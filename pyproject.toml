@@ -1,0 +1,6 @@
+[project]
+name    = "lab"
+version = "0"
+
+[project.optional-dependencies]
+dev = ["mypy", "types-PyYAML", "black", "isort"]

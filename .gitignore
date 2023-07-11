@@ -1,0 +1,8 @@
+.bundle/
+.mypy_cache/
+vendor/
+.venv/
+Gemfile.lock
+package-lock.json
+tmp/
+var/
