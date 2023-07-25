@@ -17,6 +17,7 @@ ProtectSystem        = strict
 PrivateTmp           = yes
 ReadWritePaths       = %t/systemd %T
 
+Environment          = NETWORKD_DHCP=yes
 Environment          = IFACE=vn-%I
 Environment          = DOMAIN=%I
 Environment          = NETDEV=%t/systemd/network/0-vn-%I.netdev

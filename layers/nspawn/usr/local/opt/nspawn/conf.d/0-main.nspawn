@@ -1,0 +1,12 @@
+[Exec]
+NotifyReady           = yes
+SystemCallFilter      = add_key keyctl bpf
+PrivateUsers          = pick
+LinkJournal           = try-guest
+
+[Network]
+Bridge                = vn-nspawn
+
+[Files]
+Bind                  = /dev/fuse
+PrivateUsersOwnership = map

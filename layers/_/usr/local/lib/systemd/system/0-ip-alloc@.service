@@ -16,10 +16,11 @@ ProtectSystem    = strict
 PrivateTmp       = yes
 ReadWritePaths   = %t %T
 
+Environment      = LOCK=%t/local/ipv4
 Environment      = IFACE=%I
 Environment      = IPV4_PREFIX=20
 
-EnvironmentFile  = -/usr/local/lib/env.d/alloc.%I.env
+EnvironmentFile  = -/usr/local/default/alloc.%I.env
 
 ExecStart        = /usr/local/lib/network/ipalloc.sh ${IFACE} ${IPV4_PREFIX}
-ExecStopPost     = flock -- %t/ipv4/lock rm --recursive --force -- %t/ipv4/alloc/${IFACE}
+ExecStopPost     = flock -- ${LOCK} rm -fr -- ${LOCK}/${IFACE}

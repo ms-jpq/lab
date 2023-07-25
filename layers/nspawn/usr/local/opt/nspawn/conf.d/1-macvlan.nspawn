@@ -1,0 +1,2 @@
+[Network]
+MACVLAN = <%= nspawn.lan_if %>

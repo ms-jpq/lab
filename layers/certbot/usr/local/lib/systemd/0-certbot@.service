@@ -12,7 +12,7 @@ Environment    = DOMAIN=%I
 Environment    = CONF=%C/certbot/conf
 Environment    = LOGS=%C/certbot/logs
 
-ExecStartPre   = mkdir --parents -- %C/certbot %C/certbot/nginx
+ExecStartPre   = mkdir -p -- %C/certbot %C/certbot/nginx
 ExecStart      = /usr/local/venv/bin/certbot certonly \
                    --work-dir %T \
                    --config-dir ${CONF} \
@@ -22,5 +22,5 @@ ExecStart      = /usr/local/venv/bin/certbot certonly \
                    --expand \
                    --domains ${DOMAIN} \
                    --dns-cloudflare \
-                   --dns-cloudflare-credentials /usr/local/lib/env.d/certbot.${DOMAIN}.env
+                   --dns-cloudflare-credentials /usr/local/default/certbot.${DOMAIN}.env
 ExecStart      = envsubst2.sh /usr/local/lib/certbot/nginx.conf %C/certbot/nginx/${DOMAIN}.conf

@@ -18,13 +18,12 @@ Address                 = ${IPV6_IF}
 Domains                 = ~${DOMAIN}
 DNS                     = ${IPV6_ADDR} ${IPV4_ADDR}
 
-DHCPServer              = ${DHCP}
-IPv6SendRA              = ${DHCP}
+DHCPServer              = ${NETWORKD_DHCP}
+IPv6SendRA              = ${NETWORKD_DHCP}
 
 [DHCPServer]
 DNS                     = ${IPV4_ADDR}
 DefaultLeaseTimeSec     = 90s
-EmitNTP                 = yes
 MaxLeaseTimeSec         = 300s
 
 [IPv6SendRA]

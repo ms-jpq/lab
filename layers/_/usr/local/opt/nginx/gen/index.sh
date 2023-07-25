@@ -3,7 +3,7 @@
 set -o pipefail
 
 CGI='/run/cgi/'
-TITLE="$(basename -- "$0")"
+TITLE="${0##*/}"
 LOCATION_D="$1/$TITLE.conf"
 WWW="$4/index.html"
 
@@ -51,4 +51,4 @@ EOF
 
 BODY="$(body)"
 export -- TITLE BODY
-envsubst </usr/local/lib/nginx/index.html >"$WWW"
+envsubst </usr/local/opt/nginx/index.html >"$WWW"

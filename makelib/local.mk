@@ -1,4 +1,4 @@
-MACHINE := $(MACHINE)
+MACHINE ?= _
 
 ./tmp/$(MACHINE): ./tmp
 

@@ -11,5 +11,5 @@ PrivateTmp      = yes
 ReadWritePaths  = %t %T %V
 TimeoutStartSec = 1m
 
-EnvironmentFile = -/usr/local/lib/env.d/cgi.%J.env
+EnvironmentFile = -/usr/local/default/cgi.%J.env
 ExecStart       = /usr/local/lib/cgi/%J

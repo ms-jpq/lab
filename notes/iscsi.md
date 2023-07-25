@@ -1,9 +1,13 @@
 # ISCSI
 
-## open-iscsi
+## Client
 
-Client
+```bash
+open-iscsi
+```
 
-## targetcli-fb
+## Server
 
-Server
+```
+targetcli-fb
+```

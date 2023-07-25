@@ -1,4 +1,4 @@
-# Notes on Filesystems
+# Notes on File Systems
 
 ## Destroy
 
