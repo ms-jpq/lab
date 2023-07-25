@@ -1,0 +1,14 @@
+[Unit]
+Description      = Reload nginx on generator updates
+StopWhenUnneeded = yes
+
+BindsTo          = nginx.service
+After            = nginx.service
+
+[Service]
+Restart          = on-failure
+PrivateTmp       = yes
+ProtectSystem    = strict
+ReadWritePaths   = %t/nginx %T
+
+ExecStart        = /usr/local/lib/nginx/conf.sh

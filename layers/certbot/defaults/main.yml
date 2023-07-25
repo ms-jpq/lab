@@ -1,0 +1,51 @@
+---
+remove_apt_packages:
+  - snapd
+  - vim
+
+gpg_keys: []
+
+apt_repos:
+  - "deb http://archive.canonical.com/ubuntu {{ ansible_distribution_release }} partner"
+
+apt_packages:
+  - "linux-lowlatency-hwe-{{ ansible_distribution_version }}"
+  - bat
+  - dnsmasq
+  - fd-find
+  - fzf
+  - git
+  - ipcalc-ng
+  - iperf3
+  - jq
+  - language-pack-zh-hans
+  - moreutils
+  - mosh
+  - ncdu
+  - neovim
+  - netdata
+  - netdata-plugins-python
+  - nfs-common
+  - nginx
+  - python3-venv
+  - ripgrep
+  - rsync
+  - ssh-import-id
+  - systemd-oomd
+  - tmux
+  - tree
+  - unattended-upgrades
+  - wireguard-tools
+
+venv_packages:
+  /usr/local/venv:
+    - certbot
+    - certbot-dns-cloudflare
+
+git_repos:
+  - src: "https://github.com/ms-jpq/tmux_rc.git"
+    dst: "~/.config/tmux"
+
+target_systemds:
+  - nftables.service
+  - 00-wg-private-key.service

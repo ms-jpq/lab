@@ -1,0 +1,1 @@
+InitiatorName=iqn.1949-08.arpa.home.iscsi:<%= facts.hostname %>

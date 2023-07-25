@@ -1,0 +1,25 @@
+[Unit]
+Description      = IPv4 alloc -- /run/ipv4/alloc/%I
+StopWhenUnneeded = yes
+
+BindsTo          = systemd-networkd.service
+After            = systemd-networkd.service
+
+After            = systemd-tmpfiles-setup.service
+
+[Service]
+Type             = oneshot
+RemainAfterExit  = yes
+Restart          = on-failure
+
+ProtectSystem    = strict
+PrivateTmp       = yes
+ReadWritePaths   = %t %T
+
+Environment      = IFACE=%I
+Environment      = IPV4_PREFIX=20
+
+EnvironmentFile  = -/usr/local/lib/env.d/alloc.%I.env
+
+ExecStart        = /usr/local/lib/network/ipalloc.sh ${IFACE} ${IPV4_PREFIX}
+ExecStopPost     = flock -- %t/ipv4/lock rm --recursive --force -- %t/ipv4/alloc/${IFACE}

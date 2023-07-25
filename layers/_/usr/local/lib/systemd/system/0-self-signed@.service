@@ -1,0 +1,30 @@
+[Unit]
+Description              = Self signed certs for %H @ %t/%i
+
+ConditionPathExists      = !%C/self-signed/%I/ssl.pem
+ConditionPathExists      = !%C/self-signed/%I/ssl.crt
+ConditionPathExists      = !%C/self-signed/%I/ssl.key
+
+[Service]
+Type                     = oneshot
+RemainAfterExit          = yes
+Restart                  = on-failure
+
+ProtectSystem            = strict
+ReadWritePaths           = %C
+RuntimeDirectoryPreserve = yes
+RuntimeDirectory         = %i
+
+Environment              = DIR=%C/self-signed/%I
+Environment              = PEM=%C/self-signed/%I/ssl.pem
+Environment              = CRT=%C/self-signed/%I/ssl.crt
+Environment              = KEY=%C/self-signed/%I/ssl.key
+
+ExecStartPre             = printf -- %%s CRT=${CRT}
+ExecStartPre             = printf -- %%s KEY=${KEY}
+ExecStartPre             = printf -- %%s PEM=${PEM}
+
+ExecStartPre             = mkdir --parents -- ${DIR}
+ExecStart                = openssl req -x509 -newkey rsa:4096 -sha256 -days 6969 -nodes -subj /CN=%H -out ${CRT} -keyout ${KEY}
+ExecStart                = dd oflag=append conv=notrunc if=${KEY} of=${PEM}
+ExecStart                = dd oflag=append conv=notrunc if=${CRT} of=${PEM}

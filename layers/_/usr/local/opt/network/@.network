@@ -1,0 +1,34 @@
+[Match]
+Name                    = ${IFACE}
+
+[Link]
+RequiredForOnline       = no
+
+[Network]
+ConfigureWithoutCarrier = yes
+
+LinkLocalAddressing     = yes
+LLDP                    = yes
+EmitLLDP                = customer-bridge
+IPMasquerade            = both
+
+Address                 = ${IPV4_IF}
+Address                 = ${IPV6_IF}
+
+Domains                 = ~${DOMAIN}
+DNS                     = ${IPV6_ADDR} ${IPV4_ADDR}
+
+DHCPServer              = ${DHCP}
+IPv6SendRA              = ${DHCP}
+
+[DHCPServer]
+DNS                     = ${IPV4_ADDR}
+DefaultLeaseTimeSec     = 90s
+EmitNTP                 = yes
+MaxLeaseTimeSec         = 300s
+
+[IPv6SendRA]
+DNS                     = _link_local
+Managed                 = yes
+OtherInformation        = yes
+RouterLifetimeSec       = 90s
