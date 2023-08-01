@@ -8,5 +8,5 @@ shift -- 2
 
 TMP="$(mktemp)"
 envsubst "$@" <"$SRC" >"$TMP"
-chmod -- g+r,o+r "$TMP"
+chmod -v -- g+r,o+r "$TMP"
 mv -v --force -- "$TMP" "$DST"
