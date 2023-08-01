@@ -25,7 +25,7 @@ export -- PYDEPS
 CURL := curl --fail --location --no-progress-meter
 
 ./var/bin:
-	mkdir -p -- '$@'
+	mkdir -v -p -- '$@'
 
 ./.bundle/config:
 	bundle config set --local path '$(PWD)/vendor'

@@ -15,11 +15,11 @@ SHELL := bash
 
 clean:
 	shopt -u failglob
-	rm -rf --
+	rm -v -rf --
 
 clobber: clean
 	shopt -u failglob
-	rm -rf --
+	rm -v -rf --
 
 include makelib/*.mk
 

@@ -4,7 +4,7 @@ RUN="$1"
 CGI='/usr/local/lib/cgi/'
 WANTS="$RUN/sockets.target.wants"
 
-mkdir --parents -- "$WANTS"
+mkdir -v --parents -- "$WANTS"
 
 for FILE in "$CGI"*; do
   if [[ -x "$FILE" ]]; then
@@ -12,8 +12,8 @@ for FILE in "$CGI"*; do
     ESC="$(systemd-escape -- "$NAME")"
 
     SOCK="06-cgi-$ESC.socket"
-    cp --force -- "$CGI/06-cgi-.socket" "$RUN/$SOCK"
-    cp --force -- "$CGI/06-cgi-@.service" "$RUN/06-cgi-$ESC@.service"
-    ln --force --symbolic -- "$RUN/$SOCK" "$WANTS/$SOCK"
+    cp -v --force -- "$CGI/06-cgi-.socket" "$RUN/$SOCK"
+    cp -v --force -- "$CGI/06-cgi-@.service" "$RUN/06-cgi-$ESC@.service"
+    ln -v --force --symbolic -- "$RUN/$SOCK" "$WANTS/$SOCK"
   fi
 done

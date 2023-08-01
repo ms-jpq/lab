@@ -9,4 +9,4 @@ shift -- 2
 TMP="$(mktemp)"
 envsubst "$@" <"$SRC" >"$TMP"
 chmod -- g+r,o+r "$TMP"
-mv --force -- "$TMP" "$DST"
+mv -v --force -- "$TMP" "$DST"

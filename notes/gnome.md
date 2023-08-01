@@ -26,7 +26,7 @@ grdctl vnc enable
 grdctl vnc disable-view-only
 grdctl vnc set-auth-method password
 
-rm --force --recursive -- ~/.local/share/keyrings/login.keyring
+rm -v --force --recursive -- ~/.local/share/keyrings/login.keyring
 # probably need to run this on actual machine
 grdctl vnc set-password "$PASSWORD"
 ```

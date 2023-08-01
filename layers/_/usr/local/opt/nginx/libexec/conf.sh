@@ -45,7 +45,7 @@ while true; do
     fi
   done
 
-  rm --recursive --force -- "${TMPS[@]}"
+  rm -v --recursive --force -- "${TMPS[@]}"
 
   if ((RELOAD)); then
     systemctl reload -- nginx.service

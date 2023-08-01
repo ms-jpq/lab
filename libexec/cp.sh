@@ -13,5 +13,5 @@ else
   FLAGS=(-P)
 fi
 
-mkdir -p -- "${DST%/*}"
-exec -- cp "${FLAGS[@]}" -f -- "$SRC" "$DST"
+mkdir -v -p -- "${DST%/*}"
+exec -- cp -v -f "${FLAGS[@]}" -- "$SRC" "$DST"

@@ -12,13 +12,13 @@ SHELL := bash
 
 clean:
 	shopt -u failglob
-	rm -rf -- ./tmp
+	rm -v -rf -- ./tmp
 
 clobber: clean
 	shopt -u failglob
-	rm -rf -- ./var ./.venv/ ./node_modules/ ./.bundle/ ./vendor/ Gemfile.lock package-lock.json
+	rm -v -rf -- ./var ./.venv/ ./node_modules/ ./.bundle/ ./vendor/ Gemfile.lock package-lock.json
 
 ./tmp:
-	mkdir -p -- '$@'
+	mkdir -v -p -- '$@'
 
 include makelib/*.mk

@@ -24,7 +24,7 @@ ExecStartPre             = printf -- %%s CRT=${CRT}
 ExecStartPre             = printf -- %%s KEY=${KEY}
 ExecStartPre             = printf -- %%s PEM=${PEM}
 
-ExecStartPre             = mkdir --parents -- ${DIR}
+ExecStartPre             = mkdir -v --parents -- ${DIR}
 ExecStart                = openssl req -x509 -newkey rsa:4096 -sha256 -days 6969 -nodes -subj /CN=%H -out ${CRT} -keyout ${KEY}
 ExecStart                = dd oflag=append conv=notrunc if=${KEY} of=${PEM}
 ExecStart                = dd oflag=append conv=notrunc if=${CRT} of=${PEM}

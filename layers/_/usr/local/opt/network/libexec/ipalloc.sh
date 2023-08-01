@@ -6,7 +6,7 @@ RUN='/run/ipv4'
 ALLOC="$RUN/alloc"
 
 if ! [[ -v LOCKED ]]; then
-  mkdir --parents -- "$ALLOC"
+  mkdir -v --parents -- "$ALLOC"
   LOCKED=1 exec -- flock "$RUN/local/lock" "$0" "$@"
 fi
 
@@ -16,7 +16,7 @@ IFACE="$1"
 RECORD="$ALLOC/$IFACE"
 shift
 
-rm --force --recursive -- "$RECORD"
+rm -v --force --recursive -- "$RECORD"
 RS="$(ip --json -4 route | jq --exit-status --raw-output '.[] | select(.dst | match("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}")) | .dst')"
 readarray -t -d $'\n' -- ROUTES <<<"$RS"
 IS="$(ip --json -4 addr show | jq --exit-status --raw-output '.[] | .addr_info[] | "\(.local)/\(.prefixlen)"')"
