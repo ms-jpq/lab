@@ -4,7 +4,13 @@ on:
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform:
+          - ubuntu-latest
+          # - windows-latest
+
+    runs-on: ${{ matrix.platform }}
 
     steps:
       - uses: actions/checkout@v3
@@ -27,3 +33,5 @@ jobs:
 
       - run: |-
           make ci
+
+

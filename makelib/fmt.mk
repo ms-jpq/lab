@@ -3,7 +3,7 @@
 fmt: shfmt stree black prettier taplo
 
 shfmt: ./var/bin/shfmt
-	readarray -t -d $$'\0' -- ARRAY < <(git ls-files -z -- '*.sh')
+	readarray -t -d $$'\0' -- ARRAY < <(git ls-files --deduplicate -z -- '*.sh')
 	'$<' --write --indent 2 -- "$${ARRAY[@]}"
 
 stree: ./vendor
@@ -18,5 +18,5 @@ prettier: ./node_modules/.bin
 	'$</prettier' --cache --write -- .
 
 taplo: ./node_modules/.bin
-	readarray -t -d $$'\0' -- ARRAY < <(git ls-files -z -- '*.toml')
+	readarray -t -d $$'\0' -- ARRAY < <(git ls-files --deduplicate -z -- '*.toml')
 	'$</taplo' format -- "$${ARRAY[@]}"
