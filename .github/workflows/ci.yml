@@ -8,7 +8,7 @@ jobs:
       matrix:
         platform:
           - ubuntu-latest
-          # - windows-latest
+          - windows-latest
 
     runs-on: ${{ matrix.platform }}
 
@@ -33,5 +33,3 @@ jobs:
 
       - run: |-
           make ci
-
-

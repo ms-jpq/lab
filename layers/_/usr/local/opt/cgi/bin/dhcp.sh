@@ -13,7 +13,7 @@ EOF
 fi
 
 for LEASE in /run/dnsmasq/*/leases; do
-  hr
+  /usr/local/libexec/hr.sh
   printf -- '%s\n' "$LEASE"
-  sort --key 4 -- "$LEASE" | awk '{ print($4 " " $3)  }' | column --table
+  sort --key 4 -- "$LEASE" | awk '{ print($4 " " $3) }' | column --table
 done

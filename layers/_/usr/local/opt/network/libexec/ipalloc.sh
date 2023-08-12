@@ -2,19 +2,18 @@
 
 set -o pipefail
 
-RUN='/run/ipv4'
-ALLOC="$RUN/alloc"
+RUN='/run/local/ipv4'
 
 if ! [[ -v LOCKED ]]; then
-  mkdir -v --parents -- "$ALLOC"
-  LOCKED=1 exec -- flock "$RUN/local/lock" "$0" "$@"
+  mkdir -v --parents -- "$RUN"
+  LOCKED=1 exec -- flock "$RUN" "$0" "$@"
 fi
 
 cd -- "${0%/*}"
 
 IFACE="$1"
-RECORD="$ALLOC/$IFACE"
-shift
+RECORD="$RUN/$IFACE"
+shift -- 1
 
 rm -v --force --recursive -- "$RECORD"
 RS="$(ip --json -4 route | jq --exit-status --raw-output '.[] | select(.dst | match("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}")) | .dst')"
@@ -23,7 +22,7 @@ IS="$(ip --json -4 addr show | jq --exit-status --raw-output '.[] | .addr_info[]
 readarray -t -d $'\n' -- INETS <<<"$IS"
 
 SEEN=()
-for A in "$ALLOC"/*; do
+for A in "$RUN"/*; do
   readarray -t -d $'\n' -- SAW <"$A"
   SEEN+=("${SAW[@]}")
 done

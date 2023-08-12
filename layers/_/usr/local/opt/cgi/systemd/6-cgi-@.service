@@ -1,7 +1,7 @@
 [Unit]
 Description     = CGI -- /%J
 CollectMode     = inactive-or-failed
-BindsTo         = 06-cgi-%j.socket
+BindsTo         = 6-cgi-%j.socket
 
 [Service]
 Type            = oneshot
@@ -11,5 +11,5 @@ PrivateTmp      = yes
 ReadWritePaths  = %t %T %V
 TimeoutStartSec = 1m
 
-EnvironmentFile = -/usr/local/default/cgi.%J.env
-ExecStart       = /usr/local/lib/cgi/%J
+EnvironmentFile = -/usr/local/default/%J.cgi.env
+ExecStart       = /usr/local/opt/cgi/bin/%J

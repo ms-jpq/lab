@@ -13,10 +13,10 @@ EOF
 fi
 
 systemctl() {
-  hr-run command -- systemctl --no-pager --plain --full --show-transaction "$@" || true
+  /usr/local/libexec/hr-run.sh command -- systemctl --no-pager --plain --full --show-transaction "$@" || true
 }
 
-hr-run timedatectl status
+/usr/local/libexec/hr-run.sh timedatectl status
 
 systemctl --failed
 

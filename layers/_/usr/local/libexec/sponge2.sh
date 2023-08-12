@@ -3,7 +3,7 @@
 set -o pipefail
 
 DST="$1"
-shift
+shift -- 1
 
 mkdir -v --parents -- "$(dirname -- "$DST")"
 "$@" | sponge -- "$DST"
