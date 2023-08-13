@@ -2,8 +2,8 @@
 
 set -o pipefail
 
-hr-run nft --optimize "$@" -- 'include "/usr/local/lib/nftables/conf.d/*.conf";'
-hr-run nft --service --guid -- 'list ruleset'
+/usr/local/libexec/hr-run.sh nft --optimize "$@" -- 'include "/usr/local/lib/nftables/conf.d/*.conf";'
+/usr/local/libexec/hr-run.sh nft --service --guid -- 'list ruleset'
 
-hr-run nft --optimize "$@" -- 'include "/usr/local/lib/nftables/dropin.d/*.conf";'
-hr-run nft --service --guid -- 'list ruleset'
+/usr/local/libexec/hr-run.sh nft --optimize "$@" -- 'include "/usr/local/lib/nftables/dropin.d/*.conf";'
+/usr/local/libexec/hr-run.sh nft --service --guid -- 'list ruleset'

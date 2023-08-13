@@ -2,4 +2,8 @@
 
 set -o pipefail
 
-! "$@"
+HR="$("${0%/*}/hr.sh")"
+
+printf -- '%s' "$HR"
+"$@"
+printf -- '%s' "$HR"
