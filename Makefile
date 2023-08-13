@@ -24,4 +24,5 @@ clobber: clean
 VAR := ./var
 TMP := '$(VAR)/tmp'
 
+include env.mk
 include makelib/*.mk
