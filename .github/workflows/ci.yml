@@ -32,4 +32,4 @@ jobs:
       - uses: actions/setup-node@v3
 
       - run: |-
-          make ci
+          make build

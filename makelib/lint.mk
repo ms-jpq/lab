@@ -8,10 +8,10 @@ rubocop: ./vendor
 mypy: ./.venv/bin
 	'$</mypy' -- .
 
-shellcheck: ./var/bin/shellcheck
+shellcheck: $(VAR)/bin/shellcheck
 	readarray -t -d $$'\0' -- ARRAY < <(git ls-files --deduplicate -z -- '*.sh')
 	'$<' -- "$${ARRAY[@]}"
 
-hadolint: ./var/bin/hadolint
+hadolint: $(VAR)/bin/hadolint
 	readarray -t -d $$'\0' -- ARRAY < <(git ls-files --deduplicate -z -- '*Dockerfile')
 	'$<' -- "$${ARRAY[@]}"

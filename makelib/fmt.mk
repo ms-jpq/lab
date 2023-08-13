@@ -2,7 +2,7 @@
 
 fmt: shfmt stree black prettier taplo
 
-shfmt: ./var/bin/shfmt
+shfmt: $(VAR)/bin/shfmt
 	readarray -t -d $$'\0' -- ARRAY < <(git ls-files --deduplicate -z -- '*.sh')
 	'$<' --write --indent 2 -- "$${ARRAY[@]}"
 

@@ -16,9 +16,12 @@ clean:
 
 clobber: clean
 	shopt -u failglob
-	rm -v -rf -- ./var ./.venv/ ./node_modules/ ./.bundle/ ./vendor/ Gemfile.lock package-lock.json
+	rm -v -rf -- '$(VAR)' ./.venv/ ./node_modules/ ./.bundle/ ./vendor/ Gemfile.lock package-lock.json
 
 ./tmp:
 	mkdir -v -p -- '$@'
+
+VAR := ./var
+TMP := '$(VAR)/tmp'
 
 include makelib/*.mk

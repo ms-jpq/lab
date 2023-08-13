@@ -24,7 +24,7 @@ export -- PYDEPS
 
 CURL := curl --fail --location --no-progress-meter
 
-./var/bin:
+$(VAR)/bin:
 	mkdir -v -p -- '$@'
 
 ./.bundle/config:
@@ -40,7 +40,7 @@ CURL := curl --fail --location --no-progress-meter
 ./node_modules/.bin:
 	npm install --upgrade --no-package-lock
 
-./var/bin/shellcheck: | ./var/bin
+$(VAR)/bin/shellcheck: | $(VAR)/bin
 	VERSION='v0.9.0'
 	case "$$OSTYPE" in
 	darwin*)
@@ -51,10 +51,10 @@ CURL := curl --fail --location --no-progress-meter
 		;;
 	esac
 	URI="https://github.com/koalaman/shellcheck/releases/latest/download/shellcheck-$$VERSION.$$FILE.tar.xz"
-	$(CURL) -- "$$URI" | tar --extract --xz --file - --directory './var/bin' --strip-components 1 --wildcards 'shellcheck-*/shellcheck'
+	$(CURL) -- "$$URI" | tar --extract --xz --file - --directory '$(VAR)/bin' --strip-components 1 --wildcards 'shellcheck-*/shellcheck'
 	chmod -v +x -- '$@'
 
-./var/bin/hadolint: | ./var/bin
+$(VAR)/bin/hadolint: | $(VAR)/bin
 	case "$$OSTYPE" in
 	darwin*)
 		FILE='hadolint-Darwin-x86_64'
@@ -68,7 +68,7 @@ CURL := curl --fail --location --no-progress-meter
 	chmod +x -- '$@'
 
 
-./var/bin/shfmt: | ./var/bin
+$(VAR)/bin/shfmt: | $(VAR)/bin
 	VERSION='v3.7.0'
 	case "$$OSTYPE" in
 	darwin*)

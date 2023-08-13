@@ -1,3 +1,5 @@
+.PHONY: local
+
 MACHINE ?= _
 
 ./tmp/$(MACHINE): ./tmp
