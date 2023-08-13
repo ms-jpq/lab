@@ -2,19 +2,41 @@
 
 MACHINES := $(shell printf -- '%s ' machines/*)
 
-LAYERS_DIRS := $(shell find layers -type d)
-LAYERS_FILES := $(shell find layers -type f,l)
+e :=
+s := ,
+sp := $(e) $(e)
 
 
-define LOCAL_PRE_TEMPLATE
+define LOCAL_TEMPLATE
 LOCALS.$1 :=
+
+MACH.$1.LAYERS := layers/{$(subst $(sp),$(s),$(strip $(shell tr '\n' ' ' <'$(machine)/layers.txt')))}
+MACH.$1.DIRS := $$(shell find $$(MACH.$1.LAYERS) -type d)
+MACH.$1.FILES := $$(shell find $$(MACH.$1.LAYERS) -type f,l)
 
 $(TMP)/$1/./: | $(TMP)/$1
 $(TMP)/$1: | $(TMP)
 	mkdir -v -p -- '$$@'
+$(TMP)/$1/layers/: | $(TMP)/$1
+	mkdir -v -p -- '$$@'
+
 
 $(TMP)/$1/facts.json: | $(TMP)/$1
 	./libexec/facts.sh '$1' >'$$@'
+
+
+$$(foreach layer,$$(MACH.$1.DIRS),$$(eval $$(call LOCAL_D_TEMPLATE,$1,$$(layer))))
+$$(foreach layer,$$(MACH.$1.FILES),$$(eval $$(call LOCAL_F_TEMPLATE,$1,$$(layer))))
+
+
+local: $(TMP)/$1/fs
+
+$(TMP)/$1/fs: $$(LOCALS.$1)
+	mkdir -v -p -- '$$@'
+	for layer in $(TMP)/$1/layers/*/; do
+		rsync --recursive --links --perms --keep-dirlinks "$$$$layer" '$$@/'
+	done
+	touch -- '$$@'
 endef
 
 
@@ -40,20 +62,4 @@ endif
 endef
 
 
-define LOCAL_POST_TEMPLATE
-local: $(TMP)/$1/fs
-
-$(TMP)/$1/fs: $$(LOCALS.$1)
-	mkdir -v -p -- '$$@'
-	for layer in $(TMP)/$1/layers/*/; do
-		rsync --recursive --links --perms --keep-dirlinks "$$$$layer" '$$@/'
-	done
-	touch -- '$$@'
-
-endef
-
-
-$(foreach machine,$(MACHINES),$(eval $(call LOCAL_PRE_TEMPLATE,$(machine))))
-$(foreach machine,$(MACHINES),$(foreach layer,$(LAYERS_DIRS),$(eval $(call LOCAL_D_TEMPLATE,$(machine),$(layer)))))
-$(foreach machine,$(MACHINES),$(foreach layer,$(LAYERS_FILES),$(eval $(call LOCAL_F_TEMPLATE,$(machine),$(layer)))))
-$(foreach machine,$(MACHINES),$(eval $(call LOCAL_POST_TEMPLATE,$(machine))))
+$(foreach machine,$(MACHINES),$(eval $(call LOCAL_TEMPLATE,$(machine))))
