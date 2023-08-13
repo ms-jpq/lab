@@ -1,11 +1,11 @@
 .PHONY: local
 
-MACHINES := $(shell printf -- '%s ' machines/*)
-
 e :=
 s := ,
 sp := $(e) $(e)
 
+MACHINES := $(shell printf -- '%s ' machines/*)
+local: facts
 
 define LOCAL_TEMPLATE
 LOCALS.$1 :=

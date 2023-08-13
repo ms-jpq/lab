@@ -8,4 +8,9 @@ RUN apt-get update && \
   sudo \
   curl \
   jq \
-  ca-certificates
+  ca-certificates \
+  ruby
+
+WORKDIR /srv
+COPY . /srv
+# RUN make local
