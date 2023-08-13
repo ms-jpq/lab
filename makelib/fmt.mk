@@ -1,6 +1,9 @@
-.PHONY: fmt shfmt stree black prettier taplo
+.PHONY: fmt systemd-fmt shfmt stree black prettier taplo
 
-fmt: shfmt stree black prettier taplo
+fmt: systemd-fmt shfmt stree black prettier taplo
+
+systemd-fmt: $(VAR)/sh
+	'$</zsh/iso/bin/systemd-fmt.sh' ./layers ./machines
 
 shfmt: $(VAR)/bin/shfmt
 	readarray -t -d $$'\0' -- ARRAY < <(git ls-files --deduplicate -z -- '*.sh')

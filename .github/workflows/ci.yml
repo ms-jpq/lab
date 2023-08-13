@@ -3,20 +3,29 @@ on:
   push:
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        platform:
-          - ubuntu-latest
-          - windows-latest
-
-    runs-on: ${{ matrix.platform }}
+  build_linux:
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
 
       - run: |-
           gmake build
+
+  build_nt:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - run: |-
+          $pacman = Join-Path -Path $Env:GHCUP_MSYS2 'usr' 'bin' 'pacman'
+          $argv = @('--sync', '--refresh', '--noconfirm', '--', 'make')
+          & $pacman @argv
+
+      - run: |-
+          $gmake = Join-Path -Path $Env:GHCUP_MSYS2 'usr' 'bin' 'make'
+          & $gmake build
 
   lint:
     runs-on: ubuntu-latest

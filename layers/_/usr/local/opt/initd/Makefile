@@ -1,5 +1,8 @@
+MAKEFLAGS += --check-symlink-times
 MAKEFLAGS += --jobs
 MAKEFLAGS += --no-builtin-rules
+MAKEFLAGS += --no-builtin-variables
+MAKEFLAGS += --shuffle
 MAKEFLAGS += --warn-undefined-variables
 SHELL := bash
 .DELETE_ON_ERROR:
@@ -12,18 +15,12 @@ SHELL := bash
 
 clean:
 	shopt -u failglob
-	rm -v -rf -- '$(TMP)'
+	rm -v -rf --
 
 clobber: clean
 	shopt -u failglob
-	rm -v -rf -- '$(VAR)' ./.venv/ ./node_modules/ ./.bundle/ ./vendor/ Gemfile.lock package-lock.json
+	rm -v -rf --
+
+include lib/*.mk
 
 
-VAR := ./var
-TMP := $(VAR)/tmp
-
-$(TMP):
-	mkdir -v -p -- '$@'
-
-include layers/_/usr/local/opt/initd/lib/*.mk
-include makelib/*.mk
