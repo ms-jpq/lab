@@ -12,17 +12,18 @@ SHELL := bash
 
 clean:
 	shopt -u failglob
-	rm -v -rf -- ./tmp
+	rm -v -rf -- '$(TMP)'
 
 clobber: clean
 	shopt -u failglob
 	rm -v -rf -- '$(VAR)' ./.venv/ ./node_modules/ ./.bundle/ ./vendor/ Gemfile.lock package-lock.json
 
-./tmp:
-	mkdir -v -p -- '$@'
 
 VAR := ./var
-TMP := '$(VAR)/tmp'
+TMP := $(VAR)/tmp
+
+$(TMP):
+	mkdir -v -p -- '$@'
 
 include env.mk
 include makelib/*.mk

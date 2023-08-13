@@ -40,8 +40,7 @@
 
 src, dst = ARGV.map { Pathname(_1) }
 json = JSON.parse($stdin.read)
-
-Dir.chdir(src.parent)
+erb = src.read
 
 xform = -> { _1.tr(".", "_").to_sym }
 
@@ -56,7 +55,8 @@ parse = ->(data) do
   end
 end
 
-data = parse[json]
-rendered = ERB.new(path.read).result_with_hash(data)
+parse[json] => { **data }
+
+rendered = Dir.chdir(src.parent) { ERB.new(erb).result_with_hash(data) }
 dst.write(rendered)
 dst.chmod(src.stat.mode)

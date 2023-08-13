@@ -14,11 +14,11 @@ if [[ -t 0 ]]; then
     TMP="$(mktemp)"
     for FILE in ./**/*; do
       case "$FILE" in
-      *.link | *.netdev | *.network | *.socket | *.service | */systemd/**/*.conf)
+      *.link | *.netdev | *.network | *.socket | *.service | */repart.d/*.conf | */systemd/**/*.conf)
         if [[ ! -L "$FILE" ]]; then
           printf -- '%s\n' "$FILE" >&2
           "$0" <"$FILE" >"$TMP"
-          mv -v -- "$TMP" "$FILE"
+          mv -f -- "$TMP" "$FILE"
         fi
         ;;
       *) ;;

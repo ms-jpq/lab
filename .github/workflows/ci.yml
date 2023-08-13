@@ -39,5 +39,8 @@ jobs:
           gmake lint
 
       - run: |-
+          gmake local
+
+      - run: |-
           gmake fmt
           git diff --exit-code

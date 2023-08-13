@@ -2,6 +2,6 @@
 
 set -o pipefail
 
-cd -- "${0%/*}"
+MACHINE="$1"
 
-gmake -- MACHINE="$1"
+jq --exit-status --arg mach "$MACHINE" '.machine = $mach' <<<'{}'

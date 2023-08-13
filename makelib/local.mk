@@ -1,34 +1,46 @@
 .PHONY: local
 
-MACHINE ?= _
+MACHINES := $(shell printf -- '%s ' machines/*)
 
-./tmp/$(MACHINE): ./tmp
+LAYERS_DIRS := $(shell find layers -type d)
+LAYERS_FILES := $(shell find layers -type f,l)
 
-LAYERS := ./layers
-LAYERS_DIRS := $(shell find $(LAYERS) -type d)
-LAYERS_FILES := $(shell find $(LAYERS) -type f,l)
+
+define LOCAL_TEMPLATE
+$(TMP)/$1/./: | $(TMP)/$1
+$(TMP)/$1: | $(TMP)
+	mkdir -v -p -- '$$@'
+
+$(TMP)/$1/fs: | $(TMP)/$1
+	mkdir -v -p -- '$$@'
+
+$(TMP)/$1/facts.json: | $(TMP)/$1
+	./libexec/facts.sh '$1' >'$$@'
+endef
 
 
 define LOCAL_D_TEMPLATE
-$(patsubst $(LAYERS)%,%,$1)/: | $(patsubst $(LAYERS)%,%,$(dir $1))
+$(TMP)/$1/$2/: | $(TMP)/$1/$(dir $2)
 	mkdir -v -p -- '$$@'
 endef
 
 
 define LOCAL_F_TEMPLATE
-$(patsubst $(LAYERS)%,%,$(dir $1))$(patsubst !%,%,$(subst .erb.,.,$(notdir $1))): $1 | $(patsubst $(LAYERS)%,%,$(dir $1))
-ifeq (!,$(findstring !,$1))
-	cp -v -P -f -- '$$<' '$$@'
-else
-ifeq (.erb,$(suffix $(basename $1)))
-	cd -- '$(dir $1)'
-	./libexec/erb.rb '$$<' '$$@'
-else
+local: $(TMP)/$1/$(dir $2)$(patsubst !%,%,$(subst .erb.,.,$(notdir $2)))
+$(TMP)/$1/$(dir $2)$(patsubst !%,%,$(subst .erb.,.,$(notdir $2))): $2 $(TMP)/$1/facts.json | $(TMP)/$1/$(dir $2)
+ifeq (!,$(findstring !,$2))
 	cp -v -f -- '$$<' '$$@'
+else
+ifeq (.erb,$(suffix $(basename $2)))
+	./libexec/erb.rb '$$<' '$$@' <'$(TMP)/$1/facts.json'
+else
+	cp -v -P -f -- '$$<' '$$@'
 endif
 endif
 endef
 
 
-$(foreach tpl,$(LAYERS_DIRS),$(eval $(call LOCAL_D_TEMPLATE,$(tpl))))
-$(foreach tpl,$(LAYERS_FILES),$(eval $(call LOCAL_F_TEMPLATE,$(tpl))))
+
+$(foreach machine,$(MACHINES),$(eval $(call LOCAL_TEMPLATE,$(machine))))
+$(foreach machine,$(MACHINES),$(foreach layer,$(LAYERS_DIRS),$(eval $(call LOCAL_D_TEMPLATE,$(machine),$(layer)))))
+$(foreach machine,$(MACHINES),$(foreach layer,$(LAYERS_FILES),$(eval $(call LOCAL_F_TEMPLATE,$(machine),$(layer)))))
