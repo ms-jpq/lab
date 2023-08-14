@@ -3,8 +3,6 @@
 set -o pipefail
 
 MACHINE="$1"
-ENV_JSON="$2"
+shift -- 1
 
-ENV="$(<"$ENV_JSON")"
-
-jq --exit-status --arg mach "$MACHINE" '.machine = $mach' <<<"$ENV"
+jq --exit-status --arg mach "$MACHINE" --slurp --sort-keys 'add | .machine = $mach' "$@"

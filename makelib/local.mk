@@ -23,7 +23,7 @@ ifeq (!,$(findstring !,$2))
 	cp -v -f -- '$$<' '$$@'
 else
 ifeq (.erb,$(suffix $(basename $2)))
-	./libexec/erb.rb '$$<' '$$@' <'$(TMP)/$1/facts.json'
+	./libexec/erb.rb '$$<' '$$@' '$(TMP)/$1/facts.json'
 else
 	cp -v -P -f -- '$$<' '$$@'
 endif
@@ -47,6 +47,8 @@ LOCALS.$1 :=
 MACH.$1.LAYERS := layers/{$(subst $(sp),$(s),$(strip _ $(shell tr '\n' ' ' <'$1/layers.txt')))}
 MACH.$1.DIRS := $$(shell find $$(MACH.$1.LAYERS) -type d)
 MACH.$1.FILES := $$(shell find $$(MACH.$1.LAYERS) -type f,l)
+MACH.$1.FACTS := $(shell printf -- '%s ' $1/facts/*.json)
+
 
 $(TMP)/$1/./: | $(TMP)/$1
 $(TMP)/$1: | $(TMP)
@@ -55,8 +57,8 @@ $(TMP)/$1/layers/: | $(TMP)/$1
 	mkdir -v -p -- '$$@'
 
 
-$(TMP)/$1/facts.json: ./libexec/facts.sh $(TMP)/$1/env.json | $(TMP)/$1
-	'$$<' '$1' '$(TMP)/$1/env.json' >'$$@'
+$(TMP)/$1/facts.json: ./libexec/facts.sh $$(MACH.$1.FACTS) $(TMP)/$1/env.json | $(TMP)/$1
+	'$$<' '$(notdir $1)' $$(MACH.$1.FACTS) '$(TMP)/$1/env.json' >'$$@'
 
 
 $$(foreach layer,$$(MACH.$1.DIRS),$$(eval $$(call LOCAL_D_TEMPLATE,$1,$$(layer))))

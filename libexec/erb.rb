@@ -38,8 +38,8 @@
   yaml
 ].each { require(_1) }
 
-src, dst = ARGV.map { Pathname(_1) }
-json = JSON.parse($stdin.read)
+ARGV.map { Pathname(_1) } => [src, dst, env]
+json = JSON.parse(env.read)
 erb = src.read
 
 xform = -> { _1.tr(".", "_").to_sym }
