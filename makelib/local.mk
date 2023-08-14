@@ -73,9 +73,12 @@ endef
 
 define REF_LINKS
 
+layers/posix/home/.local/opt/initd/libexec/curl-unpack.sh                 usr/local/opt/initd/libexec/curl-unpack.sh
 layers/posix/home/.local/opt/initd/libexec/pkg.sh                         usr/local/opt/initd/libexec/pkg.sh
+layers/ubuntu/home/.local/opt/initd/libexec/add-ppa.sh                    usr/local/opt/initd/libexec/add-ppa.sh
 layers/ubuntu/root/usr/local/lib/systemd/resolved.conf.d/0-override.conf  usr/local/lib/systemd/resolved.conf.d/0-override.conf
 layers/ubuntu/root/usr/local/lib/systemd/timesyncd.conf.d/0-override.conf usr/local/lib/systemd/timesyncd.conf.d/0-override.conf
+zsh/iso/libexec/hr.sh                                                     usr/local/libexec/hr.sh
 
 endef
 
