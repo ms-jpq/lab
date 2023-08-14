@@ -5,12 +5,14 @@ s := ,
 sp := $(e) $(e)
 
 MACHINES := $(shell printf -- '%s ' machines/*)
-local: facts
+
+LSYNC := $(VAR)/sh/libexec/lsync.sh
+
 
 define LOCAL_TEMPLATE
 LOCALS.$1 :=
 
-MACH.$1.LAYERS := layers/{$(subst $(sp),$(s),$(strip $(shell tr '\n' ' ' <'$(machine)/layers.txt')))}
+MACH.$1.LAYERS := layers/{$(subst $(sp),$(s),$(strip $(shell tr '\n' ' ' <'$1/layers.txt')))}
 MACH.$1.DIRS := $$(shell find $$(MACH.$1.LAYERS) -type d)
 MACH.$1.FILES := $$(shell find $$(MACH.$1.LAYERS) -type f,l)
 
@@ -21,8 +23,8 @@ $(TMP)/$1/layers/: | $(TMP)/$1
 	mkdir -v -p -- '$$@'
 
 
-$(TMP)/$1/facts.json: | $(TMP)/$1
-	./libexec/facts.sh '$1' >'$$@'
+$(TMP)/$1/facts.json: ./libexec/facts.sh | $(TMP)/$1
+	'$$<' '$1' >'$$@'
 
 
 $$(foreach layer,$$(MACH.$1.DIRS),$$(eval $$(call LOCAL_D_TEMPLATE,$1,$$(layer))))
@@ -31,12 +33,8 @@ $$(foreach layer,$$(MACH.$1.FILES),$$(eval $$(call LOCAL_F_TEMPLATE,$1,$$(layer)
 
 local: $(TMP)/$1/fs
 
-$(TMP)/$1/fs: $$(LOCALS.$1)
-	mkdir -v -p -- '$$@'
-	for layer in $(TMP)/$1/layers/*/; do
-		rsync --recursive --links --perms --keep-dirlinks "$$$$layer" '$$@/'
-	done
-	touch -- '$$@'
+$(TMP)/$1/fs: $(VAR)/sh/libexec/lsync.sh $$(LOCALS.$1) | $(VAR)/sh
+	'$$<' '$$@' $(TMP)/$1/layers/*/
 endef
 
 
@@ -49,7 +47,7 @@ endef
 define LOCAL_F_TEMPLATE
 LOCALS.$1 += $(TMP)/$1/$(dir $2)$(patsubst !%,%,$(subst .erb.,.,$(notdir $2)))
 
-$(TMP)/$1/$(dir $2)$(patsubst !%,%,$(subst .erb.,.,$(notdir $2))): $2 $(TMP)/$1/facts.json | $(TMP)/$1/$(dir $2)
+$(TMP)/$1/$(dir $2)$(patsubst !%,%,$(subst .erb.,.,$(notdir $2))): $2 ./libexec/erb.rb $(TMP)/$1/facts.json | $(TMP)/$1/$(dir $2)
 ifeq (!,$(findstring !,$2))
 	cp -v -f -- '$$<' '$$@'
 else
