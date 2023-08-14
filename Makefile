@@ -22,8 +22,12 @@ clobber: clean
 VAR := ./var
 TMP := $(VAR)/tmp
 
-$(TMP):
+$(VAR):
 	mkdir -v -p -- '$@'
+
+$(TMP): | $(VAR)
+	mkdir -v -p -- '$@'
+
 
 include layers/_/usr/local/opt/initd/lib/*.mk
 include makelib/*.mk

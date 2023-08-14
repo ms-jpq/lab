@@ -3,5 +3,8 @@
 set -o pipefail
 
 MACHINE="$1"
+ENV_JSON="$2"
 
-jq --exit-status --arg mach "$MACHINE" '.machine = $mach' <<<'{}'
+ENV="$(<"$ENV_JSON")"
+
+jq --exit-status --arg mach "$MACHINE" '.machine = $mach' <<<"$ENV"

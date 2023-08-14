@@ -24,7 +24,7 @@ export -- PYDEPS
 
 CURL := curl --fail --location --no-progress-meter
 
-$(VAR)/bin:
+$(VAR)/bin: | $(VAR)
 	mkdir -v -p -- '$@'
 
 ./.bundle/config:
@@ -40,47 +40,25 @@ $(VAR)/bin:
 ./node_modules/.bin:
 	npm install --upgrade --no-package-lock
 
+
+V_SHELLCHECK := $(shell ./libexec/gh-latest.sh $(TMP) koalaman/shellcheck)
+V_SHFMT := $(shell ./libexec/gh-latest.sh $(TMP) mvdan/sh)
+HADO_OS := $(shell perl -CASD -pe 's/([a-z])/\u$$1/' <<<'$(OS)')
+
 $(VAR)/bin/shellcheck: | $(VAR)/bin
-	VERSION='v0.9.0'
-	case "$$OSTYPE" in
-	darwin*)
-		FILE='darwin.x86_64'
-		;;
-	linux*)
-		FILE='linux.x86_64'
-		;;
-	esac
-	URI="https://github.com/koalaman/shellcheck/releases/latest/download/shellcheck-$$VERSION.$$FILE.tar.xz"
-	$(CURL) -- "$$URI" | tar --extract --xz --file - --directory '$(VAR)/bin' --strip-components 1 --wildcards 'shellcheck-*/shellcheck'
-	chmod -v +x -- '$@'
+	URI='https://github.com/koalaman/shellcheck/releases/latest/download/shellcheck-$(V_SHELLCHECK).$(OS).x86_64.tar.xz'
+	$(CURL) -- "$$URI" | tar --extract --xz --file - --directory '$(VAR)/bin' --strip-components 1 "shellcheck-$(V_SHELLCHECK)/shellcheck"
+	chmod +x '$@'
 
 $(VAR)/bin/hadolint: | $(VAR)/bin
-	case "$$OSTYPE" in
-	darwin*)
-		FILE='hadolint-Darwin-x86_64'
-		;;
-	linux*)
-		FILE='hadolint-Linux-x86_64'
-		;;
-	esac
-	URI="https://github.com/hadolint/hadolint/releases/latest/download/$$FILE"
+	URI='https://github.com/hadolint/hadolint/releases/latest/download/hadolint-$(HADO_OS)-x86_64'
 	$(CURL) --output '$@' -- "$$URI"
-	chmod +x -- '$@'
-
+	chmod +x '$@'
 
 $(VAR)/bin/shfmt: | $(VAR)/bin
-	VERSION='v3.7.0'
-	case "$$OSTYPE" in
-	darwin*)
-		FILE='darwin_arm64'
-		;;
-	linux*)
-		FILE='linux_amd64'
-		;;
-	esac
-	URI="https://github.com/mvdan/sh/releases/latest/download/shfmt_$${VERSION}_$$FILE"
+	URI='https://github.com/mvdan/sh/releases/latest/download/shfmt_$(V_SHFMT)_$(OS)_$(GOARCH)'
 	$(CURL) --output '$@' -- "$$URI"
-	chmod +x -- '$@'
+	chmod +x '$@'
 
 
 $(VAR)/sh: | $(VAR)

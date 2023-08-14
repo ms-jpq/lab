@@ -7,6 +7,7 @@ sp := $(e) $(e)
 MACHINES := $(shell printf -- '%s ' machines/*)
 
 LSYNC := $(VAR)/sh/libexec/lsync.sh
+$(LSYNC): $(VAR)/sh
 
 
 define LOCAL_TEMPLATE
@@ -23,8 +24,8 @@ $(TMP)/$1/layers/: | $(TMP)/$1
 	mkdir -v -p -- '$$@'
 
 
-$(TMP)/$1/facts.json: ./libexec/facts.sh | $(TMP)/$1
-	'$$<' '$1' >'$$@'
+$(TMP)/$1/facts.json: ./libexec/facts.sh $(TMP)/$1/env.json | $(TMP)/$1
+	'$$<' '$1' '$(TMP)/$1/env.json' >'$$@'
 
 
 $$(foreach layer,$$(MACH.$1.DIRS),$$(eval $$(call LOCAL_D_TEMPLATE,$1,$$(layer))))
