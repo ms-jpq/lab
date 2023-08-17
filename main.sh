@@ -28,10 +28,6 @@ done
 
 gmake local
 
-if ! [[ -v MACHINE ]]; then
-  exit
-fi
-
 SRC="./var/tmp/machines/$MACHINE"
 
 set -x

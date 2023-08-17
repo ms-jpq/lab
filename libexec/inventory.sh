@@ -58,8 +58,8 @@ conn() {
   USER="$("${JQER[@]}" '.user // "root"' <<<"$JSON")"
   set +x
 
-  CONN+=(-p $((PORT)))
-  SSH=("${CONN[@]}" -l "$USER" "$HOST")
+  CONN+=(-p $((PORT)) -l "$USER")
+  SSH=("${CONN[@]}" "$HOST")
   printf -v RSH -- '%q ' "${CONN[@]}"
   RSY+=(--rsh "$RSH" --)
 }
@@ -114,9 +114,12 @@ env)
   ;;
 sync)
   conn
+  SRC="$1" DST="$HOST:$2"
+  "${RSY[@]}" "$SRC" "$DST"
   ;;
 exec)
   conn
+  "${SSH[@]}" "$@"
   ;;
 *)
   exit 2
