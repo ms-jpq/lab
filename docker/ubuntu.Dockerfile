@@ -3,14 +3,15 @@ FROM ubuntu:latest
 # hadolint ignore=DL3009
 RUN apt-get update && \
   DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends --yes -- \
+  ca-certificates \
+  curl \
+  git \
+  jq \
+  m4 \
   make \
   rsync \
-  sudo \
-  curl \
-  jq \
-  ca-certificates \
-  ruby
+  sudo
 
 WORKDIR /srv
 COPY . /srv
-# RUN make local
+RUN gmake local

@@ -20,14 +20,14 @@ $(ENV_SH): $(VAR)/sh
 
 
 define FACT_TEMPLATE
-facts: $(TMP)/machines/$1/env.json
-$(TMP)/machines/$1/env.json: ./libexec/inventory.sh $(ENV_SH) $(INVENTORY) | $(TMP)/machines/$1
+facts: $(TMP)/machines/$1/mach.env
+$(TMP)/machines/$1/mach.env: ./libexec/inventory.sh $(ENV_SH) $(INVENTORY) | $(TMP)/machines/$1
 	'$$<' --action env --inventory '$(INVENTORY)' --machine '$1' -- '$(ENV_SH)' >'$$@'
 endef
 
 
 define NOFACT_TEMPLATE
-$(TMP)/machines/$1/env.json: $(INVENTORY) | $(TMP)/machines/$1
+$(TMP)/machines/$1/mach.env: $(INVENTORY) | $(TMP)/machines/$1
 	printf -- '%s\n' '{}' >'$$@'
 endef
 

@@ -1,8 +1,0 @@
-{
-  "Style/NumberedParameters": {
-    "Enabled": false
-  },
-  "Style/NumberedParametersLimit": {
-    "Enabled": false
-  }
-}

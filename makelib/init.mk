@@ -27,12 +27,6 @@ CURL := curl --fail --location --no-progress-meter
 $(VAR)/bin: | $(VAR)
 	mkdir -v -p -- '$@'
 
-./.bundle/config:
-	bundle config set --local path '$(PWD)/vendor'
-
-./vendor: | ./.bundle/config
-	bundle install
-
 ./.venv/bin:
 	python3 -m venv -- './.venv'
 	'$@/python3' <<< "$$PYDEPS"
@@ -41,8 +35,8 @@ $(VAR)/bin: | $(VAR)
 	npm install --upgrade --no-package-lock
 
 
-V_SHELLCHECK := $(shell ./libexec/gh-latest.sh $(TMP) koalaman/shellcheck)
-V_SHFMT := $(shell ./libexec/gh-latest.sh $(TMP) mvdan/sh)
+V_SHELLCHECK := $(shell ./libexec/gh-latest.sh $(VAR) koalaman/shellcheck)
+V_SHFMT := $(shell ./libexec/gh-latest.sh $(VAR) mvdan/sh)
 HADO_OS := $(shell perl -CASD -pe 's/([a-z])/\u$$1/' <<<'$(OS)')
 
 $(VAR)/bin/shellcheck: | $(VAR)/bin

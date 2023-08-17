@@ -98,18 +98,7 @@ env)
   SCRIPT="$1"
   conn
   STR="$(printf -- '%q ' "${BSH[@]}" "$(<"$SCRIPT")")"
-  ENV="$("${SSH[@]}" "$STR")"
-  readarray -t -d $'\n' -- ROWS <<<"$ENV"
-
-  ACC='{}'
-  for ROW in "${ROWS[@]}"; do
-    KEY="${ROW%%=*}"
-    KEY="${KEY#'ENV_'}"
-    VAL="${ROW#*=}"
-    # shellcheck disable=SC2016
-    ACC="$("${JQE[@]}" --arg key "${KEY,,}" --arg val "$VAL" '.[$key] = $val' <<<"$ACC")"
-  done
-  "${JQE[@]}" <<<"$ACC"
+  "${SSH[@]}" "$STR"
 
   ;;
 sync)

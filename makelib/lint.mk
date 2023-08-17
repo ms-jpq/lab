@@ -1,9 +1,6 @@
-.PHONY: lint rubocop mypy shellcheck hadolint
+.PHONY: lint mypy shellcheck hadolint
 
-lint: rubocop mypy shellcheck hadolint
-
-rubocop: ./vendor
-	bundle exec -- rubocop -- .
+lint: mypy shellcheck hadolint
 
 mypy: ./.venv/bin
 	'$</mypy' -- .

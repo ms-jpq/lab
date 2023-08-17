@@ -16,7 +16,7 @@ clean:
 
 clobber: clean
 	shopt -u failglob
-	rm -v -rf -- '$(VAR)' ./.venv/ ./node_modules/ ./.bundle/ ./vendor/ Gemfile.lock package-lock.json
+	rm -v -rf -- '$(VAR)' ./.venv/ ./node_modules/ package-lock.json
 
 
 VAR := ./var

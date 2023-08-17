@@ -33,11 +33,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: ruby/setup-ruby@v1
-        with:
-          bundler-cache: true
-          ruby-version: "3.2"
-
       - uses: actions/setup-python@v4
         with:
           python-version: "3.11"
@@ -49,6 +44,9 @@ jobs:
 
       - run: |-
           gmake local
+
+      - run: |-
+          gmake local --debug
 
       - run: |-
           gmake fmt
