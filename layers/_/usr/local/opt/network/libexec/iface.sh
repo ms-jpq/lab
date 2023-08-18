@@ -9,7 +9,7 @@ DOMAIN="$2"
 
 export -- IFACE DOMAIN IPV4_IF IPV6_IF IPV4_ADDR IPV6_ADDR
 
-IPV4_IF="$(<"/run/ipv4/alloc/$IFACE")"
+IPV4_IF="$(<"/run/local/ipv4/$IFACE")"
 IPV4_ADDR="${IPV4_IF%%/*}"
 IPV6_ADDR="$(./ula.sh "$IFACE")::1"
 IPV6_IF="$IPV6_ADDR/64"

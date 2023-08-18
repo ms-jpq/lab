@@ -12,7 +12,7 @@ CONF_D="/run/dnsmasq/$INSTANCE/conf.d"
 
 IPV4_ADDR="$(<"/run/ipv4/alloc/$IFACE")"
 I4="$(ipcalc-ng --json -- "$IPV4_ADDR" | jq --exit-status --raw-output '.MINADDR, .MAXADDR')"
-readarray -t -d $'\n' -- IPV_4 <<<"$I4"
+readarray -t -- IPV_4 <<<"$I4"
 IPV4_LO="${IPV_4[0]%%1}2"
 IPV4_HI="${IPV_4[1]}"
 

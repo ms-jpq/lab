@@ -1,5 +1,5 @@
 [Unit]
-Description      = IPv4 alloc -- /run/ipv4/alloc/%I
+Description      = IPv4 alloc -- /run/local/ipv4/%I
 StopWhenUnneeded = yes
 
 BindsTo          = systemd-networkd.service
@@ -20,7 +20,7 @@ Environment      = LOCK=%t/local/ipv4
 Environment      = IFACE=%I
 Environment      = IPV4_PREFIX=20
 
-EnvironmentFile  = -/usr/local/default/alloc.%I.env
+EnvironmentFile  = -/usr/local/default/%I.ipv4.env
 
-ExecStart        = /usr/local/lib/network/ipalloc.sh ${IFACE} ${IPV4_PREFIX}
+ExecStart        = /usr/local/lib/network/libexec/ipalloc.sh ${LOCK} ${IFACE} $IPV4_PREFIX
 ExecStopPost     = flock -- ${LOCK} rm -v -fr -- ${LOCK}/${IFACE}
