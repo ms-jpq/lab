@@ -21,5 +21,6 @@ clobber: clean
 	rm -v -rf --
 
 include lib/*.mk
+include makelib/*.mk
 
 
