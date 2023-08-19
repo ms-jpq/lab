@@ -3,7 +3,8 @@
 lint: mypy shellcheck hadolint
 
 mypy: ./.venv/bin
-	'$</mypy' -- .
+	readarray -t -d $$'\0' -- ARRAY < <(git ls-files --deduplicate -z -- '*.py')
+	'$</mypy' -- "$${ARRAY[@]}"
 
 shellcheck: $(VAR)/bin/shellcheck
 	readarray -t -d $$'\0' -- ARRAY < <(git ls-files --deduplicate -z -- '*.sh')
