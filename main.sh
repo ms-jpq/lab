@@ -28,10 +28,23 @@ done
 
 gmake local
 
-SRC="./var/tmp/machines/$MACHINE"
+SRC="./var/tmp/machines/$MACHINE/fs/"
+INVENTORY='./inventory.json'
 
 set -x
-if ! [[ -d "$SRC" ]]; then
+if ! [[ -d "$SRC" ]] || ! [[ -f "$INVENTORY" ]]; then
   exit 1
 fi
 set +x
+
+EXEC=(
+  ./libexec/inventory.sh
+  --inventory "$INVENTORY"
+  --machine "$MACHINE"
+  --action
+)
+
+"${EXEC[@]}" exec -- "$(<./libexec/essentials.sh)"
+"${EXEC[@]}" sync -- "$SRC"
+printf -v ESC -- '%q ' gmake --directory /usr/local/opt/initd "$@"
+"${EXEC[@]}" exec -- "$ESC"

@@ -97,18 +97,20 @@ ls)
 env)
   SCRIPT="$1"
   conn
-  STR="$(printf -- '%q ' "${BSH[@]}" "$(<"$SCRIPT")")"
-  "${SSH[@]}" "$STR"
+  printf -v ESC -- '%q ' "${BSH[@]}" "$(<"$SCRIPT")"
+  "${SSH[@]}" "$ESC"
 
   ;;
 sync)
   conn
-  SRC="$1" DST="$HOST:$2"
+  SRC="$1"
+  DST="$HOST:/"
   "${RSY[@]}" "$SRC" "$DST"
   ;;
 exec)
   conn
-  "${SSH[@]}" "$@"
+  printf -v ESC -- '%q ' "${BSH[@]}" "$@"
+  "${SSH[@]}" "$ESC"
   ;;
 *)
   exit 2
