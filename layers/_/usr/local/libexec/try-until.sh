@@ -3,7 +3,7 @@
 set -o pipefail
 
 INTERVAL="$1"
-shift
+shift -- 1
 
 NOW="$(date -- '+%s')"
 NEXT=$((NOW + INTERVAL))

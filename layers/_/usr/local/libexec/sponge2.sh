@@ -5,5 +5,5 @@ set -o pipefail
 DST="$1"
 shift -- 1
 
-mkdir -v --parents -- "$(dirname -- "$DST")"
+mkdir -v --parents -- "${DST%/*}"
 "$@" | sponge -- "$DST"

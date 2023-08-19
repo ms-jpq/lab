@@ -1,1 +1,1 @@
-../../../opt/cgi/libexec/main.sh
+../../../opt/cgi/libexec/system-generator.sh

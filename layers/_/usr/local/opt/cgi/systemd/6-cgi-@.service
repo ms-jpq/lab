@@ -1,5 +1,5 @@
 [Unit]
-Description     = CGI -- /%J
+Description     = CGI -- /usr/local/opt/cgi/bin/%J
 CollectMode     = inactive-or-failed
 BindsTo         = 6-cgi-%j.socket
 
@@ -11,5 +11,5 @@ PrivateTmp      = yes
 ReadWritePaths  = %t %T %V
 TimeoutStartSec = 1m
 
-EnvironmentFile = -/usr/local/default/%J.cgi.env
+EnvironmentFile = -/usr/local/etc/default/%J.cgi.env
 ExecStart       = /usr/local/opt/cgi/bin/%J

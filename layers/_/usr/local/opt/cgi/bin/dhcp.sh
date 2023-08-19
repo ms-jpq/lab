@@ -1,4 +1,4 @@
-#!/usr/bin/env -S -- bash -Eeu -O dotglob -O nullglob -O extglob -O failglob -O globstar
+#!/usr/bin/env -S -- bash -Eeu -O dotglob -O nullglob -O extglob -O globstar
 
 set -o pipefail
 
@@ -12,7 +12,7 @@ Content-Type: text/plain; charset=utf-8
 EOF
 fi
 
-for LEASE in /run/dnsmasq/*/leases; do
+for LEASE in /run/local/dnsmasq/*/leases; do
   /usr/local/libexec/hr.sh
   printf -- '%s\n' "$LEASE"
   sort --key 4 -- "$LEASE" | awk '{ print($4 " " $3) }' | column --table

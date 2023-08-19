@@ -1,10 +1,10 @@
 [Unit]
-Description  = CGI -- %t/local/cgi/%j.sock
+Description  = CGI -- %t/local/cgi/%J.sock
 
 [Socket]
 RemoveOnStop = yes
 Accept       = yes
-ListenStream = %t/local/cgi/%j.sock
+ListenStream = %t/local/cgi/%J.sock
 
 [Install]
 WantedBy     = sockets.target

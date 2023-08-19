@@ -2,10 +2,8 @@
 
 set -o pipefail
 
-SELF="$(realpath -- "$0")"
-SELF="${SELF%/*}/.."
-RUN="$(realpath -- "$1")"
-
+RUN="$1"
+SELF='/usr/local/opt/cgi'
 CGI="$SELF/bin/"
 WANTS="$RUN/sockets.target.wants"
 
