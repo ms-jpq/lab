@@ -35,7 +35,7 @@ done
 
 JQE=(jq --exit-status)
 JQER=("${JQE[@]}" --raw-output)
-BSH=(bash --norc --noprofile -Eeu -o pipefail -O dotglob -O nullglob -O extglob -O failglob -O globstar -c)
+BSH=(bash --norc --noprofile -Eeuo pipefail -O dotglob -O nullglob -O extglob -O failglob -O globstar -c)
 CONN=(ssh
   -o 'ControlMaster=auto'
   -o "ControlPath=$PWD/var/tmp/%r@%h:%p"
