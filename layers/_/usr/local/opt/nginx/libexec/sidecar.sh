@@ -35,6 +35,6 @@ while true; do
     systemctl reload -- nginx.service
   fi
 
-  rm -v --recursive --force -- "$TMP"
+  rm --recursive --force -- "$TMP"
   sleep -- 5
 done

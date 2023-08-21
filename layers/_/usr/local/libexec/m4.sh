@@ -25,4 +25,5 @@ while (($#)); do
   shift -- 1
 done
 
-exec -- m4 --fatal-warnings --prefix-builtins "${O[@]}" -- "${0%/*}/../include/m4"/*.m4 "${A[@]}"
+H="$(realpath -- "$0")"
+exec -- m4 --fatal-warnings --prefix-builtins "${O[@]}" -- "${H%/*}/../include/m4"/*.m4 "${A[@]}"
