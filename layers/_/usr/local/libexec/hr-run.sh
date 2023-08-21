@@ -2,8 +2,9 @@
 
 set -o pipefail
 
+HR="${0%/*}/hr.sh"
 printf -- '%q ' "$@"
 printf -- '\n'
-"${0%/*}/hr.sh" '>'
+"$HR" '>'
 "$@"
-"${0%/*}/hr.sh" '<'
+"$HR" '<'
