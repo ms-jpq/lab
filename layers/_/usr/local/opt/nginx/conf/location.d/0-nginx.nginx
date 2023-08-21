@@ -3,5 +3,5 @@ location /nginx {
 }
 
 location /nginx/ {
-  stub_status;
+  stub_status ;
 }

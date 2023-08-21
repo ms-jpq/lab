@@ -1,9 +1,9 @@
 [Unit]
 Description              = Self signed certs for %H @ %t/%i
 
-ConditionPathExists      = !%C/self-signed/%I/ssl.pem
-ConditionPathExists      = !%C/self-signed/%I/ssl.crt
-ConditionPathExists      = !%C/self-signed/%I/ssl.key
+ConditionPathExists      = !%C/local/self-signed/%I/ssl.pem
+ConditionPathExists      = !%C/local/self-signed/%I/ssl.crt
+ConditionPathExists      = !%C/local/self-signed/%I/ssl.key
 
 [Service]
 Type                     = oneshot
@@ -15,14 +15,10 @@ ReadWritePaths           = %C
 RuntimeDirectoryPreserve = yes
 RuntimeDirectory         = %i
 
-Environment              = DIR=%C/self-signed/%I
-Environment              = PEM=%C/self-signed/%I/ssl.pem
-Environment              = CRT=%C/self-signed/%I/ssl.crt
-Environment              = KEY=%C/self-signed/%I/ssl.key
-
-ExecStartPre             = printf -- %%s CRT=${CRT}
-ExecStartPre             = printf -- %%s KEY=${KEY}
-ExecStartPre             = printf -- %%s PEM=${PEM}
+Environment              = DIR=%C/local/self-signed/%I
+Environment              = PEM=%C/local/self-signed/%I/ssl.pem
+Environment              = CRT=%C/local/self-signed/%I/ssl.crt
+Environment              = KEY=%C/local/self-signed/%I/ssl.key
 
 ExecStartPre             = mkdir -v --parents -- ${DIR}
 ExecStart                = openssl req -x509 -newkey rsa:4096 -sha256 -days 6969 -nodes -subj /CN=%H -out ${CRT} -keyout ${KEY}

@@ -9,6 +9,6 @@ After            = nginx.service
 Restart          = on-failure
 PrivateTmp       = yes
 ProtectSystem    = strict
-ReadWritePaths   = %t/nginx %T
+ReadWritePaths   = %t/local/nginx %T
 
-ExecStart        = /usr/local/lib/nginx/conf.sh
+ExecStart        = /usr/local/opt/nginx/libexec/monitor.sh
