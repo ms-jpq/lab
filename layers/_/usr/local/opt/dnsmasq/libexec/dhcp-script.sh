@@ -2,10 +2,8 @@
 
 set -o pipefail
 
-cd -- "${0%/*}/.."
-
 PIDS=()
-for EXEC in ./dhcp-script.d/*; do
+for EXEC in "${0%/*}/../dhcp-script.d"/*; do
   if [[ -x "$EXEC" ]]; then
     "$EXEC" "$@" &
     PIDS+=("$!")

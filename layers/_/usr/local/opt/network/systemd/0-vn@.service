@@ -17,16 +17,19 @@ ProtectSystem        = strict
 PrivateTmp           = yes
 ReadWritePaths       = %t/systemd %T
 
-EnvironmentFile      = /usr/local/default/vn-%I.ipv4.env
+EnvironmentFile      = /usr/local/etc/default/%I.vn.env
 
-Environment          = NETWORKD_DHCP=yes
+Environment          = NETWORKD_DHCP=no
 Environment          = IFACE=vn-%I
 Environment          = DOMAIN=%I
 Environment          = NETDEV=%t/systemd/network/0-vn-%I.netdev
 Environment          = NETWORK=%t/systemd/network/0-vn-%I.network
 
-ExecStart            = /usr/local/libexec/envsubst2.sh /usr/local/lib/network/@.netdev ${NETDEV}
-ExecStart            = /usr/local/lib/network/iface.sh ${IFACE} ${DOMAIN}
-ExecReload           = networkctl reconfigure -- ${IFACE}
+ExecStart            = /usr/local/libexec/envsubst2.sh /usr/local/opt/network/systemd/@.netdev ${NETDEV}
+ExecStart            = /usr/local/libexec/envsubst2.sh /usr/local/opt/network/systemd/@.network ${NETWORK}
+ExecStart            = networkctl reload
+ExecStart            = nft -- 'add element inet user internal_ifs { ${IFACE} }'
+ExecReload           = nft -- 'add element inet user internal_ifs { ${IFACE} }'
+ExecStopPost         = -nft -- 'delete element inet user internal_ifs { ${IFACE} }'
 ExecStopPost         = rm -v --recursive --force -- ${NETDEV} ${NETWORK}
 ExecStopPost         = -networkctl delete -- ${IFACE}

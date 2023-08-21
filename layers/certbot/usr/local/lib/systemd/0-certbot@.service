@@ -22,5 +22,5 @@ ExecStart      = /usr/local/venv/bin/certbot certonly \
                    --expand \
                    --domains ${DOMAIN} \
                    --dns-cloudflare \
-                   --dns-cloudflare-credentials /usr/local/default/certbot.${DOMAIN}.env
+                   --dns-cloudflare-credentials /usr/local/etc/default/certbot.${DOMAIN}.env
 ExecStart      = envsubst2.sh /usr/local/lib/certbot/nginx.conf %C/certbot/nginx/${DOMAIN}.conf
