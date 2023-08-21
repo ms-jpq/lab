@@ -4,6 +4,7 @@ e :=
 s := ,
 sp := $(e) $(e)
 
+M4 := ./libexec/m4.sh $(shell printf -- '%s ' ./layers/_/usr/local/include/m4/*.m4)
 
 LSYNC := $(VAR)/sh/libexec/lsync.sh
 $(LSYNC): $(VAR)/sh
@@ -19,7 +20,7 @@ define LOCAL_F_TEMPLATE
 LOCALS.$1 += $(TMP)/$1/$(dir $2)$(patsubst !%,%,$(subst .m4.,.,$(notdir $2)))
 
 ifeq (.m4,$(suffix $(basename $2)))
-$(TMP)/$1/$(dir $2)$(patsubst !%,%,$(subst .m4.,.,$(notdir $2))): $2 ./libexec/m4.sh $(TMP)/$1/facts.env | $(TMP)/$1/$(dir $2)
+$(TMP)/$1/$(dir $2)$(patsubst !%,%,$(subst .m4.,.,$(notdir $2))): $2 $(M4) $(TMP)/$1/facts.env | $(TMP)/$1/$(dir $2)
 	./libexec/m4.sh '$$<' '$$@' '$(TMP)/$1/facts.env'
 else
 $(TMP)/$1/$(dir $2)$(patsubst !%,%,$(subst .m4.,.,$(notdir $2))): $2 | $(TMP)/$1/$(dir $2)
