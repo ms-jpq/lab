@@ -3,9 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${TITLE}</title>
+    <title>ENV_TITLE</title>
   </head>
   <body>
-    ${BODY}
+    <ul>
+      m5_foreach(`X', `
+      <li><a href="X">X</a></li>
+      ', ENV_HREFS)
+    </ul>
   </body>
 </html>

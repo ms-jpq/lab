@@ -4,13 +4,8 @@ MACHINES := $(shell printf -- '%s ' machines/*)
 INVENTORY := ./inventory.json
 ENV_SH := $(VAR)/sh/libexec/env.sh
 
-
-ifeq ($(origin FACTS), command line)
-FACT_MACHINES := $(FACTS)
-else
 FACT_MACHINES := $(shell ./libexec/inventory.sh --action ls --inventory '$(INVENTORY)')
-endif
-
+FACTS := $(shell shopt -u failglob; printf -- '%s ' ./facts/*.env)
 
 facts: $(INVENTORY)
 $(INVENTORY):

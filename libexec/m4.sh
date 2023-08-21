@@ -13,4 +13,4 @@ for D in "${DEFS[@]}"; do
   ACC+=("-D$D")
 done
 
-exec -- m4 --fatal-warnings --prefix-builtins "${ACC[@]}" -- "$SRC" >"$DST"
+exec -- ./layers/_/usr/local/libexec/m4.sh "${ACC[@]}" -- "$SRC" >"$DST"

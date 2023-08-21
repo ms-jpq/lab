@@ -1,0 +1,9 @@
+location /${BASE} {
+  return 307 /${BASE}/;
+}
+
+location /${BASE}/ {
+  error_log       stderr crit;
+  proxy_buffering off;
+  proxy_pass      http://unix:${SOCK}:/;
+}
