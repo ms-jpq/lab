@@ -7,7 +7,7 @@ RUN='/run/local/nginx'
 CONF_D=(
   conf.d
   http.d
-  location.d
+  server.d
   stream.d
   www
 )

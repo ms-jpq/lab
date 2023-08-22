@@ -2,53 +2,20 @@
 
 set -o pipefail
 
-CGI='/run/cgi/'
-TITLE="${0##*/}"
-LOCATION_D="$1/$TITLE.conf"
-WWW="$4/index.html"
+TMP="$1"
+CGI='/run/local/cgi/'
 
-declare -A -- SOCKS
+ENV_NGINX=()
+ENV_HREFS=()
 
-for SOCK in "$CGI"**.sock; do
-  BASE="${SOCK##"$CGI"}"
-  BASE="${BASE%%'.sock'}"
-  SOCKS["$BASE"]="$SOCK"
+for SOCK in "$CGI"*.sock; do
+  BASE="${SOCK#"$CGI"}"
+  BASE="${BASE%'.sock'}"
+  ENV_NGINX+=("[$BASE, $SOCK]")
+  ENV_HREFS+=("$BASE")
 done
 
-for BASE in "${!SOCKS[@]}"; do
-  SOCK="${SOCKS["$BASE"]}"
-
-  read -r -d '' -- CONF <<-EOF || true
-location /$BASE {
-  return 307 /$BASE/;
-}
-
-location /$BASE/ {
-  error_log        stderr crit;
-  proxy_buffering  off;
-  proxy_pass http://unix:$SOCK:/;
-}
-EOF
-
-  printf -- '\n%s\n' "$CONF" >>"$LOCATION_D"
-done
-
-body() {
-  SOCKS['nginx']=''
-  SOCKS['netdata']=''
-
-  printf -- '%s\n' '<ul>'
-  for BASE in "${!SOCKS[@]}"; do
-    read -r -d '' -- CONF <<-EOF || true
-<li>
-  <a href="/$BASE/">$BASE</a>
-</li>
-EOF
-    printf -- '\n%s\n' "$CONF"
-  done
-  printf -- '%s\n' '</ul>'
-}
-
-BODY="$(body)"
-export -- TITLE BODY
-envsubst </usr/local/opt/nginx/index.html >"$WWW"
+IFS=','
+/usr/local/libexec/m4.sh -D"ENV_NGINX=(${ENV_NGINX[*]})" "${0%/*}/index.nginx" >"$TMP/server.d/index.nginx"
+/usr/local/libexec/m4.sh -D"ENV_HREFS=(${ENV_HREFS[*]})" "${0%/*}/index.html" >"$TMP/www/index.html"
+unset -- IFS

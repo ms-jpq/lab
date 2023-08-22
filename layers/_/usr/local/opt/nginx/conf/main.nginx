@@ -30,18 +30,18 @@ http {
 
   server {
     listen  [::]:8080 ipv6only=off;
-    include /usr/local/opt/nginx/websocket.conf;
-    include /usr/local/opt/nginx/location.d/*.conf;
-    include /run/local/nginx/location.d/*.conf;
+    include /usr/local/opt/nginx/websocket.nginx;
+    include /usr/local/opt/nginx/server.d/*.nginx;
+    include /run/local/nginx/server.d/*.nginx;
   }
 
-  include               /usr/local/lib/nginx/http.d/*.conf;
-  include               /run/nginx/http.d/*.conf;
+  include               /usr/local/opt/nginx/http.d/*.nginx;
+  include               /run/nginx/http.d/*.nginx;
 }
 
 stream {
   # proxy_half_close       on;
   proxy_socket_keepalive on;
-  include                /usr/local/lib/nginx/stream.d/*.conf;
-  include                /run/nginx/stream.d/*.conf;
+  include                /usr/local/opt/nginx/stream.d/*.nginx;
+  include                /run/nginx/stream.d/*.nginx;
 }
