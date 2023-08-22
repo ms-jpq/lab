@@ -16,6 +16,6 @@ for SOCK in "$CGI"*.sock; do
 done
 
 IFS=','
-/usr/local/libexec/m4.sh -D"ENV_NGINX=(${ENV_NGINX[*]})" "${0%/*}/index.nginx" >"$TMP/server.d/index.nginx"
-/usr/local/libexec/m4.sh -D"ENV_HREFS=(${ENV_HREFS[*]})" "${0%/*}/index.html" >"$TMP/www/index.html"
+/usr/local/libexec/m4.sh -D"ENV_NGINX=${ENV_NGINX[*]}" "${0%/*}/index.nginx" >"$TMP/server.d/index.nginx"
+/usr/local/libexec/m4.sh -D"ENV_HOST=$HOSTNAME" -D"ENV_HREFS=${ENV_HREFS[*]}" "${0%/*}/index.html" >"$TMP/www/index.html"
 unset -- IFS

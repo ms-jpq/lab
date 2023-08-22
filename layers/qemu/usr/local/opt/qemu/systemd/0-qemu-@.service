@@ -4,7 +4,7 @@ CollectMode      = inactive-or-failed
 [Service]
 ProtectSystem    = strict
 RuntimeDirectory = local/qemu/%I
-ReadWritePaths   = %V
+ReadWritePaths   = %V/local
 
 ExecStartPre     =
 ExecStart        = /usr/local/opt/qemu/libexec/%J.sh %I

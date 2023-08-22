@@ -22,14 +22,3 @@ pkg: | /usr/local/bin/bat /usr/local/bin/fd
 	sudo -- ln -v -sf -- '$|' '$@'
 
 $(APT_DEPS): | /usr/bin/unzip
-
-
-define SYSTEMD_MASK_TEMPLATE
-pkg._: | /usr/local/lib/systemd/$1
-/usr/local/lib/systemd/$1:
-	mkdir -v -p -- '$$(@D)'
-	ln -v -sf -- /dev/null '$$@'
-endef
-
-
-$(foreach mask,$(shell cat -- ./masks/*.txt),$(eval $(call SYSTEMD_MASK_TEMPLATE,$(mask))))

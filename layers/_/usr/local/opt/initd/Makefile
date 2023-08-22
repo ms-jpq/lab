@@ -23,4 +23,4 @@ clobber: clean
 include lib/*.mk
 include makelib/*.mk
 
-all: pkg
+all: link pkg

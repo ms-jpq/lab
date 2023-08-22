@@ -1,5 +1,5 @@
 [Unit]
-Description              = Self signed certs for %H @ %t/%i
+Description              = Self signed certs for %H @ %C/local/self-signed/%I
 
 ConditionPathExists      = !%C/local/self-signed/%I/ssl.pem
 ConditionPathExists      = !%C/local/self-signed/%I/ssl.crt
@@ -11,7 +11,7 @@ RemainAfterExit          = yes
 Restart                  = on-failure
 
 ProtectSystem            = strict
-ReadWritePaths           = %C
+ReadWritePaths           = %C/local
 RuntimeDirectoryPreserve = yes
 RuntimeDirectory         = %i
 

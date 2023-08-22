@@ -10,7 +10,7 @@ http {
   access_log            off;
   include               /etc/nginx/mime.types;
   include               /etc/nginx/proxy_params;
-  root                  /run/local/nginx/www;
+  root                  /run/local/nginx/conf/www;
   absolute_redirect     off;
   client_max_body_size  0;
   log_not_found         off;
@@ -30,18 +30,20 @@ http {
 
   server {
     listen  [::]:8080 ipv6only=off;
-    include /usr/local/opt/nginx/websocket.nginx;
-    include /usr/local/opt/nginx/server.d/*.nginx;
-    include /run/local/nginx/server.d/*.nginx;
+    include /usr/local/opt/nginx/conf/websocket.nginx;
+    include /usr/local/opt/nginx/conf/server.d/*.nginx;
+    include /run/local/nginx/conf/server.d/*.nginx;
   }
 
-  include               /usr/local/opt/nginx/http.d/*.nginx;
-  include               /run/nginx/http.d/*.nginx;
+  include               /usr/local/opt/nginx/conf/http.d/*.nginx;
+  include               /run/local/nginx/conf/http.d/*.nginx;
 }
 
 stream {
   # proxy_half_close       on;
   proxy_socket_keepalive on;
-  include                /usr/local/opt/nginx/stream.d/*.nginx;
-  include                /run/nginx/stream.d/*.nginx;
+  include                /usr/local/opt/nginx/conf/stream.d/*.nginx;
+  include                /run/local/nginx/conf/stream.d/*.nginx;
 }
+
+include          /run/local/nginx/conf/conf.d/*.nginx;

@@ -1,2 +1,0 @@
-ssl_certificate     /var/cache/self-signed/nginx/ssl.crt;
-ssl_certificate_key /var/cache/self-signed/nginx/ssl.key;

@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-RUN='/run/local/nginx'
+RUN='/run/local/nginx/conf'
 
 CONF_D=(
   conf.d
@@ -16,7 +16,7 @@ while true; do
   TMP="$(mktemp --directory)"
 
   for CONF in "${CONF_D[@]}"; do
-    mkdir -v --parents -- "$TMP/$CONF"
+    mkdir --parents -- "$TMP/$CONF"
   done
 
   PIDS=()
@@ -30,7 +30,7 @@ while true; do
     wait -- "$PID"
   done
 
-  if diff --recursive -- "$TMP" "$RUN"; then
+  if ! diff --recursive --brief -- "$TMP" "$RUN"; then
     rsync --recursive --perms -- "$TMP/" "$RUN/"
     systemctl reload -- nginx.service
   fi
