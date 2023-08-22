@@ -1,4 +1,5 @@
-+ bat
+# + netdata
+# + netdata-plugins-python
 + bat
 + dnsmasq
 + fd-find

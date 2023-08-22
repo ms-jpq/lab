@@ -46,7 +46,7 @@ endef
 define LOCAL_TEMPLATE
 LOCALS.$1 :=
 
-MACH.$1.LAYERS := layers/{$(subst $(sp),$(s),$(strip _ $(shell tr '\n' ' ' <'$1/layers.txt')))}
+MACH.$1.LAYERS := layers/{$(subst $(sp),$(s),$(strip _ $(shell cat -- <'$1/layers.txt')))}
 MACH.$1.DIRS := $$(shell find $$(MACH.$1.LAYERS) -type d)
 MACH.$1.FILES := $$(shell find $$(MACH.$1.LAYERS) -type f,l)
 MACH.$1.FACTS := $(FACTS) $(shell shopt -u failglob && printf -- '%s ' $1/*.env)
