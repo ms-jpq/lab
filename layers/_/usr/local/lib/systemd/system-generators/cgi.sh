@@ -1,1 +1,0 @@
-../../../opt/cgi/libexec/system-generator.sh

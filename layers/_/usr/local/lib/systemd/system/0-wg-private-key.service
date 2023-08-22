@@ -1,0 +1,14 @@
+[Unit]
+Description         = Wireguard -- %S/local/wireguard/self.key
+ConditionPathExists = !%S/local/wireguard/self.key
+
+[Service]
+Type                = oneshot
+RemainAfterExit     = yes
+Restart             = on-failure
+
+ProtectSystem       = strict
+PrivateTmp          = yes
+ReadWritePaths      = %S/local %T
+
+ExecStart           = sponge.sh %S/local/wireguard/self.key wg genkey

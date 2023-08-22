@@ -1,1 +1,14 @@
-../../../opt/nginx/systemd/0-nginx-sidecar.service
+[Unit]
+Description      = Reload nginx on generator updates
+StopWhenUnneeded = yes
+
+BindsTo          = nginx.service
+After            = nginx.service
+
+[Service]
+Restart          = on-failure
+PrivateTmp       = yes
+ProtectSystem    = strict
+ReadWritePaths   = %t/local/nginx %T
+
+ExecStart        = /usr/local/opt/nginx/libexec/sidecar.sh

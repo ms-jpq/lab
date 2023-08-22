@@ -1,1 +1,0 @@
-../../../opt/nginx/systemd/nginx.service.d
