@@ -21,7 +21,7 @@ readarray -t -- INETS <<<"$IS"
 
 SEEN=()
 for A in "$RUN"/*.env; do
-  read -r -- LINE <"$A"
+  read -r -- LINE <"$A" || true
   LINE="${LINE#*=}"
   SEEN+=("$LINE")
 done
