@@ -20,7 +20,7 @@ ReadWritePaths       = %t/systemd %T
 EnvironmentFile      = %t/local/ip/vn-%I.env
 EnvironmentFile      = -/usr/local/etc/default/%I.vn.env
 
-Environment          = NETWORKD_DHCP=no
+Environment          = NETWORKD_DHCP=yes
 Environment          = IFACE=vn-%I
 Environment          = DOMAIN=%I
 Environment          = NETDEV=%t/systemd/network/0-vn-%I.netdev

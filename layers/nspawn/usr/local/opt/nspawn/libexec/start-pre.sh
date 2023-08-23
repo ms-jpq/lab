@@ -19,4 +19,5 @@ fi
 RSSH="$ROOT/root/.ssh"
 mkdir -v -p -- "$RSSH"
 cp -v -f -- /root/.ssh/authorized_keys "$RSSH/authorized_keys"
+chroot "$ROOT" ssh-keygen -A
 chroot "$ROOT" dpkg --purge --force-all -- snapd cloud-init lxd-agent-loader

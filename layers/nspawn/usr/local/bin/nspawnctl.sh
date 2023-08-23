@@ -57,8 +57,10 @@ disable)
 remove)
   for MACH in "${MACHINES[@]}"; do
     ROOT="$LIB/$MACH"
-    if ! [[ -k "$ROOT" ]]; then
+    if ! [[ -k "$ROOT" ]] && ! [[ -k "$ROOT/fs" ]]; then
       "$HR" rm -v -fr -- "$ROOT"
+    else
+      exit 1
     fi
   done
   ;;

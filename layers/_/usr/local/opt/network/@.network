@@ -15,7 +15,7 @@ IPMasquerade            = both
 Address                 = ${IPV4_IF}
 Address                 = ${IPV6_IF}
 
-Domains                 = ~${DOMAIN}
+# Domains                 = ~${DOMAIN}
 DNS                     = ${IPV6_ADDR} ${IPV4_ADDR}
 
 DHCPServer              = ${NETWORKD_DHCP}
@@ -24,7 +24,7 @@ IPv6SendRA              = ${NETWORKD_DHCP}
 [DHCPServer]
 DNS                     = ${IPV4_ADDR}
 DefaultLeaseTimeSec     = 90s
-MaxLeaseTimeSec         = 300s
+MaxLeaseTimeSec         = 120s
 
 [IPv6SendRA]
 DNS                     = _link_local
