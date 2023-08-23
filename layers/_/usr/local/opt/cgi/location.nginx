@@ -1,9 +1,9 @@
-location /ENV_PATH {
-  return 307 /ENV_PATH/;
+location /m5_assert([ENV_PATH]) {
+  return 307 /m5_assert([ENV_PATH])/;
 }
 
-location /ENV_PATH/ {
+location /m5_assert([ENV_PATH])/ {
   error_log       stderr crit;
   proxy_buffering off;
-  proxy_pass      http://unix:ENV_SOCK:/;
+  proxy_pass      http://unix:m5_assert([ENV_SOCK]):/;
 }

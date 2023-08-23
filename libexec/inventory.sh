@@ -52,11 +52,9 @@ RSY=(
 conn() {
   # shellcheck disable=SC2016
   JSON="$("${JQER[@]}" --arg key "$MACHINE" '.[$key] // {}' inventory.json)"
-  set -x "${JQER[@]}"
   HOST="$("${JQER[@]}" '.host' <<<"$JSON")"
   PORT="$("${JQER[@]}" '.port // 22' <<<"$JSON")"
   USER="$("${JQER[@]}" '.user // "root"' <<<"$JSON")"
-  set +x
 
   CONN+=(-p $((PORT)) -l "$USER")
   SSH=("${CONN[@]}" "$HOST")

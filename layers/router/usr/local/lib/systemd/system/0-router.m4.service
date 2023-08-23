@@ -1,4 +1,4 @@
-[Unit]
+[[Unit]]
 Description     = Router monitor
 
 Upholds         = chrony.service
@@ -7,8 +7,8 @@ After           = chrony.service
 Upholds         = squid.service
 After           = squid.service
 
-Upholds         = 0-tc.service
-After           = 0-tc.service
+Upholds         = 0-tc@cake.service
+After           = 0-tc@cake.service
 
 Upholds         = 0-wg.service
 After           = 0-wg.service
@@ -16,16 +16,16 @@ After           = 0-wg.service
 Upholds         = 0-fwd.service
 After           = 0-fwd.service
 
-# <% lan_ifs.each do %>
-Upholds         = 0-lan@<%= _1 %>.service
-After           = 0-lan@<%= _1 %>.service
-# <% end %>
+# m5_for([LAN], [
+Upholds         = 0-lan@LAN.service
+After           = 0-lan@LAN.service
+# ], m5_assert([ENV_LAN_IFS]))
 
-[Service]
+[[Service]]
 Restart         = on-failure
 RemainAfterExit = yes
 DynamicUser     = yes
 ExecStart       = sleep -- infinity
 
-[Install]
+[[Install]]
 WantedBy        = default.target

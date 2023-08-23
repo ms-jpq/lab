@@ -1,1 +1,1 @@
-deb http://archive.canonical.com/ubuntu ENV_VERSION_CODENAME partner
+deb http://archive.canonical.com/ubuntu m5_assert([ENV_VERSION_CODENAME]) partner

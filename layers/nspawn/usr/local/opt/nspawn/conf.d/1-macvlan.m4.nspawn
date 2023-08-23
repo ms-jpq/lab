@@ -1,2 +1,4 @@
-[Network]
+[[Network]]
+# m4_ifdef([ENV_LAN_IF], [
 MACVLAN = ENV_LAN_IF
+# ])

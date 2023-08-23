@@ -1,17 +1,17 @@
-[Unit]
+[[Unit]]
 Description     = Configure TC - %J
 
 BindsTo         = 0-networkd@%j\x2dtx.service
 After           = 0-networkd@%j\x2dtx.service
 
-[Service]
+[[Service]]
 Type            = oneshot
 RemainAfterExit = yes
 ProtectSystem   = strict
 
 Environment     = IFB=%j-rx
 Environment     = QDISC=ffff:
-EnvironmentFile = /usr/local/etc/default/%J.tc.env
+Environment     = WAN_IF=m5_assert([ENV_WAN_IF])
 
 # TX
 ExecStart       = tc qdisc  replace dev ${WAN_IF} root cake ingress nat dual-dsthost diffserv4  wash rtt 10ms ethernet
