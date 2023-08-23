@@ -1,4 +1,5 @@
 [Exec]
+Boot                  = yes
 NotifyReady           = yes
 SystemCallFilter      = add_key keyctl bpf
 PrivateUsers          = pick

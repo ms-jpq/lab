@@ -11,4 +11,4 @@ ProtectSystem       = strict
 PrivateTmp          = yes
 ReadWritePaths      = %S/local %T
 
-ExecStart           = sponge.sh %S/local/wireguard/self.key wg genkey
+ExecStart           = /usr/local/libexec/sponge2.sh %S/local/wireguard/self.key wg genkey

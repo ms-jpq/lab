@@ -1,17 +1,3 @@
-define MACH_DETECT
-case "$$MACHTYPE" in
-aarch64*)
-	printf -- '%s' aarch64
-	;;
-x86_64*)
-	printf -- '%s' x86_64
-	;;
-*)
-	exit 1
-	;;
-esac
-endef
-
 define OS_DETECT
 case "$$OSTYPE" in
 darwin*)
@@ -29,16 +15,18 @@ msys)
 esac
 endef
 
-MACHTYPE := $(shell $(MACH_DETECT))
+HOSTTYPE := $(shell printf -- '%s' "$$HOSTTYPE")
 OS := $(shell $(OS_DETECT))
 
-ifeq ($(MACHTYPE), aarch64)
+
+ifeq ($(HOSTTYPE), aarch64)
 BREW_PREFIX := /opt/homebrew
 GOARCH := arm64
 else
 BREW_PREFIX := /usr/local
 GOARCH := amd64
 endif
+
 
 ifeq ($(OS),nt)
 define NT_2_UNIX
@@ -56,11 +44,13 @@ $1
 endef
 endif
 
+
 ifeq (nt, $(OS))
 PY_BIN := Scripts
 else
 PY_BIN := bin
 endif
+
 
 ifeq (nt, $(OS))
 MSYS_PREFIX := /$(subst :,,$(SYSTEMDRIVE))/msys64/
@@ -68,4 +58,23 @@ else
 MSYS_PREFIX :=
 endif
 
-NPROC := $(shell ./libexec/nproc.sh)
+
+ifeq (darwin, $(OS))
+NPROC := $(shell sysctl -n hw.physicalcpu)
+else
+NPROC := $(shell nproc)
+endif
+
+
+ifeq (linux, $(OS))
+VERSION_ID := $(shell perl -w -CAS -ne '/^VERSION_ID="(.+)"$$/ && print $$1' </etc/os-release)
+VERSION_CODENAME := $(shell perl -w -CAS -ne '/^VERSION_CODENAME=(.+)$$/ && print $$1' </etc/os-release)
+else
+ifeq (darwin, $(OS))
+VERSION_ID := $(shell sw_vers -productVersion)
+VERSION_CODENAME := $(VERSION_ID)
+else
+VERSION_ID := $(shell wmic os get Version | tr -d '\r')
+VERSION_CODENAME := $(VERSION_ID)
+endif
+endif

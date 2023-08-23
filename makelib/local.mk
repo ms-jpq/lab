@@ -71,8 +71,9 @@ $$(foreach line,$(REF_LINKS),$$(eval $$(call LOCAL_L_TEMPLATE,$1,$$(firstword $$
 
 local: $(TMP)/$1/fs
 
-$(TMP)/$1/fs: $(VAR)/sh/libexec/lsync.sh $$(LOCALS.$1) | $(VAR)/sh
-	'$$<' '$$@' $(TMP)/$1/layers/*/
+$(TMP)/$1/fs: $(VAR)/sh/libexec/lsync.sh ./libexec/cgi.sh $$(LOCALS.$1) | $(VAR)/sh
+	'$$<' '$$@' '$(TMP)/$1/layers'/*/
+	./libexec/cgi.sh '$$@' '$(TMP)/$1/layers'/*/usr/local/opt/cgi/bin/*
 endef
 
 

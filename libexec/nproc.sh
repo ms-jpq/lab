@@ -1,1 +1,0 @@
-../layers/_/usr/local/opt/initd/libexec/nproc.sh

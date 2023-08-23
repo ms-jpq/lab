@@ -23,4 +23,4 @@ clobber: clean
 include lib/*.mk
 include makelib/*.mk
 
-all: link cgi systemd pkg venv
+all: link systemd pkg venv
