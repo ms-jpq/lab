@@ -5,6 +5,7 @@ set -o pipefail
 LIB='/var/lib/local/nspawn'
 HR='/usr/local/libexec/hr-run.sh'
 
+ARGV=("$@")
 ACTION="${1:-"ls"}"
 shift -- 1 || true
 
@@ -57,14 +58,19 @@ disable)
 remove)
   for MACH in "${MACHINES[@]}"; do
     ROOT="$LIB/$MACH"
+    set -x
     if ! [[ -k "$ROOT" ]] && ! [[ -k "$ROOT/fs" ]]; then
       "$HR" rm -v -fr -- "$ROOT"
     else
       exit 1
     fi
+    set +x
   done
   ;;
 *)
+  printf -- '%s' '>? '
+  printf -- '%q ' "$0" "${ARGV[@]}"
+  printf -- '\n'
   exit 2
   ;;
 esac
