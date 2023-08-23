@@ -2,12 +2,13 @@
 
 set -o pipefail
 
-LIB='/var/local/lib/machines'
+LIB='/var/lib/local/nspawn'
 HR='/usr/local/libexec/hr-run.sh'
 
 ACTION="${1:-"ls"}"
 shift -- 1 || true
 
+WANTS='/usr/local/lib/systemd/system/machines.target.wants'
 MACHINES=()
 SERVICES=()
 for NAME in "$@"; do
@@ -22,8 +23,9 @@ sctl() {
 
 case "$ACTION" in
 ls)
+  mkdir -v -p -- "$LIB"
   "$HR" ls --almost-all --group-directories-first --classify -l --no-group --si --color=auto -- "$LIB"
-  "$HR" machinectl list --all --no-pager
+  "$HR" machinectl list --full --no-pager
   ;;
 pin)
   for MACH in "${MACHINES[@]}"; do
@@ -42,10 +44,15 @@ stop)
   sctl stop -- "${SERVICES[@]}"
   ;;
 enable)
-  everyone
+  mkdir -v -p -- "$WANTS"
+  for SVC in "${SERVICES[@]}"; do
+    "$HR" ln -v -sf -- '../1-nspawnd@.service' "$WANTS/$SVC"
+  done
   ;;
 disable)
-  everyone
+  for SVC in "${SERVICES[@]}"; do
+    "$HR" rm -v -fr -- "$WANTS/$SVC"
+  done
   ;;
 remove)
   for MACH in "${MACHINES[@]}"; do

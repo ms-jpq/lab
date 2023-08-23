@@ -17,7 +17,8 @@ ProtectSystem        = strict
 PrivateTmp           = yes
 ReadWritePaths       = %t/systemd %T
 
-EnvironmentFile      = /usr/local/etc/default/%I.vn.env
+EnvironmentFile      = %t/local/ip/vn-%I.env
+EnvironmentFile      = -/usr/local/etc/default/%I.vn.env
 
 Environment          = NETWORKD_DHCP=no
 Environment          = IFACE=vn-%I

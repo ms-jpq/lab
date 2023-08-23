@@ -1,6 +1,6 @@
 .PHONY: build
 
-ifeq (x86_64-nt, $(MACHTYPE)-$(OS))
+ifeq (x86_64-nt, $(HOSTTYPE)-$(OS))
 build: ./docker/nt.Dockerfile
 	docker build --tag 'shell' --file '$<' -- .
 else

@@ -1,11 +1,11 @@
-#!/usr/bin/env -S -- bash -Eeu -O dotglob -O nullglob -O extglob -O failglob -O globstar
+#!/usr/bin/env -S -- bash -Eeu -O dotglob -O nullglob -O extglob -O globstar
 
 set -o pipefail
 
 RUN="$1"
 IFACE="$2"
 SUBNET="$3"
-RECORD="$RUN/$IFACE"
+RECORD="$RUN/$IFACE.env"
 
 if ! [[ -v LOCKED ]]; then
   mkdir -v --parents -- "$RUN" >&2
@@ -20,7 +20,7 @@ IS="$(ip --json -4 addr show | jq --exit-status --raw-output '.[].addr_info[] | 
 readarray -t -- INETS <<<"$IS"
 
 SEEN=()
-for A in "$RUN"/*; do
+for A in "$RUN"/*.env; do
   read -r -- LINE <"$A"
   LINE="${LINE#*=}"
   SEEN+=("$LINE")
@@ -39,7 +39,7 @@ IPV4_MAXADDR="$(jq --exit-status --raw-output '.MAXADDR' <<<"$IPV4_CALC")"
 tee <<-EOF | sponge -- "$RECORD"
 IPV4_IF=$IPV4_IF
 IPV4_ADDR=$IPV4_ADDR
-IPV6_IFACE=$IPV6_ADDR/64
+IPV6_IF=$IPV6_ADDR/64
 IPV6_ADDR=$IPV6_ADDR
 IPV4_MINADDR=$IPV4_MINADDR
 IPV4_MAXADDR=$IPV4_MAXADDR
