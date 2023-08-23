@@ -1,0 +1,30 @@
+[Unit]
+Description      = Configure wireguard server
+
+Before           = nginx.service
+
+Requires         = 0-wg-private-key.service
+After            = 0-wg-private-key.service
+
+BindsTo          = 0-ip-alloc@vn\x2dwg.service
+After            = 0-ip-alloc@vn\x2dwg.service
+
+Upholds          = dnsmasq@wg.service
+
+[Service]
+Type             = oneshot
+RemainAfterExit  = yes
+Restart          = on-failure
+
+ProtectSystem    = strict
+PrivateTmp       = yes
+RuntimeDirectory = local/wireguard/dnsmasq.d local/wireguard/qr
+ReadWritePaths   = %t/local/wireguard %T %V %C/local %S/local
+
+EnvironmentFile  = /usr/local/etc/default/vn.wg.env
+Environment      = CONF=%t/systemd/network
+
+ExecStart        = /usr/local/lib/router/vn-wg.sh
+ExecStartPost    = /usr/local/lib/router/qr-wg.sh
+ExecStopPost     = rm -v -fr -- ${CONF}/0-vn-wg.netdev ${CONF}/0-vn-wg.network
+ExecStopPost     = -networkctl delete -- vn-wg

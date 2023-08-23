@@ -1,0 +1,16 @@
+[Unit]
+Description      = Port forward
+StopWhenUnneeded = yes
+
+BindsTo          = nftables.service
+After            = nftables.service
+
+[Service]
+Restart          = on-failure
+
+ProtectSystem    = strict
+PrivateTmp       = yes
+ReadWritePaths   = %T
+
+EnvironmentFile  = /usr/local/etc/default/fwd.env
+ExecStart        = /usr/local/opt/router/libexec/fwd.sh

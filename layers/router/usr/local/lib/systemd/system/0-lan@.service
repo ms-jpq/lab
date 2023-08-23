@@ -1,0 +1,28 @@
+[Unit]
+Description      = Lan -- %I
+StopWhenUnneeded = yes
+
+After            = 0-ip-alloc@vn\x2dwg.service
+
+BindsTo          = 0-ip-alloc@%i.service
+After            = 0-ip-alloc@%i.service
+
+BindsTo          = dnsmasq@%i.service
+
+[Service]
+Type             = oneshot
+RemainAfterExit  = yes
+Restart          = on-failure
+
+ProtectSystem    = strict
+PrivateTmp       = yes
+ReadWritePaths   = %t/systemd %T
+
+Environment      = IFACE=%I
+Environment      = DOMAIN=%I
+Environment      = NETWORK=%t/systemd/network/00-%I.network
+
+EnvironmentFile  = -/usr/local/etc/default/%I.dnsmasq.env
+
+ExecStart        = /usr/local/lib/network/iface.sh ${IFACE} ${DOMAIN}
+ExecStopPost     = rm --recursive --force -- ${NETWORK}
