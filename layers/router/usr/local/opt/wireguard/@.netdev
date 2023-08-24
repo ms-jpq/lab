@@ -1,0 +1,17 @@
+[[NetDev]]
+Name                = m5_assert([ENV_IFACE])
+Kind                = wireguard
+
+[[WireGuard]]
+ListenPort          = 51820
+PrivateKeyFile      = m5_assert([ENV_SERVER_KEY])
+
+# m4_define([PEER], [
+[[WireGuardPeer]]
+PersistentKeepalive = 6
+PublicKey           = $1
+AllowedIPs          = $2
+AllowedIPs          = $3
+# ])
+
+# m5_for([X], [PEER(X)], m5_assert([ENV_PEER]))

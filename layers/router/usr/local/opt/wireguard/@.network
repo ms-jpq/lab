@@ -1,0 +1,12 @@
+[Match]
+Name         = ${IFACE}
+Driver       = wireguard
+
+[Network]
+IPMasquerade = both
+
+Address      = ${IPV6_IF}
+Address      = ${IPV4_IF}
+
+Domains      = ~${DOMAIN}
+DNS          = ${IPV6_ADDR} ${IPV4_ADDR}

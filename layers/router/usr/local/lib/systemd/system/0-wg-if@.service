@@ -1,0 +1,41 @@
+[Unit]
+Description      = Wireguard server -- %I
+
+Before           = nginx.service
+
+Requires         = 0-wg-private-key.service
+After            = 0-wg-private-key.service
+
+BindsTo          = 0-ip-alloc@%i.service
+After            = 0-ip-alloc@%i.service
+
+Upholds          = dnsmasq@%i.service
+
+[Service]
+Type             = oneshot
+RemainAfterExit  = yes
+Restart          = on-failure
+
+ProtectSystem    = strict
+PrivateTmp       = yes
+RuntimeDirectory = local/wireguard/dnsmasq.d
+ReadWritePaths   = %t/systemd %t/local/wireguard %T %V %C/local %S/local
+
+EnvironmentFile  = %t/local/ip/%I.env
+EnvironmentFile  = -/usr/local/etc/default/%I.vn.env
+
+Environment      = IFACE=%I
+Environment      = DOMAIN=%I
+Environment      = NETDEV=%t/systemd/network/0-vn-%I.netdev
+Environment      = NETWORK=%t/systemd/network/0-vn-%I.network
+Environment      = WG_PEERS=
+
+Environment      = CACHE=%C/local/wireguard
+Environment      = DNSMASQD=%t/local/wireguard/dnsmasq.d/%I.hosts
+
+ExecStart        = /usr/local/libexec/envsubst2.sh /usr/local/opt/wireguard/@.network ${NETWORK}
+ExecStart        = /usr/local/opt/wireguard/libexec/vn.sh ${IFACE} ${DOMAIN} ${DNSMASQD} ${CACHE} %S/local/wireguard ${NETDEV}
+ExecStart        = networkctl reload
+ExecStartPost    = /usr/local/opt/wireguard/libexec/qr.sh ${CACHE}
+ExecStopPost     = rm -v --recursive --force -- ${NETDEV} ${NETWORK}
+ExecStopPost     = -networkctl delete -- ${IFACE}

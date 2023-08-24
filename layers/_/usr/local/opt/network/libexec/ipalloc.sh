@@ -28,21 +28,26 @@ done
 
 IPV4_IF="$("${0%/*}/ip4alloc.py" --verbose --no "${ROUTES[@]}" "${INETS[@]}" "${SEEN[@]}" -- "$SUBNET")"
 IPV4_ADDR="${IPV4_IF%%/*}"
-IPV6_ULA="$("${0%/*}/ula64.sh" "$IFACE")"
-IPV6_ADDR="$IPV6_ULA:0000:0000:0000:0001"
+IPV6_NETWORK="$("${0%/*}/ula64.sh" "$IFACE")"
+IPV6_ADDR="$IPV6_NETWORK:0000:0000:0000:0001"
 
 IPV4_CALC="$(ipcalc-ng --json -- "$IPV4_IF")"
 IPV4_MINADDR="$(jq --exit-status --raw-output '.MINADDR' <<<"$IPV4_CALC")"
 IPV4_MINADDR="${IPV4_MINADDR%1}2"
 IPV4_MAXADDR="$(jq --exit-status --raw-output '.MAXADDR' <<<"$IPV4_CALC")"
+IPV4_NETWORK="$(jq --exit-status --raw-output '.NETWORK' <<<"$IPV4_CALC")"
+IPV4_NETMASK="$(jq --exit-status --raw-output '.NETMASK' <<<"$IPV4_CALC")"
 
 tee <<-EOF | sponge -- "$RECORD"
 IPV4_IF=$IPV4_IF
 IPV4_ADDR=$IPV4_ADDR
-IPV6_IF=$IPV6_ADDR/64
-IPV6_ADDR=$IPV6_ADDR
 IPV4_MINADDR=$IPV4_MINADDR
 IPV4_MAXADDR=$IPV4_MAXADDR
+IPV4_NETWORK=$IPV4_NETWORK
+IPV4_NETMASK=$IPV4_NETMASK
+IPV6_IF=$IPV6_ADDR/64
+IPV6_ADDR=$IPV6_ADDR
+IPV6_NETWORK=$IPV6_NETWORK
 EOF
 
 exec -- cat -- "$RECORD"

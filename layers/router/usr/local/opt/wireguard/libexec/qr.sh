@@ -2,12 +2,12 @@
 
 set -o pipefail
 
-DUMP="$1/"
+CACHE="$1/"
 
 TMP="$(mktemp)"
 chmod g+r,o+r -- "$TMP"
-for CONF in "$DUMP"*.conf; do
-  NAME="${CONF#"$DUMP"}"
+for CONF in "$CACHE"*.conf; do
+  NAME="${CONF#"$CACHE"}"
   qrencode --output "$TMP" <"$CONF"
-  mv -- "$TMP" "$DUMP$NAME.png"
+  mv -- "$TMP" "$CACHE$NAME.png"
 done

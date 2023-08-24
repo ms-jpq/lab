@@ -1,9 +1,6 @@
 [[Unit]]
 Description     = Configure TC - %J
 
-BindsTo         = 0-networkd@%j\x2dtx.service
-After           = 0-networkd@%j\x2dtx.service
-
 [[Service]]
 Type            = oneshot
 RemainAfterExit = yes
@@ -12,6 +9,10 @@ ProtectSystem   = strict
 Environment     = IFB=%j-rx
 Environment     = QDISC=ffff:
 Environment     = WAN_IF=m5_assert([ENV_WAN_IF])
+
+# ExecStartPre    = mkdir --parents -- %t/systemd/network
+# ExecStart       = envsubst2.sh /usr/local/opt/network/%i@.network %t/systemd/network/0-%i.network
+# ExecStart       = networkctl reload
 
 # TX
 ExecStart       = tc qdisc  replace dev ${WAN_IF} root cake ingress nat dual-dsthost diffserv4  wash rtt 10ms ethernet
