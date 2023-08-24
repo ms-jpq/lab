@@ -8,8 +8,8 @@ ProtectSystem   = strict
 
 Environment     = WAN_IF=m5_assert([ENV_WAN_IF])
 
-Environment     = TC_TX=diffserv4  wash rtt 10ms ethernet
-Environment     = TC_RX=besteffort wash rtt 5ms  ethernet
+Environment     = TC_TX="diffserv4  wash rtt 10ms ethernet"
+Environment     = TC_RX="besteffort wash rtt 5ms  ethernet"
 
 Environment     = IFB=%I-rx
 Environment     = QDISC=ffff:

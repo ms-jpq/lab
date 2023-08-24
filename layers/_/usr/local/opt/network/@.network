@@ -15,7 +15,7 @@ IPMasquerade            = both
 Address                 = ${IPV4_IF}
 Address                 = ${IPV6_IF}
 
-# Domains                 = ~${DOMAIN}
+Domains                 = ~${DOMAIN}
 DNS                     = ${IPV6_ADDR} ${IPV4_ADDR}
 
 DHCPServer              = ${NETWORKD_DHCP}

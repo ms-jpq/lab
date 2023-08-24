@@ -1,0 +1,12 @@
+[Unit]
+Description   = ZFS trim -- %i
+BindsTo       = zfs-import-cache.service
+After         = zfs-import-cache.service
+
+[Service]
+Type          = oneshot
+Restart       = on-failure
+ProtectSystem = strict
+
+ExecStart     = zpool trim --wait -- %i
+ExecStop      = -zpool trim --suspend -- %i

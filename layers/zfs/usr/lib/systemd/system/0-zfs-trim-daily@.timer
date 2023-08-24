@@ -1,0 +1,10 @@
+[Unit]
+Description        = ZFS trim timer -- %i
+
+[Timer]
+OnStartupSec       = %j
+OnUnitInactiveSec  = %j
+RandomizedDelaySec = 12 hours
+
+[Install]
+WantedBy           = timers.target

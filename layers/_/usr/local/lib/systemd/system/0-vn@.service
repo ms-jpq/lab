@@ -2,8 +2,10 @@
 Description          = Network Interface -- %I
 StopWhenUnneeded     = yes
 
-BindsTo              = 0-ip-alloc@%j\x2d%i.service
-After                = 0-ip-alloc@%j\x2d%i.service
+BindsTo              = 0-ip-alloc@%i.service
+After                = 0-ip-alloc@%i.service
+
+Upholds              = dnsmasq@%i.service
 
 ReloadPropagatedFrom = nftables.service
 After                = nftables.service
@@ -21,7 +23,7 @@ EnvironmentFile      = %t/local/ip/%J-%I.env
 EnvironmentFile      = -/usr/local/etc/default/%I.%J.env
 
 Environment          = NETWORKD_DHCP=yes
-Environment          = IFACE=%J-%I
+Environment          = IFACE=%I
 Environment          = DOMAIN=%I
 Environment          = NETDEV=%t/systemd/network/0-%J-%I.netdev
 Environment          = NETWORK=%t/systemd/network/0-%J-%I.network

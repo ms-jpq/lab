@@ -1,0 +1,16 @@
+[Unit]
+Description     = iSCSI share
+
+[Service]
+Type            = oneshot
+RemainAfterExit = yes
+Restart         = on-failure
+ProtectSystem   = full
+
+ReadWritePaths  = %E/rtslib-fb-target
+
+ExecStart       = /usr/local/opt/iscsi/share.sh
+ExecStopPost    = /usr/local/opt/iscsi/clear.sh
+
+[Install]
+WantedBy        = default.target

@@ -3,7 +3,7 @@ SystemCallFilter      = add_key keyctl bpf
 LinkJournal           = try-guest
 
 [Network]
-Bridge                = vn-nspawn
+Bridge                = nspawn
 
 [Files]
 Bind                  = /dev/fuse

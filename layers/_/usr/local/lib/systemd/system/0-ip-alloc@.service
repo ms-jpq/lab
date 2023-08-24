@@ -5,8 +5,6 @@ StopWhenUnneeded = yes
 BindsTo          = systemd-networkd.service
 After            = systemd-networkd.service
 
-After            = systemd-tmpfiles-setup.service
-
 [Service]
 Type             = oneshot
 RemainAfterExit  = yes

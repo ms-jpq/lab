@@ -1,0 +1,14 @@
+[Unit]
+Description     = Samba user share
+BindsTo         = smbd.service
+After           = smbd.service
+
+[Service]
+Type            = oneshot
+RemainAfterExit = yes
+Restart         = on-failure
+ProtectSystem   = full
+PrivateTmp      = yes
+
+ReadWritePaths  = %t %T
+ExecStart       = /usr/local/lib/samba/share.sh

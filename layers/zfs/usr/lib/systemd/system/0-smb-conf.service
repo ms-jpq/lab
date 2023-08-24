@@ -1,0 +1,14 @@
+[Unit]
+Description              = Samba service templating
+
+[Service]
+Type                     = oneshot
+Restart                  = on-failure
+
+ProtectSystem            = strict
+PrivateTmp               = yes
+ReadWritePaths           = %t %T
+RuntimeDirectoryPreserve = yes
+RuntimeDirectory         = samba
+
+ExecStart                = /usr/local/lib/samba/conf.sh

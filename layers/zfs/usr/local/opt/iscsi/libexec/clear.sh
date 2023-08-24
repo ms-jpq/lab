@@ -2,8 +2,10 @@
 
 set -o pipefail
 
-MACHINE="$1"
-
-# until ping -c 1 -w 1 -- "$MACHINE"; do
-#   sleep -- 0.1
-# done
+targetcli <<-'EOF'
+cd /
+ls
+clearconfig confirm=True
+saveconfig
+ls
+EOF

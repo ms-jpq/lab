@@ -1,0 +1,9 @@
++ avahi-daemon
++ iotop-c
++ nfs-kernel-server
++ samba
++ samba-vfs-modules
++ sanoid
++ targetcli-fb
++ wsdd
++ zfsutils-linux

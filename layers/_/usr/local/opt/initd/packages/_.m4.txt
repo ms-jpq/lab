@@ -2,6 +2,7 @@
 # + netdata
 # + netdata-plugins-python
 + bat
++ dnsmasq
 + fd-find
 + fzf
 + git

@@ -1,6 +1,5 @@
 # + ntopng
 + chrony
-+ dnsmasq
 + ipv6calc
 + ndisc6
 + qrencode
