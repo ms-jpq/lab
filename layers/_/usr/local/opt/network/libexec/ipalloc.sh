@@ -3,8 +3,9 @@
 set -o pipefail
 
 RUN="$1"
-IFACE="$2"
-SUBNET="$3"
+VAR="$2"
+IFACE="$3"
+SUBNET="$4"
 RECORD="$RUN/$IFACE.env"
 
 if ! [[ -v LOCKED ]]; then
@@ -19,8 +20,9 @@ readarray -t -- ROUTES <<<"$RS"
 IS="$(ip --json -4 addr show | jq --exit-status --raw-output '.[].addr_info[] | "\(.local)/\(.prefixlen)"')"
 readarray -t -- INETS <<<"$IS"
 
+ENVS=("$RUN"/*.env "$VAR"/*.env)
 SEEN=()
-for A in "$RUN"/*.env; do
+for A in "${ENVS[@]}"; do
   read -r -- LINE <"$A" || true
   LINE="${LINE#*=}"
   SEEN+=("$LINE")
