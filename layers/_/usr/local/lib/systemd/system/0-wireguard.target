@@ -1,0 +1,6 @@
+[Unit]
+Description = Wireguard Network
+Before      = default.target
+
+[Install]
+WantedBy    = default.target
