@@ -24,7 +24,7 @@ ReadWritePaths   = %t/local/wireguard %T %V %C/local %S/local
 EnvironmentFile  = /usr/local/etc/default/vn.wg.env
 Environment      = CONF=%t/systemd/network
 
-ExecStart        = /usr/local/lib/router/vn-wg.sh
-ExecStartPost    = /usr/local/lib/router/qr-wg.sh
+ExecStart        = /usr/local/opt/wireguard/vn.sh
+ExecStartPost    = /usr/local/opt/wireguard/qr.sh
 ExecStopPost     = rm -v -fr -- ${CONF}/0-vn-wg.netdev ${CONF}/0-vn-wg.network
 ExecStopPost     = -networkctl delete -- vn-wg

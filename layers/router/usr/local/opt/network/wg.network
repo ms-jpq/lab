@@ -1,0 +1,12 @@
+[Match]
+Name         = vn-wg
+Driver       = wireguard
+
+[Network]
+IPMasquerade = both
+
+Address      = ${IPV4}
+Address      = ${IPV6}
+
+Domains      = ~wg
+DNS          = ${DNS6} ${DNS4}
