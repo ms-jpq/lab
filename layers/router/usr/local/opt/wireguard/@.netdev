@@ -3,7 +3,7 @@ Name                = m5_assert([ENV_IFACE])
 Kind                = wireguard
 
 [[WireGuard]]
-ListenPort          = 51820
+ListenPort          = m5_or([ENV_SERVER_PORT], [51820])
 PrivateKeyFile      = m5_assert([ENV_SERVER_KEY])
 
 # m4_define([PEER], [

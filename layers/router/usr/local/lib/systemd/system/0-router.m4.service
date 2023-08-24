@@ -10,8 +10,8 @@ After           = squid.service
 Upholds         = 0-tc@cake.service
 After           = 0-tc@cake.service
 
-Upholds         = 0-wg-if.service
-After           = 0-wg-if.service
+Upholds         = 0-wg-if@wg.service
+After           = 0-wg-if@wg.service
 
 Upholds         = 0-fwd.service
 After           = 0-fwd.service

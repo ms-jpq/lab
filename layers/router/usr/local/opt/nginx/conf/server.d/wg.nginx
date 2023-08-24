@@ -1,0 +1,7 @@
+location /wg {
+  return 307 /wg/;
+}
+
+location /wg/ {
+  root /var/cache/local/wireguard;
+}

@@ -11,8 +11,8 @@ VAR="$5"
 NETDEV="$6"
 
 SYSTEMD='/run/systemd/network'
+SELF="${0%/*}/.."
 SERVER_PRIVATE_KEY="$VAR/self.key"
-PEER_CONF="${0%/*}/../peer.conf"
 
 mkdir -v --parents -- "$SYSTEMD" "$VAR" "$CACHE"
 SERVER_PUBLIC_KEY="$(wg pubkey <"$SERVER_PRIVATE_KEY")"
@@ -29,17 +29,20 @@ SEEN=(
   ["$IPV4_MAXADDR"]=1
 )
 
+WG_IDS=()
 WG_LINES=()
 DNSMAQ_HOSTS=()
 
-export -- DOMAIN IPV6 IPV4 SERVER_PUBLIC_KEY CLIENT_PRIVATE_KEY
+export -- DOMAIN IPV6 IPV4 SERVER_PUBLIC_KEY CLIENT_PRIVATE_KEY HTML_TITLE HTML_BODY
 
 # shellcheck disable=SC2154
 P="$(sort --field-separator ',' <<<"$WG_PEERS")"
-readarray -t -d ' ' -- PEERS <<<"$P"
+readarray -t -d ',' -- PEERS <<<"$P"
 for PEER in "${PEERS[@]}"; do
   PEER="${PEER%%$'\n'}"
-  # export -- IPV4 IPV6 DNS4 DNS6 SERVER_PUBLIC_KEY CLIENT_PUBLIC_KEY CLIENT_PRIVATE_KEY WG_SERVER_NAME
+  if [[ -z "$PEER" ]]; then
+    continue
+  fi
 
   for ((I = 0; ; I++)); do
     ID="$I-$PEER"
@@ -59,24 +62,40 @@ for PEER in "${PEERS[@]}"; do
     if [[ -z "${SEEN["$IPV6"]:-}" ]] && [[ -z "${SEEN["$IPV4"]:-}" ]]; then
       SEEN["$IPV6"]="$ID"
       SEEN["$IPV4"]="$ID"
-
+      WG_IDS+=("$ID")
       DNSMAQ_HOSTS+=("${IPV4%%/*} $PEER.wg" "${IPV6%%/*} $PEER.wg")
+      CACHED="$CACHE/$ID.conf"
 
       if [[ ! -f "$CLIENT_PRIVATE_KEY" ]]; then
         wg genkey | sponge -- "$CLIENT_PRIVATE_KEY"
       fi
+
       CLIENT_PRIVATE_KEY="$(<"$CLIENT_PRIVATE_KEY")"
       CLIENT_PUBLIC_KEY="$(wg pubkey <<<"$CLIENT_PRIVATE_KEY")"
 
-      WG_LINES+=("$CLIENT_PUBLIC_KEY, $IPV6, $IPV4")
+      WG_LINES+=("[$CLIENT_PUBLIC_KEY, $IPV6, $IPV4"])
 
-      envsubst <<<"$PEER_CONF" | sponge -- "$CACHE/$ID.conf"
+      CONF="$(envsubst <"$SELF/peer.conf")"
+      QR="$(qrencode --type utf8 <<<"$CONF")"
+      readarray -t -- LINES <<<"$QR"
+      {
+        printf -- '%s\n\n\n' "$CONF"
+        for LINE in "${LINES[@]}"; do
+          printf -- '%s\n' "# $LINE"
+        done
+      } | sponge -- "$CACHED"
+
+      HTML_TITLE="$ID"
+      HTML_BODY="$(<"$CACHED")"
+      envsubst <"$SELF/peer.html" | sponge -- "$CACHE/$ID.html"
       break
     fi
   done
 done
 
 IFS=$'\n'
-/usr/local/libexec/m4.sh -D"ENV_IFACE=$IFACE" -D"ENV_SERVER_KEY=$SERVER_PUBLIC_KEY" | sponge -- "$NETDEV"
+printf -- '%s' "${DNSMAQ_HOSTS[*]}" | sponge -- "$DNSMASQD"
+IFS=','
+/usr/local/libexec/m4.sh -D"ENV_IFACE=$IFACE" -D"ENV_SERVER_KEY=$SERVER_PRIVATE_KEY" -D"ENV_PEER=${WG_LINES[*]}" "$SELF/@.netdev" | sponge -- "$NETDEV"
+/usr/local/libexec/m4.sh -D"ENV_TITLE=$IFACE" -D"ENV_PEER=${WG_IDS[*]}" "$SELF/index.html" | sponge -- "$CACHE/index.html"
 chmod -- g+r,o+r "$NETDEV"
-printf -- '%s' "${DNSMAQ_HOSTS[@]}" | sponge -- "$DNSMASQD"

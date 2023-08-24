@@ -30,12 +30,12 @@ Environment      = NETDEV=%t/systemd/network/0-vn-%I.netdev
 Environment      = NETWORK=%t/systemd/network/0-vn-%I.network
 Environment      = WG_PEERS=
 
-Environment      = CACHE=%C/local/wireguard
 Environment      = DNSMASQD=%t/local/wireguard/dnsmasq.d/%I.hosts
+Environment      = STATE=%S/local/wireguard
+Environment      = CACHE=%C/local/wireguard
 
 ExecStart        = /usr/local/libexec/envsubst2.sh /usr/local/opt/wireguard/@.network ${NETWORK}
-ExecStart        = /usr/local/opt/wireguard/libexec/vn.sh ${IFACE} ${DOMAIN} ${DNSMASQD} ${CACHE} %S/local/wireguard ${NETDEV}
+ExecStart        = /usr/local/opt/wireguard/libexec/alloc.sh ${IFACE} ${DOMAIN} ${DNSMASQD} ${CACHE} ${STATE} ${NETDEV}
 ExecStart        = networkctl reload
-ExecStartPost    = /usr/local/opt/wireguard/libexec/qr.sh ${CACHE}
 ExecStopPost     = rm -v --recursive --force -- ${NETDEV} ${NETWORK}
 ExecStopPost     = -networkctl delete -- ${IFACE}
