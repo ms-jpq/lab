@@ -1,3 +1,3 @@
-<% fs.nfs_exports.to_h.each do |path, options| %>
-<%= "/#{::Pathname.new(path.to_s).relative_path_from('/media')}" %> *(<%= (%w[insecure crossmnt root_squash all_squash anonuid=1000 anongid=1000 ro] + options).join(',') %>)
-<% end %>
+# m5_for([E], [
+/E insecure,crossmnt,root_squash,all_squash,anonuid=1000,anongid=1000,ro
+# ], m5_assert([ENV_NFS_EXPORTS]))

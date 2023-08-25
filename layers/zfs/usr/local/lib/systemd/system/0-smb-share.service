@@ -10,5 +10,5 @@ Restart         = on-failure
 ProtectSystem   = full
 PrivateTmp      = yes
 
-ReadWritePaths  = %t %T
-ExecStart       = /usr/local/lib/samba/share.sh
+ReadWritePaths  = %t/local/samba %T
+ExecStart       = /usr/local/opt/samba/libexec/share.sh

@@ -44,7 +44,7 @@
   # USER #
   ########
 
-  usershare path = /run/samba/usershares
+  usershare path = /run/local/samba/usershares
   usershare prefix allow list = /media
   usershare max shares = <%= 2 ** 8 - 1 %>
   usershare allow guests = yes
@@ -63,4 +63,4 @@
   # EXTENSION #
   #############
 
-  include = /run/samba/includes.conf
+  include = /run/local/samba/includes.conf

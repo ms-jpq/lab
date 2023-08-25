@@ -1,5 +1,7 @@
 #!/usr/bin/env -S -- bash -Eeu -O dotglob -O nullglob -O extglob -O failglob -O globstar
 
+set -o pipefail
+
 if [[ ! -t 1 ]]; then
   exec >&3
 
@@ -10,7 +12,7 @@ Content-Type: text/plain; charset=utf-8
 EOF
 fi
 
-hr-run zpool status -v -s -t -i -T d
-hr-run zpool iostat -v -l -T d
-hr-run zfs list -o name,mountpoint,used,volsize,available
-hr-run zfs list -t snapshot -o name,creation,used | awk '$NF != "0B" { print }'
+/usr/local/libexec/hr-run.sh zpool status -v -s -t -i -T d
+/usr/local/libexec/hr-run.sh zpool iostat -v -l -T d
+/usr/local/libexec/hr-run.sh zfs list -o name,mountpoint,used,volsize,available
+/usr/local/libexec/hr-run.sh zfs list -t snapshot -o name,creation,used | awk '$NF != "0B" { print }'

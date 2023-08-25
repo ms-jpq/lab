@@ -9,8 +9,8 @@ ProtectSystem   = full
 
 ReadWritePaths  = %E/rtslib-fb-target
 
-ExecStart       = /usr/local/opt/iscsi/share.sh
-ExecStopPost    = /usr/local/opt/iscsi/clear.sh
+ExecStart       = /usr/local/opt/iscsi/libexec/share.sh
+ExecStopPost    = /usr/local/opt/iscsi/libexec/clear.sh
 
 [Install]
 WantedBy        = default.target
