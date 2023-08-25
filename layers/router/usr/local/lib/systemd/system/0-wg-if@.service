@@ -9,7 +9,7 @@ After            = 0-wg-private-key.service
 BindsTo          = 0-ip-alloc@%i.service
 After            = 0-ip-alloc@%i.service
 
-Upholds          = dnsmasq@%i.service
+Wants            = dnsmasq@%i.service
 
 [Service]
 Type             = oneshot
@@ -22,7 +22,7 @@ RuntimeDirectory = local/wireguard/dnsmasq.d
 ReadWritePaths   = %t/systemd %t/local/wireguard %T %V %C/local %S/local
 
 EnvironmentFile  = %t/local/ip/%I.env
-EnvironmentFile  = -/usr/local/etc/default/%I.vn.env
+EnvironmentFile  = -/usr/local/etc/default/%I.wg.env
 
 Environment      = IFACE=%I
 Environment      = DOMAIN=%I

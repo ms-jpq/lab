@@ -20,6 +20,7 @@ DNS                     = ${IPV6_ADDR} ${IPV4_ADDR}
 
 DHCPServer              = ${NETWORKD_DHCP}
 IPv6SendRA              = ${NETWORKD_DHCP}
+DHCPPrefixDelegation    = ${NETWORKD_DHCP}
 
 [DHCPServer]
 DNS                     = ${IPV4_ADDR}
@@ -27,7 +28,13 @@ DefaultLeaseTimeSec     = 90s
 MaxLeaseTimeSec         = 120s
 
 [IPv6SendRA]
-DNS                     = _link_local
+DNS                     = ${IPV6_ADDR}
 Managed                 = yes
 OtherInformation        = yes
 RouterLifetimeSec       = 90s
+
+[IPv6Prefix]
+Prefix                  = ${IPV6_IF}
+
+[DHCPPrefixDelegation]
+UplinkInterface         = :self

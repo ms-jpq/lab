@@ -7,6 +7,10 @@ DISABLE="$2"
 
 if [[ -f "$NETWORK" ]]; then
   ENABLED="$(awk '/^DHCPServer/ { print $3 }' <"$NETWORK")"
+  if [[ -z "$ENABLED" ]]; then
+    exit
+  fi
+
   if [[ "$ENABLED" != 'no' ]]; then
     envsubst <"${0%/*}/../nodhcp.conf" | sponge -- "$DISABLE"
   fi
