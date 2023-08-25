@@ -46,7 +46,6 @@ RSY=(
   --recursive
   --links
   --perms
-  --keep-dirlinks
 )
 
 conn() {
