@@ -1,23 +1,23 @@
 [[Unit]]
 Description     = Router monitor
 
-Upholds         = chrony.service
+Wants           = chrony.service
 After           = chrony.service
 
-Upholds         = squid.service
+Wants           = squid.service
 After           = squid.service
 
-Upholds         = 0-tc@cake.service
+Wants           = 0-tc@cake.service
 After           = 0-tc@cake.service
 
-Upholds         = 0-wg-if@wg.service
+Wants           = 0-wg-if@wg.service
 After           = 0-wg-if@wg.service
 
-Upholds         = 0-port-fwd.service
+Wants           = 0-port-fwd.service
 After           = 0-port-fwd.service
 
 # m5_for([LAN], [
-Upholds         = 0-lan@LAN.service
+Wants           = 0-lan@LAN.service
 After           = 0-lan@LAN.service
 # ], m5_assert([ENV_LAN_IFS]))
 
@@ -25,7 +25,7 @@ After           = 0-lan@LAN.service
 Restart         = on-failure
 RemainAfterExit = yes
 DynamicUser     = yes
-ExecStart       = sleep -- infinity
+ExecStart       = true
 
 [[Install]]
 WantedBy        = default.target

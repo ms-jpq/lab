@@ -37,7 +37,7 @@ $(VAR)/bin: | $(VAR)
 
 V_SHELLCHECK := $(shell ./libexec/gh-latest.sh $(VAR) koalaman/shellcheck)
 V_SHFMT := $(shell ./libexec/gh-latest.sh $(VAR) mvdan/sh)
-HADO_OS := $(shell perl -CASD -pe 's/([a-z])/\u$$1/' <<<'$(OS)')
+HADO_OS := $(shell perl -CASD -wpe 's/([a-z])/\u$$1/' <<<'$(OS)')
 
 $(VAR)/bin/shellcheck: | $(VAR)/bin
 	URI='https://github.com/koalaman/shellcheck/releases/latest/download/shellcheck-$(V_SHELLCHECK).$(OS).x86_64.tar.xz'

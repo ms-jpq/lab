@@ -67,8 +67,8 @@ endif
 
 
 ifeq (linux, $(OS))
-VERSION_ID := $(shell perl -w -CAS -ne '/^VERSION_ID="(.+)"$$/ && print $$1' </etc/os-release)
-VERSION_CODENAME := $(shell perl -w -CAS -ne '/^VERSION_CODENAME=(.+)$$/ && print $$1' </etc/os-release)
+VERSION_ID := $(shell perl -CASD -wne '/^VERSION_ID="(.+)"$$/ && print $$1' </etc/os-release)
+VERSION_CODENAME := $(shell perl -CASD -wne '/^VERSION_CODENAME=(.+)$$/ && print $$1' </etc/os-release)
 else
 ifeq (darwin, $(OS))
 VERSION_ID := $(shell sw_vers -productVersion)

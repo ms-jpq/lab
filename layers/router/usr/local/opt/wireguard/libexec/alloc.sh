@@ -51,11 +51,10 @@ for PEER in "${PEERS[@]}"; do
     B2="$(b2sum --binary --length 64 <<<"$ID")"
     HEX_64="${B2%% *}"
     # shellcheck disable=SC2154
-    IPV6="$IPV6_NETWORK:$(perl -pe 's/(.{4})(?=.)/\1:/g' <<<"$HEX_64")/128"
+    IPV6="$IPV6_NETWORK:$(perl -CASD -wpe 's/(.{4})(?=.)/$1:/g' <<<"$HEX_64")/128"
 
-    printf -v HEX_32 -- '%x' $((("0x$HEX_64" << 32 >> 32) ^ ~0xffffffff))
-    printf -v IPV4_LOWER -- '%x' $(("0x$HEX_32" & ~"0x$V4_MASK" | "0x$V4_NET"))
-    IPV4_OCTETS="$(perl -CAS -w -pe 's/(.{2})/0x\1 /g' <<<"$IPV4_LOWER")"
+    printf -v HEX_32 -- '%x' $(("0x$HEX_64" & 0xffffffff & ~"0x$V4_MASK" | "0x$V4_NET"))
+    IPV4_OCTETS="$(perl -CASD -wpe 's/(.{2})/0x$1 /g' <<<"$HEX_32")"
     # shellcheck disable=SC2086
     printf -v IPV4 -- '%d.%d.%d.%d/32' $IPV4_OCTETS
 

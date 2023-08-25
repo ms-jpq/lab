@@ -45,7 +45,7 @@ reload() {
       printf -- '%s\n' "nameserver $DNS"
     done | sponge -- "$RESOLV"
 
-    WGC="$(perl -CAS -w -pe 's/^(Address|DNS) .*//g' -- "$CONF")"
+    WGC="$(perl -CASD -wpe 's/^(Address|DNS) .*//g' -- "$CONF")"
     ip link set dev "$WG" up
     wg syncconf "$WG" <<<"$WGC"
     wg set "$WG" fwmark "$FWMARK"
