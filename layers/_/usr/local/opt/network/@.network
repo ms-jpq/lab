@@ -31,4 +31,3 @@ OtherInformation        = yes
 
 [IPv6Prefix]
 Prefix                  = ${IPV6_IF}
-# Assign                  = yes

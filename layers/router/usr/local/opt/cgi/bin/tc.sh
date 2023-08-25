@@ -28,9 +28,7 @@ END { close(command) }
 EOF
 
 show() {
-  printf -- '%s\n' "$1"
-  hr
-  tc -statistics qdisc show dev "$2"
+  /usr/local/libexec/hr-run.sh tc -statistics qdisc show dev "$2"
 }
 
 {

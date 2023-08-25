@@ -7,11 +7,12 @@ ListenPort          = m5_or([ENV_SERVER_PORT], [51820])
 PrivateKeyFile      = m5_assert([ENV_SERVER_KEY])
 
 # m4_define([PEER], [
+# -> $1
 [[WireGuardPeer]]
 PersistentKeepalive = 6
-PublicKey           = $1
-AllowedIPs          = $2
+PublicKey           = $2
 AllowedIPs          = $3
+AllowedIPs          = $4
 # ])
 
 # m5_for([X], [PEER(X)], m5_assert([ENV_PEER]))

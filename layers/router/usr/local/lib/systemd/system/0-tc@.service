@@ -1,16 +1,17 @@
-[[Unit]]
-Description     = Configure TC - TX: m5_assert([ENV_WAN_IF]) - RX: %I-rx
+[Unit]
+Description     = Configure TC - TX: ${WAN_IF} - RX: %I-rx
 
-[[Service]]
+[Service]
 Type            = oneshot
 RemainAfterExit = yes
 ProtectSystem   = strict
 
-Environment     = WAN_IF=m5_assert([ENV_WAN_IF])
+EnvironmentFile = /usr/local/etc/default/%I.tc.env
 
-Environment     = TC_TX="diffserv4  wash rtt 10ms ethernet"
-Environment     = TC_RX="besteffort wash rtt 5ms  ethernet"
+Environment     = "TC_TX=diffserv4  wash rtt 10ms ethernet"
+Environment     = "TC_RX=besteffort wash rtt 5ms  ethernet"
 
+Environment     = WAN_IF=
 Environment     = IFB=%I-rx
 Environment     = QDISC=ffff:
 

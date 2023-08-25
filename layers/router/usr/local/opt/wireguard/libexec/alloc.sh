@@ -1,7 +1,6 @@
 #!/usr/bin/env -S -- bash -Eeu -O dotglob -O nullglob -O extglob -O globstar
 
 set -o pipefail
-set -x
 
 IFACE="$1"
 DOMAIN="$2"
@@ -40,6 +39,7 @@ P="$(sort --field-separator ',' <<<"$WG_PEERS")"
 readarray -t -d ',' -- PEERS <<<"$P"
 for PEER in "${PEERS[@]}"; do
   PEER="${PEER%%$'\n'}"
+  PEER="${PEER//' '/''}"
   if [[ -z "$PEER" ]]; then
     continue
   fi
@@ -73,7 +73,7 @@ for PEER in "${PEERS[@]}"; do
       CLIENT_PRIVATE_KEY="$(<"$CLIENT_PRIVATE_KEY")"
       CLIENT_PUBLIC_KEY="$(wg pubkey <<<"$CLIENT_PRIVATE_KEY")"
 
-      WG_LINES+=("[$CLIENT_PUBLIC_KEY, $IPV6, $IPV4"])
+      WG_LINES+=("[$ID, $CLIENT_PUBLIC_KEY, $IPV6, $IPV4"])
 
       CONF="$(envsubst <"$SELF/peer.conf")"
       QR="$(qrencode --type utf8 <<<"$CONF")"
