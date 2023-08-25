@@ -14,4 +14,5 @@ RUN apt-get update && \
 
 WORKDIR /srv
 COPY . /srv
-RUN gmake local
+
+RUN gmake examples && gmake local
