@@ -78,7 +78,7 @@ gen)
 EOF
 
   # shellcheck disable=SC2016
-  for m in machines/*; do
+  for m in machines/*/; do
     m="${m#*/}"
     LEAF="$("${JQE[@]}" --arg val "$m" '.host = $val' <<<"$JSON")"
     ACC="$("${JQE[@]}" --arg key "$m" --argjson val "$LEAF" '.[$key] = .[$key] // $val' <<<"$ACC")"

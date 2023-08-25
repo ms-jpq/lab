@@ -1,11 +1,11 @@
 .PHONY: facts
 
-MACHINES := $(shell printf -- '%s ' machines/*)
+MACHINES := $(patsubst %/,%,$(shell printf -- '%s ' machines/*/))
 INVENTORY := ./inventory.json
 SH_ENV := $(VAR)/sh/libexec/env.sh
 
 FACT_MACHINES := $(shell ./libexec/inventory.sh --action ls --inventory '$(INVENTORY)')
-FACTS := $(shell shopt -u failglob && printf -- '%s ' ./facts/*.env)
+FACTS := $(shell shopt -u failglob && printf -- '%s ' ./machines/*.env)
 
 facts: $(INVENTORY)
 $(INVENTORY):

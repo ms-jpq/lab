@@ -91,7 +91,7 @@ $(TMP)/$1/layers/: | $(TMP)/$1
 
 $(TMP)/$1/facts.env: $$(MACH.$1.FACTS) $(TMP)/$1/mach.env | $(TMP)/$1
 	printf -- '%s=%q\n' 'ENV_MACHINE' '$(notdir $1)' >'$$@'
-	cat -- $$(MACH.$1.FACTS) '$(TMP)/$1/mach.env' >>'$$@'
+	grep -h -v '^#' -- $$(MACH.$1.FACTS) '$(TMP)/$1/mach.env' >>'$$@'
 
 
 $$(foreach layer,$$(MACH.$1.DIRS),$$(eval $$(call LOCAL_D_TEMPLATE,$1,$$(layer))))
