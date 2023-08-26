@@ -1,4 +1,4 @@
-.PHONY: zfs samba iscsi
+.PHONY: samba iscsi
 
 samba: /var/lib/local/samba/usershares
 
