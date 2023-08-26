@@ -1,0 +1,11 @@
+[Unit]
+CollectMode      = inactive-or-failed
+
+BindsTo          = 2-swtpm@%i.service
+After            = 2-swtpm@%i.service
+
+[Service]
+ProtectSystem    = strict
+RuntimeDirectory = local/swtpm/%I
+
+ExecStart        = /usr/local/opt/qemu/libexec/swtpm.sh %t/local/swtpm/%I

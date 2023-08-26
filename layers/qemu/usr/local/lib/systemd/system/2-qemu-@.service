@@ -1,13 +1,12 @@
 [Unit]
 CollectMode      = inactive-or-failed
 
-BindsTo          = 0-swtpm@%i.service
-
+BindsTo          = 2-swtpm@%i.service
+After            = 2-swtpm@%i.service
 
 [Service]
 ProtectSystem    = strict
 RuntimeDirectory = local/qemu/%I
 ReadWritePaths   = %V/local
 
-ExecStartPre     =
-ExecStart        = /usr/local/opt/qemu/libexec/%J.sh %I
+ExecStart        = /usr/local/opt/qemu/libexec/%J.sh %I %t/local/qemu/%I

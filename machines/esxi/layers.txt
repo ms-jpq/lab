@@ -1,3 +1,4 @@
 nspawn
+qemu
 vfio
 zfs

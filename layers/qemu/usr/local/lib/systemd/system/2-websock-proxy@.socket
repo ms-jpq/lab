@@ -1,0 +1,10 @@
+[Unit]
+Description  = Proxy qemu display socket -- %t/vm-sockets/%i.sock
+CollectMode  = inactive-or-failed
+
+[Socket]
+RemoveOnStop = yes
+ListenStream = %t/vm-sockets/%i.sock
+
+[Install]
+WantedBy     = sockets.target

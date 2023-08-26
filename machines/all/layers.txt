@@ -1,6 +1,9 @@
 certbot
 intel_gvt
+nspawn
 podman
 printer
 qemu
+router
+vfio
 zfs

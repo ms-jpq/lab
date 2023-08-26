@@ -1,6 +1,8 @@
 .PHONY: samba iscsi
 all: samba iscsi
 
+CLOBBER.FS += /etc/default/samba
+
 samba: /var/lib/local/samba/usershares
 
 /var/lib/local/samba/usershares: | pkg._

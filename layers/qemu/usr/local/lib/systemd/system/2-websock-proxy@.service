@@ -1,0 +1,14 @@
+[Unit]
+Description      = Proxy qemu display -- %i
+CollectMode      = inactive-or-failed
+
+BindsTo          = 01-vm-display@%i.service
+After            = 01-vm-display@%i.service
+JoinsNamespaceOf = 01-vm-display@%i.service
+
+[Service]
+Restart          = on-failure
+ProtectSystem    = strict
+PrivateNetwork   = yes
+
+ExecStart        = /usr/lib/systemd/systemd-socket-proxyd --exit-idle-time 2hours -- localhost:8080
