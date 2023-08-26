@@ -1,0 +1,2 @@
+/usr/local/etc/default/tc.sh.cgi.env                                cake.tc.env
+/usr/local/lib/systemd/system/default.target.wants/0-router.service ../0-router.service

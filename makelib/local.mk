@@ -36,6 +36,16 @@ endef
 
 
 define LOCAL_L_TEMPLATE
+LOCALS.$1 += $(TMP)/$1/links/$2
+
+$(TMP)/$1/links/$2: | $(dir $(TMP)/$1/layers/_$2)
+	ln -v -sf -- '$3' '$(TMP)/$1/layers/_$2'
+	mkdir -v -p -- '$$(@D)'
+	touch -- '$$@'
+endef
+
+
+define LOCAL_RL_TEMPLATE
 LOCALS.$1 += $(TMP)/$1/layers/_/$3
 
 $(VAR)/sh/$2: | $(VAR)/sh
@@ -74,10 +84,11 @@ endef
 define LOCAL_TEMPLATE
 LOCALS.$1 :=
 
-MACH.$1.LAYERS := layers/{$(subst $(sp),$(s),$(strip _ $(shell cat -- <'$1/layers.txt')))}
+MACH.$1.LAYERS := layers/{$(subst $(sp),$(s),$(strip _ $(file <$1/layers.txt)))}
 MACH.$1.DIRS := $$(shell find $$(MACH.$1.LAYERS) -type d)
 MACH.$1.FILES := $$(shell find $$(MACH.$1.LAYERS) -type f,l)
 MACH.$1.CGI := $$(shell printf -- '%s ' $$(MACH.$1.LAYERS)/usr/local/opt/cgi/bin/*)
+MACH.$1.LINKS := $$(shell shopt -u failglob && grep -h -v '^#' -- $$(MACH.$1.LAYERS)/usr/local/opt/initd/links/*.txt $1/links/*.txt | tr -s ' ' '!')
 
 MACH.$1.FACTS := $(FACTS) $(shell shopt -u failglob && printf -- '%s ' $1/*.env)
 
@@ -97,7 +108,8 @@ $(TMP)/$1/facts.env: $$(MACH.$1.FACTS) $(TMP)/$1/mach.env | $(TMP)/$1
 $$(foreach layer,$$(MACH.$1.DIRS),$$(eval $$(call LOCAL_D_TEMPLATE,$1,$$(layer))))
 $$(foreach layer,$$(MACH.$1.FILES),$$(eval $$(call LOCAL_F_TEMPLATE,$1,$$(layer))))
 $$(foreach layer,$$(MACH.$1.CGI),$$(eval $$(call LOCAL_C_TEMPLATE,$1,$$(layer))))
-$$(foreach line,$(REF_LINKS),$$(eval $$(call LOCAL_L_TEMPLATE,$1,$$(firstword $$(subst !, ,$$(line))),$$(lastword $$(subst !, ,$$(line))))))
+$$(foreach layer,$$(MACH.$1.LINKS),$$(eval $$(call LOCAL_L_TEMPLATE,$1,$$(firstword $$(subst !, ,$$(layer))),$$(lastword $$(subst !, ,$$(layer))))))
+$$(foreach line,$(REF_LINKS),$$(eval $$(call LOCAL_RL_TEMPLATE,$1,$$(firstword $$(subst !, ,$$(line))),$$(lastword $$(subst !, ,$$(line))))))
 
 
 local: $(TMP)/$1/fs
