@@ -4,10 +4,12 @@ set -o pipefail
 
 IFACE="$1"
 DOMAIN="$2"
-DNSMASQD="$3"
-CACHE="$4"
-VAR="$5"
-NETDEV="$6"
+NETDEV="$3"
+DNSMASQD="$4"
+CACHE="$5"
+VAR="$6"
+SERVER_NAME="$7"
+WG_PEERS="$8"
 
 SYSTEMD='/run/systemd/network'
 SELF="${0%/*}/.."
@@ -32,9 +34,8 @@ WG_IDS=()
 WG_LINES=()
 DNSMAQ_HOSTS=()
 
-export -- DOMAIN IPV6 IPV4 SERVER_PUBLIC_KEY CLIENT_PRIVATE_KEY HTML_TITLE HTML_BODY
+export -- DOMAIN IPV6 IPV4 SERVER_PUBLIC_KEY SERVER_NAME CLIENT_PRIVATE_KEY HTML_TITLE HTML_BODY
 
-# shellcheck disable=SC2154
 P="$(sort --field-separator ',' <<<"$WG_PEERS")"
 readarray -t -d ',' -- PEERS <<<"$P"
 for PEER in "${PEERS[@]}"; do

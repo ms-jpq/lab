@@ -26,10 +26,10 @@ while (($#)); do
   esac
 done
 
-gmake local
-
-SRC="./var/tmp/machines/$MACHINE/fs/"
+SRC="./var/tmp/machines/$MACHINE/fs"
 INVENTORY='./inventory.json'
+
+gmake "$SRC"
 
 set -x
 if ! [[ -d "$SRC" ]] || ! [[ -f "$INVENTORY" ]]; then
@@ -45,6 +45,6 @@ EXEC=(
 )
 
 "${EXEC[@]}" exec -- "$(<./libexec/essentials.sh)"
-"${EXEC[@]}" sync -- "$SRC"
+"${EXEC[@]}" sync -- "$SRC/"
 printf -v ESC -- '%q ' gmake --directory /usr/local/opt/initd "$@"
 "${EXEC[@]}" exec -- "$ESC"

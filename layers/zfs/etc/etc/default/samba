@@ -1,0 +1,3 @@
+NMBDOPTIONS=--configfile=/usr/local/opt/samba/smb.conf
+SAMBAOPTIONS=--configfile=/usr/local/opt/samba/smb.conf
+SMBDOPTIONS=--configfile=/usr/local/opt/samba/smb.conf

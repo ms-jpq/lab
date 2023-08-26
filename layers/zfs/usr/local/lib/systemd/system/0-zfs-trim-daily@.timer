@@ -2,6 +2,7 @@
 Description        = ZFS trim timer -- %i
 
 [Timer]
+Unit               = 0-zfs-trim@%i.service
 OnStartupSec       = %j
 OnUnitInactiveSec  = %j
 RandomizedDelaySec = 12 hours

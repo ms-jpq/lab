@@ -1,7 +1,7 @@
 [Unit]
 Description   = ZFS trim -- %i
-BindsTo       = zfs-import-cache.service
-After         = zfs-import-cache.service
+Requires      = zfs.target
+After         = zfs.target
 
 [Service]
 Type          = oneshot
