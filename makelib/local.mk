@@ -41,7 +41,7 @@ LOCALS.$1 += $(TMP)/$1/links/$2
 $(TMP)/$1/links/$2: | $(dir $(TMP)/$1/layers/_$2)
 	ln -v -sf -- '$3' '$(TMP)/$1/layers/_$2'
 	mkdir -v -p -- '$$(@D)'
-	touch -- '$$@'
+	printf -- '%s' '$3' >'$$@'
 endef
 
 
