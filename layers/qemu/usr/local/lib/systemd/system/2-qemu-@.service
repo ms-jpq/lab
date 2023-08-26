@@ -1,6 +1,9 @@
 [Unit]
 CollectMode      = inactive-or-failed
 
+BindsTo          = 0-swtpm@%i.service
+
+
 [Service]
 ProtectSystem    = strict
 RuntimeDirectory = local/qemu/%I

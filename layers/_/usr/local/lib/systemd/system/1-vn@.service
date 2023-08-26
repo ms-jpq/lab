@@ -2,8 +2,8 @@
 Description          = Network Interface -- %I
 StopWhenUnneeded     = yes
 
-BindsTo              = 0-ip-alloc@%i.service
-After                = 0-ip-alloc@%i.service
+BindsTo              = 1-ip-alloc@%i.service
+After                = 1-ip-alloc@%i.service
 
 Wants                = dnsmasq@%i.service
 

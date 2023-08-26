@@ -7,18 +7,18 @@ After           = chrony.service
 Wants           = squid.service
 After           = squid.service
 
-Wants           = 0-tc@cake.service
-After           = 0-tc@cake.service
+Wants           = 1-tc@cake.service
+After           = 1-tc@cake.service
 
-Wants           = 0-wg-if@wg.service
-After           = 0-wg-if@wg.service
+Wants           = 1-wg-if@wg.service
+After           = 1-wg-if@wg.service
 
 Wants           = 0-port-fwd.service
 After           = 0-port-fwd.service
 
 # m5_for([LAN], [
-Wants           = 0-lan@LAN.service
-After           = 0-lan@LAN.service
+Wants           = 1-lan@LAN.service
+After           = 1-lan@LAN.service
 # ], m5_assert([ENV_LAN_IFS]))
 
 [[Service]]

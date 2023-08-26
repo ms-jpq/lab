@@ -4,8 +4,8 @@ all: nspawn
 
 /usr/lib/systemd/system/systemd-nspawn@.service: | pkg._
 
-nspawn: /usr/local/lib/systemd/system/1-nspawnd@.service
-/usr/local/lib/systemd/system/1-nspawnd@.service: /usr/lib/systemd/system/systemd-nspawn@.service
+nspawn: /usr/local/lib/systemd/system/2-nspawnd@.service
+/usr/local/lib/systemd/system/2-nspawnd@.service: /usr/lib/systemd/system/systemd-nspawn@.service
 	cp -v -f -- '$<' '$@'
 
 TARBUNTU := https://cloud-images.ubuntu.com/releases/$(VERSION_ID)/release/ubuntu-$(VERSION_ID)-server-cloudimg-$(GOARCH)-root.tar.xz

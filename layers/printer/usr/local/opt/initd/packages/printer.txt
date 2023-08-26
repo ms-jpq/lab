@@ -1,0 +1,3 @@
++ avahi-daemon
++ cups
++ printer-driver-brlaser

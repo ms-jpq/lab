@@ -1,0 +1,7 @@
++ novnc
++ ovmf
++ qemu-block-extra
++ qemu-kvm
++ qemu-utils
++ swtpm-tools
++ websockify
