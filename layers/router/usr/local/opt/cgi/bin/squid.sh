@@ -4,12 +4,12 @@ set -o pipefail
 
 if [[ ! -t 1 ]]; then
   exec >&3
+fi
 
-  tee <<-'EOF'
+tee -- <<-'EOF'
 HTTP/1.0 200 OK
 Content-Type: text/plain; charset=utf-8
 
 EOF
-fi
 
 exec -- squidclient --host 127.0.0.53 -- mgr:utilization

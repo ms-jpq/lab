@@ -5,10 +5,11 @@ set -o pipefail
 if [[ ! -t 1 ]]; then
   exec >&3
 
-  tee <<-'EOF'
+fi
+
+tee -- <<-'EOF'
 HTTP/1.0 200 OK
 
 EOF
-fi
 
 /usr/local/bin/vmctl.sh

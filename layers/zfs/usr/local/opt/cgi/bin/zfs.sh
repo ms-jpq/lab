@@ -4,13 +4,13 @@ set -o pipefail
 
 if [[ ! -t 1 ]]; then
   exec >&3
+fi
 
-  tee <<-'EOF'
+tee -- <<-'EOF'
 HTTP/1.0 200 OK
 Content-Type: text/plain; charset=utf-8
 
 EOF
-fi
 
 /usr/local/libexec/hr-run.sh zpool status -v -s -t -i -T d
 /usr/local/libexec/hr-run.sh zpool iostat -v -l -T d

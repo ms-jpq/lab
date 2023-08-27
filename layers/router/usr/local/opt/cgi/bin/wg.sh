@@ -4,10 +4,10 @@ set -o pipefail
 
 if [[ ! -t 1 ]]; then
   exec >&3
+fi
 
-  tee <<-'EOF'
+tee -- <<-'EOF'
 HTTP/1.0 307 Temporary Redirect
 Location: /wg/
 
 EOF
-fi

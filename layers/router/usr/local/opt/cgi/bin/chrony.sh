@@ -4,16 +4,14 @@ set -o pipefail
 
 if [[ ! -t 1 ]]; then
   exec >&3
+fi
 
-  tee <<-'EOF'
+tee -- <<-'EOF'
 HTTP/1.0 200 OK
 Content-Type: text/plain; charset=utf-8
 
 EOF
-fi
 
-chronyc serverstats
-hr
-chronyc tracking
-hr
-chronyc sources
+/usr/local/libexec/hr-run.sh chronyc serverstats
+/usr/local/libexec/hr-run.sh chronyc tracking
+/usr/local/libexec/hr-run.sh chronyc sources
