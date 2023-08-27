@@ -3,7 +3,8 @@ location /m5_assert([ENV_PATH]) {
 }
 
 location /m5_assert([ENV_PATH])/ {
-  error_log       stderr crit;
-  proxy_buffering off;
-  proxy_pass      http://unix:m5_assert([ENV_SOCK]):/;
+  error_log                 stderr crit;
+  chunked_transfer_encoding off;
+  proxy_buffering           off;
+  proxy_pass                http://unix:m5_assert([ENV_SOCK]):/;
 }

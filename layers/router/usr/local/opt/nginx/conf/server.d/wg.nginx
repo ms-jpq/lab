@@ -4,5 +4,4 @@ location /wg {
 
 location /wg/ {
   alias /var/cache/local/wireguard/;
-  index index.html;
 }

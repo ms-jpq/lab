@@ -1,4 +1,5 @@
 .PHONY: user samba iscsi clobber.samba clobber.iscsi
+
 all: user samba iscsi
 
 CLOBBER.FS += /etc/default/samba
