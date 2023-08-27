@@ -10,7 +10,7 @@ user: /home/ubuntu
 samba: /var/lib/local/samba/usershares
 
 /var/lib/local/samba/usershares: | pkg._
-	mkdir -v -p -- '$@'
+	sudo -- mkdir -v -p -- '$@'
 	sudo -- chgrp -- sambashare '$@'
 	sudo -- chmod -- 1770 '$@'
 
