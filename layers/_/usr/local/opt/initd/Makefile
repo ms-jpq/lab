@@ -20,6 +20,8 @@ clobber: clean
 	shopt -u failglob
 	rm -v -rf --
 
+CURL := curl --fail --location --no-progress-meter
+
 include lib/*.mk
 include makelib/*.mk
 

@@ -1,0 +1,19 @@
+# + build-essential
+# + dkms
+# + firefox
++ celluloid
++ gnome-software
++ gnome-software-plugin-flatpak
++ gnome-tweaks
++ gnome-weather
++ gstreamer1.0-libav
++ gstreamer1.0-plugins-bad
++ microsoft-edge-stable
++ uxplay
++ variety
+- libreoffice-common
+- libreoffice-core
+- rhythmbox
+- thunderbird
+- transmission-common
+- yelp

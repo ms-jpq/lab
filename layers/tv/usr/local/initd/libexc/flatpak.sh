@@ -1,0 +1,52 @@
+#!/usr/bin/env -S -- bash -Eeu -O dotglob -O nullglob -O extglob -O failglob -O globstar
+
+set -o pipefail
+
+cd -- "${0%/*}/.."
+
+TXT="$(grep -E -h -- '^(\+|-) .+' ./flatpaks/*.txt)"
+readarray -t -- DESIRED <<<"$TXT"
+
+PKGS="$(flatpak list --app --columns application)"
+readarray -t -- INSTALLED <<<"$PKGS"
+
+declare -A -- PRESENT=()
+
+for PKG in "${INSTALLED[@]}"; do
+  PRESENT["$PKG"]=1
+done
+
+ADD=()
+RM=()
+
+for LINE in "${DESIRED[@]}"; do
+  ACTION="${LINE%% *}"
+  PKG="${LINE#* }"
+
+  case "$ACTION" in
+  +)
+    if [[ -z "${PRESENT["$PKG"]:-""}" ]]; then
+      ADD+=("$PKG")
+    fi
+    ;;
+  -)
+    if [[ -n "${PRESENT["$PKG"]:-""}" ]]; then
+      RM+=("$PKG")
+    fi
+    ;;
+  *)
+    printf -- '%s%q\n' '>! ' "$LINE" >&2
+    exit 1
+    ;;
+  esac
+done
+
+if (("${#RM[@]}")); then
+  sudo -- flatpak uninstall --noninteractive --assumeyes -- "${RM[@]}"
+fi
+
+if (("${#ADD[@]}")); then
+  printf -- '%q\n' "${ADD[@]}"
+  sudo -- flatpak remote-add --if-not-exists -- flathub 'https://flathub.org/repo/flathub.flatpakrepo'
+  sudo -- flatpak install --noninteractive --assumeyes -- "${ADD[@]}"
+fi
