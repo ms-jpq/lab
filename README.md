@@ -1,12 +1,22 @@
-# Personal Infrastructure
+# My Infrastructure
 
-- Mostly written in bash + recursive \[makefile & m4\] macros (think autoconf) for boomercore aesthetics.
+- Mostly written in **bash + recursive \[makefile & m4\] macros** (think autoconf) for boomercore aesthetics.
 
 - Idempotent deployment + total rollback
 
 - Containerized build suite + CI verification
 
 WIP...
+
+## Why? / How
+
+[Ansible](https://www.ansible.com/) is slow as fuck my man.
+
+Linux configuration is mostly based on plain ASCII files.
+
+Use [systemd](https://systemd.network/systemd.unit.html) drop in mechanism to override vanilla configurations via [bind mounts](https://docs.docker.com/storage/bind-mounts/).
+
+Just generate the desired configurations, make sure they do not collide in file system location + `rsync` away.
 
 ## Components
 
@@ -20,11 +30,15 @@ WIP...
 
 - CAKE SQM for [TCP flowcontrol](https://www.bufferbloat.net/)
 
-- Wireguard gateway
+- [Wireguard](https://www.wireguard.com/) gateway
 
 - [Nftables](https://wiki.nftables.org/) firewall
 
-- Tor transparent gateway
+- [Tor](https://www.torproject.org/) transparent gateway
+
+- [Certbot](https://certbot.eff.org/) daemon
+
+- [ssl alpn](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation) based TCP port 443 sharing with HTTPS & SSH
 
 ### Headless Workstation
 
@@ -50,4 +64,12 @@ WIP...
 
 - Systemd managed [containers](https://podman.io/)
 
-- Linux [network ns](https://www.man7.org/linux/man-pages/man8/ip-netns.8.html) isolated file share daemon
+- [Intel GVT-g](https://www.intel.com/content/www/us/en/support/articles/000093216/graphics/intel-uhd-graphics-family.html) accelerated [迅雷](https://www.xunlei.com/) VM
+
+- Linux [network namespace](https://www.man7.org/linux/man-pages/man8/ip-netns.8.html) protected torrent daemon
+
+### Random VPS
+
+- FOSS youtube / twitter / etc proxy
+
+- Provisioned via terraform
