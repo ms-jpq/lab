@@ -15,4 +15,6 @@ RUN apt-get update && \
 WORKDIR /srv
 COPY . /srv
 
-RUN gmake examples && gmake local
+ENV LOCAL=1
+RUN gmake examples && gmake
+RUN ./main.sh --machine all

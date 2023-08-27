@@ -3,6 +3,7 @@
 .terraform/
 .venv/
 inventory.json
+node_modules/
 package-lock.json
 var/
 !layers/**/*.env

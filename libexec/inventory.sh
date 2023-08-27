@@ -61,6 +61,18 @@ conn() {
   RSY+=(--rsh "$RSH" --)
 }
 
+shell() {
+  local sh
+  if [[ -v LOCAL ]]; then
+    "$@"
+  else
+    conn
+    printf -v sh -- '%q ' "$@"
+    # shellcheck disable=SC2029
+    "${SSH[@]}" "$sh"
+  fi
+}
+
 case "$ACTION" in
 gen)
   if [[ -f "$INVENTORY" ]]; then
@@ -87,27 +99,32 @@ EOF
   "${JQE[@]}" <<<"$ACC"
   ;;
 ls)
+  if [[ -v LOCAL ]]; then
+    MS='./machines/'
+    for m in "$MS"*/; do
+      m="${m#"$MS"}"
+      printf -- '%s\n' "${m%/}"
+    done
+  fi
   if [[ -f "$INVENTORY" ]]; then
     "${JQER[@]}" '. // {} | keys[]' "$INVENTORY"
   fi
   ;;
 env)
   SCRIPT="$1"
-  conn
-  printf -v ESC -- '%q ' "${BSH[@]}" "$(<"$SCRIPT")"
-  "${SSH[@]}" "$ESC"
-
+  shell "${BSH[@]}" "$(<"$SCRIPT")"
   ;;
 sync)
-  conn
   SRC="$1"
-  DST="$HOST:/"
+  DST="/"
+  if ! [[ -v LOCAL ]]; then
+    conn
+    DST="$HOST:$DST"
+  fi
   "${RSY[@]}" "$SRC" "$DST"
   ;;
 exec)
-  conn
-  printf -v ESC -- '%q ' "${BSH[@]}" "$@"
-  "${SSH[@]}" "$ESC"
+  shell "${BSH[@]}" "$@"
   ;;
 *)
   exit 2

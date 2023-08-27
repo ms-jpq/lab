@@ -44,10 +44,16 @@ jobs:
 
       - run: |-
           gmake examples
-          gmake local
+          gmake
 
       - run: |-
-          gmake local --debug
+          gmake --debug
+
+      - run: |-
+          ./main.sh --machine all
+
+      - run: |-
+          ./main.sh --machine all -- --debug
 
       - run: |-
           gmake fmt

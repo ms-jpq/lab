@@ -9,7 +9,7 @@ FACTS := $(shell shopt -u failglob && printf -- '%s ' ./machines/*.env)
 
 facts: $(INVENTORY)
 $(INVENTORY):
-	printf -- '%s\n' '{}' >'$@'
+	touch -- '$@'
 
 $(SH_ENV): $(VAR)/sh
 
@@ -22,8 +22,9 @@ endef
 
 
 define NOFACT_TEMPLATE
+facts: $(TMP)/machines/$1/mach.env
 $(TMP)/machines/$1/mach.env: $(INVENTORY) | $(TMP)/machines/$1
-	printf -- '%s\n' '{}' >'$$@'
+	touch -- '$$@'
 endef
 
 
