@@ -5,7 +5,7 @@ CLOBBER.FS += /etc/default/samba
 
 user: /home/ubuntu
 /home/ubuntu:
-	useradd --user-group --create-home --uid 1000 -- "$(@F)"
+	sudo -- useradd --user-group --create-home --uid 1000 -- "$(@F)"
 
 samba: /var/lib/local/samba/usershares
 
