@@ -6,13 +6,13 @@ all: nspawn
 
 nspawn: /usr/local/lib/systemd/system/2-nspawnd@.service
 /usr/local/lib/systemd/system/2-nspawnd@.service: /usr/lib/systemd/system/systemd-nspawn@.service
-	cp -v -f -- '$<' '$@'
+	sudo -- cp -v -f -- '$<' '$@'
 
 TARBUNTU := https://cloud-images.ubuntu.com/releases/$(VERSION_ID)/release/ubuntu-$(VERSION_ID)-server-cloudimg-$(GOARCH)-root.tar.xz
 
 nspawn: /var/cache/local/nspawn/cloudimg.tar.xz
 clobber.nspawn:
-	rm -v -rf -- /var/cache/local/nspawn/cloudimg.tar.xz
+	sudo -- rm -v -rf -- /var/cache/local/nspawn/cloudimg.tar.xz
 
 /var/cache/local/nspawn/cloudimg.tar.xz:
-	curl --fail --location --create-dirs --output '$@' -- '$(TARBUNTU)' || rm -v -rf -- '$@'
+	sudo -- curl --fail --location --create-dirs --output '$@' -- '$(TARBUNTU)'

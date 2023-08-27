@@ -4,8 +4,8 @@ define PYNV_TEMPLATES
 
 venv: /usr/local/venv/$1
 /usr/local/venv/$1: | /usr/share/doc/python3-venv
-	python3 -m venv -- '$$@'
-	'$$@'/bin/pip install --upgrade --requirement './venvs/$1.txt'
+	sudo -- python3 -m venv -- '$$@'
+	sudo -- '$$@'/bin/pip install --upgrade --requirement './venvs/$1.txt'
 
 endef
 
