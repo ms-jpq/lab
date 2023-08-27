@@ -1,0 +1,5 @@
+cd /
+ls
+clearconfig confirm=True
+saveconfig
+ls

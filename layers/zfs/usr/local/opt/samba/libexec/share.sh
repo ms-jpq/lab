@@ -2,6 +2,9 @@
 
 set -o pipefail
 
+# shellcheck disable=SC1091
+source -- /usr/local/etc/default/shares.m4.env
+
 readarray -t -d ',' -- ROWS <<<""
 
 for ROW in "${ROWS[@]}"; do
