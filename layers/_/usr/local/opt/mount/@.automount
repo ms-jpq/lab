@@ -1,0 +1,6 @@
+[Unit]
+Description    = AutoMount -- /%P
+
+[Automount]
+TimeoutIdleSec = 1h
+Where          = /%P
