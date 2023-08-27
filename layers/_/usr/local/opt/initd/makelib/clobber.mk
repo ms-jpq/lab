@@ -3,6 +3,7 @@
 CLOBBER.FS :=
 
 clobber: clobber.fs
+clobber.fs:
 	shopt -u failglob
 	printf '%q ' -- rm -v -rf -- $(CLOBBER.FS)
 

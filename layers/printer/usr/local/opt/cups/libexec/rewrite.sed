@@ -1,4 +1,4 @@
-#!/usr/bin/env sed -E -f
+#!/usr/bin/env -S -- sed -E -f
 
-s/^Listen .+:631$//g
+/^Listen .+:631$/d
 s/^(DefaultAuthType) .+$/\1 None/g

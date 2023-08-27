@@ -2,11 +2,11 @@
 
 define PYNV_TEMPLATES
 
-venv: $(patsubst ./venvs%,%,$1)
-$(patsubst ./venvs%,%,$1): | /usr/share/doc/python3-venv
+venv: /usr/local/venv/$1
+/usr/local/venv/$1: | /usr/share/doc/python3-venv
 	python3 -m venv -- '$$@'
-	'$$@'/bin/pip install --upgrade --requirement '$1'
+	'$$@'/bin/pip install --upgrade --requirement './venvs/$1.txt'
 
 endef
 
-$(foreach venv,$(shell find ./venvs -type f -not -name '.gitignore'),$(info $(call PYNV_TEMPLATES,$(venv))))
+$(foreach venv,$(shell shopt -u failglob && printf -- '%s ' ./venvs/*.txt),$(eval $(call PYNV_TEMPLATES,$(patsubst ./venvs/%,%,$(basename $(venv))))))
