@@ -15,12 +15,12 @@ samba: /var/lib/local/samba/usershares
 	sudo -- mkdir -v -p -- '$@'
 	sudo -- chgrp -- sambashare '$@'
 	sudo -- chmod -- 1770 '$@'
-	sudo -- /usr/local/opt/samba/libexec/share.sh
+	sudo --preserve-env -- /usr/local/opt/samba/libexec/share.sh
 
 iscsi: /etc/rtslib-fb-target
 /etc/rtslib-fb-target: | pkg._
-	sudo -- /usr/local/opt/iscsi/libexec/share.sh
+	sudo --preserve-env -- /usr/local/opt/iscsi/libexec/share.sh
 
 clobber.iscsi:
-	sudo -- /usr/local/opt/iscsi/libexec/unshare.sh
+	sudo --preserve-env -- /usr/local/opt/iscsi/libexec/unshare.sh
 
