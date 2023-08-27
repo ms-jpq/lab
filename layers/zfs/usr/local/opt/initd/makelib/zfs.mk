@@ -1,7 +1,11 @@
-.PHONY: samba iscsi
-all: samba iscsi
+.PHONY: user samba iscsi
+all: user samba iscsi
 
 CLOBBER.FS += /etc/default/samba
+
+user: /home/ubuntu
+/home/ubuntu:
+	useradd --user-group --create-home --uid 1000 -- "$(@F)"
 
 samba: /var/lib/local/samba/usershares
 
