@@ -84,13 +84,13 @@ endef
 define LOCAL_TEMPLATE
 LOCALS.$1 :=
 
-MACH.$1.LAYERS := layers/{$(subst $(sp),$(s),$(strip _ $(file <$1/usr/local/opt/initd/layers.txt)))}
-MACH.$1.DIRS := $$(shell find $$(MACH.$1.LAYERS) -type d)
-MACH.$1.FILES := $$(shell find $$(MACH.$1.LAYERS) -type f,l)
-MACH.$1.CGI := $$(shell shopt -u failglob && printf -- '%s ' $$(MACH.$1.LAYERS)/usr/local/opt/cgi/bin/*)
-MACH.$1.LINKS := $$(shell shopt -u failglob && grep -h -v -- '^#' $$(MACH.$1.LAYERS)/usr/local/opt/initd/links/*.txt $1/usr/local/opt/initd/links.txt | tr -s ' ' '!')
+MACH.$1.DIRS := $(shell find $2 -type d)
+MACH.$1.FILES := $(shell find $2 -type f,l)
+MACH.$1.CGI := $(shell shopt -u failglob && printf -- '%s ' $2/usr/local/opt/cgi/bin/*)
+MACH.$1.AUTOMOUNT := $(shell shopt -u failglob && printf -- '%s ' $2/usr/local/lib/systemd/system/media*-.mount)
+MACH.$1.LINKS := $(shell shopt -u failglob && grep -h -v -- '^#' $2/usr/local/opt/initd/links/*.txt $1/usr/local/opt/initd/links.txt | tr -s ' ' '!')
 
-MACH.$1.FACTS := $(FACTS) $(shell shopt -u failglob && printf -- '%s ' $1/*.env)
+MACH.$1.FACTS := $(FACTS) $(shell shopt -u failglob && printf -- '%s ' ./facts/$1*.env)
 
 
 $(TMP)/$1/./: | $(TMP)/$1
@@ -139,4 +139,4 @@ zsh/iso/libexec/hr.sh                                                           
 endef
 
 REF_LINKS := $(shell tr -s ' ' '!' <<<'$(REF_LINKS)')
-$(foreach machine,$(MACHINES),$(eval $(call LOCAL_TEMPLATE,$(machine))))
+$(foreach machine,$(MACHINES),$(eval $(call LOCAL_TEMPLATE,$(machine),layers/{$(subst $(sp),$(s),$(strip _ $(file <$(machine)/usr/local/opt/initd/layers.txt)))})))

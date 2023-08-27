@@ -1,0 +1,17 @@
+[Unit]
+Description    = Airplay server daemon
+
+[Service]
+Restart        = on-failure
+
+ProtectSystem  = strict
+PrivateTmp     = yes
+
+ReadWritePaths = %t %T
+Environment    = DISPLAY=:0
+
+ExecStartPre   = try-until 1 stat -- /run/avahi-daemon/socket
+ExecStart      = uxplay -p
+
+[Install]
+WantedBy       = default.target

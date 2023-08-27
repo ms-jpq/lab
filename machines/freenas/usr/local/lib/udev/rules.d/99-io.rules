@@ -1,0 +1,2 @@
+ACTION=="add|change", ENV{DEVTYPE}=="disk", SUBSYSTEM=="block", SUBSYSTEMS=="pci", DRIVERS=="ahci", ATTR{queue/scheduler}="none"
+ACTION=="add|change", ENV{DEVTYPE}=="disk", SUBSYSTEM=="block", SUBSYSTEMS=="pci", DRIVERS=="ahci", ATTR{queue/rotational}=="1", ATTR{device/queue_depth}="8", ATTR{queue/nr_requests}="8"

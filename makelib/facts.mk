@@ -5,7 +5,7 @@ INVENTORY := ./inventory.json
 SH_ENV := $(VAR)/sh/libexec/env.sh
 
 FACT_MACHINES := $(shell ./libexec/inventory.sh --action ls --inventory '$(INVENTORY)')
-FACTS := $(shell shopt -u failglob && printf -- '%s ' ./machines/*.env)
+FACTS := $(shell shopt -u failglob && printf -- '%s ' ./facts/example*.env)
 
 facts: $(INVENTORY)
 $(INVENTORY):

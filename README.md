@@ -42,6 +42,8 @@ Just generate the desired configurations, make sure they do not collide in file 
 
 - [ssl alpn](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation) based TCP port 443 sharing with HTTPS & SSH
 
+- DHCP callback based port forwarding (use client DNS instead of static DHCP lease + fixed IP alloc)
+
 ### Headless Workstation
 
 - Throw away [systemd-nspawn](https://manpages.ubuntu.com/manpages/jammy/man1/systemd-nspawn.1.html) dev containers
@@ -56,11 +58,13 @@ Just generate the desired configurations, make sure they do not collide in file 
 
 - ZFS backed storage with [policy driven snapshots](https://github.com/jimsalterjrs/sanoid)
 
-- [smb](https://www.samba.org/) shares for Windows clients + MacOS Time Machine
+- Hand tuned [udev](https://www.freedesktop.org/software/systemd/man/udev.html) IO policies for legacy storage array
 
-- [nfs](https://ubuntu.com/server/docs/service-nfs) shares for Linux clients
+- [iscsi](https://www.open-iscsi.com/) block shares for skyrim's 300 mods
 
-- [iscsi](https://www.open-iscsi.com/) block level shares for skyrim's 300 mods
+- [smb](https://www.samba.org/) file shares for Windows clients + MacOS Time Machine
+
+- [nfs](https://ubuntu.com/server/docs/service-nfs) file shares for Linux clients
 
 - [Backup daemon](https://rclone.org/) into ["econ cloud"](https://www.jottacloud.com/) (wtf, how are they a viable business)
 
@@ -68,7 +72,7 @@ Just generate the desired configurations, make sure they do not collide in file 
 
 - [Intel GVT-g](https://www.intel.com/content/www/us/en/support/articles/000093216/graphics/intel-uhd-graphics-family.html) accelerated [迅雷](https://www.xunlei.com/) VM
 
-- Linux [network namespace](https://www.man7.org/linux/man-pages/man8/ip-netns.8.html) protected torrent daemon
+- Linux [network namespace](https://www.man7.org/linux/man-pages/man8/ip-netns.8.html) protected torrent daemon + [`DSCP`](https://www.iana.org/assignments/dscp-registry/dscp-registry.xhtml) packet marking
 
 - Apple [AirPrint](https://www.cups.org/) server
 
