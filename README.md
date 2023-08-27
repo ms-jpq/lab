@@ -1,12 +1,14 @@
 # My Infrastructure
 
+WIP...
+
+---
+
 - Mostly written in **bash + recursive \[makefile & m4\] macros** (think autoconf) for boomercore aesthetics.
 
 - Idempotent deployment + total rollback
 
 - Containerized build suite + CI verification
-
-WIP...
 
 ## Why? / How
 
@@ -14,7 +16,7 @@ WIP...
 
 Linux configuration is mostly based on plain ASCII files.
 
-Use [systemd](https://systemd.network/systemd.unit.html) drop in mechanism to override vanilla configurations via [bind mounts](https://docs.docker.com/storage/bind-mounts/).
+Use systemd [drop in mechanism](https://systemd.network/systemd.unit.html) to override vanilla configurations via [bind mounts](https://docs.docker.com/storage/bind-mounts/).
 
 Just generate the desired configurations, make sure they do not collide in file system location + `rsync` away.
 
@@ -22,9 +24,9 @@ Just generate the desired configurations, make sure they do not collide in file 
 
 ### Home Router
 
-- [NTP](https://chrony-project.org/) blackhole
+- [NTP](https://chrony-project.org/) sinkhole
 
-- [DNS](https://dnsmasq.org/) blackhole
+- [DNS](https://dnsmasq.org/) sinkhole
 
 - HTTP [transparent cache](http://www.squid-cache.org/)
 
@@ -68,8 +70,132 @@ Just generate the desired configurations, make sure they do not collide in file 
 
 - Linux [network namespace](https://www.man7.org/linux/man-pages/man8/ip-netns.8.html) protected torrent daemon
 
+- Apple [AirPrint](https://www.cups.org/) server
+
+### TV
+
+- [Socket activated](https://www.freedesktop.org/software/systemd/man/systemd.socket.html) lambda functions for IOS shortcuts
+
 ### Random VPS
 
 - FOSS youtube / twitter / etc proxy
 
 - Provisioned via terraform
+
+## Some Bash Tricks
+
+#### Recursive Try Catch
+
+- `set -e` enables exit on any non-zero exit code
+
+- `$0` is script name, `$@` is argument array, `[[ -v RECUR ]]` test if `RECUR` is defined
+
+```bash
+set -Eeu
+set -o pipefail
+
+if ! [[ -v RECUR ]]; then
+  if RECUR=1 "$0" "$@"; then
+    # success!
+  else
+    # failed!
+  fi
+fi
+
+# ... rest of script
+```
+
+#### Deterministic, stateless globally unique IPv6 generation
+
+- hash it 420
+
+```bash
+
+# Generate /56 ULA prefix from machine-id + interface name
+ID="$(</etc/machine-id)+$IFACE"
+SHIFT=56
+ULA=$((0xfd << SHIFT))
+b2sum --binary --length "$SHIFT" <<<"$ID"
+
+# Generate lower /64 from some label, ie. wireguard client name
+b2sum --binary --length 64 <<<"$LABEL"
+```
+
+#### Deterministic, IPv4 generation from IPv6 address
+
+```bash
+HEX_64=`ipv6 lower /64`
+# For a given ipv4, `ipcalc-ng --json -- "$IPV4" | jq --raw-output '.NETWORK, .NETMASK'`
+IPV4_NETWORK='192.168.0.0'
+IPV4_NETMASK='255.255.240.0'
+
+printf -v V4_NET -- '%02x' ${IPV4_NETWORK//./ }
+printf -v V4_MASK -- '%02x' ${IPV4_NETMASK//./ }
+# Remove top 32 bits -> zero out non-identifying bits -> apply network address bits
+printf -v HEX_32 -- '%x' $(("0x$HEX_64" & 0xffffffff & ~"0x$V4_MASK" | "0x$V4_NET"))
+
+# Convert back from hex
+IPV4_OCTETS="$(perl -CASD -wpe 's/(.{2})/0x$1 /g' <<<"$HEX_32")"
+printf -v IPV4 -- '%d.%d.%d.%d' $IPV4_OCTETS
+```
+
+#### ☒AWS☒ - ☑Socket Activated☑ lambda functions
+
+- Throw bash scripts behind a oauth / jwt / zero-trust gateway via HTTP layer
+
+- Isolate script execution using systemd powered [`cgroups`](https://www.man7.org/linux/man-pages/man7/cgroups.7.html) / [`eBPF`](https://ebpf.io/) / mount namespacing, etc
+
+```systemd
+[Socket]
+Accept       = yes
+# Use unix stream to avoid TCP port allocation hassle
+ListenStream = %t/.../%J.sock
+```
+
+```systemd
+[Unit]
+CollectMode    = inactive-or-failed
+
+[Service]
+Type           = oneshot
+StandardInput  = socket
+StandardOutput = socket
+# Secure the script using systemd isolation here...
+```
+
+```bash
+# This is the HTTP1.0 header structure
+# Http clients like browser, nginx, curl, traefik, etc will tolerate lack of `\r`
+tee <<-'EOF'
+HTTP/1.0 200 OK
+Content-Type: text/plain; charset=utf-8
+
+EOF
+
+# stdout & stderr goes to http client
+<some-command>
+```
+
+```bash
+# Reading input is slightly more verbose
+
+BYTES=0
+while read -r LINE; do
+  LINE="${LINE%$'\r'}"
+  if [[ -z "$LINE" ]]; then
+    # End of header
+    break
+  fi
+
+  LHS="${LINE%%:*}"
+  KEY="${LHS,,}"
+  case "$KEY" in
+  content-length)
+    BYTES="${LINE##*: }"
+    ;;
+  *) ;;
+  esac
+done
+
+STDIN="$(head --bytes "$BYTES")"
+```
