@@ -39,8 +39,7 @@ export -- DOMAIN IPV6 IPV4 SERVER_PUBLIC_KEY SERVER_NAME CLIENT_PRIVATE_KEY HTML
 P="$(sort --field-separator ',' <<<"$WG_PEERS")"
 readarray -t -d ',' -- PEERS <<<"$P"
 for PEER in "${PEERS[@]}"; do
-  PEER="${PEER%%$'\n'}"
-  PEER="${PEER//' '/''}"
+  PEER="${PEER//[[:space:]]/''}"
   if [[ -z "$PEER" ]]; then
     continue
   fi

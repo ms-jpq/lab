@@ -60,7 +60,7 @@ reload() {
     for ADDRS in "${ADDRESSES[@]}"; do
       readarray -t -d ',' -- ADDR <<<"$ADDRS"
       for A in "${ADDR[@]}"; do
-        A="${A%%$'\n'}"
+        A="${A//[[:space:]]/''}"
         ACC["$A"]=1
       done
     done
@@ -76,7 +76,7 @@ reload() {
     done
 
     for ADDR in "${!ACC[@]}"; do
-      ADDR="${ADDR%%$'\n'}"
+      ADDR="${ADDR//[[:space:]]/''}"
       P=4
       if [[ "$ADDR" =~ : ]]; then
         P=6

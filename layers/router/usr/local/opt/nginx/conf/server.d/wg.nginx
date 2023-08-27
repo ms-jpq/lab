@@ -3,5 +3,6 @@ location /wg {
 }
 
 location /wg/ {
-  root /var/cache/local/wireguard;
+  alias /var/cache/local/wireguard/;
+  index index.html;
 }

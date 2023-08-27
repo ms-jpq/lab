@@ -10,3 +10,5 @@ HTTP/1.0 200 OK
 
 EOF
 fi
+
+/usr/local/bin/nspawnctl.sh

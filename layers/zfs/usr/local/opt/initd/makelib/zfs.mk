@@ -1,7 +1,8 @@
-.PHONY: user samba iscsi
+.PHONY: user samba iscsi clobber.samba clobber.iscsi
 all: user samba iscsi
 
 CLOBBER.FS += /etc/default/samba
+CLOBBER.FS += /etc/rtslib-fb-target
 
 user: /home/ubuntu
 /home/ubuntu:
@@ -18,3 +19,7 @@ samba: /var/lib/local/samba/usershares
 iscsi: /etc/rtslib-fb-target
 /etc/rtslib-fb-target: | pkg._
 	sudo -- /usr/local/opt/iscsi/libexec/share.sh
+
+clobber.iscsi:
+	sudo -- /usr/local/opt/iscsi/libexec/unshare.sh
+
