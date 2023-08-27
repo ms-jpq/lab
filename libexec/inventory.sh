@@ -117,11 +117,12 @@ env)
 sync)
   SRC="$1"
   DST="/"
-  if ! [[ -v LOCAL ]]; then
+  if [[ -v LOCAL ]]; then
+    sudo -- "${RSY[@]}" "$SRC" "$DST"
+  else
     conn
-    DST="$HOST:$DST"
+    "${RSY[@]}" "$SRC" "$HOST:$DST"
   fi
-  "${RSY[@]}" "$SRC" "$DST"
   ;;
 exec)
   shell "${BSH[@]}" "$@"

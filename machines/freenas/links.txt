@@ -1,4 +1,4 @@
-/usr/local/lib/systemd/system/timers.target.wants/1-zfs-trim-daily@black.timer ../1-zfs-trim-daily@.timer
+/usr/local/lib/systemd/system/timers.target.wants/1-zfs-trim-24h@black.timer ../1-zfs-trim-24h@.timer
 /usr/local/lib/systemd/system/timers.target.wants/zfs-scrub-monthly@blue.timer /usr/lib/systemd/system/zfs-scrub-monthly@.timer
 /usr/local/lib/systemd/system/timers.target.wants/zfs-scrub-monthly@pink.timer /usr/lib/systemd/system/zfs-scrub-monthly@.timer
 /usr/local/lib/systemd/system/timers.target.wants/zfs-scrub-weekly@black.timer /usr/lib/systemd/system/zfs-scrub-weekly@.timer
