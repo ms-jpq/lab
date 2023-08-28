@@ -11,8 +11,6 @@ facts: $(INVENTORY)
 $(INVENTORY):
 	touch -- '$@'
 
-$(SH_ENV): $(VAR)/sh
-
 
 define FACT_TEMPLATE
 facts: $(TMP)/machines/$1/mach.env
