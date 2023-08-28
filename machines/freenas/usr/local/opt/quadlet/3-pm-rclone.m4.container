@@ -1,13 +1,14 @@
 [[Unit]]
 Description = Rcloned
 
-BindsTo     = 6-pm-proxy-%j@8080.socket
-After       = 6-pm-proxy-%j@8080.socket
-
 [[Container]]
 Image       = docker.io/rclone/rclone:latest
 AutoUpdate  = registry
 RunInit     = yes
+
+Label       = traefik.enable=true
+Label       = traefik.http.services.traefik.loadbalancer.server.port=8080
+Label       = traefik.http.routers.traefik.rule=Host(`^%J\..+`)
 
 Exec        = rcd --rc-web-gui --rc-no-auth --rc-addr=:8080 --dscp=LE
 

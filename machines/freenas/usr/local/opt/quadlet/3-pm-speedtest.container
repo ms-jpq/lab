@@ -1,12 +1,16 @@
 [Unit]
 Description = Speedtestd
 
-BindsTo     = 6-pm-proxy-%j@80.socket
-After       = 6-pm-proxy-%j@80.socket
-
 [Container]
 Image       = lscr.io/linuxserver/librespeed:latest
 AutoUpdate  = registry
 
+Label       = traefik.enable=true
+Label       = traefik.http.services.traefik.loadbalancer.server.port=80
+Label       = traefik.http.routers.traefik.rule=Host(`^%J\..+`)
+
 [Service]
 Restart     = on-failure
+
+[Install]
+WantedBy    = default.target

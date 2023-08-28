@@ -1,12 +1,13 @@
 [Unit]
 Description = VNC gui container
 
-BindsTo     = 6-pm-proxy-%j@3000.socket
-After       = 6-pm-proxy-%j@3000.socket
-
 [Container]
 Image       = lscr.io/linuxserver/webtop:latest
 AutoUpdate  = registry
+
+Label       = traefik.enable=true
+Label       = traefik.http.services.traefik.loadbalancer.server.port=3000
+Label       = traefik.http.routers.traefik.rule=Host(`^%J\..+`)
 
 Environment = PGID=1000
 Environment = PUID=1000
@@ -15,3 +16,6 @@ AddDevice   = /dev/dri
 
 Volume      = %S/local/docker/webtop:/config
 Volume      = /media:/media
+
+[Install]
+WantedBy    = default.target
