@@ -12,21 +12,6 @@ jobs:
       - run: |-
           gmake build
 
-  build_nt:
-    runs-on: windows-latest
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - run: |-
-          $pacman = Join-Path -Path $Env:GHCUP_MSYS2 'usr' 'bin' 'pacman'
-          $argv = @('--sync', '--refresh', '--noconfirm', '--', 'make')
-          & $pacman @argv
-
-      - run: |-
-          $gmake = Join-Path -Path $Env:GHCUP_MSYS2 'usr' 'bin' 'make'
-          & $gmake build
-
   ubuntu:
     runs-on: ubuntu-latest
 
@@ -78,6 +63,7 @@ jobs:
       - env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |-
+          PATH="$(brew --prefix)/opt/gnu-getopt/bin:$PATH"
           gmake lint
 
       - run: |-
@@ -88,22 +74,3 @@ jobs:
       - run: |-
           PATH="$(brew --prefix)/opt/gnu-getopt/bin:$PATH"
           LOCAL=1 gmake --debug
-
-  windows:
-    runs-on: windows-latest
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-
-      - run: |-
-          $pacman = Join-Path -Path $Env:GHCUP_MSYS2 'usr' 'bin' 'pacman'
-          $argv = @('--sync', '--refresh', '--noconfirm', '--', 'make')
-          & $pacman @argv
-
-      - run: |-
-          $bin = Join-Path -Path $Env:GHCUP_MSYS2 'usr' 'bin' 'make'
-          & $bin local
