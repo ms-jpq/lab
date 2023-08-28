@@ -2,6 +2,9 @@
 Description      = Proxy qemu display -- %i
 CollectMode      = inactive-or-failed
 
+BindsTo          = %p@%i.socket
+After            = %p@%i.socket
+
 BindsTo          = 01-vm-display@%i.service
 After            = 01-vm-display@%i.service
 JoinsNamespaceOf = 01-vm-display@%i.service

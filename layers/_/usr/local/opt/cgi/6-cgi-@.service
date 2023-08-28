@@ -1,7 +1,7 @@
 [Unit]
 Description     = CGI -- /usr/local/opt/cgi/bin/%J
 CollectMode     = inactive-or-failed
-BindsTo         = 6-cgi-%j.socket
+BindsTo         = %p.socket
 
 [Service]
 Type            = oneshot

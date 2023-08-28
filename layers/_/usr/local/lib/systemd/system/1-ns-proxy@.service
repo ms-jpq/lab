@@ -1,8 +1,8 @@
 [Unit]
 Description          = netns proxy -- %E/netns/%I
 
-BindsTo              = 1-ns-proxy@%i.socket
-After                = 1-ns-proxy@%i.socket
+BindsTo              = %p@%i.socket
+After                = %p@%i.socket
 
 [Service]
 Restart              = on-failure
