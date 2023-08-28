@@ -1,11 +1,10 @@
 [Unit]
+Description      = SWTPM -- %t/local/swtpm/%I
+StopWhenUnneeded = yes
 CollectMode      = inactive-or-failed
-
-BindsTo          = 2-swtpm@%i.service
-After            = 2-swtpm@%i.service
 
 [Service]
 ProtectSystem    = strict
-RuntimeDirectory = local/swtpm/%I
+RuntimeDirectory = local/swtpm
 
-ExecStart        = /usr/local/opt/qemu/libexec/swtpm.sh %t/local/swtpm/%I
+ExecStart        = /usr/local/opt/qemu/libexec/swtpm.sh /%I %t/local/swtpm

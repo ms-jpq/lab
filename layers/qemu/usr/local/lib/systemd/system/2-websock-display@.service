@@ -3,9 +3,9 @@ Description      = Websockify qemu display -- %i
 StopWhenUnneeded = yes
 CollectMode      = inactive-or-failed
 
-BindsTo          = 01-vm-machine@%i.service
-After            = 01-vm-machine@%i.service
-PartOf           = 01-vm-proxy@%i.service
+BindsTo          = 2-qemu-q35@%i.service
+After            = 2-qemu-q35@%i.service
+PartOf           = 2-websock-proxy@%i.service
 
 [Service]
 Restart          = on-failure
@@ -13,4 +13,4 @@ ProtectSystem    = strict
 PrivateNetwork   = yes
 
 ExecStart        = websockify --web /usr/share/novnc --unix-target %t/virt-displays/%i.sock -- [::]:8080
-ExecStartPost    = try-until 1 curl --fail --silent --output /dev/null -- localhost:8080
+ExecStartPost    = /usr/local/libexec/retry.sh 0.1 curl --fail --silent --output /dev/null -- localhost:8080

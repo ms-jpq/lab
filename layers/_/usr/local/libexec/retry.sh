@@ -2,8 +2,9 @@
 
 set -o pipefail
 
-MACHINE="$1"
+SLEEP="$1"
+shift -- 1
 
-until ping -c 1 -w 1 -- "$MACHINE"; do
-  sleep -- 0.1
+until "$@"; do
+  sleep -- "$SLEEP"
 done
