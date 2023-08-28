@@ -16,5 +16,5 @@ WORKDIR /srv
 COPY . /srv
 
 ENV LOCAL=1
-RUN touch -- /.dockerenv && gmake examples && gmake
+RUN touch -- /.dockerenv && gmake example && gmake
 RUN ./main.sh --machine all

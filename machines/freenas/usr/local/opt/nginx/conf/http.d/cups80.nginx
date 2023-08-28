@@ -1,9 +1,10 @@
 server {
-  server_name plex.*;
+  server_name cups.*;
   listen      [::]:80 ipv6only=off;
   include     /usr/local/opt/nginx/conf/websocket.nginx;
 
   location / {
-    proxy_pass http://localhost:32400:/;
+    # proxy_set_header Host localhost;
+    proxy_pass http://unix:/run/cups/cups.sock:/;
   }
 }

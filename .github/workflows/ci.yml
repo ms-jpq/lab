@@ -43,7 +43,7 @@ jobs:
           gmake lint
 
       - run: |-
-          LOCAL=1 gmake examples
+          LOCAL=1 gmake example
           LOCAL=1 gmake
 
       - run: |-
