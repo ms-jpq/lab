@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-LONG_OPTS='cpu:,mem:,qmp:,monitor:,vnc:,bridge:,drive:,macvtap:'
+LONG_OPTS='cpu:,mem:,qmp:,monitor:,bridge:,drive:,macvtap:'
 GO="$(getopt --options='' --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
@@ -23,10 +23,6 @@ while (($#)); do
     ;;
   --monitor)
     MONITOR="$2"
-    shift -- 2
-    ;;
-  --vnc)
-    VNC="$2"
     shift -- 2
     ;;
   --bridge)
@@ -60,16 +56,11 @@ ARGV=(
   qemu-system-x86
   -nodefaults
   -no-user-config
-  -machine 'type=q35,accel=kvm'
+  -machine 'microvm,x-option-roms=off,pit=off,pic=off,isa-serial=off,rtc=off,accel=kvm'
   -cpu host
   -smp "$CPU"
-  -m "${MEM:-"size=8G"}"
-  -bios '/usr/share/qemu/OVMF.fd'
-)
-
-ARGV+=(
-  -device virtio-rng-pci-non-transitional
-  -device virtio-balloon-pci-non-transitional
+  -m "${MEM:-"size=1G"}"
+  -kernel vmlinux
 )
 
 if [[ -v QMP ]]; then
@@ -80,15 +71,7 @@ if [[ -v MONITOR ]]; then
   ARGV+=(-monitor "unix:$MONITOR,server,nowait")
 fi
 
-ARGV+=(
-  -vnc "$VNC"
-  -device "ich9-intel-hda"
-  -device 'virtio-gpu-pci'
-  -device 'virtio-keyboard-pci'
-  -device 'virtio-tablet-pci'
-)
-
-NIC='model=virtio-net-pci-non-transitional'
+NIC='model=virtio-net-device'
 ARGV+=(-nic "bridge,br=$BRIDGE,$NIC")
 
 if [[ -v MACVTAP ]]; then
@@ -100,7 +83,7 @@ for IDX in "${!DRIVES[@]}"; do
   ID="dri$IDX"
   ARGV+=(
     -drive "if=none,discard=unmap,format=raw,aio=io_uring,id=$ID,file=$DRIVE"
-    -device "virtio-blk-pci-non-transitional,drive=$ID"
+    -device "virtio-blk-device,drive=$ID"
   )
 done
 
