@@ -131,6 +131,7 @@ for VF in "${VFIO[@]}"; do
 done
 
 for MDEV in "${MDEVS[@]}"; do
+  # display=on,ramfb=on,x-igd-opregion=on,driver=vfio-pci-nohotplug
   ARGV+=(-device "vfio-pci,sysfsdev=$MDEV")
 done
 
