@@ -2,8 +2,8 @@
 Description      = Proxy qemu display -- %i
 CollectMode      = inactive-or-failed
 
-BindsTo          = %p@%i.socket
-After            = %p@%i.socket
+BindsTo          = %N.socket
+After            = %N.socket
 
 BindsTo          = 01-vm-display@%i.service
 After            = 01-vm-display@%i.service

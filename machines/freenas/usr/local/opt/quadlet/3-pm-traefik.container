@@ -14,8 +14,7 @@ Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=8080
 Label         = traefik.http.routers.%J.rule=Host(`^%J\..+`)
 
-Network       = systemd-traefik
-Network       = systemd-ingress
+Network       = %p.network
 
 PublishPort   = 127.0.0.53:8888:80
 

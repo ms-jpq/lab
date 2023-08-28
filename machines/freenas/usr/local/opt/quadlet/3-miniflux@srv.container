@@ -21,6 +21,9 @@ Environment   = CREATE_ADMIN=1
 Environment   = ADMIN_USERNAME=1
 Environment   = ADMIN_PASSWORD=123456
 
+Network       = %p.network
+Network       = 3-pm-traefik.network
+
 [Service]
 Restart       = on-failure
 

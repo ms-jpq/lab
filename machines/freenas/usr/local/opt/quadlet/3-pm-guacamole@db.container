@@ -14,6 +14,8 @@ Environment      = POSTGRES_DB=pdb
 Environment      = POSTGRES_USER=username
 Environment      = POSTGRES_PASSWORD=password
 
+Network          = %p.network
+
 Volume           = %T:/docker-entrypoint-initdb.d:ro
 Volume           = %S/local/docker/guacamole:%S/postgresql/data
 
