@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-LONG_OPTS='cpu:,mem:,qmp:,monitor:,vnc:,bridge:,drive:,macvtap:'
+LONG_OPTS='cpu:,mem:,qmp:,monitor:,vnc:,bridge:,drive:,macvtap:,vfio:,mdev:'
 GO="$(getopt --options='' --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
@@ -10,6 +10,8 @@ eval -- set -- "$GO"
 source -- /etc/iscsi/initiatorname.iscsi
 
 DRIVES=()
+VFIO=()
+MDEVS=()
 while (($#)); do
   case "$1" in
   --cpu)
@@ -42,6 +44,14 @@ while (($#)); do
     ;;
   --macvtap)
     MACVTAP="$2"
+    shift -- 2
+    ;;
+  --vfio)
+    VFIO+=("$2")
+    shift -- 2
+    ;;
+  --mdev)
+    MDEVS+=("$2")
     shift -- 2
     ;;
   --)
@@ -114,6 +124,14 @@ for IDX in "${!DRIVES[@]}"; do
     -drive "if=none,discard=unmap,format=raw,aio=io_uring,id=$ID,file=$DRIVE"
     -device "virtio-blk-pci-non-transitional,drive=$ID"
   )
+done
+
+for VF in "${VFIO[@]}"; do
+  ARGV+=(-device "vfio-pci,host=$VF")
+done
+
+for MDEV in "${MDEVS[@]}"; do
+  ARGV+=(-device "vfio-pci,sysfsdev=$MDEV")
 done
 
 ARGV+=("$@")
