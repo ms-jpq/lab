@@ -1,12 +1,12 @@
 [Match]
-Name                    = vtor
-Driver                  = dummy
+Name              = vtor
+Driver            = dummy
 
 [Link]
-RequiredForOnline       = no
+RequiredForOnline = no
 
 [Network]
-Address                 = ${IPV4_IF}
+Address           = ${IPV4_IF}
 
-Domains                 = ~onion ~exit
-DNS                     = ${IPV4_ADDR}
+Domains           = ~onion ~exit
+DNS               = ${IPV4_ADDR}

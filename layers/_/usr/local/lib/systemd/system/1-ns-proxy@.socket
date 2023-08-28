@@ -1,9 +1,0 @@
-[Unit]
-Description  = netns proxy -- %t/local/ns-proxy/%J.sock
-
-[Socket]
-RemoveOnStop = yes
-ListenStream = %t/local/ns-proxy/%J.sock
-
-[Install]
-WantedBy     = sockets.target
