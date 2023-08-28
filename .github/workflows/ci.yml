@@ -27,7 +27,7 @@ jobs:
           $gmake = Join-Path -Path $Env:GHCUP_MSYS2 'usr' 'bin' 'make'
           & $gmake build
 
-  lint:
+  linux:
     runs-on: ubuntu-latest
 
     steps:
@@ -58,3 +58,32 @@ jobs:
       - run: |-
           gmake fmt
           git diff --exit-code
+
+  macos:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - uses: actions/setup-node@v3
+
+      - run: |-
+          brew install -- bash make gnu-getopt
+
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |-
+          gmake lint
+
+      - run: |-
+          PATH="$(brew --prefix)/opt/gnu-getopt/bin:$PATH"
+          LOCAL=1 gmake example
+          LOCAL=1 gmake
+
+      - run: |-
+          PATH="$(brew --prefix)/opt/gnu-getopt/bin:$PATH"
+          LOCAL=1 gmake --debug
