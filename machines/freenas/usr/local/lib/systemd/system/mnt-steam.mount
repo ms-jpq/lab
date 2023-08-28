@@ -1,0 +1,10 @@
+[Unit]
+Description = Emergency Mount -- %f
+Requires    = zfs-volume-wait.service
+After       = zfs-volume-wait.service
+
+# Need to disable iscsi sharing before mounting
+[Mount]
+Options     = sys_immutable,ro
+Where       = /media/steam
+What        = /dev/zvol/brown/zvols/steam-part2

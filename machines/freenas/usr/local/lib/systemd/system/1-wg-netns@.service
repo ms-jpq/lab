@@ -1,0 +1,19 @@
+[Unit]
+Description      = Wireguard netns -- %E/netns/%I
+StopWhenUnneeded = yes
+After            = network-online.target
+
+[Service]
+Type             = oneshot
+RemainAfterExit  = yes
+Restart          = on-failure
+
+EnvironmentFile  = -/usr/local/etc/default/%I.wgns.env
+Environment      = NETNS=%I
+Environment      = CONFD=%t/local/netns/%I
+Environment      = FWMARK=0x0
+
+ExecStart        = /usr/local/opt/wireguard/libexec/netns.sh up     ${NETNS} ${CONFD} ${FWMARK}
+ExecStart        = /usr/local/opt/wireguard/libexec/netns.sh reload ${NETNS} ${CONFD} ${FWMARK}
+ExecReload       = /usr/local/opt/wireguard/libexec/netns.sh reload ${NETNS} ${CONFD} ${FWMARK}
+ExecStopPost     = /usr/local/opt/wireguard/libexec/netns.sh down   ${NETNS} ${CONFD} ${FWMARK}

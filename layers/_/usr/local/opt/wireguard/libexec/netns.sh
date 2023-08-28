@@ -4,7 +4,7 @@ set -o pipefail
 
 ACTION="$1"
 NETNS="$2"
-CONF_D=("$3/"*.conf)
+WG_CONFS=("$3/"*.conf)
 FWMARK="$4"
 
 ETC="/etc/netns/$NETNS"
@@ -18,16 +18,15 @@ b2() {
 }
 
 up() {
-  for CONF in "${CONF_D[@]}"; do
+  for CONF in "${WG_CONFS[@]}"; do
     WG="$(b2 "$CONF")"
     ip link add dev "$WG" type wireguard
     ip link set dev "$WG" netns "$NETNS"
   done
-
 }
 
 down() {
-  for CONF in "${CONF_D[@]}"; do
+  for CONF in "${WG_CONFS[@]}"; do
     WG="$(b2 "$CONF")"
     ip link del dev "$WG" type wireguard || true
   done
@@ -35,7 +34,7 @@ down() {
 
 reload() {
   declare -A -- ACC
-  for CONF in "${CONF_D[@]}"; do
+  for CONF in "${WG_CONFS[@]}"; do
     WG="$(b2 "$CONF")"
 
     DS="$(awk '/DNS =/ { print $NF }' "$CONF")"

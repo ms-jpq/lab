@@ -1,6 +1,6 @@
 [Unit]
-Description    = AutoMount -- /%P
+Description    = AutoMount -- /%f
 
 [Automount]
 TimeoutIdleSec = 1h
-Where          = /%P
+Where          = /%f

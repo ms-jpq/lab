@@ -1,0 +1,23 @@
+[[Unit]]
+Description       = Plex media server
+RequiresMountsFor = /media/m5_assert([ENV_FS_NTFS])
+
+[[Container]]
+Image             = lscr.io/linuxserver/plex:latest
+AutoUpdate        = registry
+
+Network           = host
+
+Volume            = %S/local/docker/plex:/config
+Volume            = %V/local/plex:/transcode
+
+Volume            = /media/m5_assert([ENV_FS_DOWNLOADS])/done:/media/downloads:ro
+Volume            = /media/m5_assert([ENV_FS_MOVIES]):/media/movies:ro
+Volume            = /media/m5_assert([ENV_FS_TV]):/media/tv:ro
+Volume            = /media/m5_assert([ENV_FS_NTFS]):/media/ntfs:ro
+
+[[Service]]
+Restart           = on-failure
+
+[[Install]]
+WantedBy          = default.target

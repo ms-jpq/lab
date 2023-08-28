@@ -1,0 +1,15 @@
+[Unit]
+Description = DDclient -- %I
+
+[Container]
+Image       = lscr.io/linuxserver/ddclient:latest
+AutoUpdate  = registry
+
+# Network     = host
+Volume      = /usr/local/opt/ddclient/%I:/config
+
+[Service]
+Restart     = on-failure
+
+[Install]
+WantedBy    = default.target

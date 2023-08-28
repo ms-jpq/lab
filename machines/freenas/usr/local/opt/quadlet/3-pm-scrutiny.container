@@ -1,0 +1,31 @@
+[Unit]
+Description   = Smartd analyzer
+
+BindsTo       = 6-pm-proxy-%j@8080.socket
+After         = 6-pm-proxy-%j@8080.socket
+
+[Container]
+Image         = ghcr.io/analogj/scrutiny:master-omnibus
+AutoUpdate    = registry
+RunInit       = yes
+
+AddCapability = SYS_RAWIO
+
+Volume        = %t/udev:/run/udev:ro
+Volume        = %S/local/docker/scrutiny/config:/opt/scrutiny/config
+Volume        = %S/local/docker/scrutiny/db:/opt/scrutiny/influxdb
+
+AddDevice     = /dev/sda
+AddDevice     = /dev/sdb
+AddDevice     = /dev/sdc
+AddDevice     = /dev/sdd
+AddDevice     = /dev/sde
+AddDevice     = /dev/sdf
+AddDevice     = /dev/sdg
+AddDevice     = /dev/sdh
+AddDevice     = /dev/sdi
+AddDevice     = /dev/sdj
+AddDevice     = /dev/sdk
+
+[Service]
+Restart       = on-failure

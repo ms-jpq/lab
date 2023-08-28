@@ -1,0 +1,12 @@
+[Unit]
+Description = Speedtestd
+
+BindsTo     = 6-pm-proxy-%j@80.socket
+After       = 6-pm-proxy-%j@80.socket
+
+[Container]
+Image       = lscr.io/linuxserver/librespeed:latest
+AutoUpdate  = registry
+
+[Service]
+Restart     = on-failure
