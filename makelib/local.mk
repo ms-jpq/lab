@@ -6,8 +6,6 @@ sp := $(e) $(e)
 
 M4 := ./libexec/m4.sh $(shell printf -- '%s ' ./layers/_/usr/local/include/m4/*.m4)
 
-$(VAR)/sh/libexec/lsync.sh: | $(VAR)/sh
-
 
 define LOCAL_D_TEMPLATE
 $(TMP)/$1/$(patsubst $1/%,layers/__/%,$2)/: | $(TMP)/$1/$(dir $(patsubst $1/%,layers/__/%,$2))

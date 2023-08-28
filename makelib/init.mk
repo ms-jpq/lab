@@ -53,12 +53,3 @@ $(VAR)/bin/shfmt: | $(VAR)/bin
 	URI='https://github.com/mvdan/sh/releases/latest/download/shfmt_$(V_SHFMT)_$(OS)_$(GOARCH)'
 	$(CURL) --output '$@' -- "$$URI"
 	chmod +x '$@'
-
-
-$(VAR)/sh: | $(VAR)
-	if [[ -d '$@' ]]; then
-		cd -- '$@'
-		git pull --recurse-submodules --no-tags '--jobs=$(NPROC)'
-	else
-		git clone --recurse-submodules --shallow-submodules --depth=1 '--jobs=$(NPROC)' -- 'https://github.com/ms-jpq/shell_rc' '$@'
-	fi
