@@ -11,7 +11,7 @@ for BIN in /usr/local/opt/cgi/bin/*; do
     NAME="$(systemd-escape -- "${BIN##*/}")"
     NAME="6-cgi-$NAME"
     SOCK="$RUN/$NAME.socket"
-    cp -v -f -- /usr/local/opt/cgi/6-cgi-@.service "$RUN/$NAME.service"
+    cp -v -f -- /usr/local/opt/cgi/6-cgi-@.service "$RUN/$NAME@.service"
     cp -v -f -- /usr/local/opt/cgi/6-cgi-.socket "$SOCK"
     ln -v -sf -- "$SOCK" "$WANTS/$NAME.socket"
   fi
