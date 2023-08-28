@@ -27,7 +27,7 @@ jobs:
           $gmake = Join-Path -Path $Env:GHCUP_MSYS2 'usr' 'bin' 'make'
           & $gmake build
 
-  linux:
+  ubuntu:
     runs-on: ubuntu-latest
 
     steps:
@@ -71,8 +71,9 @@ jobs:
 
       - uses: actions/setup-node@v3
 
+      # TODO: coreutils is not needed when `realpath` is available
       - run: |-
-          brew install -- bash make gnu-getopt
+          brew install -- bash make gnu-getopt coreutils
 
       - env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -87,3 +88,22 @@ jobs:
       - run: |-
           PATH="$(brew --prefix)/opt/gnu-getopt/bin:$PATH"
           LOCAL=1 gmake --debug
+
+  windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - run: |-
+          $pacman = Join-Path -Path $Env:GHCUP_MSYS2 'usr' 'bin' 'pacman'
+          $argv = @('--sync', '--refresh', '--noconfirm', '--', 'make')
+          & $pacman @argv
+
+      - run: |-
+          $bin = Join-Path -Path $Env:GHCUP_MSYS2 'usr' 'bin' 'make'
+          & $bin local
