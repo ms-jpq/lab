@@ -1,6 +1,11 @@
 .PHONY: facts
 
+ifeq ($(origin MACHINE), command line)
+MACHINES := machines/$(MACHINE)
+else
 MACHINES := $(patsubst %/,%,$(shell printf -- '%s ' machines/*/))
+endif
+
 INVENTORY := ./inventory.json
 SH_ENV := $(VAR)/sh/libexec/env.sh
 

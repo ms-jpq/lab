@@ -6,6 +6,9 @@ sp := $(e) $(e)
 
 M4 := ./libexec/m4.sh $(shell printf -- '%s ' ./layers/_/usr/local/include/m4/*.m4)
 
+$(VAR)/sh/libexec/lsync.sh: | $(VAR)/sh
+
+
 define LOCAL_D_TEMPLATE
 $(TMP)/$1/$(patsubst $1/%,layers/__/%,$2)/: | $(TMP)/$1/$(dir $(patsubst $1/%,layers/__/%,$2))
 	mkdir -p -- '$$@'
@@ -57,7 +60,7 @@ LOCALS.$1 :=
 
 MACH.$1.DIRS := $(shell find {$1,$2} -type d)
 MACH.$1.FILES := $(shell find {$1,$2} -type f,l)
-MACH.$1.LINKS := $(shell shopt -u failglob && grep -h -v -- '^#' $2/usr/local/opt/initd/links/*.txt $1/usr/local/opt/initd/links.txt | tr -s ' ' '!')
+MACH.$1.LINKS := $(shell shopt -u failglob && grep -h -v -- '^#' {$1,$2}/usr/local/opt/initd/links/*.txt | tr -s ' ' '!')
 
 MACH.$1.FACTS := $(FACTS) $(shell shopt -u failglob && printf -- '%s ' ./facts/$1*.env)
 

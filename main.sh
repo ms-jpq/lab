@@ -30,7 +30,7 @@ SRC="./var/tmp/machines/$MACHINE/fs"
 INVENTORY='./inventory.json'
 SH="./var/sh"
 
-gmake ./var/sh "$SRC"
+gmake MACHINE="$MACHINE" local
 
 set -x
 if ! [[ -d "$SRC" ]] || ! [[ -f "$INVENTORY" ]]; then
