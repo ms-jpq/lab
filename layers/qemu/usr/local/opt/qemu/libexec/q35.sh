@@ -61,10 +61,11 @@ ARGV=(
   -nodefaults
   -no-user-config
   -machine 'type=q35,accel=kvm'
-  -cpu host
+  -cpu 'host,hv-passthrough'
   -smp "$CPU"
   -m "${MEM:-"size=8G"}"
   -bios '/usr/share/qemu/OVMF.fd'
+  -rtc 'base=localtime'
 )
 
 ARGV+=(

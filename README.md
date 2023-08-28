@@ -46,9 +46,11 @@ Just generate the desired configurations, make sure they do not collide in file 
 
 ### Headless Workstation
 
-- Throw away [systemd-nspawn](https://manpages.ubuntu.com/manpages/jammy/man1/systemd-nspawn.1.html) dev containers
+- Disposable [systemd-nspawn](https://manpages.ubuntu.com/manpages/jammy/man1/systemd-nspawn.1.html) dev containers
 
-- Throw away systemd managed [qemu-q35](https://www.qemu.org/docs/master/system/qemu-manpage.html?highlight=q35) dev VMs (with SWTPM for windows 11)
+- Disposable systemd managed [qemu-microvm](https://www.qemu.org/docs/master/system/i386/microvm.html) linux VMs
+
+- Disposable systemd managed [qemu-q35](https://www.qemu.org/docs/master/system/qemu-manpage.html?highlight=q35) windows VMs
 
 - [VFIO](https://www.kernel.org/doc/html/latest/driver-api/vfio.html) for skyrim streaming via self-hosted "cloud" [stream](https://github.com/LizardByte/Sunshine)
 
