@@ -1,0 +1,9 @@
+[Unit]
+Description      = QEMU -- %I
+
+[Service]
+ProtectSystem    = strict
+RuntimeDirectory = local/qemu
+ReadWritePaths   = %C/local
+
+ExecStart        = /usr/local/opt/qemu/libexec/%J.sh %I %t/local/qemu

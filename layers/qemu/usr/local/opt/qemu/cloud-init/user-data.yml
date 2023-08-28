@@ -1,0 +1,18 @@
+#cloud-config
+---
+growpart:
+  mode: auto
+  devices:
+    - /
+  ignore_growroot_disabled: false
+
+hostname: |-
+  ${HOSTNAME}
+
+users:
+  - name: root
+    lock_passwd: false
+    hashed_passwd: |-
+      ${PASSWD}
+    ssh-authorized-keys: |-
+      ${AUTHORIZED_KEYS}

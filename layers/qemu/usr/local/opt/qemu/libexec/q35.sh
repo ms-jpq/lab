@@ -6,6 +6,9 @@ LONG_OPTS='cpu:,mem:,qmp:,monitor:,vnc:,bridge:,drive:,macvtap:'
 GO="$(getopt --options='' --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
+# shellcheck disable=SC1091
+source -- /etc/iscsi/initiatorname.iscsi
+
 DRIVES=()
 while (($#)); do
   case "$1" in
@@ -64,8 +67,12 @@ ARGV=(
   -cpu 'host,hv-passthrough'
   -smp "$CPU"
   -m "${MEM:-"size=8G"}"
+)
+
+ARGV+=(
   -bios '/usr/share/qemu/OVMF.fd'
   -rtc 'base=localtime'
+  -device 'intel-iommu,caching-mode=on'
 )
 
 ARGV+=(
@@ -94,6 +101,10 @@ ARGV+=(-nic "bridge,br=$BRIDGE,$NIC")
 
 if [[ -v MACVTAP ]]; then
   ARGV+=(-nic "tap,script=no,downscript=no,ifname=$MACVTAP,$NIC")
+fi
+
+if [[ -v InitiatorName ]]; then
+  ARGV+=(-iscsi "$InitiatorName")
 fi
 
 for IDX in "${!DRIVES[@]}"; do

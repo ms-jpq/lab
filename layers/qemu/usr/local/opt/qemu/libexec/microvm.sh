@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-LONG_OPTS='cpu:,mem:,qmp:,monitor:,bridge:,drive:,macvtap:'
+LONG_OPTS='cpu:,mem:,qmp:,console:,monitor:,bridge:,drive:,macvtap:'
 GO="$(getopt --options='' --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
@@ -19,6 +19,10 @@ while (($#)); do
     ;;
   --qmp)
     QMP="$2"
+    shift -- 2
+    ;;
+  --console)
+    CONSOLE="$2"
     shift -- 2
     ;;
   --monitor)
@@ -60,8 +64,18 @@ ARGV=(
   -cpu host
   -smp "$CPU"
   -m "${MEM:-"size=1G"}"
-  -kernel vmlinux
 )
+
+ARGV+=(
+  -kernel vmlinux
+  -append 'reboot=triple'
+)
+
+if [[ -v CONSOLE ]]; then
+  ARGV+=(-serial "unix:server=on,wait=off,path=$CONSOLE")
+else
+  ARGV+=(-serial stdio)
+fi
 
 if [[ -v QMP ]]; then
   ARGV+=(-qmp "unix:$QMP,server,nowait")
