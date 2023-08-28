@@ -13,6 +13,9 @@ Label         = traefik.http.routers.%J.rule=Host(`^%J\..+`)
 
 Exec          = rcd --rc-web-gui --rc-no-auth --rc-addr=:8080 --dscp=LE
 
+Network       = %p.network
+Network       = 3-pm-traefik.network
+
 # m5_for([VOL], [
 Volume        = /media/VOL:/media/VOL:ro
 # ], m5_assert([ENV_FS_RCLONE]))

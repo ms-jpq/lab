@@ -3,7 +3,6 @@ Description      = Netman -- %J
 StopWhenUnneeded = yes
 
 [Network]
-Internal         = yes
 IPv6             = yes
 
 [Service]
