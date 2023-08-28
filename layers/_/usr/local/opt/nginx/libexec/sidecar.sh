@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-RUN='/run/local/nginx/conf'
+RUN="$1"
 
 CONF_D=(
   conf.d

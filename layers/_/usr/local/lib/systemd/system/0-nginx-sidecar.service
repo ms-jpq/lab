@@ -11,4 +11,4 @@ PrivateTmp       = yes
 ProtectSystem    = strict
 ReadWritePaths   = %t/local/nginx %T
 
-ExecStart        = /usr/local/opt/nginx/libexec/sidecar.sh
+ExecStart        = /usr/local/opt/nginx/libexec/sidecar.sh %t/local/nginx/conf
