@@ -1,5 +1,5 @@
 SocksPort   0
-DNSPort     127.0.0.53:3535
+DNSPort     ${IPV4_ADDR}:53
 
 TransPort 0.0.0.0:1080
 TransPort [::]:1080

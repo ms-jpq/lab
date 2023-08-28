@@ -1,6 +1,6 @@
 [Match]
 Name                    = vtor
-Driver                  = bridge
+Driver                  = dummy
 
 [Link]
 RequiredForOnline       = no
@@ -9,7 +9,8 @@ RequiredForOnline       = no
 ConfigureWithoutCarrier = yes
 LinkLocalAddressing     = yes
 
+Address                 = ${IPV4_IF}
 Address                 = 0:0:0:0:0:0:0:0/64
 
 Domains                 = ~onion ~exit
-DNS                     = 127.0.0.53:3535
+DNS                     = ${IPV4_ADDR}
