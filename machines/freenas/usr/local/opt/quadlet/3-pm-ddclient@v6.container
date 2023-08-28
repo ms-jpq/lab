@@ -1,15 +1,16 @@
 [Unit]
-Description = DDclient -- %I
+Description   = Podman -- %J@%I
 
 [Container]
-Image       = lscr.io/linuxserver/ddclient:latest
-AutoUpdate  = registry
+Image         = lscr.io/linuxserver/ddclient:latest
+ContainerName = %J-%I
+AutoUpdate    = registry
 
 # Network     = host
-Volume      = /usr/local/opt/ddclient/%I:/config
+Volume        = /usr/local/opt/ddclient/%I:/config
 
 [Service]
-Restart     = on-failure
+Restart       = on-failure
 
 [Install]
-WantedBy    = default.target
+WantedBy      = default.target

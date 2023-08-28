@@ -1,9 +1,10 @@
 [[Unit]]
-Description       = Plex media server
+Description       = Podman -- %J
 RequiresMountsFor = /media/m5_assert([ENV_FS_NTFS])
 
 [[Container]]
 Image             = lscr.io/linuxserver/plex:latest
+ContainerName     = %J
 AutoUpdate        = registry
 
 Network           = host

@@ -1,26 +1,27 @@
 [[Unit]]
-Description = Transmission BT
+Description   = Podman -- %J
 
-BindsTo     = 1-netns-proxy@transmission.socket
-After       = 1-netns-proxy@transmission.socket
-BindsTo     = 1-wg-netns@transmission.service
-After       = 1-wg-netns@transmission.service
+BindsTo       = 1-netns-proxy@transmission.socket
+After         = 1-netns-proxy@transmission.socket
+BindsTo       = 1-wg-netns@transmission.service
+After         = 1-wg-netns@transmission.service
 
 [[Container]]
-Image       = lscr.io/linuxserver/transmission:latest
-AutoUpdate  = registry
+Image         = lscr.io/linuxserver/transmission:latest
+ContainerName = %J
+AutoUpdate    = registry
 
-Network     = ns:%E/netns/transmission
+Network       = ns:%E/netns/transmission
 
-Environment = PGID=1000
-Environment = PUID=1000
-Environment = HOST_WHITELIST=
+Environment   = PGID=1000
+Environment   = PUID=1000
+Environment   = HOST_WHITELIST=
 
-Volume      = %S/local/docker/transmission:/config
-Volume      = /media/m5_assert([ENV_FS_DOWNLOADS]):/downloads
+Volume        = %S/local/docker/transmission:/config
+Volume        = /media/m5_assert([ENV_FS_DOWNLOADS]):/downloads
 
 [[Service]]
-Restart     = on-failure
+Restart       = on-failure
 
 [[Install]]
-WantedBy    = default.target
+WantedBy      = default.target

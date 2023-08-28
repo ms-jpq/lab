@@ -1,21 +1,22 @@
 [Unit]
-Description = VNC gui container
+Description   = Podman -- %J
 
 [Container]
-Image       = lscr.io/linuxserver/webtop:latest
-AutoUpdate  = registry
+Image         = lscr.io/linuxserver/webtop:latest
+ContainerName = %J
+AutoUpdate    = registry
 
-Label       = traefik.enable=true
-Label       = traefik.http.services.traefik.loadbalancer.server.port=3000
-Label       = traefik.http.routers.traefik.rule=Host(`^%J\..+`)
+Label         = traefik.enable=true
+Label         = traefik.http.services.%J.loadbalancer.server.port=3000
+Label         = traefik.http.routers.%J.rule=Host(`^%J\..+`)
 
-Environment = PGID=1000
-Environment = PUID=1000
+Environment   = PGID=1000
+Environment   = PUID=1000
 
-AddDevice   = /dev/dri
+AddDevice     = /dev/dri
 
-Volume      = %S/local/docker/webtop:/config
-Volume      = /media:/media
+Volume        = %S/local/docker/webtop:/config
+Volume        = /media:/media
 
 [Install]
-WantedBy    = default.target
+WantedBy      = default.target

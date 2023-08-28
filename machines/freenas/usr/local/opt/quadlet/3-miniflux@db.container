@@ -1,22 +1,21 @@
 [Unit]
-Description      = Miniflux -- %I
+Description      = Podman -- %J@%I
 StopWhenUnneeded = yes
 
 [Container]
 Image            = docker.io/_/postgres:13
+ContainerName    = %J-%I
 AutoUpdate       = registry
 RunInit          = yes
 
-# HealthCmd     = pg_isready
-PodmanArgs       = --health-cmd '["pg_isready", "--dbname", "pdb", "--username", "username"]'
+HealthStartupCmd = '["pg_isready", "--dbname", "pdb", "--username", "username"]'
 
 Environment      = POSTGRES_DB=pdb
 Environment      = POSTGRES_USER=username
 Environment      = POSTGRES_PASSWORD=password
 
-Network          = systemd-miniflux-internal
-
-Volume           = <%= fs.docker_vol %>/miniflux:%S/postgresql/data
+Volume           = %S/local/docker/miniflux:%S/postgresql/data
 
 [Service]
 Restart          = on-failure
+ExecStartPost    = podman wait --condition healthy -- %J

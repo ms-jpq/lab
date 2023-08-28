@@ -1,14 +1,15 @@
 [Unit]
-Description   = Smartd analyzer
+Description   = Podman -- %J
 
 [Container]
 Image         = ghcr.io/analogj/scrutiny:master-omnibus
+ContainerName = %J
 AutoUpdate    = registry
 RunInit       = yes
 
 Label         = traefik.enable=true
-Label         = traefik.http.services.traefik.loadbalancer.server.port=8080
-Label         = traefik.http.routers.traefik.rule=Host(`^%J\..+`)
+Label         = traefik.http.services.%J.loadbalancer.server.port=8080
+Label         = traefik.http.routers.%J.rule=Host(`^%J\..+`)
 
 AddCapability = SYS_RAWIO
 

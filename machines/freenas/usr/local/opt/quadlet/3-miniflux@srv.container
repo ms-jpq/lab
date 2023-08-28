@@ -1,27 +1,28 @@
 [Unit]
-Description = Miniflux -- %I
+Description   = Podman -- %J@%I
 
-BindsTo     = %p@db.container
-After       = %p@db.container
+BindsTo       = %p@db.container
+After         = %p@db.container
 
 [Container]
-Image       = ghcr.io/miniflux/miniflux:latest
-AutoUpdate  = registry
-RunInit     = yes
+Image         = ghcr.io/miniflux/miniflux:latest
+ContainerName = %J-%I
+AutoUpdate    = registry
+RunInit       = yes
 
-Label       = traefik.enable=true
-Label       = traefik.http.services.traefik.loadbalancer.server.port=8080
-Label       = traefik.http.routers.traefik.rule=Host(`^%J\..+`)
+Label         = traefik.enable=true
+Label         = traefik.http.services.%J.loadbalancer.server.port=8080
+Label         = traefik.http.routers.%J.rule=Host(`^%J\..+`)
 
-Environment = RUN_MIGRATIONS=1
-Environment = DATABASE_URL=postgres://username:password@systemd-00-podman-miniflux-pg/pdb?sslmode=disable
-Environment = PROXY_IMAGES=all
-Environment = CREATE_ADMIN=1
-Environment = ADMIN_USERNAME=1
-Environment = ADMIN_PASSWORD=123456
+Environment   = RUN_MIGRATIONS=1
+Environment   = DATABASE_URL=postgres://username:password@systemd-00-podman-miniflux-pg/pdb?sslmode=disable
+Environment   = PROXY_IMAGES=all
+Environment   = CREATE_ADMIN=1
+Environment   = ADMIN_USERNAME=1
+Environment   = ADMIN_PASSWORD=123456
 
 [Service]
-Restart     = on-failure
+Restart       = on-failure
 
 [Install]
-WantedBy    = default.target
+WantedBy      = default.target

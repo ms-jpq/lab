@@ -1,28 +1,29 @@
 [Unit]
-Description = Traefik ingress controller
+Description   = Podman -- %J
 
-BindsTo     = podman.socket
-After       = podman.socket
+BindsTo       = podman.socket
+After         = podman.socket
 
 [Container]
-Image       = docker.io/_/traefik:latest
-AutoUpdate  = registry
-RunInit     = yes
+Image         = docker.io/_/traefik:latest
+ContainerName = %J
+AutoUpdate    = registry
+RunInit       = yes
 
-Label       = traefik.enable=true
-Label       = traefik.http.services.traefik.loadbalancer.server.port=8080
-Label       = traefik.http.routers.traefik.rule=Host(`^%J\..+`)
+Label         = traefik.enable=true
+Label         = traefik.http.services.%J.loadbalancer.server.port=8080
+Label         = traefik.http.routers.%J.rule=Host(`^%J\..+`)
 
-Network     = systemd-traefik
-Network     = systemd-ingress
+Network       = systemd-traefik
+Network       = systemd-ingress
 
-PublishPort = 127.0.0.53:8888:80
+PublishPort   = 127.0.0.53:8888:80
 
-Volume      = /usr/local/opt/traefik:%E/traefik:ro
-Volume      = %t/podman/podman.sock:/var/run/docker.sock:ro
+Volume        = /usr/local/opt/traefik:%E/traefik:ro
+Volume        = %t/podman/podman.sock:/var/run/docker.sock:ro
 
 [Service]
-Restart     = on-failure
+Restart       = on-failure
 
 [Install]
-WantedBy    = default.target
+WantedBy      = default.target

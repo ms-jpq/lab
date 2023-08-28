@@ -1,0 +1,26 @@
+[Unit]
+Description      = Podman -- %J@%I
+StopWhenUnneeded = yes
+
+[Container]
+Image            = docker.io/_/postgres:15
+ContainerName    = %J-%I
+AutoUpdate       = registry
+RunInit          = yes
+
+HealthStartupCmd = '["pg_isready", "--dbname", "pdb", "--username", "username"]'
+
+Environment      = POSTGRES_DB=pdb
+Environment      = POSTGRES_USER=username
+Environment      = POSTGRES_PASSWORD=password
+
+Volume           = %T:/docker-entrypoint-initdb.d:ro
+Volume           = %S/local/docker/guacamole:%S/postgresql/data
+
+[Service]
+Restart          = on-failure
+PrivateTmp       = yes
+
+ExecStartPre     = /usr/local/libexec/sponge2.sh %T/init.sql systemd-run --collect --service-type oneshot --wait --pipe --property BindsTo=%n -- \
+                  podman run --rm --volume %T:%T --entrypoint /opt/guacamole/bin/initdb.sh -- docker.io/guacamole/guacamole:latest --postgres
+ExecStartPost    = podman wait --condition healthy -- %J
