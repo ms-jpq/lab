@@ -1,6 +1,7 @@
 .PHONY: nspawn nspawn.pull clobber.nspawn
 
 all: nspawn
+pull: nspawn.pull
 
 /usr/lib/systemd/system/systemd-nspawn@.service: | pkg._
 
@@ -13,6 +14,7 @@ clobber.nspawn:
 	sudo -- rm -v -rf -- /var/cache/local/nspawn/*
 
 TARBUNTU := https://cloud-images.ubuntu.com/releases/$(VERSION_ID)/release/ubuntu-$(VERSION_ID)-server-cloudimg-$(GOARCH)-root.tar.xz
+
 nspawn.pull: /var/cache/local/nspawn/cloudimg.tar.xz
 /var/cache/local/nspawn/cloudimg.tar.xz:
 	sudo -- mkdir -v -p -- '$(@D)'

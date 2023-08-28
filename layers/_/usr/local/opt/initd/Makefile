@@ -10,7 +10,7 @@ SHELL := bash
 
 .DEFAULT_GOAL := all
 
-.PHONY: clean clobber
+.PHONY: clean clobber all pull
 
 clean:
 	shopt -u failglob
