@@ -1,0 +1,7 @@
+---
+use_default_settings: true
+search:
+  autocomplete: "bing"
+server:
+  limiter: false
+  secret_key: "{{ uuid4() }}"

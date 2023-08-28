@@ -1,0 +1,26 @@
+[Unit]
+Description   = Podman -- %J@%I
+
+BindsTo       = %p@redis.container
+After         = %p@redis.container
+
+[Container]
+Image         = docker.io/searxng/searxng:latest
+ContainerName = %J-%I
+AutoUpdate    = registry
+
+Label         = traefik.enable=true
+Label         = traefik.http.services.%J.loadbalancer.server.port=8080
+Label         = traefik.http.routers.%J.rule=Host(`^%J\..+`)
+
+Environment   = SEARXNG_BASE_URL=
+
+Network       = 3-pm-traefik.network
+
+Volume        = /usr/local/opt/%J/settings.yml:%E/settings.yml
+
+[Service]
+Restart       = on-failure
+
+[Install]
+WantedBy      = default.target

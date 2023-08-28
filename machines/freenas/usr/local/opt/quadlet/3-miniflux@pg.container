@@ -17,7 +17,7 @@ Environment      = POSTGRES_PASSWORD=password
 Network          = %p.network
 Network          = %p1.network
 
-Volume           = %S/local/docker/miniflux:%S/postgresql/data
+Volume           = %S/local/docker/%J:%S/postgresql/data
 
 [Service]
 Restart          = on-failure

@@ -1,0 +1,9 @@
+[Unit]
+Description      = Netman -- %J
+StopWhenUnneeded = yes
+
+[Network]
+IPv6             = yes
+
+[Service]
+ExecStopPost     = podman network rm --force -- systemd-%p

@@ -18,8 +18,8 @@ Network       = %p.network
 
 PublishPort   = 127.0.0.53:8888:80
 
-Volume        = /usr/local/opt/traefik:%E/traefik:ro
 Volume        = %t/podman/podman.sock:/var/run/docker.sock:ro
+Volume        = /usr/local/opt/%J:%E/traefik:ro
 
 [Service]
 Restart       = on-failure

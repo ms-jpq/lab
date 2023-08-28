@@ -1,0 +1,25 @@
+[Unit]
+Description      = Podman -- %J@%I
+StopWhenUnneeded = yes
+
+BindsTo          = %p@redis.container
+After            = %p@redis.container
+
+[Container]
+Image            = docker.io/zedeus/nitter:latest
+ContainerName    = %J-%I
+AutoUpdate       = registry
+
+Label            = traefik.enable=true
+Label            = traefik.http.services.%J.loadbalancer.server.port=8080
+Label            = traefik.http.routers.%J.rule=Host(`^%J\..+`)
+
+Network          = 3-pm-traefik.network
+
+Volume           = /usr/local/opt/%J/nitter.conf:/src/nitter.conf:ro
+
+[Service]
+Restart          = on-failure
+
+[Install]
+WantedBy         = default.target

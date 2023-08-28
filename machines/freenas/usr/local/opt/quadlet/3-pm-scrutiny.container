@@ -28,8 +28,8 @@ AddDevice     = /dev/sdk
 Network       = 3-pm-traefik.network
 
 Volume        = %t/udev:/run/udev:ro
-Volume        = %S/local/docker/scrutiny/config:/opt/scrutiny/config
-Volume        = %S/local/docker/scrutiny/db:/opt/scrutiny/influxdb
+Volume        = %S/local/docker/%J/config:/opt/scrutiny/config
+Volume        = %S/local/docker/%J/db:/opt/scrutiny/influxdb
 
 [Service]
 Restart       = on-failure

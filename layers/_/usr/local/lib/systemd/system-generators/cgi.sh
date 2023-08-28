@@ -5,6 +5,8 @@ set -o pipefail
 RUN="$1"
 WANTS="$RUN/sockets.target.wants"
 
+# SYSTEMD_SCOPE="${SYSTEMD_SCOPE:system}"
+
 mkdir -v -p -- "$WANTS"
 for BIN in /usr/local/opt/cgi/bin/*; do
   if [[ -x "$BIN" ]]; then

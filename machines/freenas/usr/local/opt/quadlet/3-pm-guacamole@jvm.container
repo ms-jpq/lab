@@ -3,8 +3,8 @@ Description   = Podman -- %J@%I
 
 BindsTo       = %p@c.service
 After         = %p@c.service
-BindsTo       = %p@db.service
-After         = %p@db.service
+BindsTo       = %p@pg.service
+After         = %p@pg.service
 
 [Container]
 Image         = docker.io/guacamole/guacamole:latest

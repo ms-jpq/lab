@@ -7,7 +7,7 @@ ContainerName = %J-%I
 AutoUpdate    = registry
 
 # Network     = host
-Volume        = /usr/local/opt/ddclient/%I:/config
+Volume        = /usr/local/opt/%J/%I:/config
 
 [Service]
 Restart       = on-failure

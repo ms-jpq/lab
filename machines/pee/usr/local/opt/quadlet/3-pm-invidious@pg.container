@@ -1,0 +1,18 @@
+[Unit]
+Description      = Podman -- %J@%I
+StopWhenUnneeded = yes
+
+[Container]
+Image            = docker.io/_/postgres:15
+ContainerName    = %J-%I
+AutoUpdate       = registry
+RunInit          = yes
+
+Environment      = POSTGRES_USER=kemal
+Environment      = POSTGRES_PASSWORD=kemal
+Environment      = POSTGRES_DB=pdb
+
+Network          = 3-pm-traefik.network
+
+[Service]
+Restart          = on-failure

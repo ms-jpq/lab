@@ -1,0 +1,29 @@
+---
+db:
+  host: postgres
+  port: 5432
+  dbname: pdb
+  user: kemal
+  password: kemal
+
+check_tables: True
+statistics_enabled: True
+
+https_only: True
+domain: youtube.{{ DOMAIN }}
+
+login_enabled: False
+registration_enabled: False
+
+channel_threads: m5_assert([ENV_NPROC])
+feed_threads: m5_assert([ENV_NPROC])
+
+default_user_preferences:
+  autoplay: True
+  continue: True
+  continue_autoplay: True
+  related_videos: True
+  unseen_only: True
+  # quality: dash
+
+  default_home: Trending

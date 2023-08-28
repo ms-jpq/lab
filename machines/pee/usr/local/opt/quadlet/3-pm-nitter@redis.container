@@ -1,0 +1,14 @@
+[Unit]
+Description      = Podman -- %J@%I
+StopWhenUnneeded = yes
+
+[Container]
+Image            = docker.io/_/redis:6
+ContainerName    = %J-%I
+AutoUpdate       = registry
+RunInit          = yes
+
+Network          = 3-pm-traefik.network
+
+[Service]
+Restart          = on-failure

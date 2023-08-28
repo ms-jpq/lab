@@ -17,7 +17,7 @@ AddDevice     = /dev/dri
 
 Network       = 3-pm-traefik.network
 
-Volume        = %S/local/docker/webtop:/config
+Volume        = %S/local/docker/%J:/config
 Volume        = /media:/media
 
 [Install]

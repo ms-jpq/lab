@@ -1,0 +1,35 @@
+[Unit]
+Description      = Podman -- %J@%I
+StopWhenUnneeded = yes
+
+BindsTo          = %p@pg.container
+After            = %p@pg.container
+
+[Container]
+Image            = docker.io/etherpad/etherpad:latest
+ContainerName    = %J-%I
+AutoUpdate       = registry
+
+Label            = traefik.enable=true
+Label            = traefik.http.services.%J.loadbalancer.server.port=9001
+Label            = traefik.http.routers.%J.rule=Host(`^%J\..+`)
+
+Environment      = DB_HOST=postgres
+Environment      = DB_NAME=pdb
+Environment      = DB_PASS=password
+Environment      = DB_TYPE=postgres
+Environment      = DB_USER=username
+Environment      = DEFAULT_PAD_TEXT=...
+Environment      = LOGLEVEL=ERROR
+Environment      = PAD_OPTIONS_NO_COLORS=true
+Environment      = PAD_OPTIONS_USE_MONOSPACE_FONT=true
+Environment      = TITLE=📝
+Environment      = TRUST_PROXY=true
+
+Network          = 3-pm-traefik.network
+
+[Service]
+Restart          = on-failure
+
+[Install]
+WantedBy         = default.target

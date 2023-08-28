@@ -1,8 +1,8 @@
 [Unit]
 Description   = Podman -- %J@%I
 
-BindsTo       = %p@db.container
-After         = %p@db.container
+BindsTo       = %p@pg.container
+After         = %p@pg.container
 
 [Container]
 Image         = ghcr.io/miniflux/miniflux:latest

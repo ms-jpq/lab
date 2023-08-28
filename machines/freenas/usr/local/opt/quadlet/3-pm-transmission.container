@@ -17,7 +17,7 @@ Environment   = PGID=1000
 Environment   = PUID=1000
 Environment   = HOST_WHITELIST=
 
-Volume        = %S/local/docker/transmission:/config
+Volume        = %S/local/docker/%J:/config
 Volume        = /media/m5_assert([ENV_FS_DOWNLOADS]):/downloads
 
 [[Service]]
