@@ -1,0 +1,18 @@
+[Unit]
+Description      = Tor Template -- %t/local/tor/%I/torrc
+StopWhenUnneeded = yes
+
+BindsTo          = 1-ip-alloc@%j.service
+After            = 1-ip-alloc@%j.service
+
+[Service]
+Type             = oneshot
+RemainAfterExit  = yes
+Restart          = on-failure
+ProtectSystem    = strict
+PrivateTmp       = yes
+RuntimeDirectory = local/tor/%I
+ReadWritePaths   = %t/local/tor/%I %T
+
+EnvironmentFile  = %t/local/ip/%J.env
+ExecStart        = /usr/local/libexec/envsubst2.sh /usr/local/opt/tor/torrc %t/local/tor/%I/torrc

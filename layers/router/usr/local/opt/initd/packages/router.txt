@@ -5,3 +5,4 @@
 + qrencode
 + squid
 + squidclient
++ tor
