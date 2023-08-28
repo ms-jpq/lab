@@ -19,4 +19,4 @@ ExecStart        = /usr/local/libexec/envsubst2.sh /usr/local/opt/tor/torrc %t/l
 ExecStart        = /usr/local/libexec/envsubst2.sh /usr/local/opt/tor/70-vtor.network %t/systemd/network/70-vtor.network
 ExecStart        = networkctl reload
 ExecStopPost     = rm -v -fr -- %t/systemd/network/70-vtor.network
-ExecStopPost     = -networkctl remove -- vtor
+ExecStopPost     = -networkctl delete -- vtor

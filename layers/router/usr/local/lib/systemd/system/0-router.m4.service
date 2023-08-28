@@ -1,21 +1,6 @@
 [[Unit]]
 Description     = Router monitor
 
-Wants           = chrony.service
-After           = chrony.service
-
-Wants           = squid.service
-After           = squid.service
-
-Wants           = 1-tc@cake.service
-After           = 1-tc@cake.service
-
-Wants           = 1-wg-if@wg.service
-After           = 1-wg-if@wg.service
-
-Wants           = 0-port-fwd.service
-After           = 0-port-fwd.service
-
 # m5_for([LAN], [
 Wants           = 1-lan@LAN.service
 After           = 1-lan@LAN.service

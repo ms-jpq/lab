@@ -6,11 +6,7 @@ Driver                  = dummy
 RequiredForOnline       = no
 
 [Network]
-ConfigureWithoutCarrier = yes
-LinkLocalAddressing     = yes
-
 Address                 = ${IPV4_IF}
-Address                 = 0:0:0:0:0:0:0:0/64
 
 Domains                 = ~onion ~exit
 DNS                     = ${IPV4_ADDR}
