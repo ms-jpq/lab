@@ -42,7 +42,7 @@ Just generate the desired configurations, make sure they do not collide in file 
 
 - [ssl alpn](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation) based TCP port 443 sharing with HTTPS & SSH
 
-- DHCP callback based port forwarding (use client DNS instead of static DHCP lease + fixed IP alloc)
+- DHCP callback based port forwarding (match client FQDN instead of static DHCP lease + fixed IP alloc)
 
 ### Headless Workstation
 
@@ -78,7 +78,7 @@ Just generate the desired configurations, make sure they do not collide in file 
 
 - Apple [AirPrint](https://www.cups.org/) server
 
-### TV
+### TV Box
 
 - [Socket activated](https://www.freedesktop.org/software/systemd/man/systemd.socket.html) lambda functions for IOS shortcuts
 
@@ -205,3 +205,9 @@ done
 
 STDIN="$(head --bytes "$BYTES")"
 ```
+
+## Ideas
+
+- Use [`g_mass_storage`](https://www.kernel.org/doc/html/latest/usb/mass-storage.html) kernel module to share ISCSI over USB to xbox
+
+- Azure glacier storage is cheap?
