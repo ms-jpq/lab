@@ -21,7 +21,7 @@ DNSOverTLS                         = opportunistic
 Anonymize                          = yes
 
 [[DHCPv6]]
-UseAddress                         = no
+# UseAddress                         = yes
 # WithoutRA                          = solicit
 ForceDHCPv6PDOtherInformation      = yes
 

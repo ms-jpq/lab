@@ -1,5 +1,4 @@
 .PHONY: reload
 
 reload: | pkg
-	systemctl -- daemon-reload
-	systemctl --failed
+	./libexec/systemd-reload.sh

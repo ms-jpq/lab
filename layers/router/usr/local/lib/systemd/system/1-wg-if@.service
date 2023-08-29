@@ -1,9 +1,6 @@
 [Unit]
 Description      = Wireguard server -- %I
 
-Before           = nginx.service
-
-Requires         = 0-wg-private-key.service
 After            = 0-wg-private-key.service
 
 BindsTo          = 1-ip-alloc@%i.service
