@@ -68,7 +68,7 @@ Just generate the desired configurations, make sure they do not collide in file 
 
 - [Backup daemon](https://rclone.org/) into ["econ cloud"](https://www.jottacloud.com/) (wtf, how are they a viable business)
 
-- Systemd managed [containers](https://podman.io/)
+- [Systemd managed](https://podman.io/) containers
 
 - [Intel GVT-g](https://www.intel.com/content/www/us/en/support/articles/000093216/graphics/intel-uhd-graphics-family.html) accelerated [迅雷](https://www.xunlei.com/) VM
 
