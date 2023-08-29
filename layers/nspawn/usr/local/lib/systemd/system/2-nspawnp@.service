@@ -16,7 +16,7 @@ ReadWritePaths           = %t/systemd/nspawn %T %S/local/nspawn
 
 EnvironmentFile          = -/usr/local/etc/default/%I.nspawn.env
 Environment              = ROOT=%S/local/nspawn/%I/fs
-Environment              = CACHE=%C/local/nspawn
+Environment              = CACHE=%C/local/ns
 
 ExecStart                = /usr/local/opt/nspawn/libexec/start-pre.sh %i.nspawn ${ROOT} ${CACHE}
 ExecStopPost             = rm -v -fr -- %t/systemd/nspawn/%i.nspawn

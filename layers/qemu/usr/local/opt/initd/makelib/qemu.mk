@@ -6,7 +6,7 @@ clobber.qemu:
 	shopt -u failglob
 	sudo -- rm -v -rf -- /var/cache/local/qemu/*
 
-KVMBUNTU := https://cloud-images.ubuntu.com/releases/$(VERSION_ID)/release/ubuntu-$(VERSION_ID)-server-cloudimg-$(GOARCH)-disk-kvm.img
+KVMBUNTU := https://cloud-images.ubuntu.com/releases/$(VERSION_ID)/release/ubuntu-$(VERSION_ID)-server-cloudimg-$(GOARCH).img
 VIRTIO_WIN_IMG := https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso
 
 qemu.pull: /var/cache/local/qemu/cloudimg.qcow2

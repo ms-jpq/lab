@@ -42,8 +42,6 @@ Just generate the desired configurations, make sure they do not collide in file 
 
 - [ssl alpn](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation) based TCP port 443 sharing with HTTPS & SSH
 
-- DHCP callback based port forwarding (match client FQDN instead of static DHCP lease + fixed IP alloc)
-
 ### Headless Workstation
 
 - Disposable [systemd-nspawn](https://manpages.ubuntu.com/manpages/jammy/man1/systemd-nspawn.1.html) dev containers
