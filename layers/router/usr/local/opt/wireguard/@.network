@@ -1,12 +1,14 @@
 [Match]
-Name         = ${IFACE}
-Driver       = wireguard
+Name              = ${IFACE}
+
+[Link]
+RequiredForOnline = no
 
 [Network]
-IPMasquerade = both
+IPMasquerade      = both
 
-Address      = ${IPV6_IF}
-Address      = ${IPV4_IF}
+Address           = ${IPV6_IF}
+Address           = ${IPV4_IF}
 
-Domains      = ~${DOMAIN}
-DNS          = ${IPV6_ADDR} ${IPV4_ADDR}
+Domains           = ~${DOMAIN}
+DNS               = ${IPV6_ADDR} ${IPV4_ADDR}
