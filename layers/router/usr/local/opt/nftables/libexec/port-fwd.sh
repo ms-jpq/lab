@@ -2,6 +2,8 @@
 
 set -o pipefail
 
+
+
 # readarray -t -d $'\n' -- LINES < <(jq -r 'to_entries[] | "\(.key) \(.value | to_entries[] | "\(.key) . \(.value[])")"' <<<"$PORTS")
 
 # declare -A -- SPEC

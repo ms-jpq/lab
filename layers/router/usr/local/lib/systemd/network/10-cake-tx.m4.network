@@ -1,0 +1,36 @@
+[[Match]]
+Name                               = m5_assert([ENV_WAN_IF])
+
+[[Link]]
+RequiredForOnline                  = no
+
+[[Network]]
+ConfigureWithoutCarrier            = yes
+
+LinkLocalAddressing                = yes
+IPv6LinkLocalAddressGenerationMode = random
+
+DHCP                               = yes
+IPv6AcceptRA                       = yes
+IPv6Token                          = static:::69:420:420:69
+
+MulticastDNS                       = no
+DNSOverTLS                         = opportunistic
+
+[[DHCPv4]]
+Anonymize                          = yes
+
+[[DHCPv6]]
+UseAddress                         = no
+# WithoutRA                          = solicit
+ForceDHCPv6PDOtherInformation      = yes
+
+[[IPv6AcceptRA]]
+# DHCPv6Client                       = always
+
+# [CAKE]
+# TODO: re-enable on newer systemd
+# NAT                                = yes
+# FlowIsolationMode                  = dual-src-host
+# PriorityQueueingPreset             = diffserv4
+# Wash                               = yes
