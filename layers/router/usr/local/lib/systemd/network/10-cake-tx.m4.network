@@ -24,11 +24,11 @@ UseSIP                             = no
 
 [[DHCPv6]]
 # UseAddress                         = yes
-# WithoutRA                          = solicit
+WithoutRA                          = solicit
 ForceDHCPv6PDOtherInformation      = yes
 
 [[IPv6AcceptRA]]
-# DHCPv6Client                       = always
+DHCPv6Client                       = always
 
 # [CAKE]
 # TODO: re-enable on newer systemd

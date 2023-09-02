@@ -33,3 +33,6 @@ OtherInformation        = yes
 
 [IPv6Prefix]
 Prefix                  = ${IPV6_IF}
+
+# [DHCPv6PrefixDelegation]
+# SubnetId                = 0x${SUBNET_ID}
