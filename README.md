@@ -40,7 +40,7 @@ Just generate the desired configurations, make sure they do not collide in file 
 
 - [Certbot](https://certbot.eff.org/) daemon
 
-- [ssl alpn](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation) based TCP port 443 sharing with HTTPS & SSH
+- Protocol sharing http, ssh on port 80
 
 ### Headless Workstation
 
