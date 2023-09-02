@@ -20,12 +20,8 @@ readarray -t -- ROUTES <<<"$RS"
 IS="$(ip --json -4 addr show | jq --raw-output '.[].addr_info[] | "\(.local)/\(.prefixlen)"')"
 readarray -t -- INETS <<<"$IS"
 
-ENVS=("$RUN"/*.env "$VAR"/*.env)
-IPV4_A="$(sed --regexp-extended --quiet -- 's/^IPV4_IF=(.+)$/\1/p' "${ENVS[@]}")"
-SUBNET_A="$(sed --regexp-extended --quiet -- 's/^SUBNET_ID=(.+)$/\1/p' "${ENVS[@]}")"
-
+IPV4_A="$(sed --regexp-extended --quiet -- 's/^IPV4_IF=(.+)$/\1/p' "$RUN"/*.env "$VAR"/*.env)"
 readarray -t -- IPV4_ALLOC <<<"$IPV4_A"
-readarray -t -- SUBNET_ALLOC <<<"$SUBNET_A"
 
 N=("${ROUTES[@]}" "${INETS[@]}" "${IPV4_ALLOC[@]}")
 NOPE=()
@@ -47,21 +43,6 @@ IPV4_MAXADDR="$(jq --exit-status --raw-output '.MAXADDR' <<<"$IPV4_CALC")"
 IPV4_NETWORK="$(jq --exit-status --raw-output '.NETWORK' <<<"$IPV4_CALC")"
 IPV4_NETMASK="$(jq --exit-status --raw-output '.NETMASK' <<<"$IPV4_CALC")"
 
-declare -A -- SEEN=()
-for A in "${SUBNET_ALLOC[@]}"; do
-  if [[ -n "$A" ]]; then
-    SEEN["$A"]=1
-  fi
-done
-
-SUBNET_ID=1
-while true; do
-  if [[ -z "${SEEN["$SUBNET_ID"]:-}" ]]; then
-    break
-  fi
-  _=$((SUBNET_ID++))
-done
-
 tee <<-EOF | sponge -- "$RECORD"
 IPV4_IF=$IPV4_IF
 IPV4_ADDR=$IPV4_ADDR
@@ -72,7 +53,6 @@ IPV4_NETMASK=$IPV4_NETMASK
 IPV6_IF=$IPV6_ADDR/64
 IPV6_ADDR=$IPV6_ADDR
 IPV6_NETWORK=$IPV6_NETWORK
-SUBNET_ID=$SUBNET_ID
 EOF
 
 exec -- cat -- "$RECORD"

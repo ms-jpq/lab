@@ -12,6 +12,9 @@ IPv6LinkLocalAddressGenerationMode = random
 
 DHCP                               = yes
 IPv6AcceptRA                       = yes
+# TODO: systemd 250 -> DHCPPrefixDelegation
+DHCPv6PrefixDelegation             = yes
+# TODO: systemd 250, move under `[[IPv6AcceptRA]]`
 IPv6Token                          = static:::69:420:420:69
 
 MulticastDNS                       = no
@@ -23,14 +26,18 @@ UseHostname                        = no
 UseSIP                             = no
 
 [[DHCPv6]]
-# UseAddress                         = yes
 WithoutRA                          = solicit
+# TODO: this is deprecated in systemd 250
 ForceDHCPv6PDOtherInformation      = yes
 # TODO: maybe only for rogers?
 PrefixDelegationHint               = ::/56
 
 [[IPv6AcceptRA]]
 DHCPv6Client                       = always
+
+# TODO: systemd 250
+# [[DHCPPrefixDelegation]]
+# UplinkInterface                    = :self
 
 # [CAKE]
 # TODO: re-enable on newer systemd
