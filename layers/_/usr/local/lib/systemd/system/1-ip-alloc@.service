@@ -1,24 +1,25 @@
 [Unit]
-Description      = IPv4 alloc -- %t/local/ip/%I.env
-StopWhenUnneeded = yes
+Description              = IPv4 alloc -- %t/local/ip/%I.env
+StopWhenUnneeded         = yes
 
-BindsTo          = systemd-networkd.service
-After            = systemd-networkd.service
+After                    = network-online.target
 
 [Service]
-Type             = oneshot
-RemainAfterExit  = yes
-Restart          = on-failure
+Type                     = oneshot
+RemainAfterExit          = yes
+Restart                  = on-failure
 
-ProtectSystem    = strict
-PrivateTmp       = yes
-ReadWritePaths   = %t %T
+ProtectSystem            = strict
+PrivateTmp               = yes
+RuntimeDirectory         = local/ip
+RuntimeDirectoryPreserve = yes
+ReadWritePaths           = %t/local/ip %T
 
-Environment      = LOCK=%t/local/ip
-Environment      = IFACE=%I
-Environment      = IPV4_PREFIX=20
+Environment              = LOCK=%t/local/ip
+Environment              = IFACE=%I
+Environment              = IPV4_PREFIX=20
 
-EnvironmentFile  = -/usr/local/etc/default/%I.ip.env
+EnvironmentFile          = -/usr/local/etc/default/%I.ip.env
 
-ExecStart        = /usr/local/opt/network/libexec/ipalloc.sh ${LOCK} %S/local/ip ${IFACE} ${IPV4_PREFIX}
-ExecStopPost     = flock -- ${LOCK} rm -v -fr -- ${LOCK}/${IFACE}
+ExecStart                = /usr/local/opt/network/libexec/ipalloc.sh ${LOCK} %S/local/ip ${IFACE} ${IPV4_PREFIX}
+ExecStopPost             = flock -- ${LOCK} rm -v -fr -- ${LOCK}/${IFACE}

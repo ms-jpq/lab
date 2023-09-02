@@ -20,7 +20,6 @@ execl(
   *chain.from_iterable(project["optional-dependencies"].values()),
 )
 endef
-export -- PYDEPS
 
 CURL := curl --fail --location --no-progress-meter
 
@@ -29,7 +28,7 @@ $(VAR)/bin: | $(VAR)
 
 ./.venv/bin:
 	python3 -m venv -- './.venv'
-	'$@/python3' <<< "$$PYDEPS"
+	'$@/python3' <<< '$(PYDEPS)'
 
 ./node_modules/.bin:
 	npm install --upgrade --no-package-lock
