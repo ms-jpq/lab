@@ -5,7 +5,7 @@ set -o pipefail
 RUN="$1"
 VAR="$2"
 IFACE="$3"
-SUBNET="$4"
+IPV4_PREFIX="$4"
 RECORD="$RUN/$IFACE.env"
 
 if ! [[ -v LOCKED ]]; then
@@ -31,7 +31,7 @@ for ROUTE in "${N[@]}"; do
   fi
 done
 
-IPV4_IF="$("${0%/*}/ip4alloc.py" --verbose --no "${NOPE[@]}" -- "$SUBNET")"
+IPV4_IF="$("${0%/*}/ip4alloc.py" --verbose --no "${NOPE[@]}" -- "$IPV4_PREFIX")"
 IPV4_ADDR="${IPV4_IF%%/*}"
 IPV6_NETWORK="$("${0%/*}/ula64.sh" "$IFACE")"
 IPV6_ADDR="$IPV6_NETWORK:0000:0000:0000:0001"
@@ -49,10 +49,12 @@ IPV4_ADDR=$IPV4_ADDR
 IPV4_MINADDR=$IPV4_MINADDR
 IPV4_MAXADDR=$IPV4_MAXADDR
 IPV4_NETWORK=$IPV4_NETWORK
+IPV4_NET=$IPV4_NETWORK/$IPV4_PREFIX
 IPV4_NETMASK=$IPV4_NETMASK
 IPV6_IF=$IPV6_ADDR/64
 IPV6_ADDR=$IPV6_ADDR
 IPV6_NETWORK=$IPV6_NETWORK
+IPV6_NET=$IPV6_NETWORK:0000:0000:0000:0000/64
 EOF
 
 exec -- cat -- "$RECORD"

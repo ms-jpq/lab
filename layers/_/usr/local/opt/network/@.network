@@ -10,7 +10,6 @@ ConfigureWithoutCarrier = yes
 LinkLocalAddressing     = yes
 LLDP                    = yes
 EmitLLDP                = customer-bridge
-IPMasquerade            = both
 
 DHCPv6PrefixDelegation  = yes
 
