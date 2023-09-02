@@ -1,4 +1,3 @@
-# + linux-lowlatency-hwe-[]m5_assert([ENV_VERSION_ID])
 # + netdata
 # + netdata-plugins-python
 + bat
@@ -10,6 +9,7 @@
 + iperf3
 + jq
 + language-pack-zh-hans
++ linux-lowlatency-hwe-[]m5_assert([ENV_VERSION_ID])
 + m4
 + moreutils
 + mosh

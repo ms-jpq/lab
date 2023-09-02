@@ -34,7 +34,7 @@ WG_IDS=()
 WG_LINES=()
 DNSMAQ_HOSTS=()
 
-export -- DOMAIN IPV6 IPV4 SERVER_PUBLIC_KEY SERVER_NAME CLIENT_PRIVATE_KEY HTML_TITLE HTML_BODY
+export -- DOMAIN IPV6 IPV4 SERVER_PUBLIC_KEY SERVER_NAME CLIENT_PRIVATE_KEY
 
 P="$(sort --field-separator ',' <<<"$WG_PEERS")"
 readarray -t -d ',' -- PEERS <<<"$P"
@@ -63,7 +63,6 @@ for PEER in "${PEERS[@]}"; do
       SEEN["$IPV4"]="$ID"
       WG_IDS+=("$ID")
       DNSMAQ_HOSTS+=("${IPV4%%/*} $PEER.wg" "${IPV6%%/*} $PEER.wg")
-      CACHED="$CACHE/$ID.conf"
 
       if [[ ! -f "$CLIENT_PRIVATE_KEY" ]]; then
         wg genkey | sponge -- "$CLIENT_PRIVATE_KEY"
@@ -76,17 +75,15 @@ for PEER in "${PEERS[@]}"; do
 
       CONF="$(envsubst <"$SELF/peer.conf")"
       QR="$(qrencode --type utf8 <<<"$CONF")"
-      readarray -t -- LINES <<<"$QR"
       {
+        readarray -t -- LINES <<<"$QR"
         printf -- '%s\n\n\n' "$CONF"
         for LINE in "${LINES[@]}"; do
           printf -- '%s\n' "# $LINE"
         done
-      } | sponge -- "$CACHED"
+      } | sponge -- "$CACHE/$ID.txt"
 
-      HTML_TITLE="$ID"
-      HTML_BODY="$(<"$CACHED")"
-      envsubst <"$SELF/peer.html" | sponge -- "$CACHE/$ID.html"
+      HTML_TITLE="$ID" HTML_PRE="$CONF" HTML_CODE="$QR" envsubst <"$SELF/peer.html" | sponge -- "$CACHE/$ID.html"
       break
     fi
   done

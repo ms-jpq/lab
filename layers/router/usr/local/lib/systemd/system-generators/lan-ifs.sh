@@ -13,6 +13,9 @@ readarray -t -d ' ' -- INTERFACES <<<"$LAN_IFS"
 
 mkdir -v -p -- "$WANTS"
 for NAME in "${INTERFACES[@]}"; do
-  NAME="${NAME//[[:space:]]/''}"
+  NAME="$(systemd-escape -- "${NAME//[[:space:]]/''}")"
+  ALLOCD="$RUN/1-ip-alloc@$NAME.service.d"
+  mkdir -v -p -- "$ALLOCD"
+  cp -v -- /usr/local/opt/network/1-ip-alloc@.service "$ALLOCD/0-override.conf"
   ln -v -sf -- /usr/local/lib/systemd/system/1-lan@.service "$WANTS/1-lan@$NAME.service"
 done
