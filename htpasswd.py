@@ -23,13 +23,14 @@ class _Handler(BaseHTTPRequestHandler):
         ...
 
 
-class _Server(ThreadingHTTPServer, UnixStreamServer):
-    allow_reuse_address = True
+# class _Server(ThreadingHTTPServer, UnixStreamServer):
+#     allow_reuse_address = True
 
-    def server_bind(self) -> None:
-        UnixStreamServer.server_bind(self)
+#     def server_bind(self) -> None:
+#         UnixStreamServer.server_bind(self)
 
 
 with suppress(KeyboardInterrupt):
-    srv = _Server("./owo.sock", _Handler)
-    srv.serve_forever()
+    # srv = _Server("./owo.sock", _Handler)
+    # srv.serve_forever()
+    pass

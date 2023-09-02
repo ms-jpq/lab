@@ -15,9 +15,9 @@ fi
 
 rm -v -fr -- "$RECORD" >&2
 
-RS="$(ip --json -4 route | jq --exit-status --raw-output '.[] | select(.dst | match("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}")) | .dst')"
+RS="$(ip --json -4 route | jq --raw-output '.[] | select(.dst | match("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}")) | .dst')"
 readarray -t -- ROUTES <<<"$RS"
-IS="$(ip --json -4 addr show | jq --exit-status --raw-output '.[].addr_info[] | "\(.local)/\(.prefixlen)"')"
+IS="$(ip --json -4 addr show | jq --raw-output '.[].addr_info[] | "\(.local)/\(.prefixlen)"')"
 readarray -t -- INETS <<<"$IS"
 
 ENVS=("$RUN"/*.env "$VAR"/*.env)
@@ -28,7 +28,15 @@ for A in "${ENVS[@]}"; do
   SEEN+=("$LINE")
 done
 
-IPV4_IF="$("${0%/*}/ip4alloc.py" --verbose --no "${ROUTES[@]}" "${INETS[@]}" "${SEEN[@]}" -- "$SUBNET")"
+N=("${ROUTES[@]}" "${INETS[@]}" "${SEEN[@]}")
+NOPE=()
+for ROUTE in "${N[@]}"; do
+  if [[ -n "$ROUTE" ]]; then
+    NOPE+=("$ROUTE")
+  fi
+done
+
+IPV4_IF="$("${0%/*}/ip4alloc.py" --verbose --no "${NOPE[@]}" -- "$SUBNET")"
 IPV4_ADDR="${IPV4_IF%%/*}"
 IPV6_NETWORK="$("${0%/*}/ula64.sh" "$IFACE")"
 IPV6_ADDR="$IPV6_NETWORK:0000:0000:0000:0001"

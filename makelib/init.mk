@@ -4,8 +4,7 @@ from os import execl
 from sys import executable
 from tomllib import load
 
-with open("pyproject.toml", "rb") as fd:
-  toml = load(fd)
+toml = load(open("pyproject.toml", "rb"))
 
 project = toml["project"]
 execl(
