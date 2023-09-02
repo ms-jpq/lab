@@ -1,0 +1,7 @@
+location /ntop {
+  return 307 /ntop/;
+}
+
+location /ntop/ {
+  proxy_pass http://localhost:3000;
+}

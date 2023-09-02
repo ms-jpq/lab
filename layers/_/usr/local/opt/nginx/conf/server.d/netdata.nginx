@@ -1,0 +1,7 @@
+location /netdata {
+  return 301 /netdata/;
+}
+
+location /netdata/ {
+  proxy_pass http://localhost:19999/;
+}

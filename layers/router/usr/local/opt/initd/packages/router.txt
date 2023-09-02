@@ -1,7 +1,7 @@
-# + ntopng
 + chrony
 + ipv6calc
 + ndisc6
++ ntopng
 + qrencode
 + squid
 + squidclient
