@@ -1,0 +1,7 @@
+server {
+  listen 127.0.0.53:8181;
+
+  location / {
+    return 307 https://$host$request_uri;
+  }
+}
