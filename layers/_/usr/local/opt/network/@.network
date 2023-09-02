@@ -12,6 +12,7 @@ LLDP                    = yes
 EmitLLDP                = customer-bridge
 IPMasquerade            = both
 
+# TODO: renamed to DCHPPrefixDelegation?
 DHCPv6PrefixDelegation  = yes
 
 Address                 = ${IPV4_IF}

@@ -26,6 +26,8 @@ UseSIP                             = no
 # UseAddress                         = yes
 WithoutRA                          = solicit
 ForceDHCPv6PDOtherInformation      = yes
+# TODO: maybe only for rogers?
+PrefixDelegationHint               = ::/56
 
 [[IPv6AcceptRA]]
 DHCPv6Client                       = always
