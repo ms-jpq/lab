@@ -5,6 +5,9 @@ StopWhenUnneeded     = yes
 BindsTo              = 1-ip-alloc@%i.service
 After                = 1-ip-alloc@%i.service
 
+BindsTo              = systemd-networkd.service
+After                = systemd-networkd.service
+
 Wants                = dnsmasq@%i.service
 
 ReloadPropagatedFrom = nftables.service

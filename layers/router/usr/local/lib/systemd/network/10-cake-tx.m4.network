@@ -19,6 +19,8 @@ DNSOverTLS                         = opportunistic
 
 [[DHCPv4]]
 Anonymize                          = yes
+UseHostname                        = no
+UseSIP                             = no
 
 [[DHCPv6]]
 # UseAddress                         = yes
