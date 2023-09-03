@@ -3,6 +3,7 @@
 set -o pipefail
 
 RUN="$1"
+WWW="$2"
 
 CONF_D=(
   conf.d
@@ -21,7 +22,7 @@ while true; do
   PIDS=()
   for EXEC in "${0%/*}/../generators"/*; do
     if [[ -x "$EXEC" ]]; then
-      "$EXEC" "$TMP" &
+      "$EXEC" "$TMP" "$WWW" &
       PIDS+=("$!")
     fi
   done

@@ -4,7 +4,6 @@ from collections.abc import Iterable, Iterator
 from functools import cache
 from ipaddress import IPv6Address, IPv6Interface, IPv6Network
 from os import environ
-from os.path import sep
 from pathlib import Path, PurePath
 from re import RegexFlag, compile
 from subprocess import check_call
@@ -14,7 +13,6 @@ from typing import Literal
 
 _LifeTime = Literal["forever"] | int
 
-_LEASE = Path(sep) / "var" / "tmp" / "telus" / "ia_pd.lease"
 
 _PREFIX = compile(
     r"^\s*iaprefix\s+(?P<network>[^s]+)\s+\{(?P<lifetimes>.+)}$",
@@ -46,8 +44,9 @@ def _interface(net: IPv6Network, token: IPv6Address | None = None) -> IPv6Interf
 
 @cache
 def _lease() -> str:
+    lease = Path(environ["PATH_DHCLIENT_DB"])
     try:
-        return _LEASE.read_text()
+        return lease.read_text()
     except FileNotFoundError:
         return ""
 
@@ -137,7 +136,7 @@ def _conf(token: IPv6Address, wan_if: str, lan_ifs: Iterable[str]) -> None:
                     preferred=preferred_lft,
                 )
 
-    _run("resolvectl", "dns", "--", wan_if, *map(str, _dns()))
+    _ = map(str, _dns())
 
 
 def main() -> None:

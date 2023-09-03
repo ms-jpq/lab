@@ -13,7 +13,7 @@ http {
   proxy_temp_path           /var/tmp/proxy;
   scgi_temp_path            /var/tmp/scgi;
   uwsgi_temp_path           /var/tmp/uwsgi;
-  root                      /run/local/nginx/conf/www;
+  root                      /run/local/nginx/www;
   absolute_redirect         off;
   charset                   "UTF-8";
   client_max_body_size      0;

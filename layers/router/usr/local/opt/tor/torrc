@@ -10,5 +10,3 @@ VirtualAddrNetworkIPv6 ${IPV6_NETWORK}:0000:0000:0000:0000/64
 
 # Allow debugging
 # SafeLogging 0
-
-# DataDirectory /var/tmp/tor

@@ -1,0 +1,6 @@
+[Unit]
+Description       = TelusIA_PD timer
+
+[Timer]
+OnStartupSec      = 6seconds
+OnUnitInactiveSec = 60seconds
