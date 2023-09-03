@@ -27,8 +27,9 @@ UseSIP                             = no
 
 [[DHCPv6]]
 WithoutRA                          = solicit
-# TODO: this is deprecated in systemd 250
+# TODO: this is deprecated in systemd 250 -> UseDelegatedPrefix is replacement
 ForceDHCPv6PDOtherInformation      = yes
+# UseDelegatedPrefix                 = yes
 # TODO: maybe only for rogers?
 PrefixDelegationHint               = ::/56
 
@@ -37,6 +38,7 @@ DHCPv6Client                       = always
 
 # TODO: systemd 250
 # [[DHCPPrefixDelegation]]
+# Token                              = static:::69:420:420:69
 # UplinkInterface                    = :self
 
 # [CAKE]

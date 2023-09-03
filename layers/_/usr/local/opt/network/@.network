@@ -11,8 +11,6 @@ LinkLocalAddressing     = yes
 LLDP                    = yes
 EmitLLDP                = customer-bridge
 
-DHCPv6PrefixDelegation  = yes
-
 Address                 = ${IPV4_IF}
 Address                 = ${IPV6_IF}
 
