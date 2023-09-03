@@ -1,6 +1,7 @@
 server {
   server_name transmission.*;
-  listen      [::]:80 ipv6only=off;
+  listen      0.0.0.0:80;
+  listen      [::]:80;
   include     /usr/local/opt/nginx/conf/websocket.nginx;
 
   location / {

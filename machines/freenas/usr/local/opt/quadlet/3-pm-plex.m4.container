@@ -20,6 +20,7 @@ Volume            = /media/m5_assert([ENV_FS_TV]):/media/tv:ro
 Volume            = /media/m5_assert([ENV_FS_NTFS]):/media/ntfs:ro
 
 [[Service]]
+ExecStartPre      = mkdir -v -p -- %V/local/plex
 Restart           = on-failure
 
 [[Install]]
