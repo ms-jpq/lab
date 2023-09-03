@@ -4,8 +4,8 @@ StopWhenUnneeded = yes
 
 After            = network-online.target
 
-BindsTo          = %p@redis.container
-After            = %p@redis.container
+BindsTo          = %p@redis.service
+After            = %p@redis.service
 
 [Container]
 Image            = docker.io/zedeus/nitter:latest

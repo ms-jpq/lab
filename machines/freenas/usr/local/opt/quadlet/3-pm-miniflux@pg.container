@@ -5,22 +5,21 @@ StopWhenUnneeded = yes
 After            = network-online.target
 
 [Container]
-Image            = docker.io/_/postgres:13
+Image            = docker.io/library/postgres:13
 ContainerName    = %J-%I
 AutoUpdate       = registry
 RunInit          = yes
 
-HealthStartupCmd = '["pg_isready", "--dbname", "pdb", "--username", "username"]'
+HealthCmd        = pg_isready --dbname pdb --username username
 
 Environment      = POSTGRES_DB=pdb
 Environment      = POSTGRES_USER=username
 Environment      = POSTGRES_PASSWORD=password
 
-Network          = %p.network
 Network          = %p1.network
 
 Volume           = %S/local/docker/%J:%S/postgresql/data
 
 [Service]
 Restart          = on-failure
-ExecStartPost    = podman wait --condition healthy -- %J
+ExecStartPost    = podman wait --condition healthy -- %J-%I

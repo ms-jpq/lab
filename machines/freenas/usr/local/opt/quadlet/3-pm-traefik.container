@@ -7,7 +7,7 @@ BindsTo       = podman.socket
 After         = podman.socket
 
 [Container]
-Image         = docker.io/_/traefik:latest
+Image         = docker.io/library/traefik:latest
 ContainerName = %J
 AutoUpdate    = registry
 RunInit       = yes

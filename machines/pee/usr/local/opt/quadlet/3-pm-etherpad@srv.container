@@ -4,8 +4,8 @@ StopWhenUnneeded = yes
 
 After            = network-online.target
 
-BindsTo          = %p@pg.container
-After            = %p@pg.container
+BindsTo          = %p@pg.service
+After            = %p@pg.service
 
 [Container]
 Image            = docker.io/etherpad/etherpad:latest

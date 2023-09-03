@@ -3,8 +3,8 @@ Description   = Podman -- %J@%I
 
 After         = network-online.target
 
-BindsTo       = %p@pg.container
-After         = %p@pg.container
+BindsTo       = %p@pg.service
+After         = %p@pg.service
 
 [Container]
 Image         = ghcr.io/miniflux/miniflux:latest
@@ -17,13 +17,14 @@ Label         = traefik.http.services.%J.loadbalancer.server.port=8080
 Label         = traefik.http.routers.%J.rule=Host(`^%J\..+`)
 
 Environment   = RUN_MIGRATIONS=1
-Environment   = DATABASE_URL=postgres://username:password@systemd-00-podman-miniflux-pg/pdb?sslmode=disable
+Environment   = DATABASE_URL=postgres://username:password@%J-pg/pdb?sslmode=disable
 Environment   = PROXY_IMAGES=all
 Environment   = CREATE_ADMIN=1
 Environment   = ADMIN_USERNAME=1
 Environment   = ADMIN_PASSWORD=123456
 
 Network       = %p.network
+Network       = %p1.network
 Network       = 3-pm-traefik.network
 
 [Service]
