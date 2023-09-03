@@ -1,4 +1,4 @@
-m4_include([layers/_/usr/local/opt/network/@.network])
+m4_undivert([layers/_/usr/local/opt/network/@.network])
 
 # DHCPPrefixDelegation = yes
 
