@@ -10,7 +10,7 @@ ContainerName    = %J-%I
 AutoUpdate       = registry
 RunInit          = yes
 
-Network          = %p1.network
+Network          = %p.network
 
 [Service]
 Restart          = on-failure

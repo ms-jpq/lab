@@ -9,7 +9,7 @@ ContainerName = %J-%I
 AutoUpdate    = registry
 
 # Network     = host
-Volume        = /usr/local/opt/%J/%I:/config
+Volume        = /usr/local/opt/%J/%I:/config/config
 
 [Service]
 Restart       = on-failure

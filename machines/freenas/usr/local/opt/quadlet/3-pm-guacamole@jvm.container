@@ -28,7 +28,6 @@ Environment   = POSTGRES_DATABASE=pdb
 Environment   = POSTGRES_USER=username
 Environment   = POSTGRES_PASSWORD=password
 
-Network       = %p.network
 Network       = %p1.network
 Network       = %p2.network
 Network       = 3-pm-traefik.network
