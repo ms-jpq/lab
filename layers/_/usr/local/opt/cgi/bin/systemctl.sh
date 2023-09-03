@@ -12,16 +12,17 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-systemctl() {
-  /usr/local/libexec/hr-run.sh systemctl --no-pager --plain --full --show-transaction "$@" || true
-}
-
 /usr/local/libexec/hr-run.sh timedatectl status
 
-systemctl --failed
+AS=(
+  --failed
+  list-jobs
+  list-timers
+  list-sockets
+  list-machines
+  list-units
+)
 
-systemctl list-jobs
-
-systemctl list-timers
-
-systemctl status
+for A in "${AS[@]}"; do
+  /usr/local/libexec/hr-run.sh systemctl --no-pager --plain --full --show-transaction "$A" || true
+done

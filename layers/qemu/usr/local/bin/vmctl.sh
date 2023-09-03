@@ -26,7 +26,6 @@ case "$ACTION" in
 ls)
   mkdir -v -p -- "$LIB"
   "$HR" ls --almost-all --group-directories-first --classify -l --no-group --si --color=auto -- "$LIB"
-  "$HR" machinectl list --full --no-pager
   ;;
 pin)
   for MACH in "${MACHINES[@]}"; do
