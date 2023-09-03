@@ -10,6 +10,7 @@ After                = systemd-networkd.service
 
 Wants                = dnsmasq@%i.service
 
+BindsTo              = nftables.service
 ReloadPropagatedFrom = nftables.service
 After                = nftables.service
 
