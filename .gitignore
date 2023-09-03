@@ -1,6 +1,7 @@
 .terraform.lock.hcl
 .terraform/
 .venv/
+facts/*.env
 inventory.json
 node_modules/
 package-lock.json
