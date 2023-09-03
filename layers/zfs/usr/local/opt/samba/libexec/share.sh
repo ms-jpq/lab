@@ -12,11 +12,14 @@ source -- /usr/local/etc/default/shares.env
 # shellcheck disable=SC2154
 readarray -t -d ',' -- ROWS <<<"$SMB_EXPORTS"
 
+NUS=(net --configfile "${0%/*}/../smb.conf" usershare)
+
 for ROW in "${ROWS[@]}"; do
   ROW="${ROW//[[:space:]]/''}"
   DIR="/media/$ROW"
+  NAME="${ROW##*/}"
   mkdir -v -p -- "$DIR"
-  net usershare add "$ROW" "$DIR" "$ROW" 'everyone:F' 'guest_ok=y'
+  "${NUS[@]}" add "$NAME" "$DIR" '' 'everyone:F' 'guest_ok=y'
 done
 
-exec -- net usershare list --long
+exec -- "${NUS[@]}" list --long
