@@ -142,7 +142,7 @@ def _conf(token: IPv6Address, wan_if: str, lan_ifs: Iterable[str]) -> None:
 def main() -> None:
     token = IPv6Address(environ["TOKEN"])
     wan_if = environ["WAN_IF"]
-    lan_ifs = environ["LAN_IFS"].split(",")
+    lan_ifs = environ["LAN_IFS"].split(" ")
     _conf(token, wan_if=wan_if, lan_ifs=lan_ifs)
 
 
