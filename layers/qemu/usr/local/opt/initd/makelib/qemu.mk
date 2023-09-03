@@ -1,6 +1,9 @@
-.PHONY: qemu.pull clobber.qemu
+.PHONY: qemu.grub qemu.pull clobber.qemu
 
 pull: qemu.pull
+
+qemu.grub:
+	update-initramfs -u && update-gru
 
 clobber.qemu:
 	shopt -u failglob

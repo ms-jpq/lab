@@ -1,8 +1,6 @@
 server {
   server_name cups.*;
-  listen      0.0.0.0:80;
-  listen      [::]:80;
-  include     /usr/local/opt/nginx/conf/websocket.nginx;
+  include     /usr/local/opt/nginx/conf/listen.nginx;
 
   location / {
     proxy_pass http://localhost:631/;

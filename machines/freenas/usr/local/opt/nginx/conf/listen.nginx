@@ -1,0 +1,3 @@
+listen  0.0.0.0:80;
+listen  [::]:80;
+include /usr/local/opt/nginx/conf/websocket.nginx;
