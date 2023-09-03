@@ -6,5 +6,5 @@ After       = zfs-volume-wait.service
 # Need to disable iscsi sharing before mounting
 [Mount]
 Options     = sys_immutable,ro
-Where       = /media/steam
+Where       = %f
 What        = /dev/zvol/brown/zvols/steam-part2
