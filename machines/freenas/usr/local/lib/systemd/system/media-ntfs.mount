@@ -1,5 +1,5 @@
 [Unit]
-Description = Mount -- /%f
+Description = Mount -- %f
 Requires    = zfs-volume-wait.service
 After       = zfs-volume-wait.service
 
