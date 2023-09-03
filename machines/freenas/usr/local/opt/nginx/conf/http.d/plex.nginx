@@ -4,6 +4,6 @@ server {
   include     /usr/local/opt/nginx/conf/websocket.nginx;
 
   location / {
-    proxy_pass http://localhost:32400:/;
+    proxy_pass http://localhost:32400/;
   }
 }
