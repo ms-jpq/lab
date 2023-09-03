@@ -9,12 +9,11 @@ CONF_D=(
   http.d
   server.d
   stream.d
-  www
 )
 
-while true; do
-  TMP="$(mktemp --directory)"
+TMP="$(mktemp --directory)"
 
+while true; do
   for CONF in "${CONF_D[@]}"; do
     mkdir --parents -- "$TMP/$CONF"
   done
@@ -35,6 +34,6 @@ while true; do
     systemctl reload -- nginx.service
   fi
 
-  rm --recursive --force -- "$TMP"
+  rm --recursive --force -- "${TMP:?}"/*
   sleep -- 5
 done
