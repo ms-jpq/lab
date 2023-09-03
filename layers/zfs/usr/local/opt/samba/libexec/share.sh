@@ -16,6 +16,10 @@ NUS=(net --configfile "${0%/*}/../smb.conf" usershare)
 
 for ROW in "${ROWS[@]}"; do
   ROW="${ROW//[[:space:]]/''}"
+  if [[ -z "$ROW" ]]; then
+    continue
+  fi
+
   DIR="/media/$ROW"
   NAME="${ROW##*/}"
   mkdir -v -p -- "$DIR"

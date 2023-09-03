@@ -1,2 +1,2 @@
 ENV_WAN_IF=enp1s0
-ENV_LAN_IFS=enp2s0,enp4s0,eno1
+ENV_LAN_IFS=enp2s0, enp4s0, eno1

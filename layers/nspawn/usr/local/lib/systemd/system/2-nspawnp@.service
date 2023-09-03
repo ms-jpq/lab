@@ -18,5 +18,5 @@ EnvironmentFile          = -/usr/local/etc/default/%I.nspawn.env
 Environment              = ROOT=%S/local/nspawn/%I/fs
 Environment              = CACHE=%C/local/ns
 
-ExecStart                = /usr/local/opt/nspawn/libexec/start-pre.sh %i.nspawn ${ROOT} ${CACHE}
+ExecStart                = /usr/local/opt/nspawn/libexec/start-pre.sh %i.nspawn %S/local/nspawn ${ROOT} ${CACHE}
 ExecStopPost             = rm -v -fr -- %t/systemd/nspawn/%i.nspawn

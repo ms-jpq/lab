@@ -60,7 +60,18 @@ remove)
     ROOT="$LIB/$MACH"
     set -x
     if ! [[ -k "$ROOT" ]] && ! [[ -k "$ROOT/fs" ]]; then
-      "$HR" rm -v -fr -- "$ROOT"
+      FS="$(stat --file-system --format %T -- "$ROOT")"
+      case "$FS" in
+      zfs)
+        "$HR" zfs destroy -v -r -- "$ROOT"
+        ;;
+      btrfs)
+        "$HR" btrfs subvolume delete -- "$ROOT"
+        ;;
+      *)
+        "$HR" rm -v -fr -- "$ROOT"
+        ;;
+      esac
     else
       exit 1
     fi
