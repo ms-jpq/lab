@@ -1,6 +1,8 @@
 [Unit]
 Description   = Podman -- %J
 
+After         = network-online.target
+
 [Container]
 Image         = lscr.io/linuxserver/librespeed:latest
 ContainerName = %J

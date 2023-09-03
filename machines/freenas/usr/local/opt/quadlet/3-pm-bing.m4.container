@@ -1,6 +1,8 @@
 [[Unit]]
 Description   = Podman -- %J
 
+After         = network-online.target
+
 [[Container]]
 Image         = docker.io/msjpq/bing-daily-images:latest
 ContainerName = %J

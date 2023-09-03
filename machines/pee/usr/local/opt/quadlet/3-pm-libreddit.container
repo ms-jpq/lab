@@ -2,6 +2,8 @@
 Description      = Podman -- %J
 StopWhenUnneeded = yes
 
+After            = network-online.target
+
 [Container]
 Image            = docker.io/libreddit/libreddit:latest
 ContainerName    = %J

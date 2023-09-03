@@ -1,6 +1,8 @@
 [Unit]
 Description   = Podman -- %J@%I
 
+After         = network-online.target
+
 BindsTo       = %p@c.service
 After         = %p@c.service
 BindsTo       = %p@pg.service

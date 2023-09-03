@@ -1,6 +1,8 @@
 [[Unit]]
 Description   = Podman -- %J
 
+After         = network-online.target
+
 BindsTo       = 1-netns-proxy@transmission.socket
 After         = 1-netns-proxy@transmission.socket
 BindsTo       = 1-wg-netns@transmission.service

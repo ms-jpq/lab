@@ -1,6 +1,8 @@
 [Unit]
 Description   = Podman -- %J
 
+After         = network-online.target
+
 [Container]
 Image         = lscr.io/linuxserver/webtop:latest
 ContainerName = %J

@@ -1,6 +1,8 @@
 [Unit]
 Description   = Podman -- %J@%I
 
+After         = network-online.target
+
 BindsTo       = %p@redis.container
 After         = %p@redis.container
 

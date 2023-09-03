@@ -2,6 +2,8 @@
 Description      = Podman -- %J@%I
 StopWhenUnneeded = yes
 
+After            = network-online.target
+
 [Container]
 Image            = docker.io/_/postgres:13
 ContainerName    = %J-%I

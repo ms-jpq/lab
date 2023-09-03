@@ -2,6 +2,8 @@
 Description      = Podman -- %J@%I
 StopWhenUnneeded = yes
 
+After            = network-online.target
+
 [Container]
 Image            = docker.io/_/postgres:15
 ContainerName    = %J-%I
@@ -24,5 +26,5 @@ Restart          = on-failure
 PrivateTmp       = yes
 
 ExecStartPre     = /usr/local/libexec/sponge2.sh %T/init.sql systemd-run --collect --service-type oneshot --wait --pipe --property BindsTo=%n -- \
-                  podman run --rm --volume %T:%T --entrypoint /opt/guacamole/bin/initdb.sh -- docker.io/guacamole/guacamole:latest --postgres
+                  podman run --rm --volume %T:%T --entrypoint /opt/guacamole/bin/initdb.sh -- docker.io/guacamole/guacamole:latest --postgresql
 ExecStartPost    = podman wait --condition healthy -- %J

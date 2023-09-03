@@ -2,6 +2,8 @@
 Description       = Podman -- %J
 RequiresMountsFor = /media/m5_assert([ENV_FS_NTFS])
 
+After             = network-online.target
+
 [[Container]]
 Image             = lscr.io/linuxserver/plex:latest
 ContainerName     = %J

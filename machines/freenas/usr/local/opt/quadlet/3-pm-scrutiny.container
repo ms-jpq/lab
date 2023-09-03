@@ -1,6 +1,8 @@
 [Unit]
 Description   = Podman -- %J
 
+After         = network-online.target
+
 [Container]
 Image         = ghcr.io/analogj/scrutiny:master-omnibus
 ContainerName = %J

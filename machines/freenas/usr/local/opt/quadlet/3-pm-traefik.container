@@ -1,6 +1,8 @@
 [Unit]
 Description   = Podman -- %J
 
+After         = network-online.target
+
 BindsTo       = podman.socket
 After         = podman.socket
 

@@ -1,6 +1,8 @@
 [Unit]
 Description   = Podman -- %J@%I
 
+After         = network-online.target
+
 [Container]
 Image         = lscr.io/linuxserver/ddclient:latest
 ContainerName = %J-%I
