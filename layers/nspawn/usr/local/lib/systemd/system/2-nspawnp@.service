@@ -7,7 +7,6 @@ ConditionPathExists      = !%E/systemd/nspawn/%i.nspawn
 
 [Service]
 Type                     = oneshot
-Restart                  = on-failure
 RemainAfterExit          = yes
 RuntimeDirectoryPreserve = yes
 RuntimeDirectory         = systemd/nspawn
@@ -18,6 +17,7 @@ ReadWritePaths           = %t/systemd/nspawn %T %S/local %C/local
 EnvironmentFile          = -/usr/local/etc/default/%I.nspawn.env
 Environment              = ROOT=%S/local/nspawn/%I/fs
 Environment              = CACHE=%C/local/nspawn
+Environment              = MACHINE=%i.ns
 
-ExecStart                = /usr/local/opt/nspawn/libexec/spawn-pre.sh %I %i.nspawn %S/local/nspawn ${ROOT} ${CACHE}
+ExecStart                = /usr/local/opt/nspawn/libexec/spawn-pre.sh %i ${MACHINE} %S/local/nspawn ${ROOT} ${CACHE}
 ExecStopPost             = rm -v -fr -- %t/systemd/nspawn/%i.nspawn

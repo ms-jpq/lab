@@ -12,6 +12,8 @@ HR='/usr/local/libexec/hr-run.sh'
 CONF='/usr/local/opt/nspawn/conf.d'
 cat -- "$CONF"/*.nspawn | envsubst | sponge -- "/run/systemd/nspawn/$MACHINE.nspawn"
 
+/usr/local/opt/zfs/libexec/mount.sh "$ROOT" || true
+
 if ! [[ -d "$ROOT" ]]; then
   "$HR" rm -v -fr -- "$ROOT"
   "$HR" gmake --directory /usr/local/opt/initd -- nspawn.pull
@@ -22,7 +24,9 @@ if ! [[ -d "$ROOT" ]]; then
     SOURCE="$(findmnt --noheadings --output source --target "$FS_ROOT" | tail --lines 1)"
     SOURCE="${SOURCE//[[:space:]]/''}"
     ZFS="$SOURCE/$NAME"
-    "$HR" zfs create -o mountpoint="$ROOT" -- "$ZFS"
+    UNIT="2-nspawnd@$NAME.service"
+    "$HR" zfs create -o canmount=noauto -o mountpoint="$ROOT" -o org.openzfs.systemd:required-by="$UNIT" -o org.openzfs.systemd:before="$UNIT" -- "$ZFS"
+    "$HR" zfs mount -- "$ZFS"
     ;;
   btrfs)
     "$HR" btrfs subvolume create -- "$ROOT"

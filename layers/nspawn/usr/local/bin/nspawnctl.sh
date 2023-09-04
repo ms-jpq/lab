@@ -61,30 +61,32 @@ remove)
     ROOT="$LIB/$MACH"
     ROOT_FS="$ROOT/fs"
     set -x
-    if ! [[ -k "$ROOT" ]] && ! [[ -k "$ROOT_FS" ]]; then
-      case "$FS" in
-      zfs)
-        Z="$(zfs list -H -o name,mountpoint)"
-        readarray -t -- ZFS <<<"$Z"
-        for Z in "${ZFS[@]}"; do
-          NAME="${Z%%$'\t'*}"
-          MOUNTPOINT="${Z#*$'\t'}"
-          if [[ "$MOUNTPOINT" == "$ROOT_FS" ]]; then
-            SOURCE="$NAME"
-            break
-          fi
-        done
-        "$HR" zfs destroy -v -- "$SOURCE"
-        ;;
-      btrfs)
-        "$HR" btrfs subvolume delete -- "$ROOT_FS"
-        ;;
-      *) ;;
-      esac
-      "$HR" rm -v -fr -- "$ROOT"
-    else
+
+    if [[ -k "$ROOT" ]] || [[ -k "$ROOT_FS" ]]; then
       exit 1
     fi
+
+    case "$FS" in
+    zfs)
+      Z="$(zfs list -H -o name,mountpoint)"
+      readarray -t -- ZFS <<<"$Z"
+      for Z in "${ZFS[@]}"; do
+        NAME="${Z%%$'\t'*}"
+        MOUNTPOINT="${Z#*$'\t'}"
+        if [[ "$MOUNTPOINT" == "$ROOT_FS" ]]; then
+          SOURCE="$NAME"
+          break
+        fi
+      done
+      "$HR" zfs destroy -v -- "$SOURCE"
+      ;;
+    btrfs)
+      "$HR" btrfs subvolume delete -- "$ROOT_FS"
+      ;;
+    *) ;;
+    esac
+    "$HR" rm -v -fr -- "$ROOT"
+
     set +x
   done
   ;;
