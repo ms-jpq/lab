@@ -12,4 +12,4 @@ HTTP/1.0 200 OK
 
 EOF
 
-/usr/local/bin/vmctl.sh
+/usr/local/bin/microvmctl.sh
