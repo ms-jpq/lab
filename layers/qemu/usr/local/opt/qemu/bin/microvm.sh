@@ -121,11 +121,13 @@ fi
 
 if [[ -n "${MACVTAP:-}" ]]; then
   ID='mv0'
-  IFI="$(<"/sys/class/net/$MACVTAP/ifindex")"
+  SYS="/sys/class/net/$MACVTAP"
+  IFI="$(<"$SYS/ifindex")"
+  MACADDR="$(<"$SYS/address")"
   exec 3<>"/dev/tap$IFI"
   ARGV+=(
     -netdev "tap,fd=3,id=$ID"
-    -device "virtio-net-device,netdev=$ID"
+    -device "virtio-net-device,netdev=$ID,mac=$MACADDR"
   )
 fi
 
