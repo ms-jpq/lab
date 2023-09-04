@@ -24,4 +24,4 @@ q | qmp)
 esac
 
 SOCKET="$RUN/$MACHINE/$SOCK.sock"
-exec -- socat 'READLINE' "UNIX-CONNECT:$SOCKET"
+exec -- rlwrap -- socat 'STDIO' "UNIX-CONNECT:$SOCKET"

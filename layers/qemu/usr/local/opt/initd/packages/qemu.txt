@@ -3,5 +3,7 @@
 + qemu
 + qemu-block-extra
 + qemu-utils
++ rlwrap
++ socat
 + swtpm-tools
 + websockify

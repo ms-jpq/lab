@@ -60,22 +60,29 @@ ARGV=(
   qemu-system-x86_64-microvm
   -nodefaults
   -no-user-config
+  -nographic
   -machine 'microvm,x-option-roms=off,pit=off,pic=off,isa-serial=off,rtc=off,accel=kvm'
+  -no-acpi
   -cpu host
   -smp "$CPU"
   -m "${MEM:-"size=1G"}"
 )
 
+CONSOLE=
+CON='con0'
 ARGV+=(
-  -kernel vmlinux
-  -append 'reboot=triple'
+  -kernel /boot/vmlinuz
+  -append 'reboot=triple console=hvc0 root=/dev/vda'
+  -device 'virtio-serial-device'
+  -device "virtconsole,chardev=$CON"
 )
-
 if [[ -n "${CONSOLE:-""}" ]]; then
-  ARGV+=(-serial "unix:server=on,wait=off,path=$CONSOLE")
+  ARGV+=(-chardev "socket,server=on,wait=off,id=$CON,path=$CONSOLE")
 else
-  ARGV+=(-serial stdio)
+  ARGV+=(-chardev "stdio,id=$CON")
 fi
+
+ARGV+=(-device virtio-rng-device)
 
 if [[ -n "${QMP:-""}" ]]; then
   ARGV+=(-qmp "unix:$QMP,server,nowait")
@@ -86,15 +93,15 @@ if [[ -n "${MONITOR:-""}" ]]; then
 fi
 
 NIC='model=virtio-net-device'
-ARGV+=(-nic "bridge,br=$BRIDGE,$NIC")
+ARGV+=(-nic "tap,script=no,downscript=no,$NIC,br=$BRIDGE")
 
 if [[ -n "${MACVTAP:-""}" ]]; then
-  ARGV+=(-nic "tap,script=no,downscript=no,ifname=$MACVTAP,$NIC")
+  ARGV+=(-nic "tap,script=no,downscript=no,$NIC,ifname=$MACVTAP")
 fi
 
 for IDX in "${!DRIVES[@]}"; do
-  DRIVE="${DRIVES[$IDX]}"
   ID="dri$IDX"
+  DRIVE="${DRIVES[$IDX]}"
   # TODO io_uring
   ARGV+=(
     -drive "if=none,discard=unmap,format=raw,aio=threads,id=$ID,file=$DRIVE"
