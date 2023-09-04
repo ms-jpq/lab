@@ -1,7 +1,6 @@
 #!/usr/bin/env -S -- bash -Eeu -O dotglob -O nullglob -O extglob -O failglob -O globstar
 
 set -o pipefail
-set -x
 
 cd -- "${0%/*}/.."
 
@@ -15,7 +14,10 @@ envsubst <./cloud-init/meta-data.yml >"$TMP/meta-data"
 
 SALT="$(uuidgen)"
 PASSWD="$(openssl passwd -1 -salt "$SALT" root)"
-AUTHORIZED_KEYS="$(</root/.ssh/authorized_keys)"
+
+readarray -t -- SSH_KEYS <<<'/root/.ssh/authorized_keys'
+printf -v AUTHORIZED_KEYS -- '\n      - %s' "${SSH_KEYS[@]}"
+
 envsubst <./cloud-init/user-data.yml >"$TMP/user-data"
 
 cp -a -R -f -- ./cloud-init/scripts "$TMP/scripts"

@@ -88,7 +88,6 @@ ARGV+=(
   -device "virtconsole,chardev=$CON"
 )
 
-CONSOLE=''
 if [[ -n "${CONSOLE:-""}" ]]; then
   ARGV+=(-chardev "socket,server=on,wait=off,id=$CON,path=$CONSOLE")
 else
