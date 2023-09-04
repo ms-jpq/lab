@@ -16,3 +16,12 @@ users:
       ${PASSWD}
     ssh-authorized-keys:
     # ${AUTHORIZED_KEYS}
+
+network:
+  version: 2
+  ethernets:
+    eth:
+      match: "eth*"
+      dhcp4: true
+      dhcp6: true
+      optional: true

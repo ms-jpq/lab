@@ -2,10 +2,11 @@
 
 set -o pipefail
 
-LONG_OPTS='cpu:,mem:,qmp:,monitor:,console:,tap:,kernel:,initrd:,drive:,root:,macvtap:'
+LONG_OPTS='cpu:,mem:,qmp:,monitor:,console:,tap:,kernel:,initrd:,drive:,root:'
 GO="$(getopt --options='' --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
+TAPS=()
 DRIVES=()
 while (($#)); do
   case "$1" in
@@ -30,7 +31,7 @@ while (($#)); do
     shift -- 2
     ;;
   --tap)
-    TAP="$2"
+    TAPS+=("$2")
     shift -- 2
     ;;
   --kernel)
@@ -47,10 +48,6 @@ while (($#)); do
     ;;
   --root)
     ROOT="$2"
-    shift -- 2
-    ;;
-  --macvtap)
-    MACVTAP="$2"
     shift -- 2
     ;;
   --)
@@ -111,12 +108,14 @@ if [[ -n "${MONITOR:-""}" ]]; then
   ARGV+=(-monitor "unix:$MONITOR,server,nowait")
 fi
 
-NIC='model=virtio-net-device'
-ARGV+=(-nic "tap,script=no,downscript=no,$NIC,ifname=$TAP")
-
-if [[ -n "${MACVTAP:-""}" ]]; then
-  ARGV+=(-nic "tap,script=no,downscript=no,$NIC,ifname=$MACVTAP")
-fi
+for IDX in "${!TAPS[@]}"; do
+  ID="tap$IDX"
+  TAP="${TAPS[$IDX]}"
+  ARGV+=(
+    -netdev "tap,script=no,downscript=no,id=$ID,ifname=$TAP"
+    -device "virtio-net-device,netdev=$ID"
+  )
+done
 
 for IDX in "${!DRIVES[@]}"; do
   ID="dri$IDX"

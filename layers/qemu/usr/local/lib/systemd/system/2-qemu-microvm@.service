@@ -33,7 +33,7 @@ Environment       = DRIVE=%S/local/qemu/%I/fs.raw
 Environment       = CLOUD_INIT=%V/cloud-init.iso
 
 ExecStartPre      = /usr/local/opt/qemu/libexec/preinux.sh %S/local/qemu ${MACHINE} ${DRIVE_ROOT} ${DRIVE}
-ExecStartPre      = /usr/local/opt/qemu/libexec/cloud-init.sh %h ${CLOUD_INIT}
+ExecStartPre      = /usr/local/opt/qemu/libexec/cloud-init.sh %I ${CLOUD_INIT}
 
 ExecStartPre      = touch -- ${DRIVE_ROOT}/.live
 ExecStopPost      = rm -v -rf -- ${DRIVE_ROOT}/.live
