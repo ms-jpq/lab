@@ -2,11 +2,10 @@
 
 set -o pipefail
 
-NAME="$1"
-MACHINE="$2"
-FS_ROOT="$3"
-ROOT="$4"
-CACHE="$5"
+MACHINE="$1"
+FS_ROOT="$2"
+ROOT="$3"
+CACHE="$4"
 
 HR='/usr/local/libexec/hr-run.sh'
 CONF='/usr/local/opt/nspawn/conf.d'
@@ -23,8 +22,8 @@ if ! [[ -d "$ROOT" ]]; then
   zfs)
     SOURCE="$(findmnt --noheadings --output source --target "$FS_ROOT" | tail --lines 1)"
     SOURCE="${SOURCE//[[:space:]]/''}"
-    ZFS="$SOURCE/$NAME"
-    UNIT="2-nspawnd@$NAME.service"
+    ZFS="$SOURCE/$MACHINE"
+    UNIT="2-nspawnd@$MACHINE.service"
     "$HR" zfs create -o canmount=noauto -o mountpoint="$ROOT" -o org.openzfs.systemd:required-by="$UNIT" -o org.openzfs.systemd:before="$UNIT" -- "$ZFS"
     "$HR" zfs mount -- "$ZFS"
     ;;
@@ -41,6 +40,7 @@ fi
 
 RSSH="$ROOT/root/.ssh"
 USRN="$ROOT/usr/local/lib/systemd/network"
+"$HR" rm -v -rf -- "$ROOT/etc/hostname"
 "$HR" mkdir -v -p -- "$RSSH" "$USRN"
 "$HR" cp -v -f -- /root/.ssh/authorized_keys "$RSSH/authorized_keys"
 "$HR" cp -v -f -- "${0%/*}/../macvlan.network" "$USRN/10-macvlan.network"
