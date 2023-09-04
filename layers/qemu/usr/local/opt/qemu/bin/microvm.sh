@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-LONG_OPTS='cpu:,mem:,qmp:,monitor:,console:,bridge:,kernel:,initrd:,drive:,root:'
+LONG_OPTS='cpu:,mem:,qmp:,monitor:,console:,bridge:,kernel:,initrd:,drive:,root:,macvtap:'
 GO="$(getopt --options='' --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
@@ -47,6 +47,10 @@ while (($#)); do
     ;;
   --root)
     ROOT="$2"
+    shift -- 2
+    ;;
+  --macvtap)
+    MACVTAP="$2"
     shift -- 2
     ;;
   --)
@@ -111,6 +115,16 @@ if [[ -n "${BRIDGE:-""}" ]]; then
   ID='br0'
   ARGV+=(
     -netdev "bridge,id=$ID,br=$BRIDGE"
+    -device "virtio-net-device,netdev=$ID"
+  )
+fi
+
+if [[ -n "${MACVTAP:-}" ]]; then
+  ID='mv0'
+  IFI="$(<"/sys/class/net/$MACVTAP/ifindex")"
+  exec 3<>"/dev/tap$IFI"
+  ARGV+=(
+    -netdev "tap,fd=3,id=$ID"
     -device "virtio-net-device,netdev=$ID"
   )
 fi
