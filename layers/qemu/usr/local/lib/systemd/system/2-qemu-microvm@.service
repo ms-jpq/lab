@@ -1,9 +1,21 @@
 [Unit]
 Description      = QEMU -- %I
 
+BindsTo          = 1-vn@qemu.service
+After            = 1-vn@qemu.service
+
 [Service]
 ProtectSystem    = strict
-RuntimeDirectory = local/qemu
+RuntimeDirectory = local/qemu local/qemu/%I
 ReadWritePaths   = %C/local
 
-ExecStart        = /usr/local/opt/qemu/libexec/%J.sh %I %t/local/qemu
+EnvironmentFile  = -/usr/local/etc/default/%I.qemu.env
+Environment      = CPU=
+Environment      = MEMORY=8G
+Environment      = QMP=%t/local/qemu/%I/qmp.sock
+Environment      = MONITOR=%t/local/qemu/%I/mon.sock
+Environment      = CONSOLE=%t/local/qemu/%I/con.sock
+Environment      = BRIDGE=qemu
+Environment      = DRIVE=%t/local/qemu/%I/fs.raw
+
+ExecStart        = /usr/local/opt/qemu/libexec/%J@.sh --cpu ${CPU} --mem ${MEMORY} --qmp ${QMP} --monitor ${MONITOR} --console ${CONSOLE} --bridge ${BRIDGE} --drive ${DRIVE}

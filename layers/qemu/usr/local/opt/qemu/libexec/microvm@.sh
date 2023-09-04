@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-LONG_OPTS='cpu:,mem:,qmp:,console:,monitor:,bridge:,drive:,macvtap:'
+LONG_OPTS='cpu:,mem:,qmp:,monitor:,console:,bridge:,drive:,macvtap:'
 GO="$(getopt --options='' --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
@@ -21,12 +21,12 @@ while (($#)); do
     QMP="$2"
     shift -- 2
     ;;
-  --console)
-    CONSOLE="$2"
-    shift -- 2
-    ;;
   --monitor)
     MONITOR="$2"
+    shift -- 2
+    ;;
+  --console)
+    CONSOLE="$2"
     shift -- 2
     ;;
   --bridge)
@@ -51,7 +51,7 @@ while (($#)); do
   esac
 done
 
-if ! [[ -v CPU ]]; then
+if [[ -z "${CPU:-""}" ]]; then
   NPROCS="$(nproc)"
   CPU="cpus=$((NPROCS / 2))"
 fi
@@ -88,7 +88,7 @@ fi
 NIC='model=virtio-net-device'
 ARGV+=(-nic "bridge,br=$BRIDGE,$NIC")
 
-if [[ -v MACVTAP ]]; then
+if [[ -n "${MACVTAP:-""}" ]]; then
   ARGV+=(-nic "tap,script=no,downscript=no,ifname=$MACVTAP,$NIC")
 fi
 

@@ -59,20 +59,19 @@ remove)
   FS="$(stat --file-system --format %T -- "$LIB")"
   for MACH in "${MACHINES[@]}"; do
     ROOT="$LIB/$MACH"
-    ROOT_FS="$ROOT/fs"
     set -x
 
-    if [[ -k "$ROOT" ]] || [[ -k "$ROOT_FS" ]]; then
+    if [[ -k "$ROOT" ]] || [[ -f "$ROOT/.live" ]]; then
       exit 1
     fi
 
     case "$FS" in
     zfs)
-      SOURCE="$(/usr/local/opt/zfs/libexec/findfs.sh fs "$ROOT_FS")"
+      SOURCE="$(/usr/local/opt/zfs/libexec/findfs.sh fs "$ROOT")"
       "$HR" zfs destroy -v -- "$SOURCE"
       ;;
     btrfs)
-      "$HR" btrfs subvolume delete -- "$ROOT_FS"
+      "$HR" btrfs subvolume delete -- "$ROOT"
       ;;
     *) ;;
     esac
