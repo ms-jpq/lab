@@ -56,12 +56,12 @@ disable)
   done
   ;;
 remove)
+  FS="$(stat --file-system --format %T -- "$LIB")"
   for MACH in "${MACHINES[@]}"; do
     ROOT="$LIB/$MACH"
     ROOT_FS="$ROOT/fs"
     set -x
     if ! [[ -k "$ROOT" ]] && ! [[ -k "$ROOT_FS" ]]; then
-      FS="$(stat --file-system --format %T -- "$ROOT")"
       case "$FS" in
       zfs)
         Z="$(zfs list -H -o name,mountpoint)"
