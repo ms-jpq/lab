@@ -5,7 +5,7 @@ set -o pipefail
 MACHINE="$1"
 ROOT="$2"
 
-ZFS='/usr/local/opt/zfs/libexec/mount.sh'
+ZFS='/usr/local/opt/zfs/libexec/mount-by-path.sh'
 if [[ -x "$ZFS" ]]; then
   "$ZFS" "$ROOT" || true
 fi

@@ -12,7 +12,7 @@ HR='/usr/local/libexec/hr-run.sh'
 CONF='/usr/local/opt/nspawn/conf.d'
 cat -- "$CONF"/*.nspawn | envsubst | sponge -- "/run/systemd/nspawn/$MACHINE.nspawn"
 
-/usr/local/opt/zfs/libexec/mount.sh "$ROOT" || true
+/usr/local/opt/zfs/libexec/mount-by-path.sh "$ROOT" || true
 
 if ! [[ -d "$ROOT" ]]; then
   "$HR" rm -v -fr -- "$ROOT"
@@ -40,7 +40,9 @@ if ! [[ -d "$ROOT" ]]; then
 fi
 
 RSSH="$ROOT/root/.ssh"
-"$HR" mkdir -v -p -- "$RSSH"
+USRN="$ROOT/usr/local/lib/systemd/network"
+"$HR" mkdir -v -p -- "$RSSH" "$USRN"
 "$HR" cp -v -f -- /root/.ssh/authorized_keys "$RSSH/authorized_keys"
+"$HR" cp -v -f -- "${0%/*}/../macvlan.network" "$USRN/10-macvlan.network"
 "$HR" chroot "$ROOT" ssh-keygen -A
 "$HR" chroot "$ROOT" dpkg --purge --force-all -- snapd cloud-init lxd-agent-loader
