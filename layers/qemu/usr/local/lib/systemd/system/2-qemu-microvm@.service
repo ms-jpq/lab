@@ -22,12 +22,15 @@ Environment       = QMP=%t/local/qemu/%I/qmp.sock
 Environment       = MONITOR=%t/local/qemu/%I/mon.sock
 Environment       = CONSOLE=%t/local/qemu/%I/con.sock
 Environment       = BRIDGE=qemu
-Environment       = ROOT=%S/local/qemu/%I
+Environment       = KERNEL=%C/local/qemu/vmlinuz
+Environment       = INITRD=%C/local/qemu/initrd
+Environment       = ROOT=/dev/vda1
+Environment       = DRIVE_ROOT=%S/local/qemu/%I
 Environment       = DRIVE=%S/local/qemu/%I/fs.raw
 
-ExecStartPre      = /usr/local/opt/qemu/libexec/preinux.sh %S/local/qemu ${MACHINE} ${ROOT} ${DRIVE}
+ExecStartPre      = /usr/local/opt/qemu/libexec/preinux.sh %S/local/qemu ${MACHINE} ${DRIVE_ROOT} ${DRIVE}
 
-ExecStartPre      = touch -- ${ROOT}/.live
-ExecStopPost      = rm -v -rf -- ${ROOT}/.live
+ExecStartPre      = touch -- ${DRIVE_ROOT}/.live
+ExecStopPost      = rm -v -rf -- ${DRIVE_ROOT}/.live
 
-ExecStart         = /usr/local/opt/qemu/libexec/%J@.sh --cpu ${CPU} --mem ${MEMORY} --qmp ${QMP} --monitor ${MONITOR} --console ${CONSOLE} --bridge ${BRIDGE} --drive ${DRIVE}
+ExecStart         = /usr/local/opt/qemu/libexec/%J@.sh --cpu ${CPU} --mem ${MEMORY} --qmp ${QMP} --monitor ${MONITOR} --console ${CONSOLE} --bridge ${BRIDGE} --kernel ${KERNEL} --initrd ${INITRD} --drive ${DRIVE} --root ${ROOT}

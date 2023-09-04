@@ -2,9 +2,16 @@
 
 set -o pipefail
 
-LONG_OPTS='cpu:,mem:,qmp:,monitor:,console:,bridge:,drive:,macvtap:'
+LONG_OPTS='cpu:,mem:,qmp:,monitor:,console:,bridge:,kernel:,initrd:,drive:,root:,macvtap:'
 GO="$(getopt --options='' --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
+
+for BIN in "${0%/*}/../apriori.d"/*; do
+  if [[ -x "$BIN" ]]; then
+    # shellcheck disable=SC2154
+    "$BIN" "$MACHINE" "$DRIVE_ROOT"
+  fi
+done
 
 DRIVES=()
 while (($#)); do
@@ -33,8 +40,20 @@ while (($#)); do
     BRIDGE="$2"
     shift -- 2
     ;;
+  --kernel)
+    KERNEL="$2"
+    shift -- 2
+    ;;
+  --initrd)
+    INITRD="$2"
+    shift -- 2
+    ;;
   --drive)
     DRIVES+=("$2")
+    shift -- 2
+    ;;
+  --root)
+    ROOT="$2"
     shift -- 2
     ;;
   --macvtap)
@@ -71,11 +90,14 @@ ARGV=(
 CONSOLE=
 CON='con0'
 ARGV+=(
-  -kernel /boot/vmlinuz
-  -append 'reboot=triple console=hvc0 root=/dev/vda'
+  -kernel "$KERNEL"
+  -initrd "$INITRD"
+  -append "reboot=triple console=hvc0 root=$ROOT"
   -device 'virtio-serial-device'
   -device "virtconsole,chardev=$CON"
 )
+
+CONSOLE=''
 if [[ -n "${CONSOLE:-""}" ]]; then
   ARGV+=(-chardev "socket,server=on,wait=off,id=$CON,path=$CONSOLE")
 else
@@ -102,6 +124,7 @@ fi
 for IDX in "${!DRIVES[@]}"; do
   ID="dri$IDX"
   DRIVE="${DRIVES[$IDX]}"
+  DRIVE=/var/cache/local/qemu/cloudimg.raw
   # TODO io_uring
   ARGV+=(
     -drive "if=none,discard=unmap,format=raw,aio=threads,id=$ID,file=$DRIVE"
@@ -112,10 +135,4 @@ done
 ARGV+=("$@")
 
 "${0%/*}/pprint.sh" "${ARGV[@]}"
-for BIN in "${0%/*}/../apriori.d"/*; do
-  if [[ -x "$BIN" ]]; then
-    # shellcheck disable=SC2154
-    "$BIN" "$MACHINE" "$ROOT"
-  fi
-done
 exec -- "${ARGV[@]}"
