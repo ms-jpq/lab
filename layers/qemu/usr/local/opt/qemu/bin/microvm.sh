@@ -2,11 +2,10 @@
 
 set -o pipefail
 
-LONG_OPTS='cpu:,mem:,qmp:,monitor:,console:,tap:,kernel:,initrd:,drive:,root:'
+LONG_OPTS='cpu:,mem:,qmp:,monitor:,console:,bridge:,kernel:,initrd:,drive:,root:'
 GO="$(getopt --options='' --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
-TAPS=()
 DRIVES=()
 while (($#)); do
   case "$1" in
@@ -30,8 +29,8 @@ while (($#)); do
     CONSOLE="$2"
     shift -- 2
     ;;
-  --tap)
-    TAPS+=("$2")
+  --bridge)
+    BRIDGE="$2"
     shift -- 2
     ;;
   --kernel)
@@ -108,14 +107,13 @@ if [[ -n "${MONITOR:-""}" ]]; then
   ARGV+=(-monitor "unix:$MONITOR,server,nowait")
 fi
 
-for IDX in "${!TAPS[@]}"; do
-  ID="tap$IDX"
-  TAP="${TAPS[$IDX]}"
+if [[ -n "${BRIDGE:-""}" ]]; then
+  ID='br0'
   ARGV+=(
-    -netdev "tap,script=no,downscript=no,id=$ID,ifname=$TAP"
+    -netdev "bridge,id=$ID,br=$BRIDGE"
     -device "virtio-net-device,netdev=$ID"
   )
-done
+fi
 
 for IDX in "${!DRIVES[@]}"; do
   ID="dri$IDX"

@@ -1,8 +1,0 @@
-[Match]
-Name              = ${IFACE}
-
-[Link]
-RequiredForOnline = no
-
-[Network]
-Bridge            = ${BRIDGE}

@@ -1,5 +1,5 @@
 [Unit]
-Description  = Mount -- freenas.lan:/%f
+Description  = Mount -- freenas.local:%f
 
 [Mount]
 Type         = nfs4
@@ -7,5 +7,5 @@ ForceUnmount = yes
 TimeoutSec   = 2seconds
 Options      = soft,noatime
 
-Where        = /%f
-What         = freenas.lan:/%J
+Where        = %f
+What         = freenas.enp2s0:/%J

@@ -1,3 +1,0 @@
-[NetDev]
-Name = ${IFACE}
-Kind = tap
