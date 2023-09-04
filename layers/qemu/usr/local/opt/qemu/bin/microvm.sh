@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-LONG_OPTS='cpu:,mem:,qmp:,monitor:,console:,bridge:,kernel:,initrd:,drive:,root:,macvtap:'
+LONG_OPTS='cpu:,mem:,qmp:,monitor:,console:,tap:,kernel:,initrd:,drive:,root:,macvtap:'
 GO="$(getopt --options='' --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
@@ -29,8 +29,8 @@ while (($#)); do
     CONSOLE="$2"
     shift -- 2
     ;;
-  --bridge)
-    BRIDGE="$2"
+  --tap)
+    TAP="$2"
     shift -- 2
     ;;
   --kernel)
@@ -79,11 +79,18 @@ ARGV=(
   -m "${MEM:-"size=1G"}"
 )
 
+KERNEL_COMMANDS=(
+  reboot=triple
+  panic=-1
+  console=hvc0
+  "root=$ROOT"
+)
+
 CON='con0'
 ARGV+=(
   -kernel "$KERNEL"
   -initrd "$INITRD"
-  -append "reboot=triple console=hvc0 root=$ROOT"
+  -append "${KERNEL_COMMANDS[*]}"
   -device 'virtio-serial-device'
   -device "virtconsole,chardev=$CON"
 )
@@ -105,7 +112,7 @@ if [[ -n "${MONITOR:-""}" ]]; then
 fi
 
 NIC='model=virtio-net-device'
-ARGV+=(-nic "tap,script=no,downscript=no,$NIC,br=$BRIDGE")
+ARGV+=(-nic "tap,script=no,downscript=no,$NIC,ifname=$TAP")
 
 if [[ -n "${MACVTAP:-""}" ]]; then
   ARGV+=(-nic "tap,script=no,downscript=no,$NIC,ifname=$MACVTAP")

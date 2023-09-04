@@ -1,0 +1,29 @@
+[Unit]
+Description      = Network Tap -- %I
+StopWhenUnneeded = yes
+
+BindsTo          = systemd-networkd.service
+After            = systemd-networkd.service
+
+[Service]
+Type             = oneshot
+RemainAfterExit  = yes
+Restart          = on-failure
+
+ProtectSystem    = strict
+PrivateTmp       = yes
+ReadWritePaths   = %t/systemd %T
+
+EnvironmentFile  = -/usr/local/etc/default/%I.%J.env
+
+Environment      = IFACE=%I
+Environment      = BRIDGE=%J
+Environment      = NETDEV=%t/systemd/network/0-%I.netdev
+Environment      = NETWORK=%t/systemd/network/0-%I.network
+
+ExecStart        = /usr/local/libexec/envsubst2.sh /usr/local/opt/network/tap@.netdev ${NETDEV}
+ExecStart        = /usr/local/libexec/envsubst2.sh /usr/local/opt/network/tap@.network ${NETWORK}
+ExecStart        = networkctl reload
+ExecStart        = networkctl reconfigure -- ${IFACE}
+ExecStopPost     = rm -v --recursive --force -- ${NETDEV} ${NETWORK}
+ExecStopPost     = -networkctl delete -- ${IFACE}
