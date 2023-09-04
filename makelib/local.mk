@@ -110,4 +110,4 @@ zsh/iso/libexec/hr.sh                                                           
 endef
 
 REF_LINKS := $(shell tr -s ' ' '!' <<<'$(REF_LINKS)')
-$(foreach machine,$(MACHINES),$(eval $(call LOCAL_TEMPLATE,$(machine),layers/{$(subst $(sp),$(s),$(strip _ $(file <$(machine)/usr/local/opt/initd/layers.txt)))})))
+$(foreach machine,$(MACHINES),$(eval $(call LOCAL_TEMPLATE,$(machine),layers/{$(subst $(sp),$(s),$(strip _ $(shell grep -h -v -- '^#' $(machine)/usr/local/opt/initd/layers.txt)))})))
