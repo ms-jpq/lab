@@ -37,6 +37,7 @@ ExecStartPre         = /usr/local/libexec/envsubst2.sh /usr/local/opt/network/@.
 
 ExecStart            = networkctl reload
 ExecStart            = networkctl reconfigure -- ${IFACE}
+ExecReload           = networkctl reconfigure -- ${IFACE}
 
 ExecStart            = nft -- 'add element inet user internal_ifs     { ${IFACE} }; add element inet user masq_v4    { ${IPV4_NET} }; add element inet user masq_v6    { ${IPV6_NET} }'
 ExecReload           = nft -- 'add element inet user internal_ifs     { ${IFACE} }; add element inet user masq_v4    { ${IPV4_NET} }; add element inet user masq_v6    { ${IPV6_NET} }'

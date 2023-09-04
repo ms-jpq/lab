@@ -17,8 +17,8 @@ ReadWritePaths   = %t/local/tor/%I %t/systemd/network %T
 Environment      = IFACE=vtor
 
 EnvironmentFile  = %t/local/ip/%J.env
-ExecStart        = /usr/local/libexec/envsubst2.sh /usr/local/opt/tor/torrc %t/local/tor/%I/torrc
-ExecStart        = /usr/local/libexec/envsubst2.sh /usr/local/opt/tor/70-vtor.network %t/systemd/network/70-${IFACE}.network
+ExecStartPre     = /usr/local/libexec/envsubst2.sh /usr/local/opt/tor/torrc %t/local/tor/%I/torrc
+ExecStartPre     = /usr/local/libexec/envsubst2.sh /usr/local/opt/tor/70-vtor.network %t/systemd/network/70-${IFACE}.network
 ExecStart        = networkctl reload
 ExecStart        = networkctl reconfigure -- ${IFACE}
 ExecStopPost     = -networkctl delete -- ${IFACE}
