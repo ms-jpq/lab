@@ -74,13 +74,11 @@ ARGV=(
   -no-user-config
   -nographic
   -machine 'microvm,x-option-roms=off,pit=off,pic=off,isa-serial=off,rtc=off,accel=kvm'
-  -no-acpi
   -cpu host
   -smp "$CPU"
   -m "${MEM:-"size=1G"}"
 )
 
-CONSOLE=
 CON='con0'
 ARGV+=(
   -kernel "$KERNEL"
@@ -117,7 +115,9 @@ fi
 for IDX in "${!DRIVES[@]}"; do
   ID="dri$IDX"
   DRIVE="${DRIVES[$IDX]}"
-  DRIVE=/var/cache/local/qemu/cloudimg.raw
+  if ! ((IDX)); then
+    DRIVE=/var/cache/local/qemu/cloudimg.raw
+  fi
   # TODO io_uring
   ARGV+=(
     -drive "if=none,discard=unmap,format=raw,aio=threads,id=$ID,file=$DRIVE"

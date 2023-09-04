@@ -9,4 +9,4 @@ for BIN in "${0%/*}/../apriori.d"/*; do
   fi
 done
 
-exec -- "${0%/*}/../bin/microvm.sh" "$@" --drive "$CLOUD_INIT"
+exec -- "${0%/*}/../bin/microvm.sh" "$@"

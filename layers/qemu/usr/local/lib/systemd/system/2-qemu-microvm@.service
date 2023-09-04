@@ -27,10 +27,12 @@ Environment       = INITRD=%C/local/qemu/initrd
 Environment       = ROOT=/dev/vda1
 Environment       = DRIVE_ROOT=%S/local/qemu/%I
 Environment       = DRIVE=%S/local/qemu/%I/fs.raw
+Environment       = CLOUD_INIT=%V/cloud-init.iso
 
 ExecStartPre      = /usr/local/opt/qemu/libexec/preinux.sh %S/local/qemu ${MACHINE} ${DRIVE_ROOT} ${DRIVE}
+ExecStartPre      = /usr/local/opt/qemu/libexec/cloud-init.sh %h ${CLOUD_INIT}
 
 ExecStartPre      = touch -- ${DRIVE_ROOT}/.live
 ExecStopPost      = rm -v -rf -- ${DRIVE_ROOT}/.live
 
-ExecStart         = /usr/local/opt/qemu/libexec/%J@.sh --cpu ${CPU} --mem ${MEMORY} --qmp ${QMP} --monitor ${MONITOR} --console ${CONSOLE} --bridge ${BRIDGE} --kernel ${KERNEL} --initrd ${INITRD} --drive ${DRIVE} --root ${ROOT}
+ExecStart         = /usr/local/opt/qemu/libexec/%J@.sh --cpu ${CPU} --mem ${MEMORY} --qmp ${QMP} --monitor ${MONITOR} --console ${CONSOLE} --bridge ${BRIDGE} --kernel ${KERNEL} --initrd ${INITRD} --drive ${DRIVE} --root ${ROOT} --drive ${CLOUD_INIT}
