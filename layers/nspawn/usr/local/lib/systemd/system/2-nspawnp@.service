@@ -2,6 +2,7 @@
 Description              = Template '.nspawn' systemd.nspawn -- %I
 StopWhenUnneeded         = yes
 CollectMode              = inactive-or-failed
+RequiresMountsFor        = %S/local/nspawn %S/local/nspawn/%I/fs
 ConditionPathExists      = !%E/systemd/nspawn/%i.nspawn
 
 [Service]
@@ -12,11 +13,11 @@ RuntimeDirectoryPreserve = yes
 RuntimeDirectory         = systemd/nspawn
 ProtectSystem            = strict
 PrivateTmp               = yes
-ReadWritePaths           = %t/systemd/nspawn %T %S/local/nspawn
+ReadWritePaths           = %t/systemd/nspawn %T %S/local %C/local
 
 EnvironmentFile          = -/usr/local/etc/default/%I.nspawn.env
 Environment              = ROOT=%S/local/nspawn/%I/fs
-Environment              = CACHE=%C/local/ns
+Environment              = CACHE=%C/local/nspawn
 
 ExecStart                = /usr/local/opt/nspawn/libexec/start-pre.sh %i.nspawn %S/local/nspawn ${ROOT} ${CACHE}
 ExecStopPost             = rm -v -fr -- %t/systemd/nspawn/%i.nspawn

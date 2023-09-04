@@ -1,6 +1,7 @@
 #!/usr/bin/env -S -- bash -Eeu -O dotglob -O nullglob -O extglob -O failglob -O globstar
 
 set -o pipefail
+set -x
 
 MACHINE="$1"
 FS_ROOT="$2"
@@ -13,12 +14,13 @@ cat -- "$CONF"/*.nspawn | envsubst | sponge -- "/run/systemd/nspawn/$MACHINE.nsp
 
 if ! [[ -d "$ROOT" ]]; then
   "$HR" rm -v -fr -- "$ROOT"
-  "$HR" gmake --directory /usr/local/opt/initd -- nspawn
+  "$HR" gmake --directory /usr/local/opt/initd -- nspawn.pull
 
   FS="$(stat --file-system --format %T -- "$FS_ROOT")"
   case "$FS" in
   zfs)
-    SOURCE="$(findmnt --noheadings --output source --target "$FS_ROOT")"
+    SOURCE="$(findmnt --noheadings --output source --target "$FS_ROOT" | tail --lines 1)"
+    SOURCE="${SOURCE//[[:space:]]/''}"
     "$HR" zfs create -o mountpoint="$ROOT" "$SOURCE/$MACHINE"
     ;;
   btrfs)
