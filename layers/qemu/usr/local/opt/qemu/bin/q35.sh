@@ -110,7 +110,12 @@ NIC='model=virtio-net-pci-non-transitional'
 ARGV+=(-nic "bridge,br=$BRIDGE,$NIC")
 
 if [[ -n "${MACVTAP:-""}" ]]; then
-  ARGV+=(-nic "tap,script=no,downscript=no,ifname=$MACVTAP,$NIC")
+  ID='mv0'
+  SYS="/sys/class/net/$MACVTAP"
+  IFI="$(<"$SYS/ifindex")"
+  MACADDR="$(<"$SYS/address")"
+  exec 3<>"/dev/tap$IFI"
+  ARGV+=(-nic "tap,script=no,downscript=no,fd=3,mac=$MACADDR,$NIC")
 fi
 
 if [[ -v InitiatorName ]]; then
@@ -138,3 +143,4 @@ done
 ARGV+=("$@")
 
 "${0%/*}/../libexec/pprint.sh" "${ARGV[@]}"
+exec -- "${ARGV[@]}"
