@@ -68,16 +68,7 @@ remove)
 
     case "$FS" in
     zfs)
-      Z="$(zfs list -H -o name,mountpoint)"
-      readarray -t -- ZFS <<<"$Z"
-      for Z in "${ZFS[@]}"; do
-        NAME="${Z%%$'\t'*}"
-        MOUNTPOINT="${Z#*$'\t'}"
-        if [[ "$MOUNTPOINT" == "$ROOT_FS" ]]; then
-          SOURCE="$NAME"
-          break
-        fi
-      done
+      SOURCE="$(/usr/local/opt/zfs/libexec/findfs.sh "$ROOT_FS")"
       "$HR" zfs destroy -v -- "$SOURCE"
       ;;
     btrfs)

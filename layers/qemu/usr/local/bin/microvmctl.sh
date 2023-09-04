@@ -15,7 +15,7 @@ SERVICES=()
 for NAME in "$@"; do
   MACH="$(systemd-escape -- "$NAME")"
   MACHINES+=("$MACH")
-  SERVICES+=("2-nspawnd@$MACH.service")
+  SERVICES+=("2-qemu-microvm@$MACH.service")
 done
 
 sctl() {
@@ -26,6 +26,7 @@ case "$ACTION" in
 ls)
   mkdir -v -p -- "$LIB"
   "$HR" ls --almost-all --group-directories-first --classify -l --no-group --si --color=auto -- "$LIB"
+  "$HR" machinectl list --full --no-pager
   ;;
 pin)
   for MACH in "${MACHINES[@]}"; do
@@ -46,7 +47,7 @@ stop)
 enable)
   mkdir -v -p -- "$WANTS"
   for SVC in "${SERVICES[@]}"; do
-    "$HR" ln -v -sf -- '../2-nspawnd@.service' "$WANTS/$SVC"
+    "$HR" ln -v -sf -- '../2-qemu-microvm@.service' "$WANTS/$SVC"
   done
   ;;
 disable)
@@ -55,14 +56,28 @@ disable)
   done
   ;;
 remove)
+  FS="$(stat --file-system --format %T -- "$LIB")"
   for MACH in "${MACHINES[@]}"; do
     ROOT="$LIB/$MACH"
+    ROOT_FS="$ROOT/fs"
     set -x
-    if ! [[ -k "$ROOT" ]] && ! [[ -k "$ROOT/fs" ]]; then
-      "$HR" rm -v -fr -- "$ROOT"
-    else
+
+    if [[ -k "$ROOT" ]] || [[ -k "$ROOT_FS" ]]; then
       exit 1
     fi
+
+    case "$FS" in
+    zfs)
+      SOURCE="$(/usr/local/opt/zfs/libexec/findfs.sh "$ROOT_FS")"
+      "$HR" zfs destroy -v -- "$SOURCE"
+      ;;
+    btrfs)
+      "$HR" btrfs subvolume delete -- "$ROOT"
+      ;;
+    *) ;;
+    esac
+    "$HR" rm -v -fr -- "$ROOT"
+
     set +x
   done
   ;;
