@@ -28,7 +28,13 @@ case "$ACTION" in
 ls)
   mkdir -v -p -- "$LIB" >&2
   "$HR" tree --dirsfirst -F -a -L 2 -- "$LIB"
-  "$HR" machinectl list --full --no-pager
+  case "$0" in
+  */nspawnctl.sh)
+    "$HR" machinectl list --full --no-pager
+    ;;
+  *) ;;
+  esac
+  sctl status -- "$SERVICE_NAME@*.service"
   ;;
 pin)
   for MACH in "${MACHINES[@]}"; do

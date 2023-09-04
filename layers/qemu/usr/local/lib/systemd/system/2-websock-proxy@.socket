@@ -1,7 +1,7 @@
 [Unit]
-Description  = Proxy qemu display socket -- %t/local/websockify/%i.sock
+Description  = Proxy qemu display socket -- %t/local/qemu/%I/ws.sock
 CollectMode  = inactive-or-failed
 
 [Socket]
 RemoveOnStop = yes
-ListenStream = %t/local/websockify/%i.sock
+ListenStream = %t/local/qemu/%I/ws.sock

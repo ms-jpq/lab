@@ -15,4 +15,4 @@ Restart          = on-failure
 ProtectSystem    = strict
 PrivateNetwork   = yes
 
-ExecStart        = /usr/lib/systemd/systemd-socket-proxyd --exit-idle-time 2hours -- localhost:8080
+ExecStart        = /usr/lib/systemd/systemd-socket-proxyd -- localhost:8080

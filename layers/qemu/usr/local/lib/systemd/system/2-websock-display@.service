@@ -12,5 +12,5 @@ Restart          = on-failure
 ProtectSystem    = strict
 PrivateNetwork   = yes
 
-ExecStart        = websockify --web /usr/share/novnc --unix-target %t/virt-displays/%i.sock -- [::]:8080
+ExecStart        = websockify --web /usr/share/novnc --unix-target %t/local/qemu/%I/vnc.sock -- [::]:8080
 ExecStartPost    = /usr/local/libexec/retry.sh 0.1 curl --fail --silent --output /dev/null -- localhost:8080

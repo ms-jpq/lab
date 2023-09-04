@@ -1,21 +1,25 @@
 [Unit]
-Description      = QEMU -- %I
+Description       = Qemu -- %N
+RequiresMountsFor = %S/local/qemu %S/local/qemu/%I
 
-BindsTo          = 1-vn@qemu.service
-After            = 1-vn@qemu.service
+BindsTo           = 1-vn@qemu.service
+After             = 1-vn@qemu.service
+
+BindsTo           = dnsmasq@qemu.service
+After             = dnsmasq@qemu.service
 
 [Service]
-ProtectSystem    = strict
-RuntimeDirectory = local/qemu local/qemu/%I
-ReadWritePaths   = %C/local
+ProtectSystem     = strict
+RuntimeDirectory  = local/qemu local/qemu/%I
+ReadWritePaths    = %t %T %S/local %C/local
 
-EnvironmentFile  = -/usr/local/etc/default/%I.qemu.env
-Environment      = CPU=
-Environment      = MEMORY=8G
-Environment      = QMP=%t/local/qemu/%I/qmp.sock
-Environment      = MONITOR=%t/local/qemu/%I/mon.sock
-Environment      = CONSOLE=%t/local/qemu/%I/con.sock
-Environment      = BRIDGE=qemu
-Environment      = DRIVE=%t/local/qemu/%I/fs.raw
+EnvironmentFile   = -/usr/local/etc/default/%I.qemu.env
+Environment       = CPU=
+Environment       = MEMORY=8G
+Environment       = QMP=%t/local/qemu/%I/qmp.sock
+Environment       = MONITOR=%t/local/qemu/%I/mon.sock
+Environment       = CONSOLE=%t/local/qemu/%I/con.sock
+Environment       = BRIDGE=qemu
+Environment       = DRIVE=%t/local/qemu/%I/fs.raw
 
-ExecStart        = /usr/local/opt/qemu/libexec/%J@.sh --cpu ${CPU} --mem ${MEMORY} --qmp ${QMP} --monitor ${MONITOR} --console ${CONSOLE} --bridge ${BRIDGE} --drive ${DRIVE}
+ExecStart         = /usr/local/opt/qemu/libexec/%J@.sh --cpu ${CPU} --mem ${MEMORY} --qmp ${QMP} --monitor ${MONITOR} --console ${CONSOLE} --bridge ${BRIDGE} --drive ${DRIVE}
