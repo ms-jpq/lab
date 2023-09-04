@@ -20,6 +20,10 @@ Environment       = QMP=%t/local/qemu/%I/qmp.sock
 Environment       = MONITOR=%t/local/qemu/%I/mon.sock
 Environment       = CONSOLE=%t/local/qemu/%I/con.sock
 Environment       = BRIDGE=qemu
+Environment       = ROOT=%t/local/qemu/%I
 Environment       = DRIVE=%t/local/qemu/%I/fs.raw
+
+ExecStartPre      = touch -- ${ROOT}/.live
+ExecStopPost      = rm -v -rf -- ${ROOT}/.live
 
 ExecStart         = /usr/local/opt/qemu/libexec/%J@.sh --cpu ${CPU} --mem ${MEMORY} --qmp ${QMP} --monitor ${MONITOR} --console ${CONSOLE} --bridge ${BRIDGE} --drive ${DRIVE}

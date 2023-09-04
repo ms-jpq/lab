@@ -5,6 +5,10 @@ CollectMode      = inactive-or-failed
 
 [Service]
 ProtectSystem    = strict
-RuntimeDirectory = local/swtpm
+RuntimeDirectory = local/swtpm local/swtpm/%I
 
-ExecStart        = /usr/local/opt/qemu/libexec/swtpm.sh /%I %t/local/swtpm
+Environment      = TPM_PATH=%t/local/swtpm/%I
+Environment      = TPM_CTRL=%t/local/swtpm/%I/ctl.sock
+Environment      = TPM_SOCK=%t/local/swtpm/%I/tpm.sock
+
+ExecStart        = swtpm --ctrl type=unixio,path=${TPM_CTRL} --server type=unixio,path=${TPM_SOCK}
