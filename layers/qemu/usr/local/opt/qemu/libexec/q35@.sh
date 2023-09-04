@@ -64,7 +64,7 @@ while (($#)); do
   esac
 done
 
-if ! [[ -v CPU ]]; then
+if [[ -z "${CPU:-""}" ]]; then
   NPROCS="$(nproc)"
   CPU="cpus=$((NPROCS / 2))"
 fi
@@ -90,11 +90,11 @@ ARGV+=(
   -device virtio-balloon-pci-non-transitional
 )
 
-if [[ -v QMP ]]; then
+if [[ -n "${QMP:-""}" ]]; then
   ARGV+=(-qmp "unix:$QMP,server,nowait")
 fi
 
-if [[ -v MONITOR ]]; then
+if [[ -n "${MONITOR:-""}" ]]; then
   ARGV+=(-monitor "unix:$MONITOR,server,nowait")
 fi
 
@@ -109,7 +109,7 @@ ARGV+=(
 NIC='model=virtio-net-pci-non-transitional'
 ARGV+=(-nic "bridge,br=$BRIDGE,$NIC")
 
-if [[ -v MACVTAP ]]; then
+if [[ -n "${MACVTAP:-""}" ]]; then
   ARGV+=(-nic "tap,script=no,downscript=no,ifname=$MACVTAP,$NIC")
 fi
 

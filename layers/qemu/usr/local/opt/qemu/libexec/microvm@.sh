@@ -71,17 +71,17 @@ ARGV+=(
   -append 'reboot=triple'
 )
 
-if [[ -v CONSOLE ]]; then
+if [[ -n "${CONSOLE:-""}" ]]; then
   ARGV+=(-serial "unix:server=on,wait=off,path=$CONSOLE")
 else
   ARGV+=(-serial stdio)
 fi
 
-if [[ -v QMP ]]; then
+if [[ -n "${QMP:-""}" ]]; then
   ARGV+=(-qmp "unix:$QMP,server,nowait")
 fi
 
-if [[ -v MONITOR ]]; then
+if [[ -n "${MONITOR:-""}" ]]; then
   ARGV+=(-monitor "unix:$MONITOR,server,nowait")
 fi
 

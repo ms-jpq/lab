@@ -9,13 +9,15 @@ ARGV=("$@")
 ACTION="${1:-"ls"}"
 shift -- 1 || true
 
+# shellcheck disable=SC1090
+source -- "${0%/*}/../libexec/${0##*/}"
 WANTS='/usr/local/lib/systemd/system/machines.target.wants'
 MACHINES=()
 SERVICES=()
 for NAME in "$@"; do
   MACH="$(systemd-escape -- "$NAME")"
   MACHINES+=("$MACH")
-  SERVICES+=("2-nspawnd@$MACH.service")
+  SERVICES+=("$SERVICE_NAME@$MACH.service")
 done
 
 sctl() {
@@ -47,7 +49,7 @@ stop)
 enable)
   mkdir -v -p -- "$WANTS"
   for SVC in "${SERVICES[@]}"; do
-    "$HR" ln -v -sf -- '../2-nspawnd@.service' "$WANTS/$SVC"
+    "$HR" ln -v -sf -- "../$SERVICE_NAME@.service" "$WANTS/$SVC"
   done
   ;;
 disable)
