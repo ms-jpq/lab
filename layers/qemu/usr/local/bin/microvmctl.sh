@@ -24,8 +24,8 @@ sctl() {
 
 case "$ACTION" in
 ls)
-  mkdir -v -p -- "$LIB"
-  "$HR" ls --almost-all --group-directories-first --classify -l --no-group --si --color=auto -- "$LIB"
+  mkdir -v -p -- "$LIB" >&2
+  "$HR" tree --dirsfirst -F -a -L 2 -- "$LIB"
   "$HR" machinectl list --full --no-pager
   ;;
 pin)
@@ -59,16 +59,15 @@ remove)
   FS="$(stat --file-system --format %T -- "$LIB")"
   for MACH in "${MACHINES[@]}"; do
     ROOT="$LIB/$MACH"
-    ROOT_FS="$ROOT/fs"
     set -x
 
-    if [[ -k "$ROOT" ]] || [[ -k "$ROOT_FS" ]]; then
+    if [[ -k "$ROOT" ]] || [[ -f "$ROOT/.live" ]]; then
       exit 1
     fi
 
     case "$FS" in
     zfs)
-      SOURCE="$(/usr/local/opt/zfs/libexec/findfs.sh vol "$ROOT_FS")"
+      SOURCE="$(/usr/local/opt/zfs/libexec/findfs.sh vol "$ROOT")"
       "$HR" zfs destroy -v -- "$SOURCE"
       ;;
     btrfs)

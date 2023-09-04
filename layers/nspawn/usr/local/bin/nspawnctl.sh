@@ -24,8 +24,8 @@ sctl() {
 
 case "$ACTION" in
 ls)
-  mkdir -v -p -- "$LIB"
-  "$HR" ls --almost-all --group-directories-first --classify -l --no-group --si --color=auto -- "$LIB"
+  mkdir -v -p -- "$LIB" >&2
+  "$HR" tree --dirsfirst -F -a -L 2 -- "$LIB"
   "$HR" machinectl list --full --no-pager
   ;;
 pin)
