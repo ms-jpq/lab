@@ -2,6 +2,5 @@
 
 set -o pipefail
 
-MOUNT="$1"
-NAME="$("${0%/*}/findfs.sh" fs "$MOUNT")"
-exec -- zfs mount -- "$NAME"
+ROOT="$2"
+/usr/local/opt/zfs/libexec/mount-by-path.sh "$ROOT"

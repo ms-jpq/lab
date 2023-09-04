@@ -2,16 +2,39 @@
 
 set -o pipefail
 
-MOUNT="$1"
-Z="$(zfs list -H -o name,mountpoint)"
-readarray -t -- ZFS <<<"$Z"
+TYPE="$1"
+MOUNT="$2"
 
-for Z in "${ZFS[@]}"; do
-  NAME="${Z%%$'\t'*}"
-  MOUNTPOINT="${Z#*$'\t'}"
-  if [[ "$MOUNTPOINT" == "$MOUNT" ]]; then
-    printf -- '%s' "$NAME"
-    exit
+case "$TYPE" in
+fs)
+  Z="$(zfs list -H -o name,mountpoint -t filesystem)"
+  readarray -t -- ZFS <<<"$Z"
+  for Z in "${ZFS[@]}"; do
+    NAME="${Z%%$'\t'*}"
+    MOUNTPOINT="${Z#*$'\t'}"
+    if [[ "$MOUNTPOINT" == "$MOUNT" ]]; then
+      printf -- '%s' "$NAME"
+      exit
+    fi
+  done
+  exit 1
+  ;;
+vol)
+  if [[ "$MOUNT" != /dev/zvol/* ]] && [[ -L "$MOUNT" ]]; then
+    MOUNT="$(readlink -- "$MOUNT")"
   fi
-done
-exit 1
+  Z="$(zfs list -H -o name -t volume)"
+  readarray -t -- ZFS <<<"$Z"
+  for Z in "${ZFS[@]}"; do
+    ALIAS="/dev/zvol/$Z"
+    if [[ "$ALIAS" == "$MOUNT" ]]; then
+      printf -- '%s' "$Z"
+      exit
+    fi
+  done
+  exit 1
+  ;;
+*)
+  exit 2
+  ;;
+esac

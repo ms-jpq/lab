@@ -11,7 +11,11 @@ HR='/usr/local/libexec/hr-run.sh'
 CONF='/usr/local/opt/nspawn/conf.d'
 cat -- "$CONF"/*.nspawn | envsubst | sponge -- "/run/systemd/nspawn/$MACHINE.nspawn"
 
-/usr/local/opt/zfs/libexec/mount-by-path.sh "$ROOT" || true
+for BIN in "${0%/*}/../apriori.d"/*; do
+  if [[ -x "$BIN" ]]; then
+    "$BIN" "$MACHINE" "$ROOT" || true
+  fi
+done
 
 if ! [[ -d "$ROOT" ]]; then
   "$HR" rm -v -fr -- "$ROOT"

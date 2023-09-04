@@ -5,9 +5,10 @@ set -o pipefail
 MACHINE="$1"
 ROOT="$2"
 
-ZFS='/usr/local/opt/zfs/libexec/mount-by-path.sh'
-if [[ -x "$ZFS" ]]; then
-  "$ZFS" "$ROOT" || true
-fi
+for BIN in "${0%/*}/../apriori.d"/*; do
+  if [[ -x "$BIN" ]]; then
+    "$BIN" "$MACHINE" "$ROOT"
+  fi
+done
 
 exec -- systemd-nspawn --keep-unit --boot --notify-read=yes -U --network-veth --link-journal=try-guest --settings=override --machine="$MACHINE" --directory="$ROOT"
