@@ -7,7 +7,7 @@
 + iperf3
 + jq
 + language-pack-zh-hans
-+ linux-lowlatency-hwe-[]m5_assert([ENV_VERSION_ID])
++ linux-generic-hwe-[]m5_assert([ENV_VERSION_ID])
 + m4
 + moreutils
 + mosh
@@ -25,6 +25,7 @@
 + tree
 + unattended-upgrades
 + wireguard-tools
+- linux-lowlatency-hwe-[]m5_assert([ENV_VERSION_ID])
 - lxd-agent-loader
 - snapd
 - vim

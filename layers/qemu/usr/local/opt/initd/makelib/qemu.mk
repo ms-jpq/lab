@@ -3,7 +3,7 @@
 pull: qemu.pull
 
 qemu.grub:
-	update-initramfs -u && update-gru
+	update-initramfs -u && update-grub
 
 clobber.qemu:
 	shopt -u failglob
