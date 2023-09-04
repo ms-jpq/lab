@@ -1,0 +1,6 @@
+[NetDev]
+Name = macvtap0
+Kind = macvtap
+
+[MACVTAP]
+Mode = bridge

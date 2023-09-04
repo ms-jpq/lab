@@ -134,9 +134,6 @@ fi
 for IDX in "${!DRIVES[@]}"; do
   ID="dri$IDX"
   DRIVE="${DRIVES[$IDX]}"
-  if ! ((IDX)); then
-    DRIVE=/var/cache/local/qemu/cloudimg.raw
-  fi
   # TODO io_uring
   ARGV+=(
     -drive "if=none,discard=unmap,format=raw,aio=threads,id=$ID,file=$DRIVE"

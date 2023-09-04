@@ -25,22 +25,16 @@ if ! [[ -d "$ROOT" ]]; then
     SOURCE="$(findmnt --noheadings --output source --target "$LIB" | tail --lines 1)"
     SOURCE="${SOURCE//[[:space:]]/''}"
     ZFS="$SOURCE/$MACHINE"
-    ZFSFS="$ZFS/fs"
     UNIT="2-qemu-microvm@$MACHINE.service"
     "$HR" zfs create -o canmount=noauto -o mountpoint="$ROOT" -o org.openzfs.systemd:required-by="$UNIT" -o org.openzfs.systemd:before="$UNIT" -- "$ZFS"
     "$HR" zfs mount -- "$ZFS"
-    "$HR" zfs create -s -V 100G "$ZFSFS"
-    "$HR" ln -v -sf "/dev/zvol/$ZFSFS" "$DRIVE"
-    "$HR" systemctl daemon-reload
-    "$HR" cat -- "$RAW" >"$DRIVE"
     ;;
   btrfs)
     "$HR" btrfs subvolume create -- "$ROOT"
-    "$HR" cp -v -f --reflink=auto -- "$RAW" "$DRIVE"
     ;;
   *)
     "$HR" mkdir -v -p -- "$ROOT"
-    "$HR" cp -v -f --reflink=auto -- "$RAW" "$DRIVE"
     ;;
   esac
+  "$HR" cp -v -f --reflink=auto -- "$RAW" "$DRIVE"
 fi
