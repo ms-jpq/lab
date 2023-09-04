@@ -9,13 +9,16 @@ ARGV=("$@")
 ACTION="${1:-"ls"}"
 shift -- 1 || true
 
-WANTS='/usr/local/lib/systemd/system/machines.target.wants'
-MACHINES=()
+SYSTEMD='/usr/local/lib/systemd/system'
+MWANTS="$SYSTEMD/machines.target.wants"
+SWANTS="$SYSTEMD/sockets.target.wants"
+
 SERVICES=()
+SOCKS=()
 for NAME in "$@"; do
   MACH="$(systemd-escape -- "$NAME")"
-  MACHINES+=("$MACH")
-  SERVICES+=("2-qemu-microvm@$MACH.service")
+  SERVICES+=("2-qemu-q35@$MACH.service")
+  SOCKS+=("2-websock-proxy@$MACH.socket")
 done
 
 sctl() {
@@ -26,17 +29,7 @@ case "$ACTION" in
 ls)
   mkdir -v -p -- "$LIB" >&2
   "$HR" tree --dirsfirst -F -a -L 2 -- "$LIB"
-  "$HR" machinectl list --full --no-pager
-  ;;
-pin)
-  for MACH in "${MACHINES[@]}"; do
-    "$HR" chmod +t -- "$LIB/$MACH"
-  done
-  ;;
-unpin)
-  for MACH in "${MACHINES[@]}"; do
-    "$HR" chmod -t -- "$LIB/$MACH"
-  done
+  sctl status -- '2-qemu-q35@*.service' '2-swtpm@*.service' '2-websock-display@*.service' '2-websock-proxy@*.*'
   ;;
 start)
   sctl start -- "${SERVICES[@]}"
@@ -45,40 +38,23 @@ stop)
   sctl stop -- "${SERVICES[@]}"
   ;;
 enable)
-  mkdir -v -p -- "$WANTS"
+  mkdir -v -p -- "$MWANTS" "$SWANTS"
   for SVC in "${SERVICES[@]}"; do
-    "$HR" ln -v -sf -- '../2-qemu-microvm@.service' "$WANTS/$SVC"
+    "$HR" ln -v -sf -- '../2-qemu-q35@.service' "$MWANTS/$SVC"
+  done
+  for SOCK in "${SOCKS[@]}"; do
+    "$HR" ln -v -sf -- '../2-websock-proxy@.socket' "$SWANTS/$SOCK"
   done
   ;;
 disable)
+  RM=()
   for SVC in "${SERVICES[@]}"; do
-    "$HR" rm -v -fr -- "$WANTS/$SVC"
+    RM+=("$MWANTS/$SVC")
   done
-  ;;
-remove)
-  FS="$(stat --file-system --format %T -- "$LIB")"
-  for MACH in "${MACHINES[@]}"; do
-    ROOT="$LIB/$MACH"
-    set -x
-
-    if [[ -k "$ROOT" ]] || [[ -f "$ROOT/.live" ]]; then
-      exit 1
-    fi
-
-    case "$FS" in
-    zfs)
-      SOURCE="$(/usr/local/opt/zfs/libexec/findfs.sh vol "$ROOT")"
-      "$HR" zfs destroy -v -- "$SOURCE"
-      ;;
-    btrfs)
-      "$HR" btrfs subvolume delete -- "$ROOT"
-      ;;
-    *) ;;
-    esac
-    "$HR" rm -v -fr -- "$ROOT"
-
-    set +x
+  for SOCK in "${SOCKS[@]}"; do
+    RM+=("$SWANTS/$SOCK")
   done
+  "$HR" rm -v -fr -- "${RM[@]}"
   ;;
 *)
   printf -- '%s' '>? '

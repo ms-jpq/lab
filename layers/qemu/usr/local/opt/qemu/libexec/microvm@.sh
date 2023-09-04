@@ -57,7 +57,7 @@ if [[ -z "${CPU:-""}" ]]; then
 fi
 
 ARGV=(
-  qemu-system-x86
+  qemu-system-x86_64-microvm
   -nodefaults
   -no-user-config
   -machine 'microvm,x-option-roms=off,pit=off,pic=off,isa-serial=off,rtc=off,accel=kvm'
@@ -95,8 +95,9 @@ fi
 for IDX in "${!DRIVES[@]}"; do
   DRIVE="${DRIVES[$IDX]}"
   ID="dri$IDX"
+  # TODO io_uring
   ARGV+=(
-    -drive "if=none,discard=unmap,format=raw,aio=io_uring,id=$ID,file=$DRIVE"
+    -drive "if=none,discard=unmap,format=raw,aio=threads,id=$ID,file=$DRIVE"
     -device "virtio-blk-device,drive=$ID"
   )
 done
@@ -104,3 +105,10 @@ done
 ARGV+=("$@")
 
 "${0%/*}/pprint.sh" "${ARGV[@]}"
+for BIN in "${0%/*}/../apriori.d"/*; do
+  if [[ -x "$BIN" ]]; then
+    # shellcheck disable=SC2154
+    "$BIN" "$MACHINE" "$ROOT"
+  fi
+done
+exec -- "${ARGV[@]}"

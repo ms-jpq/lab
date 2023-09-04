@@ -2,4 +2,4 @@
 
 set -o pipefail
 
-export -- SERVICE_NAME='2-nspawnd'
+export -- SERVICE_NAME='2-nspawnd' LIB='/var/lib/local/nspawn'

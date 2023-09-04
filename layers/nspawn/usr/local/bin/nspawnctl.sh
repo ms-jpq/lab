@@ -2,7 +2,6 @@
 
 set -o pipefail
 
-LIB='/var/lib/local/nspawn'
 HR='/usr/local/libexec/hr-run.sh'
 
 ARGV=("$@")
@@ -26,6 +25,7 @@ sctl() {
 
 case "$ACTION" in
 ls)
+  # shellcheck disable=SC2154
   mkdir -v -p -- "$LIB" >&2
   "$HR" tree --dirsfirst -F -a -L 2 -- "$LIB"
   case "$0" in
@@ -34,7 +34,6 @@ ls)
     ;;
   *) ;;
   esac
-  sctl status -- "$SERVICE_NAME@*.service"
   ;;
 pin)
   for MACH in "${MACHINES[@]}"; do
@@ -59,9 +58,11 @@ enable)
   done
   ;;
 disable)
+  RM=()
   for SVC in "${SERVICES[@]}"; do
-    "$HR" rm -v -fr -- "$WANTS/$SVC"
+    RM+=("$WANTS/$SVC")
   done
+  "$HR" rm -v -fr -- "${RM[@]}"
   ;;
 remove)
   FS="$(stat --file-system --format %T -- "$LIB")"
@@ -76,7 +77,7 @@ remove)
     case "$FS" in
     zfs)
       SOURCE="$(/usr/local/opt/zfs/libexec/findfs.sh fs "$ROOT")"
-      "$HR" zfs destroy -v -- "$SOURCE"
+      "$HR" zfs destroy -v -r -- "$SOURCE"
       ;;
     btrfs)
       "$HR" btrfs subvolume delete -- "$ROOT"

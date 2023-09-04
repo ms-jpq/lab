@@ -2,4 +2,4 @@
 
 set -o pipefail
 
-export -- SERVICE_NAME='2-qemu-microvm'
+export -- SERVICE_NAME='2-qemu-microvm' LIB='/var/lib/local/qemu'

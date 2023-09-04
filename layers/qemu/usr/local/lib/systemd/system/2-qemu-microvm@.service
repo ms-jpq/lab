@@ -12,16 +12,20 @@ After             = dnsmasq@qemu.service
 ProtectSystem     = strict
 RuntimeDirectory  = local/qemu local/qemu/%I
 ReadWritePaths    = %t %T %S/local %C/local
+PrivateTmp        = yes
 
 EnvironmentFile   = -/usr/local/etc/default/%I.qemu.env
+Environment       = MACHINE=%i
 Environment       = CPU=
 Environment       = MEMORY=8G
 Environment       = QMP=%t/local/qemu/%I/qmp.sock
 Environment       = MONITOR=%t/local/qemu/%I/mon.sock
 Environment       = CONSOLE=%t/local/qemu/%I/con.sock
 Environment       = BRIDGE=qemu
-Environment       = ROOT=%t/local/qemu/%I
-Environment       = DRIVE=%t/local/qemu/%I/fs.raw
+Environment       = ROOT=%S/local/qemu/%I
+Environment       = DRIVE=%S/local/qemu/%I/fs.raw
+
+ExecStartPre      = /usr/local/opt/qemu/libexec/preinux.sh %S/local/qemu ${MACHINE} ${ROOT} ${DRIVE}
 
 ExecStartPre      = touch -- ${ROOT}/.live
 ExecStopPost      = rm -v -rf -- ${ROOT}/.live
