@@ -19,9 +19,10 @@ q | qmp)
   SOCK='con'
   ;;
 *)
+  set -x
   exit 2
   ;;
 esac
 
 SOCKET="$RUN/$MACHINE/$SOCK.sock"
-exec -- rlwrap -- socat 'STDIO' "UNIX-CONNECT:$SOCKET"
+exec -- rlwrap -- sudo -- socat 'STDIO' "UNIX-CONNECT:$SOCKET"

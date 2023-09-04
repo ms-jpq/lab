@@ -35,6 +35,7 @@ vol)
   exit 1
   ;;
 *)
+  set -x
   exit 2
   ;;
 esac

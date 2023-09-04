@@ -128,6 +128,7 @@ exec)
   shell "${BSH[@]}" "$@"
   ;;
 *)
+  set -x
   exit 2
   ;;
 esac
