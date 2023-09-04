@@ -1,4 +1,4 @@
 [[Network]]
-# m4_ifdef([ENV_MACVLAN_IF], [
+# m5_for([ENV_MACVLAN_IF], [
 MACVLAN = ENV_MACVLAN_IF
-# ])
+# ], m5_assert([ENV_MACVLAN_IFS]))

@@ -5,6 +5,6 @@ ENV_FS_NTFS=ntfs
 ENV_FS_RCLONE=downloads, gray, hao, media, misc, wallpapers
 ENV_FS_TV=media/TV
 ENV_FS_WALLPAPER=wallpapers
-ENV_MACVLAN_IF=enp109s0
+ENV_MACVLAN_IFS=enp109s0
 ENV_NFS_EXPORTS=tmp, wallpapers
 ENV_SMB_EXPORTS=downloads, gray, hao, media, misc, time-machine, tmp, wallpapers
