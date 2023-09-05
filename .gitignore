@@ -7,3 +7,4 @@ node_modules/
 package-lock.json
 var/
 !layers/**/var/
+!machines/**/var/
