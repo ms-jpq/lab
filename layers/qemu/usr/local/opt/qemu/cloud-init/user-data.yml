@@ -9,20 +9,37 @@ growpart:
 hostname: |-
   ${HOSTNAME}
 
+write_files:
+  - path: /etc/cloud/cloud.cfg.d/99-custom-networking.cfg
+    content: |
+      network: {config: disabled}
+
+  - path: /usr/local/lib/systemd/network/00-cloud-init.network
+    content: |
+      [Match]
+      Name                = e*
+
+      [Link]
+      RequiredForOnline   = no
+
+      [Network]
+      DHCP                = yes
+      LinkLocalAddressing = yes
+      LLDP                = yes
+      EmitLLDP            = customer-bridge
+      IPv6AcceptRA        = yes
+
+runcmd:
+  - - rm
+    - -rf
+    - --
+    - /etc/netplan
+  - - networkctl
+    - reload
+
 users:
   - name: root
     lock_passwd: false
     hashed_passwd: |-
       ${PASSWD}
     ssh-authorized-keys:
-    # ${AUTHORIZED_KEYS}
-
-network:
-  version: 2
-  ethernets:
-    eth:
-      match:
-        name: "e*"
-      dhcp4: true
-      dhcp6: true
-      optional: true

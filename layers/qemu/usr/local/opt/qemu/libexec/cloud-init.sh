@@ -16,11 +16,12 @@ SALT="$(uuidgen)"
 PASSWD="$(openssl passwd -1 -salt "$SALT" root)"
 
 RS='/root/.ssh'
-KEYS="$(cat -- "$RS/authorized_keys" "$RS"/*.pub | sed -E '/^\s*$/d')"
-readarray -t -- SSH_KEYS <<<"$KEYS"
-printf -v AUTHORIZED_KEYS -- '\n      - %s' "${SSH_KEYS[@]}"
+USERDATA="$TMP/user-data"
+envsubst <./cloud-init/user-data.yml >"$USERDATA"
+cat -- "$RS/authorized_keys" "$RS"/*.pub | sed -E -e '/^\s*$/d' -e 's/(.*)/      - \1/' >>"$USERDATA"
 
-envsubst <./cloud-init/user-data.yml >"$TMP/user-data"
+# cat -- "$USERDATA"
+# cloud-init schema --config-file "$USERDATA"
 
 cp -a -R -f -- ./cloud-init/scripts "$TMP/scripts"
 rm -v -fr -- "$DST"
