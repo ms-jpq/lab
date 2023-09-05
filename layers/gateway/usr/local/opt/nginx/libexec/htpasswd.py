@@ -1,3 +1,5 @@
+#!/usr/bin/env -S -- PYTHONSAFEPATH= python3
+
 from argparse import ArgumentParser, Namespace
 from asyncio import (
     StreamReader,
@@ -9,6 +11,7 @@ from asyncio import (
 )
 from base64 import b64encode, urlsafe_b64decode, urlsafe_b64encode
 from collections.abc import (
+    AsyncIterator,
     Awaitable,
     Callable,
     Iterator,
@@ -17,7 +20,7 @@ from collections.abc import (
     MutableSequence,
     Sequence,
 )
-from contextlib import suppress
+from contextlib import asynccontextmanager, closing, suppress
 from fnmatch import translate
 from functools import lru_cache
 from hmac import compare_digest, digest
@@ -126,6 +129,18 @@ async def _subrequest(sock: Path, credentials: bytes) -> bool:
     return int(status) in range(200, 299)
 
 
+@asynccontextmanager
+async def finalize(writer: StreamWriter) -> AsyncIterator[None]:
+    try:
+        with closing(writer):
+            try:
+                yield
+            finally:
+                await writer.drain()
+    finally:
+        await writer.wait_closed()
+
+
 def _handler(
     sock: Path,
     authn_path: bytes,
@@ -137,8 +152,9 @@ def _handler(
     match = _fnmatch(allow_list)
 
     async def cont(reader: StreamReader, writer: StreamWriter) -> None:
-        try:
+        async with finalize(writer):
             _, path, query, headers = await _parse(reader)
+            print([_, path, query, headers])
             host = b"".join(headers.get(b"host", ())).decode()
             if match(host) or _read_auth_cookies(
                 headers, name=cookie_name, secret=hmac_secret
@@ -149,7 +165,10 @@ def _handler(
             for auth in _auth_headers(headers):
                 if await _subrequest(sock=sock, credentials=auth):
                     _write_auth_cookies(
-                        writer, name=cookie_name, ttl=cookie_ttl, secret=hmac_secret
+                        writer,
+                        name=cookie_name,
+                        ttl=cookie_ttl,
+                        secret=hmac_secret,
                     )
                     return
 
@@ -159,13 +178,14 @@ def _handler(
                 auth = b64encode(user + b":" + passwd)
                 if await _subrequest(sock, credentials=auth):
                     _write_auth_cookies(
-                        writer, name=cookie_name, ttl=cookie_ttl, secret=hmac_secret
+                        writer,
+                        name=cookie_name,
+                        ttl=cookie_ttl,
+                        secret=hmac_secret,
                     )
                     return
 
             writer.write(b"HTTP/1.1 401 Unauthorized\r\n\r\n")
-        finally:
-            await writer.wait_closed()
 
     return cont
 
@@ -184,9 +204,13 @@ def _parse_args() -> Namespace:
 
 async def main() -> None:
     args = _parse_args()
+
     hmac_secret = Path(args.hmac_secret).read_bytes()
     allow_list = frozenset(
-        line for line in Path(args.allow_list).read_text().splitlines() if line
+        line
+        for allow in args.allow_list
+        for line in Path(allow).read_text().splitlines()
+        if line
     )
     authn_path = PurePosixPath(args.authn_path).as_posix().encode()
     assert authn_path.startswith(b"/")
@@ -195,7 +219,7 @@ async def main() -> None:
         args.htpasswd_socket,
         cookie_name=args.cookie_name,
         authn_path=authn_path,
-        cookie_ttl=args.ttl,
+        cookie_ttl=args.cookie_ttl,
         hmac_secret=hmac_secret,
         allow_list=allow_list,
     )

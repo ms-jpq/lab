@@ -1,6 +1,7 @@
 [Unit]
 Description      = Wireguard server -- %I
 
+Requires         = 0-wg-private-key.service
 After            = 0-wg-private-key.service
 
 BindsTo          = 1-ip-alloc@%i.service
