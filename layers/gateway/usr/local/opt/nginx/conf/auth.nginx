@@ -12,13 +12,12 @@ location /-_-auth-_- {
   proxy_set_header        X-Original-URL $scheme://$http_host$request_uri;
   proxy_set_header        Content-Length "";
   proxy_pass_request_body off;
-  proxy_pass              http://auth-proxy:6969/;
+  proxy_pass              unix:/run/local/nginx/auth-proxy.sock:/;
 }
 
 location @signin {
   internal   ;
   add_header Set-Cookie $auth_cookie;
-  sub_filter "${METHOD}" $request_method;
   sub_filter "${ACTION}" "/-_-auth-_-/try";
   sub_filter "${X_ORIGINAL_URL}" "$scheme://$http_host$request_uri";
   try_files  /usr/local/opt/nginx/auth.html =404;

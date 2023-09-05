@@ -17,8 +17,13 @@
     </style>
   </head>
   <body>
-    <form action="${ACTION}" method="${METHOD}">
-      <input required type="hidden" name="uri" value="${X_ORIGINAL_URL}" />
+    <form action="${ACTION}" method="get">
+      <input
+        required
+        type="hidden"
+        name="x_original_url"
+        value="${X_ORIGINAL_URL}"
+      />
       <p>
         <label>⌥ <input required type="text" name="username" /></label>
       </p>
