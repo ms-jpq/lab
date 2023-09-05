@@ -17,6 +17,7 @@ Label         = traefik.http.services.%J.loadbalancer.server.port=8080
 Label         = traefik.http.routers.%J.rule=Host(`^%J\..+`)
 
 Network       = %p.network
+Network       = 3-pm-ingress.network
 
 PublishPort   = 127.0.0.53:8888:80
 
