@@ -3,17 +3,18 @@ Description   = Podman -- %J
 
 After         = network-online.target
 
-BindsTo       = 1-netns-proxy@transmission.socket
-After         = 1-netns-proxy@transmission.socket
-BindsTo       = 1-wg-netns@transmission.service
-After         = 1-wg-netns@transmission.service
+BindsTo       = 1-wg-netns@trans.service
+After         = 1-wg-netns@trans.service
+
+BindsTo       = 1-netns-proxy-9091@trans.socket
+After         = 1-netns-proxy-9091@trans.socket
 
 [[Container]]
 Image         = lscr.io/linuxserver/transmission:latest
 ContainerName = %J
 AutoUpdate    = registry
 
-Network       = ns:%E/netns/transmission
+Network       = ns:%E/netns/trans
 
 Environment   = PGID=1000
 Environment   = PUID=1000

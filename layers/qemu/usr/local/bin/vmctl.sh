@@ -16,7 +16,7 @@ m | mon | monitor)
   SOCK='mon'
   ;;
 q | qmp)
-  SOCK='con'
+  SOCK='qmp'
   ;;
 *)
   set -x

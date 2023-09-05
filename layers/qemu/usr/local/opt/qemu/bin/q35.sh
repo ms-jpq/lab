@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-LONG_OPTS='cpu:,mem:,qmp:,monitor:,vnc:,bridge:,drive:,macvtap:,vfio:,mdev:'
+LONG_OPTS='cpu:,mem:,qmp:,monitor:,tpm:,vnc:,bridge:,drive:,macvtap:,vfio:,mdev:'
 GO="$(getopt --options='' --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
@@ -28,6 +28,10 @@ while (($#)); do
     ;;
   --monitor)
     MONITOR="$2"
+    shift -- 2
+    ;;
+  --tpm)
+    TPM="$2"
     shift -- 2
     ;;
   --vnc)
@@ -87,7 +91,7 @@ ARGV+=(
 
 ARGV+=(
   -device virtio-rng-pci-non-transitional
-  -device virtio-balloon-pci-non-transitional
+  -device 'virtio-balloon-pci-non-transitional,deflate-on-oom=on,free-page-reporting=on'
 )
 
 if [[ -n "${QMP:-""}" ]]; then
@@ -98,16 +102,32 @@ if [[ -n "${MONITOR:-""}" ]]; then
   ARGV+=(-monitor "unix:$MONITOR,server,nowait")
 fi
 
-ARGV+=(
-  -vnc "$VNC"
-  -device "ich9-intel-hda"
-  -device 'virtio-gpu-pci'
-  -device 'virtio-keyboard-pci'
-  -device 'virtio-tablet-pci'
-)
+if [[ -n "${TPM:-""}" ]]; then
+  ID1='chtp0'
+  ID2='tpm0'
+  ARGV+=(
+    -chardev "socket,id=$ID1,path=$TPM"
+    -tpmdev "emulator,id=$ID2,chardev=$ID1"
+    -device "tpm-tis,tpmdev=$ID2"
+  )
+fi
 
-NIC='model=virtio-net-pci-non-transitional'
-ARGV+=(-nic "bridge,br=$BRIDGE,$NIC")
+if [[ -n "${VNC:-""}" ]]; then
+  ARGV+=(
+    -vnc "$VNC"
+    -device "ich9-intel-hda"
+    -device 'virtio-gpu-pci'
+    -device 'virtio-keyboard-pci'
+    -device 'virtio-tablet-pci'
+  )
+else
+  ARGV+=(-nographic)
+fi
+
+if [[ -n "${BRIDGE:-""}" ]]; then
+  NIC='model=virtio-net-pci-non-transitional'
+  ARGV+=(-nic "bridge,br=$BRIDGE,$NIC")
+fi
 
 if [[ -n "${MACVTAP:-""}" ]]; then
   ID='mv0'

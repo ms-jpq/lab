@@ -25,7 +25,7 @@ AddDevice     = /dev/sdg
 AddDevice     = /dev/sdh
 AddDevice     = /dev/sdi
 AddDevice     = /dev/sdj
-AddDevice     = /dev/sdk
+# AddDevice     = /dev/sdk
 
 Network       = 3-pm-traefik.network
 

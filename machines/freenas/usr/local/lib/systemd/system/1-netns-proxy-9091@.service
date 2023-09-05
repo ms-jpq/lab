@@ -1,0 +1,13 @@
+[Unit]
+Description          = NetNS Proxy -- %I:%j
+
+BindsTo              = %N.socket
+After                = %N.socket
+
+[Service]
+Restart              = on-failure
+
+ProtectSystem        = strict
+NetworkNamespacePath = %E/netns/%I
+
+ExecStart            = /usr/lib/systemd/systemd-socket-proxyd -- localhost:%j
