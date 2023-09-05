@@ -9,6 +9,7 @@ After             = nginx.service
 [Service]
 Type              = oneshot
 LogLevelMax       = warning
+SyslogLevel       = warning
 ProtectSystem     = strict
 ReadWritePaths    = %t/local/nginx %t/local/ngenx %T
 PrivateTmp        = yes
