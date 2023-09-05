@@ -82,6 +82,8 @@ ARGV=(
 KERNEL_COMMANDS=(
   reboot=triple
   panic=-1
+  random.trust_cpu=on
+  random.trust_bootloader=on
   console=hvc0
   "root=$ROOT"
 )

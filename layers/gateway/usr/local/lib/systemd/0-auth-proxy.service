@@ -1,0 +1,12 @@
+[Unit]
+Description    = Nginx Auth Proxy
+
+BindsTo        = nginx.service
+After          = nginx.service
+
+[Service]
+Restart        = on-failure
+ProtectSystem  = strict
+ReadWritePaths = %t/local/nginx
+
+ExecStart      = /usr/local/opt/nginx/libexec/htpasswd.py
