@@ -1,0 +1,11 @@
+[Unit]
+Description       = Reload nginx on generator updates
+StopWhenUnneeded  = yes
+
+PartOf            = nginx.service
+Requisite         = nginx.service
+After             = nginx.service
+
+[Timer]
+OnActiveSec       = 0
+OnUnitInactiveSec = 6seconds

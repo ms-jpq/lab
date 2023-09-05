@@ -1,14 +1,18 @@
 [Unit]
-Description      = Reload nginx on generator updates
-StopWhenUnneeded = yes
+Description       = Reload nginx on generator updates
+StopWhenUnneeded  = yes
 
-BindsTo          = nginx.service
-After            = nginx.service
+PartOf            = nginx.service
+Requisite         = nginx.service
+After             = nginx.service
 
 [Service]
-Restart          = on-failure
-PrivateTmp       = yes
-ProtectSystem    = strict
-ReadWritePaths   = %t/local/nginx %T
+Type              = oneshot
+LogLevelMax       = warning
+ProtectSystem     = strict
+ReadWritePaths    = %t/local/nginx %t/local/ngenx %T
+PrivateTmp        = yes
 
-ExecStart        = /usr/local/opt/nginx/libexec/sidecar.sh %t/local/nginx/conf %t/local/nginx/www
+RuntimeDirectory  = local/ngenx/conf.d local/ngenx/http.d local/ngenx/server.d local/ngenx/stream.d
+SuccessExitStatus = 127
+ExecStart         = env -- /usr/local/opt/nginx/libexec/sidecar.sh %t/local/nginx/conf %t/local/nginx/www %t/local/ngenx
