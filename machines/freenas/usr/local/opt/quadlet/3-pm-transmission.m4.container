@@ -14,7 +14,7 @@ Image         = lscr.io/linuxserver/transmission:latest
 ContainerName = %J
 AutoUpdate    = registry
 
-Network       = ns:%E/netns/trans
+Network       = ns:%t/netns/trans
 
 Environment   = PGID=1000
 Environment   = PUID=1000

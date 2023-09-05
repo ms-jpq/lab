@@ -8,6 +8,6 @@ After                = %N.socket
 Restart              = on-failure
 
 ProtectSystem        = strict
-NetworkNamespacePath = %E/netns/%I
+NetworkNamespacePath = %t/netns/%I
 
 ExecStart            = /usr/lib/systemd/systemd-socket-proxyd -- localhost:%j
