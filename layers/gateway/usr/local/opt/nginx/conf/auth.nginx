@@ -21,5 +21,5 @@ location @signin {
   sub_filter "${METHOD}" $request_method;
   sub_filter "${ACTION}" "/-_-auth-_-/try";
   sub_filter "${X_ORIGINAL_URL}" "$scheme://$http_host$request_uri";
-  alias      /usr/local/opt/nginx/www;
+  try_files  /usr/local/opt/nginx/auth.html =404;
 }
