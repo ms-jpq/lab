@@ -77,7 +77,7 @@ remove)
     case "$FS" in
     zfs)
       SOURCE="$(/usr/local/opt/zfs/libexec/findfs.sh fs "$ROOT")"
-      "$HR" zfs destroy -v -r -- "$SOURCE"
+      "$HR" zfs destroy -v -- "$SOURCE"
       ;;
     btrfs)
       "$HR" btrfs subvolume delete -- "$ROOT"

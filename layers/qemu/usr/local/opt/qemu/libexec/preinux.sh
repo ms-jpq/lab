@@ -37,4 +37,5 @@ if ! [[ -d "$ROOT" ]]; then
     ;;
   esac
   "$HR" cp -v -f --reflink=auto -- "$RAW" "$DRIVE"
+  "$HR" qemu-img resize -f raw -- "$DRIVE" +88G
 fi
