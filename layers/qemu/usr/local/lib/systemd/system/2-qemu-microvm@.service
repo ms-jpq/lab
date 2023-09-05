@@ -10,7 +10,7 @@ After             = dnsmasq@qemu.service
 
 [Service]
 ProtectSystem     = strict
-RuntimeDirectory  = local/qemu local/qemu/%I
+RuntimeDirectory  = local/qemu/%I
 ReadWritePaths    = %t %T %S/local %C/local
 BindReadOnlyPaths = /usr/local/opt/qemu/etc:%E/qemu
 PrivateTmp        = yes

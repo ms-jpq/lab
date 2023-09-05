@@ -12,8 +12,6 @@ Restart                  = on-failure
 
 ProtectSystem            = strict
 ReadWritePaths           = %C/local
-RuntimeDirectoryPreserve = yes
-RuntimeDirectory         = %i
 
 Environment              = DIR=%C/local/self-signed/%I
 Environment              = PEM=%C/local/self-signed/%I/ssl.pem

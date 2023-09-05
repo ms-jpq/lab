@@ -5,7 +5,7 @@ CollectMode      = inactive-or-failed
 
 [Service]
 ProtectSystem    = strict
-RuntimeDirectory = local/swtpm local/swtpm/%I
+RuntimeDirectory = local/swtpm/%I
 
 Environment      = TPM_PATH=%t/local/swtpm/%I
 Environment      = TPM_CTRL=%t/local/swtpm/%I/ctl.sock
