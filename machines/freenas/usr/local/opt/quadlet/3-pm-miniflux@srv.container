@@ -14,7 +14,7 @@ RunInit       = yes
 
 Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=8080
-Label         = traefik.http.routers.%J.rule=Host(`^%J\..+`)
+Label         = traefik.http.routers.%J.rule=Host(`^%J\\..+`)
 
 Environment   = RUN_MIGRATIONS=1
 Environment   = DATABASE_URL=postgres://username:password@%J-pg/pdb?sslmode=disable

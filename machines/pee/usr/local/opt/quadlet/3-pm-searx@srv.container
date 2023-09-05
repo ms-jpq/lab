@@ -13,7 +13,7 @@ AutoUpdate    = registry
 
 Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=8080
-Label         = traefik.http.routers.%J.rule=Host(`^%J\..+`)
+Label         = traefik.http.routers.%J.rule=Host(`^%J\\..+`)
 
 Environment   = SEARXNG_BASE_URL=
 

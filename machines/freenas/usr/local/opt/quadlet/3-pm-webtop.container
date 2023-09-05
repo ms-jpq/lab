@@ -10,7 +10,7 @@ AutoUpdate    = registry
 
 Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=3000
-Label         = traefik.http.routers.%J.rule=Host(`^%J\..+`)
+Label         = traefik.http.routers.%J.rule=Host(`^%J\\..+`)
 
 Environment   = PGID=1000
 Environment   = PUID=1000

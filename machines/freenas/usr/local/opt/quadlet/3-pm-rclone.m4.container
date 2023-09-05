@@ -11,7 +11,7 @@ RunInit       = yes
 
 Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=8080
-Label         = traefik.http.routers.%J.rule=Host(`^%J\..+`)
+Label         = traefik.http.routers.%J.rule=Host(`^%J\\..+`)
 
 Exec          = rcd --rc-web-gui --rc-no-auth --rc-addr=:8080 --dscp=LE
 
