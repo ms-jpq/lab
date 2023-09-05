@@ -1,4 +1,4 @@
-#!/usr/bin/env -S -- bash -Eeu -O dotglob -O nullglob -O extglob -O failglob -O globstar
+#!/usr/bin/env -S -- bash -Eeu -O dotglob -O nullglob -O extglob -O globstar
 
 set -o pipefail
 
@@ -15,7 +15,9 @@ envsubst <./cloud-init/meta-data.yml >"$TMP/meta-data"
 SALT="$(uuidgen)"
 PASSWD="$(openssl passwd -1 -salt "$SALT" root)"
 
-readarray -t -- SSH_KEYS <<<'/root/.ssh/authorized_keys'
+RS='/root/.ssh'
+KEYS="$(cat -- "$RS/authorized_keys" "$RS"/*.pub | sed -E '/^\s*$/d')"
+readarray -t -- SSH_KEYS <<<"$KEYS"
 printf -v AUTHORIZED_KEYS -- '\n      - %s' "${SSH_KEYS[@]}"
 
 envsubst <./cloud-init/user-data.yml >"$TMP/user-data"

@@ -1,5 +1,5 @@
 [Match]
-Name                    = ${IFACE}
+Name                    = macvtap0
 
 [Link]
 RequiredForOnline       = no
