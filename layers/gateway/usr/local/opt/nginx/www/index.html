@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${TITLE}</title>
+    <title>@</title>
     <style type="text/css" media="">
       body {
         display: flex;
@@ -17,7 +17,8 @@
     </style>
   </head>
   <body>
-    <form action="./fetch" method="get">
+    <form action="${ACTION}" method="${METHOD}">
+      <input required type="hidden" name="uri" value="${X_ORIGINAL_URL}" />
       <p>
         <label>⌥ <input required type="text" name="username" /></label>
       </p>

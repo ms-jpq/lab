@@ -1,6 +1,6 @@
 location / {
   error_page       401 = @signin;
-  auth_request     /-_-auth-_-/auth/nginx;
+  auth_request     /-_-auth-_-/auth;
   auth_request_set $auth_cookie $upstream_http_set_cookie;
   add_header       Set-Cookie $auth_cookie;
 }
@@ -18,5 +18,8 @@ location /-_-auth-_- {
 location @signin {
   internal   ;
   add_header Set-Cookie $auth_cookie;
-  return     307 /-_-auth-_-/signin?redirect=$request_uri;
+  sub_filter "${METHOD}" $request_method;
+  sub_filter "${ACTION}" "/-_-auth-_-/try";
+  sub_filter "${X_ORIGINAL_URL}" "$scheme://$http_host$request_uri";
+  alias      /usr/local/opt/nginx/www;
 }
