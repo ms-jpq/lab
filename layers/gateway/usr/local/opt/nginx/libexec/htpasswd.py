@@ -200,13 +200,6 @@ def _handler(
             else:
                 proto = b"".join(headers.get(b"x-forwarded-proto", ()))
                 secure = proto != b"http"
-                cookie = _write_auth_cookies(
-                    name=cookie_name,
-                    ttl=cookie_ttl,
-                    secret=hmac_secret,
-                    host=host,
-                    secure=secure,
-                )
                 if redirect:
                     writer.write(b"HTTP/1.0 307 Temporary Redirect\r\nLocation: ")
                     writer.write(redirect)
@@ -215,6 +208,13 @@ def _handler(
                     writer.write(b"HTTP/1.0 204 No Content\r\n")
 
                 if add_cookie:
+                    cookie = _write_auth_cookies(
+                        name=cookie_name,
+                        ttl=cookie_ttl,
+                        secret=hmac_secret,
+                        host=host,
+                        secure=secure,
+                    )
                     writer.write(str(cookie).encode())
                     writer.write(b"\r\n")
 
