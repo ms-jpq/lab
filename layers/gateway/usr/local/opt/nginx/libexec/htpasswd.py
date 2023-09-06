@@ -77,11 +77,13 @@ async def _parse(reader: StreamReader) -> _Req:
     return _Method(method.upper()), ps, parsed, _Query(query), _Headers(headers)
 
 
-def _auth_headers(headers: _Headers) -> Iterator[bytes]:
+def _auth_headers(headers: _Headers) -> Iterator[tuple[bytes, bytes]]:
     for auth in headers.get(b"authorization", []):
         lhs, sep, rhs = auth.partition(b" ")
         if sep and lhs.lower() in {b"basic", b"bearer"}:
-            yield rhs
+            with suppress(ValueError):
+                user, _, _ = urlsafe_b64decode(rhs).partition(b":")
+                yield user, rhs
 
 
 def _encode(secret: bytes, plain: bytes) -> bytes:
@@ -107,7 +109,8 @@ def _read_auth_cookies(headers: _Headers, name: str, secret: bytes) -> bool:
             if morsel := cookies.get(name, None):
                 crip = morsel.value.encode()
                 with suppress(ValueError):
-                    exp = _decode(secret, crip=crip).decode()
+                    plain = _decode(secret, crip=crip).decode()
+                    _, _, exp = plain.partition(":")
                     d = int(exp) - time()
                     if d >= 0:
                         return True
@@ -116,10 +119,10 @@ def _read_auth_cookies(headers: _Headers, name: str, secret: bytes) -> bool:
 
 
 def _write_auth_cookies(
-    name: str, ttl: float, secret: bytes, host: str, secure: bool
+    name: str, ttl: float, secret: bytes, host: str, secure: bool, user: bytes
 ) -> Morsel[str]:
     now = time()
-    plain = str(int(now + ttl)).encode()
+    plain = user + b":" + str(int(now + ttl)).encode()
     crip = _encode(secret, plain=plain)
     cookie = SimpleCookie[str]()
     cookie[name] = crip.decode()
@@ -174,7 +177,7 @@ def _handler(
             assert parsed.hostname
             host = parsed.hostname.decode()
 
-            add_cookie = True
+            user = None
             if commonpath((authn_path, path)) == authn_path:
                 redirect = b"".join(query.get(b"redirect", ()))
                 user = b"".join(query.get(b"username", ()))
@@ -188,9 +191,8 @@ def _handler(
                     authorized = _read_auth_cookies(
                         headers, name=cookie_name, secret=hmac_secret
                     )
-                    add_cookie = False
                 if not authorized:
-                    for auth in _auth_headers(headers):
+                    for user, auth in _auth_headers(headers):
                         authorized = await _subrequest(sock=sock, credentials=auth)
                         if authorized:
                             break
@@ -207,13 +209,14 @@ def _handler(
                 else:
                     writer.write(b"HTTP/1.0 204 No Content\r\n")
 
-                if add_cookie:
+                if user:
                     cookie = _write_auth_cookies(
                         name=cookie_name,
                         ttl=cookie_ttl,
                         secret=hmac_secret,
                         host=host,
                         secure=secure,
+                        user=user,
                     )
                     writer.write(str(cookie).encode())
                     writer.write(b"\r\n")
@@ -242,7 +245,8 @@ async def main() -> None:
     allow_list = frozenset(
         line
         for allow in args.allow_list
-        for line in Path(allow).read_text().splitlines()
+        for path in Path(allow).glob("*.txt")
+        for line in path.read_text().splitlines()
         if line
     )
     listening_socket = Path(args.listening_socket)
