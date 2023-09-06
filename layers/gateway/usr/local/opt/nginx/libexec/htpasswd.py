@@ -143,6 +143,7 @@ def _write_auth_cookies(
     morsel = cookie[name]
     morsel["domain"] = host
     morsel["httponly"] = True
+    # X-Forwarded-Proto
     morsel["max-age"] = str(ttl)
     morsel["path"] = "/"
     morsel["samesite"] = "Strict"
@@ -229,6 +230,7 @@ async def main() -> None:
         for line in Path(allow).read_text().splitlines()
         if line
     )
+    listening_socket = Path(args.listening_socket)
     authn_path = PurePosixPath(args.authn_path).as_posix().encode()
     assert authn_path.startswith(b"/")
 
@@ -240,7 +242,8 @@ async def main() -> None:
         hmac_secret=hmac_secret,
         allow_list=allow_list,
     )
-    server = await start_unix_server(handler, normcase(args.listening_socket))
+    server = await start_unix_server(handler, listening_socket)
+    listening_socket.chmod(0o666)
 
     async with server:
         await server.serve_forever()

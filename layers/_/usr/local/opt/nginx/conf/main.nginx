@@ -23,7 +23,7 @@ http {
   ssl_prefer_server_ciphers on;
   tcp_nopush                on;
   include                   /etc/nginx/mime.types;
-  include                   /etc/nginx/proxy_params;
+  include                   /usr/local/opt/nginx/conf/websocket.nginx;
 
   map $http_upgrade $connection_upgrade {
     default upgrade;
@@ -32,7 +32,6 @@ http {
 
   server {
     listen  [::]:8080 ipv6only=off;
-    include /usr/local/opt/nginx/conf/websocket.nginx;
     include /usr/local/opt/nginx/conf/server.d/*.nginx;
     include /run/local/nginx/conf/server.d/*.nginx;
   }
