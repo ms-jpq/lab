@@ -12,4 +12,4 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-exec -- wg show
+exec -- /usr/local/libexec/hr-run.sh wg show

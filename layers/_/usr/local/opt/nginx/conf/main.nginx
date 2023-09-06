@@ -18,6 +18,7 @@ http {
   charset                   "UTF-8";
   client_max_body_size      0;
   log_not_found             off;
+  resolver                  127.0.0.53;
   sendfile                  on;
   server_tokens             off;
   ssl_prefer_server_ciphers on;
