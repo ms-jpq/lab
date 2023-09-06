@@ -6,6 +6,6 @@ server {
     alias           /usr/local/opt/nginx/index/;
     sub_filter_once off;
     sub_filter      "@SCHEME" $scheme;
-    sub_filter      "@HOST" $host;
+    sub_filter      "@HOST" $http_host;
   }
 }

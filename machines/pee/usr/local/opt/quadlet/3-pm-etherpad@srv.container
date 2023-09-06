@@ -14,7 +14,7 @@ AutoUpdate       = registry
 
 Label            = traefik.enable=true
 Label            = traefik.http.services.%J.loadbalancer.server.port=9001
-Label            = traefik.http.routers.%J.rule=HostRegexp(`%J.{.+$$}`)
+Label            = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+$$}`) || HostRegexp(`%J.{.+$$}.{.+$$}`)"
 
 Environment      = DB_HOST=postgres
 Environment      = DB_NAME=pdb

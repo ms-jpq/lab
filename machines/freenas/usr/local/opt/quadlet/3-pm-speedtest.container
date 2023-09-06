@@ -10,7 +10,7 @@ AutoUpdate    = registry
 
 Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=80
-Label         = traefik.http.routers.%J.rule=HostRegexp(`%J.{.+$$}`)
+Label         = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+$$}`) || HostRegexp(`%J.{.+$$}.{.+$$}`)"
 
 Network       = 3-pm-traefik.network
 
