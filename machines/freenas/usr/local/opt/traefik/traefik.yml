@@ -18,14 +18,18 @@ serversTransport:
 entryPoints:
   http:
     address: :80
-  tls:
+  host-http: &gravity
     address: :443
     http:
       middlewares:
         - gravity@file
         - stop@file
+  host-stmp:
+    <<: *gravity
+    address: :587
 
 certificatesResolvers:
   resolver1:
     acme:
-      storage: /acme/traefik.json
+      storage: /acme/acme.json
+      tlschallenge: true
