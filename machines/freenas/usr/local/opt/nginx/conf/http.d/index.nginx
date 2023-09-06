@@ -1,0 +1,11 @@
+server {
+  server_name index.*;
+  include     /usr/local/opt/nginx/conf/listen.nginx;
+
+  location / {
+    alias           /usr/local/opt/nginx/index/;
+    sub_filter_once off;
+    sub_filter      "@SCHEME" $scheme;
+    sub_filter      "@HOST" $host;
+  }
+}
