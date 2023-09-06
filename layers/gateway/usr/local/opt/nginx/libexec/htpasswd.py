@@ -9,7 +9,7 @@ from asyncio import (
     run,
     start_unix_server,
 )
-from base64 import b64encode, urlsafe_b64decode, urlsafe_b64encode
+from base64 import urlsafe_b64decode, urlsafe_b64encode
 from collections.abc import (
     AsyncIterator,
     Awaitable,
@@ -26,9 +26,8 @@ from functools import lru_cache
 from hmac import compare_digest, digest
 from http.cookies import CookieError, SimpleCookie
 from logging import DEBUG, StreamHandler, captureWarnings, getLogger
-from os.path import normcase
 from pathlib import Path, PurePosixPath
-from posixpath import commonpath
+from posixpath import commonpath, normpath
 from re import compile
 from time import time
 from typing import NewType
@@ -73,7 +72,8 @@ async def finalize(writer: StreamWriter) -> AsyncIterator[None]:
 async def _parse(reader: StreamReader) -> _Req:
     line = await anext(reader)
     method, path, _ = line.strip().split()
-    parsed = urlsplit(path)
+    parsed = urlsplit(b"ssh://" + path)
+    ps = normpath(parsed.path)
     query = parse_qs(parsed.query)
 
     headers: MutableMapping[bytes, MutableSequence[bytes]] = {}
@@ -85,21 +85,22 @@ async def _parse(reader: StreamReader) -> _Req:
         else:
             break
 
-    return _Method(method.upper()), parsed.path, _Query(query), _Headers(headers)
+    return _Method(method.upper()), ps, _Query(query), _Headers(headers)
 
 
-def _auth_headers(authn_path: bytes, req: _Req) -> Iterator[bytes]:
+def _auth_headers(authn_path: bytes, req: _Req) -> Iterator[tuple[bytes, bool]]:
     _, path, query, headers = req
     for auth in headers.get(b"authorization", []):
         lhs, sep, rhs = auth.partition(b" ")
         if sep and lhs.lower() in {b"basic", b"bearer"}:
-            yield rhs
+            yield rhs, True
     else:
+        LOG.debug("%s", (authn_path, path))
         if commonpath((authn_path, path)) == authn_path:
             user = b"".join(query.get(b"username", ()))
             passwd = b"".join(query.get(b"password", ()))
-            auth = b64encode(user + b":" + passwd)
-            yield auth
+            auth = urlsafe_b64encode(user + b":" + passwd)
+            yield auth, False
 
 
 def _decode(secret: bytes, crip: bytes) -> bytes:
@@ -133,7 +134,7 @@ def _read_auth_cookies(headers: _Headers, name: str, secret: bytes) -> bool:
 
 
 def _write_auth_cookies(
-    writer: StreamWriter, name: str, ttl: float, secret: bytes, host: str
+    writer: StreamWriter, name: str, ttl: float, secret: bytes, host: str, secure: bool
 ) -> None:
     now = time()
     plain = str(int(now + ttl)).encode()
@@ -143,14 +144,11 @@ def _write_auth_cookies(
     morsel = cookie[name]
     morsel["domain"] = host
     morsel["httponly"] = True
-    # X-Forwarded-Proto
     morsel["max-age"] = str(ttl)
     morsel["path"] = "/"
     morsel["samesite"] = "Strict"
-    morsel["secure"] = True
-    writer.write(b"HTTP/1.1 204 No Content\r\n")
+    morsel["secure"] = secure
     writer.write(str(cookie).encode())
-    writer.write(b"\r\n\r\n")
 
 
 async def _subrequest(sock: Path, credentials: bytes) -> bool:
@@ -189,15 +187,26 @@ def _handler(
                 writer.write(b"HTTP/1.1 204 No Content\r\n\r\n")
                 return
 
-            for auth in _auth_headers(authn_path, req=req):
+            for auth, redirect in _auth_headers(authn_path, req=req):
                 if await _subrequest(sock=sock, credentials=auth):
+                    proto = b"".join(headers.get(b"x-forwarded-proto", ()))
+                    secure = proto != b"http"
+                    if redirect:
+                        writer.write(b"HTTP/1.1 307 Found\r\n")
+                    else:
+                        writer.write(b"HTTP/1.1 204 No Content\r\n")
                     _write_auth_cookies(
                         writer,
                         name=cookie_name,
                         ttl=cookie_ttl,
                         secret=hmac_secret,
                         host=host,
+                        secure=secure,
                     )
+                    if redirect:
+                        writer.write(b"Location: /\r\n")
+
+                    writer.write(b"\r\n")
                     LOG.debug("%s", "allowing")
                     return
 
