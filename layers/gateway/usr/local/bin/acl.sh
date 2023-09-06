@@ -11,5 +11,8 @@ touch -- "$PASSWD"
 HR="$("${0%/*}/../libexec/hr.sh")"
 printf -- '%s\n%q\n%s\n' "$HR" "$PASSWD" "$HR"
 
-htpasswd -b -- "$PASSWD" "$@"
+ARGV=(htpasswd -b -- "$PASSWD" "$@")
+if (($#)); then
+  "${ARGV[@]}"
+fi
 cat -- "$PASSWD"

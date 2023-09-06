@@ -1,0 +1,10 @@
+# m5_for([MACH], [
+server {
+  server_name MACH.*;
+  include     /usr/local/opt/nginx/conf/listen.nginx;
+
+  location / {
+    proxy_pass http://MACH.m5_assert([ENV_LOCAL_DOMAIN]):8080/;
+  }
+}
+# ], m5_assert([ENV_MACHINES]))

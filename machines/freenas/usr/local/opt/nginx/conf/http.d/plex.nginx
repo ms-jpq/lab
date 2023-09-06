@@ -3,6 +3,7 @@ server {
   include     /usr/local/opt/nginx/conf/listen.nginx;
 
   location / {
-    proxy_pass http://localhost:32400/;
+    auth_request off;
+    proxy_pass   http://localhost:32400/;
   }
 }
