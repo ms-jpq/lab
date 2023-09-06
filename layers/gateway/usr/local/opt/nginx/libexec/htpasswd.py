@@ -20,11 +20,12 @@ from collections.abc import (
     MutableSequence,
     Sequence,
 )
-from contextlib import asynccontextmanager, closing, suppress
+from contextlib import asynccontextmanager, closing, nullcontext, suppress
 from fnmatch import translate
 from functools import lru_cache
 from hmac import compare_digest, digest
 from http.cookies import CookieError, SimpleCookie
+from logging import DEBUG, StreamHandler, captureWarnings, getLogger
 from os.path import normcase
 from pathlib import Path, PurePosixPath
 from posixpath import commonpath
@@ -36,8 +37,15 @@ from urllib.parse import parse_qs, urlsplit
 _Method = NewType("_Method", bytes)
 _Headers = NewType("_Headers", Mapping[bytes, Sequence[bytes]])
 _Query = NewType("_Query", Mapping[bytes, Sequence[bytes]])
+_Req = tuple[_Method, bytes, _Query, _Headers]
 
 _ALGORITHM = "sha512"
+
+with nullcontext():
+    LOG = getLogger()
+    LOG.addHandler(StreamHandler())
+    LOG.setLevel(DEBUG)
+    captureWarnings(True)
 
 
 def _fnmatch(patterns: frozenset[str]) -> Callable[[str], bool]:
@@ -50,9 +58,19 @@ def _fnmatch(patterns: frozenset[str]) -> Callable[[str], bool]:
     return cont
 
 
-async def _parse(
-    reader: StreamReader,
-) -> tuple[_Method, bytes, _Query, _Headers]:
+@asynccontextmanager
+async def finalize(writer: StreamWriter) -> AsyncIterator[None]:
+    try:
+        with closing(writer):
+            try:
+                yield
+            finally:
+                await writer.drain()
+    finally:
+        await writer.wait_closed()
+
+
+async def _parse(reader: StreamReader) -> _Req:
     line = await anext(reader)
     method, path, _ = line.strip().split()
     parsed = urlsplit(path)
@@ -67,14 +85,21 @@ async def _parse(
         else:
             break
 
-    return _Method(method), parsed.path, _Query(query), _Headers(headers)
+    return _Method(method.upper()), parsed.path, _Query(query), _Headers(headers)
 
 
-def _auth_headers(headers: _Headers) -> Iterator[bytes]:
+def _auth_headers(authn_path: bytes, req: _Req) -> Iterator[bytes]:
+    _, path, query, headers = req
     for auth in headers.get(b"authorization", []):
         lhs, sep, rhs = auth.partition(b" ")
         if sep and lhs.lower() in {b"basic", b"bearer"}:
             yield rhs
+    else:
+        if commonpath((authn_path, path)) == authn_path:
+            user = b"".join(query.get(b"username", ()))
+            passwd = b"".join(query.get(b"password", ()))
+            auth = b64encode(user + b":" + passwd)
+            yield auth
 
 
 def _decode(secret: bytes, crip: bytes) -> bytes:
@@ -108,12 +133,20 @@ def _read_auth_cookies(headers: _Headers, name: str, secret: bytes) -> bool:
 
 
 def _write_auth_cookies(
-    writer: StreamWriter, name: str, ttl: float, secret: bytes
+    writer: StreamWriter, name: str, ttl: float, secret: bytes, host: str
 ) -> None:
-    now = str(int(time() + ttl)).encode()
-    crip = _encode(secret, plain=now)
+    now = time()
+    plain = str(int(now + ttl)).encode()
+    crip = _encode(secret, plain=plain)
     cookie = SimpleCookie[str]()
     cookie[name] = crip.decode()
+    morsel = cookie[name]
+    morsel["domain"] = host
+    morsel["httponly"] = True
+    morsel["max-age"] = str(ttl)
+    morsel["path"] = "/"
+    morsel["samesite"] = "Strict"
+    morsel["secure"] = True
     writer.write(b"HTTP/1.1 204 No Content\r\n")
     writer.write(str(cookie).encode())
     writer.write(b"\r\n\r\n")
@@ -121,24 +154,14 @@ def _write_auth_cookies(
 
 async def _subrequest(sock: Path, credentials: bytes) -> bool:
     reader, writer = await open_unix_connection(sock)
-    writer.write(b"GET / HTTP/1.1\r\nAuthorization: Basic ")
-    writer.write(credentials)
-    writer.write(b"\r\n\r\n")
-    _, line = await gather(writer.drain(), anext(reader))
-    _, status, _ = line.strip().split()
-    return int(status) in range(200, 299)
-
-
-@asynccontextmanager
-async def finalize(writer: StreamWriter) -> AsyncIterator[None]:
-    try:
-        with closing(writer):
-            try:
-                yield
-            finally:
-                await writer.drain()
-    finally:
-        await writer.wait_closed()
+    async with finalize(writer):
+        writer.write(b"GET / HTTP/1.0\r\nAuthorization: Basic ")
+        writer.write(credentials)
+        writer.write(b"\r\n\r\n")
+        _, line = await gather(writer.drain(), anext(reader))
+        LOG.debug("%s", line)
+        _, status, *_ = line.strip().split()
+        return int(status) in range(200, 299)
 
 
 def _handler(
@@ -153,38 +176,31 @@ def _handler(
 
     async def cont(reader: StreamReader, writer: StreamWriter) -> None:
         async with finalize(writer):
-            _, path, query, headers = await _parse(reader)
-            print([_, path, query, headers])
+            req = await _parse(reader)
+            _, _, _, headers = req
+            LOG.debug("%s", req)
+
             host = b"".join(headers.get(b"host", ())).decode()
             if match(host) or _read_auth_cookies(
                 headers, name=cookie_name, secret=hmac_secret
             ):
+                LOG.debug("%s", "allowed")
                 writer.write(b"HTTP/1.1 204 No Content\r\n\r\n")
                 return
 
-            for auth in _auth_headers(headers):
+            for auth in _auth_headers(authn_path, req=req):
                 if await _subrequest(sock=sock, credentials=auth):
                     _write_auth_cookies(
                         writer,
                         name=cookie_name,
                         ttl=cookie_ttl,
                         secret=hmac_secret,
+                        host=host,
                     )
+                    LOG.debug("%s", "allowing")
                     return
 
-            if commonpath((authn_path, path)) == authn_path:
-                user = b"".join(query.get(b"username", ()))
-                passwd = b"".join(query.get(b"password", ()))
-                auth = b64encode(user + b":" + passwd)
-                if await _subrequest(sock, credentials=auth):
-                    _write_auth_cookies(
-                        writer,
-                        name=cookie_name,
-                        ttl=cookie_ttl,
-                        secret=hmac_secret,
-                    )
-                    return
-
+            LOG.debug("%s", "forbidden")
             writer.write(b"HTTP/1.1 401 Unauthorized\r\n\r\n")
 
     return cont
@@ -204,6 +220,7 @@ def _parse_args() -> Namespace:
 
 async def main() -> None:
     args = _parse_args()
+    LOG.debug("%s", args)
 
     hmac_secret = Path(args.hmac_secret).read_bytes()
     allow_list = frozenset(

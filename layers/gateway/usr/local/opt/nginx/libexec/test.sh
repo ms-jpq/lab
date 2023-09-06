@@ -3,11 +3,12 @@
 set -o pipefail
 set -x
 
-SOCK='/run/local/nginx/auth-proxy.sock'
+curl -v --unix /run/local/nginx/htpasswd.sock -- http://localhost
+
 CURL=(
   curl -v
   --show-error --styled-output
-  --unix "$SOCK"
+  --unix '/run/local/nginx/auth-proxy.sock'
   "$@"
   -- 'http://curl.localhost:8080/abc?def=ghi'
 )
