@@ -24,7 +24,7 @@ from contextlib import asynccontextmanager, closing, nullcontext, suppress
 from fnmatch import translate
 from functools import lru_cache
 from hmac import compare_digest, digest
-from http.cookies import CookieError, SimpleCookie
+from http.cookies import CookieError, Morsel, SimpleCookie
 from logging import DEBUG, StreamHandler, captureWarnings, getLogger
 from pathlib import Path, PurePosixPath
 from posixpath import commonpath, normpath
@@ -57,18 +57,6 @@ def _fnmatch(patterns: frozenset[str]) -> Callable[[str], bool]:
     return cont
 
 
-@asynccontextmanager
-async def finalize(writer: StreamWriter) -> AsyncIterator[None]:
-    try:
-        with closing(writer):
-            try:
-                yield
-            finally:
-                await writer.drain()
-    finally:
-        await writer.wait_closed()
-
-
 async def _parse(reader: StreamReader) -> _Req:
     line = await anext(reader)
     method, path, _ = line.strip().split()
@@ -89,20 +77,11 @@ async def _parse(reader: StreamReader) -> _Req:
     return _Method(method.upper()), ps, parsed, _Query(query), _Headers(headers)
 
 
-def _auth_headers(authn_path: bytes, req: _Req) -> Iterator[tuple[bytes, bytes | None]]:
-    _, path, _, query, headers = req
+def _auth_headers(headers: _Headers) -> Iterator[bytes]:
     for auth in headers.get(b"authorization", []):
         lhs, sep, rhs = auth.partition(b" ")
         if sep and lhs.lower() in {b"basic", b"bearer"}:
-            yield rhs, None
-    else:
-        LOG.debug("%s", (authn_path, path))
-        if commonpath((authn_path, path)) == authn_path:
-            user = b"".join(query.get(b"username", ()))
-            passwd = b"".join(query.get(b"password", ()))
-            redirect = b"".join(query.get(b"redirect", ()))
-            auth = urlsafe_b64encode(user + b":" + passwd)
-            yield auth, redirect
+            yield rhs
 
 
 def _decode(secret: bytes, crip: bytes) -> bytes:
@@ -136,8 +115,8 @@ def _read_auth_cookies(headers: _Headers, name: str, secret: bytes) -> bool:
 
 
 def _write_auth_cookies(
-    writer: StreamWriter, name: str, ttl: float, secret: bytes, host: str, secure: bool
-) -> None:
+    name: str, ttl: float, secret: bytes, host: str, secure: bool
+) -> Morsel[str]:
     now = time()
     plain = str(int(now + ttl)).encode()
     crip = _encode(secret, plain=plain)
@@ -151,8 +130,19 @@ def _write_auth_cookies(
     morsel["path"] = "/"
     morsel["samesite"] = "Strict"
     morsel["secure"] = secure
-    writer.write(str(cookie).encode())
-    writer.write(b"\r\n")
+    return morsel
+
+
+@asynccontextmanager
+async def finalize(writer: StreamWriter) -> AsyncIterator[None]:
+    try:
+        with closing(writer):
+            try:
+                yield
+            finally:
+                await writer.drain()
+    finally:
+        await writer.wait_closed()
 
 
 async def _subrequest(sock: Path, credentials: bytes) -> bool:
@@ -180,47 +170,52 @@ def _handler(
     async def cont(reader: StreamReader, writer: StreamWriter) -> None:
         async with finalize(writer):
             req = await _parse(reader)
-            _, _, parsed, _, headers = req
-            LOG.debug("%s", req)
-
+            _, path, parsed, query, headers = req
             assert parsed.hostname
             host = parsed.hostname.decode()
-            if match(host) or _read_auth_cookies(
-                headers, name=cookie_name, secret=hmac_secret
-            ):
-                LOG.debug("%s", "allowed")
-                writer.write(b"HTTP/1.0 204 No Content\r\n\r\n")
-                return
 
-            for auth, redirect in _auth_headers(authn_path, req=req):
-                if await _subrequest(sock=sock, credentials=auth):
-                    proto = b"".join(headers.get(b"x-forwarded-proto", ()))
-                    secure = proto != b"http"
-                    if redirect:
-                        writer.write(b"HTTP/1.0 307 Temporary Redirect\r\n")
-                    else:
-                        writer.write(b"HTTP/1.0 204 No Content\r\n")
-                    _write_auth_cookies(
-                        writer,
-                        name=cookie_name,
-                        ttl=cookie_ttl,
-                        secret=hmac_secret,
-                        host=host,
-                        secure=secure,
-                    )
-                    LOG.debug("%s", "cookied")
-                    if redirect:
-                        writer.write(b"Location: ")
-                        writer.write(redirect)
-                        writer.write(b"\r\n")
-                        LOG.debug("%s", f"redirecting -> {redirect}")
-
-                    writer.write(b"\r\n")
-                    LOG.debug("%s", "allowed")
-                    return
+            LOG.debug("%s", req)
+            if commonpath((authn_path, path)) == authn_path:
+                redirect = b"".join(query.get(b"redirect", ()))
+                user = b"".join(query.get(b"username", ()))
+                passwd = b"".join(query.get(b"password", ()))
+                auth = urlsafe_b64encode(user + b":" + passwd)
+                authorized = await _subrequest(sock=sock, credentials=auth)
             else:
-                LOG.debug("%s", "forbidden")
-                writer.write(b"HTTP/1.0 401 Unauthorized\r\n\r\n")
+                redirect = None
+
+                authorized = match(host) or _read_auth_cookies(
+                    headers, name=cookie_name, secret=hmac_secret
+                )
+                if not authorized:
+                    for auth in _auth_headers(headers):
+                        authorized = await _subrequest(sock=sock, credentials=auth)
+                        if authorized:
+                            break
+
+            if not authorized:
+                writer.write(b"HTTP/1.0 401 Unauthorized\r\n")
+            else:
+                proto = b"".join(headers.get(b"x-forwarded-proto", ()))
+                secure = proto != b"http"
+                cookie = _write_auth_cookies(
+                    name=cookie_name,
+                    ttl=cookie_ttl,
+                    secret=hmac_secret,
+                    host=host,
+                    secure=secure,
+                )
+                if redirect:
+                    writer.write(b"HTTP/1.0 307 Temporary Redirect\r\nLocation: ")
+                    writer.write(redirect)
+                    writer.write(b"\r\n")
+                else:
+                    writer.write(b"HTTP/1.0 204 No Content\r\n")
+
+                writer.write(str(cookie).encode())
+                writer.write(b"\r\n")
+
+            writer.write(b"\r\n")
 
     return cont
 
