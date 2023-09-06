@@ -1,2 +1,0 @@
-ssl_certificate     /var/cache/local/certbot/conf/live/${DOMAIN}/fullchain.pem;
-ssl_certificate_key /var/cache/local/certbot/conf/live/${DOMAIN}/privkey.pem;

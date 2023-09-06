@@ -38,8 +38,6 @@ Just generate the desired configurations, make sure they do not collide in file 
 
 - [Tor](https://www.torproject.org/) transparent gateway
 
-- [Certbot](https://certbot.eff.org/) daemon
-
 - Protocol sharing http, ssh on port 80
 
 ### Headless Workstation

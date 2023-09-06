@@ -1,0 +1,20 @@
+---
+tls:
+  options:
+    tls1:
+      minVersion: VersionTLS13
+tcp:
+  routers:
+    host0:
+      entryPoints:
+        - tls
+      service: host0
+      rule: HostSNI(`*`)
+      tls:
+        options: tls1
+        certResolver: resolver1
+  services:
+    host0:
+      loadBalancer:
+        servers:
+          - address: host.containers.internal:80
