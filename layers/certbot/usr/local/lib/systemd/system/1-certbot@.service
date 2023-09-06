@@ -14,14 +14,14 @@ Environment    = CONF=%C/local/certbot/conf
 Environment    = LOGS=%C/local/certbot/logs
 
 ExecStartPre   = mkdir -v --parents -- %C/local/certbot %C/local/certbot/nginx
-ExecStart      = /var/lib/local/venv/certbot/bin/certbot certonly \
+ExecStart      = /usr/local/venv/certbot/bin/certbot certonly \
+                   --non-interactive --agree-tos \
                    --work-dir %T \
                    --config-dir ${CONF} \
                    --logs-dir ${LOGS} \
-                   --non-interactive --agree-tos \
                    --email certbot+%H@${DOMAIN} \
                    --expand \
                    --domains ${DOMAIN} \
                    --dns-cloudflare \
-                   --dns-cloudflare-credentials /usr/local/etc/default/certbot.${DOMAIN}.env
+                   --dns-cloudflare-credentials /usr/local/etc/default/${DOMAIN}.certbot.env
 ExecStart      = /usr/local/libexec/envsubst2.sh /usr/local/opt/certbot/certbot.nginx %C/local/certbot/nginx/${DOMAIN}.conf

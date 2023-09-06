@@ -5,6 +5,3 @@ Description        = Certbot timer -- %i
 Persistent         = yes
 OnCalendar         = hourly
 RandomizedDelaySec = 30 minutes
-
-[Install]
-WantedBy           = timers.target
