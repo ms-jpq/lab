@@ -31,12 +31,12 @@ from posixpath import commonpath, normpath
 from re import compile
 from time import time
 from typing import NewType
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import SplitResultBytes, parse_qs, urlsplit
 
 _Method = NewType("_Method", bytes)
 _Headers = NewType("_Headers", Mapping[bytes, Sequence[bytes]])
 _Query = NewType("_Query", Mapping[bytes, Sequence[bytes]])
-_Req = tuple[_Method, bytes, _Query, _Headers]
+_Req = tuple[_Method, bytes, SplitResultBytes, _Query, _Headers]
 
 _ALGORITHM = "sha512"
 
@@ -72,9 +72,6 @@ async def finalize(writer: StreamWriter) -> AsyncIterator[None]:
 async def _parse(reader: StreamReader) -> _Req:
     line = await anext(reader)
     method, path, _ = line.strip().split()
-    parsed = urlsplit(b"ssh://" + path)
-    ps = normpath(parsed.path)
-    query = parse_qs(parsed.query)
 
     headers: MutableMapping[bytes, MutableSequence[bytes]] = {}
     async for line in reader:
@@ -85,22 +82,27 @@ async def _parse(reader: StreamReader) -> _Req:
         else:
             break
 
-    return _Method(method.upper()), ps, _Query(query), _Headers(headers)
+    host = b"".join(headers.get(b"host", ()))
+    parsed = urlsplit(b"ssh://" + host + path)
+    ps = normpath(parsed.path)
+    query = parse_qs(parsed.query)
+    return _Method(method.upper()), ps, parsed, _Query(query), _Headers(headers)
 
 
-def _auth_headers(authn_path: bytes, req: _Req) -> Iterator[tuple[bytes, bool]]:
-    _, path, query, headers = req
+def _auth_headers(authn_path: bytes, req: _Req) -> Iterator[tuple[bytes, bytes | None]]:
+    _, path, _, query, headers = req
     for auth in headers.get(b"authorization", []):
         lhs, sep, rhs = auth.partition(b" ")
         if sep and lhs.lower() in {b"basic", b"bearer"}:
-            yield rhs, True
+            yield rhs, None
     else:
         LOG.debug("%s", (authn_path, path))
         if commonpath((authn_path, path)) == authn_path:
             user = b"".join(query.get(b"username", ()))
             passwd = b"".join(query.get(b"password", ()))
+            redirect = b"".join(query.get(b"redirect", ()))
             auth = urlsafe_b64encode(user + b":" + passwd)
-            yield auth, False
+            yield auth, redirect
 
 
 def _decode(secret: bytes, crip: bytes) -> bytes:
@@ -143,12 +145,14 @@ def _write_auth_cookies(
     cookie[name] = crip.decode()
     morsel = cookie[name]
     morsel["domain"] = host
+    morsel["expires"] = int(now + ttl)
     morsel["httponly"] = True
-    morsel["max-age"] = str(ttl)
+    morsel["max-age"] = int(ttl)
     morsel["path"] = "/"
     morsel["samesite"] = "Strict"
     morsel["secure"] = secure
     writer.write(str(cookie).encode())
+    writer.write(b"\r\n")
 
 
 async def _subrequest(sock: Path, credentials: bytes) -> bool:
@@ -176,15 +180,16 @@ def _handler(
     async def cont(reader: StreamReader, writer: StreamWriter) -> None:
         async with finalize(writer):
             req = await _parse(reader)
-            _, _, _, headers = req
+            _, _, parsed, _, headers = req
             LOG.debug("%s", req)
 
-            host = b"".join(headers.get(b"host", ())).decode()
+            assert parsed.hostname
+            host = parsed.hostname.decode()
             if match(host) or _read_auth_cookies(
                 headers, name=cookie_name, secret=hmac_secret
             ):
                 LOG.debug("%s", "allowed")
-                writer.write(b"HTTP/1.1 204 No Content\r\n\r\n")
+                writer.write(b"HTTP/1.0 204 No Content\r\n\r\n")
                 return
 
             for auth, redirect in _auth_headers(authn_path, req=req):
@@ -192,9 +197,9 @@ def _handler(
                     proto = b"".join(headers.get(b"x-forwarded-proto", ()))
                     secure = proto != b"http"
                     if redirect:
-                        writer.write(b"HTTP/1.1 307 Found\r\n")
+                        writer.write(b"HTTP/1.0 307 Temporary Redirect\r\n")
                     else:
-                        writer.write(b"HTTP/1.1 204 No Content\r\n")
+                        writer.write(b"HTTP/1.0 204 No Content\r\n")
                     _write_auth_cookies(
                         writer,
                         name=cookie_name,
@@ -203,15 +208,19 @@ def _handler(
                         host=host,
                         secure=secure,
                     )
+                    LOG.debug("%s", "cookied")
                     if redirect:
-                        writer.write(b"Location: /\r\n")
+                        writer.write(b"Location: ")
+                        writer.write(redirect)
+                        writer.write(b"\r\n")
+                        LOG.debug("%s", f"redirecting -> {redirect}")
 
                     writer.write(b"\r\n")
-                    LOG.debug("%s", "allowing")
+                    LOG.debug("%s", "allowed")
                     return
-
-            LOG.debug("%s", "forbidden")
-            writer.write(b"HTTP/1.1 401 Unauthorized\r\n\r\n")
+            else:
+                LOG.debug("%s", "forbidden")
+                writer.write(b"HTTP/1.0 401 Unauthorized\r\n\r\n")
 
     return cont
 

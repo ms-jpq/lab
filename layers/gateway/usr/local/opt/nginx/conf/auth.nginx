@@ -6,7 +6,6 @@ add_header       Set-Cookie $auth_cookie;
 location /-_-auth-_- {
   auth_request            off;
   include                 /etc/nginx/proxy_params;
-  proxy_set_header        X-Original-URL $scheme://$http_host$request_uri;
   proxy_set_header        Content-Length "";
   proxy_pass_request_body off;
   proxy_pass              http://unix:/run/local/nginx/auth-proxy.sock:/;
@@ -15,7 +14,8 @@ location /-_-auth-_- {
 location @signin {
   internal     ;
   auth_request off;
-  sub_filter   "@X_ORIGINAL_URL" $scheme://$http_host$request_uri;
+  sub_filter   "@METHOD"  $request_method;
+  sub_filter   "@REDIRECT" $scheme://$http_host$request_uri;
   root         /usr/local/opt/nginx/auth/;
   try_files    /index.html =404;
 }
