@@ -84,6 +84,12 @@ def _auth_headers(headers: _Headers) -> Iterator[bytes]:
             yield rhs
 
 
+def _encode(secret: bytes, plain: bytes) -> bytes:
+    sig = digest(key=secret, msg=plain, digest=_ALGORITHM)
+    crip = urlsafe_b64encode(plain) + b"." + urlsafe_b64encode(sig)
+    return crip
+
+
 def _decode(secret: bytes, crip: bytes) -> bytes:
     bplain, bsig = crip.split(b".")
     plain, sig = urlsafe_b64decode(bplain), urlsafe_b64decode(bsig)
@@ -94,12 +100,6 @@ def _decode(secret: bytes, crip: bytes) -> bytes:
         return plain
 
 
-def _encode(secret: bytes, plain: bytes) -> bytes:
-    sig = digest(key=secret, msg=plain, digest=_ALGORITHM)
-    crip = urlsafe_b64encode(plain) + b"." + urlsafe_b64encode(sig)
-    return crip
-
-
 def _read_auth_cookies(headers: _Headers, name: str, secret: bytes) -> bool:
     for cs in headers.get(b"cookie", []):
         with suppress(CookieError):
@@ -108,7 +108,8 @@ def _read_auth_cookies(headers: _Headers, name: str, secret: bytes) -> bool:
                 crip = morsel.value.encode()
                 with suppress(ValueError):
                     exp = _decode(secret, crip=crip).decode()
-                    if time() < int(exp):
+                    d = int(exp) - time()
+                    if d >= 0:
                         return True
     else:
         return False
@@ -152,7 +153,6 @@ async def _subrequest(sock: Path, credentials: bytes) -> bool:
         writer.write(credentials)
         writer.write(b"\r\n\r\n")
         _, line = await gather(writer.drain(), anext(reader))
-        LOG.debug("%s", line)
         _, status, *_ = line.strip().split()
         return int(status) in range(200, 299)
 
@@ -174,7 +174,7 @@ def _handler(
             assert parsed.hostname
             host = parsed.hostname.decode()
 
-            LOG.debug("%s", req)
+            add_cookie = True
             if commonpath((authn_path, path)) == authn_path:
                 redirect = b"".join(query.get(b"redirect", ()))
                 user = b"".join(query.get(b"username", ()))
@@ -183,10 +183,12 @@ def _handler(
                 authorized = await _subrequest(sock=sock, credentials=auth)
             else:
                 redirect = None
-
-                authorized = match(host) or _read_auth_cookies(
-                    headers, name=cookie_name, secret=hmac_secret
-                )
+                authorized = match(host)
+                if not authorized:
+                    authorized = _read_auth_cookies(
+                        headers, name=cookie_name, secret=hmac_secret
+                    )
+                    add_cookie = False
                 if not authorized:
                     for auth in _auth_headers(headers):
                         authorized = await _subrequest(sock=sock, credentials=auth)
@@ -212,8 +214,9 @@ def _handler(
                 else:
                     writer.write(b"HTTP/1.0 204 No Content\r\n")
 
-                writer.write(str(cookie).encode())
-                writer.write(b"\r\n")
+                if add_cookie:
+                    writer.write(str(cookie).encode())
+                    writer.write(b"\r\n")
 
             writer.write(b"\r\n")
 
@@ -234,7 +237,6 @@ def _parse_args() -> Namespace:
 
 async def main() -> None:
     args = _parse_args()
-    LOG.debug("%s", args)
 
     hmac_secret = Path(args.hmac_secret).read_bytes()
     allow_list = frozenset(
