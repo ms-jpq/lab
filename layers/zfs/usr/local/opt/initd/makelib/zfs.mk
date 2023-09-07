@@ -5,7 +5,7 @@ all: user samba iscsi
 CLOBBER.FS += /etc/default/samba /var/lib/local/samba/usershares
 CLOBBER.FS += /etc/rtslib-fb-target
 
-pkg._ | /home/ubuntu
+pkg._: | /home/ubuntu
 user: /home/ubuntu
 /home/ubuntu:
 	sudo -- useradd --user-group --create-home -- "$(@F)"

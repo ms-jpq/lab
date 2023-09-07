@@ -1,0 +1,5 @@
+[Unit]
+Description = %f.sawp
+
+[Swap]
+What        = %f
