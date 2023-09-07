@@ -16,11 +16,11 @@ Label            = traefik.enable=true
 Label            = traefik.http.services.%J.loadbalancer.server.port=9001
 Label            = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+$$}`) || HostRegexp(`%J.{.+$$}.{.+$$}`)"
 
-Environment      = DB_HOST=postgres
+Environment      = DB_HOST=%J-pg
 Environment      = DB_NAME=pdb
-Environment      = DB_PASS=password
+Environment      = DB_PASS=postgres
 Environment      = DB_TYPE=postgres
-Environment      = DB_USER=username
+Environment      = DB_USER=postgres
 Environment      = DEFAULT_PAD_TEXT=...
 Environment      = LOGLEVEL=ERROR
 Environment      = PAD_OPTIONS_NO_COLORS=true

@@ -5,10 +5,12 @@ StopWhenUnneeded = yes
 After            = network-online.target
 
 [Container]
-Image            = docker.io/library/postgres:15
+Image            = docker.io/library/postgres:latest
 ContainerName    = %J-%I
 AutoUpdate       = registry
 RunInit          = yes
+
+HealthCmd        = pg_isready --dbname postgres --username postgres
 
 Environment      = POSTGRES_USER=postgres
 Environment      = POSTGRES_PASSWORD=postgres
@@ -18,3 +20,4 @@ Network          = 3-pm-traefik.network
 
 [Service]
 Restart          = on-failure
+ExecStartPost    = podman wait --condition healthy -- %J-%I

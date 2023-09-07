@@ -10,6 +10,8 @@ ContainerName    = %J-%I
 AutoUpdate       = registry
 RunInit          = yes
 
+HealthCmd        = pg_isready --dbname pdb --username kemal
+
 Environment      = POSTGRES_USER=kemal
 Environment      = POSTGRES_PASSWORD=kemal
 Environment      = POSTGRES_DB=pdb
@@ -18,3 +20,4 @@ Network          = 3-pm-traefik.network
 
 [Service]
 Restart          = on-failure
+ExecStartPost    = podman wait --condition healthy -- %J-%I

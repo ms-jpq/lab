@@ -1,6 +1,6 @@
 ---
 db:
-  host: postgres
+  host: invidious-pg
   port: 5432
   dbname: pdb
   user: kemal
@@ -27,3 +27,6 @@ default_user_preferences:
   # quality: dash
 
   default_home: Trending
+
+hmac_key: |-
+  m4_esyscmd([uuidgen])

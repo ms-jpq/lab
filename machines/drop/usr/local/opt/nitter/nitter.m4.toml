@@ -4,7 +4,7 @@ https    = true
 title    = "🐓"
 
 [Cache]
-redisHost = "redis"
+redisHost = "nitter-redis"
 
 [Preferences]
 replaceReddit  = "reddit.m5_assert([ENV_DOMAIN])"
