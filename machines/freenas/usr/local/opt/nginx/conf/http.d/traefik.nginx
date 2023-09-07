@@ -1,7 +1,7 @@
 server {
   server_name "";
-  listen      0.0.0.0:80 default_server;
-  listen      [::]:80 default_server;
+  listen      0.0.0.0:80 default_server http2;
+  listen      [::]:80 default_server http2;
   include     /usr/local/opt/nginx/conf/auth.nginx;
 
   location / {
