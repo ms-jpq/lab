@@ -10,7 +10,7 @@ check_tables: True
 statistics_enabled: True
 
 https_only: True
-domain: youtube.{{ DOMAIN }}
+domain: youtube.m5_assert([ENV_DOMAIN])
 
 login_enabled: False
 registration_enabled: False

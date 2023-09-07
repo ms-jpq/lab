@@ -4,4 +4,5 @@ search:
   autocomplete: "bing"
 server:
   limiter: false
-  secret_key: "{{ uuid4() }}"
+  secret_key: |-
+    m4_esyscmd([uuidgen])

@@ -18,7 +18,7 @@ Label            = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+$$}`) || Host
 
 Network          = 3-pm-traefik.network
 
-Volume           = /usr/local/opt/%J/nitter.conf:/src/nitter.conf:ro
+Volume           = /usr/local/opt/%J/nitter.toml:/src/nitter.conf:ro
 
 [Service]
 Restart          = on-failure
