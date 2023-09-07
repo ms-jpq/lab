@@ -1,0 +1,7 @@
+[Unit]
+Description      = Socket 6to4 -- %I:localhost:%I
+StopWhenUnneeded = yes
+
+[Socket]
+BindIPv6Only     = ipv6-only
+ListenStream     = %I

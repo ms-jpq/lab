@@ -6,6 +6,9 @@ After           = network-online.target
 BindsTo         = podman.socket
 After           = podman.socket
 
+# Upholds         = 3-loopback-6to4@443.socket
+# Upholds         = 3-loopback-6to4@587.socket
+
 [Container]
 Image           = docker.io/library/traefik:latest
 ContainerName   = %J
