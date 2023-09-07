@@ -5,7 +5,7 @@ StopWhenUnneeded = yes
 After            = network-online.target
 
 [Container]
-Image            = docker.io/library/postgres:15
+Image            = docker.io/library/postgres:latest
 ContainerName    = %J-%I
 AutoUpdate       = registry
 RunInit          = yes

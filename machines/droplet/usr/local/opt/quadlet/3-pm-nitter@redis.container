@@ -10,7 +10,7 @@ ContainerName    = %J-%I
 AutoUpdate       = registry
 RunInit          = yes
 
-HealthCmd        = redis-cli --raw incr ping
+HealthCmd        = redis-cli incr ping
 
 Network          = 3-pm-traefik.network
 

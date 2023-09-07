@@ -1,1 +1,1 @@
-ENV_INDEX=traefik, speedtest, google, docs, reddit, youtube, twitter
+ENV_INDEX=traefik, speedtest, google, docs, reddit, youtube, twitter, piped

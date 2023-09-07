@@ -14,11 +14,11 @@ AutoUpdate       = registry
 
 Label            = traefik.enable=true
 Label            = traefik.http.services.%J.loadbalancer.server.port=8080
-Label            = "traefik.http.routers.%J.rule=HostRegexp(`twitter.{.+$$}`)"
+Label            = "traefik.http.routers.%J.rule=HostRegexp(`twitter.{.+}.{.+$$}`)"
 
 Network          = 3-pm-traefik.network
 
-Volume           = /usr/local/opt/%J/nitter.toml:/src/nitter.conf:ro
+Volume           = /usr/local/opt/%J/nitter.toml:/src/nitter.conf
 
 [Service]
 Restart          = on-failure
