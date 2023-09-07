@@ -22,6 +22,8 @@ entryPoints:
           to: https
   https:
     address: :443
+    http:
+      tls: {}
 
 certificatesResolvers:
   resolver1:
