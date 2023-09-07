@@ -1,20 +1,21 @@
 [Unit]
-Description       = Reload nftables on dhcp lease changes
-StopWhenUnneeded  = yes
+Description              = Reload nftables on dhcp lease changes
+StopWhenUnneeded         = yes
 
-PartOf            = nftables.service
-Requisite         = nftables.service
-After             = nftables.service
+PartOf                   = nftables.service
+Requisite                = nftables.service
+After                    = nftables.service
 
 [Service]
-Type              = oneshot
-LogLevelMax       = warning
-SyslogLevel       = warning
-ProtectSystem     = strict
-ReadWritePaths    = %t/local/port-fwd %T
-PrivateTmp        = yes
+Type                     = oneshot
+LogLevelMax              = warning
+SyslogLevel              = warning
+ProtectSystem            = strict
+ReadWritePaths           = %t/local/port-fwd %T
+PrivateTmp               = yes
 
-RuntimeDirectory  = local/port-fwd
-SuccessExitStatus = 127
-EnvironmentFile   = -/usr/local/etc/default/port-fwd.env
-ExecStart         = env -- /usr/local/opt/nftables/libexec/port-fwd.sh
+RuntimeDirectory         = local/port-fwd
+RuntimeDirectoryPreserve = yes
+SuccessExitStatus        = 127
+EnvironmentFile          = -/usr/local/etc/default/port-fwd.env
+ExecStart                = env -- /usr/local/opt/nftables/libexec/port-fwd.sh %t/local/port-fwd
