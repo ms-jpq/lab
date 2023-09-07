@@ -119,15 +119,22 @@ def _read_auth_cookies(headers: _Headers, name: str, secret: bytes) -> bool:
 
 
 def _write_auth_cookies(
-    name: str, ttl: float, secret: bytes, host: str, secure: bool, user: bytes
+    domain_parts: int,
+    name: str,
+    ttl: float,
+    secret: bytes,
+    host: str,
+    secure: bool,
+    user: bytes,
 ) -> Morsel[str]:
+    domain = ".".join(host.split(".")[-domain_parts:])
     now = time()
     plain = user + b":" + str(int(now + ttl)).encode()
     crip = _encode(secret, plain=plain)
     cookie = SimpleCookie[str]()
     cookie[name] = crip.decode()
     morsel = cookie[name]
-    morsel["domain"] = host
+    morsel["domain"] = domain
     morsel["expires"] = int(now + ttl)
     morsel["httponly"] = True
     morsel["max-age"] = int(ttl)
@@ -163,6 +170,7 @@ async def _subrequest(sock: Path, credentials: bytes) -> bool:
 def _handler(
     sock: Path,
     authn_path: bytes,
+    domain_parts: int,
     cookie_name: str,
     cookie_ttl: float,
     hmac_secret: bytes,
@@ -211,6 +219,7 @@ def _handler(
 
                 if user:
                     cookie = _write_auth_cookies(
+                        domain_parts=domain_parts,
                         name=cookie_name,
                         ttl=cookie_ttl,
                         secret=hmac_secret,
@@ -230,6 +239,7 @@ def _parse_args() -> Namespace:
     parser = ArgumentParser()
     parser.add_argument("--listening-socket", type=Path, required=True)
     parser.add_argument("--htpasswd-socket", type=Path, required=True)
+    parser.add_argument("--domain_parts", type=int, default=2)
     parser.add_argument("--cookie-name", required=True)
     parser.add_argument("--cookie-ttl", type=float, required=True)
     parser.add_argument("--allow-list", type=Path, nargs="*")
@@ -255,6 +265,7 @@ async def main() -> None:
 
     handler = _handler(
         args.htpasswd_socket,
+        domain_parts=args.domain_parts,
         cookie_name=args.cookie_name,
         authn_path=authn_path,
         cookie_ttl=args.cookie_ttl,
