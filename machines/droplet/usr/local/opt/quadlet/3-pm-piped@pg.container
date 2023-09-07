@@ -10,7 +10,7 @@ ContainerName    = %J-%I
 AutoUpdate       = registry
 RunInit          = yes
 
-HealthCmd        = pg_isready --dbname piped --username piped
+HealthCmd        = pg_isready --dbname piped
 
 Environment      = POSTGRES_USER=piped
 Environment      = POSTGRES_PASSWORD=piped

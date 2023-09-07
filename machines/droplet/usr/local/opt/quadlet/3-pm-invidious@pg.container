@@ -5,15 +5,15 @@ StopWhenUnneeded = yes
 After            = network-online.target
 
 [Container]
-Image            = docker.io/library/postgres:latest
+Image            = docker.io/library/postgres:15
 ContainerName    = %J-%I
 AutoUpdate       = registry
 RunInit          = yes
 
-HealthCmd        = pg_isready --dbname postgres --username postgres
+HealthCmd        = pg_isready --dbname pdb
 
-Environment      = POSTGRES_USER=postgres
-Environment      = POSTGRES_PASSWORD=postgres
+Environment      = POSTGRES_USER=kemal
+Environment      = POSTGRES_PASSWORD=kemal
 Environment      = POSTGRES_DB=pdb
 
 Network          = 3-pm-traefik.network

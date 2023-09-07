@@ -10,7 +10,7 @@ ContainerName    = %J-%I
 AutoUpdate       = registry
 RunInit          = yes
 
-HealthCmd        = pg_isready --dbname pdb --username username
+HealthCmd        = pg_isready --dbname pdb
 
 Environment      = POSTGRES_DB=pdb
 Environment      = POSTGRES_USER=username
