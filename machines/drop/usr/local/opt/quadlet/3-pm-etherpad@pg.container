@@ -14,7 +14,7 @@ HealthCmd        = pg_isready --dbname postgres --username postgres
 
 Environment      = POSTGRES_USER=postgres
 Environment      = POSTGRES_PASSWORD=postgres
-Environment      = POSTGRES_DB=postgres
+Environment      = POSTGRES_DB=pdb
 
 Network          = 3-pm-traefik.network
 
