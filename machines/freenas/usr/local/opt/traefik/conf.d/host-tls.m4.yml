@@ -10,6 +10,10 @@ tcp:
       tls:
         options: tls1
         certResolver: resolver1
+        domains:
+          - main: "m5_assert([ENV_DOMAIN])"
+            sans:
+              - "*.m5_assert([ENV_DOMAIN])"
       rule: HostSNI(`*`)
       service: host-http
       entryPoints:

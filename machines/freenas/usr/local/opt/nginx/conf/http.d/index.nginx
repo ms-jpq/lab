@@ -1,3 +1,8 @@
+map $http_host $optimistic_host {
+  default                                   $http_host;
+  ~[^.]+\.(?<x_optimistic_host>[^.]+\.[^.]+) $x_optimistic_host;
+}
+
 server {
   server_name index.*;
   include     /usr/local/opt/nginx/conf/listen.nginx;
@@ -6,6 +11,6 @@ server {
     alias           /usr/local/opt/nginx/index/;
     sub_filter_once off;
     sub_filter      "@SCHEME" $scheme;
-    sub_filter      "@HOST" $http_host;
+    sub_filter      "@HOST" $optimistic_host;
   }
 }

@@ -32,4 +32,5 @@ certificatesResolvers:
   resolver1:
     acme:
       storage: /acme/acme.json
-      tlschallenge: true
+      dnsChallenge:
+        provider: cloudflare
