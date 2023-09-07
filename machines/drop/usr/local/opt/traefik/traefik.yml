@@ -1,0 +1,31 @@
+---
+providers:
+  docker:
+    exposedByDefault: false
+    network: systemd-3-pm-traefik
+
+api:
+  dashboard: true
+  insecure: true
+
+ping: {}
+
+serversTransport:
+  insecureSkipVerify: true
+
+entryPoints:
+  http:
+    address: :80
+    http:
+      redirections:
+        entryPoint:
+          to: https
+  https:
+    address: :443
+
+certificatesResolvers:
+  resolver1:
+    acme:
+      storage: /acme/acme.json
+      dnsChallenge:
+        provider: cloudflare
