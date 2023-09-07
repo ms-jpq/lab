@@ -1,12 +1,12 @@
-[Server]
+[[Server]]
 hostname = "twitter.m5_assert([ENV_DOMAIN])"
 https    = true
 title    = "🐓"
 
-[Cache]
+[[Cache]]
 redisHost = "nitter-redis"
 
-[Preferences]
+[[Preferences]]
 replaceReddit  = "reddit.m5_assert([ENV_DOMAIN])"
 replaceTwitter = "twitter.m5_assert([ENV_DOMAIN])"
 replaceYouTube = "youtube.m5_assert([ENV_DOMAIN])"

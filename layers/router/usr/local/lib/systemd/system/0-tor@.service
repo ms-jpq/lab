@@ -1,6 +1,5 @@
 [Unit]
 Description      = Tor Template -- %t/local/tor/%I/torrc
-StopWhenUnneeded = yes
 
 BindsTo          = 1-ip-alloc@%j.service
 After            = 1-ip-alloc@%j.service

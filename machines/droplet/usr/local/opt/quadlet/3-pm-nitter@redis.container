@@ -5,7 +5,7 @@ StopWhenUnneeded = yes
 After            = network-online.target
 
 [Container]
-Image            = docker.io/library/redis:6
+Image            = docker.io/library/redis:latest
 ContainerName    = %J-%I
 AutoUpdate       = registry
 RunInit          = yes

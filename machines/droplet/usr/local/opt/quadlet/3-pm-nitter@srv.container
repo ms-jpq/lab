@@ -1,27 +1,26 @@
 [Unit]
-Description      = Podman -- %J@%I
-StopWhenUnneeded = yes
+Description   = Podman -- %J@%I
 
-After            = network-online.target
+After         = network-online.target
 
-BindsTo          = %p@redis.service
-After            = %p@redis.service
+BindsTo       = %p@redis.service
+After         = %p@redis.service
 
 [Container]
-Image            = docker.io/zedeus/nitter:latest
-ContainerName    = %J-%I
-AutoUpdate       = registry
+Image         = docker.io/zedeus/nitter:latest
+ContainerName = %J-%I
+AutoUpdate    = registry
 
-Label            = traefik.enable=true
-Label            = traefik.http.services.%J.loadbalancer.server.port=8080
-Label            = "traefik.http.routers.%J.rule=HostRegexp(`twitter.{.+}.{.+$$}`)"
+Label         = traefik.enable=true
+Label         = traefik.http.services.%J.loadbalancer.server.port=8080
+Label         = "traefik.http.routers.%J.rule=HostRegexp(`twitter.{.+}.{.+$$}`)"
 
-Network          = 3-pm-traefik.network
+Network       = 3-pm-traefik.network
 
-Volume           = /usr/local/opt/%J/nitter.toml:/src/nitter.conf
+Volume        = /usr/local/opt/%J/nitter.toml:/src/nitter.conf:ro
 
 [Service]
-Restart          = on-failure
+Restart       = on-failure
 
 [Install]
-WantedBy         = default.target
+WantedBy      = default.target

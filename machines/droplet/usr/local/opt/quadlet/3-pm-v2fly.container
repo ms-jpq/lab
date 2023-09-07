@@ -1,24 +1,23 @@
 [Unit]
-Description      = Podman -- %J
-StopWhenUnneeded = yes
+Description   = Podman -- %J
 
-After            = network-online.target
+After         = network-online.target
 
 [Container]
-Image            = docker.io/v2fly/v2fly-core:latest
-ContainerName    = %J
-AutoUpdate       = registry
+Image         = docker.io/v2fly/v2fly-core:latest
+ContainerName = %J
+AutoUpdate    = registry
 
-Label            = traefik.enable=true
-Label            = traefik.http.services.%J.loadbalancer.server.port=8080
-Label            = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+}.{.+$$}`)"
+Label         = traefik.enable=true
+Label         = traefik.http.services.%J.loadbalancer.server.port=8080
+Label         = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+}.{.+$$}`)"
 
-Network          = 3-pm-traefik.network
+Network       = 3-pm-traefik.network
 
-Volume           = /usr/local/opt/%J/config.json:%E/v2ray/config.json:ro
+Volume        = /usr/local/opt/%J/config.json:%E/v2ray/config.json:ro
 
 [Service]
-Restart          = on-failure
+Restart       = on-failure
 
 [Install]
-WantedBy         = default.target
+WantedBy      = default.target

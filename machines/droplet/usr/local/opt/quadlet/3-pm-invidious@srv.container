@@ -1,27 +1,26 @@
 [Unit]
-Description      = Podman -- %J@%I
-StopWhenUnneeded = yes
+Description   = Podman -- %J@%I
 
-After            = network-online.target
+After         = network-online.target
 
-BindsTo          = %p@pg.service
-After            = %p@pg.service
+BindsTo       = %p@pg.service
+After         = %p@pg.service
 
 [Container]
-Image            = quay.io/invidious/invidious:latest
-ContainerName    = %J-%I
-AutoUpdate       = registry
+Image         = quay.io/invidious/invidious:latest
+ContainerName = %J-%I
+AutoUpdate    = registry
 
-Label            = traefik.enable=true
-Label            = traefik.http.services.%J.loadbalancer.server.port=3000
-Label            = "traefik.http.routers.%J.rule=HostRegexp(`youtube.{.+}.{.+$$}`)"
+Label         = traefik.enable=true
+Label         = traefik.http.services.%J.loadbalancer.server.port=3000
+Label         = "traefik.http.routers.%J.rule=HostRegexp(`youtube.{.+}.{.+$$}`)"
 
-Network          = 3-pm-traefik.network
+Network       = 3-pm-traefik.network
 
-Volume           = /usr/local/opt/%J/conf.yml:/invidious/config/config.yml
+Volume        = /usr/local/opt/%J/conf.yml:/invidious/config/config.yml
 
 [Service]
-Restart          = on-failure
+Restart       = on-failure
 
 [Install]
-WantedBy         = default.target
+WantedBy      = default.target

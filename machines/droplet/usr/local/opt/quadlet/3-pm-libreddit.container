@@ -1,27 +1,26 @@
 [Unit]
-Description      = Podman -- %J
-StopWhenUnneeded = yes
+Description   = Podman -- %J
 
-After            = network-online.target
+After         = network-online.target
 
 [Container]
-Image            = docker.io/libreddit/libreddit:latest
-ContainerName    = %J
-AutoUpdate       = registry
+Image         = docker.io/libreddit/libreddit:latest
+ContainerName = %J
+AutoUpdate    = registry
 
-Label            = traefik.enable=true
-Label            = traefik.http.services.%J.loadbalancer.server.port=8080
-Label            = "traefik.http.routers.%J.rule=HostRegexp(`reddit.{.+}.{.+$$}`)"
+Label         = traefik.enable=true
+Label         = traefik.http.services.%J.loadbalancer.server.port=8080
+Label         = "traefik.http.routers.%J.rule=HostRegexp(`reddit.{.+}.{.+$$}`)"
 
-Environment      = LIBREDDIT_DEFAULT_AUTOPLAY_VIDEOS=on
-Environment      = LIBREDDIT_DEFAULT_HIDE_HLS_NOTIFICATION=on
-Environment      = LIBREDDIT_DEFAULT_SHOW_NSFW=on
-Environment      = LIBREDDIT_DEFAULT_USE_HLS=on
+Environment   = LIBREDDIT_DEFAULT_AUTOPLAY_VIDEOS=on
+Environment   = LIBREDDIT_DEFAULT_HIDE_HLS_NOTIFICATION=on
+Environment   = LIBREDDIT_DEFAULT_SHOW_NSFW=on
+Environment   = LIBREDDIT_DEFAULT_USE_HLS=on
 
-Network          = 3-pm-traefik.network
+Network       = 3-pm-traefik.network
 
 [Service]
-Restart          = on-failure
+Restart       = on-failure
 
 [Install]
-WantedBy         = default.target
+WantedBy      = default.target
