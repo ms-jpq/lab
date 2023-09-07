@@ -14,7 +14,7 @@ RunInit       = yes
 
 Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=8080
-Label         = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+$$}`) || HostRegexp(`%J.{.+$$}.{.+$$}`)"
+Label         = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+$$}`)"
 
 Network       = %p.network
 

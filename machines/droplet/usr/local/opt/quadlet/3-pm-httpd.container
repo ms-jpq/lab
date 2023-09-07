@@ -10,12 +10,12 @@ ContainerName    = %J
 AutoUpdate       = registry
 
 Label            = traefik.enable=true
-Label            = traefik.http.services.%J.loadbalancer.server.port=8080
-Label            = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+$$}`)"
+Label            = traefik.http.services.%J.loadbalancer.server.port=80
+Label            = "traefik.http.routers.%J.rule=PathPrefix(`/`)"
 
 Network          = 3-pm-traefik.network
 
-Volume           = /usr/local/opt/%J/config.json:%E/v2ray/config.json:ro
+Volume           = /usr/local/opt/%J:/usr/local/apache2/htdocs:ro
 
 [Service]
 Restart          = on-failure
