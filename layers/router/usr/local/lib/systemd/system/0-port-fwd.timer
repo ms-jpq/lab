@@ -1,5 +1,6 @@
 [Unit]
 Description       = Reload nftables on dhcp lease changes
+StopWhenUnneeded  = yes
 
 PartOf            = nftables.service
 Requisite         = nftables.service
