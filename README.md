@@ -1,7 +1,5 @@
 # My Infrastructure
 
-WIP...
-
 ---
 
 - Mostly written in **bash + recursive \[makefile & m4\] macros** (think autoconf) for boomercore aesthetics.
