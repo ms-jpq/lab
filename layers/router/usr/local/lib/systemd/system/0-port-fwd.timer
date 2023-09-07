@@ -1,0 +1,10 @@
+[Unit]
+Description       = Reload nftables on dhcp lease changes
+
+PartOf            = nftables.service
+Requisite         = nftables.service
+After             = nftables.service
+
+[Timer]
+OnActiveSec       = 0
+OnUnitInactiveSec = 6seconds

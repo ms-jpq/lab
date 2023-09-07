@@ -15,5 +15,5 @@ EOF
 for LEASE in /run/local/dnsmasq/*/leases; do
   /usr/local/libexec/hr.sh
   printf -- '%s\n' "$LEASE"
-  sort --key 4 -- "$LEASE" | awk '{ print($4 " " $3) }' | column --table
+  sort --key 4 -- "$LEASE" | awk '{ print($4, $3) }' | column --table
 done
