@@ -15,7 +15,7 @@ Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=8080
 Label         = "traefik.http.routers.%J.rule=HostRegexp(`google.{.+}.{.+$$}`)"
 
-Environment   = SEARXNG_BASE_URL=
+Environment   = AUTOCOMPLETE=duckduckgo
 
 Network       = 3-pm-traefik.network
 
