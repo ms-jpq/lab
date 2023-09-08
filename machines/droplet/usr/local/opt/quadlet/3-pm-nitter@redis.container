@@ -2,8 +2,6 @@
 Description      = Podman -- %J@%I
 StopWhenUnneeded = yes
 
-After            = network-online.target
-
 [Container]
 Image            = docker.io/library/redis:latest
 ContainerName    = %J-%I

@@ -1,8 +1,6 @@
 [Unit]
 Description   = Podman -- %J
 
-After         = network-online.target
-
 [Container]
 Image         = docker.io/library/httpd:latest
 ContainerName = %J
@@ -21,4 +19,4 @@ Volume        = /usr/local/opt/%J:/usr/local/apache2/htdocs:ro
 Restart       = on-failure
 
 [Install]
-WantedBy      = default.target
+WantedBy      = 0-podman.target

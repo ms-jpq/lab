@@ -1,8 +1,6 @@
 [Unit]
 Description   = Podman -- %J
 
-After         = network-online.target
-
 [Container]
 Image         = docker.io/libreddit/libreddit:latest
 ContainerName = %J
@@ -24,4 +22,4 @@ Network       = 3-pm-traefik.network
 Restart       = on-failure
 
 [Install]
-WantedBy      = default.target
+WantedBy      = 0-podman.target

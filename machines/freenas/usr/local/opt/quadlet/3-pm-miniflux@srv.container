@@ -1,8 +1,6 @@
 [Unit]
 Description   = Podman -- %J@%I
 
-After         = network-online.target
-
 BindsTo       = %p@pg.service
 After         = %p@pg.service
 
@@ -31,4 +29,4 @@ Network       = 3-pm-traefik.network
 Restart       = on-failure
 
 [Install]
-WantedBy      = default.target
+WantedBy      = 0-podman.target

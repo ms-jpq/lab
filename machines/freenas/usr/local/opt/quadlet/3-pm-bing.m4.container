@@ -1,8 +1,6 @@
 [[Unit]]
 Description   = Podman -- %J
 
-After         = network-online.target
-
 [[Container]]
 Image         = docker.io/msjpq/bing-daily-images:latest
 ContainerName = %J
@@ -16,4 +14,4 @@ Volume        = /media/m5_assert([ENV_FS_WALLPAPER]):/data
 Restart       = on-failure
 
 [[Install]]
-WantedBy      = default.target
+WantedBy      = 0-podman.target

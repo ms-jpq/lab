@@ -10,7 +10,8 @@ shift -- 1 || true
 
 # shellcheck disable=SC1090
 source -- "${0%/*}/../libexec/${0##*/}"
-WANTS='/usr/local/lib/systemd/system/machines.target.wants'
+# shellcheck disable=SC2154
+WANTS="/usr/local/lib/systemd/system/$TARGET.target.wants"
 MACHINES=()
 SERVICES=()
 for NAME in "$@"; do

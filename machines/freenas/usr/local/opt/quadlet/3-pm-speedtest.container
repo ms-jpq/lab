@@ -1,8 +1,6 @@
 [Unit]
 Description   = Podman -- %J
 
-After         = network-online.target
-
 [Container]
 Image         = lscr.io/linuxserver/librespeed:latest
 ContainerName = %J
@@ -18,4 +16,4 @@ Network       = 3-pm-traefik.network
 Restart       = on-failure
 
 [Install]
-WantedBy      = default.target
+WantedBy      = 0-podman.target

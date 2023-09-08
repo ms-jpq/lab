@@ -1,8 +1,6 @@
 [Unit]
 Description   = Podman -- %J
 
-After         = network-online.target
-
 [Container]
 Image         = lscr.io/linuxserver/webtop:latest
 ContainerName = %J
@@ -23,4 +21,4 @@ Volume        = %S/local/docker/%J:/config
 Volume        = /media:/media
 
 [Install]
-WantedBy      = default.target
+WantedBy      = 0-podman.target

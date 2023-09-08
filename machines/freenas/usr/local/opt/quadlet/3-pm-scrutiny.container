@@ -1,8 +1,6 @@
 [Unit]
 Description   = Podman -- %J
 
-After         = network-online.target
-
 [Container]
 Image         = ghcr.io/analogj/scrutiny:master-omnibus
 ContainerName = %J
@@ -37,4 +35,4 @@ Volume        = %S/local/docker/%J/db:/opt/scrutiny/influxdb
 Restart       = on-failure
 
 [Install]
-WantedBy      = default.target
+WantedBy      = 0-podman.target

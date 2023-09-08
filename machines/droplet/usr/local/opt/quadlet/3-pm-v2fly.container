@@ -1,8 +1,6 @@
 [Unit]
 Description   = Podman -- %J
 
-After         = network-online.target
-
 [Container]
 Image         = docker.io/v2fly/v2fly-core:latest
 ContainerName = %J
@@ -23,4 +21,4 @@ Volume        = /usr/local/opt/%J/config.yml:%E/v2ray/config.yml:ro
 Restart       = on-failure
 
 [Install]
-WantedBy      = default.target
+WantedBy      = 0-podman.target

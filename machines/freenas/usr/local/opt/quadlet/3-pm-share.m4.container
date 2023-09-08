@@ -1,8 +1,6 @@
 [[Unit]]
 Description   = Podman -- %J
 
-After         = network-online.target
-
 [[Container]]
 Image         = docker.io/rclone/rclone:latest
 ContainerName = %J
@@ -23,4 +21,4 @@ Volume        = /media/m5_assert([ENV_FS_DOWNLOADS]):/downloads:ro
 Restart       = on-failure
 
 [[Install]]
-WantedBy      = default.target
+WantedBy      = 0-podman.target

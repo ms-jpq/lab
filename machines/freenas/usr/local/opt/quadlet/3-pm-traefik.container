@@ -1,8 +1,6 @@
 [Unit]
 Description     = Podman -- %J
 
-After           = network-online.target
-
 BindsTo         = podman.socket
 After           = podman.socket
 
@@ -42,4 +40,4 @@ Restart         = on-failure
 ExecStartPre    = mkdir -v -p -- %S/local/docker/%J
 
 [Install]
-WantedBy        = default.target
+WantedBy        = 0-podman.target

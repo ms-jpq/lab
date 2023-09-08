@@ -1,8 +1,6 @@
 [Unit]
 Description   = Podman -- %J@%I
 
-After         = network-online.target
-
 [Container]
 Image         = lscr.io/linuxserver/ddclient:latest
 ContainerName = %J-%I
@@ -15,4 +13,4 @@ Volume        = /usr/local/opt/%J/%I:/config/config
 Restart       = on-failure
 
 [Install]
-WantedBy      = default.target
+WantedBy      = 0-podman.target

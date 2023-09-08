@@ -1,8 +1,6 @@
 [[Unit]]
 Description   = Podman -- %J
 
-After         = network-online.target
-
 BindsTo       = 1-wg-netns@trans.service
 After         = 1-wg-netns@trans.service
 
@@ -27,4 +25,4 @@ Volume        = /media/m5_assert([ENV_FS_DOWNLOADS]):/downloads
 Restart       = on-failure
 
 [[Install]]
-WantedBy      = default.target
+WantedBy      = 0-podman.target

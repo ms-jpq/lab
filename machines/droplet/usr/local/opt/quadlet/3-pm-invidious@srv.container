@@ -1,8 +1,6 @@
 [Unit]
 Description   = Podman -- %J@%I
 
-After         = network-online.target
-
 BindsTo       = %p@pg.service
 After         = %p@pg.service
 
@@ -24,4 +22,4 @@ Volume        = /usr/local/opt/%J/conf.yml:/invidious/config/config.yml
 Restart       = on-failure
 
 [Install]
-WantedBy      = default.target
+WantedBy      = 0-podman.target

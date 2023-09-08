@@ -10,7 +10,7 @@ ACTION="${1:-"ls"}"
 shift -- 1 || true
 
 SYSTEMD='/usr/local/lib/systemd/system'
-MWANTS="$SYSTEMD/machines.target.wants"
+MWANTS="$SYSTEMD/default.target.wants"
 SWANTS="$SYSTEMD/sockets.target.wants"
 
 SERVICES=()

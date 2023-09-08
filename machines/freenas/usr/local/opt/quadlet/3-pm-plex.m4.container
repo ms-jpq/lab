@@ -2,8 +2,6 @@
 Description       = Podman -- %J
 RequiresMountsFor = /media/m5_assert([ENV_FS_NTFS])
 
-After             = network-online.target
-
 [[Container]]
 Image             = lscr.io/linuxserver/plex:latest
 ContainerName     = %J
@@ -24,4 +22,4 @@ ExecStartPre      = mkdir -v -p -- %V/local/plex
 Restart           = on-failure
 
 [[Install]]
-WantedBy          = default.target
+WantedBy          = 0-podman.target

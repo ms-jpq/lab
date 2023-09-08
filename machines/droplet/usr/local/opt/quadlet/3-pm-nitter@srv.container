@@ -1,8 +1,6 @@
 [Unit]
 Description   = Podman -- %J@%I
 
-After         = network-online.target
-
 BindsTo       = %p@redis.service
 After         = %p@redis.service
 
@@ -24,4 +22,4 @@ Volume        = /usr/local/opt/%J/nitter.toml:/src/nitter.conf:ro
 Restart       = on-failure
 
 [Install]
-WantedBy      = default.target
+WantedBy      = 0-podman.target
