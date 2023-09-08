@@ -1,4 +1,4 @@
 .PHONY: reload
 
-reload: | pkg
+reload: | all
 	./libexec/systemd-reload.sh
