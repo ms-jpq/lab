@@ -1,5 +1,6 @@
 [Unit]
-Description = Qemu VMs Target
+Description       = Qemu VMs Target
+RequiresMountsFor = %S/local/qemu
 
 [Install]
-WantedBy    = default.target
+WantedBy          = default.target

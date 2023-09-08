@@ -1,25 +1,24 @@
 [[Unit]]
-Description       = Podman -- %J
-RequiresMountsFor = /media/m5_assert([ENV_FS_NTFS])
+Description   = Podman -- %J
 
 [[Container]]
-Image             = lscr.io/linuxserver/plex:latest
-ContainerName     = %J
-AutoUpdate        = registry
+Image         = lscr.io/linuxserver/plex:latest
+ContainerName = %J
+AutoUpdate    = registry
 
-Network           = host
+Network       = host
 
-Volume            = %S/local/docker/plex:/config
-Volume            = %V/local/plex:/transcode
+Volume        = %S/local/docker/plex:/config
+Volume        = %V/local/plex:/transcode
 
-Volume            = /media/m5_assert([ENV_FS_DOWNLOADS])/done:/media/downloads:ro
-Volume            = /media/m5_assert([ENV_FS_MOVIES]):/media/movies:ro
-Volume            = /media/m5_assert([ENV_FS_TV]):/media/tv:ro
-Volume            = /media/m5_assert([ENV_FS_NTFS]):/media/ntfs:ro
+Volume        = /media/m5_assert([ENV_FS_DOWNLOADS])/done:/media/downloads:ro
+Volume        = /media/m5_assert([ENV_FS_MOVIES]):/media/movies:ro
+Volume        = /media/m5_assert([ENV_FS_TV]):/media/tv:ro
+Volume        = /media/m5_assert([ENV_FS_NTFS]):/media/ntfs:ro
 
 [[Service]]
-ExecStartPre      = mkdir -v -p -- %V/local/plex
-Restart           = on-failure
+ExecStartPre  = mkdir -v -p -- %V/local/plex
+Restart       = on-failure
 
 [[Install]]
-WantedBy          = 0-podman.target
+WantedBy      = 0-podman.target

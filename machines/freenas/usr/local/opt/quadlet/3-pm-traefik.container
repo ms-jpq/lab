@@ -21,6 +21,8 @@ Label           = traefik.http.routers.index.middlewares=indexm
 Label           = "traefik.http.middlewares.indexm.redirectRegex.regex=(^[^:]+)://(.+$$)"
 Label           = "traefik.http.middlewares.indexm.redirectRegex.replacement=$${1}://index.$${2}"
 
+HealthCmd       = wget --no-verbose --tries=1 --spider --timeout=1 http://localhost:8080
+
 EnvironmentFile = /usr/local/etc/default/traefik.env
 
 Network         = %p.network
@@ -38,6 +40,7 @@ Volume          = %S/local/docker/%J:/acme
 [Service]
 Restart         = on-failure
 ExecStartPre    = mkdir -v -p -- %S/local/docker/%J
+ExecStartPost   = podman wait --condition healthy -- %J
 
 [Install]
 WantedBy        = 0-podman.target
