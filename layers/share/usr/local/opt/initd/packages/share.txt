@@ -1,0 +1,8 @@
++ avahi-daemon
++ iotop-c
++ nfs-kernel-server
++ rclone
++ samba
++ samba-vfs-modules
++ targetcli-fb
++ wsdd

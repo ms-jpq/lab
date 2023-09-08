@@ -3,4 +3,5 @@ intel_gvt
 podman
 printer
 qemu
+share
 zfs
