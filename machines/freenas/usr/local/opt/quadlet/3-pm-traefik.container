@@ -18,6 +18,10 @@ RunInit         = yes
 Label           = traefik.enable=true
 Label           = traefik.http.services.%J.loadbalancer.server.port=8080
 Label           = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+$$}`) || HostRegexp(`%J.{.+$$}.{.+$$}`)"
+Label           = "traefik.http.routers.index.rule=(HostRegexp(`{.+$$}`) || HostRegexp(`{.+$$}.{.+$$}`)) && PathPrefix(`/`)"
+Label           = traefik.http.routers.index.middlewares=indexm
+Label           = "traefik.http.middlewares.indexm.redirectRegex.regex=(^[^:]+)://(.+$$)"
+Label           = "traefik.http.middlewares.indexm.redirectRegex.replacement=$${1}://index.$${2}"
 
 EnvironmentFile = /usr/local/etc/default/traefik.env
 
