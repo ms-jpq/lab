@@ -1,0 +1,25 @@
+[[Unit]]
+Description   = Podman -- %J
+
+After         = network-online.target
+
+[[Container]]
+Image         = ghcr.io/alexta69/metube:latest
+ContainerName = %J
+AutoUpdate    = registry
+RunInit       = yes
+
+Label         = traefik.enable=true
+Label         = traefik.http.services.%J.loadbalancer.server.port=8081
+Label         = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+$$}`) || HostRegexp(`%J.{.+$$}.{.+$$}`)"
+
+Network       = %p.network
+Network       = 3-pm-traefik.network
+
+Volume        = /media/m5_assert([ENV_FS_DOWNLOADS]):/downloads
+
+[[Service]]
+Restart       = on-failure
+
+[[Install]]
+WantedBy      = default.target
