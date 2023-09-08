@@ -1,6 +1,6 @@
 [Unit]
-Description              = Share -- %I
-RequiresMountsFor        = %I
+Description              = Share -- /%I
+RequiresMountsFor        = /%I
 
 [Service]
 Restart                  = on-failure
@@ -10,4 +10,5 @@ RuntimeDirectory         = local/http-share
 RuntimeDirectoryPreserve = yes
 PrivateTmp               = yes
 
-ExecStart                = rclone serve http --read-only --addr=unix://%t/local/http-share/%i.sock -- %I
+# TODO: rclone can listen on unix sockets on later versions
+ExecStart                = rclone serve http --read-only --addr=127.0.0.53:8090 --baseurl=/share/%I -- /%I

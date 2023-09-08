@@ -1,5 +1,5 @@
 location /netdata {
-  return 301 /netdata/;
+  return 307 /netdata/;
 }
 
 location /netdata/ {
