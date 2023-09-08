@@ -1,6 +1,5 @@
 [Unit]
 Description  = Proxy qemu display socket -- %t/local/qemu/%I/ws.sock
-CollectMode  = inactive-or-failed
 
 [Socket]
 RemoveOnStop = yes

@@ -4,19 +4,21 @@ Description   = Podman -- %J
 BindsTo       = 1-wg-netns@trans.service
 After         = 1-wg-netns@trans.service
 
-BindsTo       = 1-netns-proxy-9091@trans.socket
-After         = 1-netns-proxy-9091@trans.socket
+Upholds       = 1-netns-proxy-9091@trans.socket
+Before        = 1-netns-proxy-9091@trans.socket
 
 [[Container]]
 Image         = lscr.io/linuxserver/transmission:latest
 ContainerName = %J
 AutoUpdate    = registry
 
-Network       = ns:%t/netns/trans
+HealthCmd     = wget --no-verbose --tries=1 --spider --timeout=1 http://localhost:9091
 
 Environment   = PGID=1000
 Environment   = PUID=1000
 Environment   = HOST_WHITELIST=
+
+Network       = ns:%t/netns/trans
 
 Volume        = %S/local/docker/%J:/config
 Volume        = /media/m5_assert([ENV_FS_DOWNLOADS]):/downloads

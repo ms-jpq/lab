@@ -1,7 +1,6 @@
 [Unit]
 Description      = SWTPM -- %t/local/swtpm/%I
 StopWhenUnneeded = yes
-CollectMode      = inactive-or-failed
 
 [Service]
 ProtectSystem    = strict

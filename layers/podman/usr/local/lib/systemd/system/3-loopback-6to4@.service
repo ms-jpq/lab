@@ -1,12 +1,11 @@
 [Unit]
-Description      = Socket 6to4 -- %i:localhost:%i
-StopWhenUnneeded = yes
+Description   = Socket 6to4 -- %i:localhost:%i
 
-BindsTo          = %N.socket
-After            = %N.socket
+BindsTo       = %N.socket
+After         = %N.socket
 
 [Service]
-Restart          = on-failure
-ProtectSystem    = strict
+Restart       = on-failure
+ProtectSystem = strict
 
-ExecStart        = /usr/lib/systemd/systemd-socket-proxyd -- 127.0.0.1:%I
+ExecStart     = /usr/lib/systemd/systemd-socket-proxyd -- 127.0.0.1:%I

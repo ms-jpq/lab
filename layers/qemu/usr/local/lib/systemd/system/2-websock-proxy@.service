@@ -1,7 +1,5 @@
 [Unit]
 Description      = Proxy qemu display -- %i
-StopWhenUnneeded = yes
-CollectMode      = inactive-or-failed
 
 BindsTo          = %N.socket
 After            = %N.socket

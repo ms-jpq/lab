@@ -1,10 +1,9 @@
 [Unit]
-Description      = NetNS Proxy -- %t/local/ns-proxy/%I.sock
-StopWhenUnneeded = yes
+Description  = NetNS Proxy -- %t/local/ns-proxy/%I.sock
 
-BindsTo          = 1-netns@%i.service
-After            = 1-netns@%i.service
+BindsTo      = 1-netns@%i.service
+After        = 1-netns@%i.service
 
 [Socket]
-RemoveOnStop     = yes
-ListenStream     = %t/local/ns-proxy/%I.sock
+RemoveOnStop = yes
+ListenStream = %t/local/ns-proxy/%I.sock
