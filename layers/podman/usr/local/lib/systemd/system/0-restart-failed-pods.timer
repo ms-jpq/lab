@@ -1,0 +1,6 @@
+[Unit]
+Description       = Restart failed podman services
+
+[Timer]
+OnActiveSec       = 12minutes
+OnUnitInactiveSec = 12minutes

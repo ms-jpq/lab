@@ -1,0 +1,13 @@
+[Unit]
+Description     = Restart failed podman services
+After           = 0-podman.target
+
+[Service]
+Type            = oneshot
+
+ProtectSystem   = strict
+PrivateTmp      = yes
+
+TimeoutStartSec = 6minutes
+
+ExecStart       = /usr/local/libexec/systemd-reload.sh list-units -- '3-pm-*.service'

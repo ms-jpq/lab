@@ -1,4 +1,5 @@
 .PHONY: reload
 
 reload: | all
-	./libexec/systemd-reload.sh
+	systemctl daemon-reload --no-pager --show-transaction
+	/usr/local/libexec/systemd-reload.sh

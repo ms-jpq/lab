@@ -27,6 +27,3 @@ ExecStartPre    = mkdir --parents -- %C/local/dhcpd
 ExecStartPre    = /lib/systemd/systemd-networkd-wait-online --ipv4 --interface ${WAN_IF}
 ExecStart       = env -- ${PATH_DHCLIENT_SCRIPT}
 ExecStart       = dhclient -d --no-pid -1 -P --prefix-len-hint 56 -w -e TOKEN=${TOKEN} -e PATH_DHCLIENT_DB=${PATH_DHCLIENT_DB} -e WAN_IF=${WAN_IF} -e LAN_IFS=${LAN_IFS} ${WAN_IF}
-
-[Install]
-WantedBy        = default.target
