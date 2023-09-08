@@ -1,0 +1,10 @@
+location /bt {
+  return 307 /bt/;
+}
+
+location /bt/ {
+  include           /usr/local/opt/nginx/conf/websocket.nginx;
+  proxy_set_header  Host localhost;
+  proxy_cookie_path / "/; Secure";
+  proxy_pass        http://unix:/run/local/ns-proxy/qbt.sock:/;
+}

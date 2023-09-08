@@ -1,4 +1,6 @@
 [[Unit]]
+# TODO: switch to transmission 4.0 deb in ubuntu 24
+# https://github.com/qbittorrent/qBittorrent/wiki/NGINX-Reverse-Proxy-for-Web-UI
 Description   = Podman -- %J
 
 BindsTo       = 1-wg-netns@trans.service
