@@ -10,6 +10,7 @@ After         = %p@redis.service
 Image         = docker.io/searxng/searxng:latest
 ContainerName = %J-%I
 AutoUpdate    = registry
+RunInit       = yes
 
 Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=8080

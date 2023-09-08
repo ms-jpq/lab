@@ -1,0 +1,42 @@
+# yaml-language-server: schema=https://raw.githubusercontent.com/EHfive/v2ray-jsonschema/main/v4-config.schema.json
+---
+inbounds:
+  - port: 6901
+    protocol: shadowsocks
+    settings:
+      method: aes-256-gcm
+      network: tcp,udp
+      password: |-
+        m4_esyscmd([uuidgen])
+    streamSettings: &stream
+      network: ws
+
+  - port: 6902
+    protocol: trojan
+    settings:
+      clients:
+        - password: |-
+            m4_esyscmd([uuidgen])
+    streamSettings: *stream
+
+  - port: 6903
+    protocol: vless
+    settings:
+      clients:
+        - id: |-
+            m4_esyscmd([uuidgen])
+      decryption: none
+    streamSettings: *stream
+
+  - port: 6904
+    protocol: vmess
+    settings:
+      clients:
+        - id: |-
+            m4_esyscmd([uuidgen])
+    streamSettings: *stream
+
+outbounds:
+  - protocol: freedom
+    settings:
+      domainStrategy: UseIP

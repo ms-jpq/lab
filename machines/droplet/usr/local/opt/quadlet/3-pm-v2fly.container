@@ -7,14 +7,17 @@ After         = network-online.target
 Image         = docker.io/v2fly/v2fly-core:latest
 ContainerName = %J
 AutoUpdate    = registry
+RunInit       = yes
 
 Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=8080
 Label         = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+}.{.+$$}`)"
 
+Exec          = run -c %E/v2ray/config.yml
+
 Network       = 3-pm-traefik.network
 
-Volume        = /usr/local/opt/%J/config.json:%E/v2ray/config.json:ro
+Volume        = /usr/local/opt/%J/config.yml:%E/v2ray/config.yml:ro
 
 [Service]
 Restart       = on-failure
