@@ -11,6 +11,7 @@ JoinsNamespaceOf = 2-websock-display@%i.service
 [Service]
 Restart          = on-failure
 ProtectSystem    = strict
+ProtectHome      = yes
 PrivateNetwork   = yes
 
 ExecStart        = /usr/lib/systemd/systemd-socket-proxyd -- localhost:8080

@@ -8,6 +8,7 @@ Type            = oneshot
 AppArmorProfile = unconfined
 
 ProtectSystem   = strict
+ProtectHome     = yes
 PrivateTmp      = yes
 ReadWritePaths  = %C
 

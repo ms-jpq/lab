@@ -9,6 +9,7 @@ Type             = oneshot
 RemainAfterExit  = yes
 Restart          = on-failure
 ProtectSystem    = strict
+ProtectHome      = yes
 PrivateTmp       = yes
 RuntimeDirectory = local/tor/%I
 ReadWritePaths   = %t/local/tor/%I %t/systemd/network %T

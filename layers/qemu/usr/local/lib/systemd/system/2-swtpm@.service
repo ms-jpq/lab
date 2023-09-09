@@ -4,6 +4,7 @@ StopWhenUnneeded = yes
 
 [Service]
 ProtectSystem    = strict
+ProtectHome      = yes
 RuntimeDirectory = local/swtpm/%I
 
 Environment      = TPM_PATH=%t/local/swtpm/%I

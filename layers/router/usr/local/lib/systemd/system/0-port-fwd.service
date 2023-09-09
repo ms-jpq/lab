@@ -11,6 +11,7 @@ Type                     = oneshot
 LogLevelMax              = warning
 SyslogLevel              = warning
 ProtectSystem            = strict
+ProtectHome              = yes
 ReadWritePaths           = %t/local/port-fwd %T
 PrivateTmp               = yes
 

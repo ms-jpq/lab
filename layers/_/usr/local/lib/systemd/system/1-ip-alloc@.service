@@ -10,6 +10,7 @@ RemainAfterExit          = yes
 Restart                  = on-failure
 
 ProtectSystem            = strict
+ProtectHome              = yes
 PrivateTmp               = yes
 RuntimeDirectory         = local/ip
 RuntimeDirectoryPreserve = yes

@@ -11,6 +11,7 @@ RemainAfterExit     = yes
 Restart             = on-failure
 
 ProtectSystem       = strict
+ProtectHome         = yes
 ReadWritePaths      = %C/local
 
 Environment         = DIR=%C/local/self-signed/%I

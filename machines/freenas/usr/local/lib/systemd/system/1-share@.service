@@ -5,6 +5,7 @@ RequiresMountsFor        = /%I
 [Service]
 Restart                  = on-failure
 ProtectSystem            = strict
+ProtectHome              = yes
 ReadWritePaths           = %t/local %T %V
 RuntimeDirectory         = local/http-share
 RuntimeDirectoryPreserve = yes

@@ -15,6 +15,7 @@ RemainAfterExit  = yes
 Restart          = on-failure
 
 ProtectSystem    = strict
+ProtectHome      = yes
 PrivateTmp       = yes
 RuntimeDirectory = local/wireguard/dnsmasq.d
 ReadWritePaths   = %t/systemd %t/local/wireguard %T %V %C/local %S/local

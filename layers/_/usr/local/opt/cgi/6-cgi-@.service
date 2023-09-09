@@ -9,6 +9,7 @@ After           = %p.socket
 Type            = oneshot
 
 ProtectSystem   = strict
+ProtectHome     = yes
 PrivateTmp      = yes
 ReadWritePaths  = %t %T %V
 TimeoutStartSec = 1m

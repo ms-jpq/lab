@@ -5,6 +5,7 @@ Description     = Configure TC - TX: ${WAN_IF} - RX: %I-rx
 Type            = oneshot
 RemainAfterExit = yes
 ProtectSystem   = strict
+ProtectHome     = yes
 
 EnvironmentFile = /usr/local/etc/default/%I.tc.env
 

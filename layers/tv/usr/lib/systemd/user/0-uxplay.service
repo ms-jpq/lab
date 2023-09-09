@@ -5,6 +5,7 @@ Description    = Airplay server daemon
 Restart        = on-failure
 
 ProtectSystem  = strict
+ProtectHome    = yes
 PrivateTmp     = yes
 
 ReadWritePaths = %t %T

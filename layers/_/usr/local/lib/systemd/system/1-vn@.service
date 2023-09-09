@@ -20,6 +20,7 @@ RemainAfterExit      = yes
 Restart              = on-failure
 
 ProtectSystem        = strict
+ProtectHome          = yes
 PrivateTmp           = yes
 ReadWritePaths       = %t/systemd %T
 

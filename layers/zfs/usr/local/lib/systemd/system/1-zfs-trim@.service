@@ -7,6 +7,7 @@ After         = zfs.target
 Type          = oneshot
 Restart       = on-failure
 ProtectSystem = strict
+ProtectHome   = yes
 
 ExecStart     = zpool trim --wait -- %i
 ExecStop      = -zpool trim --suspend -- %i

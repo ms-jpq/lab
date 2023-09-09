@@ -9,6 +9,7 @@ PartOf           = 2-websock-proxy@%i.service
 [Service]
 Restart          = on-failure
 ProtectSystem    = strict
+ProtectHome      = yes
 PrivateNetwork   = yes
 
 ExecStart        = websockify --web /usr/share/novnc --unix-target %t/local/qemu/%I/vnc.sock -- [::]:8080

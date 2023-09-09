@@ -10,6 +10,7 @@ RemainAfterExit          = yes
 RuntimeDirectoryPreserve = yes
 RuntimeDirectory         = systemd/nspawn
 ProtectSystem            = strict
+ProtectHome              = yes
 PrivateTmp               = yes
 ReadWritePaths           = %t/systemd/nspawn %T %S/local %C/local
 
