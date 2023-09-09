@@ -43,7 +43,7 @@ fi
 
 "$HR" rm -v -rf -- "$FS_ROOT/etc/hostname"
 "$HR" mkdir -v -p -- "$RSSH" "$USRN"
-"$HR" cp -v -f -- /root/.ssh/authorized_keys "$RSSH/authorized_keys"
+"$HR" cp -v -f -- ~/.ssh/authorized_keys "$RSSH/authorized_keys"
 "$HR" cp -v -f -- "${0%/*}/../macvlan.network" "$USRN/10-macvlan.network"
 "$HR" chroot "$FS_ROOT" ssh-keygen -A
 "$HR" chroot "$FS_ROOT" dpkg --purge --force-all -- snapd cloud-init lxd-agent-loader

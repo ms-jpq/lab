@@ -10,9 +10,10 @@ RemainAfterExit          = yes
 RuntimeDirectoryPreserve = yes
 RuntimeDirectory         = systemd/nspawn
 ProtectSystem            = strict
-ProtectHome              = yes
+ProtectHome              = tmpfs
 PrivateTmp               = yes
 ReadWritePaths           = %t/systemd/nspawn %T %S/local %C/local
+BindReadOnlyPaths        = -%h/.ssh:%h/.ssh
 
 EnvironmentFile          = -/usr/local/etc/default/%I.nspawn.env
 Environment              = MACHINE=%i
