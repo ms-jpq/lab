@@ -6,7 +6,9 @@ Image         = lscr.io/linuxserver/plex:latest
 ContainerName = %J
 AutoUpdate    = registry
 
-Network       = host
+Label         = traefik.enable=true
+Label         = traefik.http.services.%J.loadbalancer.server.port=32400
+Label         = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+$$}`) || HostRegexp(`%J.{.+$$}.{.+$$}`)"
 
 Volume        = %S/local/docker/plex:/config
 Volume        = %V/local/plex:/transcode

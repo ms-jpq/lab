@@ -1,9 +1,0 @@
-server {
-  server_name plex.*;
-  include     /usr/local/opt/nginx/conf/listen.nginx;
-
-  location / {
-    auth_request off;
-    proxy_pass   http://localhost:32400/;
-  }
-}
