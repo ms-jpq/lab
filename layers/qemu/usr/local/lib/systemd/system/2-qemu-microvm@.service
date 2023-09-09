@@ -10,9 +10,10 @@ After             = dnsmasq@qemu.service
 
 [Service]
 ProtectSystem     = strict
-ProtectHome       = yes
+ProtectHome       = tmpfs
 RuntimeDirectory  = local/qemu/%I
 ReadWritePaths    = %t %T %S/local %C/local
+BindReadOnlyPaths = -%h/.ssh:%h/.ssh
 BindReadOnlyPaths = /usr/local/opt/qemu/etc:%E/qemu
 PrivateTmp        = yes
 

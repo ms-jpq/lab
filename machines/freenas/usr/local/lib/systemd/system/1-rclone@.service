@@ -1,0 +1,14 @@
+[Unit]
+Description              = Rclone Mirror -- /%I
+RequiresMountsFor        = /%I
+
+[Service]
+Restart                  = on-failure
+ProtectSystem            = strict
+ProtectHome              = yes
+ReadWritePaths           = %t/local/rclone
+RuntimeDirectory         = local/rclone
+RuntimeDirectoryPreserve = yes
+PrivateTmp               = yes
+
+ExecStart                = true
