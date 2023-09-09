@@ -4,7 +4,7 @@ location /bt {
 
 location /bt/ {
   include           /usr/local/opt/nginx/conf/websocket.nginx;
-  proxy_set_header  Host localhost;
+  proxy_set_header  X-Forwarded-Host $http_host;
   proxy_cookie_path / "/; Secure";
   proxy_pass        http://unix:/run/local/ns-proxy/qbt.sock:/;
 }
