@@ -1,0 +1,11 @@
+location /share {
+  return 307 /share/;
+}
+
+location /share/ {
+  return 307 /share/media/downloads/;
+}
+
+location /share/media/downloads/ {
+  proxy_pass http://127.0.0.53:8090;
+}

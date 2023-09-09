@@ -13,4 +13,4 @@ CLOBBER.FS += /etc/apt/sources.list.d/*
 
 clobber.cache:
 	shopt -u failglob
-	rm -v -rf -- /var/cache/local/*
+	rm -v -rf -- $(CACHE)/*

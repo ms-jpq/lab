@@ -20,8 +20,6 @@ execl(
 )
 endef
 
-CURL := curl --fail --location --no-progress-meter
-
 $(VAR)/bin: | $(VAR)
 	mkdir -v -p -- '$@'
 

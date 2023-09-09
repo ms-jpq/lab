@@ -14,13 +14,17 @@ SHELL := bash
 
 clean:
 	shopt -u failglob
-	rm -v -rf --
+	rm -v -rf -- $(TMP)
 
 clobber: clean
 	shopt -u failglob
 	rm -v -rf --
 
-CURL := curl --fail --location --no-progress-meter
+
+CACHE := /var/cache/local
+TMP := /var/tmp/initd
+
+APT_INSTALL := DEBIAN_FRONTEND=noninteractive sudo --preserve-env -- apt-get install --yes
 
 include lib/*.mk
 include makelib/*.mk
