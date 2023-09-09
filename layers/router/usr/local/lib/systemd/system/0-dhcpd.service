@@ -1,30 +1,31 @@
 [Unit]
 # TODO -- Newer versions of systemd.networkd should fix this
-Description     = IPv6 IA_PD service
-After           = network.target
+Description         = IPv6 IA_PD service
+After               = network.target
+
+ConditionPathExists = /usr/local/opt/network/libexec/dhcpd.py
 
 [Service]
-Type            = oneshot
-AppArmorProfile = unconfined
+Type                = oneshot
+AppArmorProfile     = unconfined
 
-ProtectSystem   = strict
-ProtectHome     = yes
-PrivateTmp      = yes
-ReadWritePaths  = %C
+ProtectSystem       = strict
+ProtectHome         = yes
+PrivateTmp          = yes
+ReadWritePaths      = %C
 
-TimeoutStartSec = 6minutes
+TimeoutStartSec     = 6minutes
 
-Environment     = TOKEN=::69:420:420:69
-Environment     = WAN_IF=
-Environment     = LAN_IFS=
-EnvironmentFile = /usr/local/etc/default/cake.tc.env
-EnvironmentFile = /usr/local/etc/default/lan.env
+Environment         = TOKEN=::69:420:420:69
+Environment         = WAN_IF=
+Environment         = LAN_IFS=
+EnvironmentFile     = /usr/local/etc/default/cake.tc.env
+EnvironmentFile     = /usr/local/etc/default/lan.env
 
-Environment     = PATH_DHCLIENT_SCRIPT=/usr/local/opt/network/libexec/dhcpd.py
-Environment     = PATH_DHCLIENT_CONF=/dev/null
-Environment     = PATH_DHCLIENT_DB=%C/local/dhcpd/lease
+Environment         = PATH_DHCLIENT_SCRIPT=/usr/local/opt/network/libexec/dhcpd.py
+Environment         = PATH_DHCLIENT_CONF=/dev/null
+Environment         = PATH_DHCLIENT_DB=%C/local/dhcpd/lease
 
-ExecStartPre    = mkdir --parents -- %C/local/dhcpd
-ExecStartPre    = /lib/systemd/systemd-networkd-wait-online --ipv4 --interface ${WAN_IF}
-ExecStart       = env -- ${PATH_DHCLIENT_SCRIPT}
-ExecStart       = dhclient -d --no-pid -1 -P --prefix-len-hint 56 -w -e TOKEN=${TOKEN} -e PATH_DHCLIENT_DB=${PATH_DHCLIENT_DB} -e WAN_IF=${WAN_IF} -e LAN_IFS=${LAN_IFS} ${WAN_IF}
+ExecStartPre        = mkdir --parents -- %C/local/dhcpd
+ExecStartPre        = /lib/systemd/systemd-networkd-wait-online --ipv4 --interface ${WAN_IF}
+ExecStart           = dhclient -d --no-pid -1 -P --prefix-len-hint 56 -w -e TOKEN=${TOKEN} -e PATH_DHCLIENT_DB=${PATH_DHCLIENT_DB} -e WAN_IF=${WAN_IF} -e LAN_IFS=${LAN_IFS} ${WAN_IF}
