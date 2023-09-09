@@ -1,0 +1,10 @@
+server {
+  server_name bt.*;
+  include     /usr/local/opt/nginx/conf/listen.nginx;
+
+  location / {
+    return 307 /bt;
+  }
+
+  include     /usr/local/opt/nginx/conf/server.d/qbittorrent.nginx;
+}
