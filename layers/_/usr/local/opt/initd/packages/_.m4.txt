@@ -21,6 +21,7 @@
 + ripgrep
 + rsync
 + ssh-import-id
++ systemd-journal-remote
 + systemd-oomd
 + tree
 + unattended-upgrades
