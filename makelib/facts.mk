@@ -1,7 +1,7 @@
 .PHONY: facts
 
 ifeq ($(origin MACHINE), command line)
-MACHINES := machines/$(MACHINE)
+MACHINES := $(patsubst %,machines/%,$(MACHINE))
 else
 MACHINES := $(patsubst %/,%,$(shell printf -- '%s ' machines/*/))
 endif

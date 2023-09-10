@@ -10,6 +10,7 @@ GO="$(getopt --options="$OPTS" --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
 USER=root
+MACHINES=()
 while (($#)); do
   case "$1" in
   --)
@@ -17,7 +18,7 @@ while (($#)); do
     break
     ;;
   -m | --machine)
-    MACHINE="$2"
+    MACHINES+=("$2")
     shift -- 2
     ;;
   *)
@@ -26,26 +27,29 @@ while (($#)); do
   esac
 done
 
-SRC="./var/tmp/machines/$MACHINE/fs"
-INVENTORY='./inventory.json'
 SH="./var/sh"
-
-gmake MACHINE="$MACHINE" local
+INVENTORY='./inventory.json'
 
 set -x
-if ! [[ -d "$SRC" ]] || ! [[ -f "$INVENTORY" ]]; then
+if ! [[ -f "$INVENTORY" ]]; then
   exit 1
 fi
 set +x
 
-EXEC=(
-  ./libexec/inventory.sh
-  --inventory "$INVENTORY"
-  --machine "$MACHINE"
-  --action
-)
+gmake MACHINE="${MACHINES[*]}" local
 
-"${EXEC[@]}" exec -- "$(<"$SH/libexec/essentials.sh")"
-"${EXEC[@]}" sync -- "$SRC/"
-printf -v ESC -- '%q ' gmake --directory /usr/local/opt/initd "$@"
-"${EXEC[@]}" exec -- "$ESC"
+for MACHINE in "${MACHINES[@]}"; do
+  SRC="./var/tmp/machines/$MACHINE/fs"
+
+  EXEC=(
+    ./libexec/inventory.sh
+    --inventory "$INVENTORY"
+    --machine "$MACHINE"
+    --action
+  )
+
+  "${EXEC[@]}" exec -- "$(<"$SH/libexec/essentials.sh")"
+  "${EXEC[@]}" sync -- "$SRC/"
+  printf -v ESC -- '%q ' gmake --directory /usr/local/opt/initd "$@"
+  "${EXEC[@]}" exec -- "$ESC"
+done
