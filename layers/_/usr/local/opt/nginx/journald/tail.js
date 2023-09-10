@@ -23,40 +23,45 @@ const raw_stream = async function* (uri, cursor) {
   yield coder.decode();
 };
 
-/**
- * @param {symbol} sym
- * @param {string} uri
- * @returns {AsyncIterableIterator<Record<string, string>>}
- */
-const stream = async function* (sym, uri) {
-  /** @type string[] */
-  const acc = [];
-  let timeout = 60;
-  let cursor = undefined;
-  while (true) {
-    try {
-      for await (const tokens of raw_stream(uri, cursor)) {
-        for (const token of tokens) {
-          if (token === "\n") {
-            const json = JSON.parse(acc.join(""));
-            cursor = json.__CURSOR;
-            yield json;
-            acc.length = 0;
-            timeout = 60;
-          } else {
-            acc.push(token);
+const stream = (() => {
+  const t = 60,
+    c = "cursor";
+  /**
+   * @param {symbol} sym
+   * @param {string} uri
+   * @returns {AsyncIterableIterator<Record<string, string>>}
+   */
+  return async function* (sym, uri) {
+    /** @type string[] */
+    const acc = [];
+    let timeout = t;
+    let cursor = globalThis.localStorage?.getItem(c) ?? undefined;
+    while (true) {
+      try {
+        for await (const tokens of raw_stream(uri, cursor)) {
+          for (const token of tokens) {
+            if (token === "\n") {
+              const json = JSON.parse(acc.join(""));
+              cursor = json.__CURSOR;
+              yield json;
+              globalThis.localStorage?.setItem(c, cursor);
+              acc.length = 0;
+              timeout = t;
+            } else {
+              acc.push(token);
+            }
           }
         }
+      } catch (err) {
+        yield { [sym]: err };
+        acc.length = 0;
+      } finally {
+        await new Promise((resolve) => setTimeout(resolve, timeout));
+        timeout = timeout * 1.6;
       }
-    } catch (err) {
-      yield { [sym]: err };
-      acc.length = 0;
-    } finally {
-      await new Promise((resolve) => setTimeout(resolve, timeout));
-      timeout = timeout * 1.6;
     }
-  }
-};
+  };
+})();
 
 const debounce = ((handle) => {
   /**
@@ -97,7 +102,7 @@ const append = (sym, root, json) => {
   time.setAttribute("datetime", ts.toISOString());
   time.appendChild(document.createTextNode(tt));
 
-  const id = document.createTextNode(SYSLOG_IDENTIFIER);
+  const id = document.createTextNode(err?.constructor ?? SYSLOG_IDENTIFIER);
   const b = document.createElement("b");
   b.appendChild(id);
 

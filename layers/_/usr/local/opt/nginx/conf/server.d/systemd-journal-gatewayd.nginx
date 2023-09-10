@@ -1,9 +1,10 @@
-location /browse {
-  proxy_pass http://unix:/run/local/systemd-journal-gatewayd.sock:;
+location /journald {
+  alias /usr/local/opt/nginx/journald/;
 }
 
 location /entries {
-  proxy_pass http://unix:/run/local/systemd-journal-gatewayd.sock:;
+  proxy_read_timeout 3600;
+  proxy_pass         http://unix:/run/local/systemd-journal-gatewayd.sock:;
 }
 
 location /machine {
@@ -12,8 +13,4 @@ location /machine {
 
 location /fields {
   proxy_pass http://unix:/run/local/systemd-journal-gatewayd.sock:;
-}
-
-location /journald {
-  alias /usr/local/opt/nginx/journald/;
 }
