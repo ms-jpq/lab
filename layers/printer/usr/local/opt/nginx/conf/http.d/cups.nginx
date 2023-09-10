@@ -1,5 +1,5 @@
 server {
-  listen           [::]:630 ipv6only=off;
+  listen           [::]:6310 ipv6only=off;
   include          /usr/local/opt/nginx/conf/websocket.nginx;
   proxy_set_header Host localhost;
 

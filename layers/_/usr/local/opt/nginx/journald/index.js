@@ -121,7 +121,7 @@ const append = (sym, root, json) => {
   debounce(() => {
     const eof = document.querySelector("input")?.checked;
     if (eof) {
-      root.scrollIntoView({ block: "end" });
+      li.scrollIntoView({ block: "end" });
       intersecting = true;
     }
   });

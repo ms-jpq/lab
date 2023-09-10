@@ -1,3 +1,5 @@
 #!/usr/bin/env -S -- sed -E -f
 
-/^Listen .+:631$/d
+s/^Listen localhost:([[:digit:]]+)$/Listen \1/g
+s/(AuthType) .+$/\1 None/g
+s/^Browsing .+$/Browsing Yes/g

@@ -15,7 +15,7 @@ envsubst <./cloud-init/meta-data.yml >"$TMP/meta-data"
 SALT="$(uuidgen)"
 PASSWD="$(openssl passwd -1 -salt "$SALT" root)"
 
-RS='/root/.ssh'
+RS=~/.ssh
 USERDATA="$TMP/user-data"
 envsubst <./cloud-init/user-data.yml >"$USERDATA"
 cat -- "$RS/authorized_keys" "$RS"/*.pub | sed -E -e '/^\s*$/d' -e 's/(.*)/      - \1/' >>"$USERDATA"
