@@ -1,18 +1,23 @@
 body {
   padding-left: 5rem;
-}
-li {
-  list-style-type: cjk-decimal;
-}
-time {
-  font-family:
-    ui-monospace,
-    SFMono-Regular,
-    SF Mono,
-    Menlo,
-    Consolas,
-    Liberation Mono,
-    monospace;
 
-  margin-inline-end: 1rem;
+  & li {
+    list-style-type: cjk-decimal;
+
+    & time,
+    & label > b {
+      margin-inline-end: 1rem;
+    }
+
+    & time {
+      font-family:
+        ui-monospace,
+        SFMono-Regular,
+        SF Mono,
+        Menlo,
+        Consolas,
+        Liberation Mono,
+        monospace;
+    }
+  }
 }

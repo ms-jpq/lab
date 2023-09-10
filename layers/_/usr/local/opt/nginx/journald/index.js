@@ -91,6 +91,9 @@ const append = ((handle) => {
     time.appendChild(document.createTextNode(tt));
 
     const id = document.createTextNode(SYSLOG_IDENTIFIER);
+    const b = document.createElement("b");
+    b.appendChild(id);
+
     const msg = document.createTextNode(err ?? MESSAGE);
     const line = err
       ? (() => {
@@ -100,9 +103,13 @@ const append = ((handle) => {
         })()
       : msg;
 
+
+    const label = document.createElement("label");
+    label.appendChild(b);
+    label.appendChild(line);
+
     li.appendChild(time);
-    li.appendChild(id);
-    li.appendChild(line);
+    li.appendChild(label);
     root.appendChild(li);
 
     clearTimeout(handle);
