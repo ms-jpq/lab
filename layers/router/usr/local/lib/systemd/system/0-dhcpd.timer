@@ -1,5 +1,5 @@
 [Unit]
-Description       = TelusIA_PD timer
+Description       = IPv6 IA_PD timer
 
 [Timer]
 OnStartupSec      = 6seconds

@@ -1,13 +1,12 @@
 [Unit]
-Description              = Rclone Mirror -- /%I
-RequiresMountsFor        = /%I
+Description              = Rclone Mirror Service
+RequiresMountsFor        = /media
 
 [Service]
+Type                     = oneshot
 Restart                  = on-failure
 ProtectSystem            = strict
 ProtectHome              = yes
-ReadWritePaths           = %t/local/rclone
-RuntimeDirectory         = local/rclone
 RuntimeDirectoryPreserve = yes
 PrivateTmp               = yes
 

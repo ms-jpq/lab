@@ -1,0 +1,6 @@
+[Unit]
+Description        = Rclone Update Timer
+
+[Timer]
+OnCalendar         = weekly
+RandomizedDelaySec = 1 day

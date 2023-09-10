@@ -1,1 +1,1 @@
-../layers/_/usr/local/opt/initd/libexec/gh-latest.sh
+../layers/_/usr/local/libexec/gh-latest.sh
