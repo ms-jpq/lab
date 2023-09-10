@@ -82,6 +82,7 @@ const append = (sym, root, json) => {
   const {
     [sym]: err,
     __REALTIME_TIMESTAMP,
+    _KERNEL_SUBSYSTEM,
     _SYSTEMD_UNIT,
     SYSLOG_IDENTIFIER,
     MESSAGE,
@@ -112,6 +113,9 @@ const append = (sym, root, json) => {
     err?.constructor ??
       [
         ...(function* () {
+          if (_KERNEL_SUBSYSTEM) {
+            yield `*${_KERNEL_SUBSYSTEM}*`;
+          }
           if (_SYSTEMD_UNIT) {
             yield `[${_SYSTEMD_UNIT}]`;
           }

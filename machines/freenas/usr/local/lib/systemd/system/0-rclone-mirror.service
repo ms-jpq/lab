@@ -1,5 +1,6 @@
 [Unit]
 Description              = Rclone Mirror Service
+After                    = network-online.target
 RequiresMountsFor        = /media
 
 [Service]

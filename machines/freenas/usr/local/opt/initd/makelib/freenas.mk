@@ -4,12 +4,14 @@ pkg._: /etc/apt/sources.list.d/ppa_qbittorrent-team_qbittorrent-stable.list
 
 
 V_RCLONE := $(shell ./libexec/gh-latest.sh $(TMP) rclone/rclone)
-RCLONE := https://github.com/rclone/rclone/releases/latest/download/rclone-$(V_RCLONE)-linux-$(GOARCH).deb
+N_RCLONE := rclone-$(V_RCLONE)-linux-$(GOARCH)
+RCLONE := https://github.com/rclone/rclone/releases/latest/download/$(N_RCLONE).zip
 
-$(TMP)/rclone.deb: | /usr/bin/curl /usr/bin/jq
-	$(CURL) --output '$@' -- '$(RCLONE)'
+$(TMP)/rclone.zip: | /usr/bin/curl /usr/bin/jq
+	$(CURL) --output '$@.tmp' -- '$(RCLONE)'
+	sudo -- mv -v -f -- '$@.tmp' '$@'
 
-all: /usr/local/opt/rclone/usr/bin/rclone
-/usr/local/opt/rclone/usr/bin/rclone: | $(TMP)/rclone.deb
-	dpkg --instdir /usr/local/opt/rclone  --install '$(TMP)/rclone.deb'
-
+all: /usr/local/libexec/rclone
+/usr/local/libexec/rclone: $(TMP)/rclone.zip | /usr/bin/curl /usr/bin/jq
+	sudo -- unzip -d '$(TMP)' -- '$<'
+	sudo -- install -b -- '$(TMP)/$(N_RCLONE)/rclone' '$@'

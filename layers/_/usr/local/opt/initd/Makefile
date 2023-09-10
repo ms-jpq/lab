@@ -22,7 +22,7 @@ clobber: clean
 
 
 CACHE := /var/cache/local
-TMP := /var/tmp/initd
+TMP := /var/tmp/local/initd
 
 APT_INSTALL := DEBIAN_FRONTEND=noninteractive sudo --preserve-env -- apt-get install --yes
 
