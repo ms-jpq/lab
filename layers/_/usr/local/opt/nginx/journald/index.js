@@ -119,8 +119,7 @@ const append = ((handle) => {
 
 (async () => {
   const uri =
-    (globalThis.location?.origin ?? "http://esxi.enp2s0") +
-    "/entries?boot&follow";
+    (globalThis.location?.origin ?? "localhost") + "/entries?boot&follow";
 
   const sym = Symbol();
   const root = globalThis?.document?.querySelector("ol");
