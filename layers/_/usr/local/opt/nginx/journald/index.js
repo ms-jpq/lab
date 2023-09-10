@@ -58,8 +58,17 @@ const stream = async function* (sym, uri) {
   }
 };
 
+const debounce = ((handle) => {
+  /**
+   * @param {() => void} exec
+   */
+  return (exec) => {
+    cancelIdleCallback(handle);
+    handle = requestIdleCallback(exec);
+  };
+})(NaN);
+
 const append = (() => {
-  let handle = NaN;
   let anchor = undefined;
   let intersecting = true;
   const obs = new IntersectionObserver((entries) => {
@@ -129,10 +138,10 @@ const append = (() => {
     anchor = li;
     obs.observe(anchor);
 
-    cancelIdleCallback(handle);
-    handle = requestIdleCallback(() => {
+    debounce(() => {
       if (intersecting) {
         root.scrollIntoView({ block: "end" });
+        intersecting = true;
       }
     });
   };
@@ -144,6 +153,10 @@ const append = (() => {
 
   const sym = Symbol();
   const root = globalThis?.document?.querySelector("ol");
+
+  globalThis?.document
+    ?.querySelector("button")
+    ?.addEventListener("click", () => root.scrollIntoView({ block: "end" }));
 
   for await (const json of stream(sym, uri)) {
     if (!root) {

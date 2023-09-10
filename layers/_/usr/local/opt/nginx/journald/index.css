@@ -1,6 +1,11 @@
 body {
   padding-left: 5rem;
 
+  & header {
+    position: fixed;
+    width: 100%;
+  }
+
   & li {
     list-style-type: cjk-decimal;
 
