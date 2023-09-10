@@ -109,7 +109,6 @@ const append = ((handle) => {
     handle = setTimeout(() => {
       const { scrollTop, clientHeight, scrollHeight } = root;
       const eof = Math.abs(scrollTop + clientHeight - scrollHeight) < 1;
-      console.log({ clientHeight, scrollTop, scrollHeight, eof });
       if (eof) {
         root.scrollIntoView({ block: "end" });
       }
