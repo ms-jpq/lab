@@ -79,7 +79,13 @@ const debounce = ((handle) => {
  * @param {Record<string, string>} json
  */
 const append = (sym, root, json) => {
-  const { [sym]: err, __REALTIME_TIMESTAMP, MESSAGE, SYSLOG_IDENTIFIER } = json;
+  const {
+    [sym]: err,
+    __REALTIME_TIMESTAMP,
+    _SYSTEMD_UNIT,
+    SYSLOG_IDENTIFIER,
+    MESSAGE,
+  } = json;
 
   const ts = __REALTIME_TIMESTAMP
     ? new Date(Number(__REALTIME_TIMESTAMP) / 1000)
@@ -102,7 +108,19 @@ const append = (sym, root, json) => {
   time.setAttribute("datetime", ts.toISOString());
   time.appendChild(document.createTextNode(tt));
 
-  const id = document.createTextNode(err?.constructor ?? SYSLOG_IDENTIFIER);
+  const id = document.createTextNode(
+    err?.constructor ??
+      [
+        ...(function* () {
+          if (_SYSTEMD_UNIT) {
+            yield `[${_SYSTEMD_UNIT}]`;
+          }
+          if (SYSLOG_IDENTIFIER) {
+            yield SYSLOG_IDENTIFIER;
+          }
+        })(),
+      ].join(" "),
+  );
   const b = document.createElement("b");
   b.appendChild(id);
 
@@ -134,7 +152,8 @@ const append = (sym, root, json) => {
 
 (async () => {
   const uri =
-    (globalThis.location?.origin ?? "localhost") + "/entries?boot&follow";
+    (globalThis.location?.origin ?? "http://esxi.enp2s0:8080") +
+    "/entries?boot&follow";
 
   const sym = Symbol();
   const root = globalThis?.document?.querySelector("ol");
