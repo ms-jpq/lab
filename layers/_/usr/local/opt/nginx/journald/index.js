@@ -1,3 +1,6 @@
+globalThis.requestIdleCallback ??= (cb) => setTimeout(cb);
+globalThis.cancelIdleCallback ??= clearTimeout;
+
 /**
  * @param {string} uri
  * @param {string | undefined}  cursor
@@ -55,7 +58,16 @@ const stream = async function* (sym, uri) {
   }
 };
 
-const append = ((handle) => {
+const append = (() => {
+  let handle = NaN;
+  let anchor = undefined;
+  let intersecting = true;
+  const obs = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      intersecting = entry.isIntersecting;
+    }
+  }, {});
+
   /**
    * @param {symbol} sym
    * @param {HTMLElement} root
@@ -103,7 +115,6 @@ const append = ((handle) => {
         })()
       : msg;
 
-
     const label = document.createElement("label");
     label.appendChild(b);
     label.appendChild(line);
@@ -112,16 +123,20 @@ const append = ((handle) => {
     li.appendChild(label);
     root.appendChild(li);
 
-    clearTimeout(handle);
-    handle = setTimeout(() => {
-      const { scrollTop, clientHeight, scrollHeight } = root;
-      const eof = Math.abs(scrollTop + clientHeight - scrollHeight) < 1;
-      if (eof) {
+    if (anchor) {
+      obs.unobserve(anchor);
+    }
+    anchor = li;
+    obs.observe(anchor);
+
+    cancelIdleCallback(handle);
+    handle = requestIdleCallback(() => {
+      if (intersecting) {
         root.scrollIntoView({ block: "end" });
       }
     });
   };
-})(NaN);
+})();
 
 (async () => {
   const uri =
