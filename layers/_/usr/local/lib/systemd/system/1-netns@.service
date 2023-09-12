@@ -17,3 +17,4 @@ ExecStart        = ip netns add ${NETNS}
 ExecStart        = ip --netns ${NETNS} link set dev lo up
 ExecStop         = -ip netns del ${NETNS}
 ExecStartPost    = ip netns
+ExecStopPost     = rm -v -fr -- %t/local/netns/%I

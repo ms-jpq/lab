@@ -11,6 +11,7 @@ After            = 1-netns@%i.service
 Type             = oneshot
 RemainAfterExit  = yes
 Restart          = on-failure
+PrivateTmp       = yes
 
 EnvironmentFile  = -/usr/local/etc/default/%I.wgns.env
 Environment      = NETNS=%I

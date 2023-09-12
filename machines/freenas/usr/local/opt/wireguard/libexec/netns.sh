@@ -9,7 +9,7 @@ FWMARK="$4"
 
 ETC="/etc/netns/$NETNS"
 RESOLV="$ETC/resolv.conf"
-WGC="$ETC/wg.conf"
+WGC="$(mktemp)"
 
 b2() {
   B2="$(b2sum --binary --length 64 <<<"$NETNS$*")"
