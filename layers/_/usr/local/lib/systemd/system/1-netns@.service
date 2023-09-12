@@ -12,9 +12,8 @@ Restart          = on-failure
 RuntimeDirectory = local/netns/%I
 Environment      = NETNS=%I
 
-ExecStartPre     = -ip netns del ${NETNS}
-ExecStart        = ip netns add ${NETNS}
-ExecStart        = ip --netns ${NETNS} link set dev lo up
-ExecStop         = -ip netns del ${NETNS}
-ExecStartPost    = ip netns
+ExecStartPre     = -/usr/local/libexec/hr-run.sh ip netns del ${NETNS}
+ExecStart        = /usr/local/libexec/hr-run.sh ip netns add ${NETNS}
+ExecStart        = /usr/local/libexec/hr-run.sh ip --netns ${NETNS} link set dev lo up
+ExecStop         = -/usr/local/libexec/hr-run.sh ip netns del ${NETNS}
 ExecStopPost     = rm -v -fr -- %t/local/netns/%I

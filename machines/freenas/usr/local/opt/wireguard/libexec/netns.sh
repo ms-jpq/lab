@@ -1,6 +1,7 @@
 #!/usr/bin/env -S -- bash -Eeu -O dotglob -O nullglob -O extglob -O globstar
 
 set -o pipefail
+set -x
 
 ACTION="$1"
 NETNS="$2"
@@ -39,11 +40,18 @@ reload() {
   for CONF in "${WG_CONFS[@]}"; do
     WG="$(b2 "$CONF")"
 
-    DS="$(awk '/DNS =/ { print $NF }' "$CONF")"
+    DS="$(sed -E --quiet 's/DNS =(.+)/\1/p' "$CONF")"
     readarray -t -d ',' -- DNS_SERVERS <<<"$DS"
 
     for DNS in "${DNS_SERVERS[@]}"; do
-      printf -- '%s\n' "nameserver $DNS"
+      readarray -t -d ' ' -- DS <<<"$DNS"
+      for D in "${DS[@]}"; do
+        D="${D//[[:space:]]/''}"
+        if [[ -n "$D" ]]; then
+          printf -- '%s\n' "nameserver $D"
+        fi
+      done
+
     done | sponge -- "$RESOLV"
 
     sed -E '/^(Address|DNS) .*/d' -- "$CONF" >"$WGC"
