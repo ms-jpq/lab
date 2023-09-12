@@ -1,5 +1,3 @@
-# + build-essential
-# + dkms
 # + firefox
 + celluloid
 + gnome-software

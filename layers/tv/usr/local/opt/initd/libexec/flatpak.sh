@@ -13,7 +13,9 @@ readarray -t -- INSTALLED <<<"$PKGS"
 declare -A -- PRESENT=()
 
 for PKG in "${INSTALLED[@]}"; do
-  PRESENT["$PKG"]=1
+  if [[ -n "$PKG" ]]; then
+    PRESENT["$PKG"]=1
+  fi
 done
 
 ADD=()
