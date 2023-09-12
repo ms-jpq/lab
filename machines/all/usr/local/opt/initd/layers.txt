@@ -6,5 +6,6 @@ printer
 qemu
 router
 share
+tv
 vfio
 zfs

@@ -23,7 +23,7 @@ zpool import -d /dev/disk/by-id/ <pool>
 ## Hierarchy
 
 ```bash
-zpool create -o ashift=12 <pool> mirror <dev>
+zpool create -o ashift=12 -o autotrim=on <pool> mirror <dev>
 zfs set canmount=off <pool>
 ```
 
@@ -32,7 +32,7 @@ zfs create -s -V <size> <pool>/<zvol>
 ```
 
 ```bash
-zfs set autotrim=on atime=off xattr=sa compression=zstd mountpoint=none dnodesize=auto <pool>
+zfs set atime=off xattr=sa compression=zstd mountpoint=none dnodesize=auto <pool>
 ```
 
 ```bash
