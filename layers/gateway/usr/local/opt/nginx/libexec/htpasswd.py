@@ -139,7 +139,7 @@ def _write_auth_cookies(
     morsel["httponly"] = True
     morsel["max-age"] = int(ttl)
     morsel["path"] = "/"
-    morsel["samesite"] = "Strict"
+    morsel["samesite"] = "Lax"
     morsel["secure"] = secure
     return morsel
 
