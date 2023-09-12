@@ -1,3 +1,3 @@
 # m5_for([E], [
-/E *(insecure,crossmnt,root_squash,all_squash,no_subtree_check,anonuid=1000,anongid=1000,ro)
+/E *(insecure,crossmnt,root_squash,all_squash,no_subtree_check,anonuid=1000,anongid=1000)
 # ], m5_or([ENV_NFS_EXPORTS], []))
