@@ -3,7 +3,7 @@
 set -o pipefail
 
 if [[ -f /.dockerenv ]]; then
-  exit 0
+  exit
 fi
 
 NAME="${0##*/}"

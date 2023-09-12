@@ -2,6 +2,10 @@
 
 set -o pipefail
 
+if [[ -f /.dockerenv ]]; then
+  exit 0
+fi
+
 cd -- "${0%/*}/.."
 
 TXT="$(grep -E -h -- '^(\+|-) .+' ./flatpaks/*.txt)"
