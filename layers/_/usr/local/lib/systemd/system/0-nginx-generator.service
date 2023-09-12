@@ -2,7 +2,7 @@
 Description         = Reload nginx on generator updates
 StopWhenUnneeded    = yes
 
-ConditionPathExists = /usr/local/opt/nginx/libexec/sidecar.sh
+ConditionPathExists = /usr/local/opt/nginx/libexec/generator.sh.sh
 
 PartOf              = nginx.service
 Requisite           = nginx.service
@@ -18,4 +18,4 @@ ReadWritePaths      = %t/local/nginx %t/local/ngenx %T
 PrivateTmp          = yes
 
 RuntimeDirectory    = local/ngenx/conf.d local/ngenx/http.d local/ngenx/server.d local/ngenx/stream.d
-ExecStart           = /usr/local/opt/nginx/libexec/sidecar.sh %t/local/nginx/conf %t/local/nginx/www %t/local/ngenx
+ExecStart           = /usr/local/opt/nginx/libexec/generator.sh %t/local/nginx/conf %t/local/nginx/www %t/local/ngenx

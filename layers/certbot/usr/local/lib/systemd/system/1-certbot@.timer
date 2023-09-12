@@ -1,0 +1,7 @@
+[Unit]
+Description        = Certbot timer -- %i
+
+[Timer]
+Persistent         = yes
+OnCalendar         = daily
+RandomizedDelaySec = 6hours
