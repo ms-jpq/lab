@@ -1,5 +1,6 @@
 [Unit]
 Description    = Certbot renew -- %i
+After          = 0-certbot-update.service
 
 [Service]
 Type           = oneshot

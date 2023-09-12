@@ -1,0 +1,13 @@
+[Unit]
+Description    = Certbot update
+
+[Service]
+Type           = oneshot
+Restart        = on-failure
+ProtectSystem  = strict
+ProtectHome    = yes
+PrivateTmp     = yes
+ReadWritePaths = %T %S/local %C/local
+
+ExecStartPre   = mkdir -v -p -- %S/local/certbot
+ExecStart      = /usr/local/opt/certbot/libexec/ensurepip.sh %S/local/certbot/venv %C/local/certbot

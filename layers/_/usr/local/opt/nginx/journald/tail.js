@@ -155,9 +155,11 @@ const append = (sym, root, json) => {
 };
 
 (async () => {
-  const uri =
-    (globalThis.location?.origin ?? "http://esxi.enp2s0:8080") +
-    "/entries?boot&follow";
+  const uri = (() => {
+    const origin = globalThis.location?.origin ?? "http://localhost:8080";
+    const params = new URLSearchParams(globalThis.location?.search ?? "");
+    return origin + `/entries?boot&follow&${params}`;
+  })();
 
   const sym = Symbol();
   const root = globalThis?.document?.querySelector("ol");

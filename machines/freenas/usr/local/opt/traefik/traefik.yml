@@ -18,19 +18,3 @@ serversTransport:
 entryPoints:
   http:
     address: :80
-  host-http: &gravity
-    address: :443
-    http:
-      middlewares:
-        - gravity@file
-        - stop@file
-  host-stmp:
-    <<: *gravity
-    address: :587
-
-certificatesResolvers:
-  resolver1:
-    acme:
-      storage: /acme/acme.json
-      dnsChallenge:
-        provider: cloudflare
