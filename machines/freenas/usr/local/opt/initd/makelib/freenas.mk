@@ -3,7 +3,7 @@ pkg._: /etc/apt/sources.list.d/ppa_qbittorrent-team_qbittorrent-stable.list
 	sudo -- ./libexec/add-ppa.sh qbittorrent-team/qbittorrent-stable
 
 
-V_RCLONE := $(shell /usr/local/libexec/gh-latest.sh $(TMP) rclone/rclone)
+V_RCLONE := $(shell /usr/local/libexec/gh-latest.sh /tmp rclone/rclone)
 N_RCLONE := rclone-$(V_RCLONE)-linux-$(GOARCH)
 RCLONE := https://github.com/rclone/rclone/releases/latest/download/$(N_RCLONE).zip
 

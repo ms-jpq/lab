@@ -1,5 +1,7 @@
 # + firefox
++ adwaita-icon-theme-full
 + celluloid
++ dconf-editor
 + gnome-software
 + gnome-software-plugin-flatpak
 + gnome-tweaks
