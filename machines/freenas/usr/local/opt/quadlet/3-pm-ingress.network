@@ -6,4 +6,4 @@ StopWhenUnneeded = yes
 IPv6             = yes
 
 [Service]
-ExecStopPost     = podman network rm --force -- systemd-%J
+ExecStop         = podman network rm --force -- systemd-%J

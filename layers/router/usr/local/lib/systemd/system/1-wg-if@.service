@@ -39,4 +39,4 @@ ExecStartPre     = /usr/local/opt/wireguard/libexec/alloc.sh ${IFACE} ${DOMAIN} 
 ExecStart        = networkctl reload
 ExecStart        = networkctl reconfigure -- ${IFACE}
 ExecStopPost     = rm -v --recursive --force -- ${NETDEV} ${NETWORK}
-ExecStopPost     = -networkctl delete -- ${IFACE}
+ExecStop         = -networkctl delete -- ${IFACE}

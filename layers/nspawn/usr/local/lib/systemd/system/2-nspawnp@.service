@@ -1,6 +1,7 @@
 [Unit]
 Description              = systemd.prepawn -- %I
 StopWhenUnneeded         = yes
+CollectMode              = inactive
 RequiresMountsFor        = %S/local/nspawn %S/local/nspawn/%I/fs
 ConditionPathExists      = !%E/systemd/nspawn/%i.nspawn
 

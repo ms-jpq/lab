@@ -1,6 +1,7 @@
 [Unit]
 Description          = Network Interface -- %I
 StopWhenUnneeded     = yes
+CollectMode          = inactive
 
 BindsTo              = 1-ip-alloc@%i.service
 After                = 1-ip-alloc@%i.service
@@ -42,7 +43,7 @@ ExecReload           = networkctl reconfigure -- ${IFACE}
 
 ExecStart            = nft -- 'add element inet user internal_ifs     { ${IFACE} }; add element inet user masq_v4    { ${IPV4_NET} }; add element inet user masq_v6    { ${IPV6_NET} }'
 ExecReload           = nft -- 'add element inet user internal_ifs     { ${IFACE} }; add element inet user masq_v4    { ${IPV4_NET} }; add element inet user masq_v6    { ${IPV6_NET} }'
-ExecStopPost         = -nft -- 'delete element inet user internal_ifs { ${IFACE} }; delete element inet user masq_v4 { ${IPV4_NET} }; delete element inet user masq_v6 { ${IPV6_NET} };'
+ExecStop             = -nft -- 'delete element inet user internal_ifs { ${IFACE} }; delete element inet user masq_v4 { ${IPV4_NET} }; delete element inet user masq_v6 { ${IPV6_NET} };'
 
+ExecStop             = -networkctl delete -- ${IFACE}
 ExecStopPost         = rm -v --recursive --force -- ${NETDEV} ${NETWORK}
-ExecStopPost         = -networkctl delete -- ${IFACE}

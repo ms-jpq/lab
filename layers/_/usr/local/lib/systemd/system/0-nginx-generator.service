@@ -2,7 +2,7 @@
 Description         = Reload nginx on generator updates
 StopWhenUnneeded    = yes
 
-ConditionPathExists = /usr/local/opt/nginx/libexec/generator.sh.sh
+ConditionPathExists = /usr/local/opt/nginx/libexec/generator.sh
 
 PartOf              = nginx.service
 Requisite           = nginx.service

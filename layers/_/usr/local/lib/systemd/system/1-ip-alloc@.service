@@ -1,6 +1,7 @@
 [Unit]
 Description              = IPv4 alloc -- %t/local/ip/%I.env
 StopWhenUnneeded         = yes
+CollectMode              = inactive
 
 After                    = network-online.target
 

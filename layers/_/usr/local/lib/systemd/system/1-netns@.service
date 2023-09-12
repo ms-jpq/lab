@@ -1,6 +1,7 @@
 [Unit]
 Description      = netns -- %E/netns/%I
 StopWhenUnneeded = yes
+CollectMode      = inactive
 After            = network.target
 
 [Service]
@@ -11,6 +12,8 @@ Restart          = on-failure
 RuntimeDirectory = local/netns/%I
 Environment      = NETNS=%I
 
+ExecStartPre     = -ip netns del ${NETNS}
 ExecStart        = ip netns add ${NETNS}
 ExecStart        = ip --netns ${NETNS} link set dev lo up
-ExecStopPost     = -ip netns del ${NETNS}
+ExecStop         = -ip netns del ${NETNS}
+ExecStartPost    = ip netns

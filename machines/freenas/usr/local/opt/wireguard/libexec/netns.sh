@@ -9,10 +9,11 @@ FWMARK="$4"
 
 ETC="/etc/netns/$NETNS"
 RESOLV="$ETC/resolv.conf"
+WGC="$ETC/wg.conf"
 
 b2() {
   B2="$(b2sum --binary --length 64 <<<"$NETNS$*")"
-  B2="${B2#* }"
+  B2="${B2% *}"
   NAME="w-$B2"
   printf -- '%s' "${NAME::15}"
 }
@@ -28,6 +29,7 @@ up() {
 down() {
   for CONF in "${WG_CONFS[@]}"; do
     WG="$(b2 "$CONF")"
+    ip --netns "$NETNS" link del dev "$WG" type wireguard || true
     ip link del dev "$WG" type wireguard || true
   done
 }
@@ -44,15 +46,15 @@ reload() {
       printf -- '%s\n' "nameserver $DNS"
     done | sponge -- "$RESOLV"
 
-    WGC="$(perl -CASD -wpe 's/^(Address|DNS) .*//g' -- "$CONF")"
+    sed -E '/^(Address|DNS) .*/d' -- "$CONF" >"$WGC"
     ip link set dev "$WG" up
-    wg syncconf "$WG" <<<"$WGC"
+    wg syncconf "$WG" "$WGC"
     wg set "$WG" fwmark "$FWMARK"
 
     ADDRC="$(awk '/Address =/ { print $NF }' "${CONF[@]}")"
-    CURRENT_ADDR="$(ip --json addr show dev "$WG" | jq --exit-status --raw-output '.[].addr_info[].local')"
+    CURRENT_ADDR="$(ip --json addr show dev "$WG" | jq --raw-output '.[].addr_info[].local')"
 
-    ACC=()
+    declare -A -- ACC=()
     readarray -t -- ADDRESSES <<<"$ADDRC"
     readarray -t -- CURRENT <<<"$CURRENT_ADDR"
 
@@ -65,7 +67,7 @@ reload() {
     done
 
     for ADDR in "${CURRENT[@]}"; do
-      if [[ -z "${ACC["$ADDR"]:-}" ]]; then
+      if [[ -n "$ADDR" ]] && [[ -z "${ACC["$ADDR"]:-""}" ]]; then
         ip addr del "$ADDR" dev "$WG"
       fi
     done
