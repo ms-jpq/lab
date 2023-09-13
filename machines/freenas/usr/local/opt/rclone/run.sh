@@ -1,27 +1,25 @@
-#!/usr/bin/env sh
+#!/usr/bin/env -S -- bash -Eeu -O dotglob -O nullglob -O extglob -O failglob -O globstar
 
-set -eu
+set -o pipefail
 
-OPTS='{"OrderBy": "size", "Checkers": 16, "Transfers": 16}'
+CONF="$1"
+shift -- 1
 
-rc() {
-  rclone rc \
-    --rc-addr=rclone-rcd:8080 \
-    -- \
-    "$@"
-}
+NPROC="$(nproc)"
 
-apk add -- jq
+ARGV=(
+  rclone sync
+  --check-first
+  --order-by size
+  --create-empty-src-dirs
+  --fast-list
+  --multi-thread-streams $((NPROC * 2))
+  --config "$CONF"
+  --progress
+)
 
-while true; do
-  _TMP="$(rc job/list)"
-  _JOBS="$(printf -- '%s' "$_TMP" | jq '.jobids[]')"
-  JOBS="$(printf -- '%s' "$_JOBS" | wc -l)"
-  if [ "$JOBS" -eq 0 ]; then
-    break
-  else
-    sleep 10
-  fi
-done
+if ! [[ -v INVOCATION_ID ]] && ! [[ -v NO_DRY_RUN ]]; then
+  ARGV+=(--dry-run)
+fi
 
-rc sync/sync _config="$OPTS" _async=true createEmptySrcDirs=true srcFs=/media dstFs="<%= fs.rclone_remote %>":/
+exec -- "${ARGV[@]}" -- /media "$@"

@@ -14,8 +14,8 @@ LogLevelMax         = warning
 SyslogLevel         = warning
 ProtectSystem       = strict
 ProtectHome         = yes
-ReadWritePaths      = %t/local/nginx %t/local/ngenx %T
+ReadWritePaths      = %t/local/nginx %T
 PrivateTmp          = yes
 
-RuntimeDirectory    = local/ngenx/conf.d local/ngenx/http.d local/ngenx/server.d local/ngenx/stream.d
-ExecStart           = /usr/local/opt/nginx/libexec/generator.sh %t/local/nginx/conf %t/local/nginx/www %t/local/ngenx
+RuntimeDirectory    = local/nginx/generator/conf.d local/nginx/generator/http.d local/nginx/generator/server.d local/nginx/generator/stream.d
+ExecStart           = /usr/local/opt/nginx/libexec/generator.sh %t/local/nginx/conf %t/local/nginx/www %t/local/nginx/generator

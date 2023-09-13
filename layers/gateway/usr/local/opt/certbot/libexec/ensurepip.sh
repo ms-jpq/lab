@@ -2,8 +2,8 @@
 
 set -o pipefail
 
-VENV="$1"
-CACHE="$2"
+CACHE="$1"
+VENV="$CACHE/venv"
 STAMP="$VENV/stamp"
 
 if ! [[ -v RECUR ]]; then
@@ -20,5 +20,5 @@ else
     python3 -m venv --clear -- "$VENV"
   fi
   rm -v -fr -- "$STAMP"
-  "$VENV/bin/python3" -m pip install --require-virtualenv --cache-dir "$CACHE" --upgrade -- certbot certbot-dns-cloudflare
+  "$VENV/bin/python3" -m pip install --require-virtualenv --cache-dir "$CACHE/pip" --upgrade -- certbot certbot-dns-cloudflare
 fi

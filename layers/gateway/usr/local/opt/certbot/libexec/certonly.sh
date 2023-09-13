@@ -4,21 +4,36 @@ set -o pipefail
 
 HOST="$1"
 DOMAIN="$2"
+CONF=/var/lib/local/certbot
+LOG=/var/cache/local/certbot/logs
+TMP="$(mktemp)"
+
+mkdir -v -p -- "$CONF" "$LOG"
+
+readarray -t -- SITES </usr/local/etc/default/certbot.env
+for SITE in "${SITES[@]}"; do
+  NAME="${SITE%%=*}"
+  if [[ "$NAME" == "$DOMAIN" ]]; then
+    TOKEN="${SITE#*=}"
+  fi
+done
+
+printf -- '%s\n' "dns_cloudflare_api_token = $TOKEN" >"$TMP"
 
 CERTBOT=(
-  /var/lib/local/certbot/venv/bin/certbot
+  /var/cache/local/certbot/venv/bin/certbot
   certonly
   --non-interactive --agree-tos
   --work-dir /var/tmp
-  --config-dir /var/lib/local/certbot/config
-  --logs-dir /var/log/local/certbot
+  --config-dir "$CONF"
+  --logs-dir "$LOG"
   --email "certbot+$HOST@$DOMAIN"
   --expand
   --domains "$DOMAIN"
   --dns-cloudflare
-  --dns-cloudflare-credentials "/usr/local/etc/default/$DOMAIN.certbot.env"
+  --dns-cloudflare-credentials "$TMP"
 )
 
 "${CERTBOT[@]}"
 
-DOMAIN="$DOMAIN" envsubst "${0%/*}/../certbot.nginx" | sponge -- ""
+DOMAIN="$DOMAIN" envsubst "${0%/*}/../certbot.nginx" | sponge -- "/var/lib/local/certbot/nginx/$DOMAIN.nginx"

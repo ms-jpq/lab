@@ -1,0 +1,12 @@
+[Unit]
+Description    = Github Mirror Service -- %I
+
+[Service]
+Type           = oneshot
+Restart        = on-failure
+ProtectSystem  = strict
+ProtectHome    = yes
+PrivateTmp     = yes
+ReadWritePaths = %T %S/local
+
+ExecStart      = /usr/local/opt/gh_mirror/libexec/mirror.sh %S/local/gh_mirror %I

@@ -10,4 +10,4 @@ PrivateTmp     = yes
 ReadWritePaths = %T %S/local %C/local
 
 ExecStartPre   = mkdir -v -p -- %S/local/certbot
-ExecStart      = /usr/local/opt/certbot/libexec/ensurepip.sh %S/local/certbot/venv %C/local/certbot
+ExecStart      = /usr/local/opt/certbot/libexec/ensurepip.sh %C/local/certbot
