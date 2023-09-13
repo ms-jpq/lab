@@ -10,4 +10,3 @@
 + org.mamedev.MAME
 + org.ppsspp.PPSSPP
 + org.scummvm.ScummVM
-+ tv.plex.PlexDesktop
