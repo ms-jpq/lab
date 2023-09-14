@@ -1,0 +1,15 @@
+[Unit]
+Description         = Polling for failed services
+ConditionPathExists = /usr/local/opt/systemd-monitor/libexec/cron.sh
+
+[Service]
+Type                = oneshot
+ProtectSystem       = strict
+ProtectHome         = yes
+ReadWritePaths      = %C/local
+PrivateTmp          = yes
+
+Environment         = RUN=%C/local/systemd-monitor
+
+ExecStartPre        = mkdir -v -p -- ${RUN}
+ExecStart           = /usr/local/libexec/hr-run.sh /usr/local/opt/systemd-monitor/libexec/cron.sh ${RUN}

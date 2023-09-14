@@ -1,0 +1,6 @@
+[Unit]
+Description       = Polling for failed services
+
+[Timer]
+OnActiveSec       = 0
+OnUnitInactiveSec = 600seconds

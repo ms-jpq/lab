@@ -1,0 +1,4 @@
+location /failed {
+  alias               /var/cache/local/systemd-monitor/;
+  autoindex           on;
+}
