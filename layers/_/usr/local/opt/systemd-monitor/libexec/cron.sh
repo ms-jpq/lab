@@ -28,9 +28,4 @@ for U in "${!FAILED[@]}"; do
   journalctl --boot --lines 300 --unit "$U" | sponge -- "$RUN/$U.txt"
 done
 
-printf -v LINES -- '! -> %s\n' "${!FAILED[@]}"
-printf -- '%s' "$LINES"
-
-# if ((${#FAILED})); then
-#   :
-# fi
+printf -- '! -> %s\n' "${!FAILED[@]}"

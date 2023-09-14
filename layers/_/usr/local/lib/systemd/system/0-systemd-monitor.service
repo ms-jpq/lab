@@ -1,6 +1,6 @@
 [Unit]
 Description         = Polling for failed services
-ConditionPathExists = /usr/local/opt/systemd-monitor/libexec/cron.sh
+ConditionPathExists = /usr/local/libexec/hr-run.sh
 
 [Service]
 Type                = oneshot
@@ -13,3 +13,4 @@ Environment         = RUN=%C/local/systemd-monitor
 
 ExecStartPre        = mkdir -v -p -- ${RUN}
 ExecStart           = /usr/local/libexec/hr-run.sh /usr/local/opt/systemd-monitor/libexec/cron.sh ${RUN}
+ExecStart           = /usr/local/libexec/hr-run.sh /usr/local/opt/systemd-monitor/libexec/sendmail.sh ${RUN}
