@@ -30,8 +30,6 @@ Network         = 3-pm-ingress.network
 
 PublishPort     = 127.0.0.53:8888:80
 PublishPort     = 127.0.0.53:8181:8080
-PublishPort     = 443:443
-PublishPort     = 587:587
 
 Volume          = %t/podman/podman.sock:/var/run/docker.sock:ro
 Volume          = /usr/local/opt/%J:%E/traefik:ro
