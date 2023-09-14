@@ -4,7 +4,7 @@ map $http_host $optimistic_host {
 }
 
 server {
-  server_name index.*;
+  server_name "";
   include     /usr/local/opt/nginx/conf/listen.nginx;
 
   location / {

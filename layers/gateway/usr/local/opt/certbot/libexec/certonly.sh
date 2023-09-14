@@ -31,7 +31,7 @@ CERTBOT=(
   --config-dir "$CONF"
   --logs-dir "$LOG"
   --email "certbot+$HOST@$DOMAIN"
-  --domains "$DOMAIN"
+  --domains "$DOMAIN,*.$DOMAIN"
   --dns-cloudflare
   --dns-cloudflare-credentials "$TMP"
 )
