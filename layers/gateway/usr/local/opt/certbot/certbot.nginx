@@ -1,2 +1,3 @@
-ssl_certificate     /var/cache/local/certbot/conf/live/${DOMAIN}/fullchain.pem;
-ssl_certificate_key /var/cache/local/certbot/conf/live/${DOMAIN}/privkey.pem;
+# CHECKSUM=${CHKSUM}
+ssl_certificate     /var/lib/local/certbot/live/${DOMAIN}/fullchain.pem;
+ssl_certificate_key /var/lib/local/certbot/live/${DOMAIN}/privkey.pem;
