@@ -1,0 +1,8 @@
+server {
+  server_name "";
+  include     /usr/local/opt/nginx/conf/listen.nginx;
+
+  location / {
+    proxy_pass http://localhost:8080;
+  }
+}

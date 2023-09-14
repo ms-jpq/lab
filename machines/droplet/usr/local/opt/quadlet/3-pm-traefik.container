@@ -19,7 +19,6 @@ Network       = %p.network
 # TODO: ipv6 https://github.com/containers/podman/issues/14491
 PublishPort   = 80:80
 PublishPort   = 8181:8080
-PublishPort   = 443:443
 
 Volume        = %t/podman/podman.sock:/var/run/docker.sock:ro
 Volume        = /usr/local/opt/%J:%E/traefik:ro

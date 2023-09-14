@@ -17,5 +17,5 @@ ProtectHome         = yes
 ReadWritePaths      = %t/local/nginx %T
 PrivateTmp          = yes
 
-RuntimeDirectory    = local/nginx/generator/conf.d local/nginx/generator/http.d local/nginx/generator/server.d local/nginx/generator/stream.d
+RuntimeDirectory    = local/nginx/generator/conf.d local/nginx/generator/http.d local/nginx/generator/server.d local/nginx/generator/stream.d local/nginx/generator/ssl
 ExecStart           = /usr/local/opt/nginx/libexec/generator.sh %t/local/nginx/conf %t/local/nginx/www %t/local/nginx/generator
