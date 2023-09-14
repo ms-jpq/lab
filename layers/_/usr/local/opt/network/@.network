@@ -17,6 +17,9 @@ Address                 = ${IPV6_IF}
 Domains                 = ~${DOMAIN}
 DNS                     = ${IPV6_ADDR} ${IPV4_ADDR}
 
+DHCP                    = no
+IPv6AcceptRA            = no
+
 DHCPServer              = ${NETWORKD_DHCP}
 IPv6SendRA              = ${NETWORKD_DHCP}
 

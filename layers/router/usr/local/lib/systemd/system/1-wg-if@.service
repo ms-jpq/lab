@@ -37,6 +37,6 @@ Environment      = CACHE=%C/local/wireguard
 ExecStartPre     = /usr/local/libexec/envsubst2.sh /usr/local/opt/wireguard/@.network ${NETWORK}
 ExecStartPre     = /usr/local/opt/wireguard/libexec/alloc.sh ${IFACE} ${DOMAIN} ${NETDEV} ${DNSMASQD} ${CACHE} ${STATE} ${WG_SERVER_NAME} ${WG_PEERS}
 ExecStart        = networkctl reload
-ExecStart        = networkctl reconfigure -- ${IFACE}
+ExecReload       = networkctl reconfigure -- ${IFACE}
 ExecStopPost     = rm -v --recursive --force -- ${NETDEV} ${NETWORK}
 ExecStop         = -networkctl delete -- ${IFACE}
