@@ -11,12 +11,12 @@ CURL=(
   --fail-with-body
   --location
   --no-progress-meter
-  --write-out '%{header_json}'
-  --output "$TMP"
+  --dump-header "$TMP"
   -- "$REPOS"
 )
 
-LS="$("${CURL[@]}" | jq --exit-status --raw-output '.link[]')"
+JSON="$("${CURL[@]}")"
+LS="$(sed -E -n 's/^link: (.+)$/\1/p' "$TMP")"
 readarray -t -d ',' -- LLS <<<"$LS"
 
 export -- NEXT_URI=''
@@ -34,7 +34,7 @@ for L in "${LLS[@]}"; do
   fi
 done
 
-jq --exit-status --raw-output '.[].clone_url' "$TMP"
+jq --exit-status --raw-output '.[].clone_url' <<<"$JSON"
 if [[ -n "$NEXT_URI" ]]; then
   exec -- "$0" "$@"
 fi
