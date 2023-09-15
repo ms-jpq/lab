@@ -8,7 +8,6 @@ After                    = network-online.target
 [Service]
 Type                     = oneshot
 RemainAfterExit          = yes
-Restart                  = on-failure
 
 ProtectSystem            = strict
 ProtectHome              = yes

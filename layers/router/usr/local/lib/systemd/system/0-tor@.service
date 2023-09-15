@@ -7,7 +7,6 @@ After            = 1-ip-alloc@%j.service
 [Service]
 Type             = oneshot
 RemainAfterExit  = yes
-Restart          = on-failure
 ProtectSystem    = strict
 ProtectHome      = yes
 PrivateTmp       = yes

@@ -5,7 +5,6 @@ ConditionPathExists = !%S/local/wireguard/self.key
 [Service]
 Type                = oneshot
 RemainAfterExit     = yes
-Restart             = on-failure
 
 ProtectSystem       = strict
 ProtectHome         = yes
@@ -17,3 +16,4 @@ Environment         = KEY=%S/local/wireguard/self.key
 ExecStart           = /usr/local/libexec/sponge2.sh ${KEY} wg genkey
 ExecStart           = chmod 600 -- ${KEY}
 ExecStart           = chown systemd-network:systemd-network -- ${KEY}
+ExecStop            = rm -v -fr -- ${KEY}

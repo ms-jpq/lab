@@ -8,7 +8,6 @@ ConditionPathExists = !%C/local/self-signed/%I/ssl.key
 [Service]
 Type                = oneshot
 RemainAfterExit     = yes
-Restart             = on-failure
 
 ProtectSystem       = strict
 ProtectHome         = yes
@@ -23,3 +22,4 @@ ExecStartPre        = mkdir -v --parents -- ${DIR}
 ExecStart           = openssl req -x509 -newkey rsa:4096 -sha256 -days 6969 -nodes -subj /CN=%H -out ${CRT} -keyout ${KEY}
 ExecStart           = dd oflag=append conv=notrunc if=${KEY} of=${PEM}
 ExecStart           = dd oflag=append conv=notrunc if=${CRT} of=${PEM}
+ExecStop            = rm -v -fr -- ${DIR}

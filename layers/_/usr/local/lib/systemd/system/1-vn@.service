@@ -18,7 +18,6 @@ After                = nftables.service
 [Service]
 Type                 = oneshot
 RemainAfterExit      = yes
-Restart              = on-failure
 
 ProtectSystem        = strict
 ProtectHome          = yes
