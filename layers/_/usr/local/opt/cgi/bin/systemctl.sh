@@ -24,5 +24,5 @@ AS=(
 )
 
 for A in "${AS[@]}"; do
-  /usr/local/libexec/hr-run.sh systemctl --no-pager --plain --full --show-transaction "$A" || true
+  /usr/local/libexec/hr-run.sh systemctl --no-pager --plain --all --full --show-transaction "$A" || true
 done
