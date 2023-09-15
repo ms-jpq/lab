@@ -1,9 +1,6 @@
 [[Match]]
 Name                               = m5_assert([ENV_WAN_IF])
 
-[[Link]]
-RequiredForOnline                  = no
-
 [[Network]]
 ConfigureWithoutCarrier            = yes
 
