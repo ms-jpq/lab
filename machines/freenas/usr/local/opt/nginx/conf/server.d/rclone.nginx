@@ -1,0 +1,3 @@
+location /rclone {
+  return 307 /journald/tail.html?_SYSTEMD_UNIT=0-rclone-mirror.service;
+}
