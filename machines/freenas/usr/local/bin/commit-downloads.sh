@@ -14,7 +14,7 @@ RSYNC=(
   --times
   --human-readable
   --info progress2
-  -- "$SRC" "$DST"
+  -- "$SRC/" "$DST"
 )
 
 "${RSYNC[@]}"

@@ -10,4 +10,6 @@ ENV_LOCAL_DOMAIN=enp2s0
 ENV_MACHINES=_gateway, freenas, esxi, roku
 ENV_MACVLAN_IFS=enp109s0
 ENV_NFS_EXPORTS=downloads, media, wallpapers
+ENV_RCLONE_REMOTE=jotta-archive:/
+ENV_RCLONE_LOCAL=gray, hao, media, misc, wallpapers
 ENV_SMB_EXPORTS=downloads, gray, hao, media, misc, time-machine, wallpapers

@@ -1,0 +1,24 @@
+[[Unit]]
+Description         = Rclone Mirror Service
+After               = network-online.target
+RequiresMountsFor   = /media %S/local/rclone
+
+ConditionPathExists = /usr/local/libexec/rclone
+ConditionPathExists = %S/local/rclone/rclone.conf
+ConditionPathExists = /usr/local/opt/rclone/sync.sh
+
+[[Service]]
+Type                = oneshot
+Restart             = on-failure
+ProtectSystem       = strict
+ProtectHome         = yes
+PrivateTmp          = yes
+ReadWritePaths      = %T %V %S/local/rclone
+
+TemporaryFileSystem = /media:ro
+
+# m5_for([PATH], [
+BindReadOnlyPaths   = /media/PATH:/media/PATH
+# ], m5_assert([ENV_RCLONE_LOCAL]))
+
+ExecStart           = /usr/local/libexec/hr-run.sh /usr/local/opt/rclone/sync.sh %S/local/rclone/rclone.conf m5_assert([ENV_RCLONE_REMOTE])
