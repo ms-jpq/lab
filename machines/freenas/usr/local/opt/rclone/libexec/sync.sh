@@ -2,20 +2,16 @@
 
 set -o pipefail
 
-CONF="$1"
-shift -- 1
-
 NPROC="$(nproc)"
 
 ARGV=(
-  rclone sync
+  rclone.sh sync
   --check-first
   --order-by size
   --create-empty-src-dirs
   --fast-list
   --transfers $((NPROC * 2))
   --multi-thread-streams $((NPROC * 2))
-  --config "$CONF"
   --progress
 )
 

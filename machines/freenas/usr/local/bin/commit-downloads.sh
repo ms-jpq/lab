@@ -4,8 +4,14 @@ set -o pipefail
 set -x
 
 if ! [[ -v INVOCATION_ID ]]; then
-  UNIT="$(systemd-escape -- "${0##*/}")"
-  exec -- systemd-run --service-type oneshot --remain-after-exit --no-block --unit "$UNIT" -- "$0" "$@"
+  UNIT="${0##*/}"
+  UNIT="${UNIT%.sh}"
+  SVC="$UNIT.service"
+  if systemctl list-units --all --output json -- "$SVC" | jq --exit-status '.[]'; then
+    exec -- journalctl --boot --follow --unit "$SVC"
+  else
+    exec -- systemd-run --service-type oneshot --no-block --unit "$UNIT" -- "$0" "$@"
+  fi
 fi
 
 SRC="/media/${1:-"downloads"}"

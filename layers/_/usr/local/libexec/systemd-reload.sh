@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-FAILED="$(systemctl --output json --failed "$@" | jq --raw-output '.[].unit')"
+FAILED="$(systemctl --all --output json --failed "$@" | jq --raw-output '.[].unit')"
 readarray -t -- US <<<"$FAILED"
 
 UNITS=()
