@@ -6,4 +6,4 @@ StopWhenUnneeded = yes
 IPv6             = yes
 
 [Service]
-ExecStop         = podman network rm --force -- systemd-%J
+ExecStop         = /usr/local/opt/podman/libexec/execstop-network.sh %N
