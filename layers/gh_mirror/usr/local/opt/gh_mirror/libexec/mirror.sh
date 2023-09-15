@@ -4,4 +4,10 @@ set -o pipefail
 
 ACCOUNT="$2"
 STORE="$1/$ACCOUNT"
-mkdir -v -p -- "$STORE"
+
+RS="$("${0%/*}/ls-repos.sh" "$ACCOUNT" | shuf)"
+readarray -t -- REPOS <<<"$RS"
+
+for REPO in "${REPOS[@]}"; do
+  "${0%/*}/mirror-repo.sh" "$STORE" "$REPO"
+done

@@ -1,4 +1,5 @@
 gateway
+gh_mirror
 intel_gvt
 podman
 printer

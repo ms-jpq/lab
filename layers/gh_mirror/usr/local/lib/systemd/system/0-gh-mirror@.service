@@ -3,7 +3,6 @@ Description    = Github Mirror Service -- %I
 
 [Service]
 Type           = oneshot
-Restart        = on-failure
 ProtectSystem  = strict
 ProtectHome    = yes
 PrivateTmp     = yes
