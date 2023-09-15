@@ -13,6 +13,7 @@ ARGV=(
   --order-by size
   --create-empty-src-dirs
   --fast-list
+  --transfers $((NPROC * 2))
   --multi-thread-streams $((NPROC * 2))
   --config "$CONF"
   --progress

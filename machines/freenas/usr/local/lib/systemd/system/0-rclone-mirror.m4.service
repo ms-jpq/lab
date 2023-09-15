@@ -9,7 +9,6 @@ ConditionPathExists = /usr/local/opt/rclone/sync.sh
 
 [[Service]]
 Type                = oneshot
-Restart             = on-failure
 ProtectSystem       = strict
 ProtectHome         = yes
 PrivateTmp          = yes
@@ -21,4 +20,4 @@ TemporaryFileSystem = /media:ro
 BindReadOnlyPaths   = /media/PATH:/media/PATH
 # ], m5_assert([ENV_RCLONE_LOCAL]))
 
-ExecStart           = /usr/local/libexec/hr-run.sh /usr/local/opt/rclone/sync.sh %S/local/rclone/rclone.conf m5_assert([ENV_RCLONE_REMOTE])
+ExecStart           = /usr/local/libexec/hr-run.sh /usr/local/opt/rclone/libexec/sync.sh %S/local/rclone/rclone.conf m5_assert([ENV_RCLONE_REMOTE])
