@@ -18,7 +18,7 @@ ARGV=(
   --progress
 )
 
-if ! [[ -v INVOCATION_ID ]] && ! [[ -v NO_DRY_RUN ]]; then
+if ! [[ -v INVOCATION_ID ]]; then
   ARGV+=(--dry-run)
 fi
 
