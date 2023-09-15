@@ -4,7 +4,7 @@ set -o pipefail
 
 RUN="$1"
 
-declare -A -- FAILED
+declare -A -- FAILED=()
 FU="$(systemctl --output json --failed | jq --raw-output '.[].unit')"
 readarray -t -- UNITS <<<"$FU"
 for U in "${UNITS[@]}"; do
@@ -28,6 +28,6 @@ for U in "${!FAILED[@]}"; do
   journalctl --boot --lines 300 --unit "$U" | sponge -- "$RUN/$U.txt"
 done
 
-if ((${#FAILED})); then
+if ((${#FAILED[@]})); then
   printf -- '! -> %s\n' "${!FAILED[@]}"
 fi
