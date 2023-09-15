@@ -20,9 +20,10 @@ AS=(
   list-timers
   list-sockets
   list-machines
-  list-units
 )
 
 for A in "${AS[@]}"; do
-  /usr/local/libexec/hr-run.sh systemctl --no-pager --plain --all --full --show-transaction "$A" || true
+  /usr/local/libexec/hr-run.sh systemctl --no-pager --all --full --show-transaction "$A"
 done
+
+/usr/local/libexec/hr-run.sh systemctl --no-pager --full --show-transaction list-dependencies
