@@ -36,6 +36,12 @@ if ! [[ -f "$INVENTORY" ]]; then
 fi
 set +x
 
+for MACHINE in "${MACHINES[@]}"; do
+  if ! [[ -d "machines/$MACHINE" ]]; then
+    exit 1
+  fi
+done
+
 gmake MACHINE="${MACHINES[*]}" local
 
 for MACHINE in "${MACHINES[@]}"; do

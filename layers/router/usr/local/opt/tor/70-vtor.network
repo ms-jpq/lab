@@ -8,5 +8,8 @@ RequiredForOnline = no
 [Network]
 Address           = ${IPV4_IF}
 
+DHCP              = no
+IPv6AcceptRA      = no
+
 Domains           = ~onion ~exit
 DNS               = ${IPV4_ADDR}

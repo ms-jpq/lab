@@ -12,6 +12,7 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
+/usr/local/libexec/hr-run.sh networkctl
 /usr/local/libexec/hr-run.sh networkctl status
 /usr/local/libexec/hr-run.sh resolvectl status
 /usr/local/libexec/hr-run.sh resolvectl statistics
