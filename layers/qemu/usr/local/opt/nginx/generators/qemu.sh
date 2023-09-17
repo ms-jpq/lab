@@ -9,11 +9,12 @@ VNC='/run/local/qemu/'
 HREFS=()
 SOCKS=()
 
-S='/vnc.sock'
+S='/ws.sock'
 for SOCK in "$VNC"*"$S"; do
   BASE="${SOCK#"$VNC"}"
-  BASE="${BASE%"$S"}"
-  HREFS+=("$BASE")
+  BASE="qemu/${BASE%"$S"}"
+  PARAMS="path=/$BASE/websocketify&reconnect=1&reconnect_delay=200&scale=1"
+  HREFS+=("$BASE/vnc_lite.html?$PARAMS")
   SOCKS+=("$BASE:$SOCK")
 done
 
