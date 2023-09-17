@@ -115,7 +115,7 @@ fi
 
 if [[ -n "${VNC:-""}" ]]; then
   ARGV+=(
-    -vnc "$VNC"
+    -vnc "unix:$VNC"
     -device "ich9-intel-hda"
     -device 'virtio-gpu-pci'
     -device 'virtio-keyboard-pci'
@@ -136,7 +136,7 @@ if [[ -n "${MACVTAP:-""}" ]]; then
   IFI="$(<"$SYS/ifindex")"
   MACADDR="$(<"$SYS/address")"
   exec 3<>"/dev/tap$IFI"
-  ARGV+=(-nic "tap,script=no,downscript=no,fd=3,mac=$MACADDR,$NIC")
+  ARGV+=(-nic "tap,fd=3,mac=$MACADDR,$NIC")
 fi
 
 if [[ -n "${INITIATOR_NAME:-""}" ]]; then

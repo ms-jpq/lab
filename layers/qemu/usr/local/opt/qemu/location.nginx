@@ -1,0 +1,12 @@
+# m5_for([PS], [
+# m4_pushdef([PATH], [m4_regexp(PS, [\(^[^:]+\)], [\1])])
+# m4_pushdef([SOCK], [m4_regexp(PS, [\([^:]+\)$], [\1])])
+location /qemu/PATH {
+  return 307 /qemu/PATH/;
+}
+
+location /qemu/PATH/ {
+  proxy_buffering off;
+  proxy_pass      http://unix:SOCK:/;
+}
+# ], ENV_SOCKS)
