@@ -29,7 +29,12 @@ for FILE in /run/local/dnsmasq/*/leases; do
     fi
 
     if [[ "$IP" =~ : ]]; then
-      SED+=("s/'$NAME.$DOMAIN.6'/$IP/p")
+      if [[ "$IP" =~ ^fd ]]; then
+        STAT='i'
+      else
+        STAT='e'
+      fi
+      SED+=("s/'$NAME.$DOMAIN.6$STAT'/$IP/p")
     else
       SED+=("s/'$NAME.$DOMAIN.4'/$IP/p")
     fi
