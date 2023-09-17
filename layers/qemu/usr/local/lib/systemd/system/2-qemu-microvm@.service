@@ -19,6 +19,9 @@ PrivateTmp        = yes
 
 EnvironmentFile   = -/usr/local/etc/default/%I.qemu.env
 Environment       = MACHINE=%i
+Environment       = FS=%S/local/qemu
+Environment       = ROOT=%S/local/qemu/%I
+
 Environment       = CPU=
 Environment       = MEMORY=8G
 Environment       = QMP=%t/local/qemu/%I/qmp.sock
@@ -27,16 +30,17 @@ Environment       = CONSOLE=%t/local/qemu/%I/con.sock
 Environment       = BRIDGE=qemu
 Environment       = KERNEL=%C/local/qemu/vmlinuz
 Environment       = INITRD=%C/local/qemu/initrd
-Environment       = ROOT=/dev/vda1
-Environment       = DRIVE_ROOT=%S/local/qemu/%I
+
 Environment       = DRIVE=%S/local/qemu/%I/fs.raw
+Environment       = DEV_HDA=/dev/vda1
 Environment       = CLOUD_INIT=%V/cloud-init.iso
 
-ExecStartPre      = /usr/local/opt/qemu/libexec/preinux.sh %S/local/qemu ${MACHINE} ${DRIVE_ROOT} ${DRIVE}
+ExecStartPre      = /usr/local/opt/qemu/libexec/fs-alloc.sh %N ${FS} ${MACHINE} ${ROOT}
+ExecStartPre      = /usr/local/opt/qemu/libexec/preinux.sh ${MACHINE} ${ROOT} ${DRIVE}
 ExecStartPre      = /usr/local/opt/qemu/libexec/cloud-init.sh %I ${CLOUD_INIT}
 
-ExecStartPre      = touch -- ${DRIVE_ROOT}/.live
-ExecStopPost      = rm -v -rf -- ${DRIVE_ROOT}/.live
+ExecStartPre      = touch -- ${ROOT}/.live
+ExecStopPost      = rm -v -rf -- ${ROOT}/.live
 
 ExecStart         = /usr/local/opt/qemu/libexec/%J@.sh \
                       --cpu ${CPU} \
@@ -48,5 +52,5 @@ ExecStart         = /usr/local/opt/qemu/libexec/%J@.sh \
                       --kernel ${KERNEL} \
                       --initrd ${INITRD} \
                       --drive ${DRIVE} \
-                      --root ${ROOT} \
+                      --root ${DEV_HDA} \
                       --drive ${CLOUD_INIT}

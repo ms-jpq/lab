@@ -2,4 +2,6 @@
 
 set -o pipefail
 
-cd -- "${0%/*}"
+# shellcheck disable=2154
+"${0%/*}/apriori.sh" "$MACHINE" "$ROOT"
+exec -- "${0%/*}/../bin/q35.sh" "$@"

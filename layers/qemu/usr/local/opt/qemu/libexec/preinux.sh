@@ -2,40 +2,15 @@
 
 set -o pipefail
 
-LIB="$1"
-MACHINE="$2"
-ROOT="$3"
-DRIVE="$4"
+MACHINE="$1"
+ROOT="$2"
+DRIVE="$3"
 RAW='/var/cache/local/qemu/cloudimg.raw'
 HR='/usr/local/libexec/hr-run.sh'
 
-for BIN in "${0%/*}/../apriori.d"/*; do
-  if [[ -x "$BIN" ]]; then
-    "$BIN" "$MACHINE" "$ROOT" "$DRIVE"
-  fi
-done
+"${0%/*}/apriori.sh" "$MACHINE" "$ROOT"
 
-if ! [[ -d "$ROOT" ]]; then
-  FS="$(stat --file-system --format %T -- "$LIB")"
-  "$HR" rm -v -fr -- "$ROOT"
-  "$HR" gmake --directory /usr/local/opt/initd -- qemu.pull
-
-  case "$FS" in
-  zfs)
-    SOURCE="$(findmnt --noheadings --output source --target "$LIB" | tail --lines 1)"
-    SOURCE="${SOURCE//[[:space:]]/''}"
-    ZFS="$SOURCE/$MACHINE"
-    UNIT="2-qemu-microvm@$MACHINE.service"
-    "$HR" zfs create -o canmount=noauto -o mountpoint="$ROOT" -o org.openzfs.systemd:required-by="$UNIT" -o org.openzfs.systemd:before="$UNIT" -- "$ZFS"
-    "$HR" zfs mount -- "$ZFS"
-    ;;
-  btrfs)
-    "$HR" btrfs subvolume create -- "$ROOT"
-    ;;
-  *)
-    "$HR" mkdir -v -p -- "$ROOT"
-    ;;
-  esac
+if ! [[ -f "$DRIVE" ]]; then
   "$HR" cp -v -f --reflink=auto -- "$RAW" "$DRIVE"
   "$HR" qemu-img resize -f raw -- "$DRIVE" +88G
 fi

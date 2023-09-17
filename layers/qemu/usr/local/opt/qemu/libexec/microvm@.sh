@@ -2,11 +2,6 @@
 
 set -o pipefail
 
-for BIN in "${0%/*}/../apriori.d"/*; do
-  if [[ -x "$BIN" ]]; then
-    # shellcheck disable=SC2154
-    "$BIN" "$MACHINE" "$DRIVE_ROOT"
-  fi
-done
-
+# shellcheck disable=2154
+"${0%/*}/apriori.sh" "$MACHINE" "$ROOT"
 exec -- "${0%/*}/../bin/microvm.sh" "$@"

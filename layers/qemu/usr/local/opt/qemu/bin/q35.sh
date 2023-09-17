@@ -2,12 +2,9 @@
 
 set -o pipefail
 
-LONG_OPTS='cpu:,mem:,qmp:,monitor:,tpm:,vnc:,bridge:,drive:,macvtap:,vfio:,mdev:'
+LONG_OPTS='cpu:,mem:,qmp:,monitor:,tpm:,vnc:,bridge:,iscsi:,drive:,macvtap:,vfio:,mdev:'
 GO="$(getopt --options='' --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
-
-# shellcheck disable=SC1091
-source -- /etc/iscsi/initiatorname.iscsi
 
 DRIVES=()
 VFIO=()
@@ -40,6 +37,10 @@ while (($#)); do
     ;;
   --bridge)
     BRIDGE="$2"
+    shift -- 2
+    ;;
+  --iscsi)
+    INITIATOR_NAME="$2"
     shift -- 2
     ;;
   --drive)
@@ -138,8 +139,8 @@ if [[ -n "${MACVTAP:-""}" ]]; then
   ARGV+=(-nic "tap,script=no,downscript=no,fd=3,mac=$MACADDR,$NIC")
 fi
 
-if [[ -v InitiatorName ]]; then
-  ARGV+=(-iscsi "$InitiatorName")
+if [[ -n "${INITIATOR_NAME:-""}" ]]; then
+  ARGV+=(-iscsi "$INITIATOR_NAME")
 fi
 
 for IDX in "${!DRIVES[@]}"; do
