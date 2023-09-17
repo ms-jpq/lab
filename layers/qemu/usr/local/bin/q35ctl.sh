@@ -14,10 +14,12 @@ MWANTS="$SYSTEMD/default.target.wants"
 SWANTS="$SYSTEMD/sockets.target.wants"
 
 SERVICES=()
+SECONDARY=()
 SOCKS=()
 for NAME in "$@"; do
   MACH="$(systemd-escape -- "$NAME")"
   SERVICES+=("2-qemu-q35@$MACH.service")
+  SECONDARY+=("2-swtpm@$MACH.service" "2-websock-display@$MACH.service" "2-websock-proxy@$MACH.service")
   SOCKS+=("2-websock-proxy@$MACH.socket")
 done
 
@@ -35,10 +37,10 @@ start)
   sctl start -- "${SERVICES[@]}"
   ;;
 restart)
-  sctl restart -- "${SERVICES[@]}"
+  sctl restart -- "${SERVICES[@]}" "${SECONDARY[@]}"
   ;;
 stop)
-  sctl stop -- "${SERVICES[@]}"
+  sctl stop -- "${SERVICES[@]}" "${SECONDARY[@]}"
   ;;
 enable)
   mkdir -v -p -- "$MWANTS" "$SWANTS"

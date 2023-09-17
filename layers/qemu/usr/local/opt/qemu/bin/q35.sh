@@ -91,7 +91,6 @@ ARGV=(
 
 ARGV+=(
   -bios '/usr/share/ovmf/OVMF.fd'
-  -boot 'menu=on,order=nc'
   -rtc 'base=localtime'
   -device 'intel-iommu,caching-mode=on'
 )
