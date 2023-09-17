@@ -1,8 +1,10 @@
 [Unit]
 Description      = SWTPM -- %t/local/swtpm/%I
 StopWhenUnneeded = yes
+CollectMode      = inactive
 
 [Service]
+Restart          = on-failure
 ProtectSystem    = strict
 ProtectHome      = yes
 RuntimeDirectory = local/swtpm/%I
