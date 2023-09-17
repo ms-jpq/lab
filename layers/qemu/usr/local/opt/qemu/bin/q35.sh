@@ -76,6 +76,7 @@ fi
 
 ARGV=(
   qemu-system-x86_64
+  -compat 'deprecated-input=crash'
   -nodefaults
   -no-user-config
   -machine 'type=q35,accel=kvm'

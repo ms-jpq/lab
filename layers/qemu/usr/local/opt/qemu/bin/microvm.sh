@@ -70,6 +70,7 @@ fi
 
 ARGV=(
   qemu-system-x86_64-microvm
+  -compat 'deprecated-input=crash'
   -nodefaults
   -no-user-config
   -nographic
