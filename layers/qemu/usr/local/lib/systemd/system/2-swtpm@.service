@@ -4,7 +4,6 @@ StopWhenUnneeded         = yes
 CollectMode              = inactive
 
 [Service]
-Restart                  = on-failure
 ProtectSystem            = strict
 ProtectHome              = yes
 RuntimeDirectory         = libvirt/qemu/swtpm
@@ -12,10 +11,14 @@ RuntimeDirectoryPreserve = yes
 PrivateTmp               = yes
 ReadWritePaths           = %t/libvirt/qemu/swtpm %T
 
+User                     = swtpm
+Group                    = swtpm
+
 Environment              = TPM_PATH=%T/%I
 Environment              = TPM_CTRL=%t/libvirt/qemu/swtpm/%I.ctl.sock
 Environment              = TPM_SOCK=%t/libvirt/qemu/swtpm/%I.tpm.sock
 
 ExecStartPre             = mkdir -v -p -- ${TPM_PATH}
-ExecStart                = swtpm socket --tpm2 --ctrl type=unixio,path=${TPM_CTRL} --server type=unixio,path=${TPM_SOCK}
+ExecStart                = swtpm socket --tpm2 --tpmstate dir=${TPM_PATH} --ctrl type=unixio,path=${TPM_CTRL} --server type=unixio,path=${TPM_SOCK}
+ExecStartPost            = /usr/local/libexec/retry.sh 0.1 stat -- ${TPM_SOCK}
 ExecStopPost             = rm -v -fr -- ${TPM_CTRL} ${TPM_SOCK}
