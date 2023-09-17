@@ -115,7 +115,7 @@ fi
 
 if [[ -n "${VNC:-""}" ]]; then
   ARGV+=(
-    -vnc "unix:$VNC"
+    -display "vnc=unix:$VNC"
     -device "ich9-intel-hda"
     -device 'virtio-gpu-pci'
     -device 'virtio-keyboard-pci'

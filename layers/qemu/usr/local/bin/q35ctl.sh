@@ -34,6 +34,9 @@ ls)
 start)
   sctl start -- "${SERVICES[@]}"
   ;;
+restart)
+  sctl restart -- "${SERVICES[@]}"
+  ;;
 stop)
   sctl stop -- "${SERVICES[@]}"
   ;;
