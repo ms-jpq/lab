@@ -7,8 +7,6 @@ cd -- "${0%/*}/.."
 HOSTNAME="$1"
 DST="$2"
 
-export -- HOSTNAME PASSWD
-
 TMP="$(mktemp -d)"
 envsubst <./cloud-init/meta-data.yml >"$TMP/meta-data"
 
@@ -17,6 +15,8 @@ PASSWD="$(openssl passwd -1 -salt "$SALT" root)"
 
 RS=~/.ssh
 USERDATA="$TMP/user-data"
+
+export -- HOSTNAME PASSWD
 envsubst <./cloud-init/user-data.yml >"$USERDATA"
 cat -- "$RS/authorized_keys" "$RS"/*.pub | sed -E -e '/^\s*$/d' -e 's/(.*)/      - \1/' >>"$USERDATA"
 

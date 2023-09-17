@@ -75,7 +75,7 @@ if [[ -z "${CPU:-""}" ]]; then
 fi
 
 ARGV=(
-  qemu-system-x86
+  qemu-system-x86_64
   -nodefaults
   -no-user-config
   -machine 'type=q35,accel=kvm'
@@ -140,7 +140,7 @@ if [[ -n "${MACVTAP:-""}" ]]; then
 fi
 
 if [[ -n "${INITIATOR_NAME:-""}" ]]; then
-  ARGV+=(-iscsi "$INITIATOR_NAME")
+  ARGV+=(-iscsi "initiator-name=$INITIATOR_NAME")
 fi
 
 for IDX in "${!DRIVES[@]}"; do

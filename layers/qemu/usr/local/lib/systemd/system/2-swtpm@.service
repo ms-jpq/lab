@@ -1,16 +1,19 @@
 [Unit]
-Description      = SWTPM -- %t/local/swtpm/%I
-StopWhenUnneeded = yes
-CollectMode      = inactive
+Description              = SWTPM -- %t/local/swtpm/%I
+StopWhenUnneeded         = yes
+CollectMode              = inactive
 
 [Service]
-Restart          = on-failure
-ProtectSystem    = strict
-ProtectHome      = yes
-RuntimeDirectory = local/swtpm/%I
+Restart                  = on-failure
+ProtectSystem            = strict
+ProtectHome              = yes
+RuntimeDirectory         = libvirt/qemu/swtpm
+RuntimeDirectoryPreserve = yes
+PrivateTmp               = yes
+ReadWritePaths           = %t/libvirt/qemu/swtpm %T
 
-Environment      = TPM_PATH=%t/local/swtpm/%I
-Environment      = TPM_CTRL=%t/local/swtpm/%I/ctl.sock
-Environment      = TPM_SOCK=%t/local/swtpm/%I/tpm.sock
+Environment              = TPM_PATH=%T/%I
+Environment              = TPM_CTRL=%t/libvirt/qemu/swtpm/%I.ctl.sock
+Environment              = TPM_SOCK=%t/libvirt/qemu/swtpm/%I.tpm.sock
 
-ExecStart        = swtpm --ctrl type=unixio,path=${TPM_CTRL} --server type=unixio,path=${TPM_SOCK}
+ExecStart                = swtpm socket --ctrl type=unixio,path=${TPM_CTRL} --server type=unixio,path=${TPM_SOCK}
