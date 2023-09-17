@@ -9,16 +9,17 @@ ProtectHome              = yes
 RuntimeDirectory         = libvirt/qemu/swtpm
 RuntimeDirectoryPreserve = yes
 PrivateTmp               = yes
-ReadWritePaths           = %t/libvirt/qemu/swtpm %T
+ReadWritePaths           = %t/libvirt/qemu/swtpm %T %S/swtpm-localca
 
 User                     = swtpm
 Group                    = swtpm
 
 Environment              = TPM_PATH=%T/%I
 Environment              = TPM_CTRL=%t/libvirt/qemu/swtpm/%I.ctl.sock
-Environment              = TPM_SOCK=%t/libvirt/qemu/swtpm/%I.tpm.sock
+Environment              = TPM_SERV=%t/libvirt/qemu/swtpm/%I.srv.sock
 
 ExecStartPre             = mkdir -v -p -- ${TPM_PATH}
-ExecStart                = swtpm socket --tpm2 --tpmstate dir=${TPM_PATH} --ctrl type=unixio,path=${TPM_CTRL} --server type=unixio,path=${TPM_SOCK}
-ExecStartPost            = /usr/local/libexec/retry.sh 0.1 stat -- ${TPM_SOCK}
-ExecStopPost             = rm -v -fr -- ${TPM_CTRL} ${TPM_SOCK}
+ExecStartPre             = swtpm_setup --tpm-state ${TPM_PATH} --tpm2 --create-platform-cert --display
+ExecStart                = swtpm socket --tpmstate dir=${TPM_PATH} --ctrl type=unixio,path=${TPM_CTRL} --server type=unixio,path=${TPM_SERV} --tpm2
+ExecStartPost            = /usr/local/libexec/retry.sh 0.1 stat -- ${TPM_SERV}
+ExecStopPost             = rm -v -fr -- ${TPM_CTRL} ${TPM_SERV}

@@ -44,7 +44,11 @@ while (($#)); do
     shift -- 2
     ;;
   --drive)
-    DRIVES+=("$2")
+    if [[ "$2" =~ ,boot$ ]]; then
+      DRIVES=("${2%',boot'}" "${DRIVES[@]}")
+    else
+      DRIVES+=("$2")
+    fi
     shift -- 2
     ;;
   --macvtap)
@@ -86,7 +90,8 @@ ARGV=(
 )
 
 ARGV+=(
-  -bios '/usr/share/qemu/OVMF.fd'
+  -bios '/usr/share/ovmf/OVMF.fd'
+  -boot 'menu=on,order=nc'
   -rtc 'base=localtime'
   -device 'intel-iommu,caching-mode=on'
 )
