@@ -1,6 +1,6 @@
 [Unit]
-Description  = Proxy qemu display socket -- %t/local/qemu/%I/ws.sock
+Description  = Proxy qemu display socket -- %t/local/vnc/%I.sock
 
 [Socket]
 RemoveOnStop = yes
-ListenStream = %t/local/qemu/%I/ws.sock
+ListenStream = %t/local/vnc/%I.sock
