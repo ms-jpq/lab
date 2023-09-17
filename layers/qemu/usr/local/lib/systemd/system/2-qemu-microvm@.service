@@ -17,7 +17,7 @@ BindReadOnlyPaths = -%h/.ssh:%h/.ssh
 BindReadOnlyPaths = /usr/local/opt/qemu/etc:%E/qemu
 PrivateTmp        = yes
 
-EnvironmentFile   = -/usr/local/etc/default/%I.qemu.env
+EnvironmentFile   = -%S/local/qemu/%I/argv.env
 Environment       = MACHINE=%i
 Environment       = FS=%S/local/qemu
 Environment       = ROOT=%S/local/qemu/%I
@@ -53,4 +53,5 @@ ExecStart         = /usr/local/opt/qemu/libexec/%J@.sh \
                       --initrd ${INITRD} \
                       --drive ${DRIVE} \
                       --root ${DEV_HDA} \
-                      --drive ${CLOUD_INIT}
+                      --drive ${CLOUD_INIT} \
+                      $ARGV
