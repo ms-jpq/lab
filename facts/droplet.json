@@ -1,0 +1,11 @@
+{
+  "ENV_INDEX": [
+    "docs",
+    "google",
+    "reddit",
+    "speedtest",
+    "traefik",
+    "twitter",
+    "youtube"
+  ]
+}
