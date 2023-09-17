@@ -16,5 +16,5 @@ Environment              = TPM_PATH=%T/%I
 Environment              = TPM_CTRL=%t/libvirt/qemu/swtpm/%I.ctl.sock
 Environment              = TPM_SOCK=%t/libvirt/qemu/swtpm/%I.tpm.sock
 
-ExecStart                = swtpm socket --ctrl type=unixio,path=${TPM_CTRL} --server type=unixio,path=${TPM_SOCK}
+ExecStart                = swtpm socket --tpm2 --ctrl type=unixio,path=${TPM_CTRL} --server type=unixio,path=${TPM_SOCK}
 ExecStopPost             = rm -v -fr -- ${TPM_CTRL} ${TPM_SOCK}

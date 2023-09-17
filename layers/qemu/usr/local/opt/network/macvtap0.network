@@ -6,3 +6,6 @@ RequiredForOnline       = no
 
 [Network]
 ConfigureWithoutCarrier = yes
+
+DHCP                    = no
+IPv6AcceptRA            = no
