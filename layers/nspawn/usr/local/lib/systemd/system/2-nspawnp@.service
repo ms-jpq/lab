@@ -18,6 +18,9 @@ BindReadOnlyPaths        = -%h/.ssh:%h/.ssh
 
 EnvironmentFile          = -/usr/local/etc/default/%I.nspawn.env
 Environment              = MACHINE=%i
+Environment              = FS=%S/local/nspawn
+Environment              = CACHE=%C/local/nspawn
 Environment              = ROOT=%S/local/nspawn/%I
 
-ExecStart                = /usr/local/opt/nspawn/libexec/systemd-prepawn@.sh %S/local/nspawn %C/local/nspawn ${MACHINE} ${ROOT}
+ExecStartPre             = /usr/local/opt/qemu/libexec/fs-alloc.sh %N ${FS} ${MACHINE} ${ROOT}
+ExecStart                = /usr/local/opt/nspawn/libexec/systemd-prepawn@.sh ${CACHE} ${MACHINE} ${ROOT}
