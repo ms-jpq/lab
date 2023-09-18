@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-LONG_OPTS='cpu:,mem:,qmp:,monitor:,tpm:,vnc:,bridge:,iscsi:,drive:,macvtap:,vfio:,mdev:,cd:'
+LONG_OPTS='cpu:,mem:,qmp:,monitor:,tpm:,vnc:,bridge:,iscsi:,drive:,macvtap:,vfio:,mdev:,disc:'
 GO="$(getopt --options='' --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
@@ -60,7 +60,7 @@ while (($#)); do
     MDEVS+=("$2")
     shift -- 2
     ;;
-  --cd)
+  --disc)
     CDS+=("$2")
     shift -- 2
     ;;
@@ -84,8 +84,8 @@ ARGV=(
   -compat 'deprecated-input=crash'
   -nodefaults
   -no-user-config
-  -machine 'type=q35,smm=on,accel=kvm'
-  -cpu 'host,hv-passthrough'
+  -machine 'type=q35,smm=on,igd-passthru=on,accel=kvm'
+  -cpu 'max,hv-passthrough'
   -smp "$CPU"
   -m "${MEM:-"size=8G"}"
 )
@@ -131,18 +131,17 @@ else
   ARGV+=(-nographic)
 fi
 
+NIC='model=virtio-net-pci-non-transitional'
 if [[ -n "${BRIDGE:-""}" ]]; then
-  NIC='model=virtio-net-pci-non-transitional'
-  ARGV+=(-nic "bridge,br=$BRIDGE,$NIC")
+  ARGV+=(-nic "bridge,$NIC,br=$BRIDGE")
 fi
 
 if [[ -n "${MACVTAP:-""}" ]]; then
-  ID='mv0'
   SYS="/sys/class/net/$MACVTAP"
   IFI="$(<"$SYS/ifindex")"
   MACADDR="$(<"$SYS/address")"
   exec 3<>"/dev/tap$IFI"
-  ARGV+=(-nic "tap,fd=3,mac=$MACADDR,$NIC")
+  ARGV+=(-nic "tap,fd=3,$NIC,mac=$MACADDR")
 fi
 
 if [[ -n "${INITIATOR_NAME:-""}" ]]; then
