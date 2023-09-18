@@ -7,6 +7,7 @@ GO="$(getopt --options='' --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
 DRIVES=()
+TAPS=()
 while (($#)); do
   case "$1" in
   --cpu)
@@ -50,7 +51,7 @@ while (($#)); do
     shift -- 2
     ;;
   --macvtap)
-    MACVTAP="$2"
+    TAPS+=("$2")
     shift -- 2
     ;;
   --)
@@ -122,8 +123,9 @@ if [[ -n "${BRIDGE:-""}" ]]; then
   )
 fi
 
-if [[ -n "${MACVTAP:-}" ]]; then
-  ID='mv0'
+for IDX in "${!TAPS[@]}"; do
+  ID="mv$IDX"
+  MACVTAP="${TAPS[$IDX]}"
   SYS="/sys/class/net/$MACVTAP"
   IFI="$(<"$SYS/ifindex")"
   MACADDR="$(<"$SYS/address")"
@@ -132,7 +134,7 @@ if [[ -n "${MACVTAP:-}" ]]; then
     -netdev "tap,fd=3,id=$ID"
     -device "virtio-net-device,netdev=$ID,mac=$MACADDR"
   )
-fi
+done
 
 for IDX in "${!DRIVES[@]}"; do
   ID="dri$IDX"

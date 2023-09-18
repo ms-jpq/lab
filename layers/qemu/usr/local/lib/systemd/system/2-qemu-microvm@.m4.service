@@ -49,7 +49,7 @@ ExecStartPre      = /usr/local/opt/qemu/libexec/cloud-init.sh %I ${CLOUD_INIT}
 ExecStartPre      = touch -- ${ROOT}/.live
 ExecStopPost      = rm -v -rf -- ${ROOT}/.live
 
-ExecStart         = /usr/local/opt/qemu/libexec/%J@.sh \
+ExecStart         = /usr/local/opt/qemu/libexec/%J@.sh m4_ifelse(m5_assert([ENV_MACVLAN_IFS]), [], [], [--macvtap ${MACVTAP}]) \
                       --cpu ${CPU} \
                       --mem ${MEMORY} \
                       --qmp ${QMP} \

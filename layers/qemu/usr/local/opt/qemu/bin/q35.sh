@@ -6,6 +6,7 @@ LONG_OPTS='cpu:,mem:,qmp:,monitor:,tpm:,vnc:,bridge:,iscsi:,drive:,macvtap:,vfio
 GO="$(getopt --options='' --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
+TAPS=()
 DRIVES=()
 VFIO=()
 MDEVS=()
@@ -49,7 +50,7 @@ while (($#)); do
     shift -- 2
     ;;
   --macvtap)
-    MACVTAP="$2"
+    TAPS+=("$2")
     shift -- 2
     ;;
   --vfio)
@@ -136,13 +137,13 @@ if [[ -n "${BRIDGE:-""}" ]]; then
   ARGV+=(-nic "bridge,$NIC,br=$BRIDGE")
 fi
 
-if [[ -n "${MACVTAP:-""}" ]]; then
+for MACVTAP in "${TAPS[@]}"; do
   SYS="/sys/class/net/$MACVTAP"
   IFI="$(<"$SYS/ifindex")"
   MACADDR="$(<"$SYS/address")"
   exec 3<>"/dev/tap$IFI"
   ARGV+=(-nic "tap,fd=3,$NIC,mac=$MACADDR")
-fi
+done
 
 if [[ -n "${INITIATOR_NAME:-""}" ]]; then
   ARGV+=(-iscsi "initiator-name=$INITIATOR_NAME")

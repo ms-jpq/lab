@@ -1,4 +1,4 @@
 nspawn
 qemu
-# vfio
+vfio
 zfs
