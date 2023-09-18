@@ -44,11 +44,7 @@ while (($#)); do
     shift -- 2
     ;;
   --drive)
-    if [[ "$2" =~ ,boot$ ]]; then
-      DRIVES=("${2%',boot'}" "${DRIVES[@]}")
-    else
-      DRIVES+=("$2")
-    fi
+    DRIVES+=("$2")
     shift -- 2
     ;;
   --macvtap)
@@ -120,7 +116,7 @@ fi
 
 if [[ -n "${VNC:-""}" ]]; then
   ARGV+=(
-    -vnc "unix:$VNC"
+    -display "vnc=unix:$VNC"
     -device "ich9-intel-hda"
     -device 'virtio-gpu-pci'
     -device 'virtio-keyboard-pci'
