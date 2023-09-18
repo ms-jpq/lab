@@ -10,5 +10,7 @@ Restart        = on-failure
 ProtectSystem  = strict
 ProtectHome    = yes
 PrivateNetwork = yes
+PrivateTmp     = yes
 
-ExecStart      = websockify --heartbeat 1 --unix-target %t/local/qemu/%I/vnc.sock -- [::]:8080
+ExecStart      = websockify --web /tmp --heartbeat 1 --unix-target %t/local/qemu/%I/vnc.sock -- [::]:8080
+ExecStartPost  = /usr/local/libexec/retry.sh 0.1 curl --fail --location --no-progress-meter --max-time 1 --output /dev/null -- localhost:8080

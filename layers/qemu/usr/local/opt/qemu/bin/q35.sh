@@ -86,7 +86,6 @@ ARGV=(
 )
 
 ARGV+=(
-  -bios '/usr/share/ovmf/OVMF.fd'
   -rtc 'base=localtime'
   -device 'intel-iommu,caching-mode=on'
 )
@@ -117,8 +116,8 @@ fi
 if [[ -n "${VNC:-""}" ]]; then
   ARGV+=(
     -display "vnc=unix:$VNC"
+    -vga 'virtio'
     -device "ich9-intel-hda"
-    -device 'virtio-gpu-pci'
     -device 'virtio-keyboard-pci'
     -device 'virtio-tablet-pci'
   )
