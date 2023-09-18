@@ -1,6 +1,0 @@
-[NetDev]
-Name = ${IFACE}
-Kind = macvtap
-
-[MACVTAP]
-Mode = bridge
