@@ -33,5 +33,6 @@
     "misc",
     "time-machine",
     "wallpapers"
-  ]
+  ],
+  "ENV_ZFS_MEM": 70
 }
