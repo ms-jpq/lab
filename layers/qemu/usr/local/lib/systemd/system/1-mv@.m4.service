@@ -1,4 +1,4 @@
-[Unit]
+[[Unit]]
 Description      = Macvtap -- %I
 StopWhenUnneeded = yes
 CollectMode      = inactive
@@ -6,7 +6,7 @@ CollectMode      = inactive
 BindsTo          = systemd-networkd.service
 After            = systemd-networkd.service
 
-[Service]
+[[Service]]
 Type             = oneshot
 RemainAfterExit  = yes
 
