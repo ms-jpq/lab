@@ -18,7 +18,7 @@ ReadWritePaths           = %t/local/ip %T
 
 Environment              = LOCK=%t/local/ip
 Environment              = IFACE=%I
-Environment              = IPV4_PREFIX=20
+Environment              = IPV4_PREFIX=24
 
 EnvironmentFile          = -/usr/local/etc/default/%I.ip.env
 

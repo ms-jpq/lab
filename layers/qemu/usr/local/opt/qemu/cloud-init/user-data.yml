@@ -19,9 +19,6 @@ write_files:
       [Match]
       Name                = e*
 
-      [Link]
-      RequiredForOnline   = no
-
       [Network]
       DHCP                = yes
       LinkLocalAddressing = yes

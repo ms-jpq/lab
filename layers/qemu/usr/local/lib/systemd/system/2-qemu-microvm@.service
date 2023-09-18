@@ -2,11 +2,11 @@
 Description       = Qemu -- %N
 RequiresMountsFor = %S/local/qemu %S/local/qemu/%I
 
-BindsTo           = 1-vn@qemu.service
-After             = 1-vn@qemu.service
+BindsTo           = 1-vn@v\x2d%i.service
+After             = 1-vn@v\x2d%i.service
 
-BindsTo           = dnsmasq@qemu.service
-After             = dnsmasq@qemu.service
+BindsTo           = dnsmasq@v\x2d%i.service
+After             = dnsmasq@v\x2d%i.service
 
 [Service]
 ProtectSystem     = strict
@@ -27,7 +27,7 @@ Environment       = MEMORY=8G
 Environment       = QMP=%t/local/qemu/%I/qmp.sock
 Environment       = MONITOR=%t/local/qemu/%I/mon.sock
 Environment       = CONSOLE=%t/local/qemu/%I/con.sock
-Environment       = BRIDGE=qemu
+Environment       = BRIDGE=v-%I
 Environment       = KERNEL=%C/local/qemu/vmlinuz
 Environment       = INITRD=%C/local/qemu/initrd
 
