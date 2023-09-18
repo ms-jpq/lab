@@ -84,7 +84,7 @@ ARGV=(
   -compat 'deprecated-input=crash'
   -nodefaults
   -no-user-config
-  -machine 'type=q35,smm=on,igd-passthru=on,accel=kvm'
+  -machine 'type=q35,smm=on,accel=kvm'
   -cpu 'max,hv-passthrough'
   -smp "$CPU"
   -m "${MEM:-"size=8G"}"
