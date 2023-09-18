@@ -2,13 +2,14 @@
 
 set -o pipefail
 
-LONG_OPTS='cpu:,mem:,qmp:,monitor:,tpm:,vnc:,bridge:,iscsi:,drive:,macvtap:,vfio:,mdev:'
+LONG_OPTS='cpu:,mem:,qmp:,monitor:,tpm:,vnc:,bridge:,iscsi:,drive:,macvtap:,vfio:,mdev:,cd:'
 GO="$(getopt --options='' --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
 DRIVES=()
 VFIO=()
 MDEVS=()
+CDS=()
 while (($#)); do
   case "$1" in
   --cpu)
@@ -59,6 +60,10 @@ while (($#)); do
     MDEVS+=("$2")
     shift -- 2
     ;;
+  --cd)
+    CDS+=("$2")
+    shift -- 2
+    ;;
   --)
     shift -- 1
     break
@@ -79,13 +84,14 @@ ARGV=(
   -compat 'deprecated-input=crash'
   -nodefaults
   -no-user-config
-  -machine 'type=q35,accel=kvm'
+  -machine 'type=q35,smm=on,accel=kvm'
   -cpu 'host,hv-passthrough'
   -smp "$CPU"
   -m "${MEM:-"size=8G"}"
 )
 
 ARGV+=(
+  -bios '/usr/share/ovmf/OVMF.fd'
   -rtc 'base=localtime'
   -device 'intel-iommu,caching-mode=on'
 )
@@ -150,6 +156,10 @@ for IDX in "${!DRIVES[@]}"; do
     -drive "if=none,discard=unmap,format=raw,aio=io_uring,id=$ID,file=$DRIVE"
     -device "virtio-blk-pci-non-transitional,drive=$ID"
   )
+done
+
+for CD in "${CDS[@]}"; do
+  ARGV+=(-drive "if=ide,media=cdrom,file=$CD")
 done
 
 for VF in "${VFIO[@]}"; do

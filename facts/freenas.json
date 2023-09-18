@@ -8,15 +8,16 @@
   "ENV_FS_WALLPAPER": "wallpapers",
   "ENV_INDEX": [
     "cups",
+    "esxi/vm.html",
+    "freenas/bt",
+    "freenas/rclone",
+    "freenas/share",
+    "freenas/zfs.sh",
     "metube",
     "miniflux",
     "scrutiny",
     "speedtest",
-    "traefik/dashboard",
-    "freenas/bt",
-    "freenas/share",
-    "freenas/zfs.sh",
-    "freenas/rclone"
+    "traefik/dashboard"
   ],
   "ENV_LOCAL_DOMAIN": "enp2s0",
   "ENV_MACHINES": ["_gateway", "freenas", "esxi", "roku"],
