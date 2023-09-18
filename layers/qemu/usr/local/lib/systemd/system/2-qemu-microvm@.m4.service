@@ -1,14 +1,19 @@
-[Unit]
+[[Unit]]
 Description       = Qemu -- %N
 RequiresMountsFor = %S/local/qemu %S/local/qemu/%I
 
-BindsTo           = 1-vn@v\x2d%i.service
-After             = 1-vn@v\x2d%i.service
+BindsTo           = 1-vb@v\x2d%i.service
+After             = 1-vb@v\x2d%i.service
 
 BindsTo           = dnsmasq@v\x2d%i.service
 After             = dnsmasq@v\x2d%i.service
 
-[Service]
+# m4_ifelse(m5_assert([ENV_MACVLAN_IFS]), [], [], [
+BindsTo           = 1-mv@m\x2d%i.service
+After             = 1-mv@m\x2d%i.service
+# ])
+
+[[Service]]
 ProtectSystem     = strict
 ProtectHome       = tmpfs
 RuntimeDirectory  = local/qemu/%I
@@ -30,6 +35,8 @@ Environment       = CONSOLE=%t/local/qemu/%I/con.sock
 Environment       = BRIDGE=v-%I
 Environment       = KERNEL=%C/local/qemu/vmlinuz
 Environment       = INITRD=%C/local/qemu/initrd
+
+Environment       = MACVTAP=m5_assert([ENV_MACVLAN_IFS])
 
 Environment       = DRIVE=%S/local/qemu/%I/fs.raw
 Environment       = DEV_HDA=/dev/vda1

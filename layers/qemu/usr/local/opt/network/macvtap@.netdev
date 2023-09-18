@@ -1,5 +1,5 @@
 [NetDev]
-Name = macvtap0
+Name = ${IFACE}
 Kind = macvtap
 
 [MACVTAP]

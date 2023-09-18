@@ -1,5 +1,5 @@
 [Unit]
-Description          = Network Interface -- %I
+Description          = Virtual Bridge -- %I
 StopWhenUnneeded     = yes
 CollectMode          = inactive
 

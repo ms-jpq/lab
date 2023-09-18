@@ -1,6 +1,13 @@
-.PHONY: qemu.grub qemu.pull clobber.qemu
+.PHONY: qemu qemu.grub qemu.pull clobber.qemu
 
 pull: qemu.pull
+
+all: /usr/local/lib/systemd/system/2-qemu-q35@.service
+
+/usr/local/lib/systemd/system/2-qemu-q35@.service: /usr/local/lib/systemd/system/2-qemu-microvm@.service
+	sudo -- cp -v -f -- '$<' '$@'
+
+qemu: 2-qemu-q35@.service
 
 qemu.grub:
 	update-initramfs -u && update-grub
