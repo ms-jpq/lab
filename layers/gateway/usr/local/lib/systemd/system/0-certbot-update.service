@@ -9,5 +9,7 @@ ProtectHome    = yes
 PrivateTmp     = yes
 ReadWritePaths = %T %S/local %C/local
 
-ExecStartPre   = mkdir -v -p -- %S/local/certbot
-ExecStart      = /usr/local/opt/certbot/libexec/ensurepip.sh %C/local/certbot
+Environment    = CACHE=%S/local/certbot
+
+ExecStartPre   = mkdir -v -p -- ${CACHE}
+ExecStart      = /usr/local/opt/certbot/libexec/ensurepip.sh ${CACHE}
