@@ -52,7 +52,7 @@ Inverse relationship between `<original>` and `<cloned-filesystem>` (space prese
 Makes it possible to destroy `<original>`
 
 ```bash
-# WARNING: doing so destroys the original snapshot trail
+# WARNING: doing so re-homes the original snapshot trail
 zfs promote <cloned-filesystem>
 ```
 
