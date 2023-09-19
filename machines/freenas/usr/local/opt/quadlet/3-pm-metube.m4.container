@@ -16,7 +16,7 @@ Label         = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+$$}`) || HostReg
 Network       = %p.network
 Network       = 3-pm-traefik.network
 
-Volume        = /media/m5_assert([ENV_FS_DOWNLOADS]):/downloads
+Volume        = /media/m5_assert([ENV_FS_DOWNLOADS])/youtube:/downloads
 
 [[Service]]
 Restart       = on-failure
