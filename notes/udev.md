@@ -10,6 +10,8 @@ udevadm info --attribute-walk -- </dev/...>
 ## Reload
 
 ```bash
+udevadm control --log-priority debug
+journalctl --follow --unit systemd-udevd
 udevadm control --reload-rules && udevadm trigger
 ```
 
