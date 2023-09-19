@@ -5,7 +5,7 @@ RequiresMountsFor   = /media %S/local/rclone
 
 ConditionPathExists = /usr/local/libexec/rclone
 ConditionPathExists = %S/local/rclone/rclone.conf
-ConditionPathExists = /usr/local/opt/rclone/sync.sh
+ConditionPathExists = /usr/local/opt/rclone/libexec/sync.sh
 
 [[Service]]
 Type                = oneshot

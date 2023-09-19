@@ -6,4 +6,4 @@ After       = zfs-volume-wait.service
 [Mount]
 Options     = sys_immutable,ro
 Where       = %f
-What        = /dev/zvol/pink/zvols/downloads-part2
+What        = /dev/zvol/pink/downloadz-part2
