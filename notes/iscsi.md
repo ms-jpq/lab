@@ -1,5 +1,16 @@
 # ISCSI
 
+## Discovery
+
+```bash
+iscsiadm --mode discovery --type sendtargets --op new --portal <ip/domain>
+```
+
+```bash
+iscsiadm --mode node --portal <ip/domain> --login
+iscsiadm --mode node --portal <ip/domain> --logout
+```
+
 ## Client
 
 ```bash
