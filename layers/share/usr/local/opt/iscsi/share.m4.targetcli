@@ -4,10 +4,18 @@ m4_define([ETC_ISCSI], [m4_include([layers/_/etc/iscsi/initiatorname.m4.iscsi])]
 m4_define([ISCSI_FQDN], [m4_regexp(ETC_ISCSI, [^InitiatorName=\([A-z.0-9:-]+\)], [\1])])
 m4_define([ISCSI_DN], [m4_regexp(ISCSI_FQDN, [^\([^:]+\)], [\1])])
 
+# [ETC_ISCSI]=ETC_ISCSI
+# [ISCSI_FQDN]=ISCSI_FQDN
+# [ISCSI_DN]=ISCSI_DN
+
 m4_define([SHARING], [
 m4_pushdef([BLK_DEV], [m4_regexp([$1], [\(^[^:]+\)], [\1])])
 m4_pushdef([DEV_NAME], [m4_regexp(BLK_DEV, [\([^/]+\)$], [\1])])
-m4_pushdef([REMOTE_INITIATORS], [m4_regexp([$1], [\([^:]+\)$], [\1])])
+m4_pushdef([REMOTE_INITIATORS], [m4_shift($@)])
+
+# [BLK_DEV]=BLK_DEV
+# [DEV_NAME]=DEV_NAME
+# [REMOTE_INITIATORS]=REMOTE_INITIATORS
 
 cd /
 
@@ -32,8 +40,11 @@ create ISCSI_DN:INITIATOR
 ])
 
 m5_for([SHARE], [
-SHARING(SHARE)
-], m5_join([,], m5_assert([ENV_BLK_EXPORTS])))
+m4_pushdef([ARGV], [m4_translit(SHARE, [:], [,])])
+# [SHARE]=SHARE
+# [ARGV]=ARGV
+SHARING(ARGV)
+], m5_assert([ENV_BLK_EXPORTS]))
 
 cd /
 saveconfig
