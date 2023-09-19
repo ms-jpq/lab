@@ -1,5 +1,18 @@
 # UDEV
 
+## Query
+
+```bash
+udevadm info --query all -- </dev/...>
+udevadm info --attribute-walk -- </dev/...>
+```
+
+## Reload
+
+```bash
+udevadm control --reload-rules && udevadm trigger
+```
+
 ## IO Sched
 
 ```bash
