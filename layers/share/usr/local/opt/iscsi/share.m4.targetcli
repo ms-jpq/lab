@@ -2,18 +2,12 @@ set global auto_save_on_exit=false
 
 m4_define([ETC_ISCSI], [m4_include([layers/_/etc/iscsi/initiatorname.m4.iscsi])])
 m4_define([ISCSI_FQDN], [m4_regexp(ETC_ISCSI, [^InitiatorName=\([A-z.0-9:-]+\)], [\1])])
-
-# [ETC_ISCSI]=ETC_ISCSI
-# [ISCSI_FQDN]=ISCSI_FQDN
+m4_define([ISCSI_DN], [m4_regexp(ISCSI_FQDN, [^\([^:]+\)], [\1])])
 
 m4_define([SHARING], [
 m4_pushdef([BLK_DEV], [m4_regexp([$1], [\(^[^:]+\)], [\1])])
 m4_pushdef([DEV_NAME], [m4_regexp(BLK_DEV, [\([^/]+\)$], [\1])])
 m4_pushdef([REMOTE_INITIATORS], [m4_regexp([$1], [\([^:]+\)$], [\1])])
-
-# [BLK_DEV]=BLK_DEV
-# [DEV_NAME]=DEV_NAME
-# [REMOTE_INITIATORS]=REMOTE_INITIATORS
 
 cd /
 
@@ -32,14 +26,12 @@ create /backstores/block/DEV_NAME
 
 cd /iscsi/ISCSI_FQDN@DEV_NAME/tpg1/acls
 m5_for([INITIATOR], [
-# [INITIATOR]=INITIATOR
-create ISCSI_FQDN:INITIATOR
+create ISCSI_DN:INITIATOR
 ], REMOTE_INITIATORS)
 
 ])
 
 m5_for([SHARE], [
-# [SHARE]=SHARE
 SHARING(SHARE)
 ], m5_join([,], m5_assert([ENV_BLK_EXPORTS])))
 

@@ -24,6 +24,7 @@ iscsi: /etc/rtslib-fb-target
 
 clobber.iscsi:
 	sudo --preserve-env -- /usr/local/opt/iscsi/libexec/unshare.sh
+	sudo -- rm -v -fr -- /etc/rtslib-fb-target
 
 clobber.samba:
 	sudo rm -v -fr -- /var/lib/local/samba/usershares
