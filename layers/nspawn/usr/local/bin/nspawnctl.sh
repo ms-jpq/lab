@@ -14,10 +14,9 @@ source -- "${0%/*}/../libexec/${0##*/}"
 WANTS="/usr/local/lib/systemd/system/$TARGET.target.wants"
 MACHINES=()
 SERVICES=()
-for NAME in "$@"; do
-  MACH="$(systemd-escape -- "$NAME")"
+for MACH in "$@"; do
   MACHINES+=("$MACH")
-  SERVICES+=("$SERVICE_NAME@$MACH.service")
+  SERVICES+=("$SERVICE_NAME@$(systemd-escape -- "$MACH").service")
 done
 
 sctl() {
