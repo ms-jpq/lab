@@ -25,6 +25,7 @@ zfs set canmount=off <pool>
 
 ```bash
 zfs create -s -V <size> <pool>/<zvol>
+zfs set volsize=<...G> <pool>/<zvol>
 ```
 
 ```bash

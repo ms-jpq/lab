@@ -166,12 +166,12 @@ for CD in "${CDS[@]}"; do
 done
 
 for VF in "${VFIO[@]}"; do
-  ARGV+=(-device "vfio-pci,host=$VF")
+  ARGV+=(-device "vfio-pci-nohotplug,host=$VF")
 done
 
 for MDEV in "${MDEVS[@]}"; do
-  # display=on,ramfb=on,x-igd-opregion=on,driver=vfio-pci-nohotplug
-  ARGV+=(-device "vfio-pci,sysfsdev=$MDEV")
+  # display=on,ramfb=on,x-igd-opregion=on
+  ARGV+=(-device "vfio-pci-nohotplug,sysfsdev=$MDEV")
 done
 
 ARGV+=("$@")
