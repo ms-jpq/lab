@@ -1,10 +1,6 @@
 # Notes on File Systems
 
-## Destroy
-
-```
-zfs set canmount=noauto <dataset>
-```
+https://openzfs.github.io/openzfs-docs
 
 ## Upgrade
 
@@ -39,21 +35,61 @@ zfs set atime=off xattr=sa compression=zstd mountpoint=none dnodesize=auto <pool
 zfs create -o mountpoint=<mount point> <pool>/<dataset>
 ```
 
-## Performance
+## Clone
 
-### Upgrade
+### Dependent
+
+`<filesystem>` still depends on `<snapshot>` being around
 
 ```bash
-zpool upgrade <pool>
+zfs clone <snapshot> <filesystem>
 ```
 
-### Destroy
+### Promotion
 
-#### `-r`
+Inverse relationship between `<original>` and `<cloned-filesystem>` (space preserving)
+
+Makes it possible to destroy `<original>`
+
+```bash
+# WARNING: doing so destroys the original snapshot trail
+zfs promote <cloned-filesystem>
+```
+
+## Send Recv
+
+```bash
+# includes snapshots (--replicate)
+zfs snapshot -r <snapshot>
+zfs send --verbose --replicate --props <snapshot> | zfs recv -v -F <dataset>
+```
+
+```bash
+# ignore snapshots (no replicate)
+zfs list -t snapshot | rg <dataset>
+zfs send --verbose --props <snapshot> | zfs recv -v -F <dataset>
+```
+
+## Destroy
+
+### Prevent
+
+```bash
+zfs hold <snapshot>
+zfs release <snapshot>
+```
+
+### Umount
+
+```
+zfs set canmount=noauto <dataset>
+```
+
+### `-r`
 
 Recursive
 
-#### `-R`
+### `-R`
 
 Retarded -> will kill related linked datasets, (NOT just snapshots), even datasets not under `./dataset`
 
@@ -78,22 +114,6 @@ zpool remove <pool> <guid>
 
 ```bash
 zfs set xattr=on <zpool>/<dataset>
-```
-
-### Send Recv
-
-```bash
-# includes snapshots (--replicate)
-zfs snapshot -r <snapshot>
-zfs send --verbose --replicate --props <snapshot> | zfs recv -v -F <dataset>
-```
-
-### Clone
-
-```bash
-# ignore snapshots (no replicate)
-zfs list -t snapshot | rg <dataset>
-zfs send --verbose --props <snapshot> | zfs recv -v -F <dataset>
 ```
 
 ### Clear

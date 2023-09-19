@@ -1,5 +1,5 @@
 {
-  "ENV_BLK_EXPORTS": "/dev/zvol/brown/zvols/steam:esxi",
+  "ENV_BLK_EXPORTS": "/dev/zvol/pink/steam:esxi",
   "ENV_FS_DOWNLOADS": "downloads",
   "ENV_FS_MOVIES": "media/Movies",
   "ENV_FS_NTFS": "ntfs",

@@ -120,13 +120,16 @@ if [[ -n "${TPM:-""}" ]]; then
   )
 fi
 
+ARGV+=(
+  -device "ich9-intel-hda"
+  -device 'virtio-keyboard-pci'
+  -device 'virtio-tablet-pci'
+)
+
 if [[ -n "${VNC:-""}" ]]; then
   ARGV+=(
     -display "vnc=unix:$VNC"
     -vga 'virtio'
-    -device "ich9-intel-hda"
-    -device 'virtio-keyboard-pci'
-    -device 'virtio-tablet-pci'
   )
 else
   ARGV+=(-nographic)

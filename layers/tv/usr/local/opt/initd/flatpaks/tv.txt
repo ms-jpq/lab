@@ -1,7 +1,7 @@
+# + com.valvesoftware.Steam
 + app.xemu.xemu
 + com.adobe.Flash-Player-Projector
 + com.moonlight_stream.Moonlight
-+ com.valvesoftware.Steam
 + net.lutris.Lutris
 + net.rpcs3.RPCS3
 + org.DolphinEmu.dolphin-emu

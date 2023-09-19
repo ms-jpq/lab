@@ -7,4 +7,4 @@ After       = zfs-volume-wait.service
 [Mount]
 Options     = sys_immutable,ro
 Where       = %f
-What        = /dev/zvol/brown/zvols/steam-part2
+What        = /dev/zvol/pink/zvols/steam-part2
