@@ -43,9 +43,11 @@ CONN=(ssh
 )
 RSY=(
   rsync
+  --keep-dirlinks
   --recursive
   --links
   --perms
+  --times
 )
 
 conn() {
