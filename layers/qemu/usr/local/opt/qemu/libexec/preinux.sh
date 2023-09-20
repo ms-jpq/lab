@@ -2,14 +2,16 @@
 
 set -o pipefail
 
-MACHINE="$1"
-ROOT="$2"
-DRIVE="$3"
+ROOT="$1"
+DRIVE="$2"
 RAW='/var/cache/local/qemu/cloudimg.raw'
 
-"${0%/*}/apriori.sh" "$MACHINE" "$ROOT"
-
 if ! [[ -f "$DRIVE" ]]; then
-  /usr/local/libexec/hr-run.sh cp -v -f --reflink=auto -- "$RAW" "$DRIVE"
-  /usr/local/libexec/hr-run.sh qemu-img resize -f raw -- "$DRIVE" +88G
+  RAW_ALLOC="${0%/*}/raw-alloc.sh"
+  if [[ -x "$RAW_ALLOC" ]]; then
+    "$RAW_ALLOC" "$ROOT" "$DRIVE" "$RAW"
+  else
+    /usr/local/libexec/hr-run.sh cp -v -f --reflink=auto -- "$RAW" "$DRIVE"
+    /usr/local/libexec/hr-run.sh qemu-img resize -f raw -- "$DRIVE" +88G
+  fi
 fi

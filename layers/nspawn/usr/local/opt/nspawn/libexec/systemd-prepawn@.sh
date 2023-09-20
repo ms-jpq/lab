@@ -3,14 +3,11 @@
 set -o pipefail
 
 CACHE="$1"
-MACHINE="$2"
-ROOT="$3"
+ROOT="$2"
 FS_ROOT="$ROOT/fs"
 RSSH="$FS_ROOT/root/.ssh"
 USRN="$FS_ROOT/usr/local/lib/systemd/network"
 HR='/usr/local/libexec/hr-run.sh'
-
-"${0%/*}/apriori.sh" "$MACHINE" "$ROOT"
 
 if ! [[ -d "$FS_ROOT" ]]; then
   "$HR" mkdir -v -p -- "$FS_ROOT"

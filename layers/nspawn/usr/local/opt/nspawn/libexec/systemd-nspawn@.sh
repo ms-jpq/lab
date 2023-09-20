@@ -5,7 +5,6 @@ set -o pipefail
 MACHINE="$1"
 ROOT="$2"
 
-"${0%/*}/apriori.sh" "$MACHINE" "$ROOT"
 CONF='/usr/local/opt/nspawn/conf.d'
 cat -- "$CONF"/*.nspawn "$ROOT"/*.nspawn | envsubst | sponge -- "/run/systemd/nspawn/$MACHINE.nspawn"
 ARGV=(

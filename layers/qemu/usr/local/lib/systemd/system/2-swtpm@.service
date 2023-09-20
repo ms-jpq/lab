@@ -1,5 +1,5 @@
 [Unit]
-Description              = SWTPM -- %t/local/swtpm/%I
+Description              = SWTPM -- %t/libvirt/qemu/swtpm/%I.sock
 StopWhenUnneeded         = yes
 CollectMode              = inactive
 

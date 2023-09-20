@@ -2,8 +2,10 @@
 Description              = systemd.prepawn -- %I
 StopWhenUnneeded         = yes
 CollectMode              = inactive
-RequiresMountsFor        = %S/local/nspawn %S/local/nspawn/%I/fs
 ConditionPathExists      = !%E/systemd/nspawn/%i.nspawn
+
+Requires                 = 2-fs-alloc-nspawn@%i.service
+After                    = 2-fs-alloc-nspawn@%i.service
 
 PartOf                   = 2-nspawnd@%i.service
 
@@ -24,5 +26,4 @@ Environment              = FS=%S/local/nspawn
 Environment              = CACHE=%C/local/nspawn
 Environment              = ROOT=%S/local/nspawn/%I
 
-ExecStartPre             = /usr/local/opt/qemu/libexec/fs-alloc.sh %N ${FS} ${MACHINE} ${ROOT}
-ExecStart                = /usr/local/opt/nspawn/libexec/systemd-prepawn@.sh ${CACHE} ${MACHINE} ${ROOT}
+ExecStart                = /usr/local/opt/nspawn/libexec/systemd-prepawn@.sh ${CACHE} ${ROOT}

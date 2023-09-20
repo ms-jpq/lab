@@ -1,1 +1,0 @@
-../../nspawn/apriori.d/zfs.sh

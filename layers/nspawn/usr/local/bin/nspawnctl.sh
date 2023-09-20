@@ -68,29 +68,14 @@ disable)
   "$HR" rm -v -fr -- "${RM[@]}"
   ;;
 remove)
-  FS="$(stat --file-system --format %T -- "$LIB")"
   for MACH in "${MACHINES[@]}"; do
     ROOT="$LIB/$MACH"
     set -x
-
-    if [[ -k "$ROOT" ]] || [[ -f "$ROOT/.live" ]]; then
+    if [[ -k "$ROOT" ]] || [[ -f "$ROOT/.#fs.lck" ]]; then
       exit 1
     fi
-
-    case "$FS" in
-    zfs)
-      if SOURCE="$(/usr/local/opt/zfs/libexec/findfs.sh fs "$ROOT")"; then
-        "$HR" zfs destroy -v -r -- "$SOURCE"
-      fi
-      ;;
-    btrfs)
-      "$HR" btrfs subvolume delete -- "$ROOT"
-      ;;
-    *) ;;
-    esac
-    "$HR" rm -v -fr -- "$ROOT"
-
     set +x
+    /usr/local/libexec/fs-dealloc.sh "$LIB" "$ROOT"
   done
   ;;
 *)
