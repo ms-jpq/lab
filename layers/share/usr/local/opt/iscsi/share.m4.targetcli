@@ -2,20 +2,18 @@ set global auto_save_on_exit=false
 
 m4_define([ETC_ISCSI], [m4_include([layers/_/etc/iscsi/initiatorname.m4.iscsi])])
 m4_define([ISCSI_FQDN], [m4_regexp(ETC_ISCSI, [^InitiatorName=\([A-z.0-9:-]+\)], [\1])])
-m4_define([ISCSI_DN], [m4_regexp(ISCSI_FQDN, [^\([^:]+\)], [\1])])
 
 # [ETC_ISCSI]=ETC_ISCSI
 # [ISCSI_FQDN]=ISCSI_FQDN
-# [ISCSI_DN]=ISCSI_DN
 
 m4_define([SHARING], [
 m4_pushdef([BLK_DEV], [m4_regexp([$1], [\(^[^:]+\)], [\1])])
 m4_pushdef([DEV_NAME], [m4_regexp(BLK_DEV, [\([^/]+\)$], [\1])])
-m4_pushdef([REMOTE_INITIATORS], [m4_shift($@)])
+m4_pushdef([ATTRIBUTES], [m4_shift($@)])
 
 # [BLK_DEV]=BLK_DEV
 # [DEV_NAME]=DEV_NAME
-# [REMOTE_INITIATORS]=REMOTE_INITIATORS
+# [ATTRIBUTES]=ATTRIBUTES
 
 cd /
 
@@ -25,6 +23,10 @@ create DEV_NAME BLK_DEV
 cd /iscsi
 create ISCSI_FQDN@DEV_NAME
 
+cd /iscsi/ISCSI_FQDN@DEV_NAME/tpg1
+set attribute demo_mode_write_protect=0
+set attribute generate_node_acls=1
+
 cd /iscsi/ISCSI_FQDN@DEV_NAME/tpg1/portals
 delete 0.0.0.0 3260
 create ::0
@@ -32,10 +34,10 @@ create ::0
 cd /iscsi/ISCSI_FQDN@DEV_NAME/tpg1/luns
 create /backstores/block/DEV_NAME
 
-cd /iscsi/ISCSI_FQDN@DEV_NAME/tpg1/acls
-m5_for([INITIATOR], [
-create ISCSI_DN:INITIATOR
-], REMOTE_INITIATORS)
+cd /backstores/block/DEV_NAME
+m5_for([ATTRIBUTE], [
+set attribute ATTRIBUTE
+], ATTRIBUTES)
 
 ])
 
