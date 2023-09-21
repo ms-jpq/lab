@@ -4,6 +4,6 @@ set -o pipefail
 
 DRIVE="$3"
 
-if ! [[ -f "$DRIVE" ]]; then
+if ! [[ -e "$DRIVE" ]]; then
   /usr/local/libexec/hr-run.sh qemu-img create -f raw -- "$DRIVE" 88G
 fi

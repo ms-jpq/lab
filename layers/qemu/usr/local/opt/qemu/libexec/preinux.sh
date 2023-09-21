@@ -6,7 +6,7 @@ ROOT="$1"
 DRIVE="$2"
 RAW='/var/cache/local/qemu/cloudimg.raw'
 
-if ! [[ -f "$DRIVE" ]]; then
+if ! [[ -e "$DRIVE" ]]; then
   RAW_ALLOC="${0%/*}/raw-alloc.sh"
   if [[ -x "$RAW_ALLOC" ]]; then
     "$RAW_ALLOC" "$ROOT" "$DRIVE" "$RAW"
