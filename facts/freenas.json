@@ -1,5 +1,5 @@
 {
-  "ENV_BLK_EXPORTS": ["/dev/zvol/pink/steam:is_nonrot=0"],
+  "ENV_BLK_EXPORTS": ["/dev/zvol/pink/steam:block.is_nonrot=0:tpg.default_cmdsn_depth=8"],
   "ENV_FS_DOWNLOADS": "downloads",
   "ENV_FS_MOVIES": "media/Movies",
   "ENV_FS_NTFS": "ntfs",

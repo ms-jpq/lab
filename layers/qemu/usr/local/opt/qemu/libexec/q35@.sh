@@ -2,8 +2,6 @@
 
 set -o pipefail
 
-# shellcheck disable=2154
-"${0%/*}/apriori.sh" "$MACHINE" "$ROOT"
 AS=("$@")
 if [[ -z "${ARGV:-""}" ]]; then
   for ISO in /var/cache/local/qemu/ubuntu-*.iso; do

@@ -16,6 +16,7 @@ After             = 1-mv@m\x2d%i.service
 # ])
 
 [[Service]]
+Restart           = on-failure
 ProtectSystem     = strict
 ProtectHome       = tmpfs
 RuntimeDirectory  = local/qemu/%I

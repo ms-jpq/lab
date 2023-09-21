@@ -26,6 +26,14 @@ create ISCSI_FQDN@DEV_NAME
 cd /iscsi/ISCSI_FQDN@DEV_NAME/tpg1
 set attribute demo_mode_write_protect=0
 set attribute generate_node_acls=1
+m5_for([ATTRIBUTE], [
+# [ATTRIBUTE]=ATTRIBUTE
+m4_pushdef([ATTR], [m4_regexp(ATTRIBUTE, [tpg\.\(.+\)], [\1])])
+# [ATTR]=ATTR
+m4_ifelse(ATTR, [], [], [
+set attribute ATTR
+])
+], ATTRIBUTES)
 
 cd /iscsi/ISCSI_FQDN@DEV_NAME/tpg1/portals
 delete 0.0.0.0 3260
@@ -36,7 +44,12 @@ create /backstores/block/DEV_NAME
 
 cd /backstores/block/DEV_NAME
 m5_for([ATTRIBUTE], [
-set attribute ATTRIBUTE
+# [ATTRIBUTE]=ATTRIBUTE
+m4_pushdef([ATTR], [m4_regexp(ATTRIBUTE, [block\.\(.+\)], [\1])])
+# [ATTR]=ATTR
+m4_ifelse(ATTR, [], [], [
+set attribute ATTR
+])
 ], ATTRIBUTES)
 
 ])
