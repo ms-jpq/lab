@@ -12,6 +12,6 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-/usr/local/libexec/hr-run.sh zpool iostat -v -l -T d
+/usr/local/libexec/hr-run.sh zpool iostat -v -q -l -T d
 /usr/local/libexec/hr-run.sh zpool iostat -w -T d
 /usr/local/libexec/hr-run.sh zpool iostat -r -T d
