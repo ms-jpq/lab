@@ -12,7 +12,6 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-/usr/local/libexec/hr-run.sh zpool status -v -s -t -i -T d
-/usr/local/libexec/hr-run.sh zpool iostat -v -l -T d
 /usr/local/libexec/hr-run.sh zfs list -o name,mountpoint,used,volsize,available
+/usr/local/libexec/hr-run.sh zpool status -v -s -t -i -T d
 /usr/local/libexec/hr-run.sh zfs list -t snapshot -o name,creation,used | awk '$NF != "0B" { print }'
