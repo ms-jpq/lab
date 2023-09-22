@@ -28,5 +28,6 @@
 + wireguard-tools
 - linux-lowlatency-hwe-[]m5_assert([ENV_VERSION_ID])
 - lxd-agent-loader
+- rsyslog
 - snapd
 - vim
