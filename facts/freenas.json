@@ -10,6 +10,7 @@
   "ENV_FS_WALLPAPER": "wallpapers",
   "ENV_INDEX": [
     "cups",
+    "esxi/qemu.sh",
     "esxi/vm.html",
     "freenas/bt",
     "freenas/rclone",
