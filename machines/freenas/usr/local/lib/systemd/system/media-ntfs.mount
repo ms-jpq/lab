@@ -1,9 +1,0 @@
-[Unit]
-Description = Mount -- %f
-Requires    = zfs-volume-wait.service
-After       = zfs-volume-wait.service
-
-[Mount]
-Options     = sys_immutable,ro
-Where       = %f
-What        = /dev/zvol/pink/downloadz-part2
