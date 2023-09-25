@@ -1,0 +1,33 @@
+#!/usr/bin/env -S -- bash -Eeu -O dotglob -O nullglob -O extglob -O failglob -O globstar
+
+set -o pipefail
+set -x
+
+if ! [[ -v INVOCATION_ID ]]; then
+  UNIT="${0##*/}"
+  UNIT="${UNIT%.sh}"
+  SVC="$UNIT.service"
+  if systemctl list-units --all --output json -- "$SVC" | jq --exit-status '.[]'; then
+    exec -- journalctl --boot --follow --unit "$SVC"
+  else
+    exec -- systemd-run --service-type oneshot --no-block --unit "$UNIT" -- "$0" "$@"
+  fi
+fi
+
+SRC="/media/$1"
+DST="/media/$2"
+
+RSYNC=(
+  rsync
+  --verbose
+  --mkpath
+  --recursive
+  --links
+  --perms
+  --times
+  --human-readable
+  -- "$SRC/" "$DST"
+)
+
+"${RSYNC[@]}"
+chown -v --recursive -- ubuntu:ubuntu "$DST"

@@ -20,7 +20,10 @@ zpool import -d /dev/disk/by-id/ <pool>
 
 ```bash
 zpool create -o ashift=12 -o autotrim=on <pool> mirror <dev>
-zfs set canmount=off <pool>
+```
+
+```bash
+zfs set canmount=off mountpoint=none atime=off xattr=sa compression=zstd dnodesize=auto <pool>
 ```
 
 ```bash
@@ -29,11 +32,13 @@ zfs set volsize=<...G> <pool>/<zvol>
 ```
 
 ```bash
-zfs set atime=off xattr=sa compression=zstd mountpoint=none dnodesize=auto <pool>
+zfs create -o mountpoint=<mount point> <pool>/<dataset>
 ```
 
+## Encryption
+
 ```bash
-zfs create -o mountpoint=<mount point> <pool>/<dataset>
+zfs create -o encryption=on keyformat=passphrase keylocation=file:///var/lib/local/zfs/... <pool>/<dataset>
 ```
 
 ## Clone
