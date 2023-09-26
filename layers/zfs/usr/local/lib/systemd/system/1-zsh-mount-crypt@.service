@@ -1,7 +1,7 @@
 [Unit]
 Description       = ZFS Import Encrypted -- %I
-Requires          = zfs.target
-After             = zfs.target
+Requires          = zfs-mount.service
+After             = zfs-mount.service
 RequiresMountsFor = %S/local/zfs
 
 [Service]

@@ -3,7 +3,7 @@
 set -o pipefail
 
 RUN="$1"
-WANTS="$RUN/default.target.wants"
+WANTS="$RUN/zfs.target.wants"
 
 mkdir -v -p -- "$WANTS"
 for KEY in /var/lib/local/zfs/*.key; do
