@@ -55,10 +55,16 @@ conn() {
   JSON="$("${JQER[@]}" --arg key "$MACHINE" '.[$key] // {}' "$INVENTORY")"
   HOST="$("${JQER[@]}" '.host' <<<"$JSON")"
   USER="$("${JQER[@]}" '.user // "root"' <<<"$JSON")"
-  OPTS="$("${JQER[@]}" '(.options // [])[]' <<<"$JSON")"
+  OPTS="$(jq --raw-output '(.options // [])[]' <<<"$JSON")"
   readarray -t -- OPTIONS <<<"$OPTS"
+  OOS=()
+  for O in "${OPTIONS[@]}"; do
+    if [[ -n "$O" ]]; then
+      OOS+=("$O")
+    fi
+  done
 
-  CONN+=("${OPTIONS[@]}" -l "$USER")
+  CONN+=("${OOS[@]}" -l "$USER")
   SSH=("${CONN[@]}" "$HOST")
   printf -v RSH -- '%q ' "${CONN[@]}"
   RSY+=(--rsh "$RSH" --)

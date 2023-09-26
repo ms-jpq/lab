@@ -31,4 +31,4 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-exec -- firefox --new-tab "$URI"
+DISPLAY=:0 exec -- firefox --new-tab "$URI"

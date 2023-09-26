@@ -20,6 +20,7 @@ DST="/media/$2"
 RSYNC=(
   rsync
   --verbose
+  --checksum
   --mkpath
   --recursive
   --links

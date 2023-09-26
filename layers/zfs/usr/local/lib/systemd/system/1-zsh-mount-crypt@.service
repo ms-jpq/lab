@@ -6,7 +6,9 @@ RequiresMountsFor = %S/local/zfs
 
 [Service]
 Type              = oneshot
+RemainAfterExit   = yes
 
+ExecStartPre      = -zfs unload-key -- %I
 ExecStart         = zfs load-key -- %I
 ExecStart         = zfs mount -- %I
 ExecStop          = zfs unmount -- %I
