@@ -9,8 +9,6 @@ LONG_OPTS='action:,inventory:,machine:'
 GO="$(getopt --options="$OPTS" --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
-INVENTORY='inventory.json'
-
 while (($#)); do
   case "$1" in
   --)
@@ -56,10 +54,11 @@ conn() {
   # shellcheck disable=SC2016
   JSON="$("${JQER[@]}" --arg key "$MACHINE" '.[$key] // {}' "$INVENTORY")"
   HOST="$("${JQER[@]}" '.host' <<<"$JSON")"
-  PORT="$("${JQER[@]}" '.port // 22' <<<"$JSON")"
   USER="$("${JQER[@]}" '.user // "root"' <<<"$JSON")"
+  OPTS="$("${JQER[@]}" '(.options // [])[]' <<<"$JSON")"
+  readarray -t -- OPTIONS <<<"$OPTS"
 
-  CONN+=(-p $((PORT)) -l "$USER")
+  CONN+=("${OPTIONS[@]}" -l "$USER")
   SSH=("${CONN[@]}" "$HOST")
   printf -v RSH -- '%q ' "${CONN[@]}"
   RSY+=(--rsh "$RSH" --)
@@ -88,14 +87,15 @@ gen)
   read -r -d '' -- JSON <<-EOF || true
 {
   "host": null,
-  "port": 22,
-  "user": "root"
+  "user": "root",
+  "options": []
 }
 EOF
 
   # shellcheck disable=SC2016
   for m in machines/*/; do
     m="${m#*/}"
+    m="${m%/}"
     LEAF="$("${JQE[@]}" --arg val "$m" '.host = $val' <<<"$JSON")"
     ACC="$("${JQE[@]}" --arg key "$m" --argjson val "$LEAF" '.[$key] = .[$key] // $val' <<<"$ACC")"
   done
