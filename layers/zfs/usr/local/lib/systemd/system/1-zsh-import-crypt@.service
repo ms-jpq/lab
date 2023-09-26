@@ -1,0 +1,12 @@
+[Unit]
+Description       = ZFS Import Encrypted -- %I
+Requires          = zfs.target
+After             = zfs.target
+RequiresMountsFor = %S/local/zfs
+
+[Service]
+Type              = oneshot
+
+ExecStart         = zfs load-key -- %I
+ExecStart         = zfs mount -- %I
+ExecStop          = zfs unmount -- %I

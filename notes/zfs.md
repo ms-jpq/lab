@@ -38,7 +38,7 @@ zfs create -o mountpoint=<mount point> <pool>/<dataset>
 ## Encryption
 
 ```bash
-zfs create -o encryption=on keyformat=passphrase keylocation=file:///var/lib/local/zfs/... <pool>/<dataset>
+zfs create -o canmount=noauto -o encryption=on keyformat=passphrase keylocation=file:///var/lib/local/zfs/... <pool>/<dataset>
 ```
 
 ## Clone

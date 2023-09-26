@@ -9,6 +9,8 @@ LONG_OPTS='action:,inventory:,machine:'
 GO="$(getopt --options="$OPTS" --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
+INVENTORY='inventory.json'
+
 while (($#)); do
   case "$1" in
   --)
@@ -52,7 +54,7 @@ RSY=(
 
 conn() {
   # shellcheck disable=SC2016
-  JSON="$("${JQER[@]}" --arg key "$MACHINE" '.[$key] // {}' inventory.json)"
+  JSON="$("${JQER[@]}" --arg key "$MACHINE" '.[$key] // {}' "$INVENTORY")"
   HOST="$("${JQER[@]}" '.host' <<<"$JSON")"
   PORT="$("${JQER[@]}" '.port // 22' <<<"$JSON")"
   USER="$("${JQER[@]}" '.user // "root"' <<<"$JSON")"
