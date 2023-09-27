@@ -1,0 +1,7 @@
+[Unit]
+Description = Firefox -- %I
+CollectMode = inactive-or-failed
+
+[Service]
+Type        = oneshot
+ExecStart   = firefox -- %I
