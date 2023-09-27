@@ -1,5 +1,7 @@
 [Unit]
 Description    = Airplay server daemon
+Requires       = gnome-session-initialized.target
+After          = gnome-session-initialized.target
 
 [Service]
 Restart        = on-failure
