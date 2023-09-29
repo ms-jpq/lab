@@ -1,1 +1,0 @@
-ACTION=="add|change", ENV{DEVTYPE}=="disk", SUBSYSTEM=="block", ENV{SCSI_IDENT_TARGET_NAME}=="iqn.*", ATTR{queue/scheduler}="kyber"

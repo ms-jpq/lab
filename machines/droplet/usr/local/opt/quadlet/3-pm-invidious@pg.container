@@ -8,11 +8,11 @@ ContainerName    = %J-%I
 AutoUpdate       = registry
 RunInit          = yes
 
-HealthCmd        = pg_isready --dbname pdb
+HealthCmd        = pg_isready --username kemal --dbname postgres
 
 Environment      = POSTGRES_USER=kemal
 Environment      = POSTGRES_PASSWORD=kemal
-Environment      = POSTGRES_DB=pdb
+Environment      = POSTGRES_DB=postgres
 
 Network          = 3-pm-traefik.network
 

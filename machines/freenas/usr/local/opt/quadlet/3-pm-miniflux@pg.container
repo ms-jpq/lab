@@ -7,7 +7,7 @@ Image            = docker.io/library/postgres:13
 ContainerName    = %J-%I
 AutoUpdate       = registry
 
-HealthCmd        = pg_isready --dbname pdb
+HealthCmd        = pg_isready --username username --dbname pdb
 
 Environment      = POSTGRES_DB=pdb
 Environment      = POSTGRES_USER=username
