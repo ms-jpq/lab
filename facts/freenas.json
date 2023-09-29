@@ -34,7 +34,8 @@
     "hao",
     "media",
     "misc",
-    "time-machine",
+    "time-machine-gray",
+    "time-machine-hao",
     "wallpapers"
   ],
   "ENV_ZFS_MEM": 70
