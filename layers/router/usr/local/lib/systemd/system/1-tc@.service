@@ -16,6 +16,7 @@ Environment     = WAN_IF=
 Environment     = IFB=%I-rx
 Environment     = QDISC=ffff:
 
+ExecStartPre    = /usr/lib/systemd/systemd-networkd-wait-online --interface ${IFB}
 # TX
 ExecStart       = tc qdisc  replace dev ${WAN_IF} root cake ingress nat dual-dsthost $TC_TX
 # RX
