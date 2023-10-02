@@ -27,6 +27,7 @@ IPv6SendRA              = ${NETWORKD_DHCP}
 DefaultLeaseTimeSec     = 90s
 MaxLeaseTimeSec         = 120s
 SendOption              = 15:string:${DOMAIN}
+SendOption              = 119:string:${DOMAIN}
 
 [IPv6SendRA]
 Managed                 = yes
