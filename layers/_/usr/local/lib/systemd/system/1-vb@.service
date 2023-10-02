@@ -35,6 +35,7 @@ Environment          = NETWORK=%t/systemd/network/0-%I.network
 
 ExecStartPre         = /usr/local/libexec/envsubst2.sh /usr/local/opt/network/@.netdev ${NETDEV}
 ExecStartPre         = /usr/local/libexec/envsubst2.sh /usr/local/opt/network/@.network ${NETWORK}
+ExecStartPre         = chown -- systemd-network:systemd-network ${NETDEV} ${NETWORK}
 
 ExecStart            = networkctl reload
 ExecReload           = networkctl reconfigure -- ${IFACE}

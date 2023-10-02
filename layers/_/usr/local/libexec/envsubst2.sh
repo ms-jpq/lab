@@ -6,7 +6,4 @@ SRC="$1"
 DST="$2"
 shift -- 2
 
-TMP="$(mktemp)"
-envsubst "$@" <"$SRC" >"$TMP"
-chmod -v -- g+r,o+r "$TMP"
-mv -v --force -- "$TMP" "$DST"
+envsubst "$@" <"$SRC" | sponge -- "$DST"

@@ -38,7 +38,7 @@ DHCPv6Client                       = always
 # Token                              = static:::69:420:420:69
 # UplinkInterface                    = :self
 
-# [CAKE]
+# [[CAKE]]
 # TODO: re-enable on newer systemd
 # NAT                                = yes
 # FlowIsolationMode                  = dual-src-host

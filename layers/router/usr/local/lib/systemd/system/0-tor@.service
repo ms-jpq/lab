@@ -14,11 +14,13 @@ RuntimeDirectory = local/tor/%I
 ReadWritePaths   = %t/local/tor/%I %t/systemd/network %T
 
 Environment      = IFACE=vtor
-
+Environment      = NETWORK=%t/systemd/network/70-vtor.network
 EnvironmentFile  = %t/local/ip/%J.env
+
 ExecStartPre     = /usr/local/libexec/envsubst2.sh /usr/local/opt/tor/torrc %t/local/tor/%I/torrc
-ExecStartPre     = /usr/local/libexec/envsubst2.sh /usr/local/opt/tor/70-vtor.network %t/systemd/network/70-${IFACE}.network
+ExecStartPre     = /usr/local/libexec/envsubst2.sh /usr/local/opt/tor/70-vtor.network ${NETWORK}
+ExecStartPre     = chown -- systemd-network:systemd-network ${NETWORK}
 ExecStart        = networkctl reload
 ExecReload       = networkctl reconfigure -- ${IFACE}
 ExecStop         = -networkctl delete -- ${IFACE}
-ExecStopPost     = rm -v -fr -- %t/systemd/network/70-${IFACE}.network
+ExecStopPost     = rm -v -fr -- ${NETWORK}
