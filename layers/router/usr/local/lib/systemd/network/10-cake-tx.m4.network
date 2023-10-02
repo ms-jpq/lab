@@ -26,7 +26,7 @@ UseSIP                             = no
 WithoutRA                          = solicit
 # TODO: this is deprecated in systemd 250 -> UseDelegatedPrefix is replacement
 ForceDHCPv6PDOtherInformation      = yes
-UseDelegatedPrefix                 = yes
+# UseDelegatedPrefix                 = yes
 # TODO: maybe only for rogers?
 PrefixDelegationHint               = ::/56
 
