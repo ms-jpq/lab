@@ -59,7 +59,7 @@ m4_pushdef([ARGV], [m4_translit(SHARE, [:], [,])])
 # [SHARE]=SHARE
 # [ARGV]=ARGV
 SHARING(ARGV)
-], m5_assert([ENV_BLK_EXPORTS]))
+], m5_or([ENV_BLK_EXPORTS], []))
 
 cd /
 saveconfig
