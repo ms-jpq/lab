@@ -1,6 +1,6 @@
 {
   "ENV_MACVLAN_IFS": "enp7s0",
-  "ENV_VFIO_PCI_DEVICE_IDS": ["01:00.0"],
+  "ENV_VFIO_PCI_DEVICE_IDS": ["01:00.0|multifunction=on", "01:00.1"],
   "ENV_VFIO_PCI_IDS": ["10de:2504", "10de:228e"],
   "ENV_ZFS_MEM": 30
 }
