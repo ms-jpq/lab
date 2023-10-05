@@ -16,7 +16,6 @@
     "freenas/zfs.sh",
     "metube",
     "miniflux",
-    "scrutiny",
     "speedtest",
     "traefik/dashboard"
   ],

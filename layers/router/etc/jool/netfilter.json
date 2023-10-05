@@ -1,0 +1,7 @@
+{
+  "framework": "netfilter",
+  "global": {
+    "pool6": "64:ff9b::/96"
+  },
+  "instance": "default"
+}
