@@ -64,3 +64,6 @@ ExecStart         = /usr/local/opt/qemu/bin/%J.sh m4_ifelse(m5_assert([ENV_MACVL
                       --root ${DEV_HDA} \
                       --drive ${CLOUD_INIT} \
                       $ARGV
+
+ExecReload        = /usr/local/bin/vmctl.sh monitor %I system_reset
+ExecStop          = /usr/local/bin/vmctl.sh monitor %I system_powerdown

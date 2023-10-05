@@ -25,4 +25,8 @@ q | qmp)
 esac
 
 SOCKET="$RUN/$MACHINE/$SOCK.sock"
-exec -- rlwrap -- nc -U -- "$SOCKET"
+if (($#)); then
+  exec -- nc -U -- "$SOCKET" <<<"$*"
+else
+  exec -- rlwrap -- nc -U -- "$SOCKET"
+fi
