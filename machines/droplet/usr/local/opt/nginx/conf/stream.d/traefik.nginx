@@ -1,0 +1,9 @@
+server {
+  listen     [::]:80 ipv6only=off;
+  proxy_pass 127.0.0.53:10080;
+}
+
+server {
+  listen     [::]:443 ipv6only=off;
+  proxy_pass 127.0.0.53:10443;
+}

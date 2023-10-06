@@ -8,7 +8,6 @@ After         = %p@pg.service
 Image         = quay.io/invidious/invidious:latest
 ContainerName = %J-%I
 AutoUpdate    = registry
-RunInit       = yes
 
 Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=3000

@@ -17,8 +17,8 @@ Label         = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+}.{.+$$}`)"
 Network       = %p.network
 
 # TODO: ipv6 https://github.com/containers/podman/issues/14491
-PublishPort   = 80:80
-PublishPort   = 443:443
+PublishPort   = 127.0.0.53:10080:80
+PublishPort   = 127.0.0.53:10443:443
 PublishPort   = 8181:8080
 
 Volume        = %t/podman/podman.sock:/var/run/docker.sock:ro

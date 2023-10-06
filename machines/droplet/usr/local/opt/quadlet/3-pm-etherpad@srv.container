@@ -15,7 +15,7 @@ Label         = traefik.http.services.%J.loadbalancer.server.port=9001
 Label         = "traefik.http.routers.%J.rule=HostRegexp(`docs.{.+}.{.+$$}`)"
 
 Environment   = DB_HOST=%J-pg
-Environment   = DB_NAME=pdb
+Environment   = DB_NAME=postgres
 Environment   = DB_PASS=postgres
 Environment   = DB_TYPE=postgres
 Environment   = DB_USER=postgres

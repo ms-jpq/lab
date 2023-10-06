@@ -2,7 +2,7 @@
 db:
   host: invidious-pg
   port: 5432
-  dbname: pdb
+  dbname: postgres
   user: kemal
   password: kemal
 
