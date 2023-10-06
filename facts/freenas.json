@@ -21,7 +21,7 @@
   ],
   "ENV_LOCAL_DOMAIN": "enp2s0",
   "ENV_MACHINES": ["_gateway", "freenas", "esxi", "roku"],
-  "ENV_MACVLAN_IFS": "enp109s0",
+  "ENV_MACVLAN_IFS": "eno1",
   "ENV_NFS_EXPORTS": ["downloads", "media", "wallpapers"],
   "ENV_RCLONE_LOCAL": ["gray", "hao", "media", "misc", "wallpapers"],
   "ENV_RCLONE_REMOTE": "jotta-archive:/",
