@@ -169,7 +169,7 @@ for VF in "${VFIO[@]}"; do
   ARGV+=(-device "vfio-pci-nohotplug,host=$VF")
 done
 
--device 'intel-iommu,caching-mode=on'
+ARGV+=(-device 'intel-iommu,caching-mode=on')
 
 for MDEV in "${MDEVS[@]}"; do
   # display=on,ramfb=on,x-igd-opregion=on
