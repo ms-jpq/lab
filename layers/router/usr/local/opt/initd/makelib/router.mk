@@ -1,0 +1,1 @@
+CLOBBER.FS += /etc/jool/*
