@@ -1,0 +1,55 @@
+# yaml-language-server: schema=https://raw.githubusercontent.com/EHfive/v2ray-jsonschema/main/v4-config.schema.json
+---
+log:
+  loglevel: warning
+
+service:
+  stats: {}
+  policy:
+    system:
+      stats:
+        inboundDownlink: true
+        inboundUplink: true
+        outboundDownlink: true
+        outboundUplink: true
+
+outbounds:
+  - protocol: freedom
+    settings:
+      domainStrategy: UseIP
+
+_:
+  _: &x-PROTOCOL
+
+  shadowsocks: &x-shadowsocks
+    protocol: shadowsocks
+    settings:
+      networks: tcp,udp
+      method: AES_256_GCM
+      password: UUID
+
+  trojan: &x-trojan
+    protocol: trojan
+    settings:
+      users:
+        - UUID
+
+  vmess: &x-vmess
+    protocol: vmess
+    settings:
+      users:
+        - UUID
+
+inbounds:
+  # m4_define([BASE_PORT], [6900])
+  # m4_define([UUID], m4_esyscmd(./libexec/uuidgen.py m5_assert([ENV_V2R_SEED])))
+
+  # m5_for([PROTOCOL], [
+  # m5_for([TRANSPORT], [
+  - port: BASE_PORT
+    streamSettings:
+      transport: TRANSPORT
+      <<: *x-PROTOCOL
+  # m4_pushdef([BASE_PORT], m4_eval(BASE_PORT + 1))
+  # ], quic, tcp, ws)
+  # ], shadowsocks, trojan, vmess)
