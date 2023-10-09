@@ -12,6 +12,6 @@ $(TMP)/rclone.zip: | /usr/bin/curl /usr/bin/jq
 	sudo -- mv -v -f -- '$@.tmp' '$@'
 
 all: /usr/local/libexec/rclone
-/usr/local/libexec/rclone: $(TMP)/rclone.zip | /usr/bin/curl /usr/bin/jq
+/usr/local/libexec/rclone: $(TMP)/rclone.zip
 	sudo -- unzip -o -d '$(TMP)' -- '$<'
 	sudo -- install -b -- '$(TMP)/$(N_RCLONE)/rclone' '$@'

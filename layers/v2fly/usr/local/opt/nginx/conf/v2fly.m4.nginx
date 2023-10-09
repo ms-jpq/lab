@@ -1,0 +1,13 @@
+# m4_define([PROTOCOLS], [shadowsocks, trojan, vmess])
+# m4_define([TCP_TRANSPORTS], [tcp, ws])
+# m4_define([PORT], [2000])
+map $ssl_preread_server_name $tcp_upstream {
+  hostnames            ;
+  # m5_for([PROTOCOL], [
+  # m5_for([TRANSPORT], [
+  PROTOCOL-TRANSPORT.* 127.0.0.53:PORT;
+  # m4_pushdef([PORT], m4_eval(PORT + 1))
+  # ], TCP_TRANSPORTS)
+  # ], PROTOCOLS)
+  default              tcp_upstream_fallback;
+}

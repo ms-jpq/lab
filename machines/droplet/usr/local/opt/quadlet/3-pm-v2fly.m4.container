@@ -7,22 +7,9 @@ ContainerName = %J
 AutoUpdate    = registry
 RunInit       = yes
 
-Label         = traefik.enable=true
-
-# m4_define([PORT], [2000])
-# m5_for([PROTOCOL], [
-# m5_for([XS], [
-Label         = "traefik.XS.services.PROTOCOL.loadbalancer.server.port=PORT"
-Label         = "traefik.XS.routers.PROTOCOL.service=PROTOCOL"
-# m4_pushdef([PORT], m4_eval(PORT + 1))
-# ], tcp, http)
-Label         = "traefik.tcp.routers.PROTOCOL.rule=HostSNIRegexp(`PROTOCOL-tcp.{.+}.{.+$$}`)"
-Label         = "traefik.http.routers.PROTOCOL.rule=HostRegexp(`PROTOCOL-ws.{.+}.{.+$$}`)"
-# ], shadowsocks, trojan, vmess)
-
 Exec          = run -format jsonv5 -config %E/v2ray/server.json
 
-Network       = 3-pm-traefik.network
+Network       = host
 
 Volume        = /usr/local/opt/%J:%E/v2ray:ro
 

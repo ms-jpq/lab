@@ -1,8 +1,8 @@
 ---
 # m4_define([PORT_BEGIN], [2000])
 # m4_define([PROTOCOLS], [shadowsocks, trojan, vmess])
-# m4_define([TRANSPORTS], [tcp, ws])
-#
+# m4_define([TCP_TRANSPORTS], [tcp, ws])
+# m4_define([UDP_TRANSPORTS], [quic])
 # m4_define([PORT], PORT_BEGIN)
 
 _:
@@ -32,12 +32,16 @@ _:
   c-vmess: &c-vmess
     uuid: *password
 
+  x-stream: &x-stream
+    socketSettings:
+      tcpFastOpen: true
+
 server:
-  log: &log
-    access:
+  log:
+    access: &stdout
       type: Console
     error:
-      type: Console
+      <<: *stdout
 
   service: &service
     stats: {}
@@ -62,32 +66,41 @@ server:
     - protocol: blackhole
       tag: *die
 
-  # TODO: TRANSPORT->quic
   inbounds:
     # m5_for([PROTOCOL], [
     # m5_for([TRANSPORT], [
-    - port: "PORT"
+    - listen: 127.0.0.53
+      port: "PORT"
       streamSettings:
+        <<: *x-stream
         transport: TRANSPORT
       protocol: PROTOCOL
       settings:
         <<: *s-PROTOCOL
     # m4_pushdef([PORT], m4_eval(PORT + 1))
-    # ], TRANSPORTS)
+    # ], TCP_TRANSPORTS)
     # ], PROTOCOLS)
 
 client:
   log:
-    <<: *log
+    access:
+      <<: *stdout
+    error:
+      <<: *stdout
 
   service:
     <<: *service
+    backgroundObservatory:
+      subjectSelector: &ldrs
+        - &ldr ldr-
+      probeInterval: 1h
+    burstObservatory:
+      subjectSelector: *ldrs
 
   routing:
     balancingRule:
-      - tag: &lb ldr-
-        outboundSelector:
-          - *lb
+      - tag: *ldr
+        outboundSelector: *ldrs
         strategy:
           type: random
 
@@ -105,11 +118,11 @@ client:
           - filePath: /usr/local/share/v2ray/geosite.dat
             code: cn
 
-      - balancerTag: *lb
+      - balancerTag: *ldr
         portList: 1-65535
 
   inbounds:
-    - protocol: dokodemo
+    - protocol: dokodemo-door
       port: 20001
       settings:
         networks: tcp,udp
@@ -131,8 +144,12 @@ client:
     # m5_for([PROTOCOL], [
     # m5_for([TRANSPORT], [
     - tag: ldr-PROTOCOL-TRANSPORT
-      port: "PORT"
+      protocol: PROTOCOL
       streamSettings:
+        <<: *x-stream
+        security: utls
+        securitySettings:
+          imitate: randomized
         transport: TRANSPORT
       mux:
         enabled: true
@@ -141,5 +158,5 @@ client:
         port: 443
         <<: *c-PROTOCOL
     # m4_pushdef([PORT], m4_eval(PORT + 1))
-    # ], TRANSPORTS)
+    # ], TCP_TRANSPORTS)
     # ], PROTOCOLS)
