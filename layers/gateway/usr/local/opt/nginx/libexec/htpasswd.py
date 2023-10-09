@@ -77,6 +77,13 @@ async def _parse(reader: StreamReader) -> _Req:
     return _Method(method.upper()), ps, parsed, _Query(query), _Headers(headers)
 
 
+def _ip(headers: _Headers) -> bytes:
+    for ip in headers.get(b"x-real-ip", []):
+        return ip
+    else:
+        assert False
+
+
 def _auth_headers(headers: _Headers) -> Iterator[tuple[bytes, bytes]]:
     for auth in headers.get(b"authorization", []):
         lhs, sep, rhs = auth.partition(b" ")
@@ -156,11 +163,14 @@ async def finalize(writer: StreamWriter) -> AsyncIterator[None]:
         await writer.wait_closed()
 
 
-async def _subrequest(sock: Path, credentials: bytes) -> bool:
+async def _subrequest(sock: Path, credentials: bytes, ip: bytes) -> bool:
     reader, writer = await open_unix_connection(sock)
     async with finalize(writer):
         writer.write(b"GET / HTTP/1.0\r\nAuthorization: Basic ")
         writer.write(credentials)
+        writer.write(b"\r\n")
+        writer.write(b"X-Real-IP: ")
+        writer.write(ip)
         writer.write(b"\r\n\r\n")
         _, line = await gather(writer.drain(), anext(reader))
         _, status, *_ = line.strip().split()
@@ -191,7 +201,8 @@ def _handler(
                 user = b"".join(query.get(b"username", ()))
                 passwd = b"".join(query.get(b"password", ()))
                 auth = urlsafe_b64encode(user + b":" + passwd)
-                authorized = await _subrequest(sock=sock, credentials=auth)
+                ip = _ip(headers)
+                authorized = await _subrequest(sock=sock, credentials=auth, ip=ip)
             else:
                 redirect = None
                 authorized = match(host)
@@ -200,8 +211,11 @@ def _handler(
                         headers, name=cookie_name, secret=hmac_secret
                     )
                 if not authorized:
+                    ip = _ip(headers)
                     for user, auth in _auth_headers(headers):
-                        authorized = await _subrequest(sock=sock, credentials=auth)
+                        authorized = await _subrequest(
+                            sock=sock, credentials=auth, ip=ip
+                        )
                         if authorized:
                             break
 
