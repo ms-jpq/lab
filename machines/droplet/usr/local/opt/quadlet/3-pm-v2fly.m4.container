@@ -9,7 +9,7 @@ RunInit       = yes
 
 Label         = traefik.enable=true
 
-# m4_define([PORT], [6900])
+# m4_define([PORT], [2000])
 # m5_for([PROTOCOL], [
 # m5_for([XS], [
 # m4_pushdef([ROUTE], %J-PROTOCOL)

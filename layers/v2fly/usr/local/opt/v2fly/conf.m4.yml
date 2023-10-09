@@ -1,0 +1,92 @@
+---
+# m4_define([PORT], [2000])
+# m4_define([UUID], m4_esyscmd(./libexec/uuidgen.py m5_assert([ENV_V2R_SEED])))
+
+_:
+  _: &x-PROTOCOL
+
+  shadowsocks: &x-shadowsocks
+    protocol: shadowsocks
+    settings:
+      networks: tcp,udp
+      method: AES_256_GCM
+      password: UUID
+
+  trojan: &x-trojan
+    protocol: trojan
+    settings:
+      users:
+        - UUID
+
+  vmess: &x-vmess
+    protocol: vmess
+    settings:
+      users:
+        - UUID
+
+server:
+  log: &log
+    access:
+      type: Console
+    error:
+      type: Console
+
+  service: &service
+    stats: {}
+    policy:
+      system:
+        stats:
+          inboundDownlink: true
+          inboundUplink: true
+          outboundDownlink: true
+          outboundUplink: true
+
+  routing:
+    domainStrategy: IpIfNonMatch
+    rule:
+      - tag: &die blocked
+        geoip:
+          - filePath: /usr/local/share/v2ray/geoip.dat
+            code: private
+
+  outbounds:
+    - protocol: freedom
+    - protocol: blackhole
+      tag: *die
+
+  # TODO: TRANSPORT->quic
+  inbounds:
+    # m5_for([PROTOCOL], [
+    # m5_for([TRANSPORT], [
+    - port: "PORT"
+      <<: *x-PROTOCOL
+      streamSettings:
+        transport: TRANSPORT
+    # m4_pushdef([PORT], m4_eval(PORT + 1))
+    # ], tcp, ws)
+    # ], shadowsocks, trojan, vmess)
+
+client:
+  log:
+    <<: *log
+
+  service:
+    <<: *service
+
+  routing:
+    rule:
+      - tag: &local passthrough
+        geoip:
+          - filePath: /usr/local/share/v2ray/geoip.dat
+            code: private
+      - tag: *local
+        geoip:
+          - filePath: /usr/local/share/v2ray/geoip.dat
+            code: cn
+
+  inbounds:
+    - protocol: dokodemo
+
+  outbounds:
+    - protocol: freedom
+      tag: *local
