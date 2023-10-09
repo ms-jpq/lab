@@ -1,0 +1,34 @@
+[[Unit]]
+Description   = Podman -- %J
+
+[[Container]]
+Image         = docker.io/v2fly/v2fly-core:latest
+ContainerName = %J
+AutoUpdate    = registry
+RunInit       = yes
+
+Label         = traefik.enable=true
+
+# m4_define([PORT], [6900])
+# m5_for([PROTOCOL], [
+# m5_for([XS], [
+# m4_pushdef([ROUTE], %J-PROTOCOL)
+Label         = "traefik.XS.services.ROUTE.loadbalancer.server.port=PORT"
+Label         = "traefik.XS.routers.ROUTE.service=ROUTE"
+# m4_pushdef([PORT], m4_eval(PORT + 1))
+# ], tcp, http)
+Label         = "traefik.http.routers.ROUTE.rule=HostRegexp(`ROUTE.{.+}.{.+$$}`)"
+Label         = "traefik.tcp.routers.ROUTE.rule=HostSNIRegexp(`ROUTE.{.+}.{.+$$}`)"
+# ], shadowsocks, trojan, vmess)
+
+Exec          = run -format jsonv5 -config %E/v2ray/server.json
+
+Network       = 3-pm-traefik.network
+
+Volume        = /usr/local/opt/%J:%E/v2ray:ro
+
+[[Service]]
+Restart       = on-failure
+
+[[Install]]
+WantedBy      = 0-podman.target

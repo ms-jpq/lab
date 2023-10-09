@@ -26,7 +26,7 @@ outbounds:
   - protocol: blackhole
     tag: blocked
 
-# m4_define([BASE_PORT], [6900])
+# m4_define([PORT], [6900])
 # m4_define([UUID], m4_esyscmd(./libexec/uuidgen.py m5_assert([ENV_V2R_SEED])))
 
 _:
@@ -55,10 +55,10 @@ _:
 inbounds:
   # m5_for([PROTOCOL], [
   # m5_for([TRANSPORT], [
-  - port: "BASE_PORT"
+  - port: "PORT"
     <<: *x-PROTOCOL
     streamSettings:
       transport: TRANSPORT
-  # m4_pushdef([BASE_PORT], m4_eval(BASE_PORT + 1))
+  # m4_pushdef([PORT], m4_eval(PORT + 1))
   # ], tcp, ws)
   # ], shadowsocks, trojan, vmess)
