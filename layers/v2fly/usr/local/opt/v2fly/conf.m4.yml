@@ -1,28 +1,36 @@
 ---
-# m4_define([PORT], [2000])
-# m4_define([UUID], m4_esyscmd(./libexec/uuidgen.py m5_assert([ENV_V2R_SEED])))
+# m4_define([PORT_BEGIN], [2000])
+# m4_define([PROTOCOLS], [shadowsocks, trojan, vmess])
+# m4_define([TRANSPORTS], [tcp, ws])
+#
+# m4_define([PORT], PORT_BEGIN)
 
 _:
-  _: &x-PROTOCOL
+  s: &s-PROTOCOL
+  c: &c-PROTOCOL
 
-  shadowsocks: &x-shadowsocks
-    protocol: shadowsocks
-    settings:
-      networks: tcp,udp
-      method: AES_256_GCM
-      password: UUID
+  s-shadowsocks: &s-shadowsocks
+    networks: tcp,udp
+    method: &ss-method AES_256_GCM
+    password: &password m4_esyscmd(./libexec/uuidgen.py m5_assert([ENV_V2R_SEED]))
 
-  trojan: &x-trojan
-    protocol: trojan
-    settings:
-      users:
-        - UUID
+  s-trojan: &s-trojan
+    users:
+      - *password
 
-  vmess: &x-vmess
-    protocol: vmess
-    settings:
-      users:
-        - UUID
+  s-vmess: &s-vmess
+    users:
+      - *password
+
+  c-shadowsocks: &c-shadowsocks
+    method: *ss-method
+    password: *password
+
+  c-trojan: &c-trojan
+    password: *password
+
+  c-vmess: &c-vmess
+    uuid: *password
 
 server:
   log: &log
@@ -59,12 +67,14 @@ server:
     # m5_for([PROTOCOL], [
     # m5_for([TRANSPORT], [
     - port: "PORT"
-      <<: *x-PROTOCOL
       streamSettings:
         transport: TRANSPORT
+      protocol: PROTOCOL
+      settings:
+        <<: *s-PROTOCOL
     # m4_pushdef([PORT], m4_eval(PORT + 1))
-    # ], tcp, ws)
-    # ], shadowsocks, trojan, vmess)
+    # ], TRANSPORTS)
+    # ], PROTOCOLS)
 
 client:
   log:
@@ -74,6 +84,13 @@ client:
     <<: *service
 
   routing:
+    balancingRule:
+      - tag: &lb ldr-
+        outboundSelector:
+          - *lb
+        strategy:
+          type: random
+
     rule:
       - tag: &local passthrough
         geoip:
@@ -83,10 +100,46 @@ client:
         geoip:
           - filePath: /usr/local/share/v2ray/geoip.dat
             code: cn
+      - tag: *local
+        geoDomain:
+          - filePath: /usr/local/share/v2ray/geosite.dat
+            code: cn
+
+      - balancerTag: *lb
+        portList: 1-65535
 
   inbounds:
     - protocol: dokodemo
+      port: 20001
+      settings:
+        networks: tcp,udp
+        followRedirect: true
+
+    - protocol: socks
+      port: 20002
+      settings:
+        udpEnabled: true
+
+    - protocol: http
+      port: 20003
 
   outbounds:
     - protocol: freedom
       tag: *local
+
+    # m4_define([PORT], PORT_BEGIN)
+    # m5_for([PROTOCOL], [
+    # m5_for([TRANSPORT], [
+    - tag: ldr-PROTOCOL-TRANSPORT
+      port: "PORT"
+      streamSettings:
+        transport: TRANSPORT
+      mux:
+        enabled: true
+      settings:
+        address: PROTOCOL-TRANSPORT.m5_assert([ENV_V2R_DOMAIN])
+        port: 443
+        <<: *c-PROTOCOL
+    # m4_pushdef([PORT], m4_eval(PORT + 1))
+    # ], TRANSPORTS)
+    # ], PROTOCOLS)
