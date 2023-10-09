@@ -1,9 +1,7 @@
 ---
 # m4_define([PORT_BEGIN], [2000])
 # m4_define([PROTOCOLS], [shadowsocks, trojan, vmess])
-# m4_define([TCP_TRANSPORTS], [tcp, ws])
-# m4_define([UDP_TRANSPORTS], [quic])
-# m4_define([PORT], PORT_BEGIN)
+# m4_define([TRANSPORTS], [tcp@tcp, ws@tcp, quic@udp])
 
 _:
   s: &s-PROTOCOL
@@ -31,10 +29,6 @@ _:
 
   c-vmess: &c-vmess
     uuid: *password
-
-  x-stream: &x-stream
-    socketSettings:
-      tcpFastOpen: true
 
 server:
   log:
@@ -67,18 +61,19 @@ server:
       tag: *die
 
   inbounds:
+    # m4_pushdef([PORT], PORT_BEGIN)
     # m5_for([PROTOCOL], [
     # m5_for([TRANSPORT], [
+    # m4_pushdef([TRANS], [m4_regexp(TRANSPORT, [\(^[^@]+\)], [\1])])
     - listen: 127.0.0.53
       port: "PORT"
-      streamSettings:
-        <<: *x-stream
-        transport: TRANSPORT
       protocol: PROTOCOL
+      streamSettings:
+        transport: TRANS
       settings:
         <<: *s-PROTOCOL
-    # m4_pushdef([PORT], m4_eval(PORT + 1))
-    # ], TCP_TRANSPORTS)
+    # m4_pushdef([PORT], m4_incr(PORT))
+    # ], TRANSPORTS)
     # ], PROTOCOLS)
 
 client:
@@ -140,23 +135,26 @@ client:
     - protocol: freedom
       tag: *local
 
-    # m4_define([PORT], PORT_BEGIN)
+    # m4_pushdef([PORT], PORT_BEGIN)
     # m5_for([PROTOCOL], [
     # m5_for([TRANSPORT], [
+    # m4_pushdef([TRANS], [m4_regexp(TRANSPORT, [\(^[^@]+\)], [\1])])
+    # m4_pushdef([XPORT], [m4_regexp(TRANSPORT, [\([^@]+$\)], [\1])])
     - tag: ldr-PROTOCOL-TRANSPORT
       protocol: PROTOCOL
       streamSettings:
-        <<: *x-stream
+        transport: TRANS
+        # m4_ifelse(XPORT, [tcp], [
         security: utls
         securitySettings:
           imitate: randomized
-        transport: TRANSPORT
+        # ])
       mux:
         enabled: true
       settings:
-        address: PROTOCOL-TRANSPORT.m5_assert([ENV_V2R_DOMAIN])
+        address: PROTOCOL-TRANS.m5_assert([ENV_V2R_DOMAIN])
         port: 443
         <<: *c-PROTOCOL
-    # m4_pushdef([PORT], m4_eval(PORT + 1))
-    # ], TCP_TRANSPORTS)
+    # m4_pushdef([PORT], m4_incr(PORT))
+    # ], TRANSPORTS)
     # ], PROTOCOLS)

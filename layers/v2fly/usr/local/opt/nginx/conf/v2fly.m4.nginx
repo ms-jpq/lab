@@ -1,13 +1,35 @@
+# m4_define([PORT_BEGIN], [2000])
 # m4_define([PROTOCOLS], [shadowsocks, trojan, vmess])
-# m4_define([TCP_TRANSPORTS], [tcp, ws])
-# m4_define([PORT], [2000])
+# m4_define([TRANSPORTS], [tcp@tcp, ws@tcp, quic@udp])
 map $ssl_preread_server_name $tcp_upstream {
   hostnames            ;
+  # m4_pushdef([PORT], PORT_BEGIN)
   # m5_for([PROTOCOL], [
   # m5_for([TRANSPORT], [
-  PROTOCOL-TRANSPORT.* 127.0.0.53:PORT;
-  # m4_pushdef([PORT], m4_eval(PORT + 1))
-  # ], TCP_TRANSPORTS)
+  # m4_pushdef([TRANS], [m4_regexp(TRANSPORT, [\(^[^@]+\)], [\1])])
+  # m4_pushdef([XPORT], [m4_regexp(TRANSPORT, [\([^@]+$\)], [\1])])
+  # m4_ifelse(XPORT, [tcp], [
+  PROTOCOL-TRANS.* 127.0.0.53:PORT;
+  # ])
+  # m4_pushdef([PORT], m4_incr(PORT))
+  # ], TRANSPORTS)
   # ], PROTOCOLS)
   default              tcp_upstream_fallback;
+}
+
+map $remote_addr $udp_upstream {
+  # m4_pushdef([PORT], PORT_BEGIN)
+  # m5_for([PROTOCOL], [
+  # m5_for([TRANSPORT], [
+  # m4_pushdef([TRANS], [m4_regexp(TRANSPORT, [\(^[^@]+\)], [\1])])
+  # m4_pushdef([XPORT], [m4_regexp(TRANSPORT, [\([^@]+$\)], [\1])])
+  # m4_ifelse(XPORT, [udp], [
+  # m4_pushdef([B2], m4_esyscmd(b2sum --length 64 <<<'PROTOCOL-TRANS'))
+  # m4_pushdef([SUFFIX], m4_substr(B2, 0, 4):m4_substr(B2, 4, 4):m4_substr(B2, 8, 4):m4_substr(B2, 12, 4))
+  ~SUFFIX$ 127.0.0.53:PORT; # PROTOCOL-TRANS
+  # ])
+  # m4_pushdef([PORT], m4_incr(PORT))
+  # ], TRANSPORTS)
+  # ], PROTOCOLS)
+  default  udp_upstream_fallback;
 }

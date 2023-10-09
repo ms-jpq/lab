@@ -90,7 +90,7 @@ for PEER in "${PEERS[@]}"; do
 done
 
 IFS=$'\n'
-printf -- '%s' "${DNSMAQ_HOSTS[*]}" | sponge -- "$DNSMASQD"
+sponge -- "$DNSMASQD" <<<"${DNSMAQ_HOSTS[*]}"
 IFS=','
 /usr/local/libexec/m4.sh -D"ENV_IFACE=$IFACE" -D"ENV_SERVER_KEY=$SERVER_PRIVATE_KEY" -D"ENV_PEER=${WG_LINES[*]}" "$SELF/@.netdev" | sponge -- "$NETDEV"
 /usr/local/libexec/m4.sh -D"ENV_TITLE=$IFACE" -D"ENV_PEER=${WG_IDS[*]}" "$SELF/index.html" | sponge -- "$CACHE/index.html"
