@@ -1,20 +1,21 @@
 upstream tcp_upstream_fallback {
-  server 127.0.0.53:10443;
+  server 127.0.0.53:10080;
 }
 
 upstream udp_upstream_fallback {
-  server 127.0.0.53:10443;
+  server unix:/dev/null;
 }
 
 include /usr/local/opt/nginx/conf/v2fly.nginx;
 
 server {
   listen     [::]:80 ipv6only=off;
-  proxy_pass 127.0.0.53:10080;
+  proxy_pass unix:/run/local/nginx/80.sock;
 }
 
 server {
-  listen      [::]:443 ipv6only=off;
+  listen      0.0.0.0:443 ssl;
+  listen      [::]:443 ssl;
   ssl_preread on;
   proxy_pass  $tcp_upstream;
 }

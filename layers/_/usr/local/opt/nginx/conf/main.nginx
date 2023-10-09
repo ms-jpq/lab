@@ -24,8 +24,7 @@ http {
   tcp_nopush                on;
   include                   /etc/nginx/mime.types;
   include                   /usr/local/opt/nginx/conf/websocket.nginx;
-  ssl_certificate           /var/cache/local/self-signed/nginx/ssl.crt;
-  ssl_certificate_key       /var/cache/local/self-signed/nginx/ssl.key;
+  include                   /usr/local/opt/nginx/conf/ssl.nginx;
 
   map $http_upgrade $connection_upgrade {
     default upgrade;
@@ -48,6 +47,7 @@ stream {
   resolver               127.0.0.53;
   # proxy_half_close       on;
   proxy_socket_keepalive on;
+  include                /usr/local/opt/nginx/conf/ssl.nginx;
   include                /usr/local/opt/nginx/conf/stream.d/*.nginx;
   include                /run/local/nginx/conf/stream.d/*.nginx;
 }

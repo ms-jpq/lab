@@ -27,14 +27,21 @@ _:
   c-vmess: &c-vmess
     uuid: *password
 
+  # TODO: API
+  api:
+    tag: &api api
+    services:
+      - StatsService
+
 server:
   log:
     access: &stdout
       type: Console
+      level: Debug
     error:
       <<: *stdout
 
-  service: &service
+  services: &services
     stats: {}
     policy:
       system:
@@ -44,13 +51,15 @@ server:
           outboundDownlink: true
           outboundUplink: true
 
-  routing:
+  router:
     domainStrategy: IpIfNonMatch
     rule:
+      - tag: *api
+        inboundTag:
+          - *api
       - tag: &die blocked
         geoip:
-          - filePath: /usr/local/share/v2ray/geoip.dat
-            code: private
+          - code: private
 
   outbounds:
     - protocol: freedom
@@ -58,6 +67,12 @@ server:
       tag: *die
 
   inbounds:
+    # - tag: *api
+    #   protocol: dokodemo-door
+    #   port: 2020
+    #   settings:
+    #     networks: tcp,udp
+
     # m4_pushdef([PORT], PORT_BEGIN)
     # m5_for([PROTOCOL], [
     # m5_for([TRANSPORT], [
@@ -80,53 +95,61 @@ client:
     error:
       <<: *stdout
 
-  service:
-    <<: *service
+  services:
+    <<: *services
     backgroundObservatory:
       subjectSelector: &ldrs
         - &ldr ldr-
-      probeInterval: 1h
+      probeInterval: 100
     burstObservatory:
       subjectSelector: *ldrs
 
-  routing:
+  router:
     balancingRule:
       - tag: *ldr
         outboundSelector: *ldrs
-        strategy:
-          type: random
+        strategy: random
 
     rule:
+      - tag: *api
+        inboundTag:
+          - *api
       - tag: &local passthrough
         geoip:
-          - filePath: /usr/local/share/v2ray/geoip.dat
+          - filePath: geoip.dat
             code: private
       - tag: *local
         geoip:
-          - filePath: /usr/local/share/v2ray/geoip.dat
+          - filePath: geoip.dat
             code: cn
       - tag: *local
         geoDomain:
-          - filePath: /usr/local/share/v2ray/geosite.dat
+          - filePath: geosite.dat
             code: cn
 
-      - balancerTag: *ldr
+      - balancingTag: *ldr
         portList: 1-65535
 
   inbounds:
+    # - tag: *api
+    #   protocol: dokodemo-door
+    #   port: 2021
+    #   settings:
+    #     networks: tcp,udp
+
     - protocol: dokodemo-door
-      port: 20001
+      port: 30001
       settings:
         networks: tcp,udp
         followRedirect: true
 
     - protocol: socks
-      port: 20002
+      port: 30002
       settings:
         udpEnabled: true
 
     - protocol: http
-      port: 20003
+      port: 30003
 
   outbounds:
     - protocol: freedom
@@ -137,7 +160,7 @@ client:
     # m5_for([TRANSPORT], [
     # m4_pushdef([TRANS], [m4_regexp(TRANSPORT, [\(^[^@]+\)], [\1])])
     # m4_pushdef([XPORT], [m4_regexp(TRANSPORT, [\([^@]+$\)], [\1])])
-    - tag: ldr-PROTOCOL-TRANSPORT
+    - tag: ldr-PROTOCOL-TRANS
       protocol: PROTOCOL
       streamSettings:
         transport: TRANS

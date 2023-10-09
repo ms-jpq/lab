@@ -1,0 +1,7 @@
+server {
+  listen unix:/run/local/nginx/80.sock;
+
+  location / {
+    return 307 https://$host$request_uri;
+  }
+}

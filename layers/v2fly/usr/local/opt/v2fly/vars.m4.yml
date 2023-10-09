@@ -1,3 +1,4 @@
 # m4_define([PORT_BEGIN], [2000])
 # m4_define([PROTOCOLS], [shadowsocks, trojan, vmess])
-# m4_define([TRANSPORTS], [tcp@tcp, ws@tcp, quic@udp])
+# m4_define([TRANSPORTS], [tcp@tcp, ws@tcp])
+# TODO: quic@udp
