@@ -1,8 +1,5 @@
 ---
-# m4_define([PORT_BEGIN], [2000])
-# m4_define([PROTOCOLS], [shadowsocks, trojan, vmess])
-# m4_define([TRANSPORTS], [tcp@tcp, ws@tcp, quic@udp])
-
+# m4_include([layers/v2fly/usr/local/opt/v2fly/vars.m4.yml])
 _:
   s: &s-PROTOCOL
   c: &c-PROTOCOL

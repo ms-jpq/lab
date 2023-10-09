@@ -45,6 +45,7 @@ http {
 }
 
 stream {
+  resolver               127.0.0.53;
   # proxy_half_close       on;
   proxy_socket_keepalive on;
   include                /usr/local/opt/nginx/conf/stream.d/*.nginx;
