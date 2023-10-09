@@ -11,11 +11,11 @@ Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=8080
 Label         = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+}.{.+$$}`)"
 
-Exec          = run -c %E/v2ray/config.yml
+Exec          = run -format jsonv5 -config %E/v2ray/server.json
 
 Network       = 3-pm-traefik.network
 
-Volume        = /usr/local/opt/%J/config.yml:%E/v2ray/config.yml:ro
+Volume        = /usr/local/opt/%J:%E/v2ray:ro
 
 [Service]
 Restart       = on-failure
