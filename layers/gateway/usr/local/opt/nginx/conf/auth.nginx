@@ -1,4 +1,4 @@
-error_page       401 = @signin;
+error_page       401 = @e401;
 auth_request     /-_-auth-_-;
 auth_request_set $auth_cookie $upstream_http_set_cookie;
 add_header       Set-Cookie $auth_cookie;
@@ -8,15 +8,19 @@ location /-_-auth-_- {
   include                 /etc/nginx/proxy_params;
   proxy_set_header        Content-Length "";
   proxy_pass_request_body off;
-  proxy_intercept_errors  on;
   proxy_pass              http://unix:/run/local/nginx/auth-proxy.sock:/;
+
+  location /-_-auth-_-/-_- {
+    proxy_intercept_errors on;
+    proxy_pass             http://unix:/run/local/nginx/auth-proxy.sock:/-_-;
+  }
 }
 
-location @signin {
+location @e401 {
   internal     ;
   auth_request off;
   sub_filter   "@METHOD" $request_method;
-  sub_filter   "@REDIRECT" $scheme://$http_host$request_uri;
+  sub_filter   "@REDIRECT" $x_request_uri;
   root         /usr/local/opt/nginx/auth/;
   try_files    /index.html =404;
 }

@@ -197,14 +197,14 @@ def _handler(
 
             user = None
             if commonpath((authn_path, path)) == authn_path:
-                redirect = b"".join(query.get(b"redirect", ()))
+                location = b"".join(query.get(b"redirect", ()))
                 user = b"".join(query.get(b"username", ()))
                 passwd = b"".join(query.get(b"password", ()))
                 auth = urlsafe_b64encode(user + b":" + passwd)
                 ip = _ip(headers)
                 authorized = await _subrequest(sock=sock, credentials=auth, ip=ip)
             else:
-                redirect = None
+                location = None
                 authorized = match(host)
                 if not authorized:
                     authorized = _read_auth_cookies(
@@ -224,10 +224,8 @@ def _handler(
             else:
                 proto = b"".join(headers.get(b"x-forwarded-proto", ()))
                 secure = proto != b"http"
-                if redirect:
-                    writer.write(b"HTTP/1.0 307 Temporary Redirect\r\nLocation: ")
-                    writer.write(redirect)
-                    writer.write(b"\r\n")
+                if location:
+                    writer.write(b"HTTP/1.0 307 Temporary Redirect\r\n")
                 else:
                     writer.write(b"HTTP/1.0 204 No Content\r\n")
 
@@ -242,6 +240,12 @@ def _handler(
                         user=user,
                     )
                     writer.write(str(cookie).encode())
+                    writer.write(b"\r\n")
+
+            if location:
+                for header in (b"Location: ", b"X-OG-Location: "):
+                    writer.write(header)
+                    writer.write(location)
                     writer.write(b"\r\n")
 
             writer.write(b"\r\n")
