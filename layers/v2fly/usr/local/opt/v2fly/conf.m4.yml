@@ -67,7 +67,7 @@ server:
   observatory: &obs
     subjectSelector: &ldrs
       - &ldr ldr-
-    probeURL: http://www.gstatic.com/generate_204
+    probeURL: http://m5_assert([ENV_V2R_DOMAIN])/204
 
   routing:
     rules:
