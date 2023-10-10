@@ -1,5 +1,5 @@
 # m4_include([layers/v2fly/usr/local/opt/v2fly/vars.m4.yml])
-map $ssl_preread_server_name $tcp_upstream {
+map $ssl_server_name $tcp_upstream {
   hostnames        ;
   # m4_pushdef([PORT], PORT_BEGIN)
   # m5_for([PROTOCOL], [
