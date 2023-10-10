@@ -128,7 +128,8 @@ client:
             code: cn
 
       - balancingTag: *ldr
-        portList: 1-65535
+        inboundTag:
+          - &stdin stdin
 
   inbounds:
     # - tag: *api
@@ -137,18 +138,21 @@ client:
     #   settings:
     #     networks: tcp,udp
 
-    - protocol: dokodemo-door
+    - tag: *stdin
+      protocol: dokodemo-door
       port: 30001
       settings:
         networks: tcp,udp
         followRedirect: true
 
-    - protocol: socks
+    - tag: *stdin
+      protocol: socks
       port: 30002
       settings:
         udpEnabled: true
 
-    - protocol: http
+    - tag: *stdin
+      protocol: http
       port: 30003
 
   outbounds:
@@ -162,19 +166,21 @@ client:
     # m4_pushdef([XPORT], [m4_regexp(TRANSPORT, [\([^@]+$\)], [\1])])
     - tag: ldr-PROTOCOL-TRANS
       protocol: PROTOCOL
+      settings:
+        address: &os-PROTOCOL-TRANS PROTOCOL-TRANS.m5_assert([ENV_V2R_DOMAIN])
+        port: 443
+        <<: *c-PROTOCOL
       streamSettings:
         transport: TRANS
         # m4_ifelse(XPORT, [tcp], [
         security: utls
         securitySettings:
           imitate: randomized
+          tlsConfig:
+            serverName: *os-PROTOCOL-TRANS
         # ])
       mux:
         enabled: true
-      settings:
-        address: PROTOCOL-TRANS.m5_assert([ENV_V2R_DOMAIN])
-        port: 443
-        <<: *c-PROTOCOL
     # m4_pushdef([PORT], m4_incr(PORT))
     # ], TRANSPORTS)
     # ], PROTOCOLS)
