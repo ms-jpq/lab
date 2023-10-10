@@ -1,65 +1,84 @@
 ---
+# TODO: wait for v5 to be fixed
 # m4_include([layers/v2fly/usr/local/opt/v2fly/vars.m4.yml])
 _:
   s: &s-PROTOCOL
   c: &c-PROTOCOL
 
   s-shadowsocks: &s-shadowsocks
-    networks: tcp,udp
-    method: &ss-method AES_256_GCM
+    network: &tu tcp,udp
+    method: &ss-method aes-256-gcm
     password: &password m4_esyscmd(./libexec/uuidgen.py m5_assert([ENV_V2R_SEED]))
 
   s-trojan: &s-trojan
-    users:
-      - *password
+    clients:
+      - password: *password
 
   s-vmess: &s-vmess
-    users:
-      - *password
+    clients:
+      - id: *password
 
-  c-shadowsocks: &c-shadowsocks
-    method: *ss-method
-    password: *password
+  _:
+    _:
+      c-shadowsocks:
+        # m4_define([c-shadowsocks], [
+        #
+        servers:
+          - method: *ss-method
+            password: *password
+            port: 443
+            address: $1
+        # ])
 
-  c-trojan: &c-trojan
-    password: *password
+      c-trojan:
+        # m4_define([c-trojan], [
+        #
+        servers:
+          - password: *password
+            port: 443
+            address: $1
+        # ])
 
-  c-vmess: &c-vmess
-    uuid: *password
-
-  # TODO: API
-  api:
-    tag: &api api
-    services:
-      - StatsService
+      c-vmess:
+        # m4_define([c-vmess], [
+        #
+        vnext:
+          - users:
+              - id: *password
+            port: 443
+            address: $1
+        # ])
 
 server:
   log:
-    access: &stdout
-      type: Console
-      level: Debug
-    error:
-      <<: *stdout
+    loglevel: info
+  api: &ctl
+    tag: &api api
+    services:
+      - StatsService
+      - ObservatoryService
+  stats: {}
+  policy: &policy
+    system:
+      statsInboundDownlink: false
+      statsInboundUplink: false
+      statsOutboundDownlink: false
+      statsOutboundUplink: false
+  observatory: &obs
+    subjectSelector: &ldrs
+      - &ldr ldr-
+    probeURL: http://www.gstatic.com/generate_204
 
-  services: &services
-    stats: {}
-    policy:
-      system:
-        stats:
-          inboundDownlink: true
-          inboundUplink: true
-          outboundDownlink: true
-          outboundUplink: true
-
-  router:
-    domainStrategy: IpIfNonMatch
-    rule:
-      - tag: *api
+  routing:
+    rules:
+      - type: &tf field
+        outboundTag: *api
         inboundTag:
           - *api
-      - tag: &die blocked
-        geoip:
-          - code: private
+      - type: *tf
+        outboundTag: &die blocked
+        ip:
+          - geoip:private
 
   outbounds:
     - protocol: freedom
@@ -67,11 +86,13 @@ server:
       tag: *die
 
   inbounds:
-    # - tag: *api
-    #   protocol: dokodemo-door
-    #   port: 2020
-    #   settings:
-    #     networks: tcp,udp
+    - tag: *api
+      protocol: dokodemo-door
+      port: 2020
+      settings:
+        network: *tu
+      sniffing: &joe
+        enabled: true
 
     # m4_pushdef([PORT], PORT_BEGIN)
     # m5_for([PROTOCOL], [
@@ -80,80 +101,77 @@ server:
     - listen: 127.0.0.53
       port: "PORT"
       protocol: PROTOCOL
-      streamSettings:
-        transport: TRANS
       settings:
         <<: *s-PROTOCOL
+      sniffing: *joe
+      streamSettings:
+        network: TRANS
     # m4_pushdef([PORT], m4_incr(PORT))
     # ], TRANSPORTS)
     # ], PROTOCOLS)
 
 client:
   log:
-    access:
-      <<: *stdout
-    error:
-      <<: *stdout
+    loglevel: info
+  api: *ctl
+  stats: {}
+  policy: *policy
+  observatory: *obs
 
-  services:
-    <<: *services
-    backgroundObservatory:
-      subjectSelector: &ldrs
-        - &ldr ldr-
-      probeInterval: 100
-    burstObservatory:
-      subjectSelector: *ldrs
-
-  router:
-    balancingRule:
+  routing:
+    balancers:
       - tag: *ldr
-        outboundSelector: *ldrs
-        strategy: random
+        selector: *ldrs
+        strategy:
+          type: random
 
-    rule:
-      - tag: *api
+    rules:
+      - type: *tf
+        outboundTag: *api
         inboundTag:
           - *api
-      - tag: &local passthrough
-        geoip:
-          - filePath: geoip.dat
-            code: private
-      - tag: *local
-        geoip:
-          - filePath: geoip.dat
-            code: cn
-      - tag: *local
-        geoDomain:
-          - filePath: geosite.dat
-            code: cn
-
-      - balancingTag: *ldr
+      - type: *tf
+        outboundTag: &local passthrough
+        ip:
+          - geoip:private
+          - geoip:cn
+      - type: *tf
+        outboundTag: *local
+        domains:
+          - geosite:cn
+      - type: *tf
+        balancerTag: *ldr
         inboundTag:
           - &stdin stdin
 
   inbounds:
-    # - tag: *api
-    #   protocol: dokodemo-door
-    #   port: 2021
-    #   settings:
-    #     networks: tcp,udp
+    - tag: *api
+      protocol: dokodemo-door
+      port: 2021
+      settings:
+        network: *tu
+      sniffing: *joe
 
     - tag: *stdin
       protocol: dokodemo-door
       port: 30001
       settings:
-        networks: tcp,udp
+        network: *tu
         followRedirect: true
+      sniffing: *joe
 
     - tag: *stdin
       protocol: socks
       port: 30002
       settings:
-        udpEnabled: true
+        udp: true
+        auth: noauth
+      sniffing: *joe
 
     - tag: *stdin
       protocol: http
       port: 30003
+      sniffing: *joe
 
   outbounds:
     - protocol: freedom
@@ -164,23 +182,19 @@ client:
     # m5_for([TRANSPORT], [
     # m4_pushdef([TRANS], [m4_regexp(TRANSPORT, [\(^[^@]+\)], [\1])])
     # m4_pushdef([XPORT], [m4_regexp(TRANSPORT, [\([^@]+$\)], [\1])])
+    # m4_pushdef([ADDR], PROTOCOL-TRANS.m5_assert([ENV_V2R_DOMAIN]))
     - tag: ldr-PROTOCOL-TRANS
       protocol: PROTOCOL
       settings:
-        address: &os-PROTOCOL-TRANS PROTOCOL-TRANS.m5_assert([ENV_V2R_DOMAIN])
-        port: 443
-        <<: *c-PROTOCOL
+        # m4_indir(c-PROTOCOL,ADDR)
       streamSettings:
-        transport: TRANS
+        network: TRANS
         # m4_ifelse(XPORT, [tcp], [
-        security: utls
-        securitySettings:
-          imitate: randomized
-          tlsConfig:
-            serverName: *os-PROTOCOL-TRANS
+        security: tls
+        tlsSettings:
+          allowInsecure: true
+          serverName: ADDR
         # ])
-      mux:
-        enabled: true
     # m4_pushdef([PORT], m4_incr(PORT))
     # ], TRANSPORTS)
     # ], PROTOCOLS)

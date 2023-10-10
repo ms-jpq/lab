@@ -7,7 +7,7 @@ ContainerName = %J
 AutoUpdate    = registry
 RunInit       = yes
 
-Exec          = run -format jsonv5 -config %E/v2ray/server.json
+Exec          = run -config %E/v2ray/server.json
 
 Network       = host
 
