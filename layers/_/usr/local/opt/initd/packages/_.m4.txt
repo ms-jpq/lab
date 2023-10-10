@@ -31,3 +31,4 @@
 - rsyslog
 - snapd
 - vim
+- vim-tiny
