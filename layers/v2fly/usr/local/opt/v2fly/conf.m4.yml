@@ -18,6 +18,10 @@ _:
     clients:
       - id: *password
 
+  x-sniff:
+    sniffing: &joe
+      enabled: true
+
   _:
     _:
       c-shadowsocks:
@@ -86,13 +90,18 @@ server:
       tag: *die
 
   inbounds:
-    - tag: *api
-      protocol: dokodemo-door
-      port: 2020
-      settings:
-        network: *tu
-      sniffing: &joe
-        enabled: true
+    # TODO: fix API
+    # - tag: *api
+    #   protocol: dokodemo-door
+    #   port: 2020
+    #   settings:
+    #     network: *tu
+    #     destOverride:
+    #       - http
+    #       - tls
+    #       - quic
+    #       - fakedns
+    #       - fakedns+others
 
     # m4_pushdef([PORT], PORT_BEGIN)
     # m5_for([PROTOCOL], [
@@ -142,17 +151,12 @@ client:
       - type: *tf
         balancerTag: *ldr
         inboundTag:
-          - &stdin stdin
+          - &stdin1 stdin1
+          - &stdin2 stdin2
+          - &stdin3 stdin3
 
   inbounds:
-    - tag: *api
-      protocol: dokodemo-door
-      port: 2021
-      settings:
-        network: *tu
-      sniffing: *joe
-
-    - tag: *stdin
+    - tag: *stdin1
       protocol: dokodemo-door
       port: 30001
       settings:
@@ -160,7 +164,7 @@ client:
         followRedirect: true
       sniffing: *joe
 
-    - tag: *stdin
+    - tag: *stdin2
       protocol: socks
       port: 30002
       settings:
@@ -168,7 +172,7 @@ client:
         auth: noauth
       sniffing: *joe
 
-    - tag: *stdin
+    - tag: *stdin3
       protocol: http
       port: 30003
       sniffing: *joe
