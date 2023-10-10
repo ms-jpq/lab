@@ -182,7 +182,8 @@ client:
     # m5_for([TRANSPORT], [
     # m4_pushdef([TRANS], [m4_regexp(TRANSPORT, [\(^[^@]+\)], [\1])])
     # m4_pushdef([XPORT], [m4_regexp(TRANSPORT, [\([^@]+$\)], [\1])])
-    # m4_pushdef([ADDR], PROTOCOL-TRANS.m5_assert([ENV_V2R_DOMAIN]))
+    # m4_pushdef([SALTED], m4_substr(m4_esyscmd(b2sum --length 64 <<<'PROTOCOL-TRANS-ENV_V2R_SEED'), 0, 16))
+    # m4_pushdef([ADDR], SALTED.m5_assert([ENV_V2R_DOMAIN]))
     - tag: ldr-PROTOCOL-TRANS
       protocol: PROTOCOL
       settings:

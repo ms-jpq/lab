@@ -1,18 +1,19 @@
 # m4_include([layers/v2fly/usr/local/opt/v2fly/vars.m4.yml])
 map $ssl_server_name $tcp_upstream {
-  hostnames        ;
+  hostnames ;
   # m4_pushdef([PORT], PORT_BEGIN)
   # m5_for([PROTOCOL], [
   # m5_for([TRANSPORT], [
   # m4_pushdef([TRANS], [m4_regexp(TRANSPORT, [\(^[^@]+\)], [\1])])
   # m4_pushdef([XPORT], [m4_regexp(TRANSPORT, [\([^@]+$\)], [\1])])
   # m4_ifelse(XPORT, [tcp], [
-  PROTOCOL-TRANS.* 127.0.0.53:PORT;
+  # m4_pushdef([SALTED], m4_substr(m4_esyscmd(b2sum --length 64 <<<'PROTOCOL-TRANS-ENV_V2R_SEED'), 0, 16))
+  SALTED.*  127.0.0.53:PORT; # PROTOCOL-TRANS
   # ])
   # m4_pushdef([PORT], m4_incr(PORT))
   # ], TRANSPORTS)
   # ], PROTOCOLS)
-  default          tcp_upstream_fallback;
+  default   tcp_upstream_fallback;
 }
 
 map $remote_addr $udp_upstream {
