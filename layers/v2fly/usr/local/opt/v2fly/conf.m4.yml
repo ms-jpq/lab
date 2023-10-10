@@ -64,10 +64,10 @@ server:
   stats: {}
   policy: &policy
     system:
-      statsInboundDownlink: false
-      statsInboundUplink: false
-      statsOutboundDownlink: false
-      statsOutboundUplink: false
+      statsInboundDownlink: true
+      statsInboundUplink: true
+      statsOutboundDownlink: true
+      statsOutboundUplink: true
   observatory: &obs
     subjectSelector: &ldrs
       - &ldr ldr-
@@ -90,18 +90,12 @@ server:
       tag: *die
 
   inbounds:
-    # TODO: fix API
-    # - tag: *api
-    #   protocol: dokodemo-door
-    #   port: 2020
-    #   settings:
-    #     network: *tu
-    #     destOverride:
-    #       - http
-    #       - tls
-    #       - quic
-    #       - fakedns
-    #       - fakedns+others
+    - &api-door
+      tag: *api
+      protocol: dokodemo-door
+      port: 30000
+      settings:
+        address: localhost
 
     # m4_pushdef([PORT], PORT_BEGIN)
     # m5_for([PROTOCOL], [
@@ -156,6 +150,8 @@ client:
           - &stdin3 stdin3
 
   inbounds:
+    - *api-door
+
     - tag: *stdin1
       protocol: dokodemo-door
       port: 30001
