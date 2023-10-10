@@ -18,4 +18,5 @@ $(TMP)/v2fly.zip: | /usr/bin/curl
 v2fly: /usr/local/libexec/v2ray
 /usr/local/libexec/v2ray: $(TMP)/v2fly.zip
 	sudo -- unzip -o -d '$(TMP)' -- '$<'
+	sudo -- mv -v -- '$(TMP)'/geo{ip,site}.dat /var/lib/local/v2fly/
 	sudo -- install -b -- '$(TMP)/v2ray' '$@'
