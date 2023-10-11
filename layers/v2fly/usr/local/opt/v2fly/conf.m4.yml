@@ -3,7 +3,6 @@
 # m4_include([layers/v2fly/usr/local/opt/v2fly/vars.m4.yml])
 _:
   s: &s-PROTOCOL
-  c: &c-PROTOCOL
 
   s-shadowsocks: &s-shadowsocks
     network: &tu tcp,udp
@@ -145,14 +144,14 @@ client:
       - type: *tf
         balancerTag: *ldr
         inboundTag:
-          - &stdin1 stdin1
-          - &stdin2 stdin2
-          - &stdin3 stdin3
+          - &stdin-dokodemo-door dokodemo-door
+          - &stdin-socks socks
+          - &stdin-http http
 
   inbounds:
     - *api-door
 
-    - tag: *stdin1
+    - tag: *stdin-dokodemo-door
       protocol: dokodemo-door
       port: 30001
       settings:
@@ -160,7 +159,7 @@ client:
         followRedirect: true
       sniffing: *joe
 
-    - tag: *stdin2
+    - tag: *stdin-socks
       protocol: socks
       port: 30002
       settings:
@@ -168,7 +167,7 @@ client:
         auth: noauth
       sniffing: *joe
 
-    - tag: *stdin3
+    - tag: *stdin-http
       protocol: http
       port: 30003
       sniffing: *joe
