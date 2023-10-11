@@ -156,10 +156,10 @@ client:
           - &stdin-http http
 
   dns:
-    disableFallback: true
     servers:
       - localhost
-      - address: m5_assert([ENV_V2R_DOMAIN])
+      - skipFallback: true
+        address: m5_assert([ENV_V2R_DOMAIN])
         domains:
           - geosite:geolocation-!cn
 
@@ -176,7 +176,7 @@ client:
 
     - tag: *stdin-dokodemo-door
       protocol: dokodemo-door
-      port: 30001
+      port: 8888
       settings:
         network: *tu
         followRedirect: true
@@ -184,7 +184,7 @@ client:
 
     - tag: *stdin-socks
       protocol: socks
-      port: 30002
+      port: 30001
       settings:
         udp: true
         auth: noauth
@@ -192,7 +192,7 @@ client:
 
     - tag: *stdin-http
       protocol: http
-      port: 30003
+      port: 30002
       sniffing: *joe
 
   outbounds:
