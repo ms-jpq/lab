@@ -17,10 +17,6 @@ _:
     clients:
       - id: *password
 
-  x-sniff:
-    sniffing: &joe
-      enabled: true
-
   _:
     _:
       c-shadowsocks:
@@ -110,7 +106,6 @@ server:
       protocol: PROTOCOL
       settings:
         <<: *s-PROTOCOL
-      sniffing: *joe
       streamSettings:
         network: TRANS
     # m4_pushdef([PORT], m4_incr(PORT))
@@ -180,7 +175,6 @@ client:
       settings:
         network: *tu
         followRedirect: true
-      sniffing: *joe
 
     - tag: *stdin-socks
       protocol: socks
@@ -188,12 +182,10 @@ client:
       settings:
         udp: true
         auth: noauth
-      sniffing: *joe
 
     - tag: *stdin-http
       protocol: http
       port: 30002
-      sniffing: *joe
 
   outbounds:
     - tag: *local
@@ -220,6 +212,8 @@ client:
         tlsSettings:
           allowInsecure: true
           serverName: ADDR
+        sockopt:
+          mark: 69
       mux:
         enabled: true
         # ])
