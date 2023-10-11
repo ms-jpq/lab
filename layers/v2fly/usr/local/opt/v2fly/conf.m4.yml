@@ -213,7 +213,7 @@ client:
           allowInsecure: true
           serverName: ADDR
         sockopt:
-          mark: 69
+          mark: 0x69
       mux:
         enabled: true
         # ])
