@@ -2,6 +2,7 @@
 gateway
 gh_mirror
 intel_gvt
+mail
 nspawn
 podman
 printer
@@ -9,5 +10,6 @@ qemu
 router
 share
 tv
+v2fly
 vfio
 zfs

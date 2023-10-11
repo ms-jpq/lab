@@ -154,9 +154,9 @@ client:
     disableFallback: true
     servers:
       - localhost
-      # - address: 1.1.1.1
-      #   domains:
-      #     - geosite:geolocation-!cn
+      - address: 1.1.1.1
+        domains:
+          - geosite:geolocation-!cn
 
   inbounds:
     - *api-door
