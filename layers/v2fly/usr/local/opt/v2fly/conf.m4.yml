@@ -96,15 +96,16 @@ server:
     - &api-door
       tag: *api
       protocol: dokodemo-door
+      listen: &stub-addr 127.0.0.53
       port: 30000
       settings:
-        address: localhost
+        address: &lo localhost
 
     # m4_pushdef([PORT], PORT_BEGIN)
     # m5_for([PROTOCOL], [
     # m5_for([TRANSPORT], [
     # m4_pushdef([TRANS], [m4_regexp(TRANSPORT, [\(^[^@]+\)], [\1])])
-    - listen: 127.0.0.53
+    - listen: *stub-addr
       port: "PORT"
       protocol: PROTOCOL
       settings:
@@ -135,6 +136,10 @@ client:
     rules:
       - *api-rule
       - type: *tf
+        inboundTag:
+          - &dns dns
+        outboundTag: *dns
+      - type: *tf
         outboundTag: &local passthrough
         ip:
           - geoip:private
@@ -161,6 +166,14 @@ client:
   inbounds:
     - *api-door
 
+    - tag: *dns
+      protocol: dokodemo-door
+      listen: *stub-addr
+      port: 52
+      settings:
+        network: *tu
+        address: *lo
+
     - tag: *stdin-dokodemo-door
       protocol: dokodemo-door
       port: 30001
@@ -183,8 +196,11 @@ client:
       sniffing: *joe
 
   outbounds:
-    - protocol: freedom
-      tag: *local
+    - tag: *local
+      protocol: freedom
+
+    - tag: *dns
+      protocol: *dns
 
     # m4_pushdef([PORT], PORT_BEGIN)
     # m5_for([PROTOCOL], [
