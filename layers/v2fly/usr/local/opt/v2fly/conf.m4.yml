@@ -154,7 +154,7 @@ client:
     disableFallback: true
     servers:
       - localhost
-      - address: 1.1.1.1
+      - address: m5_assert([ENV_V2R_DOMAIN])
         domains:
           - geosite:geolocation-!cn
 
