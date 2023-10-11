@@ -54,7 +54,7 @@ _:
 
 server:
   log:
-    loglevel: info
+    loglevel: warn
   api: &ctl
     tag: &api api
     services:
@@ -73,8 +73,10 @@ server:
     probeURL: http://m5_assert([ENV_V2R_DOMAIN])/204
 
   routing:
+    domainStrategy: &ip-routing IPIfNonMatch
     rules:
-      - type: &tf field
+      - &api-rule
+        type: &tf field
         outboundTag: *api
         inboundTag:
           - *api
@@ -85,8 +87,10 @@ server:
 
   outbounds:
     - protocol: freedom
-    - protocol: blackhole
-      tag: *die
+      settings:
+        domainStrategy: UseIP
+    - tag: *die
+      protocol: blackhole
 
   inbounds:
     - &api-door
@@ -114,13 +118,14 @@ server:
 
 client:
   log:
-    loglevel: info
+    loglevel: warn
   api: *ctl
   stats: {}
   policy: *policy
   observatory: *obs
 
   routing:
+    domainStrategy: *ip-routing
     balancers:
       - tag: *ldr
         selector: *ldrs
@@ -128,10 +133,7 @@ client:
           type: random
 
     rules:
-      - type: *tf
-        outboundTag: *api
-        inboundTag:
-          - *api
+      - *api-rule
       - type: *tf
         outboundTag: &local passthrough
         ip:
@@ -140,13 +142,21 @@ client:
       - type: *tf
         outboundTag: *local
         domains:
-          - geosite:cn
+          - geosite:geolocation-cn
       - type: *tf
         balancerTag: *ldr
         inboundTag:
           - &stdin-dokodemo-door dokodemo-door
           - &stdin-socks socks
           - &stdin-http http
+
+  dns:
+    disableFallback: true
+    servers:
+      - localhost
+      # - address: 1.1.1.1
+      #   domains:
+      #     - geosite:geolocation-!cn
 
   inbounds:
     - *api-door
