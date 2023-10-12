@@ -114,7 +114,7 @@ server:
 
 client:
   log:
-    loglevel: warn
+    loglevel: info
   api: *ctl
   stats: {}
   policy: *policy
@@ -167,7 +167,8 @@ client:
       port: 52
       settings:
         network: *tu
-        address: *lo
+        address: *stub-addr
+        port: 53
 
     - tag: *stdin-dokodemo-door
       protocol: dokodemo-door
