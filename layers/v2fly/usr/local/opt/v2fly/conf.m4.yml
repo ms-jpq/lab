@@ -50,7 +50,7 @@ _:
 
 server:
   log:
-    loglevel: warn
+    loglevel: info
   api: &ctl
     tag: &api api
     services:
@@ -190,9 +190,15 @@ client:
   outbounds:
     - tag: *local
       protocol: freedom
+      streamSettings:
+        sockopt:
+          mark: &sn 0x69
 
     - tag: *dns
       protocol: *dns
+      streamSettings:
+        sockopt:
+          mark: *sn
 
     # m4_pushdef([PORT], PORT_BEGIN)
     # m5_for([PROTOCOL], [
@@ -212,6 +218,8 @@ client:
         tlsSettings:
           allowInsecure: true
           serverName: ADDR
+        sockopt:
+          mark: *sn
       mux:
         enabled: true
         # ])
