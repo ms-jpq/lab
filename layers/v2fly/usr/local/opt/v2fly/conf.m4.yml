@@ -176,6 +176,7 @@ client:
       settings:
         network: *tu
         followRedirect: true
+        tproxy: tproxy
 
     - tag: *stdin-socks
       protocol: socks

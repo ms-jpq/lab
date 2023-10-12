@@ -4,7 +4,6 @@
   "ENV_HOST_ALLOW_LIST": "",
   "ENV_HOST_FORWARD_LIST": "",
   "ENV_LAN_IFS": ["enp1s0"],
-  "ENV_NO_SQUID": 1,
   "ENV_WAN_IF": "enp2s0",
   "ENV_WG_PEERS": [],
   "ENV_WG_SERVER_NAME": []
