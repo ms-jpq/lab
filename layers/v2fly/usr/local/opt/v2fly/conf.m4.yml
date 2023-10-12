@@ -212,8 +212,6 @@ client:
         tlsSettings:
           allowInsecure: true
           serverName: ADDR
-        sockopt:
-          mark: 0x69
       mux:
         enabled: true
         # ])
