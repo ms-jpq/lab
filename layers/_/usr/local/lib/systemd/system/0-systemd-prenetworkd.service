@@ -1,8 +1,11 @@
 [Unit]
-Description  = chown -- systemd-network:systemd-network
+Description    = chown -- systemd-network:systemd-network
 
 [Service]
-Type         = oneshot
-Environment  = NETWORKS=/usr/local/lib/systemd/network
-ExecStartPre = mkdir -p -- ${NETWORKS}
-ExecStart    = chown -R -- systemd-network:systemd-network ${NETWORKS}
+Type           = oneshot
+ProtectSystem  = strict
+ProtectHome    = yes
+ReadWritePaths = /usr/local
+Environment    = NETWORKS=/usr/local/lib/systemd/network
+ExecStartPre   = mkdir -p -- ${NETWORKS}
+ExecStart      = chown -R -- systemd-network:systemd-network ${NETWORKS}

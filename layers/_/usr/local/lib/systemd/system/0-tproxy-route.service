@@ -1,0 +1,9 @@
+[Unit]
+Description     = TProxy Route
+
+[Service]
+Type            = oneshot
+RemainAfterExit = yes
+ProtectSystem   = strict
+ProtectHome     = yes
+ExecStart       = /usr/local/opt/nftables/libexec/tproxy.sh

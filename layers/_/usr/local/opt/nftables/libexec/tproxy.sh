@@ -2,8 +2,10 @@
 
 set -o pipefail
 
-MARK=0x69
-ip rule add fwmark "$MARK" lookup 100
-ip route add local default dev lo table 100
-ip -6 rule add fwmark "$MARK" lookup 100
-ip -6 route add local default dev lo table 100
+MARK=0xb00b0069
+TABLE=100
+
+ip rule add fwmark "$MARK" lookup "$TABLE"
+ip route add local default dev lo table "$TABLE"
+ip -6 rule add fwmark "$MARK" lookup "$TABLE"
+ip -6 route add local default dev lo table "$TABLE"
