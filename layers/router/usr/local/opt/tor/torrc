@@ -1,7 +1,7 @@
 SocksPort   0
 DNSPort     ${IPV4_ADDR}:53
 
-TransProxyType TPROXY
+# TransProxyType TPROXY
 TransPort      0.0.0.0:1080
 TransPort      [::]:1080
 
