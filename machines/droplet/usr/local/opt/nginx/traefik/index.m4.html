@@ -8,8 +8,10 @@
   <body>
     <ul>
       <!--m5_for([SUB], [-->
+      <!--m4_pushdef([DOMAIN], [m4_regexp(SUB, [\(^[^/]+\)], [\1])])-->
+      <!--m4_pushdef([PATH], [m4_regexp(SUB, [\(/[^/]+$\)], [\1])])-->
       <li>
-        <a href="https://SUB.m5_assert([ENV_DOMAIN])">SUB</a>
+        <a rel="noreferrer" href="@SCHEME://DOMAIN.[@HOST]PATH">SUB</a>
       </li>
       <!--], m5_assert([ENV_INDEX]))-->
     </ul>

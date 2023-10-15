@@ -1,0 +1,4 @@
+map $http_host $optimistic_host {
+  default                                    $http_host;
+  ~[^.]+\.(?<x_optimistic_host>[^.]+\.[^.]+) $x_optimistic_host;
+}

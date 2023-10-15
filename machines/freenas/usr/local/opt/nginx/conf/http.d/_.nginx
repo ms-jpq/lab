@@ -1,7 +1,4 @@
-map $http_host $optimistic_host {
-  default                                    $http_host;
-  ~[^.]+\.(?<x_optimistic_host>[^.]+\.[^.]+) $x_optimistic_host;
-}
+include /usr/local/opt/nginx/conf/optimistic_host.nginx;
 
 server {
   server_name "";

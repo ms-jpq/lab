@@ -1,0 +1,26 @@
+include /usr/local/opt/nginx/conf/optimistic_host.nginx;
+
+server {
+  server_name "";
+  listen      unix:/run/local/nginx/http.sock;
+
+  location / {
+    proxy_pass http://127.0.0.53:10080/;
+  }
+}
+
+server {
+  server_name local.*;
+  listen      unix:/run/local/nginx/http.sock;
+
+  location / {
+    proxy_pass http://localhost:8080/;
+  }
+
+  location /traefik {
+    alias           /usr/local/opt/nginx/traefik/;
+    sub_filter_once off;
+    sub_filter      "@SCHEME" $scheme;
+    sub_filter      "@HOST" $optimistic_host;
+  }
+}

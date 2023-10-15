@@ -148,6 +148,7 @@ client:
           - geosite:category-browser-!cn
           - geosite:category-communication
           - geosite:category-dev
+          - geosite:category-entertainment
           - geosite:category-forums
           - geosite:category-media
           - geosite:category-social-media-!cn

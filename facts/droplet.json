@@ -2,6 +2,7 @@
   "ENV_INDEX": [
     "docs",
     "google",
+    "local",
     "reddit",
     "speedtest",
     "traefik",

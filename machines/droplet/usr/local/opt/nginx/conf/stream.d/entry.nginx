@@ -1,5 +1,5 @@
 upstream tcp_upstream_fallback {
-  server 127.0.0.53:10080;
+  server unix:/run/local/nginx/http.sock;
 }
 
 upstream udp_upstream_fallback {
@@ -14,9 +14,9 @@ server {
 }
 
 server {
-  listen      0.0.0.0:443 ssl;
-  listen      [::]:443 ssl;
-  proxy_pass  $tcp_upstream;
+  listen     0.0.0.0:443 ssl;
+  listen     [::]:443 ssl;
+  proxy_pass $tcp_upstream;
 }
 
 server {
