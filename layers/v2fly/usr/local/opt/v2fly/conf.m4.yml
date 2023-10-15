@@ -146,7 +146,8 @@ client:
       - type: *tf
         balancerTag: *ldr
         inboundTag:
-          - &stdin-dokodemo-door dokodemo-door
+          - &stdin-dokodemo-door1 dokodemo-door-1
+          - &stdin-dokodemo-door2 dokodemo-door-2
           - &stdin-socks socks
           - &stdin-http http
 
@@ -183,12 +184,20 @@ client:
         address: *stub-addr
         port: 53
 
-    - tag: *stdin-dokodemo-door
+    - &capture
+      tag: *stdin-dokodemo-door1
       protocol: dokodemo-door
       port: 8888
       settings:
         network: *tu
         followRedirect: true
+
+    - <<: *capture
+      tag: *stdin-dokodemo-door2
+      port: 8889
+      streamSettings:
+        sockopt:
+          tproxy: tproxy
 
     - tag: *stdin-socks
       protocol: socks
