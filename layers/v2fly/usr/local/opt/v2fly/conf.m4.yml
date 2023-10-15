@@ -156,7 +156,20 @@ client:
       - skipFallback: true
         address: m5_assert([ENV_V2R_DOMAIN])
         domains:
+          - domain:m5_assert([ENV_V2R_DOMAIN])
           - geosite:geolocation-!cn
+
+          - geosite:category-anticensorship
+          - geosite:category-browser-!cn
+          - geosite:category-communication
+          - geosite:category-dev
+          - geosite:category-forums
+          - geosite:category-media
+          - geosite:category-social-media-!cn
+          - geosite:category-vpnservices
+
+          - geosite:bing
+          - geosite:google
 
   inbounds:
     - *api-door
