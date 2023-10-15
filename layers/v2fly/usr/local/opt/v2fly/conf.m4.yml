@@ -114,7 +114,7 @@ server:
 
 client:
   log:
-    loglevel: info
+    # loglevel: info
   api: *ctl
   stats: {}
   policy: *policy
@@ -152,7 +152,7 @@ client:
 
   dns:
     servers:
-      - localhost
+      - *lo
       - skipFallback: true
         address: m5_assert([ENV_V2R_DOMAIN])
         domains:
@@ -176,7 +176,6 @@ client:
       settings:
         network: *tu
         followRedirect: true
-        tproxy: tproxy
 
     - tag: *stdin-socks
       protocol: socks

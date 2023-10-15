@@ -16,6 +16,5 @@ WORKDIR /srv
 COPY . /srv
 
 ENV LOCAL=1
-RUN useradd --user-group -- systemd-network
 RUN touch -- /.dockerenv && gmake example && gmake
 RUN ./main.sh --machine all
