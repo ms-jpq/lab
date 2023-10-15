@@ -10,8 +10,7 @@ ACTION="${1:-"ls"}"
 shift -- 1 || true
 
 SYSTEMD='/usr/local/lib/systemd/system'
-MWANTS="$SYSTEMD/default.target.wants"
-SWANTS="$SYSTEMD/sockets.target.wants"
+WANTS="$SYSTEMD/default.target.wants"
 
 SERVICES=()
 SOCKS=()
@@ -41,21 +40,21 @@ stop)
   sctl stop -- "${SERVICES[@]}"
   ;;
 enable)
-  mkdir -v -p -- "$MWANTS" "$SWANTS"
+  mkdir -v -p -- "$WANTS"
   for SVC in "${SERVICES[@]}"; do
-    "$HR" ln -v -sf -- '../2-qemu-q35@.service' "$MWANTS/$SVC"
+    "$HR" ln -v -sf -- '../2-qemu-q35@.service' "$WANTS/$SVC"
   done
   for SOCK in "${SOCKS[@]}"; do
-    "$HR" ln -v -sf -- '../2-websock-proxy@.socket' "$SWANTS/$SOCK"
+    "$HR" ln -v -sf -- '../2-websock-proxy@.socket' "$WANTS/$SOCK"
   done
   ;;
 disable)
   RM=()
   for SVC in "${SERVICES[@]}"; do
-    RM+=("$MWANTS/$SVC")
+    RM+=("$WANTS/$SVC")
   done
   for SOCK in "${SOCKS[@]}"; do
-    RM+=("$SWANTS/$SOCK")
+    RM+=("$WANTS/$SOCK")
   done
   sctl stop -- "${SOCKS[@]}"
   "$HR" rm -v -fr -- "${RM[@]}"

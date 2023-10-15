@@ -3,7 +3,7 @@
 set -o pipefail
 
 RUN="$1"
-WANTS="$RUN/sockets.target.wants"
+WANTS="$RUN/default.target.wants"
 
 # SYSTEMD_SCOPE="${SYSTEMD_SCOPE:system}"
 

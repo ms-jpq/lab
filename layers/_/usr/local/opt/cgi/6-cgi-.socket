@@ -5,6 +5,3 @@ Description  = CGI -- %t/local/cgi/%J.sock
 RemoveOnStop = yes
 Accept       = yes
 ListenStream = %t/local/cgi/%J.sock
-
-[Install]
-WantedBy     = sockets.target
