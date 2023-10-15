@@ -28,6 +28,7 @@ jobs:
           gmake lint
 
       - run: |-
+          sudo -- useradd --user-group -- systemd-network
           LOCAL=1 gmake example
           LOCAL=1 gmake
 

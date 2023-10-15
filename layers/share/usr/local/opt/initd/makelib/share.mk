@@ -9,7 +9,7 @@ CLOBBER.FS += $(CLOBBER.ISCSI)
 pkg._: | /home/ubuntu
 user: /home/ubuntu
 /home/ubuntu:
-	sudo -- useradd --user-group --create-home -- "$(@F)"
+	sudo -- useradd --user-group --create-home -- '$(@F)'
 
 samba: /var/lib/local/samba/usershares
 
