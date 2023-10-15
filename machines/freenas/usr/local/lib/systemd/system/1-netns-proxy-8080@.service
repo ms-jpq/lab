@@ -1,6 +1,9 @@
 [Unit]
 Description          = NetNS Proxy -- %I:%j
 
+BindsTo              = 1-netns@%i.service
+After                = 1-netns@%i.service
+
 BindsTo              = %N.socket
 After                = %N.socket
 
