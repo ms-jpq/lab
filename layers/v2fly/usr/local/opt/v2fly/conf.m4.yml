@@ -83,7 +83,7 @@ server:
 
   outbounds:
     - protocol: freedom
-      settings:
+      settings: &use-ip
         domainStrategy: UseIP
     - tag: *die
       protocol: blackhole
@@ -191,6 +191,7 @@ client:
   outbounds:
     - tag: *local
       protocol: freedom
+      settings: *use-ip
       streamSettings:
         sockopt: &mark
           mark: 0x69
