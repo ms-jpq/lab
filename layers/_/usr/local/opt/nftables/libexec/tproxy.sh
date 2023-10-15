@@ -3,7 +3,7 @@
 set -o pipefail
 
 PROTO=(-4 -6)
-MARKS=(0x69)
+MARKS=(0xb00b0069)
 TABLE=99
 
 for P in "${PROTO[@]}"; do
