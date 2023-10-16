@@ -24,7 +24,6 @@ while read -r LINE; do
 done
 
 URI="$(head --bytes "$BYTES" | jq --exit-status --raw-output '.uri')"
-NAME="$(systemd-escape -- "$URI")"
 
 tee <<-'EOF'
 HTTP/1.0 200 OK
@@ -32,4 +31,4 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-exec -- systemctl --user --machine 1000@.host --no-block start -- "6-firefox@$NAME.service"
+exec -- systemd-run --collect --service-type oneshot --user --machine 1000@.host --no-block -- firefox -- "$URI"

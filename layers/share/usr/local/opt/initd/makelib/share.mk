@@ -2,7 +2,7 @@
 
 all: user samba iscsi
 
-CLOBBER.FS += /etc/sanoid/* /etc/default/samba /var/lib/local/samba/usershares
+CLOBBER.FS += /etc/exports.d/* /etc/nfs.conf.d/* /etc/default/samba /var/lib/local/samba/usershares
 CLOBBER.ISCSI := /etc/rtslib-fb-target /etc/iscsi/nodes /etc/iscsi/send_targets
 CLOBBER.FS += $(CLOBBER.ISCSI)
 
