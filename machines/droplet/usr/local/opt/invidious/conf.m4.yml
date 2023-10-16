@@ -1,4 +1,5 @@
 ---
+check_tables: true
 db:
   host: invidious-pg
   port: 5432
@@ -6,23 +7,26 @@ db:
   user: kemal
   password: kemal
 
-check_tables: True
-statistics_enabled: True
+domain: youtube.m5_assert([ENV_DOMAIN])
+https_only: true
+statistics_enabled: true
 
-login_enabled: False
-registration_enabled: False
+login_enabled: false
+registration_enabled: false
 
 channel_threads: m5_assert([ENV_NPROC])
 feed_threads: m5_assert([ENV_NPROC])
 
 default_user_preferences:
-  autoplay: True
-  continue: True
-  continue_autoplay: True
-  related_videos: True
-  unseen_only: True
-  # quality: dash
-
+  autoplay: true
+  continue: true
+  player_style: youtube
+  related_videos: true
+  save_player_pos: true
+  unseen_only: true
+  comments:
+    - youtube
+    - reddit
   default_home: Trending
 
 hmac_key: |-
