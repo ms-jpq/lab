@@ -4,6 +4,8 @@ Description      = Tor Template -- %t/local/tor/%I/torrc
 BindsTo          = 1-ip-alloc@%j.service
 After            = 1-ip-alloc@%j.service
 
+PartOf           = tor@%i.service
+
 [Service]
 Type             = oneshot
 RemainAfterExit  = yes
