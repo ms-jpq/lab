@@ -2,5 +2,12 @@
   "ENV_HOST_ALLOW_LIST": "freenas.enp2s0@tcp*https",
   "ENV_HOST_FORWARD_LIST": "freenas.enp2s0@tcp*https:https",
   "ENV_LAN_IFS": ["enp2s0", "enp4s0", "eno1"],
-  "ENV_WAN_IF": "enp1s0"
+  "ENV_WAN_IF": "enp1s0",
+  "ENV_WG_PEERS": [
+    "hao-phone",
+    "hao-laptop",
+    "hao-tablet",
+    "gray-phone",
+    "gray-laptop"
+  ]
 }
