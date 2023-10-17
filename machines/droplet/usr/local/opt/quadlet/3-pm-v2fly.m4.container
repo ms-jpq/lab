@@ -7,7 +7,6 @@ ContainerName = %J
 AutoUpdate    = registry
 RunInit       = yes
 
-PodmanArgs    = --cpu-shares=256
 Exec          = run -config %E/v2ray/server.json
 
 Network       = host
