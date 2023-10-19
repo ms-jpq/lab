@@ -8,6 +8,7 @@ db:
   password: kemal
 
 domain: youtube.m5_assert([ENV_DOMAIN])
+external_port: 443
 https_only: true
 statistics_enabled: true
 

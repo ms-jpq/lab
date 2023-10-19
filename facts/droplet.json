@@ -9,5 +9,6 @@
     "twitter",
     "youtube"
   ],
-  "ENV_V2R_CLIENT": 0
+  "ENV_V2R_CLIENT": 0,
+  "ENV_WAN_IF": "enp1s0"
 }
