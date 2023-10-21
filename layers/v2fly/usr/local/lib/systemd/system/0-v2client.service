@@ -1,7 +1,7 @@
 [Unit]
 Description              = V2Ray Client
 After                    = network-online.target
-ConditionPathExists      = /usr/local/libexec/v2ray
+ConditionPathExists      = %S/local/v2fly/v2ray
 
 [Service]
 Restart                  = on-failure
@@ -13,4 +13,4 @@ NoNewPrivileges          = yes
 RestartPreventExitStatus = 23
 
 Environment              = V2RAY_LOCATION_ASSET=%S/local/v2fly
-ExecStart                = /usr/local/libexec/v2ray run -config /usr/local/opt/v2fly/client.json
+ExecStart                = %S/local/v2fly/v2ray run -config /usr/local/opt/v2fly/client.json

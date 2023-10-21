@@ -1,0 +1,6 @@
+[Unit]
+Description        = V2fly Update Timer
+
+[Timer]
+OnCalendar         = weekly
+RandomizedDelaySec = 1 day

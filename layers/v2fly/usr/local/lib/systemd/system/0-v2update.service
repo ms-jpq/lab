@@ -1,0 +1,14 @@
+[Unit]
+Description    = V2fly Update
+After          = network-online.target
+
+[Service]
+Type           = oneshot
+Restart        = on-failure
+ProtectSystem  = strict
+ProtectHome    = yes
+PrivateTmp     = yes
+ReadWritePaths = %T %V %S/local/v2fly
+
+ExecStart      = /usr/local/opt/v2fly/libexec/install.sh
+ExecStartPost  = systemctl try-restart -- 0-v2client.service
