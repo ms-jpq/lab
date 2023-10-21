@@ -12,9 +12,6 @@ Label         = traefik.http.services.%J.loadbalancer.server.port=5000
 Label         = "traefik.http.routers.%J.rule=HostRegexp(`bing.{.+}.{.+$$}`)"
 
 Environment   = WHOOGLE_CONFIG_NEW_TAB=true
-Environment   = WHOOGLE_ALT_TW=twitter.m5_assert([ENV_DOMAIN])
-Environment   = WHOOGLE_ALT_YT=youtube.m5_assert([ENV_DOMAIN])
-Environment   = WHOOGLE_ALT_RD=reddit.m5_assert([ENV_DOMAIN])
 
 Network       = 3-pm-traefik.network
 
