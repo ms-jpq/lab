@@ -1,7 +1,7 @@
-[[Unit]]
+[Unit]
 Description   = Podman -- %J
 
-[[Container]]
+[Container]
 Image         = docker.io/v2fly/v2fly-core:latest
 ContainerName = %J
 AutoUpdate    = registry
@@ -13,8 +13,8 @@ Network       = host
 
 Volume        = /usr/local/opt/%J:%E/v2ray:ro
 
-[[Service]]
+[Service]
 Restart       = on-failure
 
-[[Install]]
+[Install]
 WantedBy      = 0-podman.target

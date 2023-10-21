@@ -1,5 +1,6 @@
 {
   "ENV_INDEX": [
+    "bing",
     "docs",
     "google",
     "local",
