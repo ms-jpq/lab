@@ -12,7 +12,7 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-A=(/usr/local/libexec/hr-run.sh /usr/local/libexec/v2ray api stats -server 127.0.0.53:30000)
+A=(/usr/local/libexec/hr-run.sh /var/lib/local/v2fly/v2ray api stats -server 127.0.0.53:30000)
 
 "${A[@]}"
 "${A[@]}" -runtime
