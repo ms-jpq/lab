@@ -3,19 +3,19 @@ Description      = Podman -- %J@%I
 StopWhenUnneeded = yes
 
 [Container]
-Image            = docker.io/library/postgres:13
+Image            = docker.io/library/postgres:16
 ContainerName    = %J-%I
 AutoUpdate       = registry
 
-HealthCmd        = pg_isready --username username --dbname pdb
+HealthCmd        = pg_isready --username postgres --dbname postgres
 
-Environment      = POSTGRES_DB=pdb
-Environment      = POSTGRES_USER=username
-Environment      = POSTGRES_PASSWORD=password
+Environment      = POSTGRES_USER=postgres
+Environment      = POSTGRES_PASSWORD=postgres
+Environment      = POSTGRES_DB=postgres
 
 Network          = %p1.network
 
-Volume           = %S/local/docker/%J:%S/postgresql/data
+Volume           = %S/local/%J:%S/postgresql/data
 
 [Service]
 Restart          = on-failure

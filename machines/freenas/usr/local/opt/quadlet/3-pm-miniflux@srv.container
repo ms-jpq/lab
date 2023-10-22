@@ -15,7 +15,7 @@ Label         = traefik.http.services.%J.loadbalancer.server.port=8080
 Label         = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+$$}`) || HostRegexp(`%J.{.+$$}.{.+$$}`)"
 
 Environment   = RUN_MIGRATIONS=1
-Environment   = DATABASE_URL=postgres://username:password@%J-pg/pdb?sslmode=disable
+Environment   = DATABASE_URL=postgres://postgres:postgres@%J-pg/postgres?sslmode=disable
 Environment   = PROXY_IMAGES=all
 Environment   = CREATE_ADMIN=1
 Environment   = ADMIN_USERNAME=1
