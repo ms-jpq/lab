@@ -4,9 +4,6 @@ Description     = Podman -- %J
 BindsTo         = podman.socket
 After           = podman.socket
 
-# Upholds         = 3-loopback-6to4@443.socket
-# Upholds         = 3-loopback-6to4@587.socket
-
 [Container]
 Image           = docker.io/library/traefik:latest
 ContainerName   = %J
@@ -16,8 +13,6 @@ RunInit         = yes
 Label           = traefik.enable=true
 Label           = traefik.http.services.%J.loadbalancer.server.port=8080
 Label           = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+$$}`) || HostRegexp(`%J.{.+$$}.{.+$$}`)"
-
-EnvironmentFile = /usr/local/etc/default/traefik.env
 
 Network         = %p.network
 Network         = 3-pm-ingress.network
