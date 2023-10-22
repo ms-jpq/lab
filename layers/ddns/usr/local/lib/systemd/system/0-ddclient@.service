@@ -1,9 +1,11 @@
 [Unit]
-Description      = DDNS - %I
+Description      = DDNS Service - %I
 After            = network-online.target
 
 [Service]
+Type             = oneshot
 Restart          = on-failure
+
 ProtectSystem    = strict
 ProtectHome      = yes
 PrivateTmp       = yes
@@ -16,4 +18,4 @@ Environment      = CACHE=%C/local/ddclient
 ExecStartPre     = cp -v --force -- /usr/local/opt/ddclient/%I.conf ${CONF}
 ExecStartPre     = chmod -v -- 600 ${CONF}
 ExecStartPre     = mkdir -v -p -- ${CACHE}
-ExecStart        = ddclient -foreground -verbose -noquiet -cache ${CACHE}/%I.cache -file ${CONF}
+ExecStart        = ddclient -foreground -daemon 0 -noquiet -cache ${CACHE}/%I.cache -file ${CONF}
