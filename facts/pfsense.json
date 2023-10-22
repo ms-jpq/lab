@@ -12,6 +12,7 @@
     "speedtest.ENV_WG_SERVER_NAME=ENV_WG_SERVER_NAME",
     "traefik.ENV_WG_SERVER_NAME=ENV_WG_SERVER_NAME"
   ],
+  "ENV_DOMAIN": "ENV_WG_SERVER_NAME",
   "ENV_HOST_ALLOW_LIST": "freenas.enp2s0@tcp*https",
   "ENV_HOST_FORWARD_LIST": "freenas.enp2s0@tcp*https:https",
   "ENV_LAN_IFS": ["enp2s0", "enp4s0", "eno1"],
