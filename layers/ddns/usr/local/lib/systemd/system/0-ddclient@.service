@@ -1,0 +1,19 @@
+[Unit]
+Description      = DDNS - %I
+After            = network-online.target
+
+[Service]
+Restart          = on-failure
+ProtectSystem    = strict
+ProtectHome      = yes
+PrivateTmp       = yes
+RuntimeDirectory = local/ddclient/%I
+ReadWritePaths   = %t %T %C
+
+Environment      = CONF=%t/local/ddclient/%I.conf
+Environment      = CACHE=%C/local/ddclient
+
+ExecStartPre     = cp -v --force -- /usr/local/opt/ddclient/%I.conf ${CONF}
+ExecStartPre     = chmod -v -- 600 ${CONF}
+ExecStartPre     = mkdir -v -p -- ${CACHE}
+ExecStart        = ddclient -foreground -cache ${CACHE}/%I.cache -file ${CONF}

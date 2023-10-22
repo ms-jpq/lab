@@ -11,6 +11,3 @@ Volume        = /usr/local/opt/%J/%I:/config/config
 
 [Service]
 Restart       = on-failure
-
-[Install]
-WantedBy      = 0-podman.target
