@@ -20,6 +20,9 @@ Environment   = PROXY_IMAGES=all
 Environment   = CREATE_ADMIN=1
 Environment   = ADMIN_USERNAME=1
 Environment   = ADMIN_PASSWORD=123456
+Environment   = PROXY_OPTION=all
+Environment   = PROXY_MEDIA_TYPES=image,audio,video
+# Environment   = INVIDIOUS_INSTANCE=
 
 Network       = %p.network
 Network       = %p1.network
