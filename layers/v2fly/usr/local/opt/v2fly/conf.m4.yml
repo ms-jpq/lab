@@ -75,13 +75,19 @@ server:
         outboundTag: &die blocked
         ip:
           - geoip:private
+      - &adblock
+        type: *tf
+        outboundTag: *die
+        domains:
+          - category-ads-all
 
   outbounds:
     - tag: &local passthrough
       protocol: freedom
       settings: &use-ip
         domainStrategy: UseIP
-    - tag: *die
+    - &hole
+      tag: *die
       protocol: blackhole
 
   inbounds:
@@ -133,6 +139,7 @@ client:
         inboundTag:
           - &dns dns
         outboundTag: *dns
+      - *adblock
       - type: *tf
         outboundTag: *local
         ip:
@@ -228,6 +235,8 @@ client:
       protocol: *dns
       streamSettings:
         sockopt: *mark
+
+    - *hole
 
     # m4_pushdef([PORT], PORT_BEGIN)
     # m5_for([PROTOCOL], [
