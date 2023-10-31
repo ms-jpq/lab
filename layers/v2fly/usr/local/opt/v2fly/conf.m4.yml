@@ -142,6 +142,7 @@ client:
         outboundTag: *local
         domains:
           - geosite:geolocation-cn
+
           # m5_for([DOMAIN], [
           - DOMAIN
           # ], m5_assert([ENV_V2R_LOCAL_DOMAINS]))
@@ -151,16 +152,6 @@ client:
         domains: &foreign
           - domain:m5_assert([ENV_V2R_DOMAIN])
           - geosite:geolocation-!cn
-
-          - geosite:category-anticensorship
-          - geosite:category-browser-!cn
-          - geosite:category-communication
-          - geosite:category-dev
-          - geosite:category-entertainment
-          - geosite:category-forums
-          - geosite:category-media
-          - geosite:category-social-media-!cn
-          - geosite:category-vpnservices
 
           - geosite:bing
           - geosite:google
