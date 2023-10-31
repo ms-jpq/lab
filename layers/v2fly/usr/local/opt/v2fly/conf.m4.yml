@@ -138,7 +138,10 @@ client:
         ip:
           - geoip:private
           - geoip:cn
-
+      - type: *tf
+        outboundTag: *local
+        domains:
+          - geosite:geolocation-cn
       - type: *tf
         balancerTag: *ldr
         domains: &foreign
@@ -179,6 +182,13 @@ client:
       protocol: dokodemo-door
       listen: *stub-addr
       port: 52
+      sniffing: &sniff
+        enabled: true
+        destOverride:
+          - fakedns
+          - http
+          - quic
+          - tls
       settings:
         network: *tu
         address: *stub-addr
@@ -188,6 +198,7 @@ client:
       tag: *stdin-dokodemo-door1
       protocol: dokodemo-door
       port: 8888
+      sniffing: *sniff
       settings:
         network: *tu
         followRedirect: true
