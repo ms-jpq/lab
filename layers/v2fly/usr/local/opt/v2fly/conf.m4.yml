@@ -149,6 +149,7 @@ client:
         outboundTag: *local
         domains:
           - geosite:geolocation-cn
+          - domain:m5_assert([ENV_V2R_DOMAIN])
 
           # m5_for([DOMAIN], [
           - DOMAIN
@@ -157,8 +158,8 @@ client:
       - type: *tf
         balancerTag: *ldr
         domains: &foreign
-          - domain:m5_assert([ENV_V2R_DOMAIN])
           - geosite:geolocation-!cn
+          - domain:ca
 
           - geosite:bing
           - geosite:google
