@@ -138,8 +138,9 @@ client:
         ip:
           - geoip:private
           - geoip:cn
+
       - type: *tf
-        outboundTag: *local
+        balancerTag: *ldr
         domains: &foreign
           - domain:m5_assert([ENV_V2R_DOMAIN])
           - geosite:geolocation-!cn
@@ -156,7 +157,6 @@ client:
 
           - geosite:bing
           - geosite:google
-
       - type: *tf
         balancerTag: *ldr
         inboundTag:
