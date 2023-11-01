@@ -1,3 +1,4 @@
+# - linux-lowlatency-hwe-[]m5_assert([ENV_VERSION_ID])
 + bat
 + dnsmasq
 + fd-find
@@ -28,7 +29,6 @@
 + unzip
 + wireguard-tools
 - cloud-init
-- linux-lowlatency-hwe-[]m5_assert([ENV_VERSION_ID])
 - lxd-agent-loader
 - rsyslog
 - snapd

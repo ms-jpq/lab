@@ -1,4 +1,5 @@
 # + firefox
+# + microsoft-edge-stable
 + adwaita-icon-theme-full
 + celluloid
 + dconf-editor
@@ -8,7 +9,6 @@
 + gnome-weather
 + gstreamer1.0-libav
 + gstreamer1.0-plugins-bad
-+ microsoft-edge-stable
 + uxplay
 + variety
 - libreoffice-common
