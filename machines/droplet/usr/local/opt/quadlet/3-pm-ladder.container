@@ -1,0 +1,20 @@
+[Unit]
+Description   = Podman -- %J
+
+[Container]
+Image         = ghcr.io/kubero-dev/ladder:latest
+ContainerName = %J
+AutoUpdate    = registry
+RunInit       = yes
+
+Label         = traefik.enable=true
+Label         = traefik.http.services.%J.loadbalancer.server.port=8080
+Label         = "traefik.http.routers.%J.rule=HostRegexp(`12ft.{.+}.{.+$$}`)"
+
+Network       = 3-pm-traefik.network
+
+[Service]
+Restart       = on-failure
+
+[Install]
+WantedBy      = 0-podman.target
