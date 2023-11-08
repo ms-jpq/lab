@@ -8,4 +8,4 @@ TimeoutSec   = 2seconds
 Options      = soft,noatime
 
 Where        = %f
-What         = freenas.enp2s0:/%J
+What         = freenas.enp2s0.pfsense.home.arpa:/%J

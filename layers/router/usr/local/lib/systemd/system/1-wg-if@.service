@@ -23,7 +23,7 @@ EnvironmentFile  = %t/local/ip/%I.env
 EnvironmentFile  = -/usr/local/etc/default/%I.wg.env
 
 Environment      = IFACE=%I
-Environment      = DOMAIN=%I
+Environment      = DOMAIN=%I.%H.home.arpa
 Environment      = NETDEV=%t/systemd/network/0-%I.netdev
 Environment      = NETWORK=%t/systemd/network/0-%I.network
 Environment      = WG_SERVER_NAME=
