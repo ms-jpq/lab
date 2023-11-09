@@ -1,2 +1,3 @@
-# + gerbera
++ gerbera
++ libxml2-utils
 + qbittorrent-nox
