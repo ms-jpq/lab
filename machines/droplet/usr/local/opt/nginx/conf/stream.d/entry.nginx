@@ -14,8 +14,7 @@ server {
 }
 
 server {
-  listen     0.0.0.0:443 ssl;
-  listen     [::]:443 ssl;
+  listen     [::]:443 ipv6only=off ssl;
   proxy_pass $tcp_upstream;
 }
 

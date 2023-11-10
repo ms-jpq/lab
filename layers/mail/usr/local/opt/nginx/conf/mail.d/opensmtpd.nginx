@@ -1,0 +1,11 @@
+server {
+  auth_http unix:/run/local/nginx/smtp.sock;
+  listen    [::]:587 ipv6only=off ssl;
+  protocol  smtp;
+}
+
+server {
+  auth_http unix:/run/local/nginx/pop3.sock;
+  listen    [::]:995 ipv6only=off ssl;
+  protocol  pop3;
+}

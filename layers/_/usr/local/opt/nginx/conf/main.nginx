@@ -14,11 +14,11 @@ http {
   scgi_temp_path            /var/tmp/scgi;
   uwsgi_temp_path           /var/tmp/uwsgi;
   root                      /run/local/nginx/www;
+  resolver                  127.0.0.53;
   absolute_redirect         off;
   charset                   "UTF-8";
   client_max_body_size      0;
   log_not_found             off;
-  resolver                  127.0.0.53;
   sendfile                  on;
   ssl_prefer_server_ciphers on;
   tcp_nopush                on;
@@ -53,7 +53,9 @@ stream {
 }
 
 mail {
+  resolver                 127.0.0.53;
   proxy_pass_error_message on;
+  include                  /usr/local/opt/nginx/conf/ssl.nginx;
   include                  /usr/local/opt/nginx/conf/mail.d/*.nginx;
 }
 
