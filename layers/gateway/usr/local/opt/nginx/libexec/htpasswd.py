@@ -112,7 +112,7 @@ def _decode(secret: bytes, crip: bytes) -> bytes:
 def _read_auth_cookies(headers: _Headers, name: str, secret: bytes) -> bool:
     for cs in headers.get(b"cookie", []):
         with suppress(CookieError):
-            cookies = SimpleCookie[str](cs.decode())
+            cookies = SimpleCookie(cs.decode())
             if morsel := cookies.get(name, None):
                 crip = morsel.value.encode()
                 with suppress(ValueError):
@@ -138,7 +138,7 @@ def _write_auth_cookies(
     now = time()
     plain = user + b":" + str(int(now + ttl)).encode()
     crip = _encode(secret, plain=plain)
-    cookie = SimpleCookie[str]()
+    cookie = SimpleCookie()
     cookie[name] = crip.decode()
     morsel = cookie[name]
     morsel["domain"] = domain
