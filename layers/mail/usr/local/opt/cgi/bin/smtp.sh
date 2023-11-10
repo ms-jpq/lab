@@ -9,7 +9,7 @@ fi
 tee -- <<-'EOF'
 HTTP/1.0 200 OK
 Auth-Status: OK
-Auth-Server: localhost
+Auth-Server: ::1
 Auth-Port: 25
 
 EOF
