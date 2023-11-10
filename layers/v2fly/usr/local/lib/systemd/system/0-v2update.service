@@ -11,4 +11,4 @@ PrivateTmp     = yes
 ReadWritePaths = %T %V %S/local/v2fly
 
 ExecStart      = /usr/local/opt/v2fly/libexec/install.sh
-ExecStartPost  = systemctl try-restart -- 0-v2client.service
+ExecStartPost  = systemctl try-reload-or-restart -- 0-v2client.service

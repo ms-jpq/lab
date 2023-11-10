@@ -1,6 +1,6 @@
 server {
   auth_http unix:/run/local/nginx/smtp.sock;
-  listen    [::]:587 ipv6only=off ssl;
+  listen    [::]:465 ipv6only=off ssl;
   protocol  smtp;
 }
 

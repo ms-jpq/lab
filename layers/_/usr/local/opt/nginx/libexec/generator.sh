@@ -19,5 +19,5 @@ done
 
 if ! diff --recursive --brief -- "$TMP" "$RUN"; then
   rsync --recursive --perms -- "$TMP/" "$RUN/"
-  systemctl reload -- nginx.service
+  systemctl try-reload-or-restart -- nginx.service
 fi
