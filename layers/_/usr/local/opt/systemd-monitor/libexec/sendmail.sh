@@ -3,23 +3,26 @@
 set -o pipefail
 
 RUN="$1"
+REMOTE="$2"
 
 CURL=(
   curl --fail
   --ssl-reqd
-  --mail-from ''
-  --mail-rcpt ''
+  --mail-from "$USER@$HOSTNAME"
+  --mail-rcpt "$HOSTNAME@$REMOTE"
 )
 
-for R in "$RUN"/*.txt; do
+TXTS=("$RUN"/*.txt)
+
+for R in "${TXTS[@]}"; do
   N="${R##*/}"
   N="${N%.txt}"
-  # FAILED["$N"]="$R"
   CURL+=(--upload-file "$R")
 done
 
 CURL+=(
-  --user 'USER:password'
-  -- ""
+  --no-progress-meter
+  -- "smtps://$REMOTE"
 )
-printf -- '%q ' "${CURL[@]}"
+
+"${CURL[@]}"
