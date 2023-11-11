@@ -1,3 +1,4 @@
 + dovecot-imapd
++ dovecot-lmtpd
 + opensmtpd
 + z-push-backend-imap

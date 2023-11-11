@@ -7,7 +7,7 @@ server {
 }
 
 server {
-  listen    [::]:995 ipv6only=off ssl;
-  auth_http localhost:8080/pop3.sh/;
-  protocol  pop3;
+  listen    [::]:993 ipv6only=off ssl;
+  auth_http localhost:8080/imap.sh/;
+  protocol  imap;
 }
