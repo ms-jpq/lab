@@ -21,12 +21,17 @@ if ! (("${#TXTS[@]}")); then
   exit
 fi
 
+TMP="$(mktemp)"
+
 SENDMAIL=(
   /usr/local/libexec/sendmail.sh
   --rcpt "$HOSTNAME@$REMOTE"
+  --header "Subject: $0"
+  --body "$TMP"
 )
 
 for TXT in "${TXTS[@]}"; do
+  printf -- '%s\n' "> ${TXT##*/}" >>"$TMP"
   SENDMAIL+=(--attachment "$TXT")
 done
 
