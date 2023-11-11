@@ -11,6 +11,7 @@
     "twitter",
     "youtube"
   ],
+  "ENV_MAIL_DOMAIN": "localhost",
   "ENV_V2R_CLIENT": 0,
   "ENV_V2R_LOCAL_DOMAINS": [],
   "ENV_WAN_IF": "enp1s0"

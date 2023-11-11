@@ -5,14 +5,34 @@ set -o pipefail
 RUN="$1"
 REMOTE="$2"
 
-CURL=(
-  curl --fail
-  --ssl-reqd
-  --mail-from "$USER@$HOSTNAME"
-  --mail-rcpt "$HOSTNAME@$REMOTE"
-)
+if [[ -z "$REMOTE" ]]; then
+  exit
+fi
 
 TXTS=("$RUN"/*.txt)
+
+if (("${#TXTS[@]}")); then
+  exit
+fi
+
+TMP="$(mktemp)"
+FROM="$USER@$HOSTNAME"
+RCPT="$HOSTNAME@$REMOTE"
+
+tee -- "$TMP" <<-EOF
+From: <$FROM>
+To: <$RCPT>
+Subject: $0
+
+EOF
+
+CURL=(
+  curl --fail
+  --ssl-reqd --insecure
+  --mail-from "$FROM"
+  --mail-rcpt "$RCPT"
+  --upload-file "$TMP"
+)
 
 for R in "${TXTS[@]}"; do
   N="${R##*/}"
@@ -25,4 +45,4 @@ CURL+=(
   -- "smtps://$REMOTE"
 )
 
-"${CURL[@]}"
+exec -- "${CURL[@]}"
