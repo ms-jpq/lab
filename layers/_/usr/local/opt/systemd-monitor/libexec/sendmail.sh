@@ -9,40 +9,29 @@ if [[ -z "$REMOTE" ]]; then
   exit
 fi
 
-TXTS=("$RUN"/*.txt)
+TXTS=()
 
-if (("${#TXTS[@]}")); then
+for TXT in "$RUN"/*.txt; do
+  if ! [[ -k "$TXT" ]]; then
+    TXTS+=("$TXT")
+  fi
+done
+
+if ! (("${#TXTS[@]}")); then
   exit
 fi
 
-TMP="$(mktemp)"
-FROM="$USER@$HOSTNAME"
-RCPT="$HOSTNAME@$REMOTE"
-
-tee -- "$TMP" <<-EOF
-From: <$FROM>
-To: <$RCPT>
-Subject: $0
-
-EOF
-
-CURL=(
-  curl --fail
-  --ssl-reqd --insecure
-  --mail-from "$FROM"
-  --mail-rcpt "$RCPT"
-  --upload-file "$TMP"
+SENDMAIL=(
+  /usr/local/libexec/sendmail.sh
+  --rcpt "$HOSTNAME@$REMOTE"
 )
 
-for R in "${TXTS[@]}"; do
-  N="${R##*/}"
-  N="${N%.txt}"
-  CURL+=(--upload-file "$R")
+for TXT in "${TXTS[@]}"; do
+  SENDMAIL+=(--attachment "$TXT")
 done
 
-CURL+=(
-  --no-progress-meter
-  -- "smtps://$REMOTE"
-)
+SENDMAIL+=(-- --insecure)
 
-exec -- "${CURL[@]}"
+"${SENDMAIL[@]}"
+
+exec -- chmod -v -- +t "${TXTS[@]}"
