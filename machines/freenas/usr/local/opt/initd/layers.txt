@@ -1,6 +1,7 @@
 gateway
 gh_mirror
 intel_gvt
+mail
 podman
 printer
 qemu
