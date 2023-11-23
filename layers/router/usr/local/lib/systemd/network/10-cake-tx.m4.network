@@ -11,7 +11,7 @@ DHCP                               = yes
 IPv6AcceptRA                       = yes
 # TODO: systemd 250 -> DHCPPrefixDelegation
 DHCPv6PrefixDelegation             = yes
-# TODO: systemd 250, move under `[[IPv6AcceptRA]]`
+# TODO: systemd 250, move under `[[IPv6AcceptRA]]` as Token
 IPv6Token                          = static:::69:420:420:69
 
 MulticastDNS                       = no

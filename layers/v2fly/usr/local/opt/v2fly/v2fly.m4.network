@@ -1,0 +1,17 @@
+# m4_include([layers/v2fly/usr/local/opt/v2fly/vars.m4.yml])
+[[Network]]
+
+# m5_for([PROTOCOL], [
+# m5_for([TRANSPORT], [
+# m4_pushdef([TRANS], [m4_regexp(TRANSPORT, [\(^[^@]+\)], [\1])])
+# m4_pushdef([XPORT], [m4_regexp(TRANSPORT, [\([^@]+$\)], [\1])])
+# m4_ifelse(XPORT, [udp], [
+# m4_pushdef([B2], m4_esyscmd(b2sum --length 64 <<<'PROTOCOL-TRANS'))
+# m4_pushdef([SUFFIX], m4_substr(B2, 0, 4):m4_substr(B2, 4, 4):m4_substr(B2, 8, 4):m4_substr(B2, 12, 4))
+# m4_pushdef([SALTED], m4_substr(m4_esyscmd(b2sum --length 64 <<<'PROTOCOL-TRANS-ENV_V2R_SEED'), 0, 16))
+# PROTOCOL-TRANS SALTED
+# TODO: systemd 250, move under `[[IPv6AcceptRA]]` as Token
+IPv6Token = static:::SUFFIX
+# ])
+# ], TRANSPORTS)
+# ], PROTOCOLS)
