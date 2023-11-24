@@ -80,9 +80,12 @@ server:
         outboundTag: *die
         domains:
           - category-ads-all
+      - type: *tf
+        outboundTag: &local passthrough
+        network: *tu
 
   outbounds:
-    - tag: &local passthrough
+    - tag: *local
       protocol: freedom
       settings: &use-ip
         domainStrategy: UseIP
@@ -165,11 +168,7 @@ client:
           - geosite:google
       - type: *tf
         balancerTag: *ldr
-        inboundTag:
-          - &stdin-dokodemo-door1 dokodemo-door-1
-          - &stdin-dokodemo-door2 dokodemo-door-2
-          - &stdin-socks socks
-          - &stdin-http http
+        network: *tu
 
   dns:
     servers:
@@ -198,7 +197,6 @@ client:
         port: 53
 
     - &capture
-      tag: *stdin-dokodemo-door1
       protocol: dokodemo-door
       port: 8888
       sniffing: *sniff
@@ -207,21 +205,18 @@ client:
         followRedirect: true
 
     - <<: *capture
-      tag: *stdin-dokodemo-door2
       port: 8889
       streamSettings:
         sockopt:
           tproxy: tproxy
 
-    - tag: *stdin-socks
-      protocol: socks
+    - protocol: socks
       port: 30001
       settings:
         udp: true
         auth: noauth
 
-    - tag: *stdin-http
-      protocol: http
+    - protocol: http
       port: 30002
 
   outbounds:
