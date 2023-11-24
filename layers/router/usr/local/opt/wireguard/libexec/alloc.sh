@@ -46,6 +46,7 @@ for PEER in "${PEERS[@]}"; do
 
   for ((I = 0; ; I++)); do
     ID="$I-$PEER"
+    CIFACE="w-$HOSTNAME"
     CLIENT_PRIVATE_KEY="$VAR/peer-$ID.key"
 
     B2="$(b2sum --binary --length 64 <<<"$ID")"
@@ -71,7 +72,7 @@ for PEER in "${PEERS[@]}"; do
       CLIENT_PRIVATE_KEY="$(<"$CLIENT_PRIVATE_KEY")"
       CLIENT_PUBLIC_KEY="$(wg pubkey <<<"$CLIENT_PRIVATE_KEY")"
 
-      WG_LINES+=("[$ID, $CLIENT_PUBLIC_KEY, $IPV6, $IPV4"])
+      WG_LINES+=("[$ID, $CLIENT_PUBLIC_KEY, $IPV6, $IPV4]")
 
       CONF="$(envsubst <"$SELF/peer.conf")"
       QR="$(qrencode --type utf8 <<<"$CONF")"
@@ -84,6 +85,8 @@ for PEER in "${PEERS[@]}"; do
       } | sponge -- "$CACHE/$ID.txt"
 
       HTML_TITLE="$ID" HTML_PRE="$CONF" HTML_CODE="$QR" envsubst <"$SELF/peer.html" | sponge -- "$CACHE/$ID.html"
+      IFACE="$CIFACE" envsubst <"$SELF/peer.netdev" | sponge -- "$CACHE/$ID.netdev"
+      IPMASQUERADE=no IPV6_IF="$IPV6" IPV4_IF="$IPV4" IFACE="$CIFACE" DOMAIN="$HOSTNAME.home.arpa" envsubst <"$SELF/@.network" | sponge -- "$CACHE/$ID.network"
       break
     fi
   done

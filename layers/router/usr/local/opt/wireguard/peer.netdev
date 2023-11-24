@@ -1,0 +1,14 @@
+[NetDev]
+Name                = ${IFACE}
+Kind                = wireguard
+
+[WireGuard]
+PrivateKey          = ${CLIENT_PRIVATE_KEY}
+
+[WireGuardPeer]
+PersistentKeepalive = 6
+Endpoint            = ${SERVER_NAME}:51820
+PublicKey           = ${SERVER_PUBLIC_KEY}
+
+AllowedIPs          = ${IPV6_IF}
+AllowedIPs          = ${IPV4_IF}

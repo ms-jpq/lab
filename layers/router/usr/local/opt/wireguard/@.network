@@ -5,7 +5,7 @@ Name              = ${IFACE}
 RequiredForOnline = no
 
 [Network]
-IPMasquerade      = both
+IPMasquerade      = ${IPMASQUERADE}
 
 Address           = ${IPV6_IF}
 Address           = ${IPV4_IF}
