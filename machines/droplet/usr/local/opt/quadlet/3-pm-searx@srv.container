@@ -18,7 +18,7 @@ Environment   = AUTOCOMPLETE=duckduckgo
 
 Network       = 3-pm-traefik.network
 
-Volume        = /usr/local/opt/%J/settings.yml:%E/settings.yml
+Volume        = /usr/local/opt/%J/settings.yml:%E/settings.yml:ro
 
 [Service]
 Restart       = on-failure

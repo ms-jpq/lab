@@ -15,7 +15,7 @@ Label         = "traefik.http.routers.%J.rule=HostRegexp(`youtube.{.+}.{.+$$}`)"
 
 Network       = 3-pm-traefik.network
 
-Volume        = /usr/local/opt/%J/conf.yml:/invidious/config/config.yml
+Volume        = /usr/local/opt/%J/conf.yml:/invidious/config/config.yml:ro
 
 [Service]
 Restart       = on-failure
