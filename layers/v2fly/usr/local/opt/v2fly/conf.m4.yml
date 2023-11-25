@@ -142,6 +142,10 @@ client:
         inboundTag:
           - &dns dns
         outboundTag: *dns
+      - type: *tf
+        network: udp
+        port: 51820
+        outboundTag: *ldr
       - *adblock
       - type: *tf
         outboundTag: *local
