@@ -3,11 +3,9 @@
 set -o pipefail
 
 CONF=/var/lib/local/certbot
-NGINX="$CONF/nginx"
-LIVE=/var/lib/local/certbot/live
 LOG=/var/cache/local/certbot/logs
 
-mkdir -v -p -- "$NGINX" "$LOG"
+mkdir -v -p -- "$LOG"
 
 readarray -t -- SITES </usr/local/etc/default/certbot.env
 
@@ -31,13 +29,4 @@ for SITE in "${SITES[@]}"; do
   fi
 done
 
-"${CERTBOT[@]}"
-
-for DIR in "$LIVE"/*; do
-  DOMAIN="${DIR##*/}"
-  if ! [[ -d "$DIR" ]]; then
-    continue
-  fi
-  CHKSUM="$(cat -- "$DIR"/* | b2sum)"
-  DOMAIN="$DOMAIN" CHKSUM="$CHKSUM" envsubst <"${0%/*}/../certbot.nginx" | sponge -- "$NGINX/$DOMAIN.nginx"
-done
+exec -- "${CERTBOT[@]}"

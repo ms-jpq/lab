@@ -4,9 +4,15 @@ set -o pipefail
 
 RUN="$1"
 SSL="$RUN/ssl"
+LIVE=/var/lib/local/certbot/live
+
 mkdir -p -- "$SSL"
 
-for SITE in /var/lib/local/certbot/nginx/*.nginx; do
-  NAME="${SITE##*/}"
-  cp -f -- "$SITE" "$SSL/$NAME"
+for DIR in "$LIVE"/*; do
+  DOMAIN="${DIR##*/}"
+  if ! [[ -d "$DIR" ]]; then
+    continue
+  fi
+  CHKSUM="$(cat -- "$DIR"/* | b2sum)"
+  DOMAIN="$DOMAIN" CHKSUM="$CHKSUM" envsubst <'/usr/local/opt/certbot/certbot.nginx' | sponge -- "$SSL/$DOMAIN.nginx"
 done

@@ -1,4 +1,4 @@
-#!/usr/bin/env -S -- bash -Eeu -O dotglob -O nullglob -O extglob -O failglob -O globstar
+#!/usr/bin/env -S -- bash -Eeu -O dotglob -O nullglob -O extglob -O globstar
 
 set -o pipefail
 
@@ -18,6 +18,7 @@ for PID in "${PIDS[@]}"; do
 done
 
 if ! diff --recursive --brief -- "$TMP" "$RUN"; then
+  rm -rf -- "$RUN/ssl/"*
   rsync --recursive --perms -- "$TMP/" "$RUN/"
   systemctl try-reload-or-restart -- nginx.service
 fi
