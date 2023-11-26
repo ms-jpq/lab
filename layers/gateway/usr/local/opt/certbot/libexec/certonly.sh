@@ -26,7 +26,9 @@ CERTBOT=(
 )
 
 for SITE in "${SITES[@]}"; do
-  CERTBOT+=(--domains "$SITE")
+  if [[ -n "$SITE" ]]; then
+    CERTBOT+=(--domains "$SITE")
+  fi
 done
 
 "${CERTBOT[@]}"

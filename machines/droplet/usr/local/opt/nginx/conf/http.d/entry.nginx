@@ -12,6 +12,7 @@ server {
 server {
   server_name local.*;
   listen      unix:/run/local/nginx/http.sock;
+  include     /usr/local/opt/nginx/conf/auth.nginx;
 
   location / {
     proxy_pass http://localhost:8080/;
