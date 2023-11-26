@@ -6,10 +6,7 @@ RUN="$1"
 SSL="$RUN/ssl"
 mkdir -p -- "$SSL"
 
-readarray -t -- SITES </usr/local/etc/default/certbot.env
-for SITE in "${SITES[@]}"; do
-  NAME="${SITE%%=*}"
-  if [[ -n "$NAME" ]]; then
-    cp -f -- "/var/lib/local/certbot/nginx/$NAME.nginx" "$SSL/$NAME.nginx"
-  fi
+for SITE in /var/lib/local/certbot/nginx/*.nginx; do
+  NAME="${SITE##*/}"
+  cp -f -- "$SITE" "$SSL/$NAME"
 done

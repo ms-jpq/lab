@@ -16,10 +16,3 @@ serversTransport:
 entryPoints:
   http:
     address: :8888
-
-certificatesResolvers:
-  resolver1:
-    acme:
-      storage: /acme/acme.json
-      dnsChallenge:
-        provider: cloudflare

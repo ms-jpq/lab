@@ -1,0 +1,15 @@
+server {
+  listen unix:/run/local/nginx/acme.sock;
+
+  location / {
+    return 307 https://$host$request_uri;
+  }
+
+  location /204 {
+    return 204;
+  }
+
+  location /.well-known/acme-challenge/ {
+    root /run/local/nginx/acme;
+  }
+}

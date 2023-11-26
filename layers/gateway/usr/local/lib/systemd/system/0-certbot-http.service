@@ -9,8 +9,9 @@ Type                = oneshot
 ProtectSystem       = strict
 ProtectHome         = yes
 PrivateTmp          = yes
-ReadWritePaths      = %T %S/local %C/local
+ReadWritePaths      = %t/local/nginx %T %S/local %C/local
 
-Environment         = DOMAIN=%I
+Environment         = USER=%u
+Environment         = HOSTNAME=%H.home.arpa
 
-ExecStart           = /usr/local/opt/certbot/libexec/certonly.sh %H ${DOMAIN}
+ExecStart           = /usr/local/opt/certbot/libexec/certonly.sh

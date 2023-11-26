@@ -20,5 +20,5 @@ else
     python3 -m venv --clear -- "$VENV"
   fi
   rm -v -fr -- "$STAMP"
-  "$VENV/bin/python3" -m pip install --require-virtualenv --cache-dir "$CACHE/pip" --upgrade -- certbot certbot-dns-cloudflare
+  "$VENV/bin/python3" -m pip install --require-virtualenv --cache-dir "$CACHE/pip" --upgrade -- certbot
 fi

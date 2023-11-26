@@ -2,4 +2,3 @@ listen  [::]:80 ipv6only=off;
 listen  0.0.0.0:443 ssl;
 listen  [::]:443 ssl;
 include /usr/local/opt/nginx/conf/auth.nginx;
-include /run/local/nginx/conf/ssl/*.nginx;

@@ -2,24 +2,14 @@
 
 set -o pipefail
 
-HOST="$1"
-DOMAIN="$2"
 CONF=/var/lib/local/certbot
 NGINX="$CONF/nginx"
+LIVE=/var/lib/local/certbot/live
 LOG=/var/cache/local/certbot/logs
-TMP="$(mktemp)"
 
 mkdir -v -p -- "$NGINX" "$LOG"
 
 readarray -t -- SITES </usr/local/etc/default/certbot.env
-for SITE in "${SITES[@]}"; do
-  NAME="${SITE%%=*}"
-  if [[ "$NAME" == "$DOMAIN" ]]; then
-    TOKEN="${SITE#*=}"
-  fi
-done
-
-printf -- '%s\n' "dns_cloudflare_api_token = $TOKEN" >"$TMP"
 
 CERTBOT=(
   /var/cache/local/certbot/venv/bin/certbot
@@ -28,15 +18,24 @@ CERTBOT=(
   --keep-until-expiring
   --expand
   --work-dir /var/tmp
+  --webroot
+  --webroot-path /run/local/nginx/acme
   --config-dir "$CONF"
   --logs-dir "$LOG"
-  --email "certbot+$HOST@$DOMAIN"
-  --domains "$DOMAIN,*.$DOMAIN"
-  --dns-cloudflare
-  --dns-cloudflare-credentials "$TMP"
+  --email "$USER@$HOSTNAME"
 )
+
+for SITE in "${SITES[@]}"; do
+  CERTBOT+=(--domains "$SITE")
+done
 
 "${CERTBOT[@]}"
 
-CHKSUM="$(cat -- "/var/lib/local/certbot/live/$DOMAIN"/* | b2sum)"
-DOMAIN="$DOMAIN" CHKSUM="$CHKSUM" envsubst <"${0%/*}/../certbot.nginx" | sponge -- "$NGINX/$DOMAIN.nginx"
+for DIR in "$LIVE"/*; do
+  DOMAIN="${DIR##*/}"
+  if ! [[ -d "$DIR" ]]; then
+    continue
+  fi
+  CHKSUM="$(cat -- "$DIR"/* | b2sum)"
+  DOMAIN="$DOMAIN" CHKSUM="$CHKSUM" envsubst <"${0%/*}/../certbot.nginx" | sponge -- "$NGINX/$DOMAIN.nginx"
+done
