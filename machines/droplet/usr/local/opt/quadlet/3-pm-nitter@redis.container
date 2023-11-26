@@ -8,10 +8,8 @@ ContainerName    = %J-%I
 AutoUpdate       = registry
 RunInit          = yes
 
-HealthCmd        = redis-cli incr ping
-
 Network          = 3-pm-traefik.network
 
 [Service]
 Restart          = on-failure
-ExecStartPost    = podman wait --condition healthy -- %J-%I
+ExecStartPost    = /usr/local/libexec/retry.sh 0.5 podman exec -- %J-%I redis-cli incr ping
