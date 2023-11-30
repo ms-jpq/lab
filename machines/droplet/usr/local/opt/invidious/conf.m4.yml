@@ -1,11 +1,11 @@
 ---
 check_tables: true
 db:
-  host: invidious-pg
-  port: 5432
   dbname: postgres
-  user: kemal
+  host: invidious-pg
   password: kemal
+  port: 5432
+  user: kemal
 
 domain: youtube.m5_assert([ENV_DOMAIN])
 external_port: 443
@@ -21,14 +21,16 @@ feed_threads: m5_assert([ENV_NPROC])
 default_user_preferences:
   autoplay: true
   continue: true
-  player_style: youtube
+  default_home: Trending
+  local: true
+  quality: dash
+  region: CA
   related_videos: true
   save_player_pos: true
   unseen_only: true
   comments:
     - youtube
     - reddit
-  default_home: Trending
 
 hmac_key: |-
   m4_esyscmd([uuidgen])
