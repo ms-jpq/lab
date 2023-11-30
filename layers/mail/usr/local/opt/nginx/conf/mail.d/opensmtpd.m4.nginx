@@ -15,6 +15,12 @@ server {
 }
 
 server {
+  listen    [[::]]:587 ipv6only=off;
+  starttls  only;
+  SMTP_CONF
+}
+
+server {
   listen    [[::]]:993 ipv6only=off ssl;
   auth_http localhost:8080/mail.sh/;
   protocol  imap;
