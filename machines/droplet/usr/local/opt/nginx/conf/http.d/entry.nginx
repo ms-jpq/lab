@@ -2,6 +2,7 @@ include /usr/local/opt/nginx/conf/optimistic_host.nginx;
 
 server {
   server_name "";
+  # TODO: http2
   listen      unix:/run/local/nginx/http.sock;
 
   location / {
@@ -11,6 +12,7 @@ server {
 
 server {
   server_name local.*;
+  # TODO: http2
   listen      unix:/run/local/nginx/http.sock;
   include     /usr/local/opt/nginx/conf/auth.nginx;
 
