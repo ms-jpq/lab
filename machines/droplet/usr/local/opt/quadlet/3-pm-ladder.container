@@ -2,7 +2,7 @@
 Description   = Podman -- %J
 
 [Container]
-Image         = ghcr.io/kubero-dev/ladder:latest
+Image         = ghcr.io/everywall/ladder:latest
 ContainerName = %J
 AutoUpdate    = registry
 RunInit       = yes
