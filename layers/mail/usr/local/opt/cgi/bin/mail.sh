@@ -59,7 +59,7 @@ imap)
     --no-progress-meter
     --user "$AUTH_USER:$AUTH_PASS"
     --header "X-Real-IP: $CLIENT_IP"
-    --unix-socket /run/local/nginx/htpasswd2.sock
+    --unix-socket /run/local/nginx/htpasswd.sock
     -- localhost
   )
 
