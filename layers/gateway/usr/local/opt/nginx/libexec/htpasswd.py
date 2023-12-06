@@ -184,7 +184,6 @@ def _handler(
     cookie_name: str,
     cookie_ttl: float,
     hmac_secret: bytes,
-    www_agents: frozenset[bytes],
     allow_list: frozenset[str],
 ) -> Callable[[StreamReader, StreamWriter], Awaitable[None]]:
     match = _fnmatch(allow_list)
@@ -221,11 +220,12 @@ def _handler(
                             break
 
             if not authorized:
-                user_agent = next(iter(headers.get(b"user-agent", (b"",))), b"").lower()
                 writer.write(b"HTTP/1.0 401 Unauthorized\r\n")
-                for agent in www_agents:
-                    if agent in user_agent:
-                        writer.write(b'WWW-Authenticate: Basic realm="-"\r\n')
+                for accept in headers.get(b"accept", ()):
+                    if b"html" in accept:
+                        break
+                else:
+                    writer.write(b'WWW-Authenticate: Basic realm="-"\r\n')
             else:
                 proto = b"".join(headers.get(b"x-forwarded-proto", ()))
                 secure = proto != b"http"
@@ -268,7 +268,6 @@ def _parse_args() -> Namespace:
     parser.add_argument("--allow-list", type=Path, nargs="*")
     parser.add_argument("--hmac-secret", type=Path, required=True)
     parser.add_argument("--authn-path", type=PurePosixPath, required=True)
-    parser.add_argument("--www-agents", nargs="*", required=True)
     return parser.parse_args()
 
 
@@ -283,9 +282,6 @@ async def main() -> None:
         for line in path.read_text().splitlines()
         if line
     )
-    www_agents = frozenset(
-        a.encode() for agent in args.www_agents for a in str(agent).split() if a
-    )
     listening_socket = Path(args.listening_socket)
     authn_path = PurePosixPath(args.authn_path).as_posix().encode()
     assert authn_path.startswith(b"/")
@@ -297,7 +293,6 @@ async def main() -> None:
         authn_path=authn_path,
         cookie_ttl=args.cookie_ttl,
         hmac_secret=hmac_secret,
-        www_agents=www_agents,
         allow_list=allow_list,
     )
     server = await start_unix_server(handler, listening_socket)
