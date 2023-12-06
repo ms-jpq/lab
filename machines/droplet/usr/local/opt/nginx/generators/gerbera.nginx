@@ -1,0 +1,14 @@
+server {
+  server_name gerbera.*;
+  # TODO: http2 on;
+  listen      unix:/run/local/nginx/http.sock;
+  include     /usr/local/opt/nginx/conf/auth.nginx;
+
+  location / {
+    sub_filter_once  off;
+    sub_filter_types "application/json";
+    # TODO: virtualURL ??
+    sub_filter       "${GERBERA_URL}" "$scheme://$optimistic_host";
+    proxy_pass       ${GERBERA_URL};
+  }
+}

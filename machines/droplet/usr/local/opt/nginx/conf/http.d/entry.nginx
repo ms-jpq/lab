@@ -27,14 +27,3 @@ server {
     sub_filter      "@HOST" $optimistic_host;
   }
 }
-
-server {
-  server_name hotmail.*;
-  # TODO: http2 on;
-  listen      unix:/run/local/nginx/http.sock;
-  include     /usr/local/opt/nginx/conf/auth.nginx;
-
-  location / {
-    proxy_pass http://127.0.0.53:49152;
-  }
-}
