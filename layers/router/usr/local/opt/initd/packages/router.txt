@@ -1,5 +1,4 @@
 + chrony
-+ haproxy
 + iftop
 + ipv6calc
 + jool-dkms

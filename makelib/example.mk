@@ -4,4 +4,4 @@ EXAMPLES := $(shell printf -- '%s ' ./{layers,machines}/*/usr/local/share/doc/de
 
 example: ./facts/example.env
 ./facts/example.env: $(EXAMPLES)
-	cat -- $^ > '$@'
+	cat -- /dev/null $^ >'$@'
