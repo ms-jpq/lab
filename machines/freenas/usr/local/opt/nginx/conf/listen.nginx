@@ -1,5 +1,3 @@
-listen  0.0.0.0:80;
-listen  [::]:80;
 listen  0.0.0.0:443 ssl http2;
 listen  [::]:443 ssl http2;
 # TODO http2 on;
