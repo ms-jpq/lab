@@ -35,5 +35,6 @@
     "time-machine-hao",
     "wallpapers"
   ],
+  "ENV_WEB_EXPORTS": "ENV_NFS_EXPORTS",
   "ENV_ZFS_MEM": 70
 }

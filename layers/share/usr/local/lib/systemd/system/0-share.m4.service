@@ -1,0 +1,18 @@
+[[Unit]]
+Description              = Webdav Server
+
+[[Service]]
+Restart                  = on-failure
+ProtectSystem            = strict
+ProtectHome              = yes
+ReadWritePaths           = %t/local/%J
+RuntimeDirectory         = local/%J local/%J/mnt
+RuntimeDirectoryPreserve = yes
+PrivateTmp               = yes
+
+# m5_for([SHARE], [
+BindReadOnlyPaths        = /media/SHARE:%t/local/%J/mnt/SHARE
+# ], m5_assert([ENV_WEB_EXPORTS]))
+
+# TODO: rclone can listen on unix sockets on later versions
+ExecStart                = rclone serve webdav --config /dev/null --read-only --addr=127.0.0.53:8090 --baseurl=/share -- %t/local/%J/mnt
