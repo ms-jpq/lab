@@ -1,3 +1,18 @@
-add_header Content-Security-Policy: "default-src 'self'" always;
-add_header X-Frame-Options: "SAMEORIGIN" always;
-add_header X-Content-Type-Options: "nosniff" always;
+map $http_content_security_policy $x_content_security_policy {
+  ""      "default-src 'self'";
+  default $http_content_security_policy;
+}
+
+map $http_x_frame_options $x_frame_options {
+  ""      "SAMEORIGIN";
+  default $http_x_frame_options;
+}
+
+map $http_x_content_type_options $x_content_type_options {
+  ""      "nosniff";
+  default $http_x_content_type_options;
+}
+
+add_header Content-Security-Policy $x_content_security_policy always;
+add_header X-Frame-Options $x_frame_options always;
+add_header X-Content-Type-Options $x_content_type_options always;
