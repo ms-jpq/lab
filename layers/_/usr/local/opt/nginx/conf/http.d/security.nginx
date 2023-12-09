@@ -13,6 +13,6 @@ map $sent_http_x_content_type_options $x_content_type_options {
   default "";
 }
 
-add_header Content-Security-Policy $x_content_security_policy always;
+# add_header Content-Security-Policy $x_content_security_policy always;
 add_header X-Frame-Options $x_frame_options always;
 add_header X-Content-Type-Options $x_content_type_options always;
