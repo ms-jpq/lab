@@ -248,7 +248,7 @@ def _handler(
                     writer.write(b"\r\n")
 
             if location:
-                for header in (b"Location: ", b"X-OG-Location: "):
+                for header in (b"Location: ", b"X-Original-URL: "):
                     writer.write(header)
                     writer.write(location)
                     writer.write(b"\r\n")

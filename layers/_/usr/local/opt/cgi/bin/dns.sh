@@ -12,8 +12,7 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-/usr/local/libexec/hr-run.sh networkctl
-/usr/local/libexec/hr-run.sh networkctl status --all
-/usr/local/libexec/hr-run.sh ip addr
-/usr/local/libexec/hr-run.sh ip -6 route
-/usr/local/libexec/hr-run.sh ip -4 route
+/usr/local/libexec/hr-run.sh resolvectl status
+/usr/local/libexec/hr-run.sh resolvectl statistics
+# TODO: systemd 255
+# /usr/local/libexec/hr-run.sh resolvectl show-server-state
