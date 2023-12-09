@@ -1,16 +1,16 @@
-map $http_content_security_policy $x_content_security_policy {
-  ""      "default-src 'self'";
-  default $http_content_security_policy;
+map $sent_http_content_security_policy $x_content_security_policy {
+  ""      "script-src 'self' 'unsafe-inline'";
+  default "";
 }
 
-map $http_x_frame_options $x_frame_options {
+map $sent_http_x_frame_options $x_frame_options {
   ""      "SAMEORIGIN";
-  default $http_x_frame_options;
+  default "";
 }
 
-map $http_x_content_type_options $x_content_type_options {
+map $sent_http_x_content_type_options $x_content_type_options {
   ""      "nosniff";
-  default $http_x_content_type_options;
+  default "";
 }
 
 add_header Content-Security-Policy $x_content_security_policy always;
