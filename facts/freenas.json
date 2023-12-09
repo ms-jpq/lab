@@ -19,8 +19,12 @@
     "speedtest",
     "traefik/dashboard"
   ],
-  "ENV_LOCAL_DOMAIN": "enp2s0.pfsense.home.arpa",
-  "ENV_MACHINES": ["_gateway", "freenas", "esxi", "roku"],
+  "ENV_MACHINES": [
+    "_gateway.enp2s0",
+    "freenas.enp2s0",
+    "esxi.enp2s0",
+    "roku.enp2s0"
+  ],
   "ENV_MACVLAN_IFS": "eno1",
   "ENV_NFS_EXPORTS": ["downloads", "media", "wallpapers"],
   "ENV_RCLONE_LOCAL": ["gray", "hao", "media", "misc", "wallpapers"],

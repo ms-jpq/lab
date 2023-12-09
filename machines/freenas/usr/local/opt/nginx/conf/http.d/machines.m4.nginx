@@ -4,8 +4,9 @@ server {
   include     /usr/local/opt/nginx/conf/listen.nginx;
 
   location / {
-    set        $upstream MACH.m5_assert([ENV_LOCAL_DOMAIN]):8080;
     include    /usr/local/opt/nginx/conf/auth2.nginx;
+    # TODO: home.arpa
+    set        $upstream MACH:8080;
     proxy_pass http://$upstream;
   }
 }
