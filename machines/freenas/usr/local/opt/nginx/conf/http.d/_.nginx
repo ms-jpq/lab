@@ -6,6 +6,7 @@ server {
 
   location / {
     alias           /usr/local/opt/nginx/index/;
+    include         /usr/local/opt/nginx/conf/auth2.nginx;
     sub_filter_once off;
     sub_filter      "@SCHEME" $scheme;
     sub_filter      "@HOST" $optimistic_host;

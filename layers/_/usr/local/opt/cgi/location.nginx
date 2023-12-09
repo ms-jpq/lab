@@ -12,5 +12,6 @@ location /PATH/ {
   proxy_buffering           off;
   proxy_pass                http://unix:SOCK:/;
 }
-# ], ENV_SOCKS)
 
+# ], ENV_SOCKS)
+include /dev/null;

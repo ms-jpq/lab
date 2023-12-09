@@ -4,8 +4,11 @@ server {
   include     /usr/local/opt/nginx/conf/listen.nginx;
 
   location / {
-    set $upstream MACH.m5_assert([ENV_LOCAL_DOMAIN]):8080;
+    set        $upstream MACH.m5_assert([ENV_LOCAL_DOMAIN]):8080;
+    include    /usr/local/opt/nginx/conf/auth2.nginx;
     proxy_pass http://$upstream;
   }
 }
+
 # ], m5_assert([ENV_MACHINES]))
+include /dev/null;

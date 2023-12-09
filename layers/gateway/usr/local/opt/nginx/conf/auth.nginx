@@ -1,2 +1,23 @@
-error_page 401 @e401;
-include    /usr/local/opt/nginx/conf/auth2.nginx;
+auth_request /-_-auth-_-;
+
+location /-_-auth-_- {
+  auth_request            off;
+  include                 /etc/nginx/proxy_params;
+  proxy_set_header        Content-Length "";
+  proxy_pass_request_body off;
+  proxy_pass              http://unix:/run/local/nginx/auth-proxy.sock:/;
+
+  location /-_-auth-_-/-_- {
+    proxy_intercept_errors on;
+    proxy_pass             http://unix:/run/local/nginx/auth-proxy.sock:/-_-;
+  }
+}
+
+location @e401 {
+  internal     ;
+  auth_request off;
+  sub_filter   "@METHOD" $request_method;
+  sub_filter   "@REDIRECT" $x_request_uri;
+  root         /usr/local/opt/nginx/auth/;
+  try_files    /index.html =404;
+}
