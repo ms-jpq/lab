@@ -7,7 +7,7 @@
   "ENV_FS_TV": "media/TV",
   "ENV_FS_WALLPAPER": "wallpapers",
   "ENV_INDEX": [
-    "cups.freenas.enp2s0",
+    "cups.freenas.enp2s0.pfsense",
     "esxi.enp2s0.pfsense/qemu.sh",
     "esxi.enp2s0.pfsense/vm.html",
     "freenas.enp2s0.pfsense/bt",
@@ -20,7 +20,7 @@
     "traefik/dashboard"
   ],
   "ENV_MACHINES": [
-    "_gateway.enp2s0.pfsense",
+    "pfsense.enp2s0.pfsense",
     "freenas.enp2s0.pfsense",
     "esxi.enp2s0.pfsense",
     "roku.enp2s0.pfsense"
