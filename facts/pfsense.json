@@ -1,6 +1,6 @@
 {
   "ENV_CNAMES": [
-    "ENV_WG_SERVER_NAME=freenas.enp2s0.pfsense.home.arpa",
+    "ENV_WG_SERVER_NAME=freenas.enp2s0.ENV_HOSTNAME.home.arpa",
     "bt.ENV_WG_SERVER_NAME=ENV_WG_SERVER_NAME",
     "cups.ENV_WG_SERVER_NAME=ENV_WG_SERVER_NAME",
     "esxi.ENV_WG_SERVER_NAME=ENV_WG_SERVER_NAME",
