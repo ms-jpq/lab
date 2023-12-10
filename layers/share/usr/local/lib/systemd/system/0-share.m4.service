@@ -10,6 +10,9 @@ RuntimeDirectory         = local/%J local/%J/mnt
 RuntimeDirectoryPreserve = yes
 PrivateTmp               = yes
 
+User                     = 1000
+Group                    = 1000
+
 # m5_for([SHARE], [
 BindReadOnlyPaths        = /media/SHARE:%t/local/%J/mnt/SHARE
 # ], m5_assert([ENV_WEB_EXPORTS]))

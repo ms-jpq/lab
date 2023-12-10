@@ -1,0 +1,7 @@
+server {
+  listen unix:/run/local/nginx/80.sock;
+
+  location / {
+    proxy_pass http://freenas.enp2s0.m5_assert([ENV_HOSTNAME]).home.arpa;
+  }
+}
