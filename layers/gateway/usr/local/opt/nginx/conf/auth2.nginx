@@ -1,3 +1,5 @@
+error_page 420 @e420;
+
 if ($http_accept ~* "html") {
   error_page 401 @e401;
 }
