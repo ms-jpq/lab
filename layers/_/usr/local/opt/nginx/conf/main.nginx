@@ -1,4 +1,5 @@
 pid              /run/nginx.pid;
+user             www-data;
 error_log        stderr;
 worker_processes auto;
 include          /etc/nginx/modules-enabled/*.conf;
