@@ -1,0 +1,3 @@
+location /roundcube {
+  proxy_pass http://unix:/run/local/lighttpd/80.sock;
+}
