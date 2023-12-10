@@ -1,5 +1,4 @@
 auth_request /-_-auth-_-;
-error_page   401 @e401;
 
 location /-_-auth-_- {
   auth_request            off;

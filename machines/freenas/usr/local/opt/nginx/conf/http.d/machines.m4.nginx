@@ -2,12 +2,11 @@
 server {
   server_name MACH.*;
   include     /usr/local/opt/nginx/conf/listen.nginx;
+  set         $x_machine MACH.home.arpa:8080;
 
   location / {
     include    /usr/local/opt/nginx/conf/auth2.nginx;
-    # TODO: home.arpa
-    set        $upstream MACH:8080;
-    proxy_pass http://$upstream;
+    proxy_pass http://$x_machine;
   }
 }
 
