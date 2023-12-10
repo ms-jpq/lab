@@ -17,4 +17,4 @@ Network          = 3-pm-traefik.network
 
 [Service]
 Restart          = on-failure
-ExecStartPost    = /usr/local/libexec/retry.sh 0.5 podman exec -- %J-%I pg_isready --username kemal --dbname postgres
+ExecStartPost    = /usr/local/libexec/retry.sh 0.1 podman exec -- %J-%I pg_isready --username kemal --dbname postgres
