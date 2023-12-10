@@ -27,6 +27,7 @@
 + systemd-journal-remote
 + systemd-oomd
 + tree
++ ttyd
 + unattended-upgrades
 + unzip
 + wireguard-tools

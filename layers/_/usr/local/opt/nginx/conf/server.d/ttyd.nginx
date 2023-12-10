@@ -1,0 +1,3 @@
+location /ttyd {
+  proxy_pass http://unix:/run/ttyd.sock;
+}
