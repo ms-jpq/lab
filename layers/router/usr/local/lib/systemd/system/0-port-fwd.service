@@ -20,4 +20,5 @@ PrivateTmp               = yes
 RuntimeDirectory         = local/port-fwd
 RuntimeDirectoryPreserve = yes
 EnvironmentFile          = -/usr/local/etc/default/port-fwd.env
+Environment              = HOSTNAME=%H
 ExecStart                = /usr/local/opt/nftables/libexec/port-fwd.sh %t/local/port-fwd

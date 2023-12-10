@@ -11,7 +11,7 @@ NEW="$RUN/new.conf"
 SED=()
 for FILE in /run/local/dnsmasq/*/leases; do
   DOMAIN="${FILE%/*}"
-  DOMAIN="${DOMAIN##*/}"
+  DOMAIN="${DOMAIN##*/}.$HOSTNAME.home.arpa"
   LS="$(awk '{ print($1, $3, $4) }' "$FILE")"
   readarray -t -- LSS <<<"$LS"
 
