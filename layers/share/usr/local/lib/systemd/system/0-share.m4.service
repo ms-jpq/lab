@@ -14,7 +14,7 @@ User                     = 1000
 Group                    = 1000
 
 # m5_for([SHARE], [
-BindReadOnlyPaths        = /media/SHARE:%t/local/%J/mnt/SHARE
+BindPaths                = /media/SHARE:%t/local/%J/mnt/SHARE
 # ], m5_assert([ENV_WEB_EXPORTS]))
 
 # TODO: rclone can listen on unix sockets on later versions
