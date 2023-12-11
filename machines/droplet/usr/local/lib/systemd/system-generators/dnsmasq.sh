@@ -3,7 +3,7 @@
 set -o pipefail
 
 RUN="$1"
-WANTS="$RUN/default.target.wants"
+WANTS="$RUN/multi-user.target.wants"
 
 # shellcheck disable=SC1091
 source -- /usr/local/etc/default/wan.env

@@ -18,4 +18,4 @@ ExecStartPre   = /usr/local/libexec/retry.sh 0.1 stat -- /run/avahi-daemon/socke
 ExecStart      = uxplay -p -nh -n %H
 
 [Install]
-WantedBy       = default.target
+WantedBy       = multi-user.target

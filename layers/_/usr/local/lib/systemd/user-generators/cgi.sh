@@ -1,1 +1,0 @@
-../system-generators/cgi.sh

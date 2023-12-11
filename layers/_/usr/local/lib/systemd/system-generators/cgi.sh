@@ -3,7 +3,7 @@
 set -o pipefail
 
 RUN="$1"
-WANTS="$RUN/default.target.wants"
+WANTS="$RUN/multi-user.target.wants"
 
 mkdir -v -p -- "$WANTS"
 for BIN in /usr/local/opt/cgi/bin/*; do

@@ -1,1 +1,1 @@
-/usr/local/lib/systemd/system/default.target.wants/0-share.service ../0-share.service
+/usr/local/lib/systemd/system/multi-user.target.wants/0-share.service ../0-share.service

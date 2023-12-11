@@ -3,7 +3,7 @@
 set -o pipefail
 
 RUN="$1"
-WANTS="$RUN/default.target.wants"
+WANTS="$RUN/multi-user.target.wants"
 
 mkdir -v -p -- "$WANTS"
 for MOUNT in /usr/local/lib/systemd/system/media-*.mount; do

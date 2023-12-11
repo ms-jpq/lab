@@ -4,4 +4,4 @@ Description = Podman Containers Target
 After       = network-online.target
 
 [Install]
-WantedBy    = default.target
+WantedBy    = multi-user.target

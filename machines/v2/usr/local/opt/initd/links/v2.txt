@@ -1,1 +1,1 @@
-/usr/local/lib/systemd/system/default.target.wants/0-v2client.service ../0-v2client.service
+/usr/local/lib/systemd/system/multi-user.target.wants/0-v2client.service ../0-v2client.service
