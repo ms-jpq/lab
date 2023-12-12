@@ -1,6 +1,6 @@
++ apache2
 + dovecot-imapd
 + dovecot-lmtpd
-+ lighttpd
 + opensmtpd
 + roundcube-sqlite3
 + z-push-backend-imap
