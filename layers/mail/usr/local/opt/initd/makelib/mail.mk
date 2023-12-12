@@ -13,9 +13,12 @@ mail.clobber:
 	sudo -- chown -- '$(@F):$(@F)' '$@'
 
 
-mail: /usr/local/opt/apache2/apache2.conf
+mail: /usr/local/opt/apache2/apache2.conf /usr/local/opt/z-push/autodiscover.conf.php
 
-/etc/apache2/apache2.conf: | pkg._
+/etc/apache2/apache2.conf /etc/z-push/autodiscover.conf.php: | pkg._
 
 /usr/local/opt/apache2/apache2.conf: /usr/local/opt/apache2/libexec/cfg.sed /etc/apache2/apache2.conf
 	sudo -- /usr/local/libexec/sponge2.sh '$@' '$<' /etc/apache2/apache2.conf
+
+/usr/local/opt/z-push/autodiscover.conf.php: /usr/local/opt/z-push/libexec/cfg.sed /etc/z-push/autodiscover.conf.php
+	sudo -- /usr/local/libexec/sponge2.sh '$@' '$<' /etc/z-push/autodiscover.conf.php
