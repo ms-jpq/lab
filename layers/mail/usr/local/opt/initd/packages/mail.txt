@@ -2,5 +2,6 @@
 + dovecot-imapd
 + dovecot-lmtpd
 + opensmtpd
++ roundcube-core
 + roundcube-sqlite3
 + z-push-backend-imap
