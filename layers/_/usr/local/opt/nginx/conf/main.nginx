@@ -23,6 +23,7 @@ http {
   sendfile                  on;
   ssl_prefer_server_ciphers on;
   tcp_nopush                on;
+  # brotli on;
   include                   /etc/nginx/mime.types;
   include                   /usr/local/opt/nginx/conf/websocket.nginx;
   include                   /usr/local/opt/nginx/conf/ssl.nginx;

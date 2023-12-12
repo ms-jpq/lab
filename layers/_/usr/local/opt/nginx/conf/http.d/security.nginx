@@ -1,5 +1,5 @@
 map $sent_http_content_security_policy $x_content_security_policy {
-  ""      "default-src 'self' data: 'unsafe-inline' 'unsafe-eval'; img-src *; media-src *;";
+  ""      "default-src 'self' data: 'unsafe-inline' 'unsafe-eval'; img-src * data:; media-src * data:;";
   default "";
 }
 
