@@ -37,20 +37,16 @@ done
 
 case "$AUTH_PROTOCOL" in
 smtp)
-  readarray -t -- LINES </var/lib/local/nginx/htpasswd
-  # for LINE in "${LINES[@]}"; do
-  #   USER="${LINE%%:*}"
-  #   if [[ "$USER" == "$AUTH_SMTP_TO" ]]; then
-  tee -- <<-'EOF'
+  if ! [[ "$AUTH_SMTP_TO" =~ / ]]; then
+    tee -- <<-'EOF'
 HTTP/1.0 200 OK
 Auth-Status: OK
 Auth-Server: 127.0.0.53
 Auth-Port: 2525
 
 EOF
-  exit 0
-  #   fi
-  # done
+    exit 0
+  fi
   ;;
 imap)
   CURL=(

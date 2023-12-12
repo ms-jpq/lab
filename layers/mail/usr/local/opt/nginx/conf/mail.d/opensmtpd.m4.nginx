@@ -1,7 +1,7 @@
 server {
   listen    [[::]]:25 ipv6only=off;
   # m4_define([SMTP_CONF], [
-  auth_http http://unix:/run/local/nginx/cgi.sock:/mail.sh/;
+  auth_http http://unix:/run/local/nginx/cgi.sock:/sieve.sh/;
   protocol  smtp;
   xclient   off;
   smtp_auth none;
@@ -23,7 +23,7 @@ server {
 server {
   listen    127.0.0.53:1443 ipv6only=off;
   # m4_define([IMAP_CONF], [
-  auth_http http://unix:/run/local/nginx/cgi.sock:/mail.sh/;
+  auth_http http://unix:/run/local/nginx/cgi.sock:/sieve.sh/;
   protocol  imap;
   # ])
   IMAP_CONF
