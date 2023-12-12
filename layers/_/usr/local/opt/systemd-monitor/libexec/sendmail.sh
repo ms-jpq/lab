@@ -26,7 +26,7 @@ TMP="$(mktemp)"
 SENDMAIL=(
   /usr/local/libexec/sendmail.sh
   --rcpt "$REMOTE"
-  --header "Subject: $0 -- $HOSTNAME"
+  --subject "$0 -- $HOSTNAME"
   --body "$TMP"
 )
 

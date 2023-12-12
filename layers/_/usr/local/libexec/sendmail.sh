@@ -2,8 +2,8 @@
 
 set -o pipefail
 
-OPTS='f:,r:,h:,b:,a:'
-LONG_OPTS='from:,rcpt:,header:,body:,attachment:'
+OPTS='f:,r:,s:,h:,b:,a:'
+LONG_OPTS='from:,rcpt:,subject:,header:,body:,attachment:'
 GO="$(getopt --options="$OPTS" --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
@@ -31,6 +31,10 @@ while (($#)); do
   -r | --rcpt)
     RCPT="$2"
     DOMAIN="${RCPT##*@}"
+    shift -- 2
+    ;;
+  -s | --subject)
+    HEADERS+=(--header "Subject: $2")
     shift -- 2
     ;;
   -h | --header)

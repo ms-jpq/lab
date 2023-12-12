@@ -1,5 +1,6 @@
 location /roundcube {
-  return 307 /roundcube/;
+  add_header Clear-Site-Data '"*"' always;
+  return     307 /roundcube/?$args;
 }
 
 location /roundcube/ {
