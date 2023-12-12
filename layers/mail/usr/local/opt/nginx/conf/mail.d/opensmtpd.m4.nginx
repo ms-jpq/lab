@@ -21,7 +21,15 @@ server {
 }
 
 server {
-  listen    [[::]]:993 ipv6only=off ssl;
+  listen    127.0.0.53:1443 ipv6only=off;
+  # m4_define([IMAP_CONF], [
   auth_http http://unix:/run/local/nginx/cgi.sock:/mail.sh/;
   protocol  imap;
+  # ])
+  IMAP_CONF
+}
+
+server {
+  listen    [[::]]:993 ipv6only=off ssl;
+  IMAP_CONF
 }
