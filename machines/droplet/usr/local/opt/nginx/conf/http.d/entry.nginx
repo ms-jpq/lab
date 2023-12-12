@@ -1,9 +1,8 @@
 include /usr/local/opt/nginx/conf/optimistic_host.nginx;
 
 server {
-  server_name "";
   # TODO: http2 on;
-  listen      unix:/run/local/nginx/http.sock;
+  listen unix:/run/local/nginx/http.sock default_server;
 
   location / {
     proxy_pass http://127.0.0.53:10080/;

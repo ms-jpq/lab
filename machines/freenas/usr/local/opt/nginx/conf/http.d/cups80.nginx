@@ -1,9 +1,0 @@
-server {
-  server_name cups.*;
-  include     /usr/local/opt/nginx/conf/listen.nginx;
-
-  location / {
-    include    /usr/local/opt/nginx/conf/auth2.nginx;
-    proxy_pass http://localhost:6310/;
-  }
-}

@@ -1,10 +1,13 @@
 server {
-  listen           [::]:6310 ipv6only=off;
-  include          /usr/local/opt/nginx/conf/websocket.nginx;
-  proxy_set_header Host localhost;
-  proxy_set_header Authorization "Basic Y3VwczpjdXBz";
+  server_name cups.*;
+  listen      8080;
+  listen      [::]:8080;
+  listen      unix:/run/local/nginx/cgi.sock;
 
   location / {
-    proxy_pass http://unix:/run/cups/cups.sock:/;
+    include          /usr/local/opt/nginx/conf/websocket.nginx;
+    proxy_set_header Host localhost;
+    proxy_set_header Authorization "Basic Y3VwczpjdXBz";
+    proxy_pass       http://unix:/run/cups/cups.sock:/;
   }
 }
