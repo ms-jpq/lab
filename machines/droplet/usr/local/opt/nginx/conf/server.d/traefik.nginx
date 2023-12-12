@@ -1,0 +1,6 @@
+location /traefik {
+  alias           /usr/local/opt/nginx/traefik/;
+  sub_filter_once off;
+  sub_filter      "@SCHEME" $scheme;
+  sub_filter      "@HOST" $optimistic_host;
+}

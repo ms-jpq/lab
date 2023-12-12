@@ -20,12 +20,4 @@ server {
     include    /usr/local/opt/nginx/conf/auth2.nginx;
     proxy_pass http://unix:/run/local/nginx/cgi.sock;
   }
-
-  location /traefik {
-    include         /usr/local/opt/nginx/conf/auth2.nginx;
-    alias           /usr/local/opt/nginx/traefik/;
-    sub_filter_once off;
-    sub_filter      "@SCHEME" $scheme;
-    sub_filter      "@HOST" $optimistic_host;
-  }
 }
