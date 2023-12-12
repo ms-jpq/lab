@@ -10,8 +10,9 @@
       <!--m5_for([SUB], [-->
       <!--m4_pushdef([DOMAIN], [m4_regexp(SUB, [\(^[^/]+\)], [\1])])-->
       <!--m4_pushdef([PATH], [m4_regexp(SUB, [\(/[^/]+$\)], [\1])])-->
+      <!--m4_pushdef([FRONT], [m4_regexp(DOMAIN, [\(^[^.]+\)], [\1])])-->
       <li>
-        <a rel="noreferrer" href="@SCHEME://DOMAIN.[@HOST]PATH">SUB</a>
+        <a rel="noreferrer" href="@SCHEME://DOMAIN.[@HOST]PATH">FRONT[]PATH</a>
       </li>
       <!--], m5_assert([ENV_MACHINES]), m5_assert([ENV_INDEX]))-->
     </ul>
