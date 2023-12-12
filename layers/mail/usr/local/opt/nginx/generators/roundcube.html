@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>/mail</title>
+  </head>
+  <body>
+    <ul>
+      <!--m5_for([INBOX], [-->
+      <!--m4_pushdef([NAME], [m4_regexp(INBOX, [\(^[^#]+\)], [\1])])-->
+      <!--m4_pushdef([ESC], [m4_regexp(INBOX, [\([^#]+$\)], [\1])])-->
+      <li>
+        <a rel="noreferrer" target="_blank" href="/roundcube/?_user=ESC"
+          >NAME</a
+        >
+      </li>
+      <!--], m5_assert([ENV_INBOXES]))-->
+    </ul>
+  </body>
+</html>
