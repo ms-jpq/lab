@@ -1,4 +1,3 @@
-/etc/avahi/services/ssh.service                                                       /usr/share/doc/avahi-daemon/examples/ssh.service
 /usr/local/lib/systemd/system/dnsmasq.service                                         /dev/null
 /usr/local/lib/systemd/system/multi-user.target.wants/systemd-journal-gatewayd.socket /usr/lib/systemd/system/systemd-journal-gatewayd.socket
 /usr/local/lib/systemd/system/sysinit.target.wants/nftables.service                   /usr/lib/systemd/system/nftables.service
