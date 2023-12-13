@@ -4,13 +4,14 @@ set -o pipefail
 
 cd -- "${0%/*}"
 
-OPTS='m:'
-LONG_OPTS='machine:'
+OPTS='m:,e'
+LONG_OPTS='machine:,exec'
 GO="$(getopt --options="$OPTS" --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
 USER=root
 MACHINES=()
+EX=0
 while (($#)); do
   case "$1" in
   --)
@@ -20,6 +21,10 @@ while (($#)); do
   -m | --machine)
     MACHINES+=("$2")
     shift -- 2
+    ;;
+  -e | --exec)
+    EX=1
+    shift -- 1
     ;;
   *)
     exit 1
@@ -42,11 +47,11 @@ for MACHINE in "${MACHINES[@]}"; do
   fi
 done
 
-gmake MACHINE="${MACHINES[*]}" local
+if ! ((EX)); then
+  gmake MACHINE="${MACHINES[*]}" local
+fi
 
 for MACHINE in "${MACHINES[@]}"; do
-  SRC="./var/tmp/machines/$MACHINE/fs"
-
   EXEC=(
     ./libexec/inventory.sh
     --inventory "$INVENTORY"
@@ -54,8 +59,13 @@ for MACHINE in "${MACHINES[@]}"; do
     --action
   )
 
-  "${EXEC[@]}" exec -- "$(<"$SH/libexec/essentials.sh")"
-  "${EXEC[@]}" sync -- "$SRC/"
-  printf -v ESC -- '%q ' gmake --directory /usr/local/opt/initd "$@"
+  if ((EX)); then
+    printf -v ESC -- '%q ' "$@"
+  else
+    SRC="./var/tmp/machines/$MACHINE/fs"
+    "${EXEC[@]}" exec -- "$(<"$SH/libexec/essentials.sh")"
+    "${EXEC[@]}" sync -- "$SRC/"
+    printf -v ESC -- '%q ' gmake --directory /usr/local/opt/initd "$@"
+  fi
   "${EXEC[@]}" exec -- "$ESC"
 done
