@@ -9,6 +9,7 @@
 + gnome-weather
 + gstreamer1.0-libav
 + gstreamer1.0-plugins-bad
++ mpv
 + uxplay
 + variety
 - libreoffice-common
