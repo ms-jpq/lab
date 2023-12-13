@@ -98,6 +98,7 @@ layers/ubuntu/root/etc/apt/apt.conf.d/69dpkg-options                            
 layers/ubuntu/root/etc/apt/apt.conf.d/69no-recommends                                          etc/apt/apt.conf.d/69no-recommends
 layers/ubuntu/root/etc/apt/apt.conf.d/69unattended-upgrades                                    etc/apt/apt.conf.d/69unattended-upgrades
 layers/ubuntu/root/etc/apt/preferences.d/0-nosnap                                              etc/apt/preferences.d/0-nosnap
+layers/ubuntu/root/etc/avahi/avahi-daemon.conf                                                 usr/local/opt/avahi/avahi-daemon.conf
 layers/ubuntu/root/etc/ssh/sshd_config.d/0-accept-env.conf                                     etc/ssh/sshd_config.d/0-accept-env.conf
 layers/ubuntu/root/etc/ssh/sshd_config.d/0-security.conf                                       etc/ssh/sshd_config.d/0-security.conf
 layers/ubuntu/root/usr/local/lib/sysctl.d/50-tcp-congestion.conf                               usr/local/lib/sysctl.d/50-tcp-congestion.conf

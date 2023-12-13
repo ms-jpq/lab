@@ -13,7 +13,6 @@ PrivateTmp     = yes
 ReadWritePaths = %t %T
 Environment    = DISPLAY=:0
 
-ExecStartPre   = /usr/local/libexec/retry.sh 0.1 stat -- /run/avahi-daemon/socket
 # -fs -nohold
 ExecStart      = uxplay -p -nh -n %H
 
