@@ -1,0 +1,8 @@
+<service-group>
+  <name replace-wildcards="yes">%h</name>
+  <service>
+    <type>_webdav._tcp</type>
+    <port>8080</port>
+    <txt-record>path=/share</txt-record>
+  </service>
+</service-group>
