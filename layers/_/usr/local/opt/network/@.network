@@ -16,6 +16,7 @@ Address                 = ${IPV6_IF}
 
 Domains                 = ~${DOMAIN}
 DNS                     = ${IPV6_ADDR} ${IPV4_ADDR}
+MulticastDNS            = resolve
 
 DHCP                    = no
 IPv6AcceptRA            = no
