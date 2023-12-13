@@ -19,7 +19,8 @@ zpool import -d /dev/disk/by-id/ <pool>
 ## Hierarchy
 
 ```bash
-zpool create -o ashift=12 -o autotrim=on <pool> mirror <dev>
+# ashift=12 on HDDs
+zpool create -o ashift=13 -o autotrim=on <pool> mirror <dev>
 ```
 
 ```bash
