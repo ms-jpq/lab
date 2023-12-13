@@ -4,4 +4,8 @@
     <type>_smtp._tcp</type>
     <port>25</port>
   </service>
+  <service>
+    <type>_imap._tcp</type>
+    <port>143</port>
+  </service>
 </service-group>

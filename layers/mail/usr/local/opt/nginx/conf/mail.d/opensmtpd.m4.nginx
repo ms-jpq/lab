@@ -21,7 +21,7 @@ server {
 }
 
 server {
-  listen    127.0.0.53:1443 ipv6only=off;
+  listen    [[::]]:143 ipv6only=off;
   # m4_define([IMAP_CONF], [
   auth_http http://unix:/run/local/nginx/cgi.sock:/sieve.sh/;
   protocol  imap;
