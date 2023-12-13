@@ -42,3 +42,6 @@ ExecStart        = networkctl reload
 ExecReload       = networkctl reconfigure -- ${IFACE}
 ExecStopPost     = rm -v --recursive --force -- ${NETDEV} ${NETWORK}
 ExecStop         = -networkctl delete -- ${IFACE}
+
+ExecStartPost    = nft  add    element inet user wg_ifs '{ ${IFACE} }'
+ExecStop         = -nft remove element inet user wg_ifs '{ ${IFACE} }'

@@ -3,6 +3,7 @@ Name              = ${IFACE}
 
 [Link]
 RequiredForOnline = no
+Multicast         = yes
 
 [Network]
 IPMasquerade      = ${IPMASQUERADE}

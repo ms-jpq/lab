@@ -1,6 +1,7 @@
 # + libnginx-mod-http-brotli-static
 # + linux-generic-hwe-[]m5_assert([ENV_VERSION_ID])
 # TODO: more nginx modules
++ avahi-daemon
 + bat
 + dnsmasq
 + fd-find
