@@ -1,0 +1,15 @@
+<service-group>
+  <name replace-wildcards="yes">%h</name>
+  <service>
+    <type>_domain._tcp</type>
+    <port>53</port>
+  </service>
+  <service>
+    <type>_domain._udp</type>
+    <port>53</port>
+  </service>
+  <service>
+    <type>_ntp._udp</type>
+    <port>123</port>
+  </service>
+</service-group>
