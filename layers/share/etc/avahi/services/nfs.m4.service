@@ -1,0 +1,10 @@
+<service-group>
+  <name replace-wildcards="yes">%h</name>
+  <service>
+    <type>_nfs._udp</type>
+    <port>2049</port>
+    <!--m5_for([PATH], [-->
+    <txt-record>path=/media/PATH</txt-record>
+    <!--], m5_or([ENV_NFS_EXPORTS], []))-->
+  </service>
+</service-group>

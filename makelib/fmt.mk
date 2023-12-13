@@ -1,7 +1,8 @@
 .PHONY: fmt systemd-fmt shfmt black prettier nginx taplo
 
-fmt: systemd-fmt shfmt black prettier nginx taplo
+fmt: shfmt black prettier nginx taplo
 
+# TODO: add ignore list -- systemd-fmt
 systemd-fmt: $(VAR)/sh
 	'$</layers/posix/home/.local/bin/systemd-fmt.sh' ./layers ./machines
 
