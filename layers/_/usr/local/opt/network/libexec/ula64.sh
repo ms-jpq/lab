@@ -2,11 +2,10 @@
 
 set -o pipefail
 
-IFACE="$1"
-ID="$(</etc/machine-id)+$IFACE"
-SHIFT=56
-ULA=$((0xfd << SHIFT))
-B2="$(b2sum --binary --length "$SHIFT" <<<"$ID")"
+ID="$(</etc/machine-id)"
+ULA=$((0xfd << 56))
+B2="$(b2sum --binary --length 48 <<<"$ID")"
 B2="${B2% *}"
-printf -v BITS -- '%x' $((ULA ^ "0x$B2"))
+MASK=$((~(0xffff << 48)))
+printf -v BITS -- '%x' $(((ULA ^ "0x$B2" << 16) >> 16 & MASK))
 exec -- perl -CASD -wpe 's/(.{4})(?=.)/$1:/g' <<<"$BITS"

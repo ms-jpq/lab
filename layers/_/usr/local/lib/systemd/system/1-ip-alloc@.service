@@ -23,4 +23,4 @@ Environment              = IPV4_PREFIX=24
 EnvironmentFile          = -/usr/local/etc/default/%I.ip.env
 
 ExecStart                = /usr/local/opt/network/libexec/ipalloc.sh ${LOCK} %S/local/ip ${IFACE} ${IPV4_PREFIX}
-ExecStopPost             = flock -- ${LOCK} rm -v -fr -- ${LOCK}/${IFACE}
+ExecStopPost             = flock -- ${LOCK} rm -v -fr -- ${LOCK}/${IFACE}.env
