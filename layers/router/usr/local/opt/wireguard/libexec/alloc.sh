@@ -35,6 +35,7 @@ WG_LINES=()
 DNSMAQ_HOSTS=()
 
 export -- DOMAIN IPV6 IPV4 SERVER_PUBLIC_KEY SERVER_NAME CLIENT_PRIVATE_KEY
+MACHINE_ULA="$(/usr/local/opt/network/libexec/ula64.sh)/56"
 
 P="$(sort --field-separator ',' <<<"$WG_PEERS")"
 readarray -t -d ',' -- PEERS <<<"$P"
@@ -85,7 +86,7 @@ for PEER in "${PEERS[@]}"; do
       } | sponge -- "$CACHE/$ID.txt"
 
       HTML_TITLE="$ID" HTML_PRE="$CONF" HTML_CODE="$QR" envsubst <"$SELF/peer.html" | sponge -- "$CACHE/$ID.html"
-      IFACE="$CIFACE" envsubst <"$SELF/peer.netdev" | sponge -- "$CACHE/$ID.netdev"
+      IFACE="$CIFACE" IPV6_IF="$MACHINE_ULA" envsubst <"$SELF/peer.netdev" | sponge -- "$CACHE/$ID.netdev"
       IPMASQUERADE=no IPV6_IF="$IPV6" IPV4_IF="$IPV4" IFACE="$CIFACE" DOMAIN="$HOSTNAME.home.arpa" envsubst <"$SELF/@.network" | sponge -- "$CACHE/$ID.network"
       break
     fi
