@@ -1,0 +1,26 @@
+[Unit]
+Description   = Podman -- %J
+
+[Container]
+Image         = quay.io/minio/minio:latest
+ContainerName = %J
+AutoUpdate    = registry
+RunInit       = yes
+
+Label         = traefik.enable=true
+Label         = traefik.http.services.%J.loadbalancer.server.port=9001
+Label         = "traefik.http.routers.%J.rule=HostRegexp(`minio.{.+}.{.+$$}`)"
+Label         = traefik.http.routers.%J.service=%J
+Label         = traefik.http.services.%J2.loadbalancer.server.port=9000
+Label         = "traefik.http.routers.%J2.rule=HostRegexp(`s3.{.+}.{.+$$}`)"
+Label         = traefik.http.routers.%J2.service=%J2
+
+Exec          = server /data --console-address :9001
+
+Network       = 3-pm-traefik.network
+
+[Service]
+Restart       = on-failure
+
+[Install]
+WantedBy      = 0-podman.target

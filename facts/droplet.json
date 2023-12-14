@@ -6,6 +6,7 @@
     "draw",
     "google",
     "local",
+    "minio",
     "mongo",
     "mysql",
     "pastebin",
