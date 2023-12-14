@@ -13,7 +13,7 @@ Environment      = POSTGRES_USER=kemal
 Environment      = POSTGRES_PASSWORD=kemal
 Environment      = POSTGRES_DB=postgres
 
-Network          = 3-pm-%J.network
+Network          = %p.network
 
 [Service]
 Restart          = on-failure

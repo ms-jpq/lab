@@ -26,7 +26,7 @@ Environment   = PAD_OPTIONS_USE_MONOSPACE_FONT=true
 Environment   = TITLE=📝
 Environment   = TRUST_PROXY=true
 
-Network       = 3-pm-%J.network
+Network       = %p.network
 Network       = 3-pm-traefik.network
 
 [Service]
