@@ -1,0 +1,19 @@
+[Unit]
+Description   = Podman -- %J
+
+[Container]
+Image         = docker.io/library/redis:latest
+ContainerName = %J
+AutoUpdate    = registry
+RunInit       = yes
+
+PublishPort   = 127.0.0.53:63800:6380
+
+Network       = %p.network
+
+[Service]
+Restart       = on-failure
+ExecStartPost = /usr/local/libexec/retry.sh 0.1 podman exec -- %J redis-cli incr ping
+
+[Install]
+WantedBy      = 0-podman.target

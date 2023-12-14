@@ -1,8 +1,9 @@
-pid              /run/nginx.pid;
-user             www-data;
-error_log        stderr;
-worker_processes auto;
-include          /etc/nginx/modules-enabled/*.conf;
+pid                  /run/nginx.pid;
+user                 www-data;
+error_log            stderr;
+worker_processes     auto;
+worker_rlimit_nofile 65535;
+include              /etc/nginx/modules-enabled/*.conf;
 
 events {
 }
@@ -63,4 +64,4 @@ mail {
   include                  /usr/local/opt/nginx/conf/mail.d/*.nginx;
 }
 
-include          /run/local/nginx/conf/conf.d/*.nginx;
+include              /run/local/nginx/conf/conf.d/*.nginx;

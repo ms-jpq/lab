@@ -1,0 +1,21 @@
+[Unit]
+Description   = Podman -- %J
+
+[Container]
+Image         = docker.io/library/mysql:latest
+ContainerName = %J
+AutoUpdate    = registry
+RunInit       = yes
+
+Environment   = MYSQL_ROOT_PASSWORD=%J
+Environment   = MYSQL_USER=%J
+Environment   = MYSQL_PASSWORD=%J
+Environment   = MYSQL_DATABASE=%J
+
+PublishPort   = 127.0.0.53:33306:3306
+
+[Service]
+Restart       = on-failure
+
+[Install]
+WantedBy      = 0-podman.target

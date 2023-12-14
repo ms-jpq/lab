@@ -1,0 +1,19 @@
+[Unit]
+Description   = Podman -- %J
+
+[Container]
+Image         = docker.io/library/elasticsearch:8.11.1
+ContainerName = %J
+AutoUpdate    = registry
+PodmanArgs    = --memory=256m
+
+Environment   = discovery.type=single-node
+Environment   = ES_MAX_MEM=256m
+
+PublishPort   = 127.0.0.53:9280:9200
+
+[Service]
+Restart       = on-failure
+
+[Install]
+WantedBy      = 0-podman.target

@@ -1,14 +1,15 @@
 {
   "ENV_INDEX": [
     "12ft",
-    "admin",
     "bing",
+    "db",
     "docs",
     "draw",
     "google",
     "local",
     "pastebin",
     "reddit",
+    "redis",
     "speedtest",
     "traefik",
     "twitter",
