@@ -13,6 +13,7 @@ Environment      = MYSQL_USER=%J
 Environment      = MYSQL_PASSWORD=%J
 Environment      = MYSQL_DATABASE=%J
 
+Network          = %p.network
 PublishPort      = 127.0.0.53:33306:3306
 
 [Service]
