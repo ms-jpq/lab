@@ -1,0 +1,24 @@
+[Unit]
+Description    = IRSSI IRClient
+After          = znc.service
+
+After          = %p.socket
+BindsTo        = %p.socket
+
+[Service]
+Restart        = on-failure
+ProtectSystem  = strict
+ProtectHome    = yes
+PrivateTmp     = yes
+ReadWritePaths = %T %V %S/local/%J
+
+Environment    = TERM=xterm-256color
+Environment    = HOME=%S/local/%J
+Environment    = HOSTNAME=%H
+
+StandardInput  = socket
+StandardOutput = socket
+StandardError  = socket
+
+ExecStartPre   = mkdir -v -p -- ${HOME}
+ExecStart      = irssi --hostname ${HOSTNAME} --home ${HOME}
