@@ -1,8 +1,23 @@
 ---
 use_default_settings: true
+redis:
+  url: redis://searx-redis:6379/0
+general:
+  enable_metrics: true
 search:
-  autocomplete: "bing"
+  autocomplete: google
+  default_lang: all
+ui:
+  results_on_new_tab: true
 server:
+  base_url: https://google.m5_assert([ENV_DOMAIN])
   limiter: false
+  image_proxy: true
+  public_instance: true
+  formats:
+    - csv
+    - html
+    - json
+    - rss
   secret_key: |-
     m4_esyscmd([uuidgen])

@@ -14,11 +14,9 @@ Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=8080
 Label         = "traefik.http.routers.%J.rule=HostRegexp(`google.{.+}.{.+$$}`)"
 
-Environment   = AUTOCOMPLETE=duckduckgo
-
 Network       = 3-pm-traefik.network
 
-Volume        = /usr/local/opt/%J/settings.yml:%E/settings.yml:ro
+Volume        = /usr/local/opt/%J/settings.yml:%E/searxng/settings.yml:ro
 
 [Service]
 Restart       = on-failure
