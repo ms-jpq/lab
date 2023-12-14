@@ -11,13 +11,12 @@ Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=5000
 Label         = "traefik.http.routers.%J.rule=HostRegexp(`bing.{.+}.{.+$$}`)"
 
-Environment   = WHOOGLE_CONFIG_GET_ONLY=true
 Environment   = WHOOGLE_CONFIG_NEW_TAB=true
 Environment   = WHOOGLE_CONFIG_URL=https://bing.m5_assert([ENV_DOMAIN])/
 Environment   = WHOOGLE_CONFIG_VIEW_IMAGE=true
 Environment   = WHOOGLE_REDIRECTS=reddit.com:reddit.m5_assert([ENV_DOMAIN])
 
-Network       = 3-pm-traefik.network
+Network       = 3-pm-ingress.network
 
 [[Service]]
 Restart       = on-failure

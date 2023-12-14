@@ -12,7 +12,7 @@ Environment      = POSTGRES_USER=postgres
 Environment      = POSTGRES_PASSWORD=postgres
 Environment      = POSTGRES_DB=postgres
 
-Network          = 3-pm-traefik.network
+Network          = 3-pm-%J.network
 
 [Service]
 Restart          = on-failure

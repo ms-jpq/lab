@@ -16,7 +16,7 @@ Environment   = LIBREDDIT_DEFAULT_HIDE_HLS_NOTIFICATION=on
 Environment   = LIBREDDIT_DEFAULT_SHOW_NSFW=on
 Environment   = LIBREDDIT_DEFAULT_USE_HLS=on
 
-Network       = 3-pm-traefik.network
+Network       = 3-pm-ingress.network
 
 [Service]
 Restart       = on-failure

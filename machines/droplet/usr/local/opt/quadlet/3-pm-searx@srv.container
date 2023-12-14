@@ -14,7 +14,8 @@ Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=8080
 Label         = "traefik.http.routers.%J.rule=HostRegexp(`google.{.+}.{.+$$}`)"
 
-Network       = 3-pm-traefik.network
+Network       = 3-pm-%J.network
+Network       = 3-pm-ingress.network
 
 Volume        = /usr/local/opt/%J/settings.yml:%E/searxng/settings.yml:ro
 

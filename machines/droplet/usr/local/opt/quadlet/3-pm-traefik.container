@@ -15,6 +15,7 @@ Label         = traefik.http.services.%J.loadbalancer.server.port=8080
 Label         = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+}.{.+$$}`)"
 
 Network       = %p.network
+Network       = 3-pm-ingress.network
 
 # TODO: ipv6 https://github.com/containers/podman/issues/14491
 PublishPort   = 127.0.0.53:10080:8888

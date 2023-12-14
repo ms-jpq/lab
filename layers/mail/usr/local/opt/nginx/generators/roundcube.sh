@@ -2,8 +2,7 @@
 
 set -o pipefail
 
-MAIL="$2/mail"
-mkdir -p -- "$MAIL"
+WWW="$2"
 
 LS="$(
   for F in /var/lib/local/vmail/*; do
@@ -17,4 +16,4 @@ IFS=','
 PARAMS="${LINES[*]}"
 unset -- IFS
 
-/usr/local/libexec/m4.sh -D"ENV_INBOXES=$PARAMS" "${0%/*}/roundcube.html" | sponge -- "$MAIL/index.html"
+/usr/local/libexec/m4.sh -D"ENV_INBOXES=$PARAMS" "${0%/*}/roundcube.html" | sponge -- "$WWW/mail.html"
