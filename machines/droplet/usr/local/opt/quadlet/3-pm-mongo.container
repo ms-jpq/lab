@@ -7,6 +7,9 @@ ContainerName = %J
 AutoUpdate    = registry
 RunInit       = yes
 
+Environment   = MONGO_INITDB_ROOT_USERNAME=%J
+Environment   = MONGO_INITDB_ROOT_PASSWORD=%J
+
 Network       = %p.network
 PublishPort   = 127.0.0.53:2717:27017
 

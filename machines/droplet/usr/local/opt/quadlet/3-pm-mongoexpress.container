@@ -9,9 +9,13 @@ AutoUpdate    = registry
 Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=8081
 Label         = "traefik.http.routers.%J.rule=HostRegexp(`mongo.{.+}.{.+$$}`)"
+Label         = traefik.http.routers.%J.middlewares=%J
+Label         = 'traefik.http.middlewares.%J.headers.customRequestHeaders.Authorization=Basic YWRtaW46cGFzcw=='
+
+Environment   = ME_CONFIG_MONGODB_URL=mongodb://mongo:mongo@mongo:27017/
 
 Network       = 3-pm-mongo.network
-Network       = 3-pm-ingress.network
+Network       = 3-pm-traefik.network
 
 [Service]
 Restart       = on-failure

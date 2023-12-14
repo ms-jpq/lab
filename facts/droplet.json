@@ -7,6 +7,7 @@
     "draw",
     "google",
     "local",
+    "mongo",
     "pastebin",
     "reddit",
     "redis",
