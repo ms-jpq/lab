@@ -1,0 +1,28 @@
+[Unit]
+Description   = Podman -- %J
+
+BindsTo       = %p@mysql.service
+After         = %p@mysql.service
+
+[Container]
+Image         = docker.io/library/phpmyadmin:latest
+ContainerName = %J-%I
+AutoUpdate    = registry
+RunInit       = yes
+
+Label         = traefik.enable=true
+Label         = traefik.http.services.%J.loadbalancer.server.port=80
+Label         = "traefik.http.routers.%J.rule=HostRegexp(`mysql.{.+}.{.+$$}`)"
+
+Environment   = PMA_HOST=%J-mysql
+Environment   = PMA_USER=root
+Environment   = PMA_PASSWORD=%J
+
+Network       = %p.network
+Network       = 3-pm-traefik.network
+
+[Service]
+Restart       = on-failure
+
+[Install]
+WantedBy      = 0-podman.target

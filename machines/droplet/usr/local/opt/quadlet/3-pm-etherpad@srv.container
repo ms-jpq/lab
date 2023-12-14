@@ -15,10 +15,10 @@ Label         = traefik.http.services.%J.loadbalancer.server.port=9001
 Label         = "traefik.http.routers.%J.rule=HostRegexp(`docs.{.+}.{.+$$}`)"
 
 Environment   = DB_HOST=%J-pg
-Environment   = DB_NAME=postgres
-Environment   = DB_PASS=postgres
 Environment   = DB_TYPE=postgres
-Environment   = DB_USER=postgres
+Environment   = DB_NAME=%J
+Environment   = DB_PASS=%J
+Environment   = DB_USER=%J
 Environment   = DEFAULT_PAD_TEXT=...
 Environment   = LOGLEVEL=ERROR
 Environment   = PAD_OPTIONS_NO_COLORS=true

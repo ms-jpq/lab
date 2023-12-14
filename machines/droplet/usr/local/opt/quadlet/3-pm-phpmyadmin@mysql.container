@@ -1,0 +1,19 @@
+[Unit]
+Description      = Podman -- %J
+StopWhenUnneeded = yes
+
+[Container]
+Image            = docker.io/library/mysql:latest
+ContainerName    = %J-%I
+AutoUpdate       = registry
+RunInit          = yes
+
+Environment      = MYSQL_ROOT_PASSWORD=%J
+Environment      = MYSQL_USER=%J
+Environment      = MYSQL_PASSWORD=%J
+Environment      = MYSQL_DATABASE=%J
+
+PublishPort      = 127.0.0.53:33306:3306
+
+[Service]
+Restart          = on-failure

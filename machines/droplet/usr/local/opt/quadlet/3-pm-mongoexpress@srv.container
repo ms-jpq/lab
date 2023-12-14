@@ -1,9 +1,12 @@
 [Unit]
 Description   = Podman -- %J
 
+BindsTo       = %p@mongo.service
+After         = %p@mongo.service
+
 [Container]
 Image         = docker.io/library/mongo-express:latest
-ContainerName = %J
+ContainerName = %J-%I
 AutoUpdate    = registry
 
 Label         = traefik.enable=true
@@ -12,9 +15,9 @@ Label         = "traefik.http.routers.%J.rule=HostRegexp(`mongo.{.+}.{.+$$}`)"
 Label         = traefik.http.routers.%J.middlewares=%J
 Label         = 'traefik.http.middlewares.%J.headers.customRequestHeaders.Authorization=Basic YWRtaW46cGFzcw=='
 
-Environment   = ME_CONFIG_MONGODB_URL=mongodb://mongo:mongo@mongo:27017/
+Environment   = ME_CONFIG_MONGODB_URL=mongodb://%J:%J@%J-mongo:27017/
 
-Network       = 3-pm-mongo.network
+Network       = %p.network
 Network       = 3-pm-traefik.network
 
 [Service]

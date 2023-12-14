@@ -1,9 +1,12 @@
 [Unit]
 Description   = Podman -- %J
 
+BindsTo       = %p@redis.service
+After         = %p@redis.service
+
 [Container]
 Image         = ghcr.io/joeferner/redis-commander:latest
-ContainerName = %J
+ContainerName = %J-%I
 AutoUpdate    = registry
 RunInit       = yes
 
@@ -11,10 +14,10 @@ Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=8081
 Label         = "traefik.http.routers.%J.rule=HostRegexp(`redis.{.+}.{.+$$}`)"
 
-Environment   = REDIS_HOSTS=lo:redis:6379
+Environment   = REDIS_HOSTS=lo:%J-redis:6379
 
-Network       = 3-pm-redis.network
-Network       = 3-pm-ingress.network
+Network       = %p.network
+Network       = 3-pm-traefik.network
 
 [Service]
 Restart       = on-failure

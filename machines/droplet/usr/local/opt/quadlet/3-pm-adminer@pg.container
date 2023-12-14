@@ -13,6 +13,7 @@ Environment      = POSTGRES_PASSWORD=%J
 Environment      = POSTGRES_DB=%J
 
 Network          = %p.network
+PublishPort      = 127.0.0.53:55432:5432
 
 [Service]
 Restart          = on-failure
