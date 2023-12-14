@@ -22,3 +22,8 @@ server {
   listen     [::]:27017 ipv6only=off;
   proxy_pass 127.0.0.53:2717;
 }
+
+server {
+  listen     [::]:5672 ipv6only=off;
+  proxy_pass 127.0.0.53:56720;
+}

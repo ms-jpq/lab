@@ -1,0 +1,24 @@
+[Unit]
+Description   = Podman -- %J
+
+[Container]
+Image         = docker.io/library/rabbitmq:management
+ContainerName = %J
+AutoUpdate    = registry
+RunInit       = yes
+
+Label         = traefik.enable=true
+Label         = traefik.http.services.%J.loadbalancer.server.port=15672
+Label         = "traefik.http.routers.%J.rule=HostRegexp(`rabbit.{.+}.{.+$$}`)"
+
+Environment   = RABBITMQ_DEFAULT_USER=%J
+Environment   = RABBITMQ_DEFAULT_PASS=%J
+
+Network       = 3-pm-traefik.network
+PublishPort   = 127.0.0.53:56720:5672
+
+[Service]
+Restart       = on-failure
+
+[Install]
+WantedBy      = 0-podman.target

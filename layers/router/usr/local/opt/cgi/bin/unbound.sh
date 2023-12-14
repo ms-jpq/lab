@@ -12,4 +12,4 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-unbound-control -c /usr/local/opt/unbound/unbound.conf stats_noreset
+exec -- unbound-control -c /usr/local/opt/unbound/unbound.conf stats_noreset
