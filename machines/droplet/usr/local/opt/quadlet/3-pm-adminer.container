@@ -11,7 +11,7 @@ Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=8080
 Label         = "traefik.http.routers.%J.rule=HostRegexp(`db.{.+}.{.+$$}`)"
 
-Network       = 3-pm-traefik.network
+Network       = 3-pm-ingress.network
 
 [Service]
 Restart       = on-failure

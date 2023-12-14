@@ -2,18 +2,15 @@
 Description   = Podman -- %J
 
 [Container]
-Image         = ghcr.io/joeferner/redis-commander:latest
+Image         = docker.io/library/mongo-express:latest
 ContainerName = %J
 AutoUpdate    = registry
-RunInit       = yes
 
 Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=8081
-Label         = "traefik.http.routers.%J.rule=HostRegexp(`redis.{.+}.{.+$$}`)"
+Label         = "traefik.http.routers.%J.rule=HostRegexp(`mongo.{.+}.{.+$$}`)"
 
-Environment   = REDIS_HOSTS=lo:redis:6379
-
-Network       = 3-pm-redis.network
+Network       = 3-pm-mongo.network
 Network       = 3-pm-ingress.network
 
 [Service]

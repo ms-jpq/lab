@@ -2,17 +2,16 @@
 Description   = Podman -- %J
 
 [Container]
-Image         = docker.io/library/redis:latest
+Image         = docker.io/library/mongo:latest
 ContainerName = %J
 AutoUpdate    = registry
 RunInit       = yes
 
 Network       = %p.network
-PublishPort   = 127.0.0.53:63800:6380
+PublishPort   = 127.0.0.53:2717:27017
 
 [Service]
 Restart       = on-failure
-ExecStartPost = /usr/local/libexec/retry.sh 0.1 podman exec -- %J redis-cli incr ping
 
 [Install]
 WantedBy      = 0-podman.target
