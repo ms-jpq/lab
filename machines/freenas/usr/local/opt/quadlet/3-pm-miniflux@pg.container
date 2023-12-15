@@ -6,6 +6,11 @@ StopWhenUnneeded = yes
 Image            = docker.io/library/postgres:16
 ContainerName    = %J-%I
 AutoUpdate       = registry
+RunInit          = yes
+
+User             = 1000
+Group            = 1000
+HealthCmd        = pg_isready --username postgres --dbname postgres
 
 Environment      = POSTGRES_USER=postgres
 Environment      = POSTGRES_PASSWORD=postgres
@@ -17,4 +22,4 @@ Volume           = %S/local/%J:%S/postgresql/data
 
 [Service]
 Restart          = on-failure
-ExecStartPost    = /usr/local/libexec/retry.sh 0.1 podman exec -- %J-%I pg_isready --username postgres --dbname postgres
+ExecStartPost    = podman wait --condition healthy -- %J-%I

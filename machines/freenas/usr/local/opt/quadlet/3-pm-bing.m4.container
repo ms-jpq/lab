@@ -8,6 +8,8 @@ AutoUpdate    = registry
 RunInit       = yes
 
 User          = 1000
+Group         = 1000
+
 Volume        = /media/m5_assert([ENV_FS_WALLPAPER]):/data
 
 [[Service]]

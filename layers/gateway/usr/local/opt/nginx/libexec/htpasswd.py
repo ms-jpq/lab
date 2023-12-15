@@ -153,14 +153,15 @@ def _write_auth_cookies(
 
 @asynccontextmanager
 async def finalize(writer: StreamWriter) -> AsyncIterator[None]:
-    try:
-        with closing(writer):
-            try:
-                yield
-            finally:
-                await writer.drain()
-    finally:
-        await writer.wait_closed()
+    with suppress(BrokenPipeError):
+        try:
+            with closing(writer):
+                try:
+                    yield
+                finally:
+                    await writer.drain()
+        finally:
+            await writer.wait_closed()
 
 
 async def _subrequest(sock: Path, credentials: bytes, ip: bytes) -> bool:

@@ -3,8 +3,8 @@ providers:
   docker:
     exposedByDefault: false
     network: systemd-3-pm-traefik
-  file:
-    directory: /etc/traefik/conf.d
+  # file:
+  #   directory: /etc/traefik/conf.d
 
 api:
   dashboard: true
