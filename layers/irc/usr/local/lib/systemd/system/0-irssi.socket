@@ -1,6 +1,0 @@
-[Unit]
-Description  = IRSSI Socket
-
-[Socket]
-RemoveOnStop = yes
-ListenStream = %t/local/irssi.sock
