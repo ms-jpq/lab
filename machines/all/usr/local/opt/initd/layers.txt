@@ -1,9 +1,10 @@
--
 # v2fly
+-
 ddns
 gateway
 gh_mirror
 intel_gvt
+irc
 mail
 nspawn
 podman
