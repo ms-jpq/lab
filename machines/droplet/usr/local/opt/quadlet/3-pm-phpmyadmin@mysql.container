@@ -18,3 +18,4 @@ PublishPort      = 127.0.0.53:33306:3306
 
 [Service]
 Restart          = on-failure
+ExecStartPost    = /usr/local/libexec/retry.sh 0.1 podman exec -- %J-%I mysqladmin --password=%J ping

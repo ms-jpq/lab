@@ -16,3 +16,4 @@ PublishPort      = 127.0.0.53:2717:27017
 
 [Service]
 Restart          = on-failure
+ExecStartPost    = /usr/local/libexec/retry.sh 0.1 podman exec -- %J-%I mongosh --eval db.version()

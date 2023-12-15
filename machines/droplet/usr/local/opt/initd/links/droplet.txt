@@ -1,1 +1,2 @@
-/usr/local/lib/systemd/system/ufw.service /dev/null
+/usr/local/lib/systemd/system/timers.target.wants/zfs-scrub-weekly@cyan.timer /usr/lib/systemd/system/zfs-scrub-weekly@.timer
+/usr/local/lib/systemd/system/ufw.service                                     /dev/null

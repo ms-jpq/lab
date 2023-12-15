@@ -19,6 +19,7 @@ PublishPort   = 127.0.0.53:56720:5672
 
 [Service]
 Restart       = on-failure
+# ExecStartPost = /usr/local/libexec/retry.sh 0.1 podman exec -- %J rabbitmq-diagnostics ping
 
 [Install]
 WantedBy      = 0-podman.target
