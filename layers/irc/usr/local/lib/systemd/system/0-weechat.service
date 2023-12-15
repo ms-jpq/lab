@@ -1,0 +1,19 @@
+[Unit]
+Description      = Weechat IRClient
+After            = znc.service
+
+[Service]
+Restart          = always
+ProtectSystem    = strict
+ProtectHome      = yes
+PrivateTmp       = yes
+RuntimeDirectory = local/%J
+ReadWritePaths   = %t/local/%J %T %V %S/local/%J
+
+Environment      = HOME=%S/local/%J
+Environment      = XDG_RUNTIME_DIR=%t/local/%J
+Environment      = XDG_CONFIG_HOME=%S/local/%J/config
+Environment      = XDG_DATA_HOME=%S/local/%J/data
+Environment      = XDG_CACHE_HOME=%V
+
+ExecStart        = weechat-headless --stdout

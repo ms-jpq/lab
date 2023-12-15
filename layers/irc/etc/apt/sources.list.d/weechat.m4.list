@@ -1,0 +1,2 @@
+deb https://weechat.org/ubuntu m5_assert([ENV_VERSION_CODENAME]) main
+deb-src https://weechat.org/ubuntu m5_assert([ENV_VERSION_CODENAME]) main

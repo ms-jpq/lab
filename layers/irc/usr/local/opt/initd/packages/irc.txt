@@ -1,3 +1,10 @@
 + dtach
 + irssi
++ weechat-curses
++ weechat-headless
++ weechat-lua
++ weechat-perl
++ weechat-plugins
++ weechat-python
++ weechat-scripts
 + znc
