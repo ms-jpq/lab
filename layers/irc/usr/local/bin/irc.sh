@@ -2,4 +2,4 @@
 
 set -o pipefail
 
-exec -- dtach -a /run/local/irssi.sock -e '^g'
+exec -- dtach -a /run/local/weechat/dtach.sock -e '^g'

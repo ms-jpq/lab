@@ -10,10 +10,13 @@ PrivateTmp       = yes
 RuntimeDirectory = local/%J
 ReadWritePaths   = %t/local/%J %T %V %S/local/%J
 
+Environment      = TERM=xterm-256color
 Environment      = HOME=%S/local/%J
 Environment      = XDG_RUNTIME_DIR=%t/local/%J
 Environment      = XDG_CONFIG_HOME=%S/local/%J/config
 Environment      = XDG_DATA_HOME=%S/local/%J/data
 Environment      = XDG_CACHE_HOME=%V
+Environment      = DSOCKET=%t/local/%J/dtach.sock
 
-ExecStart        = weechat-headless --stdout
+ExecStartPre     = mkdir -v -p -- ${HOME}
+ExecStart        = dtach -N ${DSOCKET} %J
