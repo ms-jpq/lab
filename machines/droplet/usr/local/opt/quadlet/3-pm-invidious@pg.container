@@ -8,6 +8,7 @@ ContainerName    = %J-%I
 AutoUpdate       = registry
 RunInit          = yes
 
+HealthCmd        = pg_isready --username kemal --dbname postgres
 
 Environment      = POSTGRES_USER=kemal
 Environment      = POSTGRES_PASSWORD=kemal
@@ -17,4 +18,4 @@ Network          = %p.network
 
 [Service]
 Restart          = on-failure
-ExecStartPost    = /usr/local/libexec/retry.sh 0.1 podman exec -- %J-%I pg_isready --username kemal --dbname postgres
+ExecStartPost    = podman wait --condition healthy -- %J-%I

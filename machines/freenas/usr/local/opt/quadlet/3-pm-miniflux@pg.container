@@ -8,8 +8,10 @@ ContainerName    = %J-%I
 AutoUpdate       = registry
 RunInit          = yes
 
+# TODO UserNS = auto
 User             = 1000
 Group            = 1000
+
 HealthCmd        = pg_isready --username postgres --dbname postgres
 
 Environment      = POSTGRES_USER=postgres

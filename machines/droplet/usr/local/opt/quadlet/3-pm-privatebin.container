@@ -7,11 +7,11 @@ ContainerName = %J
 AutoUpdate    = registry
 RunInit       = yes
 
+Network       = 3-pm-traefik.network
+
 Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=8080
 Label         = "traefik.http.routers.%J.rule=HostRegexp(`pastebin.{.+}.{.+$$}`)"
-
-Network       = 3-pm-traefik.network
 
 Volume        = /usr/local/opt/%J/conf.php:/srv/cfg/conf.php:ro
 

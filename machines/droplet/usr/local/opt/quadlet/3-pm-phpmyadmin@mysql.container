@@ -8,6 +8,8 @@ ContainerName    = %J-%I
 AutoUpdate       = registry
 RunInit          = yes
 
+HealthCmd        = mysqladmin --password=%J ping
+
 Environment      = MYSQL_ROOT_PASSWORD=%J
 Environment      = MYSQL_USER=%J
 Environment      = MYSQL_PASSWORD=%J
@@ -18,4 +20,4 @@ PublishPort      = 127.0.0.53:33306:3306
 
 [Service]
 Restart          = on-failure
-ExecStartPost    = /usr/local/libexec/retry.sh 0.1 podman exec -- %J-%I mysqladmin --password=%J ping
+ExecStartPost    = podman wait --condition healthy -- %J-%I

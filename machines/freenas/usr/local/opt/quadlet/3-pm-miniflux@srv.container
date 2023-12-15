@@ -10,8 +10,8 @@ ContainerName = %J-%I
 AutoUpdate    = registry
 RunInit       = yes
 
-User          = 33
-Group         = 33
+User          = 65534
+Group         = 65534
 
 Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=8080

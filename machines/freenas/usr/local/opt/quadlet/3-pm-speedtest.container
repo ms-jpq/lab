@@ -2,12 +2,10 @@
 Description   = Podman -- %J
 
 [Container]
-Image         = lscr.io/linuxserver/librespeed:latest
+Image         = ghcr.io/librespeed/speedtest:latest
 ContainerName = %J
 AutoUpdate    = registry
-
-User          = 33
-Group         = 33
+RunInit       = yes
 
 Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=80

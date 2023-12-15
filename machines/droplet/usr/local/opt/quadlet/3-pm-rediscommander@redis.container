@@ -8,9 +8,11 @@ ContainerName    = %J-%I
 AutoUpdate       = registry
 RunInit          = yes
 
+HealthCmd        = redis-cli incr ping
+
 Network          = %p.network
 PublishPort      = 127.0.0.53:63800:6380
 
 [Service]
 Restart          = on-failure
-ExecStartPost    = /usr/local/libexec/retry.sh 0.1 podman exec -- %J-%I redis-cli incr ping
+ExecStartPost    = podman wait --condition healthy -- %J-%I
