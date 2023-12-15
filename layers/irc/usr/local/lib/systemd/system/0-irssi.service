@@ -15,5 +15,5 @@ Environment    = HOSTNAME=%H
 Environment    = DSOCKET=%t/local/%J.sock
 
 ExecStartPre   = mkdir -v -p -- ${HOME}
-ExecStart      = dtach -N ${DSOCKET} %J --hostname ${HOSTNAME} --home ${HOME}
+ExecStart      = dtach -N ${DSOCKET} %J --home ${HOME} --config ${HOME}/config
 ExecStopPost   = rm -fr -- ${DSOCKET}
