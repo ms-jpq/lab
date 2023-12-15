@@ -10,6 +10,8 @@ RunInit       = yes
 User          = 1000
 Group         = 1000
 
+HealthCmd     = curl --fail --no-progress-meter --max-time 1 -- localhost:8081
+
 Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=8081
 Label         = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+$$}`) || HostRegexp(`%J.{.+$$}.{.+$$}`)"

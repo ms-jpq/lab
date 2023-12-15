@@ -21,7 +21,7 @@ PublishPort   = 127.0.0.53:56720:5672
 
 [Service]
 Restart       = on-failure
-ExecStartPost = podman wait --condition healthy -- %J
+# ExecStartPost = podman wait --condition healthy -- %J
 
 [Install]
 WantedBy      = 0-podman.target

@@ -9,6 +9,8 @@ Image         = quay.io/invidious/invidious:latest
 ContainerName = %J-%I
 AutoUpdate    = registry
 
+HealthCmd     = wget --quiet --output-document /dev/null --timeout 1 -- 127.0.0.1:3000
+
 Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=3000
 Label         = "traefik.http.routers.%J.rule=HostRegexp(`youtube.{.+}.{.+$$}`)"

@@ -9,6 +9,8 @@ Image         = docker.io/library/mongo-express:latest
 ContainerName = %J-%I
 AutoUpdate    = registry
 
+HealthCmd     = curl --fail --no-progress-meter --max-time 1 -- localhost:8081
+
 Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=8081
 Label         = "traefik.http.routers.%J.rule=HostRegexp(`mongo.{.+}.{.+$$}`)"

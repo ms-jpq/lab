@@ -10,6 +10,8 @@ ContainerName = %J
 AutoUpdate    = registry
 RunInit       = yes
 
+HealthCmd     = wget --quiet --output-document /dev/null --timeout 1 -- localhost:8080
+
 Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=8080
 Label         = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+}.{.+$$}`)"
