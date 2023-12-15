@@ -4,7 +4,3 @@ location /traefik {
   sub_filter      "@SCHEME" $scheme;
   sub_filter      "@HOST" $optimistic_host;
 }
-
-location /znc {
-  proxy_pass http://localhost:9999;
-}

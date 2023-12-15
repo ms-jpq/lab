@@ -1,0 +1,3 @@
+location /znc {
+  proxy_pass http://localhost:9999;
+}
