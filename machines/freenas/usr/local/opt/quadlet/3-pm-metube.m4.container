@@ -24,6 +24,7 @@ Volume        = /media/m5_assert([ENV_FS_DOWNLOADS])/youtube:/downloads
 [[Service]]
 Restart       = on-failure
 ExecStartPre  = mkdir -p -- /media/m5_assert([ENV_FS_DOWNLOADS])/youtube
+ExecStartPost = podman wait --condition healthy -- %J
 
 [[Install]]
 WantedBy      = 0-podman.target

@@ -23,6 +23,7 @@ Volume        = /usr/local/opt/%J/nitter.toml:/src/nitter.conf:ro
 
 [Service]
 Restart       = on-failure
+ExecStartPost = podman wait --condition healthy -- %J-%I
 
 [Install]
 WantedBy      = 0-podman.target

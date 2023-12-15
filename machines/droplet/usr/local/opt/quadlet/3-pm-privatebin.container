@@ -19,6 +19,7 @@ Volume        = /usr/local/opt/%J/conf.php:/srv/cfg/conf.php:ro
 
 [Service]
 Restart       = on-failure
+ExecStartPost = podman wait --condition healthy -- %J
 
 [Install]
 WantedBy      = 0-podman.target

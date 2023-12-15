@@ -9,7 +9,7 @@ Image         = docker.io/library/mongo-express:latest
 ContainerName = %J-%I
 AutoUpdate    = registry
 
-HealthCmd     = curl --fail --no-progress-meter --max-time 1 -- localhost:8081
+HealthCmd     = wget --quiet --output-document /dev/null --header 'Authorization: Basic YWRtaW46cGFzcw==' --timeout 1 -- 127.0.0.1:8081
 
 Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=8081
@@ -24,6 +24,7 @@ Network       = 3-pm-traefik.network
 
 [Service]
 Restart       = on-failure
+ExecStartPost = podman wait --condition healthy -- %J-%I
 
 [Install]
 WantedBy      = 0-podman.target

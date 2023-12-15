@@ -30,6 +30,7 @@ Volume        = %S/local/docker/%J:/acme
 [Service]
 Restart       = on-failure
 ExecStartPre  = mkdir -v -p -- %S/local/docker/%J
+ExecStartPost = podman wait --condition healthy -- %J
 
 [Install]
 WantedBy      = 0-podman.target

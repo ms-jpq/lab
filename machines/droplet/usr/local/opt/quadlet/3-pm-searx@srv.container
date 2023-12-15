@@ -8,7 +8,6 @@ After         = %p@redis.service
 Image         = docker.io/searxng/searxng:latest
 ContainerName = %J-%I
 AutoUpdate    = registry
-RunInit       = yes
 
 # HealthCmd     = wget --quiet --output-document /dev/null --timeout 1 -- 127.0.0.1:8080
 
@@ -23,6 +22,7 @@ Volume        = /usr/local/opt/%J/settings.yml:%E/searxng/settings.yml:ro
 
 [Service]
 Restart       = on-failure
+# ExecStartPost = podman wait --condition healthy -- %J-%I
 
 [Install]
 WantedBy      = 0-podman.target

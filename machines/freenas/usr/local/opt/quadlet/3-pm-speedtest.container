@@ -17,6 +17,7 @@ Network       = 3-pm-traefik.network
 
 [Service]
 Restart       = on-failure
+ExecStartPost = podman wait --condition healthy -- %J
 
 [Install]
 WantedBy      = 0-podman.target
