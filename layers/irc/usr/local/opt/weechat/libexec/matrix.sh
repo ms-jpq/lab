@@ -4,14 +4,14 @@ set -o pipefail
 
 LO=/var/cache/local
 CACHE="$LO/weechat"
-PYTHON=/var/lib/local/weechat/data/python
-MATRIX="$CACHE/python/matrix"
+PREFIX=/var/lib/local/weechat/data
 VENV="$CACHE/venv"
 PROJECT=weechat-matrix
 GIT="$CACHE/$PROJECT"
 URI="https://github.com/poljar/$PROJECT"
 
 if ! [[ -v INVOCATION_ID ]]; then
+  mkdir -v -p -- "$CACHE"
   RUN=(
     systemd-run
     --collect
@@ -20,20 +20,10 @@ if ! [[ -v INVOCATION_ID ]]; then
     --property ProtectSystem=strict
     --property ProtectHome=yes
     --property PrivateTmp=yes
-    --property ReadWritePaths="/tmp /var/tmp $CACHE $PYTHON"
+    --property ReadWritePaths="/tmp /var/tmp $CACHE $PREFIX/python"
     -- "$(realpath -- "$0")"
   )
   exec -- "${RUN[@]}"
-fi
-
-if ! [[ -d "$VENV" ]]; then
-  python3 -m venv -- "$VENV"
-fi
-
-if ! [[ -L "$MATRIX" ]]; then
-  PM="$PYTHON/matrix"
-  mkdir -v -p -- "$PM"
-  ln -v -s -- "$PM" "$MATRIX"
 fi
 
 if [[ -d "$GIT" ]]; then
@@ -45,5 +35,9 @@ else
   pushd -- "$GIT"
 fi
 
-PATH="$VENV/bin:$PATH"
-exec -- make --debug -- install XDG_DATA_HOME="$LO"
+if ! [[ -d "$VENV" ]]; then
+  python3 -m venv -- "$VENV"
+  "$VENV/bin/python3" -m pip install --require-virtualenv --cache-dir "$CACHE/pip" -r "$GIT/requirements.txt" -- future
+fi
+
+exec -- make --debug -- install PREFIX="$PREFIX"

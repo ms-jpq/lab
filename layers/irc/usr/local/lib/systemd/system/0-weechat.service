@@ -11,3 +11,4 @@ RuntimeDirectory = local/%J
 ReadWritePaths   = %t/local/%J %T %V %S/local/%J
 
 ExecStart        = /usr/local/opt/weechat/libexec/wee.sh
+TimeoutStopSec   = 1s

@@ -19,5 +19,5 @@ else
   EXEC=()
 fi
 
-PATH="/var/cache/local/weechat/bin:$PATH"
+PATH="/var/cache/local/weechat/venv/bin:$PATH"
 exec -- "${EXEC[@]}" weechat
