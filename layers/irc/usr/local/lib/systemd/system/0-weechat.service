@@ -10,7 +10,7 @@ PrivateTmp       = yes
 RuntimeDirectory = local/%J
 ReadWritePaths   = %t/local/%J %T %V %S/local/%J
 
-Environment      = TERM=xterm-256color
+Environment      = TERM=tmux-256color
 Environment      = HOME=%S/local/%J
 Environment      = XDG_RUNTIME_DIR=%t/local/%J
 Environment      = XDG_CONFIG_HOME=%S/local/%J/config

@@ -1,5 +1,4 @@
 + dtach
-+ irssi
 + weechat-curses
 + weechat-headless
 + weechat-lua
