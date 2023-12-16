@@ -2,8 +2,6 @@
 
 set -o pipefail
 
-cd -- "${0%/*}/../scripts"
-
 OPTS='l:,n:,a:'
 LONG_OPTS='lang:,name:,action:'
 GO="$(getopt --options="$OPTS" --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
@@ -35,7 +33,7 @@ done
 
 DATA=/var/lib/local/weechat/data
 
-SRC="$PWD/$LAN/$NAME"
+SRC="/var/cache/local/weechat/scripts/$LAN/$NAME"
 DST="$DATA/$LAN/$NAME"
 AUTO="$DATA/$LAN/autoload/$NAME"
 
@@ -43,7 +41,7 @@ case "$ACTION" in
 install)
   if [[ -f "$SRC" ]]; then
     ln -v -sf -- "$SRC" "$DST"
-    ln -v -sf -- "$DST" "$AUTO"
+    ln -v -sf -- "../$NAME" "$AUTO"
   fi
   ;;
 uninstall)
