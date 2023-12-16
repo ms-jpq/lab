@@ -7,7 +7,7 @@ RUNTIME="/run/local/weechat"
 ENV=(
   TERM=tmux-256color
   HOME="$HOME"
-  WEECHAT_HOME="$HOME/config:$HOME/data:$RUNTIME:/var/tmp"
+  WEECHAT_HOME="$HOME/config:$HOME/data:/var/tmp:$RUNTIME"
 )
 
 export -- "${ENV[@]}"
