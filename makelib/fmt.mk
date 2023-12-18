@@ -1,10 +1,11 @@
 .PHONY: fmt systemd-fmt shfmt black prettier nginx taplo
 
-fmt: shfmt black prettier nginx taplo
+fmt: systemd-fmt shfmt black prettier nginx taplo
 
-# TODO: add ignore list -- systemd-fmt
 systemd-fmt: $(VAR)/sh
-	'$</layers/posix/home/.local/bin/systemd-fmt.sh' ./layers ./machines
+	export -- SYSTEMD_FMT_IGNORE
+	SYSTEMD_FMT_IGNORE="$$(git ls-files -- '*/services/*.service')"
+	'$</layers/posix/home/.local/bin/systemd-fmt.sh' layers machines
 
 shfmt: $(VAR)/bin/shfmt
 	readarray -t -d $$'\0' -- ARRAY < <(git ls-files --deduplicate -z -- '*.sh')
