@@ -1,17 +1,14 @@
-[Unit]
+[[Unit]]
 Description   = Podman -- %J@%I
 
 BindsTo       = %p@pg.service
 After         = %p@pg.service
 
-[Container]
+[[Container]]
 Image         = ghcr.io/miniflux/miniflux:latest
 ContainerName = %J-%I
 AutoUpdate    = registry
 RunInit       = yes
-
-User          = 65534
-Group         = 65534
 
 HealthCmd     = wget --quiet --output-document /dev/null --timeout 1 -- localhost:8080
 
@@ -20,22 +17,21 @@ Label         = traefik.http.services.%J.loadbalancer.server.port=8080
 Label         = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+$$}`) || HostRegexp(`%J.{.+$$}.{.+$$}`)"
 
 Environment   = RUN_MIGRATIONS=1
-Environment   = DATABASE_URL=postgres://postgres:postgres@%J-pg/postgres?sslmode=disable
+Environment   = DATABASE_URL=postgres://%J:%J@%J-pg/%J
 Environment   = PROXY_IMAGES=all
-Environment   = CREATE_ADMIN=1
-Environment   = ADMIN_USERNAME=1
-Environment   = ADMIN_PASSWORD=123456
+# Environment   = CREATE_ADMIN=1
+# Environment   = ADMIN_USERNAME=1
+# Environment   = ADMIN_PASSWORD=123456
 Environment   = PROXY_OPTION=all
 Environment   = PROXY_MEDIA_TYPES=image,audio,video
-# Environment   = INVIDIOUS_INSTANCE=
+Environment   = INVIDIOUS_INSTANCE=https://youtube.m5_assert([ENV_DOMAIN])
 
 Network       = %p.network
-Network       = %p1.network
-Network       = 3-pm-traefik.network
+Network       = 3-pm-ingress.network
 
-[Service]
+[[Service]]
 Restart       = on-failure
 ExecStartPost = podman wait --condition healthy -- %J-%I
 
-[Install]
+[[Install]]
 WantedBy      = 0-podman.target

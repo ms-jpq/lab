@@ -8,17 +8,16 @@ ContainerName    = %J-%I
 AutoUpdate       = registry
 RunInit          = yes
 
-# TODO UserNS = auto
 User             = 1000
 Group            = 1000
 
-HealthCmd        = pg_isready --username postgres --dbname postgres
+HealthCmd        = pg_isready --username %J --dbname %J
 
-Environment      = POSTGRES_USER=postgres
-Environment      = POSTGRES_PASSWORD=postgres
-Environment      = POSTGRES_DB=postgres
+Environment      = POSTGRES_USER=%J
+Environment      = POSTGRES_PASSWORD=%J
+Environment      = POSTGRES_DB=%J
 
-Network          = %p1.network
+Network          = %p.network
 
 Volume           = %S/local/%J:%S/postgresql/data
 
