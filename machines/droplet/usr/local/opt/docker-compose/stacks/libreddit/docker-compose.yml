@@ -4,6 +4,20 @@ services:
     image: docker.io/libreddit/libreddit:latest
     userns_mode: auto
     restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --spider
+        - --timeout
+        - "1"
+        - --
+        - 127.0.0.1:8080/settings
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`reddit.{.+}.{.+$$}`)
     environment:
       LIBREDDIT_DEFAULT_AUTOPLAY_VIDEOS: on
       LIBREDDIT_DEFAULT_HIDE_HLS_NOTIFICATION: on
@@ -15,10 +29,6 @@ services:
     image: docker.io/caomingjun/warp:latest
     userns_mode: auto
     restart: unless-stopped
-    labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`reddit.{.+}.{.+$$}`)
     cap_add:
       - NET_ADMIN
     sysctls:

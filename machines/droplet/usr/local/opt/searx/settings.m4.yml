@@ -2,7 +2,7 @@
 # https://github.com/searxng/searxng/blob/master/searx/settings.yml
 use_default_settings: true
 redis:
-  url: redis://redis:6379/0
+  url: redis://localhost:6379/0
 general:
   enable_metrics: true
 search:

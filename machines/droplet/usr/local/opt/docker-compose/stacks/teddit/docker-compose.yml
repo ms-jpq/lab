@@ -17,6 +17,10 @@ services:
         - "1"
         - --
         - localhost:8080/about
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`teddit.{.+}.{.+$$}`)
     environment:
       DOMAIN:
       REDIS_HOST: localhost
@@ -43,10 +47,6 @@ services:
     image: docker.io/caomingjun/warp:latest
     userns_mode: auto
     restart: unless-stopped
-    labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`teddit.{.+}.{.+$$}`)
     cap_add:
       - NET_ADMIN
     sysctls:
