@@ -1,0 +1,1 @@
+deb https://download.docker.com/linux/ubuntu m5_assert([ENV_VERSION_CODENAME]) stable
