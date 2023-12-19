@@ -1,7 +1,7 @@
 ---
 services:
   srv:
-    image: ghcr.io/librespeed/speedtest:latest
+    image: docker.io/jgraph/drawio:latest
     userns_mode: auto
     restart: on-failure
     healthcheck:
@@ -13,11 +13,11 @@ services:
         - --max-time
         - "1"
         - --
-        - localhost:80
+        - localhost:8080
     labels:
       - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`${COMPOSE_PROJECT_NAME}.{.+}.{.+$$}`)
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`draw.{.+}.{.+$$}`)
 
 networks:
   default:

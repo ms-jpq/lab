@@ -1,0 +1,58 @@
+---
+services:
+  srv:
+    image: ghcr.io/miniflux/miniflux:latest
+    userns_mode: auto
+    restart: on-failure
+    depends_on:
+      pg:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --output-document
+        - /dev/null
+        - --timeout
+        - "1"
+        - --
+        - localhost:8080
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`rss.{.+}.{.+$$}`)
+    environment:
+      # ADMIN_PASSWORD: 1
+      # ADMIN_USERNAME: 1
+      # CREATE_ADMIN: 1
+      DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg/${COMPOSE_PROJECT_NAME}?ssl=off
+      INVIDIOUS_INSTANCE:
+      PROXY_IMAGES: all
+      PROXY_MEDIA_TYPES: image,audio,video
+      PROXY_OPTION: all
+      RUN_MIGRATIONS: 1
+    networks:
+      - default
+      - traefik
+
+  pg:
+    image: docker.io/library/postgres:latest
+    userns_mode: auto
+    healthcheck:
+      test:
+        - CMD
+        - pg_isready
+        - --username
+        - ${COMPOSE_PROJECT_NAME}
+        - --dbname
+        - ${COMPOSE_PROJECT_NAME}
+    environment:
+      POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
+
+networks:
+  traefik:
+    external: true
+    name: traefik

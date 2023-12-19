@@ -2,6 +2,7 @@
 providers:
   docker:
     exposedByDefault: false
+    network: traefik
 
 api:
   dashboard: true

@@ -1,0 +1,20 @@
+---
+services:
+  srv:
+    image: docker.io/libreddit/libreddit:latest
+    userns_mode: auto
+    restart: on-failure
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`reddit.{.+}.{.+$$}`)
+    environment:
+      LIBREDDIT_DEFAULT_AUTOPLAY_VIDEOS: on
+      LIBREDDIT_DEFAULT_HIDE_HLS_NOTIFICATION: on
+      LIBREDDIT_DEFAULT_SHOW_NSFW: on
+      LIBREDDIT_DEFAULT_USE_HLS: on
+
+networks:
+  default:
+    external: true
+    name: traefik

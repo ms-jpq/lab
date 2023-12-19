@@ -1,0 +1,29 @@
+---
+services:
+  srv:
+    image: docker.io/benbusby/whoogle-search:latest
+    userns_mode: auto
+    restart: on-failure
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --no-progress-meter
+        - --max-time
+        - "1"
+        - --
+        - localhost:5000
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=5000
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`bing.{.+}.{.+$$}`)
+    environment:
+      WHOOGLE_CONFIG_URL:
+      WHOOGLE_CONFIG_VIEW_IMAGE: true
+      WHOOGLE_CONFIG_NEW_TAB: true
+
+networks:
+  default:
+    external: true
+    name: traefik

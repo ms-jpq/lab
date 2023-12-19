@@ -1,7 +1,7 @@
 ---
 services:
   srv:
-    image: docker.io/library/traefik:latest
+    image: ghcr.io/privatebin/nginx-fpm-alpine:latest
     userns_mode: auto
     restart: on-failure
     healthcheck:
@@ -18,17 +18,11 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`${COMPOSE_PROJECT_NAME}.{.+}.{.+$$}`)
-    networks:
-      - default
-      - traefik
-    ports:
-      - 127.0.0.53:10080:8888
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`pastebin.{.+}.{.+$$}`)
     volumes:
-      - /run/docker.sock:/run/docker.sock:ro
-      - /usr/local/opt/${COMPOSE_PROJECT_NAME}:/etc/traefik:ro
+      - /usr/local/opt/${COMPOSE_PROJECT_NAME}/conf.php:/srv/cfg/conf.php:ro
 
 networks:
-  traefik:
+  default:
     external: true
-    name: ${COMPOSE_PROJECT_NAME}
+    name: traefik

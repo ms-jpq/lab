@@ -1,0 +1,60 @@
+---
+services:
+  srv:
+    image: docker.io/etherpad/etherpad:latest
+    userns_mode: auto
+    restart: on-failure
+    depends_on:
+      pg:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --output-document
+        - /dev/null
+        - --timeout
+        - "1"
+        - --
+        - localhost:9001
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=9001
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`docs.{.+}.{.+$$}`)
+    environment:
+      DB_HOST: pg
+      DB_NAME: ${COMPOSE_PROJECT_NAME}
+      DB_PASS: ${COMPOSE_PROJECT_NAME}
+      DB_TYPE: postgres
+      DB_USER: ${COMPOSE_PROJECT_NAME}
+      DEFAULT_PAD_TEXT: ...
+      LOGLEVEL: ERROR
+      PAD_OPTIONS_NO_COLORS: true
+      PAD_OPTIONS_USE_MONOSPACE_FONT: true
+      TITLE: 📝
+      TRUST_PROXY: true
+    networks:
+      - default
+      - traefik
+
+  pg:
+    image: docker.io/library/postgres:latest
+    userns_mode: auto
+    healthcheck:
+      test:
+        - CMD
+        - pg_isready
+        - --username
+        - ${COMPOSE_PROJECT_NAME}
+        - --dbname
+        - ${COMPOSE_PROJECT_NAME}
+    environment:
+      POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
+
+networks:
+  traefik:
+    external: true
+    name: traefik

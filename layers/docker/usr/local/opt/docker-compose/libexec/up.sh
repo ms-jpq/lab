@@ -5,5 +5,5 @@ set -o pipefail
 cd -- "${0%/*}/../stacks"
 
 for STACK in ./*/docker-compose.yml; do
-  docker compose --file "$STACK" up --detach --remove-orphans
+  docker compose --file "$STACK" up --detach --remove-orphans "$@"
 done

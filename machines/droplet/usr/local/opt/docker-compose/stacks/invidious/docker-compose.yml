@@ -1,0 +1,50 @@
+---
+services:
+  srv:
+    image: quay.io/invidious/invidious:latest
+    userns_mode: auto
+    restart: on-failure
+    depends_on:
+      pg:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --output-document
+        - /dev/null
+        - --timeout
+        - "1"
+        - --
+        - localhost:3000
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=3000
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`youtube.{.+}.{.+$$}`)
+    networks:
+      - default
+      - traefik
+    volumes:
+      - /usr/local/opt/${COMPOSE_PROJECT_NAME}/conf.yml:/invidious/config/config.yml:ro
+
+  pg:
+    image: docker.io/library/postgres:latest
+    userns_mode: auto
+    healthcheck:
+      test:
+        - CMD
+        - pg_isready
+        - --username
+        - ${COMPOSE_PROJECT_NAME}
+        - --dbname
+        - ${COMPOSE_PROJECT_NAME}
+    environment:
+      POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
+
+networks:
+  traefik:
+    external: true
+    name: traefik

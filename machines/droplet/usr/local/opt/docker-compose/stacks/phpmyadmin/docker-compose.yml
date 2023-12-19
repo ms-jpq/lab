@@ -1,0 +1,52 @@
+---
+services:
+  srv:
+    image: docker.io/library/phpmyadmin:latest
+    userns_mode: auto
+    restart: on-failure
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --no-progress-meter
+        - --max-time
+        - "1"
+        - --
+        - localhost:80
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`mysql.{.+}.{.+$$}`)
+    environment:
+      PMA_HOST: mysql
+      PMA_PASSWORD: ${COMPOSE_PROJECT_NAME}
+      PMA_USER: root
+    networks:
+      - default
+      - traefik
+
+  mysql:
+    image: docker.io/library/mysql:latest
+    userns_mode: auto
+    healthcheck:
+      test:
+        - CMD
+        - mysqladmin
+        - --password=${COMPOSE_PROJECT_NAME}
+        - ping
+    environment:
+      MYSQL_DATABASE: ${COMPOSE_PROJECT_NAME}
+      MYSQL_PASSWORD: ${COMPOSE_PROJECT_NAME}
+      MYSQL_ROOT_PASSWORD: ${COMPOSE_PROJECT_NAME}
+      MYSQL_USER: ${COMPOSE_PROJECT_NAME}
+    ports:
+      - 127.0.0.53:33306:3306
+
+networks:
+  traefik:
+    external: true
+    name: traefik

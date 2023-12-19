@@ -1,11 +1,11 @@
 ---
 check_tables: true
 db:
-  dbname: postgres
-  host: invidious-pg
-  password: kemal
+  host: pg
   port: 5432
-  user: kemal
+  dbname: invidious
+  user: invidious
+  password: invidious
 
 domain: youtube.m5_assert([ENV_DOMAIN])
 external_port: 443

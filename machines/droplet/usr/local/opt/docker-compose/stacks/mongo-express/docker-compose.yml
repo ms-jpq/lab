@@ -1,0 +1,55 @@
+---
+services:
+  srv:
+    image: docker.io/library/mongo-express:latest
+    userns_mode: auto
+    restart: on-failure
+    depends_on:
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --output-document
+        - /dev/null
+        - --header
+        - "Authorization: Basic YWRtaW46cGFzcw=="
+        - --timeout
+        - "1"
+        - --
+        - 127.0.0.1:8081
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8081
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`mongo.{.+}.{.+$$}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.middlewares=${COMPOSE_PROJECT_NAME}
+      - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}.headers.customRequestHeaders.Authorization=Basic YWRtaW46cGFzcw==
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@mongo:27017/
+    networks:
+      - default
+      - traefik
+    volumes:
+      - /usr/local/opt/${COMPOSE_PROJECT_NAME}/conf.yml:/invidious/config/config.yml:ro
+
+  mongo:
+    image: docker.io/library/mongo:latest
+    userns_mode: auto
+    healthcheck:
+      test:
+        - CMD
+        - mongosh
+        - --eval
+        - db.version()
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${COMPOSE_PROJECT_NAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${COMPOSE_PROJECT_NAME}
+    ports:
+      - 127.0.0.53:2717:27017
+
+networks:
+  traefik:
+    external: true
+    name: traefik

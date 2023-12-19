@@ -1,32 +1,32 @@
 ---
 services:
   srv:
-    image: docker.io/searxng/searxng:latest
+    image: docker.io/zedeus/nitter:latest
     userns_mode: auto
     restart: on-failure
     depends_on:
       redis:
         condition: service_healthy
-    # healthcheck:
-    #   test:
-    #     - CMD
-    #     - wget
-    #     - --quiet
-    #     - --output-document
-    #     - /dev/null
-    #     - --timeout
-    #     - "1"
-    #     - --
-    #     - 127.0.0.1:8080
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --output-document
+        - /dev/null
+        - --timeout
+        - "1"
+        - --
+        - 127.0.0.1:8080
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`google.{.+}.{.+$$}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`twitter.{.+}.{.+$$}`)
     networks:
       - default
       - traefik
     volumes:
-      - /usr/local/opt/${COMPOSE_PROJECT_NAME}/settings.yml:/etc/searxng/settings.yml:ro
+      - /usr/local/opt/${COMPOSE_PROJECT_NAME}/nitter.toml:/src/nitter.conf:ro
 
   redis:
     image: docker.io/library/redis:latest
