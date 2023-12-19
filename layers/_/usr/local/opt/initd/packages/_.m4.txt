@@ -20,6 +20,8 @@
 + netdata
 + netdata-plugins-python
 + nfs-common
++ cowsay
++ figlet
 + nginx
 + python3-venv
 + ripgrep

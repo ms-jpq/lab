@@ -1,0 +1,6 @@
+[Unit]
+Description        = Youtube-DL Update Timer
+
+[Timer]
+OnCalendar         = weekly
+RandomizedDelaySec = 1 day

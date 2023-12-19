@@ -8,7 +8,7 @@ fi
 
 BYTES=0
 while read -r LINE; do
-  LINE="${LINE%%$'\r'}"
+  LINE="${LINE%$'\r'}"
   if [[ -z "$LINE" ]]; then
     break
   fi

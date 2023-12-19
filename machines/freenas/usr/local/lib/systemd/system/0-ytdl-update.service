@@ -1,0 +1,14 @@
+[Unit]
+Description         = Youtube-DL Update
+After               = network-online.target
+ConditionPathExists = %C/local/youtube-dl/bin
+
+[Service]
+Type                = oneshot
+Restart             = on-failure
+ProtectSystem       = strict
+ProtectHome         = yes
+PrivateTmp          = yes
+ReadWritePaths      = %T %V %C/local/youtube-dl
+
+ExecStart           = %C/local/youtube-dl/bin --update

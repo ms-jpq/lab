@@ -6,24 +6,9 @@ if [[ ! -t 1 ]]; then
   exec <&3 >&3
 fi
 
-BYTES=0
-while read -r LINE; do
-  LINE="${LINE%%$'\r'}"
-  if [[ -z "$LINE" ]]; then
-    break
-  fi
-
-  LHS="${LINE%%:*}"
-  KEY="${LHS,,}"
-  case "$KEY" in
-  content-length)
-    BYTES="${LINE##*: }"
-    ;;
-  *) ;;
-  esac
-done
-
-URI="$(head --bytes "$BYTES" | jq --exit-status --raw-output '.uri')"
+read -r L1
+L1="${L1#* }"
+L1="${L1% *}"
 
 tee <<-'EOF'
 HTTP/1.0 200 OK
@@ -31,4 +16,11 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-exec -- systemd-run --collect --service-type oneshot --user --machine 1000@.host --no-block -- firefox -- "$URI"
+L2="${L1#/}"
+L3="${L2#*:/}"
+
+URI="https://$(sed -E -e 's/\+/ /g' -e 's/%(..)/\x\1/g' <<<"$L3")"
+printf -- '%s\n' "$URI"
+
+/var/cache/local/youtube-dl/bin --cache-dir /var/tmp --newline -- "$URI" 2>&1
+figlet <<<'<3'
