@@ -1,0 +1,30 @@
+---
+services:
+  srv:
+    image: docker.io/library/traefik:latest
+    userns_mode: auto
+    restart: on-failure
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --output-document
+        - /dev/null
+        - --timeout 1
+        - --
+        - 127.0.0.1:8080
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.traefik.loadbalancer.server.port=8080
+      - traefik.http.routers.traefik.rule=HostRegexp(`${COMPOSE_PROJECT_NAME}.{.+}.{.+$$}`)
+    ports:
+      - 127.0.0.53:10080:8888
+    volumes:
+      - /run/docker.sock:/run/docker.sock:ro
+      - /usr/local/opt/${COMPOSE_PROJECT_NAME}:/etc/traefik:ro
+
+networks:
+  default:
+    external: true
+    name: ${COMPOSE_PROJECT_NAME}

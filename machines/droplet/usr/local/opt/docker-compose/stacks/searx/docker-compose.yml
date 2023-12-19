@@ -1,0 +1,41 @@
+---
+services:
+  srv:
+    image: ghcr.io/librespeed/speedtest:latest
+    userns_mode: auto
+    restart: on-failure
+    depends_on:
+      redis:
+        condition: service_healthy
+    labels:
+      traefik.enable: true
+      traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port: 8080
+      traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule: HostRegexp(`google.{.+}.{.+$$}`)
+    # healthcheck:
+    #   test:
+    #     - CMD
+    #     - wget
+    #     - --quiet
+    #     - --output-document
+    #     - /dev/null
+    #     - --timeout 1
+    #     - --
+    #     - 127.0.0.1:8080
+    networks:
+      - default
+      - traefik
+
+  redis:
+    image: docker.io/library/redis:latest
+    userns_mode: auto
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - incr
+        - ping
+
+networks:
+  traefik:
+    external: true
+    name: traefik

@@ -2,7 +2,6 @@
 providers:
   docker:
     exposedByDefault: false
-    network: systemd-3-pm-traefik
 
 api:
   dashboard: true

@@ -1,0 +1,25 @@
+---
+services:
+  srv:
+    image: ghcr.io/librespeed/speedtest:latest
+    userns_mode: auto
+    restart: on-failure
+    labels:
+      traefik.enable: true
+      traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port: 8080
+      traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule: HostRegexp(`${COMPOSE_PROJECT_NAME}.{.+}.{.+$$}`)
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --no-progress-meter
+        - --max-time
+        - "1"
+        - --
+        - localhost:80
+
+networks:
+  default:
+    external: true
+    name: traefik

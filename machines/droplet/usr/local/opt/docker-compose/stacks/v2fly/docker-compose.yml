@@ -1,0 +1,14 @@
+---
+services:
+  srv:
+    image: docker.io/v2fly/v2fly-core:latest
+    userns_mode: auto
+    restart: on-failure
+    command:
+      - run
+      - -config
+      - /etc/v2ray/server.json
+    network_mode: host
+    volumes:
+      - /run/docker.sock:/var/run/docker.sock:ro
+      - /usr/local/opt/${COMPOSE_PROJECT_NAME}:/etc/v2ray:ro
