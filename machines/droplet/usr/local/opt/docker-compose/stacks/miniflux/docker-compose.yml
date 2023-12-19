@@ -40,6 +40,7 @@ services:
   pg:
     image: docker.io/library/postgres:latest
     userns_mode: auto
+    restart: on-failure
     user: games
     healthcheck:
       test:

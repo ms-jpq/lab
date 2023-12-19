@@ -37,6 +37,7 @@ services:
   mongo:
     image: docker.io/library/mongo:latest
     userns_mode: auto
+    restart: on-failure
     healthcheck:
       test:
         - CMD
