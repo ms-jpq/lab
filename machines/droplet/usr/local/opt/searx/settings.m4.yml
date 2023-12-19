@@ -1,7 +1,7 @@
 ---
 use_default_settings: true
 redis:
-  url: redis://searx-redis:6379/0
+  url: redis://redis:6379/0
 general:
   enable_metrics: true
 search:

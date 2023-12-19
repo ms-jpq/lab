@@ -9,8 +9,8 @@ server {
 }
 
 server {
-  listen     [::]:6380 ipv6only=off;
-  proxy_pass 127.0.0.53:63800;
+  listen     [::]:6379 ipv6only=off;
+  proxy_pass 127.0.0.53:63790;
 }
 
 server {

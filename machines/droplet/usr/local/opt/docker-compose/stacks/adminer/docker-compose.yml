@@ -13,7 +13,7 @@ services:
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`pg.{.+}.{.+$$}`)
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.middlewares=${COMPOSE_PROJECT_NAME}
       - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}.redirectRegex.regex=(^https?://[^/]+/$$)
-      - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}.redirectRegex.replacement=$${1}?pgsql=${COMPOSE_PROJECT_NAME}-pg&username=${COMPOSE_PROJECT_NAME}&db=${COMPOSE_PROJECT_NAME}
+      - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}.redirectRegex.replacement=$${1}?pgsql=pg&username=${COMPOSE_PROJECT_NAME}&db=${COMPOSE_PROJECT_NAME}
     networks:
       - default
       - traefik

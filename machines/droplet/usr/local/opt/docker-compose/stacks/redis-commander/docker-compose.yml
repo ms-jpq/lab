@@ -38,7 +38,7 @@ services:
         - incr
         - ping
     ports:
-      - 127.0.0.53:63800:6380
+      - 127.0.0.53:63790:6379
 
 networks:
   traefik:

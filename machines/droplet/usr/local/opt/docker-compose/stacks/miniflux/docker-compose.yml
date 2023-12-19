@@ -23,10 +23,10 @@ services:
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`rss.{.+}.{.+$$}`)
     environment:
-      # ADMIN_PASSWORD: 1
-      # ADMIN_USERNAME: 1
-      # CREATE_ADMIN: 1
-      DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg/${COMPOSE_PROJECT_NAME}?ssl=off
+      ADMIN_PASSWORD: 1
+      ADMIN_USERNAME: 1
+      CREATE_ADMIN: 1
+      DATABASE_URL: postgres://postgres:postgres@pg/postgres?sslmode=disable
       INVIDIOUS_INSTANCE:
       PROXY_IMAGES: all
       PROXY_MEDIA_TYPES: image,audio,video
@@ -44,13 +44,15 @@ services:
         - CMD
         - pg_isready
         - --username
-        - ${COMPOSE_PROJECT_NAME}
+        - postgres
         - --dbname
-        - ${COMPOSE_PROJECT_NAME}
+        - postgres
     environment:
-      POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
-      POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
-      POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+    volumes:
+      - /var/lib/local/${COMPOSE_PROJECT_NAME}:/var/lib/postgresql/data
 
 networks:
   traefik:
