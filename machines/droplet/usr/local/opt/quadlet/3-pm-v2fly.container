@@ -1,20 +1,21 @@
 [Unit]
-Description   = Podman -- %J
+Description     = Podman -- %J
 
 [Container]
-Image         = docker.io/v2fly/v2fly-core:latest
-ContainerName = %J
-AutoUpdate    = registry
-RunInit       = yes
+Image           = docker.io/v2fly/v2fly-core:latest
+ContainerName   = %J
+AutoUpdate      = registry
+RunInit         = yes
 
-Exec          = run -config %E/v2ray/server.json
+Exec            = run -config %E/v2ray/server.json
 
-Network       = host
+Network         = host
 
-Volume        = /usr/local/opt/%J:%E/v2ray:ro
+Volume          = /usr/local/opt/%J:%E/v2ray:ro
 
 [Service]
-Restart       = on-failure
+Restart         = on-failure
+TimeoutStartSec = 900
 
 [Install]
-WantedBy      = 0-podman.target
+WantedBy        = 0-podman.target

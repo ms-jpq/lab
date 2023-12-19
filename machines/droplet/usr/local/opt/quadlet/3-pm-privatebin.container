@@ -1,25 +1,26 @@
 [Unit]
-Description   = Podman -- %J
+Description     = Podman -- %J
 
 [Container]
-Image         = ghcr.io/privatebin/nginx-fpm-alpine:latest
-ContainerName = %J
-AutoUpdate    = registry
-RunInit       = yes
+Image           = ghcr.io/privatebin/nginx-fpm-alpine:latest
+ContainerName   = %J
+AutoUpdate      = registry
+RunInit         = yes
 
-HealthCmd     = wget --quiet --output-document /dev/null --timeout 1 -- localhost:8080
+HealthCmd       = wget --quiet --output-document /dev/null --timeout 1 -- localhost:8080
 
-Label         = traefik.enable=true
-Label         = traefik.http.services.%J.loadbalancer.server.port=8080
-Label         = "traefik.http.routers.%J.rule=HostRegexp(`pastebin.{.+}.{.+$$}`)"
+Label           = traefik.enable=true
+Label           = traefik.http.services.%J.loadbalancer.server.port=8080
+Label           = "traefik.http.routers.%J.rule=HostRegexp(`pastebin.{.+}.{.+$$}`)"
 
-Network       = 3-pm-traefik.network
+Network         = 3-pm-traefik.network
 
-Volume        = /usr/local/opt/%J/conf.php:/srv/cfg/conf.php:ro
+Volume          = /usr/local/opt/%J/conf.php:/srv/cfg/conf.php:ro
 
 [Service]
-Restart       = on-failure
-ExecStartPost = podman wait --condition healthy -- %J
+Restart         = on-failure
+TimeoutStartSec = 900
+ExecStartPost   = podman wait --condition healthy -- %J
 
 [Install]
-WantedBy      = 0-podman.target
+WantedBy        = 0-podman.target

@@ -1,19 +1,20 @@
 [[Unit]]
-Description   = Podman -- %J
+Description     = Podman -- %J
 
 [[Container]]
-Image         = docker.io/msjpq/bing-daily-images:latest
-ContainerName = %J
-AutoUpdate    = registry
-RunInit       = yes
+Image           = docker.io/msjpq/bing-daily-images:latest
+ContainerName   = %J
+AutoUpdate      = registry
+RunInit         = yes
 
-User          = 1000
-Group         = 1000
+User            = 1000
+Group           = 1000
 
-Volume        = /media/m5_assert([ENV_FS_WALLPAPER]):/data
+Volume          = /media/m5_assert([ENV_FS_WALLPAPER]):/data
 
 [[Service]]
-Restart       = on-failure
+Restart         = on-failure
+TimeoutStartSec = 900
 
 [[Install]]
-WantedBy      = 0-podman.target
+WantedBy        = 0-podman.target

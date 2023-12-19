@@ -15,3 +15,4 @@ PublishPort      = 127.0.0.53:9280:9200
 
 [Service]
 Restart          = on-failure
+TimeoutStartSec  = 900

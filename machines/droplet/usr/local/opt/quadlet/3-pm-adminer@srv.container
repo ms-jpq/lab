@@ -1,30 +1,31 @@
 [Unit]
-Description   = Podman -- %J
+Description     = Podman -- %J
 
-BindsTo       = %p@pg.service
-After         = %p@pg.service
+BindsTo         = %p@pg.service
+After           = %p@pg.service
 
 [Container]
-Image         = docker.io/library/adminer:latest
-ContainerName = %J-%I
-AutoUpdate    = registry
-RunInit       = yes
+Image           = docker.io/library/adminer:latest
+ContainerName   = %J-%I
+AutoUpdate      = registry
+RunInit         = yes
 
-Label         = traefik.enable=true
-Label         = traefik.http.services.%J.loadbalancer.server.port=8080
-Label         = "traefik.http.routers.%J.rule=HostRegexp(`pg.{.+}.{.+$$}`)"
-Label         = traefik.http.routers.%J.middlewares=%J
-Label         = 'traefik.http.middlewares.%J.redirectRegex.regex=(^https?://[^/]+/$$)'
-Label         = 'traefik.http.middlewares.%J.redirectRegex.replacement=$${1}?pgsql=%J-pg&username=%J&db=%J'
+Label           = traefik.enable=true
+Label           = traefik.http.services.%J.loadbalancer.server.port=8080
+Label           = "traefik.http.routers.%J.rule=HostRegexp(`pg.{.+}.{.+$$}`)"
+Label           = traefik.http.routers.%J.middlewares=%J
+Label           = 'traefik.http.middlewares.%J.redirectRegex.regex=(^https?://[^/]+/$$)'
+Label           = 'traefik.http.middlewares.%J.redirectRegex.replacement=$${1}?pgsql=%J-pg&username=%J&db=%J'
 
-Environment   = ADMINER_DEFAULT_SERVER=%J-pg
+Environment     = ADMINER_DEFAULT_SERVER=%J-pg
 
 
-Network       = %p.network
-Network       = 3-pm-traefik.network
+Network         = %p.network
+Network         = 3-pm-traefik.network
 
 [Service]
-Restart       = on-failure
+Restart         = on-failure
+TimeoutStartSec = 900
 
 [Install]
-WantedBy      = 0-podman.target
+WantedBy        = 0-podman.target

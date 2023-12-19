@@ -18,4 +18,5 @@ Network          = %p.network
 
 [Service]
 Restart          = on-failure
+TimeoutStartSec  = 900
 ExecStartPost    = podman wait --condition healthy -- %J-%I

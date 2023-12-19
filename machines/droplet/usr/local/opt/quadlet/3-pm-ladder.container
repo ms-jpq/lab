@@ -1,20 +1,21 @@
 [Unit]
-Description   = Podman -- %J
+Description     = Podman -- %J
 
 [Container]
-Image         = ghcr.io/everywall/ladder:latest
-ContainerName = %J
-AutoUpdate    = registry
-RunInit       = yes
+Image           = ghcr.io/everywall/ladder:latest
+ContainerName   = %J
+AutoUpdate      = registry
+RunInit         = yes
 
-Label         = traefik.enable=true
-Label         = traefik.http.services.%J.loadbalancer.server.port=8080
-Label         = "traefik.http.routers.%J.rule=HostRegexp(`12ft.{.+}.{.+$$}`)"
+Label           = traefik.enable=true
+Label           = traefik.http.services.%J.loadbalancer.server.port=8080
+Label           = "traefik.http.routers.%J.rule=HostRegexp(`12ft.{.+}.{.+$$}`)"
 
-Network       = 3-pm-ingress.network
+Network         = 3-pm-ingress.network
 
 [Service]
-Restart       = on-failure
+Restart         = on-failure
+TimeoutStartSec = 900
 
 [Install]
-WantedBy      = 0-podman.target
+WantedBy        = 0-podman.target

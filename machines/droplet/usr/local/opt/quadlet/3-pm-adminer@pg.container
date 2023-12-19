@@ -19,4 +19,5 @@ PublishPort      = 127.0.0.53:55432:5432
 
 [Service]
 Restart          = on-failure
+TimeoutStartSec  = 900
 ExecStartPost    = podman wait --condition healthy -- %J-%I

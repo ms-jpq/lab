@@ -1,28 +1,29 @@
 [Unit]
-Description   = Podman -- %J@%I
+Description     = Podman -- %J@%I
 
-BindsTo       = %p@pg.service
-After         = %p@pg.service
+BindsTo         = %p@pg.service
+After           = %p@pg.service
 
 [Container]
-Image         = quay.io/invidious/invidious:latest
-ContainerName = %J-%I
-AutoUpdate    = registry
+Image           = quay.io/invidious/invidious:latest
+ContainerName   = %J-%I
+AutoUpdate      = registry
 
-HealthCmd     = wget --quiet --output-document /dev/null --timeout 1 -- 127.0.0.1:3000
+HealthCmd       = wget --quiet --output-document /dev/null --timeout 1 -- 127.0.0.1:3000
 
-Label         = traefik.enable=true
-Label         = traefik.http.services.%J.loadbalancer.server.port=3000
-Label         = "traefik.http.routers.%J.rule=HostRegexp(`youtube.{.+}.{.+$$}`)"
+Label           = traefik.enable=true
+Label           = traefik.http.services.%J.loadbalancer.server.port=3000
+Label           = "traefik.http.routers.%J.rule=HostRegexp(`youtube.{.+}.{.+$$}`)"
 
-Network       = %p.network
-Network       = 3-pm-ingress.network
+Network         = %p.network
+Network         = 3-pm-ingress.network
 
-Volume        = /usr/local/opt/%J/conf.yml:/invidious/config/config.yml:ro
+Volume          = /usr/local/opt/%J/conf.yml:/invidious/config/config.yml:ro
 
 [Service]
-Restart       = on-failure
-ExecStartPost = podman wait --condition healthy -- %J-%I
+Restart         = on-failure
+TimeoutStartSec = 900
+ExecStartPost   = podman wait --condition healthy -- %J-%I
 
 [Install]
-WantedBy      = 0-podman.target
+WantedBy        = 0-podman.target

@@ -1,25 +1,26 @@
 [Unit]
-Description   = Podman -- %J
+Description     = Podman -- %J
 
 [Container]
-Image         = ghcr.io/librespeed/speedtest:latest
-ContainerName = %J
-AutoUpdate    = registry
-RunInit       = yes
+Image           = ghcr.io/librespeed/speedtest:latest
+ContainerName   = %J
+AutoUpdate      = registry
+RunInit         = yes
 
 # TODO UserNS = auto
 
-HealthCmd     = curl --fail --no-progress-meter --max-time 1 -- localhost:80
+HealthCmd       = curl --fail --no-progress-meter --max-time 1 -- localhost:80
 
-Label         = traefik.enable=true
-Label         = traefik.http.services.%J.loadbalancer.server.port=80
-Label         = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+$$}`) || HostRegexp(`%J.{.+$$}.{.+$$}`)"
+Label           = traefik.enable=true
+Label           = traefik.http.services.%J.loadbalancer.server.port=80
+Label           = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+$$}`) || HostRegexp(`%J.{.+$$}.{.+$$}`)"
 
-Network       = 3-pm-traefik.network
+Network         = 3-pm-traefik.network
 
 [Service]
-Restart       = on-failure
-ExecStartPost = podman wait --condition healthy -- %J
+Restart         = on-failure
+TimeoutStartSec = 900
+ExecStartPost   = podman wait --condition healthy -- %J
 
 [Install]
-WantedBy      = 0-podman.target
+WantedBy        = 0-podman.target

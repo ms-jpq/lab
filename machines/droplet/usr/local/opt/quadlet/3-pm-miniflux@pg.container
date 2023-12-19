@@ -23,4 +23,5 @@ Volume           = %S/local/%J:%S/postgresql/data
 
 [Service]
 Restart          = on-failure
+TimeoutStartSec  = 900
 ExecStartPost    = podman wait --condition healthy -- %J-%I

@@ -1,23 +1,24 @@
 [Unit]
-Description   = Podman -- %J
+Description     = Podman -- %J
 
 [Container]
-Image         = docker.io/jgraph/drawio:latest
-ContainerName = %J
-AutoUpdate    = registry
-RunInit       = yes
+Image           = docker.io/jgraph/drawio:latest
+ContainerName   = %J
+AutoUpdate      = registry
+RunInit         = yes
 
-HealthCmd     = curl --fail --no-progress-meter --max-time 1 -- localhost:8080
+HealthCmd       = curl --fail --no-progress-meter --max-time 1 -- localhost:8080
 
-Label         = traefik.enable=true
-Label         = traefik.http.services.%J.loadbalancer.server.port=8080
-Label         = "traefik.http.routers.%J.rule=HostRegexp(`draw.{.+}.{.+$$}`)"
+Label           = traefik.enable=true
+Label           = traefik.http.services.%J.loadbalancer.server.port=8080
+Label           = "traefik.http.routers.%J.rule=HostRegexp(`draw.{.+}.{.+$$}`)"
 
-Network       = 3-pm-traefik.network
+Network         = 3-pm-traefik.network
 
 [Service]
-Restart       = on-failure
-ExecStartPost = podman wait --condition healthy -- %J
+Restart         = on-failure
+TimeoutStartSec = 900
+ExecStartPost   = podman wait --condition healthy -- %J
 
 [Install]
-WantedBy      = 0-podman.target
+WantedBy        = 0-podman.target

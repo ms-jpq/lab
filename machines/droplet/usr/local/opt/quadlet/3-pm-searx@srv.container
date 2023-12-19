@@ -1,28 +1,29 @@
 [Unit]
-Description   = Podman -- %J@%I
+Description     = Podman -- %J@%I
 
-BindsTo       = %p@redis.service
-After         = %p@redis.service
+BindsTo         = %p@redis.service
+After           = %p@redis.service
 
 [Container]
-Image         = docker.io/searxng/searxng:latest
-ContainerName = %J-%I
-AutoUpdate    = registry
+Image           = docker.io/searxng/searxng:latest
+ContainerName   = %J-%I
+AutoUpdate      = registry
 
 # HealthCmd     = wget --quiet --output-document /dev/null --timeout 1 -- 127.0.0.1:8080
 
-Label         = traefik.enable=true
-Label         = traefik.http.services.%J.loadbalancer.server.port=8080
-Label         = "traefik.http.routers.%J.rule=HostRegexp(`google.{.+}.{.+$$}`)"
+Label           = traefik.enable=true
+Label           = traefik.http.services.%J.loadbalancer.server.port=8080
+Label           = "traefik.http.routers.%J.rule=HostRegexp(`google.{.+}.{.+$$}`)"
 
-Network       = %p.network
-Network       = 3-pm-ingress.network
+Network         = %p.network
+Network         = 3-pm-ingress.network
 
-Volume        = /usr/local/opt/%J/settings.yml:%E/searxng/settings.yml:ro
+Volume          = /usr/local/opt/%J/settings.yml:%E/searxng/settings.yml:ro
 
 [Service]
-Restart       = on-failure
+Restart         = on-failure
+TimeoutStartSec = 900
 # ExecStartPost = podman wait --condition healthy -- %J-%I
 
 [Install]
-WantedBy      = 0-podman.target
+WantedBy        = 0-podman.target

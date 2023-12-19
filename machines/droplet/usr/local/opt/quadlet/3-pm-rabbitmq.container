@@ -1,27 +1,28 @@
 [Unit]
-Description   = Podman -- %J
+Description     = Podman -- %J
 
 [Container]
-Image         = docker.io/library/rabbitmq:management
-ContainerName = %J
-AutoUpdate    = registry
-RunInit       = yes
+Image           = docker.io/library/rabbitmq:management
+ContainerName   = %J
+AutoUpdate      = registry
+RunInit         = yes
 
-HealthCmd     = rabbitmq-diagnostics ping
+HealthCmd       = rabbitmq-diagnostics ping
 
-Label         = traefik.enable=true
-Label         = traefik.http.services.%J.loadbalancer.server.port=15672
-Label         = "traefik.http.routers.%J.rule=HostRegexp(`rabbit.{.+}.{.+$$}`)"
+Label           = traefik.enable=true
+Label           = traefik.http.services.%J.loadbalancer.server.port=15672
+Label           = "traefik.http.routers.%J.rule=HostRegexp(`rabbit.{.+}.{.+$$}`)"
 
-Environment   = RABBITMQ_DEFAULT_USER=%J
-Environment   = RABBITMQ_DEFAULT_PASS=%J
+Environment     = RABBITMQ_DEFAULT_USER=%J
+Environment     = RABBITMQ_DEFAULT_PASS=%J
 
-Network       = 3-pm-traefik.network
-PublishPort   = 127.0.0.53:56720:5672
+Network         = 3-pm-traefik.network
+PublishPort     = 127.0.0.53:56720:5672
 
 [Service]
-Restart       = on-failure
+Restart         = on-failure
+TimeoutStartSec = 900
 # ExecStartPost = podman wait --condition healthy -- %J
 
 [Install]
-WantedBy      = 0-podman.target
+WantedBy        = 0-podman.target
