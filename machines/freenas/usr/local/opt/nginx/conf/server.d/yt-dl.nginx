@@ -1,0 +1,3 @@
+location /youtube-dl {
+  alias /usr/local/opt/yt-dl/;
+}

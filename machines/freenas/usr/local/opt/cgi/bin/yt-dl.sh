@@ -16,11 +16,11 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-L2="${L1#/}"
-L3="${L2#*:/}"
+L2="${L1#*uri=}"
+L3="$(sed -E -e 's/\+/ /g' -e 's/%/\\x/g' <<<"$L2")"
+printf -v L4 -- '%b' "$L3"
 
-URI="https://$(sed -E -e 's/\+/ /g' -e 's/%(..)/\x\1/g' <<<"$L3")"
-printf -- '%s\n' "$URI"
+printf -- '%s\n' "$L4"
 
-/var/cache/local/youtube-dl/bin --cache-dir /var/tmp --newline -- "$URI" 2>&1
+/var/cache/local/youtube-dl/bin --cache-dir /var/tmp --newline -- "$L4" 2>&1
 figlet <<<'<3'
