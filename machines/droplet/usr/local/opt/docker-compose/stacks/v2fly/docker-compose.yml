@@ -3,7 +3,7 @@ services:
   srv:
     image: docker.io/v2fly/v2fly-core:latest
     userns_mode: auto
-    restart: on-failure
+    restart: unless-stopped
     command:
       - run
       - -config

@@ -3,7 +3,7 @@ services:
   srv:
     image: docker.io/zedeus/nitter:latest
     userns_mode: auto
-    restart: on-failure
+    restart: unless-stopped
     depends_on:
       redis:
         condition: service_healthy
@@ -31,7 +31,7 @@ services:
   redis:
     image: docker.io/library/redis:latest
     userns_mode: auto
-    restart: on-failure
+    restart: unless-stopped
     healthcheck:
       test:
         - CMD

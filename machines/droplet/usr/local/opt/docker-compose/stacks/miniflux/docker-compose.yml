@@ -3,7 +3,7 @@ services:
   srv:
     image: ghcr.io/miniflux/miniflux:latest
     userns_mode: auto
-    restart: on-failure
+    restart: unless-stopped
     depends_on:
       pg:
         condition: service_healthy
@@ -40,7 +40,7 @@ services:
   pg:
     image: docker.io/library/postgres:latest
     userns_mode: auto
-    restart: on-failure
+    restart: unless-stopped
     user: games
     healthcheck:
       test:

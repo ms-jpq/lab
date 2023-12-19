@@ -3,7 +3,7 @@ services:
   srv:
     image: docker.io/library/mongo-express:latest
     userns_mode: auto
-    restart: on-failure
+    restart: unless-stopped
     depends_on:
       mongo:
         condition: service_healthy
@@ -37,7 +37,7 @@ services:
   mongo:
     image: docker.io/library/mongo:latest
     userns_mode: auto
-    restart: on-failure
+    restart: unless-stopped
     healthcheck:
       test:
         - CMD

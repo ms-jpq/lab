@@ -3,7 +3,7 @@ services:
   srv:
     image: docker.io/library/phpmyadmin:latest
     userns_mode: auto
-    restart: on-failure
+    restart: unless-stopped
     depends_on:
       mysql:
         condition: service_healthy
@@ -32,7 +32,7 @@ services:
   mysql:
     image: docker.io/library/mysql:latest
     userns_mode: auto
-    restart: on-failure
+    restart: unless-stopped
     healthcheck:
       test:
         - CMD

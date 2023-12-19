@@ -3,6 +3,6 @@ services:
   srv:
     image: docker.io/containrrr/watchtower:latest
     userns_mode: auto
-    restart: on-failure
+    restart: unless-stopped
     volumes:
       - /run/docker.sock:/var/run/docker.sock:ro

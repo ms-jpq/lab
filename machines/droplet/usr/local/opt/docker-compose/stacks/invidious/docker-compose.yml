@@ -3,7 +3,7 @@ services:
   srv:
     image: quay.io/invidious/invidious:latest
     userns_mode: auto
-    restart: on-failure
+    restart: unless-stopped
     depends_on:
       pg:
         condition: service_healthy
@@ -31,7 +31,7 @@ services:
   pg:
     image: docker.io/library/postgres:latest
     userns_mode: auto
-    restart: on-failure
+    restart: unless-stopped
     healthcheck:
       test:
         - CMD

@@ -3,7 +3,7 @@ services:
   srv:
     image: docker.io/libreddit/libreddit:latest
     userns_mode: auto
-    restart: on-failure
+    restart: unless-stopped
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080

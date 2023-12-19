@@ -3,7 +3,7 @@ services:
   srv:
     image: ghcr.io/privatebin/nginx-fpm-alpine:latest
     userns_mode: auto
-    restart: on-failure
+    restart: unless-stopped
     healthcheck:
       test:
         - CMD
