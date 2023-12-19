@@ -23,8 +23,8 @@ services:
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`rss.{.+}.{.+$$}`)
     environment:
-      ADMIN_PASSWORD: 1
-      ADMIN_USERNAME: 1
+      ADMIN_PASSWORD:
+      ADMIN_USERNAME:
       CREATE_ADMIN: 1
       DATABASE_URL: postgres://postgres:postgres@pg/postgres?sslmode=disable
       INVIDIOUS_INSTANCE:
