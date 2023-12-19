@@ -1,0 +1,10 @@
+[Unit]
+Description      = Netman -- %J
+StopWhenUnneeded = yes
+
+[Network]
+Internal         = yes
+IPv6             = yes
+
+[Service]
+ExecStop         = /usr/local/libexec/hr-run.sh podman network rm --force -- systemd-%N
