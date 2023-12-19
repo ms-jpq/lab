@@ -1,0 +1,8 @@
+---
+services:
+  srv:
+    image: docker.io/containrrr/watchtower:latest
+    userns_mode: auto
+    restart: on-failure
+    volumes:
+      - /run/docker.sock:/run/docker.sock:ro

@@ -25,8 +25,9 @@ services:
     environment:
       ADMIN_PASSWORD:
       ADMIN_USERNAME:
+      BASE_URL:
       CREATE_ADMIN: 1
-      DATABASE_URL: postgres://postgres:postgres@pg/postgres?sslmode=disable
+      DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg/${COMPOSE_PROJECT_NAME}?sslmode=disable
       INVIDIOUS_INSTANCE:
       PROXY_IMAGES: all
       PROXY_MEDIA_TYPES: image,audio,video
@@ -39,18 +40,19 @@ services:
   pg:
     image: docker.io/library/postgres:latest
     userns_mode: auto
+    user: games
     healthcheck:
       test:
         - CMD
         - pg_isready
         - --username
-        - postgres
+        - ${COMPOSE_PROJECT_NAME}
         - --dbname
-        - postgres
+        - ${COMPOSE_PROJECT_NAME}
     environment:
-      POSTGRES_DB: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_USER: postgres
+      POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
     volumes:
       - /var/lib/local/${COMPOSE_PROJECT_NAME}:/var/lib/postgresql/data
 
