@@ -14,7 +14,7 @@ HealthCmd     = wget --quiet --output-document /dev/null --timeout 1 -- localhos
 
 Label         = traefik.enable=true
 Label         = traefik.http.services.%J.loadbalancer.server.port=8080
-Label         = "traefik.http.routers.%J.rule=HostRegexp(`%J.{.+$$}`) || HostRegexp(`%J.{.+$$}.{.+$$}`)"
+Label         = "traefik.http.routers.%J.rule=HostRegexp(`rss.{.+}.{.+$$}`)"
 
 Environment   = RUN_MIGRATIONS=1
 Environment   = DATABASE_URL=postgres://%J:%J@%J-pg/%J

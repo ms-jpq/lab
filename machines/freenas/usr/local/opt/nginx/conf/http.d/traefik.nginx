@@ -1,5 +1,5 @@
 server {
-  server_name traefik.* speedtest.* miniflux.* metube.*;
+  server_name traefik.* speedtest.* metube.*;
   include     /usr/local/opt/nginx/conf/listen.nginx;
 
   location / {

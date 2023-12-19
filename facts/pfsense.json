@@ -5,7 +5,6 @@
     "esxi.enp2s0.pfsense.ENV_WG_SERVER_NAME=ENV_WG_SERVER_NAME",
     "freenas.enp2s0.pfsense.ENV_WG_SERVER_NAME=ENV_WG_SERVER_NAME",
     "metube.ENV_WG_SERVER_NAME=ENV_WG_SERVER_NAME",
-    "miniflux.ENV_WG_SERVER_NAME=ENV_WG_SERVER_NAME",
     "pfsense.enp2s0.pfsense.ENV_WG_SERVER_NAME=ENV_WG_SERVER_NAME",
     "roku.enp2s0.pfsense.ENV_WG_SERVER_NAME=ENV_WG_SERVER_NAME",
     "speedtest.ENV_WG_SERVER_NAME=ENV_WG_SERVER_NAME",
