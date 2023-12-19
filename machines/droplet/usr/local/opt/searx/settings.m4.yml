@@ -1,4 +1,5 @@
 ---
+# https://github.com/searxng/searxng/blob/master/searx/settings.yml
 use_default_settings: true
 redis:
   url: redis://redis:6379/0
@@ -9,6 +10,7 @@ search:
   default_lang: all
 ui:
   results_on_new_tab: true
+  center_alignment: true
 server:
   base_url: https://google.m5_assert([ENV_DOMAIN])
   limiter: false
@@ -21,3 +23,18 @@ server:
     - rss
   secret_key: |-
     m4_esyscmd([uuidgen])
+
+enabled_plugins:
+  - "Hash plugin"
+  - "Self Information"
+  - "Tracker URL remover"
+  - "Ahmia blacklist"
+  - "Hostname replace"
+
+hostname_replace:
+  '(.*\.)?youtube\.com$': &youtube youtube.m5_assert([ENV_DOMAIN])
+  '(.*\.)?youtu\.be$': *youtube
+  '(.*\.)?reddit\.com$': &reddit reddit.m5_assert([ENV_DOMAIN])
+  '(.*\.)?redd\.it$': *reddit
+  # TODO: https://github.com/zedeus/nitter/pull/985
+  '(www\.)?twitter\.com$': nitter.net

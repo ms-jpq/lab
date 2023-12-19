@@ -4,17 +4,38 @@ services:
     image: docker.io/libreddit/libreddit:latest
     userns_mode: auto
     restart: unless-stopped
-    labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`reddit.{.+}.{.+$$}`)
     environment:
       LIBREDDIT_DEFAULT_AUTOPLAY_VIDEOS: on
       LIBREDDIT_DEFAULT_HIDE_HLS_NOTIFICATION: on
       LIBREDDIT_DEFAULT_SHOW_NSFW: on
       LIBREDDIT_DEFAULT_USE_HLS: on
+    network_mode: service:warp
+
+  warp:
+    image: docker.io/caomingjun/warp:latest
+    userns_mode: auto
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`reddit.{.+}.{.+$$}`)
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
+      - net.ipv4.conf.all.src_valid_mark=1
+    environment:
+      WARP_SLEEP: 2
+    networks:
+      - default
+      - traefik
+    volumes:
+      - warp:/var/lib/cloudflare-warp
 
 networks:
-  default:
+  traefik:
     external: true
     name: traefik
+
+volumes:
+  warp:

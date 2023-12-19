@@ -12,8 +12,7 @@ services:
         - CMD
         - wget
         - --quiet
-        - --output-document
-        - /dev/null
+        - --spider
         - --timeout
         - "1"
         - --

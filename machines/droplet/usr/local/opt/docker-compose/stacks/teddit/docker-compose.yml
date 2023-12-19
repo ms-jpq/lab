@@ -1,0 +1,69 @@
+---
+services:
+  srv:
+    image: docker.io/teddit/teddit:latest
+    userns_mode: auto
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --spider
+        - --timeout
+        - "1"
+        - --
+        - localhost:8080/about
+    environment:
+      DOMAIN:
+      REDIS_HOST: localhost
+      TRUST_PROXY: true
+      USE_HELMET: true
+      USE_HELMET_HSTS: true
+    network_mode: &network service:warp
+
+  redis:
+    image: docker.io/library/redis:latest
+    userns_mode: auto
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - incr
+        - ping
+    environment:
+      REDIS_REPLICATION_MODE: master
+    network_mode: *network
+
+  warp:
+    image: docker.io/caomingjun/warp:latest
+    userns_mode: auto
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`teddit.{.+}.{.+$$}`)
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
+      - net.ipv4.conf.all.src_valid_mark=1
+    environment:
+      WARP_SLEEP: 2
+    networks:
+      - default
+      - traefik
+    volumes:
+      - warp:/var/lib/cloudflare-warp
+
+networks:
+  traefik:
+    external: true
+    name: traefik
+
+volumes:
+  warp:
