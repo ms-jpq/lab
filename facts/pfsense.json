@@ -4,11 +4,8 @@
     "cups.ENV_WG_SERVER_NAME=ENV_WG_SERVER_NAME",
     "esxi.enp2s0.pfsense.ENV_WG_SERVER_NAME=ENV_WG_SERVER_NAME",
     "freenas.enp2s0.pfsense.ENV_WG_SERVER_NAME=ENV_WG_SERVER_NAME",
-    "metube.ENV_WG_SERVER_NAME=ENV_WG_SERVER_NAME",
     "pfsense.enp2s0.pfsense.ENV_WG_SERVER_NAME=ENV_WG_SERVER_NAME",
-    "roku.enp2s0.pfsense.ENV_WG_SERVER_NAME=ENV_WG_SERVER_NAME",
-    "speedtest.ENV_WG_SERVER_NAME=ENV_WG_SERVER_NAME",
-    "traefik.ENV_WG_SERVER_NAME=ENV_WG_SERVER_NAME"
+    "roku.enp2s0.pfsense.ENV_WG_SERVER_NAME=ENV_WG_SERVER_NAME"
   ],
   "ENV_DOMAIN": "ENV_WG_SERVER_NAME",
   "ENV_HOST_ALLOW_LIST": ["freenas.enp2s0.pfsense.home.arpa@tcp*https"],

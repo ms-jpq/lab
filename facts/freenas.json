@@ -13,10 +13,7 @@
     "freenas.enp2s0.pfsense/bt",
     "freenas.enp2s0.pfsense/rclone",
     "freenas.enp2s0.pfsense/share",
-    "freenas.enp2s0.pfsense/zfs.sh",
-    "metube",
-    "speedtest",
-    "traefik/dashboard"
+    "freenas.enp2s0.pfsense/zfs.sh"
   ],
   "ENV_MACHINES": [
     "pfsense.enp2s0.pfsense",
