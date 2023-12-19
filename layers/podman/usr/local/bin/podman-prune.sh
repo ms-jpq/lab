@@ -2,6 +2,9 @@
 
 set -o pipefail
 
-podman system prune --all --volumes --force
-podman network prune --force
-podman image prune --all --force
+NAME="${0##*/}"
+NAME="${NAME%-prune.sh}"
+
+"$NAME" system prune --all --volumes --force
+"$NAME" network prune --force
+"$NAME" image prune --all --force

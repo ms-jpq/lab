@@ -12,7 +12,10 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-/usr/local/libexec/hr-run.sh podman image ls --all
-/usr/local/libexec/hr-run.sh podman network ls
-/usr/local/libexec/hr-run.sh podman ps --all
-/usr/local/libexec/hr-run.sh podman volume ls
+NAME="${0##*/}"
+NAME="${NAME%.sh}"
+
+/usr/local/libexec/hr-run.sh "$NAME" image ls --all
+/usr/local/libexec/hr-run.sh "$NAME" network ls
+/usr/local/libexec/hr-run.sh "$NAME" ps --all
+/usr/local/libexec/hr-run.sh "$NAME" volume ls
