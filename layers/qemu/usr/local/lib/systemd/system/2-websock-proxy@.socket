@@ -1,7 +1,6 @@
 [Unit]
-Description         = Proxy qemu display socket -- %t/local/vnc/%I.sock
-ConditionPathExists = %t/local/qemu/%I/vnc.sock
+Description  = Proxy qemu display socket -- %t/local/vnc/%I.sock
 
 [Socket]
-RemoveOnStop        = yes
-ListenStream        = %t/local/vnc/%I.sock
+RemoveOnStop = yes
+ListenStream = %t/local/vnc/%I.sock
