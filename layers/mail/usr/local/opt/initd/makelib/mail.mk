@@ -2,16 +2,10 @@
 all: mail
 
 mail: /var/lib/local/vmail
-mail.clobber:
-	sudo -- userdel --remove -- vmail
 
-/home/vmail: | pkg._
-	sudo -- useradd --create-home -- '$(@F)'
-
-/var/lib/local/vmail: | /home/vmail
+/var/lib/local/vmail:
 	sudo -- mkdir --parents -- '$@'
-	sudo -- chown -- '$(@F):$(@F)' '$@'
-
+	sudo -- chown -- '1000:1000' '$@'
 
 mail: /usr/local/opt/apache2/apache2.conf
 
