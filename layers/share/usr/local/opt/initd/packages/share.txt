@@ -4,4 +4,5 @@
 + samba
 + samba-vfs-modules
 + targetcli-fb
++ tracker
 + wsdd
