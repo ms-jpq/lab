@@ -43,6 +43,7 @@ services:
       POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
     network_mode: *network
 
+  # https://github.com/iv-org/invidious/pull/4270
   warp:
     image: docker.io/caomingjun/warp:latest
     userns_mode: auto

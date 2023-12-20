@@ -2,9 +2,7 @@
 # https://github.com/searxng/searxng/blob/master/searx/settings.yml
 use_default_settings: true
 redis:
-  url: redis://localhost:6379/0
-general:
-  enable_metrics: true
+  url: redis://redis:6379/0
 search:
   autocomplete: google
   default_lang: all
@@ -23,6 +21,10 @@ server:
     - rss
   secret_key: |-
     m4_esyscmd([uuidgen])
+outgoing:
+  proxies:
+    all://:
+      - socks5://warp-srv-1:1080
 
 enabled_plugins:
   - "Hash plugin"

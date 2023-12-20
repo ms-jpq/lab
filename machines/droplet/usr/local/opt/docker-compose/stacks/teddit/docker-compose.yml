@@ -23,11 +23,14 @@ services:
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`teddit.{.+}.{.+$$}`)
     environment:
       DOMAIN:
-      REDIS_HOST: localhost
+      HTTP_PROXY: http://warp-srv-1:1080
+      REDIS_HOST: redis
       TRUST_PROXY: true
       USE_HELMET: true
       USE_HELMET_HSTS: true
-    network_mode: &network service:warp
+    networks:
+      - default
+      - traefik
 
   redis:
     image: docker.io/library/redis:latest
@@ -41,29 +44,8 @@ services:
         - ping
     environment:
       REDIS_REPLICATION_MODE: master
-    network_mode: *network
-
-  warp:
-    image: docker.io/caomingjun/warp:latest
-    userns_mode: auto
-    restart: unless-stopped
-    cap_add:
-      - NET_ADMIN
-    sysctls:
-      - net.ipv6.conf.all.disable_ipv6=0
-      - net.ipv4.conf.all.src_valid_mark=1
-    environment:
-      WARP_SLEEP: 2
-    networks:
-      - default
-      - traefik
-    volumes:
-      - warp:/var/lib/cloudflare-warp
 
 networks:
   traefik:
     external: true
     name: traefik
-
-volumes:
-  warp:
