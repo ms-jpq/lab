@@ -27,6 +27,7 @@ services:
       BASE_URL:
       CREATE_ADMIN: 1
       DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg/${COMPOSE_PROJECT_NAME}?sslmode=disable
+      HTTP_PROXY: http://warp-srv-1:1080
       INVIDIOUS_INSTANCE:
       PROXY_IMAGES: all
       PROXY_MEDIA_TYPES: image,audio,video
