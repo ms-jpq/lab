@@ -1,7 +1,7 @@
 ---
 check_tables: true
 db:
-  host: pg
+  host: localhost
   port: 5432
   dbname: invidious
   user: invidious

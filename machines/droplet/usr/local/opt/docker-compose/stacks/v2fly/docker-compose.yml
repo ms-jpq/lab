@@ -1,5 +1,6 @@
 ---
 services:
+  # TODO: linked DNS container + cloudflare
   srv:
     image: docker.io/v2fly/v2fly-core:latest
     userns_mode: auto
@@ -8,7 +9,9 @@ services:
       - run
       - -config
       - /etc/v2ray/server.json
-    network_mode: host
+    ports:
+      - 2000-2008:2000-2008
+      - 2000-2008:2000-2008/udp
+      - 30000:30000
     volumes:
-      - /run/docker.sock:/var/run/docker.sock:ro
       - /usr/local/opt/${COMPOSE_PROJECT_NAME}:/etc/v2ray:ro

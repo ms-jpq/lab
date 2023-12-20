@@ -16,14 +16,12 @@ services:
         - --timeout
         - "1"
         - --
-        - localhost:3000
+        - 127.0.0.1:3000
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=3000
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`youtube.{.+}.{.+$$}`)
-    networks:
-      - default
-      - traefik
+    network_mode: &network service:warp
     volumes:
       - /usr/local/opt/${COMPOSE_PROJECT_NAME}/conf.yml:/invidious/config/config.yml:ro
 
@@ -43,8 +41,29 @@ services:
       POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
       POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
+    network_mode: *network
+
+  warp:
+    image: docker.io/caomingjun/warp:latest
+    userns_mode: auto
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
+      - net.ipv4.conf.all.src_valid_mark=1
+    environment:
+      WARP_SLEEP: 2
+    networks:
+      - default
+      - traefik
+    volumes:
+      - warp:/var/lib/cloudflare-warp
 
 networks:
   traefik:
     external: true
     name: traefik
+
+volumes:
+  warp:
