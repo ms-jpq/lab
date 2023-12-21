@@ -1,2 +1,3 @@
 [Unit]
 After = 1-ip-alloc@tor.service
+After = 1-ip-alloc@wg0.service
