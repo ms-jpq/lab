@@ -2,13 +2,16 @@
 
 all: irc
 
-irc: /etc/apt/trusted.gpg.d/weechat.gpg /var/cache/local/weechat/venv
+irc: /etc/apt/trusted.gpg.d/weechat.gpg /var/cache/local/weechat/venv $(CACHE)/weechat/venv/bin/wsdump
 
 /etc/apt/trusted.gpg.d/weechat.gpg:
 	$(CURL) -- 'https://weechat.org/dev/info/debian_repository_signing_key' | sudo -- gpg --batch --dearmor --yes --output '$@'
 
 $(CACHE)/weechat/venv:
 	sudo -- python3 -m venv -- '$@'
+
+$(CACHE)/weechat/venv/bin/wsdump: $(CACHE)/weechat/venv
+	sudo -- /usr/local/opt/weechat/libexec/venv.sh
 
 define IRC_GIT_TEMPLATE
 irc: $(CACHE)/weechat/$(notdir $1)

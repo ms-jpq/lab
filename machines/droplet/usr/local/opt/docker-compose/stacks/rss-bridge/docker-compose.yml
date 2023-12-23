@@ -1,0 +1,17 @@
+---
+services:
+  srv:
+    image: docker.io/rssbridge/rss-bridge:latest
+    userns_mode: auto
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`bridge.{.+}.{.+$$}`)
+    volumes:
+      - /usr/local/opt/${COMPOSE_PROJECT_NAME}:/config:ro
+
+networks:
+  default:
+    external: true
+    name: traefik
