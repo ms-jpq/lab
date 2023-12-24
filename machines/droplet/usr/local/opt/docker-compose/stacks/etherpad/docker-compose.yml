@@ -55,6 +55,8 @@ services:
       POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
 
 networks:
+  default:
+    internal: true
   traefik:
     external: true
     name: traefik
