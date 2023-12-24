@@ -36,6 +36,7 @@ down() {
 
 reload() {
   declare -A -- ACC
+  ADDED=0
   for CONF in "${WG_CONFS[@]}"; do
     WG="$(b2 "$CONF")"
 
@@ -93,10 +94,12 @@ reload() {
       ip "-$P" route add "$ADDR" dev "$WG"
     done
 
-    PT=(4 6)
-    for P in "${PT[@]}"; do
-      ip "-$P" route add default dev "$WG"
-    done
+    if ! ((ADDED++)); then
+      PT=(4 6)
+      for P in "${PT[@]}"; do
+        ip "-$P" route add default dev "$WG"
+      done
+    fi
   done
 }
 
