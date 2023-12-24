@@ -1,7 +1,5 @@
 server {
   server_name cups.*;
-  listen      8080;
-  listen      [::]:8080;
   listen      unix:/run/local/nginx/cgi.sock;
 
   location / {

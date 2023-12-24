@@ -12,7 +12,7 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-/usr/local/libexec/hr-run.sh resolvectl status
 /usr/local/libexec/hr-run.sh resolvectl statistics
 # TODO: systemd 255
 # /usr/local/libexec/hr-run.sh resolvectl show-server-state
+/usr/local/libexec/hr-run.sh resolvectl status

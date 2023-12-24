@@ -1,3 +1,4 @@
+internal
 nspawn
 qemu
 vfio

@@ -1,6 +1,7 @@
 gateway
 gh_mirror
 intel_gvt
+internal
 printer
 qemu
 share
