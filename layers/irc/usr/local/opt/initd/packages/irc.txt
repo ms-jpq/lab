@@ -1,4 +1,5 @@
 + dtach
++ proxychains4
 + weechat-curses
 + weechat-headless
 + weechat-lua
