@@ -6,4 +6,4 @@ set -o pipefail
 #   printf -- '%s\n' "/set env TZ $TZ" >/run/local/weechat/weechat_fifo_*
 # fi
 
-exec -- dtach -a /run/local/weechat/dtach.sock -e '^g'
+exec -- dtach -a /run/local/weechat/dtach.sock -e '^]'
