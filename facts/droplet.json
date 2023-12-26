@@ -2,6 +2,7 @@
   "ENV_INDEX": [
     "12ft",
     "bing",
+    "bridge",
     "docs",
     "draw",
     "google",
@@ -16,6 +17,7 @@
     "redis",
     "rss",
     "speedtest",
+    "teddit",
     "traefik",
     "twitter",
     "youtube"
