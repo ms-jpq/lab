@@ -25,7 +25,7 @@ services:
       - default
       - traefik
     volumes:
-      - /usr/local/opt/${COMPOSE_PROJECT_NAME}/nitter.toml:/src/nitter.conf:ro
+      - ./nitter.toml:/src/nitter.conf:ro
 
   redis:
     image: docker.io/library/redis:latest

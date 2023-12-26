@@ -25,7 +25,7 @@ services:
       - default
       - traefik
     volumes:
-      - /usr/local/opt/${COMPOSE_PROJECT_NAME}/settings.yml:/etc/searxng/settings.yml:ro
+      - ./settings.yml:/etc/searxng/settings.yml:ro
 
   redis:
     image: docker.io/library/redis:latest

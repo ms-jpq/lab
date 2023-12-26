@@ -23,7 +23,7 @@ services:
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`youtube.{.+}.{.+$$}`)
     network_mode: &network service:warp
     volumes:
-      - /usr/local/opt/${COMPOSE_PROJECT_NAME}/conf.yml:/invidious/config/config.yml:ro
+      - ./conf.yml:/invidious/config/config.yml:ro
 
   pg:
     image: docker.io/library/postgres:latest

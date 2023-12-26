@@ -19,7 +19,7 @@ services:
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`pastebin.{.+}.{.+$$}`)
     volumes:
-      - /usr/local/opt/${COMPOSE_PROJECT_NAME}/conf.php:/srv/cfg/conf.php:ro
+      - ./conf.php:/srv/cfg/conf.php:ro
 
 networks:
   default:
