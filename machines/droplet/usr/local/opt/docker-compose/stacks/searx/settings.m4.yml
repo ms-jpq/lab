@@ -5,6 +5,7 @@ redis:
   url: redis://redis:6379/0
 search:
   autocomplete: google
+  autocomplete_min: 1
   default_lang: all
   formats:
     - csv

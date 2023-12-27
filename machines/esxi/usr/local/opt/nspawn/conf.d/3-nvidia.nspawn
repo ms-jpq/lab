@@ -1,0 +1,3 @@
+[Files]
+Bind = /dev/dri
+# Bind = /dev/dri/renderD128

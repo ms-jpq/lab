@@ -129,7 +129,8 @@ if [[ -n "${VNC:-""}" ]]; then
     -vga 'virtio'
     # TODO: qemu new version
     # -audio 'driver=none,model=hda'
-    -soundhw 'hda'
+    -device intel-hda
+    -device hda-duplex
   )
 else
   ARGV+=(-nographic)

@@ -6,5 +6,5 @@ LinkJournal           = try-guest
 Bridge                = v-${MACHINE}
 
 [Files]
-Bind                  = /dev/fuse
 PrivateUsersOwnership = map
+Bind                  = /dev/fuse
