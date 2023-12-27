@@ -1,5 +1,13 @@
 {
   "ENV_BLK_EXPORTS": [],
+  "ENV_CERTBOT_SITES": [
+    "cups.freenas.enp2s0.pfsense.ENV_DOMAIN",
+    "esxi.enp2s0.pfsense.ENV_DOMAIN",
+    "freenas.enp2s0.pfsense.ENV_DOMAIN",
+    "pfsense.enp2s0.pfsense.ENV_DOMAIN",
+    "roku.enp2s0.pfsense.ENV_DOMAIN",
+    "ENV_DOMAIN"
+  ],
   "ENV_FS_DOWNLOADS": "downloads",
   "ENV_FS_MOVIES": "media/Movies",
   "ENV_FS_NTFS": "ntfs",
