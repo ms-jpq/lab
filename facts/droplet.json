@@ -1,4 +1,32 @@
 {
+  "ENV_CERTBOT_SITES": [
+    "12ft.ENV_DOMAIN",
+    "ENV_DOMAIN",
+    "autodiscover.ENV_DOMAIN",
+    "bing.ENV_DOMAIN",
+    "bridge.ENV_DOMAIN",
+    "cd.ENV_DOMAIN",
+    "docker.ENV_DOMAIN",
+    "docs.ENV_DOMAIN",
+    "draw.ENV_DOMAIN",
+    "google.ENV_DOMAIN",
+    "local.ENV_DOMAIN",
+    "minio.ENV_DOMAIN",
+    "mongo.ENV_DOMAIN",
+    "mysql.ENV_DOMAIN",
+    "pastebin.ENV_DOMAIN",
+    "pg.ENV_DOMAIN",
+    "rabbit.ENV_DOMAIN",
+    "reddit.ENV_DOMAIN",
+    "redis.ENV_DOMAIN",
+    "rss.ENV_DOMAIN",
+    "s3.ENV_DOMAIN",
+    "speedtest.ENV_DOMAIN",
+    "teddit.ENV_DOMAIN",
+    "traefik.ENV_DOMAIN",
+    "twitter.ENV_DOMAIN",
+    "youtube.ENV_DOMAIN"
+  ],
   "ENV_INDEX": [
     "12ft",
     "bing",
@@ -24,7 +52,9 @@
     "twitter",
     "youtube"
   ],
+  "ENV_MAIL": "me@ENV_DOMAIN",
   "ENV_V2R_CLIENT": 0,
+  "ENV_V2R_DOMAIN": "ENV_DOMAIN",
   "ENV_V2R_LOCAL_DOMAINS": [],
   "ENV_WAN_IF": "enp1s0"
 }
