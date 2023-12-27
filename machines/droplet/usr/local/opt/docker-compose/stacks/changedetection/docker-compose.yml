@@ -1,0 +1,24 @@
+---
+services:
+  srv:
+    image: ghcr.io/dgtlmoon/changedetection.io:latest
+    userns_mode: auto
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=5000
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`cd.{.+}.{.+$$}`)
+    environment:
+      BASE_URL:
+      HTTP_PROXY: socks5h://warp-srv-1:1080
+      USE_X_SETTINGS: 1
+    volumes:
+      - data:/datastore
+
+networks:
+  default:
+    external: true
+    name: traefik
+
+volumes:
+  data:

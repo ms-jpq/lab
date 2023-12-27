@@ -1,0 +1,28 @@
+---
+services:
+  srv:
+    image: docker.io/library/registry:latest
+    userns_mode: auto
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --spider
+        - --timeout
+        - "1"
+        - --
+        - localhost:5000
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=5000
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`docker.{.+}.{.+$$}`)
+    networks:
+      - default
+      - traefik
+
+networks:
+  traefik:
+    external: true
+    name: traefik
