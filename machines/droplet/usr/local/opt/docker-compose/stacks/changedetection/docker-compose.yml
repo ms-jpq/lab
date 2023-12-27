@@ -11,6 +11,7 @@ services:
     environment:
       BASE_URL:
       HTTP_PROXY: socks5h://warp-srv-1:1080
+      HTTPS_PROXY: socks5h://warp-srv-1:1080
       USE_X_SETTINGS: 1
     volumes:
       - data:/datastore
