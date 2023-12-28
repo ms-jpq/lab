@@ -7,6 +7,7 @@
 + ndisc6
 + ntopng
 + qrencode
++ slurm
 + smcroute
 + squid
 + squidclient
