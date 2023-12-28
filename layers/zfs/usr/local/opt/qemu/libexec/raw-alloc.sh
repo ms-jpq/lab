@@ -12,4 +12,6 @@ ZVOL="/dev/zvol/$NAME"
 /usr/local/libexec/hr-run.sh zfs create -s -V 88G -- "$NAME"
 /usr/local/libexec/hr-run.sh ln -v -sf -- "$ZVOL" "$DRIVE"
 /usr/local/libexec/hr-run.sh udevadm trigger
-cat -- "$RAW" >"$ZVOL"
+if [[ -n "$RAW" ]]; then
+  cat -- "$RAW" >"$ZVOL"
+fi

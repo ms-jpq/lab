@@ -45,7 +45,10 @@ Environment       = DRIVE=%S/local/qemu/%I/fs.raw
 Environment       = DEV_HDA=/dev/vda1
 Environment       = CLOUD_INIT=%V/cloud-init.iso
 
-ExecStartPre      = /usr/local/opt/qemu/libexec/preinux.sh ${ROOT} ${DRIVE}
+Environment       = RAW=%C/local/qemu/cloudimg.raw
+
+
+ExecStartPre      = /usr/local/opt/qemu/libexec/pre-alloc.sh ${ROOT} ${DRIVE} ${RAW}
 ExecStartPre      = /usr/local/opt/qemu/libexec/cloud-init.sh %I ${CLOUD_INIT}
 
 ExecStartPre      = touch -- "${ROOT}/.#fs.lck"
