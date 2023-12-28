@@ -11,8 +11,10 @@ ARGV=(
   systemd-nspawn
   --keep-unit
   --boot
-  --notify-read yes
+  --notify-ready yes
   -U
+  # --private-users pick
+  --private-users-ownership auto
   --network-veth
   --link-journal try-guest
   --settings override
