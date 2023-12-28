@@ -1,10 +1,11 @@
 # + libnginx-mod-http-brotli-static
 # + linux-generic-hwe-[]m5_assert([ENV_VERSION_ID])
-# TODO: more nginx modules
 + avahi-daemon
 + bat
++ cowsay
 + dnsmasq
 + fd-find
++ figlet
 + fzf
 + git
 + haproxy
@@ -20,8 +21,6 @@
 + netdata
 + netdata-plugins-python
 + nfs-common
-+ cowsay
-+ figlet
 + nginx
 + python3-venv
 + ripgrep
@@ -38,5 +37,4 @@
 - lxd-agent-loader
 - rsyslog
 - snapd
-- vim
-- vim-tiny
+- vim-common
