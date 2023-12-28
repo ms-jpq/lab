@@ -1,3 +1,4 @@
+cuda
 internal
 nspawn
 qemu
