@@ -1,1 +1,3 @@
-# + nvidia-driver-545-open
+# + cuda-drivers-545
+# + nvidia-cuda-toolkit
+# + nvidia-kernel-open-545
