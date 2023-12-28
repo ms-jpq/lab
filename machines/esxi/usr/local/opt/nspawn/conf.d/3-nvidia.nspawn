@@ -1,3 +1,7 @@
+[Exec]
+SystemCallFilter = add_key keyctl bpf
+
 [Files]
-Bind = /dev/dri
-# Bind = /dev/dri/renderD128
+Bind             = /dev/fuse
+Bind             = /dev/nvidia0
+Bind             = /dev/nvidiactl

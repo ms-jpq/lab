@@ -1,5 +1,4 @@
 internal
 nspawn
 qemu
-vfio
 zfs

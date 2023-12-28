@@ -1,5 +1,4 @@
 [Exec]
-SystemCallFilter      = add_key keyctl bpf
 LinkJournal           = try-guest
 
 [Network]
@@ -7,4 +6,3 @@ Bridge                = v-${MACHINE}
 
 [Files]
 PrivateUsersOwnership = map
-Bind                  = /dev/fuse
