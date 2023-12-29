@@ -6,3 +6,4 @@ Bridge                = v-${MACHINE}
 
 [Files]
 PrivateUsers          = pick
+PrivateUsersOwnership = map
