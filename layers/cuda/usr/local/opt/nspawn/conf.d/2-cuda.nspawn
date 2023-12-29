@@ -1,0 +1,6 @@
+[Files]
+Bind = /dev/nvidia-modeset
+Bind = /dev/nvidia-uvm
+Bind = /dev/nvidia-uvm-tools
+Bind = /dev/nvidia0
+Bind = /dev/nvidiactl

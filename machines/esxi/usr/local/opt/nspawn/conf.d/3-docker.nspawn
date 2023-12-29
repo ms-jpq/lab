@@ -1,0 +1,5 @@
+[Exec]
+SystemCallFilter = add_key keyctl bpf
+
+[Files]
+Bind             = /dev/fuse
