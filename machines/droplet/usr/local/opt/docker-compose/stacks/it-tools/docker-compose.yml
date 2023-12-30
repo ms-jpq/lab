@@ -1,0 +1,28 @@
+---
+services:
+  srv:
+    image: ghcr.io/corentinth/it-tools:latest
+    userns_mode: auto
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --no-progress-meter
+        - --max-time
+        - "1"
+        - --
+        - 127.0.0.1:80
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`tools.{.+}.{.+$$}`)
+    networks:
+      - default
+      - traefik
+
+networks:
+  traefik:
+    external: true
+    name: traefik

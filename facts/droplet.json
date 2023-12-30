@@ -23,6 +23,7 @@
     "s3.ENV_DOMAIN",
     "speedtest.ENV_DOMAIN",
     "teddit.ENV_DOMAIN",
+    "tools.ENV_DOMAIN",
     "traefik.ENV_DOMAIN",
     "twitter.ENV_DOMAIN",
     "youtube.ENV_DOMAIN"
@@ -48,6 +49,7 @@
     "rss",
     "speedtest",
     "teddit",
+    "tools",
     "traefik",
     "twitter",
     "youtube"
