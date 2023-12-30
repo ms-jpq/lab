@@ -39,6 +39,7 @@
     "google",
     "local",
     "minio",
+    "mitm",
     "mongo",
     "mysql",
     "pastebin",

@@ -1,0 +1,22 @@
+---
+services:
+  srv:
+    image: docker.io/mitmproxy/mitmproxy:latest
+    userns_mode: auto
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8081
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`mitm.{.+}.{.+$$}`)
+    command:
+      - mitmweb
+      - --web-host
+      - "*"
+    networks:
+      - default
+      - traefik
+
+networks:
+  traefik:
+    external: true
+    name: traefik
