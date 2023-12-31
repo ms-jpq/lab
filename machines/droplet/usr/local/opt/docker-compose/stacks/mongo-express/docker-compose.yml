@@ -47,7 +47,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${COMPOSE_PROJECT_NAME}
       MONGO_INITDB_ROOT_PASSWORD: ${COMPOSE_PROJECT_NAME}
     ports:
-      - 127.0.0.53:2717:27017
+      - 27017:27017
 
 networks:
   traefik:
