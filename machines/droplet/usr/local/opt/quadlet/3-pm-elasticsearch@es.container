@@ -11,7 +11,7 @@ PodmanArgs       = --memory=256m
 Environment      = discovery.type=single-node
 Environment      = ES_MAX_MEM=256m
 
-PublishPort      = 127.0.0.53:9280:9200
+PublishPort      = 9200:9200
 
 [Service]
 Restart          = on-failure

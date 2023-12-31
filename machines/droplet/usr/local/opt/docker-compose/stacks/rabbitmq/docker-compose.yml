@@ -17,7 +17,7 @@ services:
       RABBITMQ_DEFAULT_USER: ${COMPOSE_PROJECT_NAME}
       RABBITMQ_DEFAULT_PASS: ${COMPOSE_PROJECT_NAME}
     ports:
-      - 127.0.0.53:56720:5672
+      - 5672:5672
 
 networks:
   default:
