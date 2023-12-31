@@ -1,0 +1,31 @@
+---
+services:
+  es:
+    image: docker.io/library/elasticsearch:8.11.1
+    userns_mode: auto
+    restart: unless-stopped
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    mem_limit: 512M
+    # healthcheck:
+    #   test:
+    #     - CMD
+    #     - curl
+    #     - --fail
+    #     - --no-progress-meter
+    #     - --max-time
+    #     - "1"
+    #     - --
+    #     - 127.0.0.1:9200
+    environment:
+      discovery.type: single-node
+      ES_JAVA_OPTS: -Xms256M -Xmx256M
+    ports:
+      - 9200:9200
+
+networks:
+  traefik:
+    external: true
+    name: traefik
