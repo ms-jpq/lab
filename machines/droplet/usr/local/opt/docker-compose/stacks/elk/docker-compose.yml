@@ -51,6 +51,9 @@ services:
       discovery.type: single-node
       xpack.security.enabled: false
       ES_JAVA_OPTS: -Xms256M -Xmx256M
+    networks:
+      - default
+      - traefik
 
   log:
     image: docker.elastic.co/logstash/logstash:${VERSION}
@@ -76,6 +79,9 @@ services:
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}-l.rule=HostRegexp(`log.{.+}.{.+$$}`)
     environment:
       LS_JAVA_OPTS: -Xms256M -Xmx256M
+    networks:
+      - default
+      - traefik
 
 networks:
   traefik:
