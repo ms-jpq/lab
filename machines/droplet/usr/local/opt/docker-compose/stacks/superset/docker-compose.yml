@@ -10,6 +10,10 @@ services:
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`superset.{.+}.{.+$$}`)
     environment:
       SUPERSET_SECRET_KEY:
+    # docker exec -- superset-srv-1 superset fab create-admin --firstname admin --lastname admin --email admin@localhost --username admin --password admin
+    # docker exec -- superset-srv-1 superset db upgrade
+    # docker exec -- superset-srv-1 superset init
+    # docker exec -- superset-srv-1 superset load_examples
 
 networks:
   default:
