@@ -50,7 +50,6 @@ services:
     environment:
       discovery.type: single-node
       xpack.security.enabled: false
-      ES_JAVA_OPTS: -Xms256M -Xmx256M
     networks:
       - default
       - traefik
@@ -77,8 +76,6 @@ services:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}-l.loadbalancer.server.port=9600
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}-l.rule=HostRegexp(`log.{.+}.{.+$$}`)
-    environment:
-      LS_JAVA_OPTS: -Xms256M -Xmx256M
     networks:
       - default
       - traefik
