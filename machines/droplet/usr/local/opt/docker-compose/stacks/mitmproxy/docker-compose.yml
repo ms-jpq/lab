@@ -19,10 +19,13 @@ services:
       - "*"
       - --mode
       - upstream:http://warp-srv-1:1080
+    networks:
+      - default
+      - traefik
     ports:
       - 127.0.0.53:18080:8080
 
 networks:
-  default:
+  traefik:
     external: true
     name: traefik
