@@ -1,29 +1,29 @@
 server {
-  listen     [::]:3306 ipv6only=off;
+  listen     [::]:3306 ipv6only=off ssl;
   proxy_pass 127.0.0.53:33306;
 }
 
 server {
-  listen     [::]:5432 ipv6only=off;
+  listen     [::]:5432 ipv6only=off ssl;
   proxy_pass 127.0.0.53:55432;
 }
 
 server {
-  listen     [::]:6379 ipv6only=off;
+  listen     [::]:6379 ipv6only=off ssl;
   proxy_pass 127.0.0.53:63790;
 }
 
 server {
-  listen     [::]:9200 ipv6only=off;
+  listen     [::]:9200 ipv6only=off ssl;
   proxy_pass 127.0.0.53:9280;
 }
 
 server {
-  listen     [::]:27017 ipv6only=off;
+  listen     [::]:27017 ipv6only=off ssl;
   proxy_pass 127.0.0.53:2717;
 }
 
 server {
-  listen     [::]:5672 ipv6only=off;
+  listen     [::]:5672 ipv6only=off ssl;
   proxy_pass 127.0.0.53:56720;
 }
