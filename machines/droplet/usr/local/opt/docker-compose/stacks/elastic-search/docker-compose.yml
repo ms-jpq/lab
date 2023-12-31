@@ -1,7 +1,7 @@
 ---
 services:
   srv:
-    image: docker.io/library/kibana:8.11.1
+    image: docker.io/library/kibana:${VERSION}
     userns_mode: auto
     restart: unless-stopped
     depends_on:
@@ -30,7 +30,7 @@ services:
       - traefik
 
   es:
-    image: docker.io/library/elasticsearch:8.11.1
+    image: docker.io/library/elasticsearch:${VERSION}
     userns_mode: auto
     restart: unless-stopped
     mem_limit: 512M
