@@ -14,10 +14,11 @@ services:
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.service=${COMPOSE_PROJECT_NAME}
     environment:
       MINIO_BROWSER_REDIRECT_URL:
-      MINIO_SERVER_URL:
+      MINIO_ROOT_PASSWORD: ${COMPOSE_PROJECT_NAME}${COMPOSE_PROJECT_NAME}
+      MINIO_ROOT_USER: ${COMPOSE_PROJECT_NAME}
     command:
       - server
-      - data
+      - /data
       - --console-address
       - :9001
 
