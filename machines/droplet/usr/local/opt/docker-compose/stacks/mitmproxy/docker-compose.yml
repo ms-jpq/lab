@@ -17,13 +17,12 @@ services:
       - mitmweb
       - --web-host
       - "*"
-    networks:
-      - default
-      - traefik
+      - --mode
+      - upstream:http://warp-srv-1:1080
     ports:
       - 127.0.0.53:18080:8080
 
 networks:
-  traefik:
+  default:
     external: true
     name: traefik
