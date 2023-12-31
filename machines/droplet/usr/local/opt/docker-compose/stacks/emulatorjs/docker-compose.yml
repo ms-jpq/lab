@@ -4,6 +4,16 @@ services:
     image: ghcr.io/linuxserver/emulatorjs:latest
     userns_mode: auto
     restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --no-progress-meter
+        - --max-time
+        - "1"
+        - --
+        - 127.0.0.1:80
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80

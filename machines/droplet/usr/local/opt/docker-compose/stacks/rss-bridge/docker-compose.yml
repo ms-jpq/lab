@@ -1,7 +1,7 @@
 ---
 services:
   srv:
-    image: docker.io/rssbridge/rss-bridge:latest
+    image: ghcr.io/rss-bridge/rss-bridge:latest
     userns_mode: auto
     restart: unless-stopped
     labels:
