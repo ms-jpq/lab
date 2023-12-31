@@ -43,12 +43,14 @@ services:
         - "1"
         - --
         - 127.0.0.1:9200/_cluster/health
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}-e.loadbalancer.server.port=9200
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-e.rule=HostRegexp(`es.{.+}.{.+$$}`)
     environment:
       discovery.type: single-node
       xpack.security.enabled: false
       ES_JAVA_OPTS: -Xms256M -Xmx256M
-    ports:
-      - 9200:9200
 
   log:
     image: docker.elastic.co/logstash/logstash:${VERSION}
@@ -67,10 +69,10 @@ services:
         - --max-time
         - "1"
         - --
-        - 127.0.0.1:9600
+        - 127.0.0.1:9600/_node/jvm
     labels:
       - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}-l.loadbalancer.server.port=5044
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}-l.loadbalancer.server.port=9600
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}-l.rule=HostRegexp(`log.{.+}.{.+$$}`)
     environment:
       LS_JAVA_OPTS: -Xms256M -Xmx256M
