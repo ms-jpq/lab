@@ -1,5 +1,4 @@
 # + libnginx-mod-http-brotli-static
-# + linux-generic-hwe-[]m5_assert([ENV_VERSION_ID])
 + avahi-daemon
 + bat
 + cowsay
@@ -13,6 +12,7 @@
 + iperf3
 + jq
 + language-pack-zh-hans
++ linux-generic-hwe-[]m5_assert([ENV_VERSION_ID])
 + m4
 + moreutils
 + mosh
