@@ -1,0 +1,26 @@
+---
+services:
+  srv:
+    image: ghcr.io/linuxserver/emulatorjs:latest
+    userns_mode: auto
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`emu.{.+}.{.+$$}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.service=${COMPOSE_PROJECT_NAME}
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}2.loadbalancer.server.port=3000
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.rule=HostRegexp(`emujs.{.+}.{.+$$}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.service=${COMPOSE_PROJECT_NAME}
+    volumes:
+      - config:/config
+      - data:/data
+
+networks:
+  default:
+    external: true
+    name: traefik
+
+volumes:
+  config:
+  data:
