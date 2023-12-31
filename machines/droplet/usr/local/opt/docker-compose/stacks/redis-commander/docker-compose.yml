@@ -43,8 +43,13 @@ services:
       - ${COMPOSE_PROJECT_NAME}
     ports:
       - 6379:6379
+    volumes:
+      - data:/data
 
 networks:
   traefik:
     external: true
     name: traefik
+
+volumes:
+  data:

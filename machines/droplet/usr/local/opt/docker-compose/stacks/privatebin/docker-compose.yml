@@ -20,8 +20,12 @@ services:
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`pastebin.{.+}.{.+$$}`)
     volumes:
       - ./conf.php:/srv/cfg/conf.php:ro
+      - data:/srv/data
 
 networks:
   default:
     external: true
     name: traefik
+
+volumes:
+  data:

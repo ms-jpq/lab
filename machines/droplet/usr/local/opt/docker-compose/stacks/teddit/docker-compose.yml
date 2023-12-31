@@ -44,8 +44,13 @@ services:
         - ping
     environment:
       REDIS_REPLICATION_MODE: master
+    volumes:
+      - data:/data
 
 networks:
   traefik:
     external: true
     name: traefik
+
+volumes:
+  data:
