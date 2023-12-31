@@ -35,7 +35,7 @@ services:
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
       POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
     ports:
-      - 127.0.0.53:55432:5432
+      - 5432:5432
 
 networks:
   traefik:
