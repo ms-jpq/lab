@@ -22,7 +22,7 @@ services:
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8081
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`redis.{.+}.{.+$$}`)
     environment:
-      REDIS_HOSTS: lo:redis
+      REDIS_HOSTS: lo:redis:6379:0:${COMPOSE_PROJECT_NAME}
     networks:
       - default
       - traefik
@@ -37,6 +37,10 @@ services:
         - redis-cli
         - incr
         - ping
+    command:
+      - redis-server
+      - --requirepass
+      - ${COMPOSE_PROJECT_NAME}
     ports:
       - 6379:6379
 
