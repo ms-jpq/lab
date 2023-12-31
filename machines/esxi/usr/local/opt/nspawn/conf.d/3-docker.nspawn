@@ -1,5 +1,2 @@
 [Exec]
 SystemCallFilter = keyctl bpf
-
-[Files]
-Bind             = /dev/fuse
