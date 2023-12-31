@@ -31,6 +31,7 @@
     "tools.ENV_DOMAIN",
     "traefik.ENV_DOMAIN",
     "twitter.ENV_DOMAIN",
+    "vault.ENV_DOMAIN",
     "youtube.ENV_DOMAIN"
   ],
   "ENV_INDEX": [
@@ -62,6 +63,7 @@
     "tools",
     "traefik",
     "twitter",
+    "vault",
     "youtube"
   ],
   "ENV_MAIL": "me@ENV_DOMAIN",
