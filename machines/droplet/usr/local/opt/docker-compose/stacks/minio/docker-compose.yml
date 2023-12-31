@@ -21,8 +21,13 @@ services:
       - /data
       - --console-address
       - :9001
+    volumes:
+      - data:/data
 
 networks:
   default:
     external: true
     name: traefik
+
+volumes:
+  data:

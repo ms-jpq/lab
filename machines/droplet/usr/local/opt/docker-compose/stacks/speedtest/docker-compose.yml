@@ -18,8 +18,13 @@ services:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`${COMPOSE_PROJECT_NAME}.{.+}.{.+$$}`)
+    volumes:
+      - data:/database
 
 networks:
   default:
     external: true
     name: traefik
+
+volumes:
+  data:

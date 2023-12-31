@@ -46,8 +46,13 @@ services:
       MYSQL_USER: ${COMPOSE_PROJECT_NAME}
     ports:
       - 3306:3306
+    volumes:
+      - data:/var/lib/mysql
 
 networks:
   traefik:
     external: true
     name: traefik
+
+volumes:
+  data:

@@ -48,8 +48,13 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${COMPOSE_PROJECT_NAME}
     ports:
       - 27017:27017
+    volumes:
+      - data:/data/db
 
 networks:
   traefik:
     external: true
     name: traefik
+
+volumes:
+  data:

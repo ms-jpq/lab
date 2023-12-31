@@ -42,6 +42,8 @@ services:
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
       POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
     network_mode: *network
+    volumes:
+      - data:/var/lib/postgresql/data
 
   # https://github.com/iv-org/invidious/pull/4270
   warp:
@@ -67,4 +69,5 @@ networks:
     name: traefik
 
 volumes:
+  data:
   warp:

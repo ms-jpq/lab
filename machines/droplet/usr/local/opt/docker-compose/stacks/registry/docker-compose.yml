@@ -21,8 +21,13 @@ services:
     networks:
       - default
       - traefik
+    volumes:
+      - data:/var/lib/registry
 
 networks:
   traefik:
     external: true
     name: traefik
+
+volumes:
+  data:

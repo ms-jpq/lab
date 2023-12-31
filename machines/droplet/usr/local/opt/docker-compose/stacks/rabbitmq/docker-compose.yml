@@ -20,8 +20,13 @@ services:
       RABBITMQ_DEFAULT_PASS: ${COMPOSE_PROJECT_NAME}
     ports:
       - 5672:5672
+    volumes:
+      - data:/var/lib/rabbitmq
 
 networks:
   default:
     external: true
     name: traefik
+
+volumes:
+  data:

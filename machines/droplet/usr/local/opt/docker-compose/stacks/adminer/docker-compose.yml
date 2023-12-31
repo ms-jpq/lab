@@ -36,8 +36,13 @@ services:
       POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
     ports:
       - 5432:5432
+    volumes:
+      - data:/var/lib/postgresql/data
 
 networks:
   traefik:
     external: true
     name: traefik
+
+volumes:
+  data:

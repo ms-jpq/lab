@@ -53,6 +53,8 @@ services:
     networks:
       - default
       - traefik
+    volumes:
+      - data:/usr/share/elasticsearch/data
 
   log:
     image: docker.elastic.co/logstash/logstash:${VERSION}
@@ -84,3 +86,6 @@ networks:
   traefik:
     external: true
     name: traefik
+
+volumes:
+  data:

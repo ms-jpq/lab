@@ -7,16 +7,16 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-    # healthcheck:
-    #   test:
-    #     - CMD
-    #     - wget
-    #     - --quiet
-    #     - --spider
-    #     - --timeout
-    #     - "1"
-    #     - --
-    #     - 127.0.0.1:8080
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --spider
+        - --timeout
+        - "1"
+        - --
+        - 127.0.0.1:8080
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080

@@ -53,6 +53,8 @@ services:
       POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
       POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
+    volumes:
+      - data:/var/lib/postgresql/data
 
 networks:
   default:
@@ -60,3 +62,6 @@ networks:
   traefik:
     external: true
     name: traefik
+
+volumes:
+  data:
