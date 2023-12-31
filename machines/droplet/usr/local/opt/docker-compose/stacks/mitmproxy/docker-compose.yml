@@ -8,6 +8,11 @@ services:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8081
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`mitm.{.+}.{.+$$}`)
+      # https://github.com/mitmproxy/mitmproxy/issues/6449
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.middlewares=${COMPOSE_PROJECT_NAME}
+      - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}.headers.customrequestheaders.Host=127.0.0.1:8081
+      - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}.headers.customrequestheaders.Origin=
+      - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}.headers.customrequestheaders.X-Real-IP=
     command:
       - mitmweb
       - --web-host
