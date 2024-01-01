@@ -1,3 +1,4 @@
 # + cuda-drivers-545
 # + cuda-toolkit
 # + nvidia-kernel-open-545
++ nvtop
