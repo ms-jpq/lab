@@ -1,0 +1,58 @@
+---
+services:
+  srv:
+    image: ghcr.io/asciinema/asciinema-server:latest
+    userns_mode: auto
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --spider
+        - --timeout
+        - "1"
+        - --
+        - localhost:4000
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=4000
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`${COMPOSE_PROJECT_NAME}.{.+}.{.+$$}`)
+    environment:
+      SECRET_KEY_BASE:
+      URL_HOST:
+      URL_SCHEME: https
+    networks:
+      - default
+      - traefik
+    volumes:
+      - ascii:/var/opt/asciinema
+
+  postgres:
+    image: docker.io/library/postgres:latest
+    userns_mode: auto
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - pg_isready
+        - --username
+        - postgres
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - data:/var/lib/postgresql/data
+
+networks:
+  default:
+    internal: true
+  traefik:
+    external: true
+    name: traefik
+
+volumes:
+  ascii:
+  data:
