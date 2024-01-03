@@ -47,11 +47,19 @@ for MACHINE in "${MACHINES[@]}"; do
   fi
 done
 
-if ! ((EX)); then
-  gmake MACHINE="${MACHINES[*]}" local
-fi
-
-for MACHINE in "${MACHINES[@]}"; do
+if ! [[ -v UNDER ]]; then
+  if ! ((EX)); then
+    gmake MACHINE="${MACHINES[*]}" local
+  fi
+  if ((EX)); then
+    ARGV+=(--exec)
+  else
+    ARGV=()
+  fi
+  printf -- '%s\0' "${MACHINES[@]}" | UNDER=1 xargs -0 -I % -n 1 -P 0 -- "$0" --machine % "${ARGV[@]}" -- "$@"
+  exit
+else
+  MACHINE="${MACHINES[*]}"
   EXEC=(
     ./libexec/inventory.sh
     --inventory "$INVENTORY"
@@ -68,4 +76,4 @@ for MACHINE in "${MACHINES[@]}"; do
     printf -v ESC -- '%q ' gmake --directory /usr/local/opt/initd "$@"
   fi
   "${EXEC[@]}" exec -- "$ESC"
-done
+fi
