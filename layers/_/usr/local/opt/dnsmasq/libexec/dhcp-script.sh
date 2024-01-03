@@ -2,19 +2,8 @@
 
 set -o pipefail
 
-PIDS=()
 for EXEC in "${0%/*}/../dhcp-script.d"/*; do
   if [[ -x "$EXEC" ]]; then
-    "$EXEC" "$@" &
-    PIDS+=("$!")
+    printf -- '%s\0' "$EXEC"
   fi
-done
-
-STATUS=0
-for PID in "${PIDS[@]}"; do
-  if ! wait -- "$PID"; then
-    STATUS=$((STATUS + 1))
-  fi
-done
-
-exit $((STATUS))
+done | xargs --null -I '%' --max-args 1 --max-procs 0 -- env -- '%' "$@"

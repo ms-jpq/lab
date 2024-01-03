@@ -6,16 +6,11 @@ RUN="$1"
 WWW="$2"
 TMP="$3"
 
-PIDS=()
 for EXEC in "${0%/*}/../generators"/*; do
   if [[ -x "$EXEC" ]]; then
-    "$EXEC" "$TMP" "$WWW" &
-    PIDS+=("$!")
+    printf -- '%s\0' "$EXEC"
   fi
-done
-for PID in "${PIDS[@]}"; do
-  wait -- "$PID"
-done
+done | xargs --null -I '%' --max-args 1 --max-procs 0 -- env -- '%' "$TMP" "$WWW"
 
 if ! diff --recursive --brief -- "$TMP" "$RUN"; then
   rm -rf -- "$RUN/ssl/"*
