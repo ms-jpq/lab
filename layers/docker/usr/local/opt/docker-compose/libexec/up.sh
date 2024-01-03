@@ -4,6 +4,4 @@ set -o pipefail
 
 cd -- "${0%/*}/../stacks"
 
-for STACK in ./*/docker-compose.yml; do
-  printf -- '%s\0' "$STACK"
-done | xargs --null -I '%' --max-args 1 --max-procs 0 -- docker compose --file '%' up --detach --remove-orphans "$@"
+printf -- '%s\0' ./*/docker-compose.yml | xargs --null -I '%' --max-args 1 --max-procs 0 -- docker compose --file '%' up --detach --remove-orphans "$@"
