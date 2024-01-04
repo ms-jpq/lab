@@ -1,5 +1,5 @@
 [Unit]
-Description  = Mount -- freenas.local:%f
+Description  = Mount -- freenas.local/%J:%f
 
 [Mount]
 Type         = nfs4

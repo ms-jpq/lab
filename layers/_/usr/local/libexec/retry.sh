@@ -5,6 +5,6 @@ set -o pipefail
 SLEEP="$1"
 shift -- 1
 
-until "$@"; do
+until chronic -- "$@"; do
   sleep -- "$SLEEP"
 done
