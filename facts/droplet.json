@@ -2,6 +2,7 @@
   "ENV_CERTBOT_SITES": [
     "12ft.ENV_DOMAIN",
     "ENV_DOMAIN",
+    "ascii.ENV_DOMAIN",
     "autodiscover.ENV_DOMAIN",
     "bing.ENV_DOMAIN",
     "bridge.ENV_DOMAIN",
@@ -33,11 +34,13 @@
     "tools.ENV_DOMAIN",
     "traefik.ENV_DOMAIN",
     "twitter.ENV_DOMAIN",
+    "unicode.ENV_DOMAIN",
     "vault.ENV_DOMAIN",
     "youtube.ENV_DOMAIN"
   ],
   "ENV_INDEX": [
     "12ft",
+    "ascii",
     "bing",
     "bridge",
     "cd",
@@ -67,6 +70,7 @@
     "tools",
     "traefik",
     "twitter",
+    "unicode",
     "vault",
     "youtube"
   ],
