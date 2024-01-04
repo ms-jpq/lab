@@ -10,7 +10,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`pg.{.+}.{.+$$}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`postgres.{.+}.{.+$$}`)
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.middlewares=${COMPOSE_PROJECT_NAME}
       - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}.redirectRegex.regex=(^https?://[^/]+/$$)
       - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}.redirectRegex.replacement=$${1}?pgsql=pg&username=${COMPOSE_PROJECT_NAME}&db=${COMPOSE_PROJECT_NAME}
