@@ -95,10 +95,10 @@ layers/posix/home/.local/opt/initd/libexec/curl-unpack.sh                       
 layers/posix/home/.local/opt/initd/libexec/pkg.sh                                              usr/local/opt/initd/libexec/pkg.sh
 layers/ubuntu/home/.local/opt/initd/libexec/add-ppa.sh                                         usr/local/opt/initd/libexec/add-ppa.sh
 layers/ubuntu/home/.local/opt/initd/makelib/motd.ubuntu.mk                                     usr/local/opt/initd/makelib/motd.mk
-layers/ubuntu/root/etc/apt/apt.conf.d/69dpkg-options                                           etc/apt/apt.conf.d/69dpkg-options
-layers/ubuntu/root/etc/apt/apt.conf.d/69no-recommends                                          etc/apt/apt.conf.d/69no-recommends
-layers/ubuntu/root/etc/apt/apt.conf.d/69unattended-upgrades                                    etc/apt/apt.conf.d/69unattended-upgrades
-layers/ubuntu/root/etc/apt/preferences.d/0-nosnap                                              etc/apt/preferences.d/0-nosnap
+layers/ubuntu/root/etc/apt/apt.conf.d/69dpkg-options.conf                                      etc/apt/apt.conf.d/69dpkg-options.conf
+layers/ubuntu/root/etc/apt/apt.conf.d/69no-recommends.conf                                     etc/apt/apt.conf.d/69no-recommends.conf
+layers/ubuntu/root/etc/apt/apt.conf.d/69unattended-upgrades.conf                               etc/apt/apt.conf.d/69unattended-upgrades.conf
+layers/ubuntu/root/etc/apt/preferences.d/0-nosnap.pref                                         etc/apt/preferences.d/0-nosnap.pref
 layers/ubuntu/root/etc/avahi/avahi-daemon.conf                                                 usr/local/opt/avahi/avahi-daemon.conf
 layers/ubuntu/root/etc/ssh/sshd_config.d/0-accept-env.conf                                     etc/ssh/sshd_config.d/0-accept-env.conf
 layers/ubuntu/root/etc/ssh/sshd_config.d/0-security.conf                                       etc/ssh/sshd_config.d/0-security.conf

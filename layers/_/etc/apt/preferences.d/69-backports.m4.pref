@@ -1,0 +1,3 @@
+Package: *
+Pin: release a=m5_assert([ENV_VERSION_CODENAME])-backports
+Pin-Priority: 500
