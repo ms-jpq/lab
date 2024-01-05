@@ -127,6 +127,7 @@ if [[ -n "${VNC:-""}" ]]; then
   ARGV+=(
     -display "vnc=unix:$VNC"
     -vga 'virtio'
+    # TODO model=virtio @ qemu8.2
     -audio 'driver=none,model=hda'
   )
 else
