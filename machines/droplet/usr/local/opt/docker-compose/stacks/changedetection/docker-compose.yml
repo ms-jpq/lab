@@ -7,7 +7,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=5000
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`cd.{.+}.{.+$$}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`changes.{.+}.{.+$$}`)
     environment:
       BASE_URL:
       HTTP_PROXY: socks5h://warp-srv-1:1080
