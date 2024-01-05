@@ -1,2 +1,0 @@
-+ nvidia-headless-545
-+ nvtop
