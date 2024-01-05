@@ -16,6 +16,11 @@ clobber.qemu:
 	shopt -u failglob
 	sudo -- rm -v -rf -- $(CACHE)/qemu/*
 
+pkg._: /etc/apt/sources.list.d/ppa_canonical-server_server-backports.list
+/etc/apt/sources.list.d/ppa_canonical-server_server-backports.list:
+	sudo -- ./libexec/add-ppa.sh canonical-server/server-backports
+
+
 CURL_CO := sudo -- curl --fail --location --create-dirs --output
 
 CLOUD_IMG_AT := https://cloud-images.ubuntu.com/releases/$(VERSION_ID)/release
