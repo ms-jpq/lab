@@ -3,9 +3,11 @@ include /usr/local/opt/nginx/conf/optimistic_host.nginx;
 server {
   # TODO: http2 on;
   listen        unix:/run/local/nginx/http.sock default_server;
+  include       /usr/local/opt/nginx/conf/auth.nginx;
   merge_slashes off;
 
   location / {
+    include    /usr/local/opt/nginx/conf/auth2.nginx;
     proxy_pass http://127.0.0.53:10080/;
   }
 }
