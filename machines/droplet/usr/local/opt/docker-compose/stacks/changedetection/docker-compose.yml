@@ -14,12 +14,9 @@ services:
       HTTPS_PROXY: socks5h://warp-srv-1:1080
       USE_X_SETTINGS: 1
     volumes:
-      - data:/datastore
+      - /var/lib/local/${COMPOSE_PROJECT_NAME}:/datastore
 
 networks:
   default:
     external: true
     name: traefik
-
-volumes:
-  data:
