@@ -6,7 +6,7 @@ RUN="$1"
 WANTS="$RUN/multi-user.target.wants"
 
 mkdir -v -p -- "$WANTS"
-for MOUNT in /usr/local/lib/systemd/system/media-*.mount; do
+for MOUNT in /usr/local/lib/systemd/system/*.mount; do
   NAME="${MOUNT##*/}"
   NAME="${NAME%.mount}"
   AUTO="$NAME.automount"
