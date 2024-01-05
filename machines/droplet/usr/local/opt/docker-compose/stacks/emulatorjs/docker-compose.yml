@@ -26,14 +26,10 @@ services:
       - default
       - traefik
     volumes:
-      - config:/config
-      - data:/data
+      - /var/lib/local/${COMPOSE_PROJECT_NAME}/config:/config
+      - /var/lib/local/${COMPOSE_PROJECT_NAME}/data:/data
 
 networks:
   traefik:
     external: true
     name: traefik
-
-volumes:
-  config:
-  data:
