@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-HT='/var/lib/local/nginx'
+HT='/var/lib/local/htpasswd'
 
 PASSWD="$HT/htpasswd"
 mkdir -v -p -- "$HT"

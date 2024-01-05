@@ -32,6 +32,7 @@
   ],
   "ENV_MACVLAN_IFS": "eno1",
   "ENV_NFS_EXPORTS": ["downloads", "media", "wallpapers"],
+  "ENV_PUBLIC_SITES": [],
   "ENV_RCLONE_LOCAL": ["gray", "hao", "media", "misc", "wallpapers"],
   "ENV_RCLONE_REMOTE": "jotta-archive:/",
   "ENV_SMB_EXPORTS": [
