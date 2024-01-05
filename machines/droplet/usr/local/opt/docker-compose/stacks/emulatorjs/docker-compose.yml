@@ -22,12 +22,15 @@ services:
       - traefik.http.services.${COMPOSE_PROJECT_NAME}2.loadbalancer.server.port=3000
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.rule=HostRegexp(`emujs.{.+}.{.+$$}`)
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.service=${COMPOSE_PROJECT_NAME}2
+    networks:
+      - default
+      - traefik
     volumes:
       - config:/config
       - data:/data
 
 networks:
-  default:
+  traefik:
     external: true
     name: traefik
 
