@@ -16,6 +16,7 @@ services:
       - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}2.redirectRegex.regex=(^https?://[^/]+/$$)
       - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}2.redirectRegex.replacement=$${1}/webui
     environment:
+      ENV_CORS_DOMAIN:
       IPFS_PROFILE: lowpower
     networks:
       - default
@@ -24,6 +25,7 @@ services:
       - 4001:4001
       - 4001:4001/udp
     volumes:
+      - ./init:/container-init.d:ro
       - export:/export
       - data:/data/ipfs
 
