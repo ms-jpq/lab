@@ -12,6 +12,11 @@ services:
       - traefik.http.services.${COMPOSE_PROJECT_NAME}2.loadbalancer.server.port=5001
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.rule=HostRegexp(`kubo.{.+}.{.+$$}`)
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.service=${COMPOSE_PROJECT_NAME}2
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.middlewares=${COMPOSE_PROJECT_NAME}2
+      - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}2.redirectRegex.regex=(^https?://[^/]+/$$)
+      - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}2.redirectRegex.replacement=$${1}/webui
+    environment:
+      IPFS_PROFILE: lowpower
     networks:
       - default
       - traefik
