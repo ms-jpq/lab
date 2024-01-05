@@ -11,7 +11,7 @@ services:
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.service=${COMPOSE_PROJECT_NAME}
       - traefik.http.services.${COMPOSE_PROJECT_NAME}2.loadbalancer.server.port=9000
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.rule=HostRegexp(`s3.{.+}.{.+$$}`)
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.service=${COMPOSE_PROJECT_NAME}
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.service=${COMPOSE_PROJECT_NAME}2
     environment:
       MINIO_BROWSER_REDIRECT_URL:
       MINIO_ROOT_PASSWORD: ${COMPOSE_PROJECT_NAME}${COMPOSE_PROJECT_NAME}

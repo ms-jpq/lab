@@ -1,0 +1,32 @@
+---
+services:
+  srv:
+    image: docker.io/ipfs/kubo:latest
+    userns_mode: auto
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`${COMPOSE_PROJECT_NAME}.{.+}.{.+$$}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.service=${COMPOSE_PROJECT_NAME}
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}2.loadbalancer.server.port=5001
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.rule=HostRegexp(`kubo.{.+}.{.+$$}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.service=${COMPOSE_PROJECT_NAME}2
+    networks:
+      - default
+      - traefik
+    ports:
+      - 4001:4001
+      - 4001:4001/udp
+    volumes:
+      - export:/export
+      - data:/data/ipfs
+
+networks:
+  traefik:
+    external: true
+    name: traefik
+
+volumes:
+  export:
+  data:
