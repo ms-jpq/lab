@@ -49,7 +49,7 @@ LOCALS.$1 += $(TMP)/$1/layers/_/$3
 $(VAR)/sh/$2: | $(VAR)/sh
 $(TMP)/$1/layers/_/$3: $(VAR)/sh/$2
 	mkdir -p -- '$$(@D)'
-	cp -P -f -- '$$<' '$$@'
+	cp -r -P -f -- '$$<' '$$@'
 endef
 
 
@@ -93,6 +93,9 @@ define REF_LINKS
 
 layers/posix/home/.local/opt/initd/libexec/curl-unpack.sh                                      usr/local/opt/initd/libexec/curl-unpack.sh
 layers/posix/home/.local/opt/initd/libexec/pkg.sh                                              usr/local/opt/initd/libexec/pkg.sh
+layers/posix/home/.local/opt/qemu/cloud-init                                                   usr/local/opt/qemu/cloud-init
+layers/posix/home/.local/opt/qemu/libexec/cloud-init.sh                                        usr/local/opt/qemu/libexec/cloud-init.sh
+layers/posix/home/.local/opt/qemu/libexec/pprint.sh                                            usr/local/opt/qemu/libexec/pprint.sh
 layers/ubuntu/home/.local/opt/initd/libexec/add-ppa.sh                                         usr/local/opt/initd/libexec/add-ppa.sh
 layers/ubuntu/home/.local/opt/initd/makelib/motd.ubuntu.mk                                     usr/local/opt/initd/makelib/motd.mk
 layers/ubuntu/root/etc/apt/apt.conf.d/69dpkg-options.conf                                      etc/apt/apt.conf.d/69dpkg-options.conf
