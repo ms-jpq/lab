@@ -1,6 +1,6 @@
 .PHONY: fmt systemd-fmt shfmt black prettier nginx taplo terraform-fmt
 
-fmt: systemd-fmt shfmt black prettier nginx taplo
+fmt: systemd-fmt shfmt black prettier nginx taplo terraform-fmt
 
 systemd-fmt: $(VAR)/sh
 	export -- SYSTEMD_FMT_IGNORE
@@ -23,5 +23,5 @@ nginx: ./node_modules/.bin
 taplo: ./node_modules/.bin
 	git ls-files --deduplicate -z -- '*.toml' | xargs -0 -- '$</taplo' format --
 
-terraform-fmt:
-	git ls-files --deduplicate -z -- '*.tf' | xargs -0 -- terraform fmt --write --
+terraform-fmt: $(VAR)/bin/tofu
+	git ls-files --deduplicate -z -- '*.tf' | xargs -0 -- '$<' fmt --write --

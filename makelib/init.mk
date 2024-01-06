@@ -33,6 +33,7 @@ $(VAR)/bin: | $(VAR)
 
 V_SHELLCHECK := $(shell ./libexec/gh-latest.sh $(VAR) koalaman/shellcheck)
 V_SHFMT := $(shell ./libexec/gh-latest.sh $(VAR) mvdan/sh)
+V_TOFU := $(patsubst v%,%,$(shell ./libexec/gh-latest.sh $(VAR) opentofu/opentofu))
 HADO_OS := $(shell perl -CASD -wpe 's/([a-z])/\u$$1/' <<<'$(OS)')
 
 $(VAR)/bin/shellcheck: | $(VAR)/bin
@@ -48,4 +49,11 @@ $(VAR)/bin/hadolint: | $(VAR)/bin
 $(VAR)/bin/shfmt: | $(VAR)/bin
 	URI='https://github.com/mvdan/sh/releases/latest/download/shfmt_$(V_SHFMT)_$(OS)_$(GOARCH)'
 	$(CURL) --output '$@' -- "$$URI"
+	chmod +x '$@'
+
+$(VAR)/bin/tofu: | $(VAR)/bin
+	URI='https://github.com/opentofu/opentofu/releases/latest/download/tofu_$(V_TOFU)_$(OS)_$(GOARCH).zip'
+	ZIP='$(TMP)/tofu.zip'
+	$(CURL) --output "$$ZIP" -- "$$URI"
+	unzip -o -d '$(VAR)/bin' -- "$$ZIP"
 	chmod +x '$@'
