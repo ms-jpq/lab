@@ -49,7 +49,8 @@ resource "aws_route_table_association" "vinfast" {
 }
 
 resource "aws_security_group" "acab" {
-  name = "nypd"
+  name   = "nypd"
+  vpc_id = aws_vpc.fastx.id
   ingress {
     cidr_blocks = ["0.0.0.0/0"]
     from_port   = 0
@@ -95,9 +96,9 @@ resource "aws_launch_template" "u-jammy" {
   }
 }
 
-# resource "aws_instance" "droplet" {
-#   instance_type = "t4g.small"
-#   launch_template {
-#     id = aws_launch_template.u-jammy.id
-#   }
-# }
+resource "aws_instance" "droplet" {
+  instance_type = "t4g.small"
+  launch_template {
+    id = aws_launch_template.u-jammy.id
+  }
+}
