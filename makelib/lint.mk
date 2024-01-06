@@ -3,13 +3,10 @@
 lint: mypy shellcheck hadolint
 
 mypy: ./.venv/bin
-	readarray -t -d $$'\0' -- ARRAY < <(git ls-files --deduplicate -z -- '*.py')
-	'$</mypy' -- "$${ARRAY[@]}"
+	git ls-files --deduplicate -z -- '*.py' | xargs -0 -- '$</mypy' --
 
 shellcheck: $(VAR)/bin/shellcheck
-	readarray -t -d $$'\0' -- ARRAY < <(git ls-files --deduplicate -z -- '*.sh')
-	'$<' -- "$${ARRAY[@]}"
+	git ls-files --deduplicate -z -- '*.sh' | xargs -0 -- '$<' --
 
 hadolint: $(VAR)/bin/hadolint
-	readarray -t -d $$'\0' -- ARRAY < <(git ls-files --deduplicate -z -- '*Dockerfile')
-	'$<' -- "$${ARRAY[@]}"
+	git ls-files --deduplicate -z -- '*Dockerfile' | xargs -0 -- '$<' --

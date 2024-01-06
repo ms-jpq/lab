@@ -49,7 +49,7 @@ resource "aws_route_table_association" "vinfast" {
 }
 
 resource "aws_security_group" "acab" {
-  name   = "nypd"
+  name   = "acab"
   vpc_id = aws_vpc.fastx.id
   ingress {
     cidr_blocks = ["0.0.0.0/0"]
