@@ -5,3 +5,7 @@ growpart:
   devices:
     - /
   ignore_growroot_disabled: false
+
+users:
+  - name: root
+    ssh-authorized-keys: ${ssh_keys}
