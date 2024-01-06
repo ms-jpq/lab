@@ -11,14 +11,14 @@ TMP="$(mktemp -d)"
 envsubst <./cloud-init/meta-data.yml >"$TMP/meta-data"
 
 SALT="$(uuidgen)"
-PASSWD="$(openssl passwd -1 -salt "$SALT" root)"
+PASSWD="$(openssl passwd -1 -salt "$SALT" root | jq --raw-input)"
 
 RS=~/.ssh
 USERDATA="$TMP/user-data"
 
-export -- HOSTNAME PASSWD
+export -- HOSTNAME PASSWD AUTHORIZED_KEYS
+AUTHORIZED_KEYS="$(cat -- "$RS/authorized_keys" "$RS"/*.pub | jq --raw-input --slurp --compact-output 'split("\n") | map(select(. != ""))')"
 envsubst <./cloud-init/user-data.yml >"$USERDATA"
-cat -- "$RS/authorized_keys" "$RS"/*.pub | sed -E -e '/^\s*$/d' -e 's/(.*)/      - \1/' >>"$USERDATA"
 
 # cat -- "$USERDATA"
 # cloud-init schema --config-file "$USERDATA"

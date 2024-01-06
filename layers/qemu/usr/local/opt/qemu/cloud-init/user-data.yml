@@ -37,6 +37,5 @@ runcmd:
 users:
   - name: root
     lock_passwd: false
-    hashed_passwd: |-
-      ${PASSWD}
-    ssh-authorized-keys:
+    hashed_passwd: ${PASSWD}
+    ssh-authorized-keys: ${AUTHORIZED_KEYS}
