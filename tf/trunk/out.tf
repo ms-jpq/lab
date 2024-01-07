@@ -1,6 +1,6 @@
-output "ubuntu-lts-props" {
+output "ubuntu-lts-ami" {
   value = {
-    "id" = data.aws_ami.ubuntu-lts.id
+    "id"   = data.aws_ami.ubuntu-lts.id
     "name" = data.aws_ami.ubuntu-lts.name
   }
 }
