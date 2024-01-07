@@ -31,6 +31,7 @@ data "http" "gh_keys" {
 }
 
 locals {
+  dns_ttl   = 60
   ssh_keys  = split("\n", trimspace(data.http.gh_keys.response_body))
   user_data = templatefile("${path.module}/user-data.yml", { AUTHORIZED_KEYS = jsonencode(local.ssh_keys) })
 }
