@@ -86,14 +86,12 @@ resource "aws_launch_template" "u-jammy" {
     security_groups = [aws_security_group.acab.id]
     subnet_id       = aws_subnet.onlyfams.id
   }
+}
 
-  block_device_mappings {
-    device_name = "/dev/sda1"
-    ebs {
-      volume_size = 50
-      volume_type = "gp3"
-    }
-  }
+resource "aws_ebs_volume" "family" {
+  availability_zone = aws_subnet.onlyfams.availability_zone
+  size              = 50
+  type              = "gp3"
 }
 
 resource "aws_instance" "droplet" {
@@ -101,4 +99,14 @@ resource "aws_instance" "droplet" {
   launch_template {
     id = aws_launch_template.u-jammy.id
   }
+  root_block_device {
+    volume_type = "gp3"
+    volume_size = 50
+  }
+}
+
+resource "aws_volume_attachment" "the_rocky" {
+  device_name = "/dev/sdf"
+  instance_id = aws_instance.droplet.id
+  volume_id   = aws_ebs_volume.family.id
 }
