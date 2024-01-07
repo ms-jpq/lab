@@ -3,6 +3,9 @@ terraform {
     http = {
       source = "hashicorp/http"
     }
+    cloudinit = {
+      source = "hashicorp/cloudinit"
+    }
     aws = {
       source = "hashicorp/aws"
     }

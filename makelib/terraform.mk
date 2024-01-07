@@ -1,4 +1,4 @@
-.PHONY: tofu tofu.bootstrap
+.PHONY: tofu tofu.bootstrap tofu.trunk
 
 facts tofu: facts/.env
 facts/.env:
@@ -14,6 +14,7 @@ tofu.bootstrap: facts/.env tf/bootstrap/.terraform
 	set +a
 	tofu -chdir='tf/bootstrap' apply
 
+tofu.trunk: tf/trunk/.terraform
 tf/trunk/.terraform: | facts/.env
 	set -a
 	source -- '$<'
