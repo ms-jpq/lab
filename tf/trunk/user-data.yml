@@ -8,4 +8,4 @@ growpart:
 
 users:
   - name: root
-    ssh-authorized-keys: ${ssh_keys}
+    ssh-authorized-keys: ${AUTHORIZED_KEYS}

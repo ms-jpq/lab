@@ -1,5 +1,5 @@
 resource "aws_launch_template" "u-jammy" {
-  image_id  = "ami-0a24e6e101933d294" # Ubuntu 22.04 arm64
+  image_id  = data.aws_ami.ubuntu-lts.id
   name      = "u-jammy"
   user_data = base64encode(local.user_data)
 
