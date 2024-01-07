@@ -1,7 +1,7 @@
 resource "aws_launch_template" "u-jammy" {
   image_id  = data.aws_ami.ubuntu-lts.id
   name      = "u-jammy"
-  user_data = base64encode(local.user_data)
+  user_data = data.cloudinit_config.user_data.rendered
 
   network_interfaces {
     security_groups = [aws_security_group.acab.id]

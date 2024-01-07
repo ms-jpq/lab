@@ -31,7 +31,13 @@ data "http" "gh_keys" {
 }
 
 locals {
-  dns_ttl   = 60
-  ssh_keys  = sort(split("\n", trimspace(data.http.gh_keys.response_body)))
-  user_data = templatefile("${path.module}/user-data.yml", { AUTHORIZED_KEYS = jsonencode(local.ssh_keys) })
+  dns_ttl  = 60
+  ssh_keys = sort(split("\n", trimspace(data.http.gh_keys.response_body)))
+}
+
+data "cloudinit_config" "user_data" {
+  part {
+    content      = templatefile("${path.module}/user-data.yml", { AUTHORIZED_KEYS = jsonencode(local.ssh_keys) })
+    content_type = "text/cloud-config"
+  }
 }
