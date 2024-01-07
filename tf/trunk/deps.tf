@@ -8,3 +8,11 @@ terraform {
     }
   }
 }
+
+terraform {
+  backend "s3" {
+    bucket  = ""
+    encrypt = true
+    key     = "tfstate"
+  }
+}

@@ -6,6 +6,10 @@ variable "le_domain" {
   type = string
 }
 
+variable "s3_state_bucket" {
+  type = string
+}
+
 data "aws_ami" "ubuntu-lts" {
   most_recent = true
   owners      = ["amazon"]
