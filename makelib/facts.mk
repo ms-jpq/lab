@@ -3,7 +3,8 @@
 ifeq ($(origin MACHINE), command line)
 MACHINES := $(patsubst %,machines/%,$(MACHINE))
 else
-MACHINES := $(patsubst %/,%,$(shell printf -- '%s ' machines/*/))
+# MACHINES := $(patsubst %/,%,$(shell printf -- '%s ' machines/*/))
+MACHINES :=
 endif
 
 INVENTORY := ./inventory.json

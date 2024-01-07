@@ -3,7 +3,7 @@ resource "aws_route53_zone" "sea_to_sky" {
 }
 
 resource "aws_route53_record" "mx" {
-  name    = "mx.${aws_route53_zone.sea_to_sky.name}"
+  name    = aws_route53_zone.sea_to_sky.name
   records = ["1 ${aws_route53_zone.sea_to_sky.name}"]
   ttl     = local.dns_ttl
   type    = "MX"
