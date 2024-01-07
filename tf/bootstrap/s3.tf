@@ -11,10 +11,9 @@ resource "aws_s3_bucket_versioning" "tfs_v" {
 }
 
 resource "aws_dynamodb_table" "tfs_lock" {
-  hash_key       = "LockID"
-  name           = aws_s3_bucket.tfs.bucket
-  read_capacity  = 1
-  write_capacity = 1
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "LockID"
+  name         = aws_s3_bucket.tfs.bucket
 
   attribute {
     name = "LockID"
