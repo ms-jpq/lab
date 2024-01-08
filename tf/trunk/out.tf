@@ -5,13 +5,6 @@ output "ami-ubuntu-lts" {
   }
 }
 
-output "c-init" {
-  value = {
-    id        = aws_launch_template.ohana.id
-    user_data = yamlencode(local.user_data)
-  }
-}
-
 output "ec2-droplet" {
   value = {
     id     = aws_instance.droplet.id

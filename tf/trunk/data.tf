@@ -40,7 +40,8 @@ locals {
       mode                     = "auto"
     }
     users = [
-      { name                = "root"
+      {
+        name                = "root"
         ssh-authorized-keys = local.ssh_keys
       }
     ]
@@ -52,9 +53,4 @@ data "cloudinit_config" "ci_data" {
     content      = yamlencode(local.user_data)
     content_type = "text/cloud-config"
   }
-}
-
-resource "terraform_data" "user_data" {
-  # https://github.com/hashicorp/terraform-provider-aws/issues/5011
-  input = data.cloudinit_config.ci_data.rendered
 }

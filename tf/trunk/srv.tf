@@ -1,8 +1,4 @@
 resource "aws_launch_template" "ohana" {
-  lifecycle {
-    ignore_changes       = [user_data]
-    replace_triggered_by = [terraform_data.user_data]
-  }
   image_id  = data.aws_ami.ubuntu-lts.id
   name      = "ohana"
   user_data = data.cloudinit_config.ci_data.rendered
@@ -28,10 +24,15 @@ resource "aws_instance" "droplet" {
     volume_type = "gp3"
     volume_size = 50
   }
+  lifecycle {
+    # https://github.com/hashicorp/terraform-provider-aws/issues/5011
+    ignore_changes = [user_data]
+  }
 }
 
 resource "aws_volume_attachment" "the_rocky" {
-  device_name = "/dev/sdf"
-  instance_id = aws_instance.droplet.id
-  volume_id   = aws_ebs_volume.family.id
+  device_name  = "/dev/sdf"
+  instance_id  = aws_instance.droplet.id
+  skip_destroy = true
+  volume_id    = aws_ebs_volume.family.id
 }
