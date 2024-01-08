@@ -1,7 +1,11 @@
 resource "aws_launch_template" "u-jammy" {
+  lifecycle {
+    ignore_changes       = [user_data]
+    replace_triggered_by = [terraform_data.user_data]
+  }
   image_id  = data.aws_ami.ubuntu-lts.id
   name      = "u-jammy"
-  user_data = data.cloudinit_config.user_data.rendered
+  user_data = data.cloudinit_config.ci_data.rendered
 
   network_interfaces {
     security_groups = [aws_security_group.acab.id]

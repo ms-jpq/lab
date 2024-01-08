@@ -8,7 +8,7 @@ output "ami-ubuntu-lts" {
 output "c-init" {
   value = {
     id        = aws_launch_template.u-jammy.id
-    # user_data = base64decode(data.cloudinit_config.user_data.rendered)
+    user_data = aws_launch_template.u-jammy.user_data
   }
 }
 

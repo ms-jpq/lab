@@ -35,9 +35,14 @@ locals {
   ssh_keys = sort(split("\n", trimspace(data.http.gh_keys.response_body)))
 }
 
-data "cloudinit_config" "user_data" {
+data "cloudinit_config" "ci_data" {
   part {
-    content      = templatefile("${path.module}/user-data.yml", { AUTHORIZED_KEYS = jsonencode(local.ssh_keys) })
+    content      = trimspace(templatefile("${path.module}/user-data.yml", { AUTHORIZED_KEYS = jsonencode(local.ssh_keys) }))
     content_type = "text/cloud-config"
   }
+}
+
+resource "terraform_data" "user_data" {
+  # https://github.com/hashicorp/terraform-provider-aws/issues/5011
+  input = data.cloudinit_config.ci_data.rendered
 }
