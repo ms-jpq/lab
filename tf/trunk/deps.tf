@@ -1,4 +1,5 @@
 terraform {
+  required_version = ">= 0"
   required_providers {
     http = {
       source  = "hashicorp/http"

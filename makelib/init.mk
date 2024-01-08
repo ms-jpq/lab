@@ -33,6 +33,7 @@ $(VAR)/bin: | $(VAR)
 
 V_SHELLCHECK = $(shell ./libexec/gh-latest.sh $(VAR) koalaman/shellcheck)
 V_SHFMT = $(shell ./libexec/gh-latest.sh $(VAR) mvdan/sh)
+V_TFLINT = $(shell ./libexec/gh-latest.sh $(VAR) terraform-linters/tflint)
 V_TOFU = $(patsubst v%,%,$(shell ./libexec/gh-latest.sh $(VAR) opentofu/opentofu))
 HADO_OS = $(shell perl -CASD -wpe 's/([a-z])/\u$$1/' <<<'$(OS)')
 
@@ -51,9 +52,18 @@ $(VAR)/bin/shfmt: | $(VAR)/bin
 	$(CURL) --output '$@' -- "$$URI"
 	chmod +x '$@'
 
+$(VAR)/bin/tflint: | $(VAR)/bin
+	URI='https://github.com/terraform-linters/tflint/releases/latest/download/tflint_$(OS)_$(GOARCH).zip'
+	ZIP='$(TMP)/tflint.zip'
+	$(CURL) --output "$$ZIP" -- "$$URI"
+	unzip -o -d '$(VAR)/bin' -- "$$ZIP"
+
 $(VAR)/bin/tofu: | $(VAR)/bin
 	URI='https://github.com/opentofu/opentofu/releases/latest/download/tofu_$(V_TOFU)_$(OS)_$(GOARCH).zip'
 	ZIP='$(TMP)/tofu.zip'
 	$(CURL) --output "$$ZIP" -- "$$URI"
 	unzip -o -d '$(VAR)/bin' -- "$$ZIP"
 	chmod +x '$@'
+
+$(VAR)/tflint.d: $(VAR)/bin/tflint tf/bootstrap/.tflint.hcl
+	printf -- '%s\0' ./tf/* | xargs -0 -n 1 -- '$<' --init --chdir
