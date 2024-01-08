@@ -12,11 +12,11 @@ SHELL := bash
 
 clean:
 	shopt -u failglob
-	rm -v -rf -- '$(TMP)'
+	rm -v -rf -- '$(TMP)' package-lock.json
 
 clobber: clean
 	shopt -u failglob
-	rm -v -rf -- '$(VAR)' ./.venv/ ./node_modules/ package-lock.json
+	rm -v -rf -- '$(VAR)' ./.venv/ ./node_modules/ ./tf/*/.terraform
 
 
 VAR := ./var
