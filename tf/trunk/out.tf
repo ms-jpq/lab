@@ -8,7 +8,7 @@ output "ami-ubuntu-lts" {
 output "c-init" {
   value = {
     id        = aws_launch_template.ohana.id
-    user_data = aws_launch_template.ohana.user_data
+    user_data = yamlencode(local.user_data)
   }
 }
 

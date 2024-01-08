@@ -33,11 +33,23 @@ data "http" "gh_keys" {
 locals {
   dns_ttl  = 60
   ssh_keys = sort(split("\n", trimspace(data.http.gh_keys.response_body)))
+  user_data = {
+    growpart = {
+      devices                  = [{ name = "/" }]
+      ignore_growroot_disabled = false
+      mode                     = "auto"
+    }
+    users = [
+      { name                = "root"
+        ssh-authorized-keys = local.ssh_keys
+      }
+    ]
+  }
 }
 
 data "cloudinit_config" "ci_data" {
   part {
-    content      = trimspace(templatefile("${path.module}/user-data.yml", { AUTHORIZED_KEYS = jsonencode(local.ssh_keys) }))
+    content      = yamlencode(local.user_data)
     content_type = "text/cloud-config"
   }
 }
