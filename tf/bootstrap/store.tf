@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "tfs" {
-  bucket_prefix = "tfstate-"
+  bucket = "tfstate-${local.aws_region}"
 }
 
 resource "aws_s3_bucket_versioning" "tfs_v" {

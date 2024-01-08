@@ -17,6 +17,6 @@ tofu.bootstrap: facts/.env tf/bootstrap/.terraform
 tofu.trunk: tf/trunk/.terraform
 tf/trunk/.terraform: | facts/.env
 	set -a
-	source -- '$<'
+	source -- '$|'
 	set +a
 	'$(@D)/init.sh'
