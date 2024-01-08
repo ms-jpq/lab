@@ -1,4 +1,3 @@
-#cloud-config
 ---
 growpart:
   mode: auto
