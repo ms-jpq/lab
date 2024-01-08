@@ -7,8 +7,8 @@ output "ami-ubuntu-lts" {
 
 output "c-init" {
   value = {
-    id        = aws_launch_template.u-jammy.id
-    user_data = aws_launch_template.u-jammy.user_data
+    id        = aws_launch_template.ohana.id
+    user_data = aws_launch_template.ohana.user_data
   }
 }
 

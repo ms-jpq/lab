@@ -1,10 +1,10 @@
-resource "aws_launch_template" "u-jammy" {
+resource "aws_launch_template" "ohana" {
   lifecycle {
     ignore_changes       = [user_data]
     replace_triggered_by = [terraform_data.user_data]
   }
   image_id  = data.aws_ami.ubuntu-lts.id
-  name      = "u-jammy"
+  name      = "ohana"
   user_data = data.cloudinit_config.ci_data.rendered
 
   network_interfaces {
@@ -22,7 +22,7 @@ resource "aws_ebs_volume" "family" {
 resource "aws_instance" "droplet" {
   instance_type = "t4g.small"
   launch_template {
-    id = aws_launch_template.u-jammy.id
+    id = aws_launch_template.ohana.id
   }
   root_block_device {
     volume_type = "gp3"
