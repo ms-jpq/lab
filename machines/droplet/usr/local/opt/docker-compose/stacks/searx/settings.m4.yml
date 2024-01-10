@@ -16,7 +16,7 @@ ui:
   results_on_new_tab: true
   center_alignment: true
 server:
-  base_url: https://google.m5_assert([ENV_DOMAIN])
+  base_url: https://ask.m5_assert([ENV_DOMAIN])
   image_proxy: true
   # public_instance: true
   secret_key: |-
