@@ -109,15 +109,14 @@ EOF
   "${JQE[@]}" <<<"$ACC"
   ;;
 ls)
-  if [[ -v LOCAL ]]; then
+  if [[ -f "$INVENTORY" ]]; then
+    "${JQER[@]}" '. // {} | keys[]' "$INVENTORY"
+  else
     MS='./machines/'
     for m in "$MS"*/; do
       m="${m#"$MS"}"
       printf -- '%s\n' "${m%/}"
     done
-  fi
-  if [[ -f "$INVENTORY" ]]; then
-    "${JQER[@]}" '. // {} | keys[]' "$INVENTORY"
   fi
   ;;
 env)
