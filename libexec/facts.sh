@@ -9,7 +9,6 @@ shift -- 1
 
 printf -- '%s=%q\n' 'ENV_MACHINE' "$MACHINE"
 
-set -x
 for F in "$@"; do
   if ! [[ -s "$F" ]]; then
     continue
@@ -20,7 +19,7 @@ for F in "$@"; do
     shift -- 1
     ;;
   *.json)
-    jq --exit-status --raw-output 'to_entries[] | "\(.key)=\(.value | if type == "array" then join(",") else . end)"' "$F"
+    jq --raw-output 'to_entries[] | "\(.key)=\(.value | if type == "array" then join(",") else . end)"' "$F"
     shift -- 1
     ;;
   *)

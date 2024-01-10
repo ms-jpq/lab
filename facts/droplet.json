@@ -3,6 +3,7 @@
     "12ft.ENV_DOMAIN",
     "ENV_DOMAIN",
     "ascii.ENV_DOMAIN",
+    "ask.ENV_DOMAIN",
     "autodiscover.ENV_DOMAIN",
     "bing.ENV_DOMAIN",
     "bridge.ENV_DOMAIN",
@@ -14,7 +15,6 @@
     "emu.ENV_DOMAIN",
     "emujs.ENV_DOMAIN",
     "es.ENV_DOMAIN",
-    "google.ENV_DOMAIN",
     "http.ENV_DOMAIN",
     "ipfs.ENV_DOMAIN",
     "kubo.ENV_DOMAIN",
@@ -45,6 +45,7 @@
   "ENV_INDEX": [
     "12ft",
     "ascii",
+    "ask",
     "bing",
     "bridge",
     "changes",
@@ -55,7 +56,6 @@
     "emu",
     "emujs",
     "es",
-    "google",
     "http",
     "ipfs",
     "kubo",
@@ -85,6 +85,7 @@
   "ENV_MAIL": "me@ENV_DOMAIN",
   "ENV_PUBLIC_SITES": [
     "12ft.*",
+    "ask.*",
     "autodiscover.*",
     "bing.*",
     "bridge.*",
@@ -92,7 +93,6 @@
     "docker.*",
     "docs.*",
     "draw.*",
-    "google.*",
     "http.*",
     "ipfs.*",
     "pastebin.*",
@@ -104,8 +104,7 @@
     "tools.*",
     "twitter.*",
     "vault.*",
-    "youtube.*",
-    ""
+    "youtube.*"
   ],
   "ENV_V2R_CLIENT": 0,
   "ENV_V2R_DOMAIN": "ENV_DOMAIN",
