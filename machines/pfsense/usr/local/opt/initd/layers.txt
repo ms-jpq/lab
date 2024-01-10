@@ -1,3 +1,4 @@
 ddns
 internal
 router
+wireguard
