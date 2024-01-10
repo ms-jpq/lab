@@ -1,9 +1,5 @@
 .PHONY: tofu tofu.bootstrap tofu.trunk
 
-facts tofu: facts/.env
-facts/.env:
-	touch -- '$@'
-
 tofu: tf/bootstrap/.terraform
 tf/bootstrap/.terraform:
 	tofu -chdir='$(@D)' init

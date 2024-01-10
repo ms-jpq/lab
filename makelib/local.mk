@@ -60,7 +60,7 @@ MACH.$1.DIRS := $(shell find {$1,$2} -type d)
 MACH.$1.FILES := $(shell find {$1,$2} -type f,l)
 MACH.$1.LINKS := $(shell shopt -u failglob && grep -h -v -- '^#' {$1,$2}/usr/local/opt/initd/links/*.txt | tr -s ' ' '!')
 
-MACH.$1.FACTS := $(FACTS) $(shell shopt -u failglob && printf -- '%s ' ./facts/$(notdir $1).*{env,json})
+MACH.$1.FACTS := $(FACTS) $(shell shopt -u failglob && printf -- '%s ' ./facts/$(notdir $1).{env,json})
 
 
 $(TMP)/$1/./: | $(TMP)/$1

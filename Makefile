@@ -30,6 +30,7 @@ $(TMP): | $(VAR)
 
 
 ifeq ($(origin MACHINE), command line)
+include makelib/crypt.mk
 include makelib/facts.mk
 include makelib/local.mk
 else
