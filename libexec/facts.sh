@@ -9,7 +9,11 @@ shift -- 1
 
 printf -- '%s=%q\n' 'ENV_MACHINE' "$MACHINE"
 
+set -x
 for F in "$@"; do
+  if ! [[ -s "$F" ]]; then
+    continue
+  fi
   case "$F" in
   *.env)
     grep -h -v -- '^#' "$F"
