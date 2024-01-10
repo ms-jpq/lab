@@ -1,8 +1,23 @@
 ---
 # https://github.com/searxng/searxng/blob/master/searx/settings.yml
 use_default_settings: true
+
 redis:
   url: redis://redis:6379/0
+
+server:
+  base_url: https://ask.m5_assert([ENV_DOMAIN])
+  http_protocol_version: "1.1"
+  image_proxy: true
+  # public_instance: true
+  secret_key: |-
+    m4_esyscmd([uuidgen])
+
+outgoing:
+  proxies:
+    all://:
+      - socks5://warp-srv-1:1080
+
 search:
   autocomplete: google
   autocomplete_min: 1
@@ -12,19 +27,11 @@ search:
     - html
     - json
     - rss
+
 ui:
-  results_on_new_tab: true
   center_alignment: true
-server:
-  base_url: https://ask.m5_assert([ENV_DOMAIN])
-  image_proxy: true
-  # public_instance: true
-  secret_key: |-
-    m4_esyscmd([uuidgen])
-outgoing:
-  proxies:
-    all://:
-      - socks5://warp-srv-1:1080
+  hotkeys: vim
+  results_on_new_tab: true
 
 enabled_plugins:
   - "Hash plugin"
