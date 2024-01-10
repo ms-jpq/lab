@@ -35,12 +35,6 @@ done
 SH="./var/sh"
 INVENTORY='./inventory.json'
 
-set -x
-if ! [[ -f "$INVENTORY" ]]; then
-  exit 1
-fi
-set +x
-
 for MACHINE in "${MACHINES[@]}"; do
   if ! [[ -d "machines/$MACHINE" ]]; then
     exit 1

@@ -29,7 +29,6 @@ jobs:
 
       - run: |-
           LOCAL=1 gmake example
-          LOCAL=1 gmake
 
       - run: |-
           LOCAL=1 gmake --debug

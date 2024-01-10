@@ -17,5 +17,5 @@ COPY . /srv
 
 ENV LOCAL=1
 RUN mkdir -p -- /usr/share/doc/avahi-daemon/examples && touch -- /usr/share/doc/avahi-daemon/examples/ssh.service
-RUN touch -- /.dockerenv && gmake example && gmake
+RUN touch -- /.dockerenv && gmake example
 RUN ./main.sh --machine -
