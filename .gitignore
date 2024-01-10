@@ -5,6 +5,8 @@
 .terraform/
 .venv/
 facts/*.env
+facts/-.env.gpg
+facts/example.env.gpg
 inventory.json
 node_modules/
 package-lock.json
