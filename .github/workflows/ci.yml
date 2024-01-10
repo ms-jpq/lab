@@ -35,10 +35,10 @@ jobs:
           LOCAL=1 gmake --debug
 
       - run: |-
-          LOCAL=1 ./main.sh --machine all
+          LOCAL=1 ./main.sh --machine -
 
       - run: |-
-          LOCAL=1 ./main.sh --machine all -- --debug
+          LOCAL=1 ./main.sh --machine - -- --debug
 
       - run: |-
           gmake fmt
