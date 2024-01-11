@@ -26,8 +26,8 @@ printf -v V4_MASK -- '%02x' ${IPV4_NETMASK//./ }
 
 declare -A -- SEEN
 SEEN=(
-  ["$IPV4_MINADDR"]=1
-  ["$IPV4_MAXADDR"]=1
+  ["$IPV4_MINADDR/32"]=1
+  ["$IPV4_MAXADDR/32"]=1
 )
 
 WG_IDS=()
@@ -53,7 +53,7 @@ for PEER in "${PEERS[@]}"; do
     B2="$(b2sum --binary --length 64 <<<"$ID")"
     HEX_64="${B2%% *}"
     # shellcheck disable=SC2154
-    IPV6="$IPV6_NETWORK:$(perl -CASD -wpe 's/(.{4})(?=.)/$1:/g' <<<"$HEX_64")/128"
+    IPV6="$IPV6_NETWORK:$(perl -CASD -wpe 's/(.{4})(?=.)/$1:/g' <<<"$HEX_64")/56"
 
     printf -v HEX_32 -- '%x' $(("0x$HEX_64" & 0xffffffff & ~"0x$V4_MASK" | "0x$V4_NET"))
     IPV4_OCTETS="$(perl -CASD -wpe 's/(.{2})/0x$1 /g' <<<"$HEX_32")"
