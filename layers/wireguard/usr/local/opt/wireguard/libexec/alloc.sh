@@ -74,7 +74,7 @@ for PEER in "${PEERS[@]}"; do
       CLIENT_PRIVATE_KEY="$(<"$CLIENT_PRIVATE_KEY")"
       CLIENT_PUBLIC_KEY="$(wg pubkey <<<"$CLIENT_PRIVATE_KEY")"
 
-      WG_LINES+=("[$ID, $CLIENT_PUBLIC_KEY, $IPV6, $IPV4]")
+      WG_LINES+=("[$ID, $CLIENT_PUBLIC_KEY, ${IPV6%%/*}/128, ${IPV4%%/*}/32]")
 
       CONF="$(envsubst <"$SELF/peer.conf")"
       QR="$(qrencode --type utf8 <<<"$CONF")"
