@@ -10,19 +10,21 @@ shift
 SYMMETRIC="$(gpg --batch --decrypt -- "$ENCRYPTED_SYMMETRIC")"
 EXT='.gpg'
 
+GPG=(--batch --passphrase-fd 0 --output)
+
 case "${0##*/}" in
 encrypt.sh)
   for FILE in "$@"; do
     OUT="$FILE$EXT"
     rm -v -fr -- "$OUT"
-    printf -- '%s' "$SYMMETRIC" | gpg --batch --encrypt --passphrase-fd 0 --output "$OUT" -- "$FILE"
+    printf -- '%s' "$SYMMETRIC" | gpg --symmetric "${GPG[@]}" "$OUT" -- "$FILE"
   done
   ;;
 decrypt.sh)
   for FILE in "$@"; do
     OUT="${FILE%%"$EXT"}"
     rm -v -fr -- "$OUT"
-    printf -- '%s' "$SYMMETRIC" | gpg --batch --decrypt --passphrase-fd 0 --output "$OUT" -- "$FILE"
+    printf -- '%s' "$SYMMETRIC" | gpg --decrypt "${GPG[@]}" "$OUT" -- "$FILE"
   done
   ;;
 *)
