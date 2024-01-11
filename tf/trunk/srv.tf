@@ -1,6 +1,6 @@
-resource "aws_launch_template" "ohana" {
+resource "aws_launch_template" "familia" {
   image_id  = data.aws_ami.ubuntu-lts.id
-  name      = "ohana"
+  name      = "familia"
   user_data = data.cloudinit_config.ci_data.rendered
 
   network_interfaces {
@@ -9,7 +9,7 @@ resource "aws_launch_template" "ohana" {
   }
 }
 
-resource "aws_ebs_volume" "family" {
+resource "aws_ebs_volume" "john" {
   availability_zone = aws_subnet.onlyfams.availability_zone
   size              = 50
   type              = "gp3"
@@ -18,7 +18,7 @@ resource "aws_ebs_volume" "family" {
 resource "aws_instance" "droplet" {
   instance_type = "t4g.small"
   launch_template {
-    id = aws_launch_template.ohana.id
+    id = aws_launch_template.familia.id
   }
   root_block_device {
     volume_type = "gp3"
@@ -30,9 +30,9 @@ resource "aws_instance" "droplet" {
   }
 }
 
-resource "aws_volume_attachment" "the_rocky" {
+resource "aws_volume_attachment" "cena" {
   device_name  = "/dev/sdf"
   instance_id  = aws_instance.droplet.id
   skip_destroy = true
-  volume_id    = aws_ebs_volume.family.id
+  volume_id    = aws_ebs_volume.john.id
 }

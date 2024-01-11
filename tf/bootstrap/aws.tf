@@ -9,16 +9,16 @@ provider "aws" {
 }
 
 data "aws_caller_identity" "current" {}
-data "aws_region" "current" {}
+# data "aws_region" "current" {}
 
 locals {
   aws_account_id = data.aws_caller_identity.current.account_id
-  aws_region     = data.aws_region.current.name
+  # aws_region     = data.aws_region.current.name
 }
 
 output "aws" {
   value = {
     account_id = local.aws_account_id,
-    region     = local.aws_region
+    # region     = local.aws_region
   }
 }
