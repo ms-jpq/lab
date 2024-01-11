@@ -35,7 +35,7 @@ WG_LINES=()
 DNSMAQ_HOSTS=()
 
 export -- DOMAIN IPV6 IPV4 SERVER_PUBLIC_KEY SERVER_NAME CLIENT_PRIVATE_KEY
-MACHINE_ULA="$(/usr/local/opt/network/libexec/ula64.sh)/56"
+MACHINE_ULA="$(/usr/local/opt/network/libexec/ula64.sh)::/56"
 
 P="$(sort --field-separator ',' <<<"$WG_PEERS")"
 readarray -t -d ',' -- PEERS <<<"$P"
