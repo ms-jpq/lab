@@ -32,7 +32,6 @@
 + ttyd
 + unattended-upgrades
 + unzip
-+ wireguard-tools
 - cloud-init
 - lxd-agent-loader
 - rsyslog

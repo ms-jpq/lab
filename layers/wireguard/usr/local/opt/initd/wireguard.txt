@@ -1,0 +1,2 @@
++ qrencode
++ wireguard-tools
