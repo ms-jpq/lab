@@ -1,7 +1,7 @@
 .PHONY: facts
 
 ifeq ($(origin MACHINE), command line)
-MACHINES := $(patsubst %,machines/%,$(MACHINE))
+MACHINES := $(addprefix machines/,$(MACHINE))
 else
 MACHINES :=
 endif
@@ -43,4 +43,4 @@ endef
 
 
 $(foreach machine,$(FACT_MACHINES),$(eval $(call FACT_TEMPLATE,$(machine))))
-$(foreach machine,$(filter-out $(FACT_MACHINES),$(patsubst machines/%,%,$(MACHINES))),$(eval $(call NOFACT_TEMPLATE,$(machine))))
+$(foreach machine,$(filter-out $(FACT_MACHINES),$(addprefix machines/,$(MACHINES))),$(eval $(call NOFACT_TEMPLATE,$(machine))))
