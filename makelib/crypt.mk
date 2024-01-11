@@ -1,13 +1,14 @@
 .PHONY: encrypt
 
-CRIP := ./sym.gpg
 GPG := $(shell shopt -u failglob && printf -- '%s ' ./facts/*.gpg)
 
-$(patsubst %.gpg,%,$(GPG)) &: $(CRIP) $(GPG)
-	./libexec/decrypt.sh $^
+define DECRYPT_TEMPLATE
+$(patsubst %.gpg,%,$1): $1
+	rm -v -fr -- '$$@'
+	flock $(VAR) gpg --batch --decrypt-files -- '$$<'
+endef
+$(foreach gpg,$(GPG),$(eval $(call DECRYPT_TEMPLATE,$(gpg))))
 
-$(CRIP):
-	openssl genrsa 4096 | gpg --batch --default-recipient-self --encrypt --output '$@'
-
-encrypt: $(CRIP)
-	./libexec/encrypt.sh '$<' ./facts/*.env
+encrypt:
+	rm -v -fr -- $(GPG)
+	gpg --batch --default-recipient-self --encrypt-files -- ./facts/*.env

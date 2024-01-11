@@ -10,7 +10,7 @@ inventory.json
 node_modules/
 package-lock.json
 var/
-!.m4.env
+!*.m4.env
 !examples/*
 !layers/**/var/
 !machines/**/var/

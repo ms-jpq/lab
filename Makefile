@@ -8,7 +8,8 @@ SHELL := bash
 
 .DEFAULT_GOAL := local
 
-.PHONY: clean clobber
+# TODO: gnumake 4.4 .WAIT
+.PHONY: clean clobber .WAIT
 
 clean:
 	shopt -u failglob
