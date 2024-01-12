@@ -18,5 +18,5 @@ TARBUNTU := https://cloud-images.ubuntu.com/releases/$(VERSION_ID)/release/ubunt
 nspawn.pull: $(CACHE)/nspawn/cloudimg.tar.xz
 $(CACHE)/nspawn/cloudimg.tar.xz:
 	sudo -- mkdir -v -p -- '$(@D)'
-	sudo -- curl --fail --location --output '$@.part' -- '$(TARBUNTU)'
+	sudo -- $(CURL) --output '$@.part' -- '$(TARBUNTU)'
 	sudo -- mv -v -f -- '$@.part' '$@'
