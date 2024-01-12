@@ -1,19 +1,17 @@
 [Unit]
-Description    = A spotify playing daemon
-Wants          = sound.target
-After          = sound.target
-Wants          = network-online.target
-After          = network-online.target
+Description  = A spotify playing daemon
+Wants        = sound.target
+After        = sound.target
+Wants        = network-online.target
+After        = network-online.target
 
 [Service]
-Restart        = on-failure
+Restart      = on-failure
 
-ProtectSystem  = strict
-PrivateTmp     = yes
+Environment  = CACHE=%C/spotifyd/%I
 
-ReadWritePaths = %t %T %V
-
-ExecStart      = /var/cache/local/spotifyd/spotifyd --no-daemon --autoplay --volume-normalisation --cache-path %V --device-name %I@%H --config-path %E/spotifyd/%I.toml
+ExecStartPre = mkdir -v -p -- ${CACHE}
+ExecStart    = /var/cache/local/spotifyd/spotifyd --no-daemon --autoplay --volume-normalisation --cache-path ${CACHE} --device-name %I@%H --config-path %E/spotifyd/%I.toml
 
 [Install]
-WantedBy       = default.target
+WantedBy     = default.target
