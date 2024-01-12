@@ -5,7 +5,6 @@ docker
 gateway
 gh_mirror
 intel_gvt
-internal
 irc
 mail
 nspawn

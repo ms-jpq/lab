@@ -1,3 +1,2 @@
-internal
 router
 v2fly

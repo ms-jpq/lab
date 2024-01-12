@@ -6,7 +6,8 @@ Wants        = network-online.target
 After        = network-online.target
 
 [Service]
-Restart      = on-failure
+Restart      = always
+RestartSec   = 9
 
 Environment  = CACHE=%C/spotifyd/%I
 

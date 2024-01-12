@@ -35,11 +35,13 @@ done
 SH="./var/sh"
 INVENTORY='./inventory.json'
 
-for MACHINE in "${MACHINES[@]}"; do
-  if ! [[ -d "machines/$MACHINE" ]]; then
-    exit 1
-  fi
-done
+if [[ "${MACHINES[*]}" != '*' ]]; then
+  for MACHINE in "${MACHINES[@]}"; do
+    if ! [[ -d "machines/$MACHINE" ]]; then
+      exit 1
+    fi
+  done
+fi
 
 if ! [[ -v UNDER ]]; then
   if ! ((EX)); then
