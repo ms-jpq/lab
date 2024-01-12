@@ -11,7 +11,7 @@ Restart      = on-failure
 Environment  = CACHE=%C/spotifyd/%I
 
 ExecStartPre = mkdir -v -p -- ${CACHE}
-ExecStart    = /var/cache/local/spotifyd/spotifyd --no-daemon --autoplay --volume-normalisation --cache-path ${CACHE} --device-name %I@%H --config-path %E/spotifyd/%I.toml
+ExecStart    = /var/cache/local/spotifyd/spotifyd --no-daemon --autoplay --volume-normalisation --cache-path ${CACHE} --device-name %I@%H --initial-volume 100 --config-path %E/spotifyd/%I.toml
 
 [Install]
 WantedBy     = default.target
