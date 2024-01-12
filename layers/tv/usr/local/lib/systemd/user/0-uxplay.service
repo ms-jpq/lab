@@ -17,4 +17,4 @@ Environment    = DISPLAY=:0
 ExecStart      = uxplay -p -nh -n %H
 
 [Install]
-WantedBy       = multi-user.target
+WantedBy       = default.target
