@@ -1,50 +1,55 @@
 [Unit]
-Description      = Wireguard server -- %I
+Description          = Wireguard server -- %I
 
-Requires         = 0-wg-private-key.service
-After            = 0-wg-private-key.service
+ReloadPropagatedFrom = nftables.service
+After                = nftables.service
 
-BindsTo          = 1-ip-alloc@%i.service
-After            = 1-ip-alloc@%i.service
+Requires             = 0-wg-private-key.service
+After                = 0-wg-private-key.service
 
-Wants            = dnsmasq@%i.service
+BindsTo              = 1-ip-alloc@%i.service
+After                = 1-ip-alloc@%i.service
+
+Wants                = dnsmasq@%i.service
 
 [Service]
-Type             = oneshot
-RemainAfterExit  = yes
+Type                 = oneshot
+RemainAfterExit      = yes
 
-ProtectSystem    = strict
-ProtectHome      = yes
-PrivateTmp       = yes
-RuntimeDirectory = local/wireguard/dnsmasq.d
-ReadWritePaths   = %t/systemd %t/local/wireguard %T %V %C/local %S/local
+ProtectSystem        = strict
+ProtectHome          = yes
+PrivateTmp           = yes
+RuntimeDirectory     = local/wireguard/dnsmasq.d
+ReadWritePaths       = %t/systemd %t/local/wireguard %T %V %C/local %S/local
 
-EnvironmentFile  = %t/local/ip/%I.env
-EnvironmentFile  = -/usr/local/etc/default/%I.wg.env
+EnvironmentFile      = %t/local/ip/%I.env
+EnvironmentFile      = -/usr/local/etc/default/%I.wg.env
 
-Environment      = IFACE=%I
-Environment      = HOSTNAME=%H
-Environment      = DOMAIN=%I.%H.home.arpa
-Environment      = NETDEV=%t/systemd/network/0-%I.netdev
-Environment      = NETWORK=%t/systemd/network/0-%I.network
-Environment      = WG_SERVER_NAME=
-Environment      = WG_PEERS=
+Environment          = IFACE=%I
+Environment          = HOSTNAME=%H
+Environment          = DOMAIN=%I.%H.home.arpa
+Environment          = NETDEV=%t/systemd/network/0-%I.netdev
+Environment          = NETWORK=%t/systemd/network/0-%I.network
+Environment          = WG_SERVER_NAME=
+Environment          = WG_PEERS=
 
-Environment      = DNSMASQD=%t/local/wireguard/dnsmasq.d/%I.hosts
-Environment      = STATE=%S/local/wireguard
-Environment      = CACHE=%C/local/wireguard
-Environment      = IPMASQUERADE=both
+Environment          = DNSMASQD=%t/local/wireguard/dnsmasq.d/%I.hosts
+Environment          = STATE=%S/local/wireguard
+Environment          = CACHE=%C/local/wireguard
+Environment          = IPMASQUERADE=both
 
-ExecStartPre     = /usr/local/libexec/envsubst2.sh /usr/local/opt/wireguard/@.network ${NETWORK}
-ExecStartPre     = /usr/local/opt/wireguard/libexec/alloc.sh ${IFACE} ${DOMAIN} ${NETDEV} ${DNSMASQD} ${CACHE} ${STATE} ${WG_SERVER_NAME} ${WG_PEERS}
-ExecStartPre     = chown -- systemd-network:systemd-network ${NETDEV} ${NETWORK}
-ExecStart        = networkctl reload
-ExecReload       = networkctl reconfigure -- ${IFACE}
-ExecStopPost     = rm -v --recursive --force -- ${NETDEV} ${NETWORK}
-ExecStop         = -networkctl delete -- ${IFACE}
+ExecStartPre         = /usr/local/libexec/envsubst2.sh /usr/local/opt/wireguard/@.network ${NETWORK}
+ExecStartPre         = /usr/local/opt/wireguard/libexec/alloc.sh ${IFACE} ${DOMAIN} ${NETDEV} ${DNSMASQD} ${CACHE} ${STATE} ${WG_SERVER_NAME} ${WG_PEERS}
+ExecStartPre         = chown -- systemd-network:systemd-network ${NETDEV} ${NETWORK}
+ExecStart            = networkctl reload
+ExecReload           = networkctl reconfigure -- ${IFACE}
+ExecStopPost         = rm -v --recursive --force -- ${NETDEV} ${NETWORK}
+ExecStop             = -networkctl delete -- ${IFACE}
 
-ExecStartPost    = nft  add    element inet user internal_ifs '{ "${IFACE}" }'
-ExecStop         = -nft delete element inet user internal_ifs '{ "${IFACE}" }'
+ExecStartPost        = nft  add    element inet user internal_ifs '{ ${IFACE} }'
+ExecReload           = nft  add    element inet user internal_ifs '{ ${IFACE} }'
+ExecStop             = -nft delete element inet user internal_ifs '{ ${IFACE} }'
 
-ExecStartPost    = nft  add    element inet user wg_ifs '{ "${IFACE}" }'
-ExecStop         = -nft delete element inet user wg_ifs '{ "${IFACE}" }'
+ExecStartPost        = nft  add    element inet user wg_ifs '{ ${IFACE} }'
+ExecReload           = nft  add    element inet user wg_ifs '{ ${IFACE} }'
+ExecStop             = -nft delete element inet user wg_ifs '{ ${IFACE} }'
