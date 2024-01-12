@@ -10,5 +10,5 @@ ProtectHome    = yes
 PrivateTmp     = yes
 ReadWritePaths = %T %V %S/local/v2fly
 
-ExecStart      = /usr/local/opt/v2fly/libexec/install.sh
+ExecStart      = /usr/local/opt/v2fly/libexec/ensure.sh
 ExecStartPost  = systemctl try-reload-or-restart -- 0-v2client.service

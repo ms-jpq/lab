@@ -1,0 +1,15 @@
+[Unit]
+Description    = Spotifyd update
+
+[Service]
+Type           = oneshot
+Restart        = on-failure
+ProtectSystem  = strict
+ProtectHome    = yes
+PrivateTmp     = yes
+ReadWritePaths = %T %C/local
+
+Environment    = CACHE=%C/local/spotifyd
+
+ExecStartPre   = mkdir -v -p -- ${CACHE}
+ExecStart      = /usr/local/opt/spotifyd/libexec/ensure.sh ${CACHE}

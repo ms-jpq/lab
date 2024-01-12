@@ -1,12 +1,1 @@
-# + com.valvesoftware.Steam
-+ app.xemu.xemu
 + com.adobe.Flash-Player-Projector
-+ com.moonlight_stream.Moonlight
-+ net.lutris.Lutris
-+ net.rpcs3.RPCS3
-+ org.DolphinEmu.dolphin-emu
-+ org.citra_emu.citra
-+ org.duckstation.DuckStation
-+ org.mamedev.MAME
-+ org.ppsspp.PPSSPP
-+ org.scummvm.ScummVM

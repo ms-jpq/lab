@@ -1,4 +1,4 @@
-#!/usr/bin/env -S -- bash -Eeu -O dotglob -O nullglob -O extglob -O failglob -O globstar
+#!/usr/bin/env -S -- bash -Eeu -O dotglob -O nullglob -O extglob -O globstar
 
 set -o pipefail
 
@@ -8,7 +8,12 @@ fi
 
 cd -- "${0%/*}/.."
 
-TXT="$(grep -E -h -- '^(\+|-) .+' ./flatpaks/*.txt)"
+TXTS=(./flatpaks/*.txt)
+if ! ((${#TXTS[@]})); then
+  exit 0
+fi
+
+TXT="$(grep -E -h -- '^(\+|-) .+' "${TXTS[@]}")"
 readarray -t -- DESIRED <<<"$TXT"
 
 PKGS="$(flatpak list --app --columns application)"
@@ -54,5 +59,6 @@ fi
 if (("${#ADD[@]}")); then
   printf -- '%q\n' "${ADD[@]}"
   sudo -- flatpak remote-add --if-not-exists -- flathub 'https://flathub.org/repo/flathub.flatpakrepo'
+  sudo -- flatpak update
   sudo -- flatpak install --noninteractive --assumeyes -- "${ADD[@]}"
 fi
