@@ -1,0 +1,21 @@
+---
+services:
+  srv:
+    image: docker.io/library/sonarqube:latest
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=9000
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`sonar.{.+}.{.+$$}`)
+    volumes:
+      - /var/lib/local/${COMPOSE_PROJECT_NAME}/data:/opt/sonarqube/data
+      - /var/lib/local/${COMPOSE_PROJECT_NAME}/extensions:/opt/sonarqube/extensions
+      - logs:/opt/sonarqube/logs
+
+networks:
+  default:
+    external: true
+    name: traefik
+
+volumes:
+  log:
