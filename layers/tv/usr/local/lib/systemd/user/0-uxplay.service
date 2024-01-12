@@ -6,12 +6,8 @@ After          = gnome-session-initialized.target
 [Service]
 Restart        = on-failure
 
-ProtectSystem  = strict
-ProtectHome    = yes
-PrivateTmp     = yes
-
 ReadWritePaths = %t %T
-Environment    = DISPLAY=:0
+Environment    = WAYLAND_DISPLAY=wayland-0
 
 # -fs -nohold
 ExecStart      = uxplay -p -nh -n %H
