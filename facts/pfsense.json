@@ -5,8 +5,7 @@
     "cups.ENV_DOMAIN=ENV_DOMAIN",
     "esxi.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN",
     "freenas.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN",
-    "pfsense.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN",
-    "roku.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN"
+    "pfsense.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN"
   ],
   "ENV_HOST_ALLOW_LIST": ["freenas.enp2s0.pfsense.home.arpa@tcp*https"],
   "ENV_HOST_FORWARD_LIST": ["freenas.enp2s0.pfsense.home.arpa@tcp*https:https"],

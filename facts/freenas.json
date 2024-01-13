@@ -5,7 +5,6 @@
     "esxi.enp2s0.pfsense.ENV_DOMAIN",
     "freenas.enp2s0.pfsense.ENV_DOMAIN",
     "pfsense.enp2s0.pfsense.ENV_DOMAIN",
-    "roku.enp2s0.pfsense.ENV_DOMAIN",
     "ENV_DOMAIN"
   ],
   "ENV_FS_DOWNLOADS": "downloads",
@@ -27,8 +26,7 @@
   "ENV_MACHINES": [
     "pfsense.enp2s0.pfsense",
     "freenas.enp2s0.pfsense",
-    "esxi.enp2s0.pfsense",
-    "roku.enp2s0.pfsense"
+    "esxi.enp2s0.pfsense"
   ],
   "ENV_MACVLAN_IFS": ["eno1"],
   "ENV_NFS_EXPORTS": ["downloads", "media", "wallpapers"],
