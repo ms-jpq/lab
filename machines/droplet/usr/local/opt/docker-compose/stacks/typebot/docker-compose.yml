@@ -1,0 +1,70 @@
+---
+services:
+  srv1:
+    image: docker.io/baptistearno/typebot-builder:latest
+    userns_mode: auto
+    restart: unless-stopped
+    depends_on:
+      pg:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=3000
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`${COMPOSE_PROJECT_NAME}.{.+}.{.+$$}`)
+    environment:
+      ENCRYPTION_SECRET:
+      NEXTAUTH_URL:
+      NEXT_PUBLIC_VIEWER_URL:
+      DATABASE_URL: &db postgresql://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg:5432/${COMPOSE_PROJECT_NAME}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - traefik
+
+  srv2:
+    image: docker.io/baptistearno/typebot-viewer:latest
+    userns_mode: auto
+    restart: unless-stopped
+    depends_on:
+      pg:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}2.loadbalancer.server.port=3000
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.rule=HostRegexp(`bot.{.+}.{.+$$}`)
+    environment:
+      ENCRYPTION_SECRET:
+      NEXTAUTH_URL:
+      NEXT_PUBLIC_VIEWER_URL:
+      DATABASE_URL: *db
+    networks:
+      - default
+      - traefik
+
+  pg:
+    image: docker.io/library/postgres:latest
+    userns_mode: auto
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - pg_isready
+        - --username
+        - ${COMPOSE_PROJECT_NAME}
+        - --dbname
+        - ${COMPOSE_PROJECT_NAME}
+    environment:
+      POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
+    volumes:
+      - data:/var/lib/postgresql/data
+
+networks:
+  traefik:
+    external: true
+    name: traefik
+
+volumes:
+  data:
