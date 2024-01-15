@@ -1,11 +1,11 @@
 {
   "ENV_CNAMES": [
     "ENV_DOMAIN=freenas.enp2s0.pfsense.home.arpa",
-    "pfsense.ENV_DOMAIN=_gateway.enp2s0.pfsense.home.arpa",
     "cups.ENV_DOMAIN=ENV_DOMAIN",
-    "esxi.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN",
+    "esxi.eno1.pfsense.ENV_DOMAIN=ENV_DOMAIN",
     "freenas.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN",
-    "pfsense.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN"
+    "pfsense.ENV_DOMAIN=_gateway.wg0.pfsense.home.arpa",
+    "pfsense.wg0.pfsense.ENV_DOMAIN=ENV_DOMAIN"
   ],
   "ENV_HOST_ALLOW_LIST": ["freenas.enp2s0.pfsense.home.arpa@tcp*https"],
   "ENV_HOST_FORWARD_LIST": ["freenas.enp2s0.pfsense.home.arpa@tcp*https:https"],

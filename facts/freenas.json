@@ -1,11 +1,11 @@
 {
   "ENV_BLK_EXPORTS": [],
   "ENV_CERTBOT_SITES": [
+    "ENV_DOMAIN",
     "cups.freenas.enp2s0.pfsense.ENV_DOMAIN",
-    "esxi.enp2s0.pfsense.ENV_DOMAIN",
+    "esxi.eno1.pfsense.ENV_DOMAIN",
     "freenas.enp2s0.pfsense.ENV_DOMAIN",
-    "pfsense.enp2s0.pfsense.ENV_DOMAIN",
-    "ENV_DOMAIN"
+    "pfsense.wg0.pfsense.ENV_DOMAIN"
   ],
   "ENV_FS_DOWNLOADS": "downloads",
   "ENV_FS_MOVIES": "media/Movies",
@@ -24,11 +24,11 @@
     "freenas.enp2s0.pfsense/zfs.sh"
   ],
   "ENV_MACHINES": [
-    "pfsense.enp2s0.pfsense",
+    "esxi.eno1.pfsense",
     "freenas.enp2s0.pfsense",
-    "esxi.enp2s0.pfsense"
+    "pfsense.wg0.pfsense"
   ],
-  "ENV_MACVLAN_IFS": ["eno1", "enp1s0"],
+  "ENV_MACVLAN_IFS": ["eno1"],
   "ENV_NFS_EXPORTS": ["downloads", "media", "wallpapers"],
   "ENV_PUBLIC_SITES": [],
   "ENV_RCLONE_LOCAL": ["gray", "hao", "media", "misc", "wallpapers"],
