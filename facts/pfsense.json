@@ -8,8 +8,16 @@
     "pfsense.ENV_DOMAIN=_gateway.wg0.pfsense.home.arpa",
     "pfsense.wg0.pfsense.ENV_DOMAIN=ENV_DOMAIN"
   ],
-  "ENV_HOST_ALLOW_LIST": ["freenas.enp2s0.pfsense.home.arpa@tcp*https"],
-  "ENV_HOST_FORWARD_LIST": ["freenas.enp2s0.pfsense.home.arpa@tcp*https:https"],
+  "ENV_HOST_ALLOW_LIST": [
+    "freenas.enp2s0.pfsense.home.arpa@tcp*https",
+    "XBOX.eno1.pfsense.home.arpa@tcp*3074",
+    "XBOX.eno1.pfsense.home.arpa@udp*3074"
+  ],
+  "ENV_HOST_FORWARD_LIST": [
+    "freenas.enp2s0.pfsense.home.arpa@tcp*https:https",
+    "XBOX.eno1.pfsense.home.arpa@tcp*3074:3074",
+    "XBOX.eno1.pfsense.home.arpa@udp*3074:3074"
+  ],
   "ENV_LAN_IFS": ["enp2s0", "enp4s0", "eno1"],
   "ENV_WAN_IF": "enp1s0",
   "ENV_WG_PEERS": [
