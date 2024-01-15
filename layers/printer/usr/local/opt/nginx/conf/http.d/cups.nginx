@@ -1,6 +1,7 @@
 server {
   server_name cups.*;
   listen      unix:/run/local/nginx/cgi.sock;
+  include     /usr/local/opt/nginx/conf/server.d/http-alt.nginx;
 
   location / {
     include          /usr/local/opt/nginx/conf/websocket.nginx;

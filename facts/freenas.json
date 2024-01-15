@@ -14,9 +14,8 @@
   "ENV_FS_TV": "media/TV",
   "ENV_FS_WALLPAPER": "wallpapers",
   "ENV_INDEX": [
-    "cups.freenas.enp2s0.pfsense",
-    "esxi.enp2s0.pfsense/qemu.sh",
-    "esxi.enp2s0.pfsense/vm.html",
+    "esxi.eno1.pfsense/qemu.sh",
+    "esxi.eno1.pfsense/vm.html",
     "freenas.enp2s0.pfsense/bt",
     "freenas.enp2s0.pfsense/rclone",
     "freenas.enp2s0.pfsense/share",
@@ -24,6 +23,7 @@
     "freenas.enp2s0.pfsense/zfs.sh"
   ],
   "ENV_MACHINES": [
+    "cups.freenas.enp2s0.pfsense",
     "esxi.eno1.pfsense",
     "freenas.enp2s0.pfsense",
     "pfsense.wg0.pfsense"

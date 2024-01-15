@@ -1,1 +1,2 @@
-listen [::]:8080 ipv6only=off;
+listen 8080;
+listen [::]:8080;
