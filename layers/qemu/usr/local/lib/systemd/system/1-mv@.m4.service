@@ -20,6 +20,6 @@ EnvironmentFile  = -/usr/local/etc/default/%I.%J.env
 Environment      = IFACE=%I
 
 ExecStartPre     = -/usr/local/libexec/hr-run.sh ip link del dev ${IFACE}
-ExecStart        = /usr/local/libexec/hr-run.sh ip link add link m5_assert([ENV_MACVLAN_IFS]) name ${IFACE} type macvtap mode bridge
+ExecStart        = /usr/local/libexec/hr-run.sh ip link add link m5_argn(1, m5_assert([ENV_MACVLAN_IFS])) name ${IFACE} type macvtap mode bridge
 ExecStart        = /usr/local/libexec/hr-run.sh ip link set ${IFACE} up
 ExecStop         = -/usr/local/libexec/hr-run.sh ip link del dev ${IFACE}

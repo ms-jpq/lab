@@ -10,7 +10,7 @@ After             = dnsmasq@v\x2d%i.service
 Requires          = 2-fs-alloc-qemu@%i.service
 After             = 2-fs-alloc-qemu@%i.service
 
-# m4_ifelse(m5_assert([ENV_MACVLAN_IFS]), [], [], [
+# m4_ifelse(m5_argn(1, m5_assert([ENV_MACVLAN_IFS])), [], [], [
 BindsTo           = 1-mv@m\x2d%i.service
 After             = 1-mv@m\x2d%i.service
 # ])
@@ -39,7 +39,7 @@ Environment       = BRIDGE=v-%I
 Environment       = KERNEL=%C/local/qemu/vmlinuz
 Environment       = INITRD=%C/local/qemu/initrd
 
-Environment       = MACVTAP=m4_ifelse(m5_assert([ENV_MACVLAN_IFS]), [], [], [m-%I])
+Environment       = MACVTAP=m4_ifelse(m5_argn(1, m5_assert([ENV_MACVLAN_IFS])), [], [], [m-%I])
 
 Environment       = DRIVE=%S/local/qemu/%I/fs.raw
 Environment       = DEV_HDA=/dev/vda1
@@ -54,7 +54,7 @@ ExecStartPre      = /usr/local/opt/qemu/libexec/cloud-init.sh %I ${CLOUD_INIT}
 ExecStartPre      = touch -- "${ROOT}/.#fs.lck"
 ExecStopPost      = rm -v -rf -- "${ROOT}/.#fs.lck"
 
-ExecStart         = /usr/local/opt/qemu/bin/%J.sh m4_ifelse(m5_assert([ENV_MACVLAN_IFS]), [], [], [--macvtap ${MACVTAP}]) \
+ExecStart         = /usr/local/opt/qemu/bin/%J.sh m4_ifelse(m5_argn(1, m5_assert([ENV_MACVLAN_IFS])), [], [], [--macvtap ${MACVTAP}]) \
                       --cpu ${CPU} \
                       --mem ${MEMORY} \
                       --qmp ${QMP} \

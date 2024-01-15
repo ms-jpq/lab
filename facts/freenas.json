@@ -28,7 +28,7 @@
     "freenas.enp2s0.pfsense",
     "pfsense.wg0.pfsense"
   ],
-  "ENV_MACVLAN_IFS": ["eno1"],
+  "ENV_MACVLAN_IFS": ["enp108s0", "eno1"],
   "ENV_NFS_EXPORTS": ["downloads", "media", "wallpapers"],
   "ENV_PUBLIC_SITES": [],
   "ENV_RCLONE_LOCAL": ["gray", "hao", "media", "misc", "wallpapers"],
