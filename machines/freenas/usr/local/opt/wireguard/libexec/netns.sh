@@ -102,13 +102,12 @@ reload() {
     fi
   done
 
-  if ! ((${#DNS_SRV[@]})); then
-    DNS_SRV+=('127.0.0.53')
+  if ((${#DNS_SRV[@]})); then
+    for D in "${DNS_SRV[@]}"; do
+      printf -- '%s\n' "nameserver $D"
+    done | sponge -- "$RESOLV"
   fi
 
-  for D in "${DNS_SRV[@]}"; do
-    printf -- '%s\n' "nameserver $D"
-  done | sponge -- "$RESOLV"
 }
 
 case "$ACTION" in
