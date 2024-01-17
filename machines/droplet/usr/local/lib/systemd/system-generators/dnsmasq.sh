@@ -12,4 +12,5 @@ source -- /usr/local/etc/default/wan.env
 NAME="$(systemd-escape -- "${WAN_IF//[[:space:]]/''}")"
 
 mkdir -v -p -- "$WANTS"
+cp -v -rf -- /usr/local/opt/dnsmasq/ip-alloc@.service.d "$RUN/1-ip-alloc@$NAME.service.d"
 ln -v -sf -- /usr/lib/systemd/system/dnsmasq@.service "$WANTS/dnsmasq@$NAME.service"
