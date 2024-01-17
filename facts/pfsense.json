@@ -3,20 +3,20 @@
     "ENV_DOMAIN=freenas.enp2s0.pfsense.home.arpa",
     "cups.freenas.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN",
     "cups.freenas.enp2s0.pfsense.home.arpa=freenas.enp2s0.pfsense.home.arpa",
-    "esxi.eno1.pfsense.ENV_DOMAIN=ENV_DOMAIN",
+    "esxi.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN",
     "freenas.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN",
     "pfsense.ENV_DOMAIN=_gateway.wg0.pfsense.home.arpa",
     "pfsense.wg0.pfsense.ENV_DOMAIN=ENV_DOMAIN"
   ],
   "ENV_HOST_ALLOW_LIST": [
     "freenas.enp2s0.pfsense.home.arpa@tcp*https",
-    "XBOX.eno1.pfsense.home.arpa@tcp*3074",
-    "XBOX.eno1.pfsense.home.arpa@udp*3074"
+    "XBOX.enp2s0.pfsense.home.arpa@tcp*3074",
+    "XBOX.enp2s0.pfsense.home.arpa@udp*3074"
   ],
   "ENV_HOST_FORWARD_LIST": [
     "freenas.enp2s0.pfsense.home.arpa@tcp*https:https",
-    "XBOX.eno1.pfsense.home.arpa@tcp*3074:3074",
-    "XBOX.eno1.pfsense.home.arpa@udp*3074:3074"
+    "XBOX.enp2s0.pfsense.home.arpa@tcp*3074:3074",
+    "XBOX.enp2s0.pfsense.home.arpa@udp*3074:3074"
   ],
   "ENV_LAN_IFS": ["enp2s0", "enp4s0", "eno1"],
   "ENV_WAN_IF": "enp1s0",
