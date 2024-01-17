@@ -1,7 +1,7 @@
 # Ubuntu Pro
 
 ```bash
-pro attach <token>
+pro attach '<token>'
 ```
 
 ## Real-time Kernel

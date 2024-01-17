@@ -20,26 +20,26 @@ zpool import -d /dev/disk/by-id/ <pool>
 
 ```bash
 # ashift=12 on HDDs
-zpool create -o ashift=13 -o autotrim=on <pool> mirror <dev>
+zpool create -o ashift=13 -o autotrim=on '<pool>' mirror '<dev>'
 ```
 
 ```bash
-zfs set canmount=off mountpoint=none atime=off xattr=sa compression=zstd dnodesize=auto <pool>
+zfs set canmount=off mountpoint=none atime=off xattr=sa compression=zstd dnodesize=auto '<pool>'
 ```
 
 ```bash
-zfs create -s -V <size> <pool>/<zvol>
-zfs set volsize=<...G> <pool>/<zvol>
+zfs create -s -V '<size>' '<pool>/<zvol>'
+zfs set volsize='<...G>' '<pool>/<zvol>'
 ```
 
 ```bash
-zfs create -o mountpoint=<mount point> <pool>/<dataset>
+zfs create -o mountpoint='<mount point>' '<pool>/<dataset>'
 ```
 
 ## Encryption
 
 ```bash
-zfs create -o encryption=on -o keyformat=passphrase -o keylocation=file:///var/lib/local/zfs/... <pool>/<dataset>
+zfs create -o encryption=on -o keyformat=passphrase -o keylocation='file:///var/lib/local/zfs/...' '<pool>/<dataset>'
 ```
 
 ## Clone
@@ -49,7 +49,7 @@ zfs create -o encryption=on -o keyformat=passphrase -o keylocation=file:///var/l
 `<filesystem>` still depends on `<snapshot>` being around
 
 ```bash
-zfs clone <snapshot> <filesystem>
+zfs clone '<snapshot>' '<filesystem>'
 ```
 
 ### Promotion
@@ -60,21 +60,21 @@ Makes it possible to destroy `<original>`
 
 ```bash
 # WARNING: doing so re-homes the original snapshot trail
-zfs promote <cloned-filesystem>
+zfs promote '<cloned-filesystem>'
 ```
 
 ## Send Recv
 
 ```bash
 # includes snapshots (--replicate)
-zfs snapshot -r <snapshot>
-zfs send --verbose --replicate --props <snapshot> | zfs recv -v -F <dataset>
+zfs snapshot -r '<snapshot>'
+zfs send --verbose --replicate --props '<snapshot>' | zfs recv -v -F '<dataset>'
 ```
 
 ```bash
 # ignore snapshots (no replicate)
-zfs list -t snapshot | rg <dataset>
-zfs send --verbose --props <snapshot> | zfs recv -v -F <dataset>
+zfs list -t snapshot | rg '<dataset>'
+zfs send --verbose --props '<snapshot>' | zfs recv -v -F '<dataset>'
 ```
 
 ## Destroy
@@ -82,14 +82,14 @@ zfs send --verbose --props <snapshot> | zfs recv -v -F <dataset>
 ### Prevent
 
 ```bash
-zfs hold <snapshot>
-zfs release <snapshot>
+zfs hold '<snapshot>'
+zfs release '<snapshot>'
 ```
 
 ### Umount
 
-```
-zfs set canmount=noauto <dataset>
+```bash
+zfs set canmount=noauto '<dataset>'
 ```
 
 ### `-r`
@@ -98,7 +98,7 @@ Recursive
 
 ### `-R`
 
-Retarded -> will kill related linked datasets, (NOT just snapshots), even datasets not under `./dataset`
+**Regarded** -> will kill related linked datasets, (NOT just snapshots), even datasets not under `./dataset`
 
 ### Async Destroy
 
@@ -107,30 +107,30 @@ Retarded -> will kill related linked datasets, (NOT just snapshots), even datase
 ### Autoexpand
 
 ```bash
-zpool set autoexpand=on <pool>
+zpool set autoexpand=on '<pool>'
 ```
 
 ### Remove
 
 ```bash
 zpool status -g
-zpool remove <pool> <guid>
+zpool remove '<pool>' '<guid>'
 ```
 
 ### Time Machine
 
 ```bash
-zfs set xattr=on <zpool>/<dataset>
+zfs set xattr=on '<zpool>/<dataset>'
 ```
 
 ### Clear
 
 ```bash
-zfs inherit -r -S <property> <pool>/<dataset>
+zfs inherit -r -S '<property>' '<pool>/<dataset>'
 ```
 
 ### Rollback / Restore
 
 ```bash
-zfs rollback <dataset>@<snapshot>
+zfs rollback '<dataset>@<snapshot>'
 ```

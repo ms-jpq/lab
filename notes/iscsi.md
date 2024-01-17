@@ -3,12 +3,12 @@
 ## Discovery
 
 ```bash
-iscsiadm --mode discovery --type sendtargets --op new --portal <ip/domain>
+iscsiadm --mode discovery --type sendtargets --op new --portal '<ip/domain>'
 ```
 
 ```bash
-iscsiadm --mode node --portal <ip/domain> --login
-iscsiadm --mode node --portal <ip/domain> --logout
+iscsiadm --mode node --portal '<ip/domain>' --login
+iscsiadm --mode node --portal '<ip/domain>' --logout
 ```
 
 ## Client
@@ -27,5 +27,5 @@ targetcli-fb
 
 ```bash
 # https://www.kernel.org/doc/html/latest/usb/mass-storage.html
-modprobe g_mass_storage file=/...
+modprobe g_mass_storage file='/...'
 ```

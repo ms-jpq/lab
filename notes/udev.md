@@ -3,8 +3,8 @@
 ## Query
 
 ```bash
-udevadm info --query all -- </dev/...>
-udevadm info --attribute-walk -- </dev/...>
+udevadm info --query all -- '</dev/...>'
+udevadm info --attribute-walk -- '</dev/...>'
 ```
 
 ## Reload
