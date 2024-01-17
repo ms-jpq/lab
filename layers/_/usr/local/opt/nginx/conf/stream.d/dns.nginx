@@ -1,9 +1,0 @@
-server {
-  listen     unix:/run/local/nginx/dns-tcp.sock;
-  proxy_pass 127.0.0.53:53;
-}
-
-server {
-  listen     unix:/run/local/nginx/dns-udp.sock udp;
-  proxy_pass 127.0.0.53:53;
-}

@@ -1,7 +1,6 @@
 pid              /dev/null;
 daemon           off;
 error_log        stderr;
-user             www-data;
 worker_processes auto;
 include          /etc/nginx/modules-enabled/*.conf;
 

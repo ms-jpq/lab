@@ -4,7 +4,8 @@ StopWhenUnneeded = yes
 CollectMode      = inactive
 
 After            = network.target
-Wants            = %p-dns@%i.service
+Wants            = %p-dns-tcp@%i.service
+Wants            = %p-dns-udp@%i.service
 
 [Service]
 Type             = oneshot

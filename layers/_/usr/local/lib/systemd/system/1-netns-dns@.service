@@ -1,14 +1,14 @@
 [Unit]
-Description          = NetNS DNS -- %I
-
-BindsTo              = 1-netns@%i.service
-After                = 1-netns@%i.service
+Description      = NetNS DNS -- %I
+StopWhenUnneeded = yes
+CollectMode      = inactive
+After            = network-online.target
 
 [Service]
-ProtectSystem        = strict
-ProtectHome          = yes
-PrivateTmp           = yes
-ReadWritePaths       = %T %V
-NetworkNamespacePath = %t/netns/%I
+ProtectSystem    = strict
+ProtectHome      = yes
+PrivateTmp       = yes
+RuntimeDirectory = local/dns
+ReadWritePaths   = %t/local/dns %T
 
-ExecStart            = nginx -c /usr/local/opt/netns/main.nginx
+ExecStart        = socat unix-listen:%t/local/dns/%I.sock,fork %I-connect:127.0.0.53:53

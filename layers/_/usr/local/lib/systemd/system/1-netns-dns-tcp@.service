@@ -1,0 +1,17 @@
+[Unit]
+Description          = NetNS DNS -- %I
+
+BindsTo              = 1-netns@%i.service
+After                = 1-netns@%i.service
+
+BindsTo              = 1-netns-dns@%j.service
+After                = 1-netns-dns@%j.service
+
+[Service]
+ProtectSystem        = strict
+ProtectHome          = yes
+PrivateTmp           = yes
+ReadWritePaths       = %t/local/dns %T
+NetworkNamespacePath = %t/netns/%I
+
+ExecStart            = socat %j-listen:53,bind=127.0.0.53,fork unix-connect:%t/local/dns/%J.sock
