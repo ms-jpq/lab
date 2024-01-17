@@ -1,0 +1,2 @@
+/usr/local/lib/systemd/system/timers.target.wants/1-zfs-trim@white.timer       ../1-zfs-trim@.timer
+/usr/local/lib/systemd/system/timers.target.wants/zfs-scrub-weekly@white.timer /usr/lib/systemd/system/zfs-scrub-weekly@.timer
