@@ -107,7 +107,6 @@ reload() {
       printf -- '%s\n' "nameserver $D"
     done | sponge -- "$RESOLV"
   fi
-
 }
 
 case "$ACTION" in
