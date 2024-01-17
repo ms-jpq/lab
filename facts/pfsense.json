@@ -1,6 +1,7 @@
 {
   "ENV_CNAMES": [
     "ENV_DOMAIN=freenas.enp2s0.pfsense.home.arpa",
+    "ENV_DROPLET_HOST.wg0.ENV_DROPLET_HOST.ENV_DOMAIN=ENV_DOMAIN",
     "cups.freenas.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN",
     "cups.freenas.enp2s0.pfsense.home.arpa=freenas.enp2s0.pfsense.home.arpa",
     "esxi.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN",
