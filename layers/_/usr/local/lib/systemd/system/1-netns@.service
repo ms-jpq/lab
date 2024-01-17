@@ -1,21 +1,22 @@
 [Unit]
-Description      = netns -- %E/netns/%I
-StopWhenUnneeded = yes
-CollectMode      = inactive
+Description         = netns -- %E/netns/%I
+StopWhenUnneeded    = yes
+CollectMode         = inactive
 
-After            = network.target
-Wants            = %p-dns-tcp@%i.service
-Wants            = %p-dns-udp@%i.service
+ConditionPathExists = !%t/local/netns/%I
+
+After               = network.target
+Wants               = %p-dns-tcp@%i.service
+Wants               = %p-dns-udp@%i.service
 
 [Service]
-Type             = oneshot
-RemainAfterExit  = yes
+Type                = oneshot
+RemainAfterExit     = yes
 
-RuntimeDirectory = local/netns/%I
-Environment      = NETNS=%I
+RuntimeDirectory    = local/netns/%I
+Environment         = NETNS=%I
 
-ExecStartPre     = -/usr/local/libexec/hr-run.sh ip netns del ${NETNS}
-ExecStart        = /usr/local/libexec/hr-run.sh ip netns add ${NETNS}
-ExecStart        = /usr/local/libexec/hr-run.sh ip --netns ${NETNS} link set dev lo up
-ExecStop         = -/usr/local/libexec/hr-run.sh ip netns del ${NETNS}
-ExecStopPost     = rm -v -fr -- %t/local/netns/%I
+ExecStart           = /usr/local/libexec/hr-run.sh ip netns add ${NETNS}
+ExecStart           = /usr/local/libexec/hr-run.sh ip --netns ${NETNS} link set dev lo up
+ExecStop            = -/usr/local/libexec/hr-run.sh ip netns del ${NETNS}
+ExecStopPost        = rm -v -fr -- %t/local/netns/%I

@@ -1,5 +1,7 @@
 [Unit]
 Description          = NetNS DNS -- %I
+StopWhenUnneeded     = yes
+CollectMode          = inactive
 
 BindsTo              = 1-netns@%i.service
 After                = 1-netns@%i.service

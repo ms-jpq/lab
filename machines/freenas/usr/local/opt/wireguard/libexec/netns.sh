@@ -37,6 +37,7 @@ down() {
 reload() {
   declare -A -- ACC
   ADDED=0
+  DNS_SRV=()
   for CONF in "${WG_CONFS[@]}"; do
     WG="$(b2 "$CONF")"
 
@@ -48,11 +49,10 @@ reload() {
       for D in "${DS[@]}"; do
         D="${D//[[:space:]]/''}"
         if [[ -n "$D" ]]; then
-          printf -- '%s\n' "nameserver $D"
+          DNS_SRV+=("$D")
         fi
       done
-
-    done | sponge -- "$RESOLV"
+    done
 
     sed -E '/^(Address|DNS) .*/d' -- "$CONF" >"$WGC"
     ip link set dev "$WG" up
@@ -101,6 +101,14 @@ reload() {
       done
     fi
   done
+
+  if ! ((${#DNS_SRV[@]})); then
+    DNS_SRV+=('127.0.0.53')
+  fi
+
+  for D in "${DNS_SRV[@]}"; do
+    printf -- '%s\n' "nameserver $D"
+  done | sponge -- "$RESOLV"
 }
 
 case "$ACTION" in
