@@ -2,7 +2,9 @@
 Description      = netns -- %E/netns/%I
 StopWhenUnneeded = yes
 CollectMode      = inactive
+
 After            = network.target
+Wants            = %p-dns@%i.service
 
 [Service]
 Type             = oneshot
