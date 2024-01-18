@@ -24,15 +24,6 @@ resource "aws_instance" "droplet" {
   }
 }
 
-resource "aws_ebs_volume" "john" {
-  availability_zone = aws_subnet.onlyfams.availability_zone
-  size              = 50
-  type              = "gp3"
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
 resource "aws_volume_attachment" "cena" {
   device_name  = "/dev/sdf"
   instance_id  = aws_instance.droplet.id

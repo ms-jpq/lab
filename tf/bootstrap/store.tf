@@ -13,13 +13,13 @@ output "tf_modules" {
 }
 
 resource "aws_s3_bucket" "tfs" {
-  bucket   = "tfstate-${each.key}"
   for_each = toset(local.tf_modules)
+  bucket   = "tfstate-${each.key}"
 }
 
 resource "aws_s3_bucket_versioning" "tfs_version" {
-  bucket   = each.value.id
   for_each = aws_s3_bucket.tfs
+  bucket   = each.value.id
 
   versioning_configuration {
     status = "Enabled"
@@ -27,8 +27,8 @@ resource "aws_s3_bucket_versioning" "tfs_version" {
 }
 
 resource "aws_dynamodb_table" "tfs_lock" {
-  billing_mode = "PAY_PER_REQUEST"
   for_each     = aws_s3_bucket.tfs
+  billing_mode = "PAY_PER_REQUEST"
   hash_key     = "LockID"
   name         = each.value.bucket
 

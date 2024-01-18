@@ -16,7 +16,7 @@ resource "aws_subnet" "onlyfams" {
   vpc_id                          = aws_vpc.fastx.id
 }
 
-resource "aws_route_table" "vinethanol" {
+resource "aws_route_table" "vin_ethanol" {
   vpc_id = aws_vpc.fastx.id
 
   route {
