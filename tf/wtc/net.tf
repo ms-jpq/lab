@@ -10,6 +10,7 @@ resource "aws_internet_gateway" "silkroad" {
 
 resource "aws_subnet" "onlyfams" {
   assign_ipv6_address_on_creation = true
+  availability_zone               = local.availability_zone
   cidr_block                      = cidrsubnet(aws_vpc.fastx.cidr_block, 8, 0)
   ipv6_cidr_block                 = cidrsubnet(aws_vpc.fastx.ipv6_cidr_block, 8, 0)
   map_public_ip_on_launch         = true

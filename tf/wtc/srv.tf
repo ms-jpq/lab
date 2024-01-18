@@ -1,5 +1,18 @@
+data "aws_ebs_volume" "john" {
+  filter {
+    name   = "tag:id"
+    values = ["nfs-droplet"]
+  }
+  most_recent = true
+}
+
+locals {
+  availability_zone = data.aws_ebs_volume.john.availability_zone
+}
+
 resource "aws_instance" "droplet" {
-  instance_type = "t4g.small"
+  availability_zone = local.availability_zone
+  instance_type     = "t4g.small"
   launch_template {
     id = aws_launch_template.familia.id
   }
@@ -13,13 +26,6 @@ resource "aws_instance" "droplet" {
   }
 }
 
-data "aws_ebs_volume" "john" {
-  filter {
-    name   = "tag:id"
-    values = ["nfs-droplet"]
-  }
-  most_recent = true
-}
 
 resource "aws_volume_attachment" "cena" {
   device_name  = "/dev/sdf"
