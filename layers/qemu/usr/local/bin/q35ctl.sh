@@ -47,6 +47,9 @@ enable)
   for SOCK in "${SOCKS[@]}"; do
     "$HR" ln -v -sf -- '../2-websock-proxy@.socket' "$WANTS/$SOCK"
   done
+  if ((${#SOCKS[@]})); then
+    sctl start -- "${SOCKS[@]}"
+  fi
   ;;
 disable)
   RM=()

@@ -70,11 +70,13 @@ disable)
 remove)
   for MACH in "${MACHINES[@]}"; do
     ROOT="$LIB/$MACH"
+    SVC="$WANTS/$SERVICE_NAME@$(systemd-escape -- "$MACH").service"
     set -x
     if [[ -k "$ROOT" ]] || [[ -f "$ROOT/.#fs.lck" ]]; then
       exit 1
     fi
     set +x
+    rm -v -fr -- "$SVC"
     /usr/local/libexec/fs-dealloc.sh "$LIB" "$ROOT"
   done
   ;;
