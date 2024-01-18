@@ -13,10 +13,6 @@ terraform {
       source  = "hashicorp/aws"
       version = ">= 0"
     }
-    oci = {
-      source  = "oracle/oci"
-      version = ">= 0"
-    }
   }
 }
 
