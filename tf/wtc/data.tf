@@ -2,10 +2,6 @@ variable "github_user" {
   type = string
 }
 
-variable "le_domain" {
-  type = string
-}
-
 data "aws_ami" "ubuntu-lts" {
   most_recent = true
   owners      = ["amazon"]
@@ -23,6 +19,13 @@ data "aws_ami" "ubuntu-lts" {
   filter {
     name   = "name"
     values = ["*ubuntu-jammy-22.04-arm64-server*"]
+  }
+}
+
+output "ami-ubuntu-lts" {
+  value = {
+    id   = data.aws_ami.ubuntu-lts.id
+    name = data.aws_ami.ubuntu-lts.name
   }
 }
 

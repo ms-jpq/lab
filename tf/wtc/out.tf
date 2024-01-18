@@ -1,9 +1,3 @@
-output "ami-ubuntu-lts" {
-  value = {
-    id   = data.aws_ami.ubuntu-lts.id
-    name = data.aws_ami.ubuntu-lts.name
-  }
-}
 
 output "ebs-john" {
   value = {

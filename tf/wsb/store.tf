@@ -9,7 +9,7 @@ locals {
 
 resource "aws_s3_bucket" "chum" {
   for_each = toset(local.s3_buckets)
-  bucket   = "tfstate-${each.key}"
+  bucket   = "chum-${each.key}"
 }
 
 output "plankton" {
