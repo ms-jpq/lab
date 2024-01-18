@@ -19,4 +19,4 @@ fi
 "$HR" cp -v -f -- ~/.ssh/authorized_keys "$RSSH/authorized_keys"
 "$HR" cp -v -f -- "${0%/*}/../macvlan.network" "$USRN/10-macvlan.network"
 "$HR" chroot "$FS_ROOT" ssh-keygen -A
-"$HR" chroot "$FS_ROOT" dpkg --purge --force-all -- snapd cloud-init lxd-agent-loader
+"$HR" chroot "$FS_ROOT" dpkg --purge --force-all -- snapd cloud-init lxd-agent-loader rsyslog
