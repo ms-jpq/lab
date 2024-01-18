@@ -40,15 +40,23 @@ locals {
     split("\n", trimspace(resp.response_body))
   ]))
   user_data = {
+    fs_setup = [
+      {
+        device     = "/dev/nvme1n1"
+        filesystem = "xfs"
+      }
+    ]
     growpart = {
-      devices                  = [{ name = "/" }]
-      ignore_growroot_disabled = false
-      mode                     = "auto"
+      ignore_growroot_disabled = true
     }
+    mounts = [
+      ["/dev/nvme1n1", "/var/lib/docker"]
+    ]
+    package_update = true
     users = [
       {
         name                = "root"
-        ssh-authorized-keys = local.ssh_keys
+        ssh_authorized_keys = local.ssh_keys
       }
     ]
   }
