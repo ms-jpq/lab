@@ -5,6 +5,14 @@ output "ami-ubuntu-lts" {
   }
 }
 
+output "ebs-john" {
+  value = {
+    id   = aws_ebs_volume.john.id
+    size = aws_ebs_volume.john.size
+    type = aws_ebs_volume.john.type
+  }
+}
+
 output "ec2-droplet" {
   value = {
     id     = aws_instance.droplet.id
