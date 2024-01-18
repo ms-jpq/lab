@@ -9,12 +9,6 @@ resource "aws_launch_template" "familia" {
   }
 }
 
-resource "aws_ebs_volume" "john" {
-  availability_zone = aws_subnet.onlyfams.availability_zone
-  size              = 50
-  type              = "gp3"
-}
-
 resource "aws_instance" "droplet" {
   instance_type = "t4g.small"
   launch_template {
@@ -28,6 +22,12 @@ resource "aws_instance" "droplet" {
     # https://github.com/hashicorp/terraform-provider-aws/issues/5011
     ignore_changes = [user_data]
   }
+}
+
+resource "aws_ebs_volume" "john" {
+  availability_zone = aws_subnet.onlyfams.availability_zone
+  size              = 50
+  type              = "gp3"
 }
 
 resource "aws_volume_attachment" "cena" {
