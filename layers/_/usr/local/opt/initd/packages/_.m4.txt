@@ -33,8 +33,3 @@
 + ttyd
 + unattended-upgrades
 + unzip
-- cloud-init
-- lxd-agent-loader
-- rsyslog
-- snapd
-- vim-common

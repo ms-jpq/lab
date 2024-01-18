@@ -98,6 +98,7 @@ layers/posix/home/.local/opt/qemu/libexec/cloud-init.sh                         
 layers/posix/home/.local/opt/qemu/libexec/pprint.sh                                            usr/local/opt/qemu/libexec/pprint.sh
 layers/ubuntu/home/.local/opt/initd/libexec/add-ppa.sh                                         usr/local/opt/initd/libexec/add-ppa.sh
 layers/ubuntu/home/.local/opt/initd/makelib/motd.ubuntu.mk                                     usr/local/opt/initd/makelib/motd.mk
+layers/ubuntu/home/.local/opt/initd/packages/rmfr.txt                                          usr/local/opt/initd/packages/rmfr.txt
 layers/ubuntu/root/etc/apt/apt.conf.d/69dpkg-options.conf                                      etc/apt/apt.conf.d/69dpkg-options.conf
 layers/ubuntu/root/etc/apt/apt.conf.d/69no-recommends.conf                                     etc/apt/apt.conf.d/69no-recommends.conf
 layers/ubuntu/root/etc/apt/apt.conf.d/69unattended-upgrades.conf                               etc/apt/apt.conf.d/69unattended-upgrades.conf
