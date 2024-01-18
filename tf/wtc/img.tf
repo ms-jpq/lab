@@ -66,6 +66,13 @@ resource "aws_launch_template" "familia" {
   name      = "familia"
   user_data = data.cloudinit_config.ci_data.rendered
 
+  block_device_mappings {
+    device_name = "/dev/sdf"
+    ebs {
+      volume_size = 50
+      volume_type = "gp3"
+    }
+  }
   network_interfaces {
     security_groups = [aws_security_group.acab.id]
     subnet_id       = aws_subnet.onlyfams.id

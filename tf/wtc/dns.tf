@@ -10,7 +10,7 @@ resource "aws_route53_zone" "sea_to_sky" {
   name = var.le_domain
 }
 
-resource "aws_route53_record" "mx" {
+resource "aws_route53_record" "sea_to_sky_mx" {
   name    = aws_route53_zone.sea_to_sky.name
   records = ["1 ${aws_route53_zone.sea_to_sky.name}"]
   ttl     = local.dns_ttl

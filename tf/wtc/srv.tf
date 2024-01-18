@@ -8,6 +8,7 @@ data "aws_ebs_volume" "john" {
 
 locals {
   availability_zone = data.aws_ebs_volume.john.availability_zone
+  ebs_vol_type      = aws_launch_template.familia.block_device_mappings[0].ebs[0].volume_type
 }
 
 resource "aws_instance" "droplet" {
@@ -17,8 +18,7 @@ resource "aws_instance" "droplet" {
     id = aws_launch_template.familia.id
   }
   root_block_device {
-    volume_type = "gp3"
-    volume_size = 50
+    volume_type = local.ebs_vol_type
   }
   lifecycle {
     # https://github.com/hashicorp/terraform-provider-aws/issues/5011
@@ -28,7 +28,7 @@ resource "aws_instance" "droplet" {
 
 
 resource "aws_volume_attachment" "cena" {
-  device_name  = "/dev/sdf"
+  device_name  = "/dev/sdp"
   instance_id  = aws_instance.droplet.id
   skip_destroy = true
   volume_id    = data.aws_ebs_volume.john.id
