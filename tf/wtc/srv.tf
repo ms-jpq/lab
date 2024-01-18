@@ -6,19 +6,15 @@ data "aws_ebs_volume" "john" {
   most_recent = true
 }
 
-locals {
-  availability_zone = data.aws_ebs_volume.john.availability_zone
-  ebs_vol_type      = aws_launch_template.familia.block_device_mappings[0].ebs[0].volume_type
-}
-
 resource "aws_instance" "droplet" {
-  availability_zone = local.availability_zone
-  instance_type     = "t4g.small"
+  availability_zone           = aws_subnet.onlyfams.availability_zone
+  instance_type               = "t4g.small"
+  user_data_replace_on_change = true
   launch_template {
     id = aws_launch_template.familia.id
   }
   root_block_device {
-    volume_type = local.ebs_vol_type
+    volume_type = aws_launch_template.familia.block_device_mappings[0].ebs[0].volume_type
   }
   lifecycle {
     # https://github.com/hashicorp/terraform-provider-aws/issues/5011
