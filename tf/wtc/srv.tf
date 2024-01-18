@@ -1,14 +1,3 @@
-resource "aws_launch_template" "familia" {
-  image_id  = data.aws_ami.ubuntu-lts.id
-  name      = "familia"
-  user_data = data.cloudinit_config.ci_data.rendered
-
-  network_interfaces {
-    security_groups = [aws_security_group.acab.id]
-    subnet_id       = aws_subnet.onlyfams.id
-  }
-}
-
 resource "aws_instance" "droplet" {
   instance_type = "t4g.small"
   launch_template {
@@ -24,9 +13,24 @@ resource "aws_instance" "droplet" {
   }
 }
 
+data "aws_ebs_volume" "john" {
+  filter {
+    name   = "tag:id"
+    values = ["nfs-droplet"]
+  }
+  most_recent = true
+}
+
 resource "aws_volume_attachment" "cena" {
   device_name  = "/dev/sdf"
   instance_id  = aws_instance.droplet.id
   skip_destroy = true
-  volume_id    = aws_ebs_volume.john.id
+  volume_id    = data.aws_ebs_volume.john.id
+}
+
+output "ec2-droplet" {
+  value = {
+    id = aws_instance.droplet.id
+    ip = concat([aws_instance.droplet.public_ip], aws_instance.droplet.ipv6_addresses)
+  }
 }

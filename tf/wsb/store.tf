@@ -39,6 +39,8 @@ output "smb" {
     for vol in aws_ebs_volume.nfs :
     {
       id   = vol.id
+      size = vol.size
+      type = vol.type
       zone = vol.availability_zone
     }
   ]

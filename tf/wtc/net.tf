@@ -31,7 +31,7 @@ resource "aws_route_table" "vin_ethanol" {
 }
 
 resource "aws_route_table_association" "vinfast" {
-  route_table_id = aws_route_table.vinethanol.id
+  route_table_id = aws_route_table.vin_ethanol.id
   subnet_id      = aws_subnet.onlyfams.id
 }
 

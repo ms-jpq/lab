@@ -10,10 +10,10 @@ terraform {
 
 terraform {
   backend "s3" {
-    encrypt        = true
-    key            = "tfstate"
     bucket         = "tfstate-wsb"
     dynamodb_table = "tfstate-wsb"
+    encrypt        = true
+    key            = "tfstate"
     # TODO: next release should fix this
     skip_region_validation = true
   }

@@ -2,6 +2,10 @@ variable "le_domain" {
   type = string
 }
 
+locals {
+  dns_ttl = 60
+}
+
 resource "aws_route53_zone" "sea_to_sky" {
   name = var.le_domain
 }
