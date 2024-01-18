@@ -4,8 +4,6 @@ variable "aws_region" {
 
 provider "aws" {
   region = var.aws_region
-  # TODO: next release should fix this
-  skip_region_validation = true
 }
 
 data "aws_caller_identity" "current" {}

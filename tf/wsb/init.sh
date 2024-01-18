@@ -6,9 +6,7 @@ ARGV=(
   tofu
   -chdir="${0%/*}"
   init
-  -backend-config="bucket=$TF_VAR_s3_state_bucket"
   -backend-config="region=$TF_VAR_aws_region"
-  -backend-config="dynamodb_table=$TF_VAR_s3_state_bucket"
 )
 
 exec -- "${ARGV[@]}"
