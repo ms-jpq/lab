@@ -6,6 +6,7 @@
     "cups.freenas.enp2s0.pfsense.ENV_DOMAIN",
     "esxi.enp2s0.pfsense.ENV_DOMAIN",
     "freenas.enp2s0.pfsense.ENV_DOMAIN",
+    "orthanc.enp2s0.pfsense.ENV_DOMAIN",
     "pfsense.wg0.pfsense.ENV_DOMAIN"
   ],
   "ENV_FS_DOWNLOADS": "downloads",
@@ -28,6 +29,7 @@
     "cups.freenas.enp2s0.pfsense",
     "esxi.enp2s0.pfsense",
     "freenas.enp2s0.pfsense",
+    "orthanc.enp2s0.pfsense",
     "pfsense.wg0.pfsense"
   ],
   "ENV_MACVLAN_IFS": ["enp108s0", "eno1"],

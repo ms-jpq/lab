@@ -6,6 +6,7 @@
     "cups.freenas.enp2s0.pfsense.home.arpa=freenas.enp2s0.pfsense.home.arpa",
     "esxi.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN",
     "freenas.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN",
+    "orthanc.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN",
     "pfsense.ENV_DOMAIN=_gateway.wg0.pfsense.home.arpa",
     "pfsense.wg0.pfsense.ENV_DOMAIN=ENV_DOMAIN"
   ],
