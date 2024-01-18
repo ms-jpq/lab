@@ -44,13 +44,14 @@ locals {
       {
         device     = "/dev/nvme1n1"
         filesystem = "xfs"
+        label      = "docker"
       }
     ]
     growpart = {
       ignore_growroot_disabled = true
     }
     mounts = [
-      ["/dev/nvme1n1", "/var/lib/docker"]
+      ["LABEL=docker", "/var/lib/docker"]
     ]
     package_update = true
     users = [
