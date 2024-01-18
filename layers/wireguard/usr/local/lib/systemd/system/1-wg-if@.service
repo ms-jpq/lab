@@ -46,10 +46,10 @@ ExecReload           = networkctl reconfigure -- ${IFACE}
 ExecStopPost         = rm -v --recursive --force -- ${NETDEV} ${NETWORK}
 ExecStop             = -networkctl delete -- ${IFACE}
 
-ExecStartPost        = nft  add    element inet user internal_ifs '{ ${IFACE} }'
-ExecReload           = nft  add    element inet user internal_ifs '{ ${IFACE} }'
-ExecStop             = -nft delete element inet user internal_ifs '{ ${IFACE} }'
+ExecStartPost        = nft  -- 'add    element inet user internal_ifs { ${IFACE} }'
+ExecReload           = nft  -- 'add    element inet user internal_ifs { ${IFACE} }'
+ExecStop             = -nft -- 'delete element inet user internal_ifs { ${IFACE} }'
 
-ExecStartPost        = nft  add    element inet user wg_ifs '{ ${IFACE} }'
-ExecReload           = nft  add    element inet user wg_ifs '{ ${IFACE} }'
-ExecStop             = -nft delete element inet user wg_ifs '{ ${IFACE} }'
+ExecStartPost        = nft  -- 'add    element inet user wg_ifs { ${IFACE} }'
+ExecReload           = nft  -- 'add    element inet user wg_ifs { ${IFACE} }'
+ExecStop             = -nft -- 'delete element inet user wg_ifs { ${IFACE} }'
