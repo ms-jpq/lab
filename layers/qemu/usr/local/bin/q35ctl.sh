@@ -60,7 +60,9 @@ disable)
     RM+=("$WANTS/$SOCK")
   done
   "$HR" rm -v -fr -- "${RM[@]}"
-  sctl stop -- "${SOCKS[@]}"
+  if ((${#SOCKS[@]})); then
+    sctl stop -- "${SOCKS[@]}"
+  fi
   ;;
 *)
   printf -- '%s' '>? '
