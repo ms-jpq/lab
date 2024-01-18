@@ -59,8 +59,8 @@ disable)
   for SOCK in "${SOCKS[@]}"; do
     RM+=("$WANTS/$SOCK")
   done
-  sctl stop -- "${SOCKS[@]}"
   "$HR" rm -v -fr -- "${RM[@]}"
+  sctl stop -- "${SOCKS[@]}"
   ;;
 *)
   printf -- '%s' '>? '
