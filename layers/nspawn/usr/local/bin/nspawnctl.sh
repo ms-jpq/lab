@@ -5,7 +5,7 @@ set -o pipefail
 HR='/usr/local/libexec/hr-run.sh'
 
 ARGV=("$@")
-ACTION="${1:-"ls"}"
+ACTION="${1:-""}"
 shift -- 1 || true
 
 # shellcheck disable=SC1090
@@ -24,7 +24,7 @@ sctl() {
 }
 
 case "$ACTION" in
-ls)
+'')
   # shellcheck disable=SC2154
   mkdir -v -p -- "$LIB" >&2
   "$HR" tree --dirsfirst -F -a -L 2 -- "$LIB"
