@@ -2,25 +2,22 @@
 
 set -o pipefail
 
-SRC="$1"
-DST="$2"
-ROOT="$3"
-NAME="$4"
+LIB="$1"
+ROOT="$2"
 
-HR='/usr/local/libexec/hr-run.sh'
-SFS="$(stat --file-system --format %T -- "$SRC")"
-DFS="$(stat --file-system --format %T -- "$DST")"
+FS="$(stat --file-system --format %T -- "$LIB")"
 
-case "$SFS-$DFS" in
-zfs-zfs)
-  SOURCE="$(findmnt --noheadings --output source --target "$DST" | tail --lines 1)"
+case "$FS" in
+zfs)
+  SOURCE="$(findmnt --noheadings --output source --target "$LIB" | tail --lines 1)"
   SOURCE="${SOURCE//[[:space:]]/''}"
-  "$HR" zfs create -o mountpoint="$ROOT" -- "$SOURCE/$NAME"
+  NAME="${ROOT##"$LIB"/}"
+  /usr/local/libexec/hr-run.sh zfs create -o mountpoint="$ROOT" -- "$SOURCE/$NAME"
   ;;
-btrfs-btrfs)
-  "$HR" btrfs subvolume create -- "$ROOT"
+btrfs)
+  /usr/local/libexec/hr-run.sh btrfs subvolume create -- "$ROOT"
   ;;
 *)
-  "$HR" cp -a -- "$SRC" "$ROOT"
+  /usr/local/libexec/hr-run.sh mkdir -v -p -- "$ROOT"
   ;;
 esac
