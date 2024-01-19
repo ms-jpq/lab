@@ -7,11 +7,11 @@ ROOT="$2/fs"
 HOSTS="$3"
 
 CONF='/usr/local/opt/nspawn/conf.d'
-HOST0="$ROOT/usr/local/lib/systemd/network/80-container-host0.network.d/0-override.conf"
+HOST0="$ROOT/usr/local/lib/systemd/network/10-container-host0.network"
 LO64="$(/usr/local/opt/network/libexec/ip64alloc.sh <<<"$MACHINE")"
 
 # shellcheck disable=2154
-export -- IPV4="$IPV4_MINADDR/24" IPV6="$IPV6_NETWORK:$LO64/64"
+export -- IPV4="$IPV4_MINADDR" IPV6="$IPV6_NETWORK:$LO64"
 
 # shellcheck disable=SC2154
 sponge -- "$HOSTS/nspawn" <<-EOF
@@ -20,7 +20,8 @@ $IPV6 _nspawn.$DOMAIN $MACHINE.$DOMAIN
 EOF
 
 cat -- "$CONF"/*.nspawn "$ROOT"/*.nspawn | envsubst | sponge -- "/run/systemd/nspawn/$MACHINE.nspawn"
-envsubst <"${0%/*}/../host0.network" >"$HOST0"
+IPV4="$IPV4/24" IPV6="$IPV6/64" envsubst <"${0%/*}/../host0.network" >"$HOST0"
+rm -v -fr -- "$ROOT/usr/local/lib/systemd/network/10-macvlan.network"
 
 ARGV=(
   systemd-nspawn

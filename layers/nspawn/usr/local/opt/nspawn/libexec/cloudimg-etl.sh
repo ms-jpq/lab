@@ -44,7 +44,7 @@ btrfs)
 esac
 
 tar --extract --directory "$DST" --file "$SRC"
-mkdir -v -p -- "$DST/root/.ssh" "$USRN/80-container-host0.network.d"
+mkdir -v -p -- "$DST/root/.ssh" "$USRN"
 rm -v -rf -- "$DST/etc/hostname"
 cp -v -f -- "$BASE/../macvlan.network" "$USRN/10-macvlan.network"
 chroot "$DST" dpkg --purge --force-all -- "${DIE[@]}"
