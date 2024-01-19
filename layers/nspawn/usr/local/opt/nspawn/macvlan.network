@@ -10,4 +10,6 @@ DHCP                = yes
 LinkLocalAddressing = yes
 LLDP                = yes
 EmitLLDP            = customer-bridge
-IPv6AcceptRA        = yes
+
+# TODO: systemd 250, move under `[[IPv6AcceptRA]]` as Token
+IPv6Token           = static:::${LO64}
