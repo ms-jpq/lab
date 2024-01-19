@@ -54,6 +54,9 @@ locals {
       ["LABEL=docker", "/var/lib/docker"]
     ]
     package_update = true
+    swap = {
+      filename = "/swapfile"
+    }
     users = [
       {
         name                = "root"
