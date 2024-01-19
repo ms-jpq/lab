@@ -18,8 +18,8 @@ terraform {
 
 terraform {
   backend "s3" {
-    bucket         = "tfstate-wtc"
-    dynamodb_table = "tfstate-wtc"
+    bucket         = "tfstate-wtc-1"
+    dynamodb_table = "tfstate-wtc-1"
     encrypt        = true
     key            = "tfstate"
     # TODO: next release should fix this
