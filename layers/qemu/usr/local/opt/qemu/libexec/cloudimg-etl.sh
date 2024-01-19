@@ -4,14 +4,13 @@ set -o pipefail
 
 SRC="$1"
 DST="$2"
+DIR="${DST%/*}"
 BASE="${0%/*}"
 DEALLOC="$BASE/fs-dealloc.sh"
-LIB='/var/lib/local/nspawn'
-USRN="$DST/usr/local/lib/systemd/network"
+LIB='/var/lib/local/qemu'
 
 DIE=(
   cloud-init
-  lxd-agent-loader
   rsyslog
   snapd
 )
@@ -31,23 +30,20 @@ FS="$(stat --file-system --format %T -- "$LIB")"
 case "$FS" in
 zfs)
   SOURCE="$(findmnt --noheadings --output source --target "$LIB")"
-  NAME="${DST##*/}"
+  NAME="${DIR##*/}"
   ZFS="$SOURCE/$NAME"
-  zfs create -o mountpoint="$DST" -- "$ZFS"
+  zfs create -s -V 10G -- "$ZFS"
+  ln -v -sf -- "/dev/zvol/$ZFS" "$DST"
   ;;
 btrfs)
-  btrfs subvolume create -- "$DST"
+  btrfs subvolume create -- "$DIR"
   ;;
 *)
-  mkdir -v -p -- "$DST"
+  mkdir -v -p -- "$DIR"
   ;;
 esac
 
-tar --extract --directory "$DST" --file "$SRC"
-mkdir -v -p -- "$DST/root/.ssh" "$USRN/80-container-host0.network.d"
-rm -v -rf -- "$DST/etc/hostname"
-cp -v -f -- "$BASE/../macvlan.network" "$USRN/10-macvlan.network"
-chroot "$DST" dpkg --purge --force-all -- "${DIE[@]}"
+qemu-img convert -f qcow2 -O raw -- "$SRC" "$DST"
 
 if [[ -n "$ZFS" ]]; then
   zfs snapshot -- "$ZFS@-"

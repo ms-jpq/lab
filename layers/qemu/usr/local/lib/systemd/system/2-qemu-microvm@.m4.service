@@ -7,8 +7,8 @@ After             = 1-vb@v\x2d%i.service
 BindsTo           = dnsmasq@v\x2d%i.service
 After             = dnsmasq@v\x2d%i.service
 
-Requires          = 2-fs-alloc-qemu@%i.service
-After             = 2-fs-alloc-qemu@%i.service
+Wants             = 2-pemu-%j@%i.service
+After             = 2-pemu-%j@%i.service
 
 # m4_ifelse(m5_argn(1, m5_assert([ENV_MACVLAN_IFS])), [], [], [
 BindsTo           = 1-mv@m\x2d%i.service
@@ -48,7 +48,6 @@ Environment       = CLOUD_INIT=%V/cloud-init.iso
 Environment       = RAW=%C/local/qemu/cloudimg.raw
 
 
-ExecStartPre      = /usr/local/opt/qemu/libexec/systemd-pmspawn@.sh ${ROOT} ${DRIVE} ${RAW}
 ExecStartPre      = /usr/local/opt/qemu/libexec/cloud-init.sh %I ${CLOUD_INIT}
 
 ExecStartPre      = touch -- "${ROOT}/.#fs.lck"

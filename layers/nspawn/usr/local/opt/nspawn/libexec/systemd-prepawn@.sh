@@ -20,7 +20,7 @@ btrfs)
   btrfs subvolume snapshot -- "$SRC" "$ROOT"
   ;;
 *)
-  cp -a --reflink=auto -- "$SRC" "$ROOT"
+  cp -v -a -f --reflink=auto -- "$SRC" "$ROOT"
   ;;
 esac
 

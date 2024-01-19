@@ -23,4 +23,4 @@ $(CLOUD_TAR):
 
 nspawn.pull: $(CACHE)/nspawn/cloud.img
 $(CACHE)/nspawn/cloud.img: /usr/local/opt/nspawn/libexec/cloudimg-etl.sh $(CLOUD_TAR)
-	'$<' $(CLOUD_TAR) '$@'
+	sudo -- '$<' $(CLOUD_TAR) '$@'

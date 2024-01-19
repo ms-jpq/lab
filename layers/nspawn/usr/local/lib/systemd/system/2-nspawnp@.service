@@ -13,4 +13,7 @@ PartOf              = 2-nspawnd@%i.service
 Type                = oneshot
 RemainAfterExit     = yes
 
-ExecStart           = /usr/local/opt/nspawn/libexec/systemd-prepawn@.sh %C/local/nspawn/cloud.img %S/local/nspawn/%I
+Environment         = SRC=%C/local/nspawn/cloud.img
+Environment         = DST=%S/local/nspawn/%I
+
+ExecStart           = /usr/local/opt/nspawn/libexec/systemd-prepawn@.sh ${SRC} ${DST}

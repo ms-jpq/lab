@@ -1,0 +1,19 @@
+[Unit]
+Description         = systemd.prepawn -- %I
+StopWhenUnneeded    = yes
+CollectMode         = inactive
+ConditionPathExists = !%S/local/qemu/%I/raw
+
+Requires            = 2-fs-alloc-qemu@%i.service
+After               = 2-fs-alloc-qemu@%i.service
+
+PartOf              = 2-qemu-microvm@%i.service
+
+[Service]
+Type                = oneshot
+RemainAfterExit     = yes
+
+Environment         = SRC=%C/local/qemu/cloud.img
+Environment         = DST=%S/local/qemu/%I
+
+ExecStart           = /usr/local/opt/nspawn/libexec/systemd-pmspawn@.sh ${SRC} ${DST}

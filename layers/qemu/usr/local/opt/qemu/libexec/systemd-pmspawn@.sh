@@ -2,18 +2,37 @@
 
 set -o pipefail
 
-ROOT="$1"
-DRIVE="$2"
-RAW="$3"
+SRC="$1"
+DST="$2"
+ROOTFS='raw'
+ROOT="$DST/$ROOTFS"
+SIZE='88G'
 
-if ! [[ -e "$DRIVE" ]]; then
-  RAW_ALLOC="${0%/*}/raw-alloc.sh"
-  if [[ -x "$RAW_ALLOC" ]]; then
-    "$RAW_ALLOC" "$ROOT" "$DRIVE" "$RAW"
-  elif [[ -n "$RAW" ]]; then
-    /usr/local/libexec/hr-run.sh cp -v -f --reflink=auto -- "$RAW" "$DRIVE"
-    /usr/local/libexec/hr-run.sh qemu-img resize -f raw -- "$DRIVE" +88G
+FS="$(stat --file-system --format %T -- "$DST")"
+case "$FS" in
+zfs)
+  DESTINATION="$(findmnt --noheadings --output source --target "$DST")"
+  NAME="$DESTINATION/$ROOTFS"
+  if [[ -n "$SRC" ]]; then
+    SOURCE="$(findmnt --noheadings --output source --target "$SRC")"
+    LATEST="$(zfs list -t snapshot -H -o name -- "$SOURCE" | tail --lines 1)"
+    zfs clone -- "$LATEST" "$NAME"
   else
-    /usr/local/libexec/hr-run.sh qemu-img create -f raw -- "$DRIVE" 88G
+    zfs create -s -V "$SIZE" -- "$NAME"
   fi
-fi
+  ln -v -sf -- "/dev/zvol/$NAME" "$ROOT"
+  udevadm trigger
+  ;;
+btrfs)
+  # TODO
+  exit 69
+  ;;
+*)
+  if [[ -n "$SRC" ]]; then
+    cp -v -f --reflink=auto -- "$SRC" "$ROOT"
+    qemu-img resize -f raw -- "$ROOT" +"$SIZE"
+  else
+    qemu-img create -f raw -- "$ROOT" "$SIZE"
+  fi
+  ;;
+esac

@@ -1,0 +1,5 @@
+[Network]
+DHCP         = no
+IPv6AcceptRA = no
+Address      = ${IPV4}
+Address      = ${IPV6}

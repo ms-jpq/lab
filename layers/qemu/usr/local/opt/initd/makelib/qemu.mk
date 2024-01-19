@@ -25,6 +25,7 @@ CLOUD_IMG_AT := https://cloud-images.ubuntu.com/releases/$(VERSION_ID)/release
 KERNEL := $(CLOUD_IMG_AT)/unpacked/ubuntu-$(VERSION_ID)-server-cloudimg-$(GOARCH)-vmlinuz-generic
 INITRD := $(CLOUD_IMG_AT)/unpacked/ubuntu-$(VERSION_ID)-server-cloudimg-$(GOARCH)-initrd-generic
 KVMBUNTU := $(CLOUD_IMG_AT)/ubuntu-$(VERSION_ID)-server-cloudimg-$(GOARCH).img
+CLOUD_QCOW2 := $(CACHE)/qemu/cloudimg.qcow2
 
 qemu.pull: $(CACHE)/qemu/vmlinuz
 $(CACHE)/qemu/vmlinuz:
@@ -36,13 +37,14 @@ $(CACHE)/qemu/initrd:
 	sudo -- $(CURL) --output '$@.part' -- '$(INITRD)'
 	sudo -- mv -v -f -- '$@.part' '$@'
 
-$(CACHE)/qemu/cloudimg.qcow2:
+$(CLOUD_QCOW2):
 	sudo -- $(CURL) --output '$@.part' -- '$(KVMBUNTU)'
 	sudo -- mv -v -f -- '$@.part' '$@'
 
-qemu.pull: $(CACHE)/qemu/cloudimg.raw
-$(CACHE)/qemu/cloudimg.raw: $(CACHE)/qemu/cloudimg.qcow2
-	sudo -- qemu-img convert -f qcow2 -O raw '$<' '$@'
+qemu.pull: $(CACHE)/qemu/cloud.img/raw
+$(CACHE)/qemu/cloud.img/raw: /usr/local/opt/nspawn/libexec/cloudimg-etl.sh $(CLOUD_QCOW2)
+	sudo -- rm -v -rf -- '$(@D)'
+	sudo -- '$<' $(CLOUD_QCOW2) '$@'
 
 
 VIRTIO_WIN_IMG := https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso
