@@ -77,7 +77,8 @@ remove)
     fi
     set +x
     rm -v -fr -- "$SVC"
-    /usr/local/libexec/fs-dealloc.sh "$LIB" "$ROOT"
+    # shellcheck disable=SC2154
+    "$DEALLOC" "$ROOT"
   done
   ;;
 *)

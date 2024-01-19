@@ -2,10 +2,9 @@
 
 set -o pipefail
 
-LIB="$1"
-ROOT="$2"
+ROOT="$1"
 
-FS="$(stat --file-system --format %T -- "$LIB")"
+FS="$(stat --file-system --format %T -- "$ROOT")"
 case "$FS" in
 zfs)
   if SOURCE="$(/usr/local/opt/zfs/libexec/findfs.sh fs "$ROOT")"; then

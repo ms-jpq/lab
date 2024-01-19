@@ -13,4 +13,4 @@ Environment         = LIB=%S/local/%J
 Environment         = ROOT=%S/local/%J/%I
 Environment         = NAME=%I
 
-ExecStart           = /usr/local/libexec/fs-alloc.sh ${LIB} ${ROOT} ${NAME}
+ExecStart           = /usr/local/opt/%J/libexec/fs-alloc.sh ${LIB} ${ROOT} ${NAME}
