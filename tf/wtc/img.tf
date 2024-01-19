@@ -56,6 +56,7 @@ locals {
       ["LABEL=docker", "/var/lib/docker"]
     ]
     package_update = true
+    packages       = ["zfsutils-linux"]
     swap = {
       filename = "/swapfile"
       size     = "auto"
@@ -84,8 +85,9 @@ resource "aws_launch_template" "familia" {
   block_device_mappings {
     device_name = "/dev/sdf"
     ebs {
-      volume_size = 50
-      volume_type = "gp3"
+      delete_on_termination = true
+      volume_size           = 50
+      volume_type           = "gp3"
     }
   }
   network_interfaces {
