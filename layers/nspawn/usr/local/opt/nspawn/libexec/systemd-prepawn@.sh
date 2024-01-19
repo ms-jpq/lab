@@ -2,25 +2,27 @@
 
 set -o pipefail
 
-ROOT="$1"
-FS_ROOT="$ROOT/fs"
-HR='/usr/local/libexec/hr-run.sh'
+SRC="$1"
+DST="$2"
+ROOTFS='fs'
+ROOT="$DST/$ROOTFS"
 
-FS="$(stat --file-system --format %T -- "$ROOT")"
+FS="$(stat --file-system --format %T -- "$DST")"
 case "$FS" in
 zfs)
-  SOURCE="$(findmnt --noheadings --output source --target "$ROOT")"
-  "$HR" zfs destroy -v -r -- "$SOURCE"
+  SOURCE="$(findmnt --noheadings --output source --target "$SRC")"
+  DESTINATION="$(findmnt --noheadings --output source --target "$DST")"
+  LATEST="$(zfs list -t snapshot -H -o name -- "$SOURCE" | tail --lines 1)"
+  NAME="$DESTINATION/$ROOTFS"
+  zfs clone -o mountpoint="$ROOT" -- "$LATEST" "$NAME"
   ;;
 btrfs)
-  "$HR" btrfs subvolume delete -- "$ROOT"
+  btrfs subvolume snapshot -- "$SRC" "$ROOT"
   ;;
-*) ;;
+*)
+  cp -a --reflink=auto -- "$SRC" "$ROOT"
+  ;;
 esac
 
-if ! [[ -d "$FS_ROOT" ]]; then
-  mkdir -v -p -- "$FS_ROOT"
-fi
-
-cp -v -f -- ~/.ssh/authorized_keys "$FS_ROOT/root/.ssh/authorized_keys"
-chroot "$FS_ROOT" ssh-keygen -A
+cp -v -f -- ~/.ssh/authorized_keys "$ROOT/root/.ssh/authorized_keys"
+chroot "$ROOT" ssh-keygen -A

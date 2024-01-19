@@ -26,12 +26,14 @@ if ! [[ -v UNDER ]]; then
   fi
 fi
 
+ZFS=''
 FS="$(stat --file-system --format %T -- "$LIB")"
 case "$FS" in
 zfs)
   SOURCE="$(findmnt --noheadings --output source --target "$LIB")"
   NAME="${DST##*/}"
-  zfs create -o mountpoint="$DST" -- "$SOURCE/$NAME"
+  ZFS="$SOURCE/$NAME"
+  zfs create -o mountpoint="$DST" -- "$ZFS"
   ;;
 btrfs)
   btrfs subvolume create -- "$DST"
@@ -46,3 +48,7 @@ mkdir -v -p -- "$DST/root/.ssh" "$USRN"
 rm -v -rf -- "$DST/etc/hostname"
 cp -v -f -- "$BASE/../macvlan.network" "$USRN/10-macvlan.network"
 chroot "$DST" dpkg --purge --force-all -- "${DIE[@]}"
+
+if [[ -n "$ZFS" ]]; then
+  zfs snapshot -- "$ZFS@-"
+fi
