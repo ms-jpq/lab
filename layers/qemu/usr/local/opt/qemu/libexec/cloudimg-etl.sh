@@ -9,11 +9,11 @@ BASE="${0%/*}"
 DEALLOC="$BASE/fs-dealloc.sh"
 LIB='/var/lib/local/qemu'
 
-DIE=(
-  cloud-init
-  rsyslog
-  snapd
-)
+# DIE=(
+#   cloud-init
+#   rsyslog
+#   snapd
+# )
 
 if ! [[ -v UNDER ]]; then
   "$DEALLOC" "$DST"

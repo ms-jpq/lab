@@ -1,17 +1,16 @@
 [Match]
-Virtualization          = container
-Name                    = host0
+Virtualization  = container
+Name            = host0
 
 [Network]
-ConfigureWithoutCarrier = yes
-DHCP                    = no
-IPv6AcceptRA            = no
+IPv6AcceptRA    = no
 
-Domains                 = ~. ~${DOMAIN}
-DNS                     = ${IPV6_ADDR} ${IPV4_ADDR}
+DNSDefaultRoute = yes
+Domains         = ~${DOMAIN}
+DNS             = ${IPV6_ADDR} ${IPV4_ADDR}
 
-Address                 = ${IPV4}
-Address                 = ${IPV6}
+Address         = ${IPV4}
+Address         = ${IPV6}
 
-Gateway                 = ${IPV6_ADDR}
-Gateway                 = ${IPV4_ADDR}
+Gateway         = ${IPV6_ADDR}
+Gateway         = ${IPV4_ADDR}
