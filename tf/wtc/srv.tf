@@ -7,8 +7,8 @@ data "aws_ebs_volume" "john" {
 }
 
 resource "aws_instance" "droplet" {
-  availability_zone           = aws_subnet.onlyfams.availability_zone
-  instance_type               = "t4g.small"
+  availability_zone = aws_subnet.onlyfams.availability_zone
+  instance_type     = "t4g.small"
   launch_template {
     id = aws_launch_template.familia.id
   }

@@ -8,3 +8,7 @@
 + weechat-python
 + weechat-scripts
 + znc
+# m4_ifelse(ENV_HOSTTYPE, [aarch64], [
++ gcc
++ python3-dev
+# ], [])

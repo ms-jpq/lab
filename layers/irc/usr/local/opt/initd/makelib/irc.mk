@@ -10,7 +10,7 @@ irc: /etc/apt/trusted.gpg.d/weechat.gpg /var/cache/local/weechat/venv $(CACHE)/w
 $(CACHE)/weechat/venv:
 	sudo -- python3 -m venv -- '$@'
 
-$(CACHE)/weechat/venv/bin/wsdump: $(CACHE)/weechat/venv
+$(CACHE)/weechat/venv/bin/wsdump: $(CACHE)/weechat/venv | pkg._
 	sudo -- /usr/local/opt/weechat/libexec/venv.sh
 
 define IRC_GIT_TEMPLATE
