@@ -1,5 +1,11 @@
 [Network]
-DHCP         = no
-IPv6AcceptRA = no
-Address      = ${IPV4}
-Address      = ${IPV6}
+ConfigureWithoutCarrier = yes
+DHCP                    = no
+IPv6AcceptRA            = no
+LLDP                    = no
+
+Domains                 = ~${DOMAIN}
+DNS                     = ${IPV6_ADDR} ${IPV4_ADDR}
+
+Address                 = ${IPV4}
+Address                 = ${IPV6}
