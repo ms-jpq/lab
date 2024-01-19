@@ -9,8 +9,7 @@ FS="$(stat --file-system --format %T -- "$LIB")"
 
 case "$FS" in
 zfs)
-  SOURCE="$(findmnt --noheadings --output source --target "$LIB" | tail --lines 1)"
-  SOURCE="${SOURCE//[[:space:]]/''}"
+  SOURCE="$(findmnt --noheadings --output source --target "$LIB")"
   NAME="${ROOT##"$LIB"/}"
   /usr/local/libexec/hr-run.sh zfs create -o mountpoint="$ROOT" -- "$SOURCE/$NAME"
   ;;

@@ -2,27 +2,25 @@
 
 set -o pipefail
 
-CACHE="$1"
-ROOT="$2"
+ROOT="$1"
 FS_ROOT="$ROOT/fs"
-RSSH="$FS_ROOT/root/.ssh"
-USRN="$FS_ROOT/usr/local/lib/systemd/network"
+HR='/usr/local/libexec/hr-run.sh'
+
+FS="$(stat --file-system --format %T -- "$ROOT")"
+case "$FS" in
+zfs)
+  SOURCE="$(findmnt --noheadings --output source --target "$ROOT")"
+  "$HR" zfs destroy -v -r -- "$SOURCE"
+  ;;
+btrfs)
+  "$HR" btrfs subvolume delete -- "$ROOT"
+  ;;
+*) ;;
+esac
 
 if ! [[ -d "$FS_ROOT" ]]; then
   mkdir -v -p -- "$FS_ROOT"
-  tar --extract --directory "$FS_ROOT" --file "$CACHE/cloudimg.tar.xz"
 fi
 
-BANNED=(
-  cloud-init
-  lxd-agent-loader
-  rsyslog
-  snapd
-)
-
-rm -v -rf -- "$FS_ROOT/etc/hostname"
-mkdir -v -p -- "$RSSH" "$USRN"
-cp -v -f -- ~/.ssh/authorized_keys "$RSSH/authorized_keys"
-cp -v -f -- "${0%/*}/../macvlan.network" "$USRN/10-macvlan.network"
+cp -v -f -- ~/.ssh/authorized_keys "$FS_ROOT/root/.ssh/authorized_keys"
 chroot "$FS_ROOT" ssh-keygen -A
-chroot "$FS_ROOT" dpkg --purge --force-all -- "${BANNED[@]}"

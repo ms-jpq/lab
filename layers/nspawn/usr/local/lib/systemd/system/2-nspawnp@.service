@@ -1,29 +1,20 @@
 [Unit]
-Description              = systemd.prepawn -- %I
-StopWhenUnneeded         = yes
-CollectMode              = inactive
-ConditionPathExists      = !%E/systemd/nspawn/%i.nspawn
+Description       = systemd.prepawn -- %I
+StopWhenUnneeded  = yes
+CollectMode       = inactive
 
-Requires                 = 2-fs-alloc-nspawn@%i.service
-After                    = 2-fs-alloc-nspawn@%i.service
+Requires          = 2-fs-alloc-nspawn@%i.service
+After             = 2-fs-alloc-nspawn@%i.service
 
-PartOf                   = 2-nspawnd@%i.service
+PartOf            = 2-nspawnd@%i.service
 
 [Service]
-Type                     = oneshot
-RemainAfterExit          = yes
-RuntimeDirectoryPreserve = yes
-RuntimeDirectory         = systemd/nspawn
-ProtectSystem            = strict
-ProtectHome              = tmpfs
-PrivateTmp               = yes
-ReadWritePaths           = %t/systemd/nspawn %T %S/local %C/local
-BindReadOnlyPaths        = -%h/.ssh:%h/.ssh
+Type              = oneshot
+RemainAfterExit   = yes
+ProtectSystem     = strict
+ProtectHome       = tmpfs
+PrivateTmp        = yes
+ReadWritePaths    = %T %S/local
+BindReadOnlyPaths = -%h/.ssh:%h/.ssh
 
-EnvironmentFile          = -/usr/local/etc/default/%I.nspawn.env
-Environment              = MACHINE=%i
-Environment              = FS=%S/local/nspawn
-Environment              = CACHE=%C/local/nspawn
-Environment              = ROOT=%S/local/nspawn/%I
-
-ExecStart                = /usr/local/opt/nspawn/libexec/systemd-prepawn@.sh ${CACHE} ${ROOT}
+ExecStart         = /usr/local/opt/nspawn/libexec/systemd-prepawn@.sh %S/local/nspawn/%I

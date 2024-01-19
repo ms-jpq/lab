@@ -14,9 +14,13 @@ clobber.nspawn:
 	sudo -- rm -v -rf -- $(CACHE)/nspawn/*
 
 TARBUNTU := https://cloud-images.ubuntu.com/releases/$(VERSION_ID)/release/ubuntu-$(VERSION_ID)-server-cloudimg-$(GOARCH)-root.tar.xz
+CLOUD_TAR := $(CACHE)/nspawn/cloudimg.tar.xz
 
-nspawn.pull: $(CACHE)/nspawn/cloudimg.tar.xz
-$(CACHE)/nspawn/cloudimg.tar.xz:
+$(CLOUD_TAR):
 	sudo -- mkdir -v -p -- '$(@D)'
 	sudo -- $(CURL) --output '$@.part' -- '$(TARBUNTU)'
 	sudo -- mv -v -f -- '$@.part' '$@'
+
+nspawn.pull: $(CACHE)/nspawn/cloud.img
+$(CACHE)/nspawn/cloud.img: /usr/local/opt/nspawn/libexec/cloudimg-etl.sh $(CLOUD_TAR)
+	'$<' $(CLOUD_TAR) '$@'
