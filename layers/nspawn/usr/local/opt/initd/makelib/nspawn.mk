@@ -1,5 +1,7 @@
 .PHONY: nspawn nspawn.pull clobber.nspawn
 
+NSPAWN_IMG := $(CACHE)/nspawn/cloud.img
+
 all: nspawn
 pull: nspawn.pull
 
@@ -11,6 +13,7 @@ nspawn: /usr/local/lib/systemd/system/2-nspawnd@.service
 
 clobber.nspawn:
 	shopt -u failglob
+	sudo -- /usr/local/opt/nspawn/libexec/fs-dealloc.sh $(NSPAWN_IMG)
 	sudo -- rm -v -rf -- $(CACHE)/nspawn/*
 
 TARBUNTU := https://cloud-images.ubuntu.com/releases/$(VERSION_ID)/release/ubuntu-$(VERSION_ID)-server-cloudimg-$(GOARCH)-root.tar.xz
@@ -20,6 +23,6 @@ $(CACHE)/nspawn/cloudimg.tar.xz:
 	sudo -- $(CURL) --output '$@.part' -- '$(TARBUNTU)'
 	sudo -- mv -v -f -- '$@.part' '$@'
 
-nspawn.pull: $(CACHE)/nspawn/cloud.img
-$(CACHE)/nspawn/cloud.img: $(CACHE)/nspawn/cloudimg.tar.xz
+nspawn.pull: $(NSPAWN_IMG)
+$(NSPAWN_IMG): $(CACHE)/nspawn/cloudimg.tar.xz
 	sudo -- /usr/local/opt/nspawn/libexec/cloudimg-etl.sh '$<' '$@'

@@ -3,17 +3,17 @@
 set -o pipefail
 
 SRC="$1"
-DST="$2"
-DIR="${DST%/*}"
+DIR="$2"
+DST="$DIR/raw"
 BASE="${0%/*}"
 DEALLOC="$BASE/fs-dealloc.sh"
 LIB='/var/lib/local/qemu'
 
-# DIE=(
-#   cloud-init
-#   rsyslog
-#   snapd
-# )
+DIE=(
+  lxd-agent-loader
+  rsyslog
+  snapd
+)
 
 if ! [[ -v UNDER ]]; then
   "$DEALLOC" "$DST"
@@ -32,8 +32,11 @@ zfs)
   SOURCE="$(findmnt --noheadings --output source --target "$LIB")"
   NAME="${DIR##*/}"
   ZFS="$SOURCE/$NAME"
-  zfs create -s -V 10G -- "$ZFS"
-  ln -v -sf -- "/dev/zvol/$ZFS" "$DST"
+  ZVOL="$ZFS/raw"
+  zfs create -o mountpoint="$DIR" -- "$ZFS"
+  zfs create -s -V 10G -- "$ZVOL"
+  ln -v -sf -- "/dev/zvol/$ZVOL" "$DST"
+  udevadm trigger
   ;;
 btrfs)
   btrfs subvolume create -- "$DIR"
@@ -44,6 +47,7 @@ btrfs)
 esac
 
 qemu-img convert -f qcow2 -O raw -- "$SRC" "$DST"
+systemd-nspawn --register no --as-pid2 --image "$DST" -- dpkg --purge --force-all -- "${DIE[@]}"
 
 if [[ -n "$ZFS" ]]; then
   zfs snapshot -- "$ZFS@-"

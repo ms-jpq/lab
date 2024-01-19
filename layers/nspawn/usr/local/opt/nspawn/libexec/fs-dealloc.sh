@@ -5,6 +5,10 @@ set -o pipefail
 ROOT="$1"
 HR='/usr/local/libexec/hr-run.sh'
 
+if ! [[ -e "$ROOT" ]]; then
+  exit 0
+fi
+
 FS="$(stat --file-system --format %T -- "$ROOT")"
 case "$FS" in
 zfs)
