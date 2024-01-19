@@ -40,9 +40,11 @@ locals {
     split("\n", trimspace(resp.response_body))
   ]))
   user_data = {
+    # TODO: index of ebs blk storage is unpredictable
     fs_setup = [
+      for n in range(1, 3) :
       {
-        device     = "/dev/nvme1n1"
+        device     = "/dev/nvme${n}n1"
         filesystem = "xfs"
         label      = "docker"
       }
@@ -56,6 +58,7 @@ locals {
     package_update = true
     swap = {
       filename = "/swapfile"
+      size     = "auto"
     }
     users = [
       {
