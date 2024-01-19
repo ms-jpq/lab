@@ -1,15 +1,16 @@
 [Unit]
-Description      = systemd.prepawn -- %I
-StopWhenUnneeded = yes
-CollectMode      = inactive
+Description         = systemd.prepawn -- %I
+StopWhenUnneeded    = yes
+CollectMode         = inactive
+ConditionPathExists = !%S/local/nspawn/%I/fs
 
-Requires         = 2-fs-alloc-nspawn@%i.service
-After            = 2-fs-alloc-nspawn@%i.service
+Requires            = 2-fs-alloc-nspawn@%i.service
+After               = 2-fs-alloc-nspawn@%i.service
 
-PartOf           = 2-nspawnd@%i.service
+PartOf              = 2-nspawnd@%i.service
 
 [Service]
-Type             = oneshot
-RemainAfterExit  = yes
+Type                = oneshot
+RemainAfterExit     = yes
 
-ExecStart        = /usr/local/opt/nspawn/libexec/systemd-prepawn@.sh %C/local/nspawn/cloud.img %S/local/nspawn/%I
+ExecStart           = /usr/local/opt/nspawn/libexec/systemd-prepawn@.sh %C/local/nspawn/cloud.img %S/local/nspawn/%I
