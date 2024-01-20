@@ -1,0 +1,27 @@
+---
+services:
+  srv:
+    image: docker.io/amir20/dozzle:latest
+    userns_mode: auto
+    restart: unless-stopped
+    # healthcheck:
+    #   test:
+    #     - CMD
+    #     - curl
+    #     - --fail
+    #     - --no-progress-meter
+    #     - --max-time
+    #     - "1"
+    #     - --
+    #     - 127.0.0.1:8978
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`docker.{.+}.{.+$$}`)
+    volumes:
+      - /run/docker.sock:/var/run/docker.sock:ro
+
+networks:
+  default:
+    external: true
+    name: traefik

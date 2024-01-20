@@ -57,8 +57,6 @@ services:
       - data:/var/lib/postgresql/data
 
 networks:
-  default:
-    internal: true
   traefik:
     external: true
     name: traefik
