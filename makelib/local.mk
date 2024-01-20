@@ -96,6 +96,7 @@ layers/posix/home/.local/opt/initd/libexec/pkg.sh                               
 layers/posix/home/.local/opt/qemu/cloud-init                                                   usr/local/opt/qemu/cloud-init
 layers/posix/home/.local/opt/qemu/libexec/cloud-init.sh                                        usr/local/opt/qemu/libexec/cloud-init.sh
 layers/posix/home/.local/opt/qemu/libexec/ip64alloc.sh                                         usr/local/opt/network/libexec/ip64alloc.sh
+layers/posix/home/.local/opt/qemu/libexec/ip64alloc.sh                                         usr/local/opt/qemu/libexec/ip64alloc.sh
 layers/posix/home/.local/opt/qemu/libexec/pprint.sh                                            usr/local/opt/qemu/libexec/pprint.sh
 layers/ubuntu/home/.local/opt/initd/libexec/add-ppa.sh                                         usr/local/opt/initd/libexec/add-ppa.sh
 layers/ubuntu/home/.local/opt/initd/makelib/motd.ubuntu.mk                                     usr/local/opt/initd/makelib/motd.mk
