@@ -29,7 +29,7 @@ zfs)
   ;;
 btrfs)
   if [[ -n "$SRC" ]]; then
-    btrfs subvolume snapshot -- "$SRC" "$ROOT"
+    btrfs subvolume snapshot -- "${SRC%/*}" "$DST"
     qemu-img resize -f raw -- "$ROOT" +"$SIZE"
   else
     btrfs subvolume create -- "$DST"
@@ -37,11 +37,11 @@ btrfs)
   fi
   ;;
 *)
+  mkdir -v -p -- "$DST"
   if [[ -n "$SRC" ]]; then
-    cp -v -a -f --reflink=auto -- "$SRC" "$DST"
+    cp -v -a -f --reflink=auto -- "$SRC" "$ROOT"
     qemu-img resize -f raw -- "$ROOT" +"$SIZE"
   else
-    mkdir -v -p -- "$DST"
     qemu-img create -f raw -- "$ROOT" "$SIZE"
   fi
   ;;
