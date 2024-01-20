@@ -8,3 +8,6 @@
 + socat
 + swtpm-tools
 + websockify
+# m4_ifelse(ENV_HOSTTYPE, [aarch64], [
++ qemu-system-x86
+# ], [])

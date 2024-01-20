@@ -2,6 +2,8 @@
 Description         = systemd.prepawn -- %I
 StopWhenUnneeded    = yes
 CollectMode         = inactive
+
+AssertPathExists    = %C/local/nspawn/cloud.img
 ConditionPathExists = !%S/local/nspawn/%I/fs
 
 Requires            = 2-fs-alloc-nspawn@%i.service
