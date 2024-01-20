@@ -62,6 +62,21 @@ disable)
   "$HR" rm -v -fr -- "${RM[@]}"
   sctl stop -- "${SOCKS[@]}"
   ;;
+remove)
+  for MACH in "$@"; do
+    ROOT="$LIB/$MACH"
+    set -x
+    if [[ -k "$ROOT" ]] || [[ -f "$ROOT/.#fs.lck" ]]; then
+      exit 1
+    fi
+    "$0" disable "$MACH"
+    set +x
+    /usr/local/opt/qemu/libexec/fs-dealloc.sh "$ROOT"
+  done
+  ;;
+pin | unpin)
+  microvmctl.sh "${ARGV[@]}"
+  ;;
 *)
   printf -- '%s' '>? '
   printf -- '%q ' "$0" "${ARGV[@]}"
