@@ -6,7 +6,7 @@ LIB='/var/lib/local/qemu'
 HR='/usr/local/libexec/hr-run.sh'
 
 ARGV=("$@")
-ACTION="${1:-"ls"}"
+ACTION="${1:-""}"
 shift -- 1 || true
 
 SYSTEMD='/usr/local/lib/systemd/system'
@@ -25,7 +25,7 @@ sctl() {
 }
 
 case "$ACTION" in
-ls)
+'')
   mkdir -v -p -- "$LIB" >&2
   "$HR" tree --dirsfirst -F -a -L 2 -- "$LIB"
   sctl status -- '2-qemu-q35@*.service' '2-swtpm@*.service' '2-websock-display@*.service' '2-websock-proxy@*.*'

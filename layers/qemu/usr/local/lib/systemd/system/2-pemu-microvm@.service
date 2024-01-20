@@ -2,7 +2,7 @@
 Description         = systemd.prepawn -- %I
 StopWhenUnneeded    = yes
 CollectMode         = inactive
-ConditionPathExists = !%S/local/qemu/%I/raw
+ConditionPathExists = !%S/local/qemu/%I/fs/raw
 
 Requires            = 2-fs-alloc-qemu@%i.service
 After               = 2-fs-alloc-qemu@%i.service
