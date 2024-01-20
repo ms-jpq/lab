@@ -5,6 +5,8 @@
 ```bash
 udevadm info --query all -- '</dev/...>'
 udevadm info --attribute-walk -- '</dev/...>'
+udevadm info --query all -- '/sys/class/net/...'
+udevadm info --attribute-walk -- '/sys/class/net/...'
 ```
 
 ## Reload
