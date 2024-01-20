@@ -21,6 +21,7 @@ zfs)
     SOURCE="${SOURCE#/dev/zvol/}"
     LATEST="$(zfs list -t snapshot -H -o name -- "$SOURCE" | tail --lines 1)"
     zfs clone -- "$LATEST" "$ZVOL"
+    zfs set volsize="$SIZE" "$ZVOL"
   else
     zfs create -s -V "$SIZE" -- "$ZVOL"
   fi

@@ -125,7 +125,7 @@ b2sum --binary --length 64 <<<"$LABEL"
 
 ```bash
 HEX_64=`ipv6 lower /64`
-# For a given ipv4, `ipcalc-ng --json -- "$IPV4" | jq --raw-output '.NETWORK, .NETMASK'`
+# For a given ipv4, `ipcalc-ng --json -- "$IPV4" | jq --exit-status --raw-output '.NETWORK, .NETMASK'`
 IPV4_NETWORK='192.168.0.0'
 IPV4_NETMASK='255.255.240.0'
 
