@@ -9,13 +9,13 @@ MACHINE="$2"
 shift -- 2
 
 case "$ACTION" in
-c | con | console)
+console)
   SOCK='con'
   ;;
-m | mon | monitor)
+monitor)
   SOCK='mon'
   ;;
-q | qmp)
+qmp)
   SOCK='qmp'
   ;;
 *)

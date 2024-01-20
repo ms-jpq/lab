@@ -68,3 +68,6 @@ ExecStart           = /usr/local/opt/qemu/bin/%J.sh m4_ifelse(m5_argn(1, m5_asse
                       --root ${DEV_HDA} \
                       --drive ${CLOUD_INIT} \
                       $ARGV
+
+ExecReload          = /usr/local/bin/vmctl.sh monitor %I system_reset
+ExecStop            = /usr/local/opt/qemu/libexec/hospice.sh 30 /usr/local/bin/vmctl.sh monitor %I system_powerdown
