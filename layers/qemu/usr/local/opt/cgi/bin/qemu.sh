@@ -13,4 +13,5 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
+/usr/local/bin/microvmctl.sh || true
 /usr/local/bin/q35ctl.sh || true
