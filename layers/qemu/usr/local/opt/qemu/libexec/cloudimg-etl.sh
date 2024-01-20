@@ -3,8 +3,8 @@
 set -o pipefail
 
 SRC="$1"
-DIR="$2"
-DST="$DIR/raw"
+DST="$2"
+DIR="${DST%/*}"
 BASE="${0%/*}"
 DEALLOC="$BASE/fs-dealloc.sh"
 LIB='/var/lib/local/qemu'
@@ -17,6 +17,7 @@ DIE=(
 
 if ! [[ -v UNDER ]]; then
   "$DEALLOC" "$DST"
+  rm -v -fr -- "$DIR"
   if ! UNDER=1 "$0" "$@"; then
     "$DEALLOC" "$DST"
     exit 1
@@ -25,16 +26,15 @@ if ! [[ -v UNDER ]]; then
   fi
 fi
 
-ZFS=''
+ZVOL=''
 FS="$(stat --file-system --format %T -- "$LIB")"
 case "$FS" in
 zfs)
   SOURCE="$(findmnt --noheadings --output source --target "$LIB")"
   NAME="${DIR##*/}"
-  ZFS="$SOURCE/$NAME"
-  ZVOL="$ZFS/raw"
-  zfs create -o mountpoint="$DIR" -- "$ZFS"
+  ZVOL="$SOURCE/$NAME"
   zfs create -s -V 10G -- "$ZVOL"
+  mkdir -v -p -- "$DIR"
   ln -v -sf -- "/dev/zvol/$ZVOL" "$DST"
   udevadm trigger
   ;;
@@ -49,6 +49,6 @@ esac
 qemu-img convert -f qcow2 -O raw -- "$SRC" "$DST"
 systemd-nspawn --register no --as-pid2 --image "$DST" -- dpkg --purge --force-all -- "${DIE[@]}"
 
-if [[ -n "$ZFS" ]]; then
-  zfs snapshot -- "$ZFS@-"
+if [[ -n "$ZVOL" ]]; then
+  zfs snapshot -- "$ZVOL@-"
 fi

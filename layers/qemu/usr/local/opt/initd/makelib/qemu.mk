@@ -4,7 +4,7 @@ CLOUD_IMG_AT := https://cloud-images.ubuntu.com/releases/$(VERSION_ID)/release
 KERNEL := $(CLOUD_IMG_AT)/unpacked/ubuntu-$(VERSION_ID)-server-cloudimg-$(GOARCH)-vmlinuz-generic
 INITRD := $(CLOUD_IMG_AT)/unpacked/ubuntu-$(VERSION_ID)-server-cloudimg-$(GOARCH)-initrd-generic
 KVMBUNTU := $(CLOUD_IMG_AT)/ubuntu-$(VERSION_ID)-server-cloudimg-$(GOARCH).img
-QEMU_IMG := $(CACHE)/qemu/cloud.img
+QEMU_IMG := $(CACHE)/qemu/cloud.img/raw
 
 pull: qemu.pull
 
@@ -21,7 +21,7 @@ qemu.grub:
 clobber.qemu:
 	shopt -u failglob
 	sudo -- /usr/local/opt/qemu/libexec/fs-dealloc.sh $(QEMU_IMG)
-	sudo -- rm -v -rf -- $(CACHE)/qemu/*
+	# sudo -- rm -v -rf -- $(CACHE)/qemu/*
 
 pkg._: /etc/apt/sources.list.d/ppa_canonical-server_server-backports.list
 /etc/apt/sources.list.d/ppa_canonical-server_server-backports.list:

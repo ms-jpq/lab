@@ -13,7 +13,7 @@ PartOf              = 2-qemu-microvm@%i.service
 Type                = oneshot
 RemainAfterExit     = yes
 
-Environment         = SRC=%C/local/qemu/cloud.img
-Environment         = DST=%S/local/qemu/%I
+Environment         = SRC=%C/local/qemu/cloud.img/raw
+Environment         = DST=%S/local/qemu/%I/fs
 
-ExecStart           = /usr/local/opt/nspawn/libexec/systemd-pmspawn@.sh ${SRC} ${DST}
+ExecStart           = /usr/local/opt/qemu/libexec/systemd-pmspawn@.sh ${SRC} ${DST}

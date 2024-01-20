@@ -68,13 +68,13 @@ zfs promote '<cloned-filesystem>'
 ```bash
 # includes snapshots (--replicate)
 zfs snapshot -r '<snapshot>'
-zfs send --verbose --replicate --props '<snapshot>' | zfs recv -v -F '<dataset>'
+zfs send --verbose --replicate --props -- '<snapshot>' | zfs recv -v -F -- '<dataset>'
 ```
 
 ```bash
 # ignore snapshots (no replicate)
 zfs list -t snapshot | rg '<dataset>'
-zfs send --verbose --props '<snapshot>' | zfs recv -v -F '<dataset>'
+zfs send --verbose --props -- '<snapshot>' | zfs recv -v -F -- '<dataset>'
 ```
 
 ## Destroy

@@ -11,9 +11,14 @@ fi
 
 FS="$(stat --file-system --format %T -- "$ROOT")"
 case "$FS" in
+tmpfs)
+  ZVOl="$(readlink -- "$ROOT")"
+  ZVOL="${ZVOl#/dev/zvol/}"
+  "$HR" zfs destroy -v -r -- "$ZVOL"
+  ;;
 zfs)
-  SOURCE="$(findmnt --noheadings --output source --target "$ROOT")"
-  "$HR" zfs destroy -v -r -- "$SOURCE"
+  ZFS="$(findmnt --noheadings --output source --target "$ROOT")"
+  "$HR" zfs destroy -v -r -- "$ZFS"
   ;;
 btrfs)
   "$HR" btrfs subvolume delete -- "$ROOT"
