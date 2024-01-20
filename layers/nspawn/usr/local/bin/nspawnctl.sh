@@ -27,12 +27,15 @@ case "$ACTION" in
 '')
   # shellcheck disable=SC2154
   mkdir -v -p -- "$LIB" >&2
-  "$HR" tree --dirsfirst -F -a -L 2 -- "$LIB"
+  TREE=("$HR" tree --dirsfirst -F -a)
   case "$0" in
   */nspawnctl.sh)
+    "${TREE[@]}" -L 2 -- "$LIB"
     "$HR" machinectl list --full --no-pager
     ;;
-  *) ;;
+  *)
+    "${TREE[@]}" -L 3 -- "$LIB"
+    ;;
   esac
   ;;
 pin)
