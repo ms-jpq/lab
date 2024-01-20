@@ -1,4 +1,4 @@
-#!/usr/bin/env -S -- bash -Eeu -O dotglob -O nullglob -O extglob -O failglob -O globstar
+#!/usr/bin/env -S -- bash -Eeu -O dotglob -O nullglob -O extglob -O globstar
 
 set -o pipefail
 
@@ -24,5 +24,5 @@ btrfs)
   ;;
 esac
 
-cp -v -f -- ~/.ssh/authorized_keys "$ROOT/root/.ssh/authorized_keys"
+cat -- ~/.ssh/authorized_keys ~/.ssh/*.pub >"$ROOT/root/.ssh/authorized_keys"
 chroot "$ROOT" ssh-keygen -A

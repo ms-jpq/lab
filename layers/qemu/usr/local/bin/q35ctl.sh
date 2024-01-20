@@ -28,7 +28,7 @@ case "$ACTION" in
 '')
   mkdir -v -p -- "$LIB" >&2
   "$HR" tree --dirsfirst -F -a -L 2 -- "$LIB"
-  sctl status -- '2-qemu-q35@*.service'
+  sctl status --lines 0 -- '2-qemu-q35@*.service'
   ;;
 start)
   sctl start -- "${SERVICES[@]}"

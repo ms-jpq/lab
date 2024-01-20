@@ -35,7 +35,7 @@ case "$ACTION" in
     ;;
   *)
     "${TREE[@]}" -L 3 -- "$LIB"
-    sctl status -- '2-qemu-microvm@*.service'
+    sctl status --lines 0 -- '2-qemu-microvm@*.service'
     ;;
   esac
   ;;
