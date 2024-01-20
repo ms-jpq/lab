@@ -5,6 +5,7 @@ set -o pipefail
 MACHINE="$1"
 ROOT="$2"
 HOSTS="$3"
+DOMAIN="$4"
 
 BASE="${0%/*}/.."
 CONF='/usr/local/opt/nspawn/conf.d'
@@ -15,7 +16,6 @@ LO64="$(/usr/local/opt/network/libexec/ip64alloc.sh <<<"$MACHINE")"
 # shellcheck disable=2154
 export -- IPV4="$IPV4_MINADDR" IPV6="$IPV6_NETWORK:$LO64" LO64
 
-# shellcheck disable=SC2154
 sponge -- "$HOSTS/nspawn" <<-EOF
 $IPV4 _nspawn.$DOMAIN $MACHINE.$DOMAIN
 $IPV6 _nspawn.$DOMAIN $MACHINE.$DOMAIN

@@ -27,10 +27,14 @@ BindReadOnlyPaths   = -%h/.ssh:%h/.ssh
 BindReadOnlyPaths   = /usr/local/opt/qemu/etc:%E/qemu
 PrivateTmp          = yes
 
+EnvironmentFile     = %t/local/ip/v-%I.env
 EnvironmentFile     = -/usr/local/etc/default/%I.qemu.env
+
 Environment         = MACHINE=%i
 Environment         = FS=%S/local/qemu
 Environment         = ROOT=%S/local/qemu/%I
+Environment         = DOMAIN=v-%I.%H.home.arpa
+Environment         = HOSTS=%t/local/dnsmasq/v-%I/hosts.d
 
 Environment         = CPU=
 Environment         = MEMORY=8G
@@ -49,8 +53,8 @@ Environment         = CLOUD_INIT=%V/cloud-init.iso
 
 Environment         = RAW=%C/local/qemu/cloudimg.raw
 
-
-ExecStartPre        = /usr/local/opt/qemu/libexec/cloud-init.sh %I ${CLOUD_INIT}
+ExecStartPre        = /usr/local/opt/qemu/libexec/cloud-init.sh ${MACHINE} ${CLOUD_INIT}
+ExecStartPost       = /usr/local/opt/qemu/libexec/nss.sh ${MACHINE} ${HOSTS} ${DOMAIN}
 
 ExecStartPre        = touch -- "${ROOT}/.#fs.lck"
 ExecStopPost        = rm -v -rf -- "${ROOT}/.#fs.lck"
