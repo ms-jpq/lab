@@ -2,4 +2,11 @@
 
 set -o pipefail
 
-exec -- "${0%/*}/../bin/q35.sh" "$@"
+AS=("$@")
+if [[ -z "${ARGV:-""}" ]]; then
+  for ISO in /var/cache/local/qemu/*.iso; do
+    AS+=(--disc "$ISO")
+  done
+fi
+
+exec -- "${0%/*}/../bin/q35.sh" "${AS[@]}"
