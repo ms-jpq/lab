@@ -1,59 +1,61 @@
 [[Unit]]
-Description       = Qemu -- %N
+Description         = Qemu -- %N
 
-BindsTo           = 1-vb@v\x2d%i.service
-After             = 1-vb@v\x2d%i.service
+ConditionPathExists = %S/local/qemu/%I/fs/raw
 
-BindsTo           = dnsmasq@v\x2d%i.service
-After             = dnsmasq@v\x2d%i.service
+BindsTo             = 1-vb@v\x2d%i.service
+After               = 1-vb@v\x2d%i.service
 
-Wants             = 2-pemu-%j@%i.service
-After             = 2-pemu-%j@%i.service
+BindsTo             = dnsmasq@v\x2d%i.service
+After               = dnsmasq@v\x2d%i.service
+
+Wants               = 2-pemu-%j@%i.service
+After               = 2-pemu-%j@%i.service
 
 # m4_ifelse(m5_argn(1, m5_assert([ENV_MACVLAN_IFS])), [], [], [
-BindsTo           = 1-mv@m\x2d%i.service
-After             = 1-mv@m\x2d%i.service
+BindsTo             = 1-mv@m\x2d%i.service
+After               = 1-mv@m\x2d%i.service
 # ])
 
 [[Service]]
-Restart           = on-failure
-ProtectSystem     = strict
-ProtectHome       = tmpfs
-RuntimeDirectory  = local/qemu/%I
-ReadWritePaths    = %t %T %S/local %C/local
-BindReadOnlyPaths = -%h/.ssh:%h/.ssh
-BindReadOnlyPaths = /usr/local/opt/qemu/etc:%E/qemu
-PrivateTmp        = yes
+Restart             = on-failure
+ProtectSystem       = strict
+ProtectHome         = tmpfs
+RuntimeDirectory    = local/qemu/%I
+ReadWritePaths      = %t %T %S/local %C/local
+BindReadOnlyPaths   = -%h/.ssh:%h/.ssh
+BindReadOnlyPaths   = /usr/local/opt/qemu/etc:%E/qemu
+PrivateTmp          = yes
 
-EnvironmentFile   = -/usr/local/etc/default/%I.qemu.env
-Environment       = MACHINE=%i
-Environment       = FS=%S/local/qemu
-Environment       = ROOT=%S/local/qemu/%I
+EnvironmentFile     = -/usr/local/etc/default/%I.qemu.env
+Environment         = MACHINE=%i
+Environment         = FS=%S/local/qemu
+Environment         = ROOT=%S/local/qemu/%I
 
-Environment       = CPU=
-Environment       = MEMORY=8G
-Environment       = QMP=%t/local/qemu/%I/qmp.sock
-Environment       = MONITOR=%t/local/qemu/%I/mon.sock
-Environment       = CONSOLE=%t/local/qemu/%I/con.sock
-Environment       = BRIDGE=v-%I
-Environment       = KERNEL=%C/local/qemu/vmlinuz
-Environment       = INITRD=%C/local/qemu/initrd
+Environment         = CPU=
+Environment         = MEMORY=8G
+Environment         = QMP=%t/local/qemu/%I/qmp.sock
+Environment         = MONITOR=%t/local/qemu/%I/mon.sock
+Environment         = CONSOLE=%t/local/qemu/%I/con.sock
+Environment         = BRIDGE=v-%I
+Environment         = KERNEL=%C/local/qemu/vmlinuz
+Environment         = INITRD=%C/local/qemu/initrd
 
-Environment       = MACVTAP=m4_ifelse(m5_argn(1, m5_assert([ENV_MACVLAN_IFS])), [], [], [m-%I])
+Environment         = MACVTAP=m4_ifelse(m5_argn(1, m5_assert([ENV_MACVLAN_IFS])), [], [], [m-%I])
 
-Environment       = DRIVE=%S/local/qemu/%I/fs.raw
-Environment       = DEV_HDA=/dev/vda1
-Environment       = CLOUD_INIT=%V/cloud-init.iso
+Environment         = DRIVE=%S/local/qemu/%I/fs/raw
+Environment         = DEV_HDA=/dev/vda1
+Environment         = CLOUD_INIT=%V/cloud-init.iso
 
-Environment       = RAW=%C/local/qemu/cloudimg.raw
+Environment         = RAW=%C/local/qemu/cloudimg.raw
 
 
-ExecStartPre      = /usr/local/opt/qemu/libexec/cloud-init.sh %I ${CLOUD_INIT}
+ExecStartPre        = /usr/local/opt/qemu/libexec/cloud-init.sh %I ${CLOUD_INIT}
 
-ExecStartPre      = touch -- "${ROOT}/.#fs.lck"
-ExecStopPost      = rm -v -rf -- "${ROOT}/.#fs.lck"
+ExecStartPre        = touch -- "${ROOT}/.#fs.lck"
+ExecStopPost        = rm -v -rf -- "${ROOT}/.#fs.lck"
 
-ExecStart         = /usr/local/opt/qemu/bin/%J.sh m4_ifelse(m5_argn(1, m5_assert([ENV_MACVLAN_IFS])), [], [], [--macvtap ${MACVTAP}]) \
+ExecStart           = /usr/local/opt/qemu/bin/%J.sh m4_ifelse(m5_argn(1, m5_assert([ENV_MACVLAN_IFS])), [], [], [--macvtap ${MACVTAP}]) \
                       --cpu ${CPU} \
                       --mem ${MEMORY} \
                       --qmp ${QMP} \
@@ -67,5 +69,5 @@ ExecStart         = /usr/local/opt/qemu/bin/%J.sh m4_ifelse(m5_argn(1, m5_assert
                       --drive ${CLOUD_INIT} \
                       $ARGV
 
-ExecReload        = /usr/local/bin/vmctl.sh monitor %I system_reset
-ExecStop          = /usr/local/bin/vmctl.sh monitor %I system_powerdown
+ExecReload          = /usr/local/bin/vmctl.sh monitor %I system_reset
+ExecStop            = /usr/local/bin/vmctl.sh monitor %I system_powerdown

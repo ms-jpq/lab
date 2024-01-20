@@ -3,7 +3,7 @@
 set -o pipefail
 
 MACHINE="$1"
-ROOT="$2/fs"
+ROOT="$2"
 HOSTS="$3"
 
 BASE="${0%/*}/.."
