@@ -80,6 +80,7 @@ if [[ -z "${CPU:-""}" ]]; then
   CPU="cpus=$((NPROCS / 2))"
 fi
 
+# https://qemu-project.gitlab.io/qemu/system/qemu-cpu-models.html
 CPUFLAGS=(
   host
   hv-passthrough=on
