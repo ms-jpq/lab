@@ -20,7 +20,7 @@ while (($#)); do
     ;;
   --cpu-flags)
     if [[ -n "$2" ]]; then
-      CPU_FLAGS+=("+$2")
+      CPU_FLAGS+=("$2")
     fi
     shift -- 2
     ;;
