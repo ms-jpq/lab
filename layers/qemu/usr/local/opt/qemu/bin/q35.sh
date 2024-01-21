@@ -85,7 +85,7 @@ ARGV=(
   -compat 'deprecated-input=crash'
   -nodefaults
   -no-user-config
-  -machine 'type=q35,smm=on,accel=kvm'
+  -machine 'type=q35,smm=on,accel=kvm,kernel-irqchip=split'
   -cpu 'max,hv-passthrough'
   -smp "$CPU"
   -m "${MEM:-"size=8G"}"
@@ -168,7 +168,7 @@ for VF in "${VFIO[@]}"; do
   ARGV+=(-device "vfio-pci-nohotplug,host=$VF")
 done
 
-ARGV+=(-device 'virtio-iommu-pci')
+ARGV+=(-device 'intel-iommu,intremap=on,caching-mode=on')
 
 for MDEV in "${MDEVS[@]}"; do
   # display=on,ramfb=on,x-igd-opregion=on
