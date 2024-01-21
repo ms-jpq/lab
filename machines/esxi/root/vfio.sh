@@ -3,14 +3,9 @@
 set -o pipefail
 set -x
 
-IOMMU_GROUPS=(
-  01:00.0
-  01:00.1
-)
-
-VENDOR_IDS=(
-  '10de 2504'
-  '10de 228e'
+VFIO_IDS=(
+  '01:00.0=10de 2504'
+  '01:00.1=10de 228e'
 )
 
 MODS=(
@@ -25,19 +20,28 @@ unbind)
     modprobe -- "$MOD"
   done
 
-  for SUFFIX in "${IOMMU_GROUPS[@]}"; do
-    ID="0000:$SUFFIX"
-    OVER="/sys/bus/pci/devices/$ID/driver/unbind"
-    if [[ -e "$OVER" ]]; then
-      printf -- '%s' "$ID" >"$OVER"
-    fi
-    printf -- '%s' "$ID" >'/sys/bus/pci/drivers/vfio-pci/bind'
+  systemctl stop -- nvidia-persistenced.service
+
+  for VF in "${VFIO_IDS[@]}"; do
+    IOMMU="0000:${VF%=*}"
+    VENDOR="${VF#*=}"
+    printf -- '%s' "$IOMMU" >"/sys/bus/pci/devices/$IOMMU/driver/unbind" || true
+    printf -- '%s' "$VENDOR" >"/sys/bus/pci/drivers/vfio-pci/new_id" || true
   done
 
   tree -- /dev/vfio
   ;;
 bind)
-  exit 1
+  for VF in "${VFIO_IDS[@]}"; do
+    IOMMU="0000:${VF%=*}"
+    VENDOR="${VF#*=}"
+    printf -- '%s' "$VENDOR" >"/sys/bus/pci/drivers/vfio-pci/remove_id" || true
+    printf -- '%s' "$IOMMU" >"/sys/bus/pci/devices/$IOMMU/driver/bind" || true
+  done
+
+  tree -- /dev/vfio
+
+  systemctl start -- nvidia-persistenced.service
   ;;
 *)
   set -x

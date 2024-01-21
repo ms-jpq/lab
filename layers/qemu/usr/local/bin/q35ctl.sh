@@ -27,7 +27,7 @@ sctl() {
 case "$ACTION" in
 '')
   mkdir -v -p -- "$LIB" >&2
-  "$HR" tree --dirsfirst -F -a -L 2 -- "$LIB"
+  "$HR" tree --dirsfirst -F -a -L 3 -- "$LIB"
   sctl status --lines 0 -- '2-qemu-q35@*.service'
   ;;
 start)
