@@ -15,12 +15,10 @@ oobe\bypassnro
 ```bash
 defrag /help
 
-defrag /MultiThread /Defrag C:
-defrag /MultiThread /PrintProgress C:
-
-defrag /MultiThread /BootOptimize C:
-defrag /MultiThread /FreespaceConsolidate C:
-defrag /MultiThread /Optimize C:
-defrag /MultiThread /Retrim C:
-defrag /MultiThread /SlabConsolidate C:
+defrag /MultiThread /BootOptimize         C: && defrag /TrackProgress C:
+defrag /MultiThread /Defrag               C: && defrag /TrackProgress C:
+defrag /MultiThread /FreespaceConsolidate C: && defrag /TrackProgress C:
+defrag /MultiThread /Optimize             C: && defrag /TrackProgress C:
+defrag /MultiThread /Retrim               C: && defrag /TrackProgress C:
+defrag /MultiThread /SlabConsolidate      C: && defrag /TrackProgress C:
 ```
