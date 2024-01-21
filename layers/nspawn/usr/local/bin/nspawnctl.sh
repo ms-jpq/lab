@@ -60,6 +60,7 @@ stop)
   ;;
 kill)
   sctl kill -- "${SERVICES[@]}"
+  sctl reset-failed -- "${SERVICES[@]}"
   ;;
 enable)
   mkdir -v -p -- "$WANTS"
