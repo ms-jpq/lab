@@ -11,7 +11,7 @@ TAPS=()
 while (($#)); do
   case "$1" in
   --cpu)
-    CPU="$2"
+    CPUS="$2"
     shift -- 2
     ;;
   --mem)
@@ -64,9 +64,9 @@ while (($#)); do
   esac
 done
 
-if [[ -z "${CPU:-""}" ]]; then
+if [[ -z "${CPUS:-""}" ]]; then
   NPROCS="$(nproc)"
-  CPU="cpus=$((NPROCS / 2))"
+  CPUS="cpus=$((NPROCS / 2))"
 fi
 
 ARGV=(
@@ -77,7 +77,7 @@ ARGV=(
   -nographic
   -machine 'microvm,x-option-roms=off,pit=off,pic=off,isa-serial=off,rtc=off,accel=kvm'
   -cpu host
-  -smp "$CPU"
+  -smp "$CPUS"
   -m "${MEM:-"size=1G"}"
 )
 

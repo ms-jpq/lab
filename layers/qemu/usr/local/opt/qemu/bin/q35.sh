@@ -14,7 +14,7 @@ CDS=()
 while (($#)); do
   case "$1" in
   --cpu)
-    CPU="$2"
+    CPUS="$2"
     shift -- 2
     ;;
   --mem)
@@ -75,9 +75,9 @@ while (($#)); do
   esac
 done
 
-if [[ -z "${CPU:-""}" ]]; then
+if [[ -z "${CPUS:-""}" ]]; then
   NPROCS="$(nproc)"
-  CPU="cpus=$((NPROCS / 2))"
+  CPUS="cpus=$((NPROCS / 2))"
 fi
 
 # https://qemu-project.gitlab.io/qemu/system/qemu-cpu-models.html
@@ -98,7 +98,7 @@ ARGV=(
   -no-user-config
   -machine 'type=q35,smm=on,accel=kvm,kernel-irqchip=split'
   -cpu "$CPUF"
-  -smp "$CPU"
+  -smp "$CPUS"
   -m "${MEM:-"size=8G"}"
 )
 
