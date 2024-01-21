@@ -80,13 +80,24 @@ if [[ -z "${CPU:-""}" ]]; then
   CPU="cpus=$((NPROCS / 2))"
 fi
 
+CPUFLAGS=(
+  host
+  hv-passthrough
+  hypervisor=off
+  vmx
+)
+
+IFS=','
+CPUF="${CPUFLAGS[*]}"
+unset -- IFS
+
 ARGV=(
   qemu-system-x86_64
   -compat 'deprecated-input=crash'
   -nodefaults
   -no-user-config
   -machine 'type=q35,smm=on,accel=kvm,kernel-irqchip=split'
-  -cpu "host,hv-passthrough"
+  -cpu "$CPUF"
   -smp "$CPU"
   -m "${MEM:-"size=8G"}"
 )

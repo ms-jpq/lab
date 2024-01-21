@@ -58,6 +58,9 @@ restart)
 stop)
   sctl stop -- "${SERVICES[@]}"
   ;;
+kill)
+  sctl kill -- "${SERVICES[@]}"
+  ;;
 enable)
   mkdir -v -p -- "$WANTS"
   for SVC in "${SERVICES[@]}"; do
