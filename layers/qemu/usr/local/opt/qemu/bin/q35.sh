@@ -82,9 +82,8 @@ fi
 
 CPUFLAGS=(
   host
-  hv-passthrough
-  hypervisor=off
-  vmx
+  hv-passthrough=on
+  migratable=off
 )
 
 IFS=','
