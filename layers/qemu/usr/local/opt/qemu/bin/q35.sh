@@ -80,13 +80,24 @@ if [[ -z "${CPU:-""}" ]]; then
   CPU="cpus=$((NPROCS / 2))"
 fi
 
+# https://www.qemu.org/docs/master/system/i386/hyperv.html
+# https://github.com/utmapp/UTM/issues/4914
+HYPERV=(
+  hv-passthrough
+  hypervisor=off
+)
+
+IFS=','
+FEATS="${HYPERV[*]}"
+unset -- IFS
+
 ARGV=(
   qemu-system-x86_64
   -compat 'deprecated-input=crash'
   -nodefaults
   -no-user-config
   -machine 'type=q35,smm=on,accel=kvm,kernel-irqchip=split'
-  -cpu 'max,hv-passthrough'
+  -cpu "host,$FEATS"
   -smp "$CPU"
   -m "${MEM:-"size=8G"}"
 )
@@ -96,7 +107,7 @@ ARGV+=(
 )
 
 ARGV+=(
-  -device virtio-rng-pci-non-transitional
+  -device 'virtio-rng-pci-non-transitional'
   -device 'virtio-balloon-pci-non-transitional,deflate-on-oom=on,free-page-reporting=on'
 )
 
