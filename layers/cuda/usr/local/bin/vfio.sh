@@ -51,7 +51,6 @@ bind)
   done
 
   tree -- /dev/vfio
-
   systemctl start -- nvidia-persistenced.service
   nvidia-smi
   ;;
