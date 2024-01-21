@@ -25,7 +25,8 @@ unbind)
 
   systemctl stop -- nvidia-persistenced.service
 
-  for IOMMU in "${VFIO_IDS[@]}"; do
+  for VF in "${VFIO_IDS[@]}"; do
+    IOMMU="0000:$VF"
     VENDOR="$(vendor "$IOMMU")"
     printf -- '%q -> %q\n' "$IOMMU" "$VENDOR"
     printf -- '%s' "$VENDOR" >"/sys/bus/pci/drivers/nvidia/remove_id" || true
@@ -39,7 +40,8 @@ unbind)
   printf -- '\n'
   ;;
 bind)
-  for IOMMU in "${VFIO_IDS[@]}"; do
+  for VF in "${VFIO_IDS[@]}"; do
+    IOMMU="0000:$VF"
     VENDOR="$(vendor "$IOMMU")"
     printf -- '%q -> %q\n' "$IOMMU" "$VENDOR"
     printf -- '%s' "$VENDOR" >"/sys/bus/pci/drivers/vfio-pci/remove_id" || true
