@@ -19,7 +19,9 @@ while (($#)); do
     shift -- 2
     ;;
   --cpu-flags)
-    CPU_FLAGS+=("$2")
+    if [[ -n "$2" ]]; then
+      CPU_FLAGS+=("+$2")
+    fi
     shift -- 2
     ;;
   --mem)
