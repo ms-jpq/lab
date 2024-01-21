@@ -7,7 +7,6 @@ DIR="${DRIVE%/*}"
 
 shift -- 1
 
-GB=$((2 << 30))
 FS="$(stat --file-system --format %T -- "$DIR")"
 case "$FS" in
 zfs)
@@ -21,7 +20,7 @@ zfs)
 esac
 
 ARGV=("$@")
-if ((USAGE < GB)); then
+if ((USAGE < (10 ** 8))); then
   for ISO in /var/cache/local/qemu/*.iso; do
     ARGV+=(--disc "$ISO")
   done

@@ -48,7 +48,7 @@ Environment         = INITRD=%C/local/qemu/initrd
 Environment         = MACVTAP=m4_ifelse(m5_argn(1, m5_assert([ENV_MACVLAN_IFS])), [], [], [m-%I])
 
 Environment         = DRIVE=%S/local/qemu/%I/fs/raw
-Environment         = DEV_HDA=/dev/vda1
+Environment         = ROOT_DEV=/dev/vda1
 Environment         = CLOUD_INIT=%V/cloud-init.iso
 
 Environment         = RAW=%C/local/qemu/cloudimg.raw
@@ -69,9 +69,9 @@ ExecStart           = /usr/local/opt/qemu/bin/%J.sh m4_ifelse(m5_argn(1, m5_asse
                       --kernel ${KERNEL} \
                       --initrd ${INITRD} \
                       --drive ${DRIVE} \
-                      --root ${DEV_HDA} \
+                      --root ${ROOT_DEV} \
                       --drive ${CLOUD_INIT} \
                       $ARGV
 
 ExecReload          = /usr/local/bin/vmctl.sh monitor %I system_reset
-ExecStop            = /usr/local/opt/qemu/libexec/hospice.sh 30 /usr/local/bin/vmctl.sh monitor %I system_powerdown
+ExecStop            = /usr/local/opt/qemu/libexec/hospice.sh 55 /usr/local/bin/vmctl.sh monitor %I system_powerdown
