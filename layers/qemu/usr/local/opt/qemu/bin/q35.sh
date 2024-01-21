@@ -2,10 +2,11 @@
 
 set -o pipefail
 
-LONG_OPTS='cpu:,mem:,qmp:,monitor:,tpm:,vnc:,bridge:,iscsi:,drive:,macvtap:,vfio:,mdev:,disc:'
+LONG_OPTS='cpu:,cpu-flags:,mem:,qmp:,monitor:,tpm:,vnc:,bridge:,iscsi:,drive:,macvtap:,vfio:,mdev:,disc:'
 GO="$(getopt --options='' --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
+CPU_FLAGS=()
 TAPS=()
 DRIVES=()
 VFIO=()
@@ -15,6 +16,10 @@ while (($#)); do
   case "$1" in
   --cpu)
     CPUS="$2"
+    shift -- 2
+    ;;
+  --cpu-flags)
+    CPU_FLAGS+=("$2")
     shift -- 2
     ;;
   --mem)
@@ -80,15 +85,15 @@ if [[ -z "${CPUS:-""}" ]]; then
   CPUS="cpus=$((NPROCS / 2))"
 fi
 
-# https://qemu-project.gitlab.io/qemu/system/qemu-cpu-models.html
-CPUFLAGS=(
+FEATS=(
   host
   hv-passthrough=on
   migratable=off
+  "${CPU_FLAGS[@]}"
 )
 
 IFS=','
-CPUF="${CPUFLAGS[*]}"
+CPUF="${FEATS[*]}"
 unset -- IFS
 
 ARGV=(
