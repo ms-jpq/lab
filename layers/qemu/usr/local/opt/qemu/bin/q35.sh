@@ -89,6 +89,7 @@ fi
 
 FEATS=(
   host
+  host-phys-bits=on
   hv-passthrough=on
   migratable=off
   "${CPU_FLAGS[@]}"
