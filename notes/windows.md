@@ -16,12 +16,12 @@ oobe\bypassnro
 defrag /help
 
 # AUTO
-# defrag /MultiThread /Optimize             C: && defrag /TrackProgress C:
+# defrag.exe /PrintProgress /Optimize             C:
 
-defrag /MultiThread /Defrag               C: && defrag /TrackProgress C:
-defrag /MultiThread /BootOptimize         C: && defrag /TrackProgress C:
-defrag /MultiThread /SlabConsolidate      C: && defrag /TrackProgress C:
-defrag /MultiThread /FreespaceConsolidate C: && defrag /TrackProgress C:
+defrag.exe /PrintProgress /Defrag               C:
+defrag.exe /PrintProgress /BootOptimize         C:
+defrag.exe /PrintProgress /SlabConsolidate      C:
+defrag.exe /PrintProgress /FreespaceConsolidate C:
 
-defrag /MultiThread /Retrim               C: && defrag /TrackProgress C:
+defrag.exe /PrintProgress /Retrim               C:
 ```
