@@ -29,7 +29,8 @@ up() {
 down() {
   for CONF in "${WG_CONFS[@]}"; do
     WG="$(b2 "$CONF")"
-    ip --netns "$NETNS" link del dev "$WG" type wireguard || ip link del dev "$WG" type wireguard
+    ip --netns "$NETNS" link del dev "$WG" type wireguard || true
+    ip link del dev "$WG" type wireguard || true
   done
 }
 
