@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-cd -- "${0%/*}"
+cd -- "${0%/*}/.."
 
 BUCKET='chum-lab'
 TMP="$PWD/var/gpg"
