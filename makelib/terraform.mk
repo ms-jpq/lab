@@ -1,11 +1,9 @@
-.PHONY: tofu tofu.bootstrap
+.PHONY: tofu
 
-tofu: tf/bootstrap/.terraform
-tf/bootstrap/.terraform:
-	tofu -chdir='$(@D)' init
+define TERRAFORM_TEMPLATE
+tofu: $(dir $1)/.terraform
+$(dir $1)/.terraform: | $(VAR)/bin/tofu
+	'$$|' -chdir='$$(@D)' get
+endef
 
-tofu.bootstrap: facts/.env tf/bootstrap/.terraform
-	set -a
-	source -- '$<'
-	set +a
-	tofu -chdir='tf/bootstrap' apply
+$(foreach tf, $(shell shopt -u failglob && printf -- '%s ' ./tf/*/deps.tf),$(eval $(call TERRAFORM_TEMPLATE,$(tf))))
