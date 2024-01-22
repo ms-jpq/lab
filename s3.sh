@@ -51,6 +51,14 @@ pull)
     mv -v -f -- "$F" "$NAME"
   done
   ;;
+die)
+  read -r -p '>>> (yes/no)?' -- DIE
+  if [[ "$DIE" == 'yes' ]]; then
+    aws s3 rm --recursive -- "s3://$BUCKET"
+  else
+    exit 130
+  fi
+  ;;
 *)
   set -x
   exit 2
