@@ -1,3 +1,7 @@
 location /wg {
+  return 307 /wg/;
+}
+
+location /wg/ {
   alias /var/cache/local/wireguard/;
 }
