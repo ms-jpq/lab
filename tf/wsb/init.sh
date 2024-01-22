@@ -2,6 +2,10 @@
 
 set -o pipefail
 
+set -a
+source -- "${0%/*}/../../facts/.env"
+set +a
+
 ARGV=(
   tofu
   -chdir="${0%/*}"
@@ -9,4 +13,4 @@ ARGV=(
   -backend-config="region=$TF_VAR_aws_region"
 )
 
-exec -- "${ARGV[@]}"
+exec -- "${ARGV[@]}" "$@"
