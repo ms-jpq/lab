@@ -15,6 +15,8 @@ oobe\bypassnro
 ```bash
 defrag /help
 
+contig.exe -s -v C:\*
+
 # AUTO
 # defrag.exe /Verbose /PrintProgress /NormalPriority /Optimize             C:
 
