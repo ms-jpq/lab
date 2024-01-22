@@ -17,7 +17,7 @@ clean:
 
 clobber: clean
 	shopt -u failglob
-	rm -v -rf -- '$(VAR)' ./.venv/ ./node_modules/ ./tf/*/.terraform
+	rm -v -rf -- '$(VAR)' ./.venv/ ./node_modules/ ./tf/*/.terraform ./*.gpg ./facts/*.gpg
 
 
 VAR := ./var
