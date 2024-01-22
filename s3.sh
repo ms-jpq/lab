@@ -7,10 +7,15 @@ cd -- "${0%/*}"
 BUCKET='chum-lab'
 TMP="$PWD/var/gpg"
 
-rm -v -fr -- "$TMP"
-mkdir -v -p -- "$TMP"
+dir() (
+  rm -v -fr -- "$TMP"
+  mkdir -v -p -- "$TMP"
+)
 
-case "$1" in
+case "${1:-""}" in
+'')
+  aws s3api list-objects-v2 --bucket "$BUCKET" | jq --raw-output '.Contents[].Key' | awk '{ gsub("%2F", "/"); print }'
+  ;;
 push)
   FILES=(
     facts/*.env
@@ -25,6 +30,7 @@ push)
     fi
   done
 
+  dir
   gpg -v --batch --yes --encrypt-files -- "${SECRETS[@]}"
   for F in "${SECRETS[@]}"; do
     F="$F.gpg"
@@ -34,6 +40,7 @@ push)
   aws s3 sync -- "$TMP/" "s3://$BUCKET"
   ;;
 pull)
+  dir
   aws s3 cp --recursive -- "s3://$BUCKET" "$TMP"
   FILES=("$TMP"/*.gpg)
   gpg -v --batch --decrypt-files -- "${FILES[@]}"
