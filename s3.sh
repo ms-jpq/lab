@@ -1,4 +1,4 @@
-#!/usr/bin/env -S -- bash -Eeu -O dotglob -O nullglob -O extglob -O failglob -O globstar
+#!/usr/bin/env -S -- bash -Eeu -O dotglob -O nullglob -O extglob -O globstar
 
 set -o pipefail
 
@@ -45,8 +45,8 @@ pull)
   FILES=("$TMP"/*.gpg)
   gpg -v --batch --decrypt-files -- "${FILES[@]}"
   for F in "${FILES[@]}"; do
-    F2="${F%.gpg}"
-    F2="${F2#"$TMP/"}"
+    F="${F%.gpg}"
+    F2="${F#"$TMP/"}"
     NAME="${F2//'%2F'/'/'}"
     mv -v -f -- "$F" "$NAME"
   done
