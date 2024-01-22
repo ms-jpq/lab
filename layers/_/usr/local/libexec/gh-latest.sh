@@ -14,6 +14,10 @@ if ! [[ -v LOCKED ]] && command -v -- flock >/dev/null; then
   LOCKED=1 exec -- flock "$LOCK" "$0" "$@"
 fi
 
+if [[ -f "$CACHE" ]]; then
+  find "$CACHE" -type f -mmin '+60' -delete
+fi
+
 if ! [[ -f "$CACHE" ]]; then
   CURL=(
     curl --fail
