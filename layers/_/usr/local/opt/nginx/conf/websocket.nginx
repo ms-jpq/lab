@@ -1,5 +1,0 @@
-include            /etc/nginx/proxy_params;
-proxy_http_version 1.1;
-proxy_read_timeout 7d;
-proxy_set_header   Connection $connection_upgrade;
-proxy_set_header   Upgrade $http_upgrade;

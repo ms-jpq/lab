@@ -1,3 +1,7 @@
 location /qemu {
+  return 307 /qemu/;
+}
+
+location /qemu/ {
   alias /usr/share/novnc/;
 }

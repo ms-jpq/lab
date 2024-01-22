@@ -40,36 +40,8 @@ jobs:
           LOCAL=1 ./main.sh --machine - -- --debug
 
       - run: |-
+          LOCAL=1 ./main.sh --machine - -- nginx
+
+      - run: |-
           gmake fmt
           git diff --exit-code
-
-  # macos:
-  #   runs-on: macos-latest
-
-  #   steps:
-  #     - uses: actions/checkout@v3
-
-  #     - uses: actions/setup-python@v4
-  #       with:
-  #         python-version: "3.11"
-
-  #     - uses: actions/setup-node@v3
-
-  #     # TODO: coreutils is not needed when `realpath` is available
-  #     - run: |-
-  #         brew install -- bash make gnu-getopt coreutils
-
-  #     - env:
-  #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #       run: |-
-  #         PATH="$(brew --prefix)/opt/gnu-getopt/bin:$PATH"
-  #         gmake lint
-
-  #     - run: |-
-  #         PATH="$(brew --prefix)/opt/gnu-getopt/bin:$PATH"
-  #         LOCAL=1 gmake example
-  #         LOCAL=1 gmake
-
-  #     - run: |-
-  #         PATH="$(brew --prefix)/opt/gnu-getopt/bin:$PATH"
-  #         LOCAL=1 gmake --debug

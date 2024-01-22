@@ -1,4 +1,8 @@
 location /journald {
+  return 307 /journald/;
+}
+
+location /journald/ {
   alias /usr/local/opt/nginx/journald/;
 }
 

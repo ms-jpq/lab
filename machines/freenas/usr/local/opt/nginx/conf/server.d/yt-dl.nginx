@@ -1,3 +1,7 @@
 location /youtube-dl {
+  return 307 /youtube-dl/;
+}
+
+location /youtube-dl/ {
   alias /usr/local/opt/yt-dl/;
 }

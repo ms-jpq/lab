@@ -2,8 +2,9 @@ auth_request /-_-auth-_-;
 
 location /-_-auth-_- {
   auth_request            off;
-  include                 /etc/nginx/proxy_params;
   proxy_set_header        Content-Length "";
+  proxy_set_header        Host $http_host;
+  proxy_set_header        X-Real-IP $remote_addr;
   proxy_pass_request_body off;
   proxy_pass              http://unix:/run/local/nginx/auth-proxy.sock:/;
 
