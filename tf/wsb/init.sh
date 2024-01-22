@@ -3,6 +3,7 @@
 set -o pipefail
 
 set -a
+# shellcheck disable=SC1091
 source -- "${0%/*}/../../facts/.env"
 set +a
 
