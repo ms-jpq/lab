@@ -79,28 +79,36 @@ sequenceDiagram
       par
         make-->>make : cp files / links
       and
-        make-->>+machine1 : env?
-        machine1-->>-make : nproc, hosttype, version_id, etc.
+        opt cached
+          rect rgba(0, 255, 0, 0.05)
+            make-->>+machine2 : env?
+            machine2-->>-make : nproc, hosttype, version_id, etc.
+          end
+        end
         make-->>make : m4 templates
       and
-        make-->>make : clone `<!>links`
+        make-->>make : deference links that begin with `!`
       end
-      make->>machine1 : rsync deltas
-      machine1-->>machine1 : make deltas
+      make->>machine2 : rsync deltas
+      machine2-->>machine2 : make deltas
     end
   and
     rect rgba(0, 0, 255, 0.05)
       par
         make-->>make : cp files / links
       and
-        make-->>+machine2 : env?
-        machine2-->>-make : nproc, hosttype, version_id, etc.
+        opt cached
+          rect rgba(0, 255, 0, 0.05)
+            make-->>+machine1 : env?
+            machine1-->>-make : nproc, hosttype, version_id, etc.
+          end
+        end
         make-->>make : m4 templates
       and
-        make-->>make : clone `<!>links`
+        make-->>make : deference links that begin with `!`
       end
-      make->>machine2 : rsync deltas
-      machine2-->>machine2 : make deltas
+      make->>machine1 : rsync deltas
+      machine1-->>machine1 : make deltas
     end
   end
 ```
