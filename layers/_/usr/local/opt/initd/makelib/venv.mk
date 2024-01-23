@@ -1,4 +1,7 @@
-.PHONY: venv
+.PHONY: venv clobber.venv
+
+clobber.venv:
+	sudo -- rm -v -fr -- '$(CACHE)/venvs'
 
 define PYNV_TEMPLATES
 
