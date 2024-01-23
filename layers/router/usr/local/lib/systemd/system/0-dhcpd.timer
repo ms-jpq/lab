@@ -1,6 +1,0 @@
-[Unit]
-Description       = IPv6 IA_PD timer
-
-[Timer]
-OnStartupSec      = 6seconds
-OnUnitInactiveSec = 60seconds

@@ -144,6 +144,7 @@ def main() -> None:
     wan_if = environ["WAN_IF"]
     lan_ifs = environ["LAN_IFS"].split(" ")
     _conf(token, wan_if=wan_if, lan_ifs=lan_ifs)
+    check_call(("systemd-notify", "--status", "WATCHDOG=1"))
 
 
 main()

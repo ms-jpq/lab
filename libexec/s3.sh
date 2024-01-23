@@ -21,6 +21,7 @@ push)
     facts/*.env
     inventory.json
     tf/bootstrap/terraform.tfstate
+    tf/bootstrap/terraform.tfstate.backup
   )
 
   SECRETS=()
