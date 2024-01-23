@@ -75,28 +75,32 @@ sequenceDiagram
   participant machine2
 
   par
-    par
-      make-->>make : cp files / links
-    and
-      make-->>+machine1 : env?
-      machine1-->>-make : nproc, hosttype, version_id, etc.
-      make-->>make : m4 templates
-    and
-      make-->>make : clone `<!>links`
+    rect rgba(0, 0, 255, 0.05)
+      par
+        make-->>make : cp files / links
+      and
+        make-->>+machine1 : env?
+        machine1-->>-make : nproc, hosttype, version_id, etc.
+        make-->>make : m4 templates
+      and
+        make-->>make : clone `<!>links`
+      end
+      make->>machine1 : rsync deltas
+      machine1-->>machine1 : make deltas
     end
-    make->>machine1 : rsync deltas
-    machine1-->>machine1 : make deltas
   and
-    par
-      make-->>make : cp files / links
-    and
-      make-->>+machine2 : env?
-      machine2-->>-make : nproc, hosttype, version_id, etc.
-      make-->>make : m4 templates
-    and
-      make-->>make : clone `<!>links`
+    rect rgba(0, 0, 255, 0.05)
+      par
+        make-->>make : cp files / links
+      and
+        make-->>+machine2 : env?
+        machine2-->>-make : nproc, hosttype, version_id, etc.
+        make-->>make : m4 templates
+      and
+        make-->>make : clone `<!>links`
+      end
+      make->>machine2 : rsync deltas
+      machine2-->>machine2 : make deltas
     end
-    make->>machine2 : rsync deltas
-    machine2-->>machine2 : make deltas
   end
 ```
