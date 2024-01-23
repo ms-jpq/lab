@@ -40,62 +40,84 @@ sequenceDiagram
   actor user
 
   critical AoT
-    par
-      make-->>machine : unpack .tar / .qcow2 onto COW file systems
-    and
-      make-->>machine : unpack kernel + initrd
+    rect rgba(0, 0, 255, 0.05)
+      rect rgba(0, 255, 0, 0.05)
+        par
+          make-->>machine : unpack .tar / .qcow2 onto COW file systems
+        and
+          make-->>machine : unpack kernel + initrd
+        end
+      end
     end
   end
 
-  user->>+machine : container / VM please
+  user->>machine : container / VM please
 
   critical almost instantaneous
-    par
+    rect rgba(0, 0, 255, 0.05)
       par
-        machine-->>machine : fork COW file systems
+        rect rgba(0, 255, 0, 0.05)
+          par
+            machine-->>machine : fork COW file systems
+          and
+            machine-->>machine : compute deterministic IP addresses
+          end
+          machine-->>machine : overlay cloud-init / sysprep with hostname, IP, SSH key, etc
+        end
       and
-        machine-->>machine : compute deterministic IP addresses
+        rect rgba(0, 255, 0, 0.05)
+          machine-->>machine : compute deterministic IP addresses
+          par
+            machine-->>machine : setup DNS zone + routes
+          and
+            machine-->>machine : setup host <-> vm / container bridge
+            machine-->>machine : setup firewall / ip forwarding rules
+          and
+            machine-->>machine : setup vm / container <-> lan macvlan/tap interface
+          end
+        end
       end
-      machine-->>machine : overlay cloud-init / sysprep with hostname, IP, SSH key, etc
-    and
-      machine-->>machine : compute deterministic IP addresses
-      par
-        machine-->>machine : setup DNS zone + routes
-      and
-        machine-->>machine : setup host <-> vm / container bridge
-        machine-->>machine : setup firewall / ip forwarding rules
-      and
-        machine-->>machine : setup vm / container <-> lan macvlan/tap interface
-      end
-    end
 
-    machine-->>machine_slice : spawn
+      machine-->>machine_slice : spawn
+    end
   end
 
-  alt if container
-    machine_slice-->>machine_slice : /sbin/init
-  else if microvm (linux)
-    machine_slice-->>machine_slice : kernel boot -> /sbin/init
-  else if q35 (windows)
-    par
-      machine-->>machine : setup ingress UNIX socket
-      machine-->>machine : live reload nginx, add ingress path to UNIX socket
-    and
-      machine-->>machine : set [ingress UNIX <-> websocket <-> VNC UNIX] proxy to pending activation
-    and
-      machine-->>machine_slice : attach VM display to VNC UNIX socket
-    and
-      opt if hard drive not written to
-        machine-->>machine_slice : attach windows iso / virtio drivers
+  rect rgba(0, 0, 255, 0.05)
+    alt if container
+      rect rgba(0, 255, 0, 0.05)
+        machine_slice-->>machine_slice : /sbin/init
+      end
+    else if microvm (linux)
+      rect rgba(0, 255, 0, 0.05)
+        machine_slice-->>machine_slice : kernel boot -> /sbin/init
+      end
+    else if q35 (windows)
+      rect rgba(0, 255, 0, 0.05)
+        par
+          machine-->>machine : setup ingress UNIX socket
+          machine-->>machine : live reload nginx, add ingress path to UNIX socket
+        and
+          machine-->>machine : set [ingress UNIX <-> websocket <-> VNC UNIX] proxy to pending activation
+        and
+          machine-->>machine_slice : attach VM display to VNC UNIX socket
+        and
+          rect rgba(255, 0, 0, 0.05)
+            opt if hard drive not written to
+              machine-->>machine_slice : attach windows iso / virtio drivers
+            end
+          end
+        end
       end
     end
   end
 
   opt
-    machine_slice-->>machine : systemd-notify ready!
+    rect rgba(0, 0, 255, 0.05)
+      machine_slice-->>machine : systemd-notify ready!
+    end
   end
 
-  machine->>-user : OK
+  machine->>user : OK
 ```
 
 ### Lambdas
