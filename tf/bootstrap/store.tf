@@ -26,6 +26,20 @@ resource "aws_s3_bucket_versioning" "tfs_version" {
   }
 }
 
+resource "aws_s3_bucket_lifecycle_configuration" "tfs_best_before" {
+  for_each = aws_s3_bucket.tfs
+  bucket   = each.value.id
+
+  rule {
+    id     = "death-and-decay"
+    status = "Enabled"
+    noncurrent_version_expiration {
+      newer_noncurrent_versions = 9
+      noncurrent_days           = 9
+    }
+  }
+}
+
 resource "aws_dynamodb_table" "tfs_lock" {
   for_each     = aws_s3_bucket.tfs
   billing_mode = "PAY_PER_REQUEST"
