@@ -162,7 +162,7 @@ sequenceDiagram
           end
         else if fat lambda, ie. windows VM
           rect rgba(255, 0, 0, 0.05)
-            nginx_lb-->>system_daemon : forward request to socket
+            nginx_lb-->>+system_daemon : forward request to socket
             rect rgba(255, 255, 0, 0.05)
               par
                 system_daemon-->>lambda : spawn long lived websocket proxy
@@ -177,7 +177,7 @@ sequenceDiagram
               end
             end
             lambda-->>system_daemon : forward via socket
-            system_daemon-->>nginx_lb : connect VM display to user
+            system_daemon-->>-nginx_lb : connect VM display to user
           end
           rect rgba(255, 0, 0, 0.05)
             opt
