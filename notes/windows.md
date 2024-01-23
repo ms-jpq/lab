@@ -13,8 +13,6 @@ oobe\bypassnro
 ## Defrag + Trim
 
 ```bash
-defrag /help
-
 contig.exe -s -v C:\*
 defrag.exe /Verbose /PrintProgress /NormalPriority /BootOptimize         C:
 defrag.exe /Verbose /PrintProgress /NormalPriority /SlabConsolidate      C:

@@ -3,7 +3,7 @@
 ## Join BNC
 
 ```bash
-/server add <server-name> <host>/<port> -notls -autoconnect -username=<user>/<bnc-server-name> -password=<pass>
+/server add '<server-name>' '<host>/<port>' -notls -autoconnect -username='<user>/<bnc-server-name>' -password='<pass>'
 ```
 
 ## Bind Key
