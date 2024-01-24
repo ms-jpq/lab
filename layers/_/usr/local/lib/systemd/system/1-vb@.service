@@ -27,7 +27,7 @@ ReadWritePaths       = %t/systemd %T
 EnvironmentFile      = %t/local/ip/%I.env
 EnvironmentFile      = -/usr/local/etc/default/%I.%J.env
 
-Environment          = NETWORKD_DHCP=yes
+Environment          = NETWORKD_DHCP=no
 Environment          = IFACE=%I
 Environment          = DOMAIN=%I.%H.home.arpa
 Environment          = NETDEV=%t/systemd/network/0-%I.netdev
