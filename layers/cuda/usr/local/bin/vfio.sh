@@ -2,9 +2,8 @@
 
 set -o pipefail
 
-VFIO_IDS=(
-  01:00.0
-  01:00.1
+VFIO_DEVICES=(
+  0000:01:00.0
 )
 
 MODS=(
@@ -17,16 +16,23 @@ vendor() {
   lspci -n -m -s "$*" | awk '{ print $3 $4 }' | tr '"' ' ' | awk '{ $1=$1; print }'
 }
 
+VFIO_IDS=()
+
+for DEV in "${VFIO_DEVICES[@]}"; do
+  for IOMMU in "/sys/bus/pci/devices/$DEV/iommu_group/devices"/*; do
+    VFIO_IDS+=("${IOMMU##*/}")
+  done
+done
+
 case "$1" in
-unbind)
+up)
   for MOD in "${MODS[@]}"; do
     modprobe -- "$MOD"
   done
 
   systemctl stop -- nvidia-persistenced.service
 
-  for VF in "${VFIO_IDS[@]}"; do
-    IOMMU="0000:$VF"
+  for IOMMU in "${VFIO_IDS[@]}"; do
     VENDOR="$(vendor "$IOMMU")"
     printf -- '%q -> %q\n' "$IOMMU" "$VENDOR"
     printf -- '%s' "$VENDOR" >"/sys/bus/pci/drivers/nvidia/remove_id" || true
@@ -39,9 +45,8 @@ unbind)
   nvidia-smi || true
   printf -- '\n'
   ;;
-bind)
-  for VF in "${VFIO_IDS[@]}"; do
-    IOMMU="0000:$VF"
+down)
+  for IOMMU in "${VFIO_IDS[@]}"; do
     VENDOR="$(vendor "$IOMMU")"
     printf -- '%q -> %q\n' "$IOMMU" "$VENDOR"
     printf -- '%s' "$VENDOR" >"/sys/bus/pci/drivers/vfio-pci/remove_id" || true
