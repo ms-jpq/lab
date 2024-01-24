@@ -12,6 +12,10 @@ MODS=(
   vfio_pci
 )
 
+SERVICES=(
+  nvidia-persistenced.service
+)
+
 vendor() {
   lspci -n -m -s "$*" | awk '{ print $3 $4 }' | tr '"' ' ' | awk '{ $1=$1; print }'
 }
@@ -30,7 +34,7 @@ up)
     modprobe -- "$MOD"
   done
 
-  systemctl stop -- nvidia-persistenced.service
+  systemctl stop -- "${SERVICES[@]}"
 
   for IOMMU in "${VFIO_IDS[@]}"; do
     VENDOR="$(vendor "$IOMMU")"
@@ -56,7 +60,7 @@ down)
   done
 
   tree -- /dev/vfio
-  systemctl start -- nvidia-persistenced.service
+  systemctl start -- "${SERVICES[@]}"
   nvidia-smi
   ;;
 *)
