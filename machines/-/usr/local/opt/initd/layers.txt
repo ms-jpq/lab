@@ -13,6 +13,5 @@ qemu
 router
 share
 tv
-vfio
 wireguard
 zfs
