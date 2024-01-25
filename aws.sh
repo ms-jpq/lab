@@ -20,20 +20,27 @@ cost)
   BEGIN="$(date --utc --date="@$((NOW - DELTA))" -- '+%Y-%m-%d')"
   END="$(date --utc -- '+%Y-%m-%d')"
 
+  read -r -d '' -- JQJQ <<-'EOF' || true
+def amount: .Metrics.UnblendedCost.Amount;
+.ResultsByTime[].Groups[] | select(amount != "0") | "\(.Keys[] | gsub("\\s"; "%")) \(amount)"
+EOF
+
   AWS+=(
     ce get-cost-and-usage
     --granularity 'DAILY'
     --time-period "Start=$BEGIN,End=$END"
     --metrics 'UnblendedCost'
+    --group-by 'Type=DIMENSION,Key=SERVICE'
   )
-  JQ+=(
-    '.ResultsByTime[].Total.UnblendedCost | "\(.Unit) \(.Amount)"'
-  )
+  read -r -d '' -- AWK <<-'EOF' || true
+BEGIN { sum = 0 }
+{ sum += $NF };1
+END { print "<$> " sum }
+EOF
+  "${AWS[@]}" | "${JQ[@]}" "$JQJQ" | awk "$AWK" | column -t | sed -E -- 's/%/ /g'
   ;;
 *)
   set -x
   exit 2
   ;;
 esac
-
-exec -- "${AWS[@]}" | "${JQ[@]}"
