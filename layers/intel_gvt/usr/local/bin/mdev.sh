@@ -29,7 +29,10 @@ up)
       INSTANCES="$(<"$TYPE/available_instances")"
       if ((INSTANCES)); then
         printf -- '%s' "$UUID" >"$TYPE/create"
-        printf -- '%s\n' "$SYSFS/$UUID" >&2
+        printf -- '%s' "$SYSFS/$UUID"
+        if [[ -t 1 ]]; then
+          printf -- '\n' >&2
+        fi
         exit
       fi
     done
