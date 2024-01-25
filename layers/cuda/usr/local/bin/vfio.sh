@@ -6,10 +6,14 @@ VFIO_DEVICES=(
   0000:01:00.0
 )
 
-MODS=(
+VFIO_MODS=(
   vfio
   vfio_iommu_type1
   vfio_pci
+)
+
+NVIDIA_MODS=(
+  nvidia_drm
 )
 
 SERVICES=(
@@ -30,11 +34,9 @@ done
 
 case "$1" in
 up)
-  for MOD in "${MODS[@]}"; do
-    modprobe -- "$MOD"
-  done
-
+  modprobe -- "${VFIO_MODS[@]}"
   systemctl stop -- "${SERVICES[@]}"
+  modprobe -r -- "${NVIDIA_MODS[@]}"
 
   for IOMMU in "${VFIO_IDS[@]}"; do
     VENDOR="$(vendor "$IOMMU")"
