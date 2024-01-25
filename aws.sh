@@ -22,7 +22,7 @@ cost)
 
   read -r -d '' -- JQJQ <<-'EOF' || true
 def amount: .Metrics.UnblendedCost.Amount;
-.ResultsByTime[].Groups[] | select(amount != "0") | "\(.Keys[] | gsub("\\s"; "%")) \(amount)"
+.ResultsByTime[] as $t | $t.Groups[] | select(amount != "0") | "\($t.TimePeriod.End) \(.Keys[] | gsub("\\s"; "%")) \(amount)"
 EOF
 
   AWS+=(
