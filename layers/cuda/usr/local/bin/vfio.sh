@@ -2,9 +2,8 @@
 
 set -o pipefail
 
-VFIO_DEVICES=(
-  0000:01:00.0
-)
+VFIO_LINES="$(lspci -mm | awk '/VGA/ && /NVIDIA/ { print "0000:"$1 }')"
+readarray -t -- VFIO_DEVICES <<<"$VFIO_LINES"
 
 VFIO_MODS=(
   vfio
@@ -21,7 +20,7 @@ SERVICES=(
 )
 
 vendor() {
-  lspci -n -m -s "$*" | awk '{ print $3 $4 }' | tr '"' ' ' | awk '{ $1=$1; print }'
+  lspci -n -mm -s "$*" | awk '{ print $3 $4 }' | tr '"' ' ' | awk '{ $1=$1; print }'
 }
 
 VFIO_IDS=()
