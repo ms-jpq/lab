@@ -11,7 +11,8 @@ shift -- 1 || true
 # shellcheck disable=SC1090
 source -- "${0%/*}/../libexec/${0##*/}"
 # shellcheck disable=SC2154
-WANTS="/usr/local/lib/systemd/system/$TARGET.target.wants"
+SERVICE_PIN=".#$SERVICE_NAME@.service"
+
 MACHINES=()
 SERVICES=()
 for MACH in "$@"; do
@@ -41,12 +42,12 @@ case "$ACTION" in
   ;;
 pin)
   for MACH in "${MACHINES[@]}"; do
-    "$HR" chmod +t -- "$LIB/$MACH"
+    "$HR" chmod -v +t -- "$LIB/$MACH"
   done
   ;;
 unpin)
   for MACH in "${MACHINES[@]}"; do
-    "$HR" chmod -t -- "$LIB/$MACH"
+    "$HR" chmod -v -t -- "$LIB/$MACH"
   done
   ;;
 start)
@@ -63,28 +64,23 @@ kill)
   sctl reset-failed -- "${SERVICES[@]}"
   ;;
 enable)
-  mkdir -v -p -- "$WANTS"
-  for SVC in "${SERVICES[@]}"; do
-    "$HR" ln -v -sf -- "../$SERVICE_NAME@.service" "$WANTS/$SVC"
+  for MACH in "${MACHINES[@]}"; do
+    "$HR" touch -- "$LIB/$MACH/$SERVICE_PIN"
   done
   ;;
 disable)
-  RM=()
-  for SVC in "${SERVICES[@]}"; do
-    RM+=("$WANTS/$SVC")
+  for MACH in "${MACHINES[@]}"; do
+    "$HR" rm -v -fr -- "$LIB/$MACH/$SERVICE_PIN"
   done
-  "$HR" rm -v -fr -- "${RM[@]}"
   ;;
 remove)
   for MACH in "${MACHINES[@]}"; do
     ROOT="$LIB/$MACH"
-    SVC="$WANTS/$SERVICE_NAME@$(systemd-escape -- "$MACH").service"
     set -x
     if [[ -k "$ROOT" ]] || [[ -f "$ROOT/.#fs.lck" ]]; then
       exit 1
     fi
     set +x
-    rm -v -fr -- "$SVC"
     # shellcheck disable=SC2154
     "$DEALLOC" "$ROOT"
   done

@@ -1,5 +1,2 @@
 [Unit]
 Description = Qemu VMs Target
-
-[Install]
-WantedBy    = multi-user.target

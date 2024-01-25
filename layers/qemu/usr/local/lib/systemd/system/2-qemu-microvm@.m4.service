@@ -18,6 +18,7 @@ After               = 1-mv@m\x2d%i.service
 # ])
 
 [[Service]]
+Slice               = machine.slice
 Restart             = on-failure
 ProtectSystem       = strict
 ProtectHome         = tmpfs

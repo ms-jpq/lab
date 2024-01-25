@@ -4,6 +4,3 @@ Description        = ZFS trim timer -- %i
 [Timer]
 OnCalendar         = daily
 RandomizedDelaySec = 12 hours
-
-[Install]
-WantedBy           = timers.target

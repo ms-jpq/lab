@@ -1,0 +1,1 @@
+../../../../../../nspawn/usr/local/lib/systemd/system-generators/nspawn.sh

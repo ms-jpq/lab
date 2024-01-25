@@ -44,26 +44,19 @@ kill)
   sctl reset-failed -- "${SERVICES[@]}"
   ;;
 enable)
-  mkdir -v -p -- "$WANTS"
-  for SVC in "${SERVICES[@]}"; do
-    "$HR" ln -v -sf -- '../2-qemu-q35@.service' "$WANTS/$SVC"
-  done
-  for SOCK in "${SOCKS[@]}"; do
-    "$HR" ln -v -sf -- '../2-websock-proxy@.socket' "$WANTS/$SOCK"
+  for MACH in "$@"; do
+    ROOT="$LIB/$MACH"
+    "$HR" touch -- "$ROOT/2-qemu-q35@.service" "$ROOT/2-websock-proxy@.socket"
   done
   if ((${#SOCKS[@]})); then
     sctl start -- "${SOCKS[@]}"
   fi
   ;;
 disable)
-  RM=()
-  for SVC in "${SERVICES[@]}"; do
-    RM+=("$WANTS/$SVC")
+  for MACH in "$@"; do
+    ROOT="$LIB/$MACH"
+    "$HR" rm -v -fr -- "$ROOT/2-qemu-q35@.service" "$ROOT/2-websock-proxy@.socket"
   done
-  for SOCK in "${SOCKS[@]}"; do
-    RM+=("$WANTS/$SOCK")
-  done
-  "$HR" rm -v -fr -- "${RM[@]}"
   sctl stop -- "${SOCKS[@]}"
   ;;
 remove)
