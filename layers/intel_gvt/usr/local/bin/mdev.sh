@@ -2,33 +2,46 @@
 
 set -o pipefail
 
-MDEV_LINES="$(lspci -mm | awk '/VGA/ && /Intel/ { print "0000:"$1 }')"
-readarray -t -- MDEV_IDS <<<"$MDEV_LINES"
+SYSFS='/sys/bus/mdev/devices'
 
-MDEV_MODS=(
-  kvmgt
-  mdev
-  vfio-iommu-type1
-)
-
-UUID="$2"
+NAME="$2"
+UUID="$(uuidgen --namespace @dns --sha1 --name "$NAME")"
 case "$1" in
+'')
+  if [[ -d "$SYSFS" ]]; then
+    ls -- "$SYSFS"/*
+  fi
+  ;;
 up)
+  MDEV_LINES="$(lspci -mm | awk '/VGA/ && /Intel/ { print "0000:"$1 }')"
+  readarray -t -- MDEV_IDS <<<"$MDEV_LINES"
+
+  MDEV_MODS=(
+    kvmgt
+    mdev
+    vfio-iommu-type1
+  )
+
   modprobe -- "${MDEV_MODS[@]}"
 
   for IOMMU in "${MDEV_IDS[@]}"; do
-    printf -- '%s\n' "/sys/bus/pci/devices/$IOMMU/mdev_supported_types"/*
+    for TYPE in "/sys/bus/pci/devices/$IOMMU/mdev_supported_types"/*; do
+      INSTANCES="$(<"$TYPE/available_instances")"
+      if ((INSTANCES)); then
+        printf -- '%s' "$UUID" >"$TYPE/create"
+        printf -- '%s\n' "$SYSFS/$UUID" >&2
+        exit
+      fi
+    done
   done
+
+  exit 1
   ;;
 down)
-  for IOMMU in "${MDEV_IDS[@]}"; do
-    printf -- '%s\n' "/sys/bus/pci/devices/$IOMMU/mdev_supported_types"/*
-  done
+  printf -- '%s' 1 >"$SYSFS/$UUID/remove"
   ;;
 *)
   set -x
   exit 2
   ;;
 esac
-
-printf -- '%s\n' "$UUID"
