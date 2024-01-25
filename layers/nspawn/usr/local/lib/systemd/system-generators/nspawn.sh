@@ -10,7 +10,7 @@ SWANTS="$RUN/sockets.target.wants"
 
 mkdir -v -p -- "$WANTS" "$SWANTS"
 
-for TAG in "/var/lib/local/$BASE"/*/.#*.{service,socket}; do
+for TAG in "/var/cache/local/$BASE/services"/*/.#*.{service,socket}; do
   SVC="${TAG##*/}"
   SVC="${SVC#'.#'}"
   MACH="${TAG%/*}"

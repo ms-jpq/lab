@@ -2,6 +2,7 @@
 
 set -o pipefail
 
+CACHE='/var/cache/local/qemu/services'
 LIB='/var/lib/local/qemu'
 HR='/usr/local/libexec/hr-run.sh'
 
@@ -46,7 +47,9 @@ kill)
 enable)
   for MACH in "$@"; do
     ROOT="$LIB/$MACH"
-    "$HR" touch -- "$ROOT/$SERVICE_PIN" "$ROOT/$SOCK_PIN"
+    CM="$CACHE/$MACH"
+    "$HR" mkdir -v -p -- "$CM"
+    "$HR" touch -- "$ROOT/$SERVICE_PIN" "$ROOT/$SOCK_PIN" "$CM/$SERVICE_PIN" "$CM/$SOCK_PIN"
   done
   if ((${#SOCKS[@]})); then
     sctl start -- "${SOCKS[@]}"
@@ -55,7 +58,7 @@ enable)
 disable)
   for MACH in "$@"; do
     ROOT="$LIB/$MACH"
-    "$HR" rm -v -fr -- "$ROOT/$SERVICE_PIN" "$ROOT/$SOCK_PIN"
+    "$HR" rm -v -fr -- "$ROOT/$SERVICE_PIN" "$ROOT/$SOCK_PIN" "$CACHE/$MACH"
   done
   ;;
 remove)

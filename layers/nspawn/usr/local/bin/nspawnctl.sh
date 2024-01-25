@@ -12,6 +12,8 @@ shift -- 1 || true
 source -- "${0%/*}/../libexec/${0##*/}"
 # shellcheck disable=SC2154
 SERVICE_PIN=".#$SERVICE_NAME@.service"
+CACHE="/var/cache/local/$LIB/services"
+LIB="/var/lib/local/$LIB"
 
 MACHINES=()
 SERVICES=()
@@ -65,12 +67,13 @@ kill)
   ;;
 enable)
   for MACH in "${MACHINES[@]}"; do
-    "$HR" touch -- "$LIB/$MACH/$SERVICE_PIN"
+    "$HR" mkdir -v -p -- "$CACHE/$MACH"
+    "$HR" touch -- "$LIB/$MACH/$SERVICE_PIN" "$CACHE/$MACH/$SERVICE_PIN"
   done
   ;;
 disable)
   for MACH in "${MACHINES[@]}"; do
-    "$HR" rm -v -fr -- "$LIB/$MACH/$SERVICE_PIN"
+    "$HR" rm -v -fr -- "$LIB/$MACH/$SERVICE_PIN" "$CACHE/$MACH"
   done
   ;;
 remove)
