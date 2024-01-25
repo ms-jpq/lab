@@ -34,7 +34,8 @@ EOF
   )
   read -r -d '' -- AWK <<-'EOF' || true
 BEGIN { sum = 0 }
-{ sum += $NF };1
+{ sum += $NF }
+{ print $0 " ~>" sprintf("%0.2f", $NF * 30) }
 END { print "<$> " sum }
 EOF
   "${AWS[@]}" | "${JQ[@]}" "$JQJQ" | awk "$AWK" | column -t | sed -E -- 's/%/ /g'
