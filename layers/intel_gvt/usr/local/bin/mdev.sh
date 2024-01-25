@@ -7,11 +7,6 @@ SYSFS='/sys/bus/mdev/devices'
 NAME="$2"
 UUID="$(uuidgen --namespace @dns --sha1 --name "$NAME")"
 case "$1" in
-'')
-  if [[ -d "$SYSFS" ]]; then
-    ls -- "$SYSFS"/*
-  fi
-  ;;
 up)
   MDEV_LINES="$(lspci -mm | awk '/VGA/ && /Intel/ { print "0000:"$1 }')"
   readarray -t -- MDEV_IDS <<<"$MDEV_LINES"
