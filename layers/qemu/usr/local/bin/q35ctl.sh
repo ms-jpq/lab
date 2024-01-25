@@ -9,8 +9,8 @@ ARGV=("$@")
 ACTION="${1:-""}"
 shift -- 1 || true
 
-SYSTEMD='/usr/local/lib/systemd/system'
-WANTS="$SYSTEMD/multi-user.target.wants"
+SERVICE_PIN='.#2-qemu-q35@.service'
+SOCK_PIN='.#2-websock-proxy@.socket'
 
 SERVICES=()
 SOCKS=()
@@ -46,7 +46,7 @@ kill)
 enable)
   for MACH in "$@"; do
     ROOT="$LIB/$MACH"
-    "$HR" touch -- "$ROOT/2-qemu-q35@.service" "$ROOT/2-websock-proxy@.socket"
+    "$HR" touch -- "$ROOT/$SERVICE_PIN" "$ROOT/$SOCK_PIN"
   done
   if ((${#SOCKS[@]})); then
     sctl start -- "${SOCKS[@]}"
@@ -55,9 +55,8 @@ enable)
 disable)
   for MACH in "$@"; do
     ROOT="$LIB/$MACH"
-    "$HR" rm -v -fr -- "$ROOT/2-qemu-q35@.service" "$ROOT/2-websock-proxy@.socket"
+    "$HR" rm -v -fr -- "$ROOT/$SERVICE_PIN" "$ROOT/$SOCK_PIN"
   done
-  sctl stop -- "${SOCKS[@]}"
   ;;
 remove)
   for MACH in "$@"; do
