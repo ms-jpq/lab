@@ -2,7 +2,7 @@ locals {
   s3_buckets = ["lab"]
   ebs_vols = {
     droplet = {
-      size = 50
+      size = 9
     }
   }
 }
