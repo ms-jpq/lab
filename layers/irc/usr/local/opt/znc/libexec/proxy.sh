@@ -2,9 +2,7 @@
 
 set -o pipefail
 
-cd -- "${0%/*}/.."
-
-PROXY_CONF=./proxychains4.conf
+PROXY_CONF="${0%/*}/../proxychains4.conf"
 
 if ! [[ -f "$PROXY_CONF" ]]; then
   exec -- "$@"

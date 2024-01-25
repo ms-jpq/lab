@@ -1,5 +1,6 @@
 [Unit]
 Description      = Weechat IRClient
+BindsTo          = znc.service
 After            = znc.service
 
 [Service]
