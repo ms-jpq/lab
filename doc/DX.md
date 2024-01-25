@@ -4,17 +4,17 @@
 
 Classic UNIX tools
 
-- Brutally fast → decades of hardware advancement
+- Brutally **ossified** → religiously forward compatible
 
-- Brutally ossified → perpetual forward compatible
+- Brutally **quick** → benefitted from decades of hardware advancement
 
-- Brutally textual + recursion heavy → UNIX is made of text & process trees
+- Brutally **textual** + **recursive** → UNIX is made of text & recursive process trees
 
 ### Tech Stack
 
-- bash, awk, jq, etc. : mostest high level languages
+- bash, awk, jq, etc. : **mostest high level** languages
 
-- make : recursive macros, embarrassingly parallel, incremental builds
+- make : recursive macros, embarrassingly **parallel**, **incremental** builds
 
 - m4 : POSIX templating (no built-in loops, only recursion)
 
@@ -42,25 +42,25 @@ program | program | program
 
 ### Isn't Bash unmainainable?
 
-Litmus test: Can you write a recursive HTTP server in bash?
+Litmus test: Are you able to write a recursive HTTP server in bash?
 
 - Yes → `continue`
 
-- No → [read my talk](https://github.com/ms-jpq/defcon604-2023/tree/main)
+- No → [checkout my talk](https://github.com/ms-jpq/defcon604-2023/tree/main)
 
 ## Idempotent deployments + rollback
 
-Pretend we have an immutable server, save for `/usr/local/*`
+Pretend we have an immutable server, except for `/usr/local/*`
 
-### Where do programs derive their behavior?
+### Configuration → Behavior
 
-Where do configurations live? → `/etc/*`
+Where do service configurations live? → `/etc/*`
 
 - UNIX `HIER` → Override `/etc/*` via `/usr/local/*` where possible
 
-- `systemd` bind mounts where needed (also go under `/usr/local/*`)
+- `systemd` bind mount `/usr/local/*` into `/etc/*` where needed (`systemd` conf also under `/usr/local/*`)
 
-Rollback: `rm -fr -- /usr/local/*` + reload
+Hard reset: `rm -fr -- /usr/local/*`
 
 ## Everything everywhere, at once
 
@@ -70,9 +70,9 @@ Rollback: `rm -fr -- /usr/local/*` + reload
 
 ```mermaid
 sequenceDiagram
-  participant make
-  participant machine1
-  participant machine2
+  actor make as GNUMake
+  participant machine1 as Machine
+  participant machine2 as Machine
 
   par
     rect rgba(0, 0, 255, 0.05)
