@@ -22,7 +22,7 @@ for NAME in "${INTERFACES[@]}"; do
   IFS=','
   PREV="ENV_IFS=${SEEN[*]}"
   unset -- IFS
-  /usr/local/libexec/m4.sh -D"$PREV" -- /usr/local/opt/network/1-ip-alloc@.service.m4 >"$ALLOCD/0-override.conf"
+  /usr/local/libexec/m4.sh -D"$PREV" -- /usr/local/opt/network/1-ip-alloc.m4@.service >"$ALLOCD/0-override.conf"
   ln -v -sf -- /usr/local/lib/systemd/system/1-lan@.service "$WANTS/1-lan@$NAME.service"
   SEEN+=("$NAME")
 done
