@@ -1,27 +1,34 @@
-### Slicing
+# Private Cloud
 
-- Deterministic IPv6
+- Nspawn containers
+
+- Qemu MicroVM / Q35
+
+## Sub-second VM / Containers
+
+- "Daemonless" `systemd` services (in the podman sense)
+
+- Parallel operations
 
 ```mermaid
 sequenceDiagram
-  participant make
-  participant machine
-  participant machine_slice
+  participant machine as Machine
+  participant machine_slice as VM / Container
   actor user
 
-  critical AoT
+  critical ahead of time cache
     rect rgba(0, 0, 255, 0.05)
       rect rgba(0, 255, 0, 0.05)
         par
-          make-->>machine : unpack .tar / .qcow2 onto COW file systems
+          machine-->>machine : unpack .tar / .qcow2 onto COW file systems (brtfs, zfs, xfs for reflink only)
         and
-          make-->>machine : unpack kernel + initrd
+          machine-->>machine : unpack kernel + initrd
         end
       end
     end
   end
 
-  user->>machine : container / VM please
+  user->>+machine : container / VM please
 
   critical almost instantaneous
     rect rgba(0, 0, 255, 0.05)
@@ -31,7 +38,7 @@ sequenceDiagram
             par
               machine-->>machine : fork COW file systems
             and
-              machine-->>machine : compute deterministic IP addresses
+              machine-->>machine : provision DNS zone + network toplogy
             end
           end
           machine-->>machine : overlay cloud-init / sysprep with hostname, IP, SSH key, etc
@@ -39,39 +46,34 @@ sequenceDiagram
       and
         rect rgba(0, 255, 0, 0.05)
           par
-            machine-->>machine : compute deterministic IP addresses
-            rect rgba(255, 0, 0, 0.05)
-              par
-                machine-->>machine : setup DNS zone + routes
-              and
-                machine-->>machine : setup host <-> vm / container bridge
-                machine-->>machine : setup firewall / ip forwarding rules
-              end
-            end
+            machine-->>machine : provision DNS zone + network toplogy
+            machine-->>machine : setup host <-> vm / container bridge
+            machine-->>machine : setup firewall / ip forwarding rules
           and
-            machine-->>machine : setup vm / container <-> lan macvlan/tap interface
+            machine-->>machine : setup vm / container <-> external macvlan/tap interface
           end
         end
       end
-
+      rect rgba(0, 255, 0, 0.05)
+        alt Container
+          machine-->>machine : connect to external nfs file system
+        else VM
+          machine-->>machine : connect to external iscsi block storage
+        end
+      end
       machine-->>machine_slice : spawn
     end
   end
 
   rect rgba(0, 0, 255, 0.05)
     alt if container
-      rect rgba(0, 255, 0, 0.05)
-        machine_slice-->>machine_slice : /sbin/init
-      end
-    else if microvm (linux)
-      rect rgba(0, 255, 0, 0.05)
-        machine_slice-->>machine_slice : kernel boot -> /sbin/init
+      rect rgba(0, 0, 255, 0.05)
+        machine_slice-->>machine : systemd-notify ready!
       end
     else if q35 (windows)
       rect rgba(0, 255, 0, 0.05)
         par
           machine-->>machine : setup ingress UNIX socket
-          machine-->>machine : live reload nginx, add ingress path to UNIX socket
         and
           machine-->>machine : set [ingress UNIX <-> websocket <-> VNC UNIX] proxy to pending activation
         and
@@ -87,24 +89,22 @@ sequenceDiagram
     end
   end
 
-  opt
-    rect rgba(0, 0, 255, 0.05)
-      machine_slice-->>machine : systemd-notify ready!
-    end
-  end
-
-  machine->>user : OK
+  machine->>-user : OK
 ```
 
-### Lambdas
+## Scale to zero + network activation
+
+- Network socket activated services
+
+- Shutdown on idle
 
 ```mermaid
 sequenceDiagram
-  participant fat_lambda
-  participant lambda
-  participant system_daemon
-  participant nginx_lb
-  participant user
+  participant fat_lambda as Fat Lambda
+  participant lambda as Lambda
+  participant system_daemon as System Daemon
+  participant nginx_lb as Load Balancer
+  participant user as User
 
   critical
     rect rgba(0, 0, 255, 0.05)
@@ -116,12 +116,12 @@ sequenceDiagram
 
   loop
     rect rgba(0, 0, 255, 0.05)
-      user->>+nginx_lb : send request to path
+      user->>+nginx_lb : send request to `/path`
       nginx_lb-->>nginx_lb : evaluate user authn / authz
       rect rgba(0, 255, 0, 0.05)
         alt if rejected
           nginx_lb-->>nginx_lb : redirect to login
-        else if bite sized lambda
+        else if function sized lambda
           rect rgba(255, 0, 0, 0.05)
             nginx_lb-->>+system_daemon : forward request to socket
             system_daemon-->>+lambda : spawn, attach request to file descriptor (fd) 3

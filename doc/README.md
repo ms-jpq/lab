@@ -12,7 +12,9 @@
 
 - [?] Minimum maintenance
 
-## [Private Cloud](https://github.com/ms-jpq/lab/blob/main/doc/PRIVATE_CLOUD.md)
+## Cloud
+
+## [Private](https://github.com/ms-jpq/lab/blob/main/doc/PRIVATE_CLOUD.md)
 
 - [x] Sub-second VM / Container spin up/down
 
@@ -22,10 +24,10 @@
 
 - [x] GPU (CUDA) VM / containers
 
-- [x] SSO
+- [x] HTTP + IMAP single sign on
 
 - [x] Centralized alerts
 
-## [Hybrid Cloud](https://github.com/ms-jpq/lab/blob/main/doc/PRIVATE_CLOUD.md)
+## [Hybrid](https://github.com/ms-jpq/lab/blob/main/doc/PRIVATE_CLOUD.md)
 
 - []
