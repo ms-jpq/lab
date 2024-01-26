@@ -10,7 +10,7 @@ Classic UNIX tools
 
 - Brutally **textual** + **recursive** → UNIX is made of text & recursive process trees
 
-### Tech Stack
+### Tech Stack (dev)
 
 - bash, awk, jq, etc. : **mostest high level** languages
 
@@ -19,6 +19,8 @@ Classic UNIX tools
 - m4 : POSIX templating (no built-in loops, only recursion)
 
 - rsync : timestamps based delta → `make` : timestamp based delta
+
+- gnupg : cryptography
 
 ### High Level Language
 

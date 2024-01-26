@@ -8,7 +8,7 @@
 
 - "Daemonless" `systemd` services (in the podman sense)
 
-- Parallel operations
+- Concurrent initialization
 
 ```mermaid
 sequenceDiagram
@@ -51,6 +51,12 @@ sequenceDiagram
             machine-->>machine : setup firewall / ip forwarding rules
           and
             machine-->>machine : setup vm / container <-> external macvlan/tap interface
+          end
+        end
+      and
+        opt Q35 VM
+          rect rgba(0, 255, 0, 0.05)
+            machine-->>machine : spawn TPM daemon
           end
         end
       end
@@ -108,26 +114,26 @@ sequenceDiagram
 
   critical
     rect rgba(0, 0, 255, 0.05)
-      system_daemon-->>lambda : list lambdas
-      system_daemon-->>system_daemon : setup UNIX socket for each lambda
+      system_daemon-->>lambda : enumerate lambda functions
+      system_daemon-->>system_daemon : setup UNIX socket for each function
       system_daemon-->>nginx_lb : live reload nginx, add path to each UNIX socket
     end
   end
 
   loop
     rect rgba(0, 0, 255, 0.05)
-      user->>+nginx_lb : send request to `/path`
-      nginx_lb-->>nginx_lb : evaluate user authn / authz
+      user->>+nginx_lb : send request to `/<path>`
+      nginx_lb-->>nginx_lb : protocol layer authn / authz
       rect rgba(0, 255, 0, 0.05)
         alt if rejected
-          nginx_lb-->>nginx_lb : redirect to login
+          nginx_lb-->>nginx_lb : redirect for auth
         else if function sized lambda
           rect rgba(255, 0, 0, 0.05)
             nginx_lb-->>+system_daemon : forward request to socket
             system_daemon-->>+lambda : spawn, attach request to file descriptor (fd) 3
             lambda-->>lambda : read request <fd 3
             lambda-->>lambda : process request
-            lambda-->>-system_daemon : write response >fd 3
+            lambda-->>-system_daemon : stream response >fd 3
             system_daemon-->>-nginx_lb : forward response from socket
           end
         else if fat lambda, ie. windows VM
@@ -146,11 +152,11 @@ sequenceDiagram
                 fat_lambda-->>lambda : send display updates
               end
             end
-            lambda-->>system_daemon : forward via socket
+            lambda-->>system_daemon : transport forwarding
             system_daemon-->>-nginx_lb : connect VM display to user
           end
           rect rgba(255, 0, 0, 0.05)
-            opt
+            opt shutdown on idle transport
               rect rgba(255, 255, 0, 0.05)
                 par
                   system_daemon-->>lambda : shutdown on socket inactivity
