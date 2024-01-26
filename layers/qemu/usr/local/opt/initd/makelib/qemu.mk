@@ -29,17 +29,14 @@ pkg._: /etc/apt/sources.list.d/ppa_canonical-server_server-backports.list
 
 qemu.pull: $(CACHE)/qemu/vmlinuz
 $(CACHE)/qemu/vmlinuz:
-	sudo -- $(CURL) --output '$@.part' -- '$(KERNEL)'
-	sudo -- mv -v -f -- '$@.part' '$@'
+	sudo -- $(CURL) --output '$@' -- '$(KERNEL)'
 
 qemu.pull: $(CACHE)/qemu/initrd
 $(CACHE)/qemu/initrd:
-	sudo -- $(CURL) --output '$@.part' -- '$(INITRD)'
-	sudo -- mv -v -f -- '$@.part' '$@'
+	sudo -- $(CURL) --output '$@' -- '$(INITRD)'
 
 $(CACHE)/qemu/cloudimg.qcow2:
-	sudo -- $(CURL) --output '$@.part' -- '$(KVMBUNTU)'
-	sudo -- mv -v -f -- '$@.part' '$@'
+	sudo -- $(CURL) --output '$@' -- '$(KVMBUNTU)'
 
 qemu.pull: $(QEMU_IMG)
 $(QEMU_IMG): $(CACHE)/qemu/cloudimg.qcow2
@@ -49,5 +46,4 @@ $(QEMU_IMG): $(CACHE)/qemu/cloudimg.qcow2
 VIRTIO_WIN_IMG := https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso
 qemu.pull: $(CACHE)/qemu/$(notdir $(VIRTIO_WIN_IMG))
 $(CACHE)/qemu/$(notdir $(VIRTIO_WIN_IMG)):
-	sudo -- $(CURL) --output '$@.part' -- '$(VIRTIO_WIN_IMG)'
-	sudo -- mv -v -f -- '$@.part' '$@'
+	sudo -- $(CURL) --output '$@' -- '$(VIRTIO_WIN_IMG)'

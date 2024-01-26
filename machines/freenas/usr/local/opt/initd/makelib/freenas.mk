@@ -8,8 +8,7 @@ N_RCLONE := rclone-$(V_RCLONE)-linux-$(GOARCH)
 RCLONE := https://github.com/rclone/rclone/releases/latest/download/$(N_RCLONE).zip
 
 $(TMP)/rclone.zip: | /usr/bin/curl /usr/bin/jq
-	sudo -- $(CURL) --output '$@.tmp' -- '$(RCLONE)'
-	sudo -- mv -v -f -- '$@.tmp' '$@'
+	sudo -- $(CURL) --output '$@' -- '$(RCLONE)'
 
 all: /usr/local/libexec/rclone
 /usr/local/libexec/rclone: $(TMP)/rclone.zip
