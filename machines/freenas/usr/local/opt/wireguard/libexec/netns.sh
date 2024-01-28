@@ -41,7 +41,7 @@ reload() {
   for CONF in "${WG_CONFS[@]}"; do
     WG="$(b2 "$CONF")"
 
-    DS="$(sed -E --quiet -e 's/DNS =(.+)/\1/p' "$CONF")"
+    DS="$(sed -E --quiet -e 's/DNS =(.+)/\1/p' -- "$CONF")"
     readarray -t -d ',' -- DNS_SERVERS <<<"$DS"
 
     for DNS in "${DNS_SERVERS[@]}"; do
