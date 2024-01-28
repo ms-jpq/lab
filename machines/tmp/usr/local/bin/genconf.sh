@@ -3,7 +3,7 @@
 set -o pipefail
 
 IF='nordlynx'
-A="$(ip --json addr show dev "$IF" | jq --exit-status --raw-output '.[].addr_info[] | "\(.local)/\(.prefixlen)"' | sed -E -n 's/(.+)/Address = \1/p')"
+A="$(ip --json addr show dev "$IF" | jq --exit-status --raw-output '.[].addr_info[] | "\(.local)/\(.prefixlen)"' | sed -E -n -e 's/(.+)/Address = \1/p')"
 readarray -t -- ADDRS <<<"$A"
 
 # TODO -- next version of resolvctl supports JSON
@@ -24,5 +24,5 @@ for D in "${DNS[@]}"; do
 done
 
 IFS=$'\n'
-CONF="$(wg showconf "$IF" | sed -E "${SED[@]}")"
+CONF="$(wg showconf "$IF" | sed -E -e "${SED[@]}")"
 printf -- '%s\n' "$CONF"

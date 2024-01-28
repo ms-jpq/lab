@@ -38,7 +38,7 @@ BEGIN { sum = 0 }
 { print $0 " ~>" sprintf("%0.2f", $NF * 30) }
 END { print "<$> " sum }
 EOF
-  "${AWS[@]}" | "${JQ[@]}" "$JQJQ" | awk "$AWK" | column -t | sed -E -- 's/%/ /g'
+  "${AWS[@]}" | "${JQ[@]}" "$JQJQ" | awk "$AWK" | column -t | sed -E -e 's/%/ /g'
   ;;
 *)
   set -x

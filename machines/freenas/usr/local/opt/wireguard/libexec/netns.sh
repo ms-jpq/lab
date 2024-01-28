@@ -41,7 +41,7 @@ reload() {
   for CONF in "${WG_CONFS[@]}"; do
     WG="$(b2 "$CONF")"
 
-    DS="$(sed -E --quiet 's/DNS =(.+)/\1/p' "$CONF")"
+    DS="$(sed -E --quiet -e 's/DNS =(.+)/\1/p' "$CONF")"
     readarray -t -d ',' -- DNS_SERVERS <<<"$DS"
 
     for DNS in "${DNS_SERVERS[@]}"; do
@@ -54,7 +54,7 @@ reload() {
       done
     done
 
-    sed -E '/^(Address|DNS) .*/d' -- "$CONF" >"$WGC"
+    sed -E -e '/^(Address|DNS) .*/d' -- "$CONF" >"$WGC"
     ip link set dev "$WG" up
     wg syncconf "$WG" "$WGC"
     wg set "$WG" fwmark "$FWMARK"

@@ -16,7 +16,7 @@ CURL=(
 )
 
 JSON="$("${CURL[@]}")"
-LS="$(sed -E -n 's/^link: (.+)$/\1/p' "$TMP")"
+LS="$(sed -E -n -e 's/^link: (.+)$/\1/p' -- "$TMP")"
 readarray -t -d ',' -- LLS <<<"$LS"
 
 export -- NEXT_URI=''

@@ -2,5 +2,5 @@
 
 set -o pipefail
 
-URI="$(sed -E 's/.*(http:[^ ]+).*/\1/' -- /etc/apt/sources.list.d/cuda.list)"
+URI="$(sed -E -e 's/.*(http:[^ ]+).*/\1/' -- /etc/apt/sources.list.d/cuda.list)"
 printf -- '%s' "$URI/cuda-archive-keyring.gpg"
