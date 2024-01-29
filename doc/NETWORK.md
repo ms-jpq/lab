@@ -67,4 +67,4 @@ flowchart TB
 
 ## Overlay Network
 
-WireGuard gateways
+Site to Site WireGuard gateways.
