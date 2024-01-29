@@ -1,5 +1,6 @@
 # + libnginx-mod-http-brotli-static
 + avahi-daemon
++ b3sum
 + bat
 + cowsay
 + dnsmasq
