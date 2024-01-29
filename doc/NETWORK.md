@@ -64,3 +64,7 @@ flowchart TB
   unused --> alloc["allocate network from smallest available subnet"]
   alloc --> used
 ```
+
+## Overlay Network
+
+WireGuard gateways

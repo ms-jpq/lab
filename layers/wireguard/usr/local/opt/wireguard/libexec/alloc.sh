@@ -45,16 +45,17 @@ for PEER in "${PEERS[@]}"; do
     continue
   fi
 
+  # shellcheck disable=SC2154
+  IPV6="$IPV6_NETWORK:$(b3sum --no-names --length 8 <<<"$PEER" | perl -CASD -wpe 's/(.{4})(?=.)/$1:/g')/56"
+
   for ((I = 0; ; I++)); do
     ID="$I-$PEER"
     CIFACE="w-$HOSTNAME"
     CLIENT_PRIVATE_KEY="$VAR/peer-$ID.key"
 
-    HEX_64="$(b3sum --no-names --length 8 <<<"$ID")"
-    # shellcheck disable=SC2154
-    IPV6="$IPV6_NETWORK:$(perl -CASD -wpe 's/(.{4})(?=.)/$1:/g' <<<"$HEX_64")/56"
+    B3="0x$(b3sum --no-names --length 4 <<<"$ID")"
+    printf -v HEX_32 -- '%x' $((B3 & ~"0x$V4_MASK" | "0x$V4_NET"))
 
-    printf -v HEX_32 -- '%x' $(("0x$HEX_64" & 0xffffffff & ~"0x$V4_MASK" | "0x$V4_NET"))
     IPV4_OCTETS="$(perl -CASD -wpe 's/(.{2})/0x$1 /g' <<<"$HEX_32")"
     # shellcheck disable=SC2086
     printf -v IPV4 -- '%d.%d.%d.%d' $IPV4_OCTETS
