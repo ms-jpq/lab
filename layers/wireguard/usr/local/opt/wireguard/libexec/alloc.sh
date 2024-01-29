@@ -37,7 +37,7 @@ DNSMAQ_HOSTS=()
 export -- DOMAIN IPV6 IPV4 SERVER_PUBLIC_KEY SERVER_NAME CLIENT_PRIVATE_KEY
 MACHINE_ULA="$(/usr/local/opt/network/libexec/ula64.sh)::/56"
 
-P="$(sort --field-separator ',' <<<"$WG_PEERS")"
+P="$(sort --unique --field-separator ',' <<<"$WG_PEERS")"
 readarray -t -d ',' -- PEERS <<<"$P"
 for PEER in "${PEERS[@]}"; do
   PEER="$(printf -- '%s' "${PEER//[[:space:]]/''}" | jq --slurp --raw-input --raw-output '@uri')"
