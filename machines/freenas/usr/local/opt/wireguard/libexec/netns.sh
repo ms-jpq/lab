@@ -12,9 +12,7 @@ RESOLV="$ETC/resolv.conf"
 WGC="$(mktemp)"
 
 b2() {
-  B2="$(b2sum --binary --length 64 <<<"$NETNS$*")"
-  B2="${B2% *}"
-  NAME="w-$B2"
+  NAME="w-$(b3sum --no-names --length 8 <<<"$NETNS$*")"
   printf -- '%s' "${NAME::15}"
 }
 

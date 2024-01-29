@@ -13,6 +13,6 @@ for DIR in "$LIVE"/*; do
   if ! [[ -d "$DIR" ]]; then
     continue
   fi
-  CHKSUM="$(cat -- "$DIR"/* | b2sum)"
+  CHKSUM="$(cat -- "$DIR"/* | b3sum --no-names)"
   DOMAIN="$DOMAIN" CHKSUM="$CHKSUM" envsubst <'/usr/local/opt/certbot/certbot.nginx' | sponge -- "$SSL/$DOMAIN.nginx"
 done

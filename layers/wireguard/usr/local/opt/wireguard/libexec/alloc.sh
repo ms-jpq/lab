@@ -50,8 +50,7 @@ for PEER in "${PEERS[@]}"; do
     CIFACE="w-$HOSTNAME"
     CLIENT_PRIVATE_KEY="$VAR/peer-$ID.key"
 
-    B2="$(b2sum --binary --length 64 <<<"$ID")"
-    HEX_64="${B2%% *}"
+    HEX_64="$(b3sum --no-names --length 8 <<<"$ID")"
     # shellcheck disable=SC2154
     IPV6="$IPV6_NETWORK:$(perl -CASD -wpe 's/(.{4})(?=.)/$1:/g' <<<"$HEX_64")/56"
 
