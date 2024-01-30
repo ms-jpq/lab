@@ -71,6 +71,10 @@ Site to Site WireGuard gateways.
 
 ## Load Balancer + ACL
 
+- MTA: Mail Transfer Agent
+
+- MDA: Mail Delivery Agent
+
 ```mermaid
 sequenceDiagram
   actor user as User
@@ -78,8 +82,8 @@ sequenceDiagram
   participant letsencrypt as Certificate Authority
   participant haproxy_nginx as Auth Server
   participant http_srv as HTTP Services
-  participant mda as Message Delivery Agent
-  participant mta as Message Transfer Agent
+  participant mda as MDA
+  participant mta as MTA
 
   rect rgba(0, 0, 255, 0.05)
     nginx -->>+ letsencrypt: HTTP-01 challenge
@@ -89,44 +93,61 @@ sequenceDiagram
   rect rgba(0, 0, 255, 0.05)
     user -->> nginx : HTTP + TLS
     nginx -->>+ haproxy_nginx : User IP + auth headers
-    haproxy_nginx -->> haproxy_nginx : Failed auth rate limit?
-    haproxy_nginx -->>- nginx: Auth status
+    rect rgba(0, 255, 0, 0.05)
+      haproxy_nginx -->> haproxy_nginx : Failed auth rate limit?
+      haproxy_nginx -->>- nginx: Auth status
+    end
     alt auth failed
       nginx -->> user : Authn redirect / Authz denied
     else auth ok
-      nginx -->>+ http_srv : Forward request
-      http_srv -->>- nginx: HTTP response
-      nginx -->> user : Forward response
+      rect rgba(255, 0, 0, 0.05)
+        nginx -->>+ http_srv : Forward request
+        http_srv -->>- nginx: HTTP response
+        nginx -->> user : Forward response
+      end
     end
   end
 
   rect rgba(0, 0, 255, 0.05)
     user -->> nginx : IMAP + TLS
     nginx -->>+ haproxy_nginx : User IP + auth headers
-    haproxy_nginx -->> haproxy_nginx : Failed auth rate limit?
-    haproxy_nginx -->>- nginx: Auth status
+    rect rgba(0, 255, 0, 0.05)
+      haproxy_nginx -->> haproxy_nginx : Failed auth rate limit?
+      haproxy_nginx -->>- nginx: Auth status
+    end
     alt auth failed
       nginx -->> user : Nein!
     else auth ok
-      nginx -->>+ mda : Forward request
-      mda -->>- nginx: IMAP response
-      nginx -->> user : You got mail
+      rect rgba(255, 0, 0, 0.05)
+        nginx -->>+ mda : Forward request
+        mda -->>- nginx: IMAP response
+        nginx -->> user : You got mail
+      end
     end
   end
 
   rect rgba(0, 0, 255, 0.05)
     user -->> nginx : SMTP + TLS (optional)
     nginx -->>+ haproxy_nginx : User IP + auth headers
-    haproxy_nginx -->> haproxy_nginx : Failed auth rate limit?
-    haproxy_nginx -->>- nginx: Auth status
+    rect rgba(0, 255, 0, 0.05)
+      haproxy_nginx -->> haproxy_nginx : Failed auth rate limit?
+      haproxy_nginx -->>- nginx: Auth status
+    end
     alt auth failed
       nginx -->> user : Nein!
     else auth ok
-      nginx -->>+ mta : Forward mail
-      mta -->>+ mda: Forward mail
-      mda -->>- mta: Ack
-      mta -->>- nginx: SMTP response
-      nginx -->> user : Sent!
+      rect rgba(255, 0, 0, 0.05)
+        nginx -->>+ mta : Forward mail
+        par
+          rect rgba(255, 255, 0, 0.05)
+            mta -->>+ mda: Forward mail
+            mda -->>- mta: Ack
+          end
+        and
+          mta -->>- nginx: SMTP response
+        end
+        nginx -->> user : Sent!
+      end
     end
   end
 ```
