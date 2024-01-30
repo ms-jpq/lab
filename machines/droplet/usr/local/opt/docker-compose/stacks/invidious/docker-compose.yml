@@ -1,7 +1,7 @@
 ---
 services:
   srv:
-    image: quay.io/invidious/invidious:latest
+    image: quay.io/invidious/invidious:${TAG}
     userns_mode: auto
     restart: unless-stopped
     depends_on:

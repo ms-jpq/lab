@@ -1,7 +1,7 @@
 ---
 services:
   srv:
-    image: quay.io/redlib/redlib:latest
+    image: quay.io/redlib/redlib:${TAG}
     userns_mode: auto
     restart: unless-stopped
     healthcheck:
