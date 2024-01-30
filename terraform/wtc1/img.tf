@@ -13,12 +13,12 @@ data "aws_ami" "ubuntu-lts" {
 
   filter {
     name   = "architecture"
-    values = ["arm64"]
+    values = ["x86_64"]
   }
 
   filter {
     name   = "name"
-    values = ["*ubuntu-jammy-22.04-arm64-server*"]
+    values = ["*ubuntu-jammy-22.04-amd64-server*"]
   }
 }
 
