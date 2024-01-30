@@ -95,7 +95,7 @@ resource "aws_launch_template" "familia" {
     device_name = "/dev/sdf"
     ebs {
       delete_on_termination = true
-      volume_size           = 50
+      volume_size           = 39
       volume_type           = "gp3"
     }
   }
