@@ -1,6 +1,6 @@
 server {
   listen unix:/run/local/nginx/80.sock;
-  set    $x_eighty "http://freenas.enp2s0.m5_assert([ENV_HOSTNAME]).home.arpa";
+  set    $x_eighty "http://freenas.enp2s0.m5_assert([ENV_MACHINE]).home.arpa";
 
   location / {
     proxy_pass $x_eighty;

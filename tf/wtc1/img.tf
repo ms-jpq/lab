@@ -58,8 +58,8 @@ locals {
     package_update = true
     packages       = ["zfsutils-linux"]
     swap = {
-      filename = "/swapfile"
-      size     = "auto"
+      filename = "/var/lib/docker/swapfile"
+      size     = "5G"
     }
     users = [
       {

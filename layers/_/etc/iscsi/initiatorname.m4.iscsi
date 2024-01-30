@@ -1,1 +1,1 @@
-InitiatorName=iqn.1949-08.arpa.home.iscsi:m5_or([ENV_HOSTNAME], [ENV_MACHINE])
+InitiatorName=iqn.1949-08.arpa.home.iscsi:m5_assert([ENV_MACHINE])
