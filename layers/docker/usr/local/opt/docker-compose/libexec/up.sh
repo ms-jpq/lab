@@ -10,4 +10,19 @@ fi
 
 cd -- "${0%/*}/../stacks"
 
-printf -- '%s\0' ./*/docker-compose.yml | xargs --null -I '%' --max-args 1 --max-procs 0 -- docker compose --file '%' up --detach --remove-orphans "$@"
+XARGS=(
+  xargs
+  --null
+  -I '%'
+  --max-args 1
+  --max-procs 0
+  -- docker compose
+  --file '%'
+  --progress plain
+  up
+  --detach
+  --remove-orphans
+  "$@"
+)
+
+printf -- '%s\0' ./*/docker-compose.yml | "${XARGS[@]}"

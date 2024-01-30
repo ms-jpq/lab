@@ -2,7 +2,7 @@
   "ENV_BLK_EXPORTS": [],
   "ENV_CERTBOT_SITES": [
     "ENV_DOMAIN",
-    "ENV_DROPLET_HOST.wg0.ENV_DROPLET_HOST.ENV_DOMAIN",
+    "droplet.wg0.droplet.ENV_DOMAIN",
     "cups.freenas.enp2s0.pfsense.ENV_DOMAIN",
     "esxi.enp2s0.pfsense.ENV_DOMAIN",
     "freenas.enp2s0.pfsense.ENV_DOMAIN",
@@ -25,7 +25,7 @@
     "freenas.enp2s0.pfsense/zfs.sh"
   ],
   "ENV_MACHINES": [
-    "ENV_DROPLET_HOST.wg0.ENV_DROPLET_HOST",
+    "droplet.wg0.droplet",
     "cups.freenas.enp2s0.pfsense",
     "esxi.enp2s0.pfsense",
     "freenas.enp2s0.pfsense",
