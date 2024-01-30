@@ -68,3 +68,65 @@ flowchart TB
 ## Overlay Network
 
 Site to Site WireGuard gateways.
+
+## Load Balancer + ACL
+
+```mermaid
+sequenceDiagram
+  actor user as User
+  participant nginx as Load Balancer
+  participant letsencrypt as Certificate Authority
+  participant haproxy_nginx as Auth Server
+  participant http_srv as HTTP Services
+  participant mda as Message Delivery Agent
+  participant mta as Message Transfer Agent
+
+  rect rgba(0, 0, 255, 0.05)
+    nginx -->>+ letsencrypt: HTTP-01 challenge
+    letsencrypt -->>- nginx: Certificate
+  end
+
+  rect rgba(0, 0, 255, 0.05)
+    user -->> nginx : HTTP + TLS
+    nginx -->>+ haproxy_nginx : User IP + auth headers
+    haproxy_nginx -->> haproxy_nginx : Failed auth rate limit?
+    haproxy_nginx -->>- nginx: Auth status
+    alt auth failed
+      nginx -->> user : Authn redirect / Authz denied
+    else auth ok
+      nginx -->>+ http_srv : Forward request
+      http_srv -->>- nginx: HTTP response
+      nginx -->> user : Forward response
+    end
+  end
+
+  rect rgba(0, 0, 255, 0.05)
+    user -->> nginx : IMAP + TLS
+    nginx -->>+ haproxy_nginx : User IP + auth headers
+    haproxy_nginx -->> haproxy_nginx : Failed auth rate limit?
+    haproxy_nginx -->>- nginx: Auth status
+    alt auth failed
+      nginx -->> user : Nein!
+    else auth ok
+      nginx -->>+ mda : Forward request
+      mda -->>- nginx: IMAP response
+      nginx -->> user : You got mail
+    end
+  end
+
+  rect rgba(0, 0, 255, 0.05)
+    user -->> nginx : SMTP + TLS (optional)
+    nginx -->>+ haproxy_nginx : User IP + auth headers
+    haproxy_nginx -->> haproxy_nginx : Failed auth rate limit?
+    haproxy_nginx -->>- nginx: Auth status
+    alt auth failed
+      nginx -->> user : Nein!
+    else auth ok
+      nginx -->>+ mta : Forward mail
+      mta -->>+ mda: Forward mail
+      mda -->>- mta: Ack
+      mta -->>- nginx: SMTP response
+      nginx -->> user : Sent!
+    end
+  end
+```
