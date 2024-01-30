@@ -8,16 +8,16 @@
 
 ```mermaid
 flowchart LR
-  machine1["< root domain / machine >"] -- (A) --> interface1["< ifname >"]
-  machine1 -- (A) --> interface2["< ifname >"]
-  interface1 -- (B) --> machine2["< machine name >"]
-  machine2 -- (C) --> interface3["< ifname >"]
-  machine2 -- (C) --> interface4["< ifname >"]
-  interface3 -- (D) --> host1["< machine / VM / container >"]
-  interface3 -- (D) --> host2["< machine / VM / container >"]
-  interface4 -- (D) --> host3["< machine / VM / container >"]
-  interface2 -- (B) --> machine3["< machine name >"]
-  machine3 -- (C) --> interface5["< ifname >"]
+  machine1["< root domain / machine >"] -- A --> interface1["< ifname >"]
+  machine1 -- A --> interface2["< ifname >"]
+  interface1 -- B --> machine2["< machine name >"]
+  machine2 -- C --> interface3["< ifname >"]
+  machine2 -- C --> interface4["< ifname >"]
+  interface3 -- D --> host1["< machine / VM / container >"]
+  interface3 -- D --> host2["< machine / VM / container >"]
+  interface4 -- D --> host3["< machine / VM / container >"]
+  interface2 -- B --> machine3["< machine name >"]
+  machine3 -- C --> interface5["< ifname >"]
 ```
 
 ## IP allocations
