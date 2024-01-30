@@ -2,13 +2,24 @@
 
 set -o pipefail
 
-NETWORK="${0%/*}/network.sh"
+if [[ -v UNDER ]]; then
+  CODE=0
+  if ! "$@"; then
+    CODE=1
+    {
+      printf -- '%q ' "$@"
+      printf -- '\n'
+    } >&2
+  fi
+  exit "$CODE"
+fi
+
+BASE="${0%/*}"
+NETWORK="$BASE/network.sh"
 
 if [[ -x "$NETWORK" ]]; then
   "$NETWORK"
 fi
-
-cd -- "${0%/*}/../stacks"
 
 XARGS=(
   xargs
@@ -16,7 +27,8 @@ XARGS=(
   -I '%'
   --max-args 1
   --max-procs 0
-  -- docker compose
+  -- "$0"
+  docker compose
   --file '%'
   --progress plain
   up
@@ -25,4 +37,4 @@ XARGS=(
   "$@"
 )
 
-printf -- '%s\0' ./*/docker-compose.yml | "${XARGS[@]}"
+printf -- '%s\0' "$BASE/../stacks"/*/docker-compose.yml | UNDER=1 "${XARGS[@]}"
