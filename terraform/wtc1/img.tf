@@ -75,6 +75,10 @@ data "cloudinit_config" "ci_data" {
     content      = yamlencode(local.user_data)
     content_type = "text/cloud-config"
   }
+  part {
+    content      = file("${path.module}/cloud-init/zpool.sh")
+    content_type = "text/x-shellscript"
+  }
 }
 
 resource "aws_launch_template" "familia" {
