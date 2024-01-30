@@ -1,47 +1,39 @@
-variable "le_domain" {
-  type = string
-}
-
 locals {
   dns_ttl = 60
 }
 
-resource "aws_route53_zone" "sea_to_sky" {
+data "aws_route53_zone" "sea_to_sky" {
   name = var.le_domain
 }
 
 resource "aws_route53_record" "sea_to_sky_mx" {
-  name    = aws_route53_zone.sea_to_sky.name
-  records = ["1 ${aws_route53_zone.sea_to_sky.name}"]
+  name    = data.aws_route53_zone.sea_to_sky.name
+  records = ["1 ${data.aws_route53_zone.sea_to_sky.name}"]
   ttl     = local.dns_ttl
   type    = "MX"
-  zone_id = aws_route53_zone.sea_to_sky.zone_id
+  zone_id = data.aws_route53_zone.sea_to_sky.zone_id
 }
 
 resource "aws_route53_record" "sea_to_sky_c" {
-  name    = "*.${aws_route53_zone.sea_to_sky.name}"
-  records = [aws_route53_zone.sea_to_sky.name]
+  name    = "*.${data.aws_route53_zone.sea_to_sky.name}"
+  records = [data.aws_route53_zone.sea_to_sky.name]
   ttl     = local.dns_ttl
   type    = "CNAME"
-  zone_id = aws_route53_zone.sea_to_sky.zone_id
+  zone_id = data.aws_route53_zone.sea_to_sky.zone_id
 }
 
 resource "aws_route53_record" "sea_to_sky_a" {
-  name    = aws_route53_zone.sea_to_sky.name
+  name    = data.aws_route53_zone.sea_to_sky.name
   records = [aws_instance.droplet.public_ip]
   ttl     = local.dns_ttl
   type    = "A"
-  zone_id = aws_route53_zone.sea_to_sky.zone_id
+  zone_id = data.aws_route53_zone.sea_to_sky.zone_id
 }
 
 resource "aws_route53_record" "sea_to_sky_a4" {
-  name    = aws_route53_zone.sea_to_sky.name
+  name    = data.aws_route53_zone.sea_to_sky.name
   records = aws_instance.droplet.ipv6_addresses
   ttl     = local.dns_ttl
   type    = "AAAA"
-  zone_id = aws_route53_zone.sea_to_sky.zone_id
-}
-
-output "sea_to_sky_name_servers" {
-  value = aws_route53_zone.sea_to_sky.name_servers
+  zone_id = data.aws_route53_zone.sea_to_sky.zone_id
 }
