@@ -20,7 +20,7 @@ zpool import -d /dev/disk/by-id/ <pool>
 
 ```bash
 # ashift=12 on HDDs
-zpool create -o ashift=13 -o autotrim=on '<pool>' mirror '<dev>'
+zpool create -o ashift=13 -o autotrim=on '<pool>' mirror '/dev/disk/by-id/...'
 ```
 
 ```bash

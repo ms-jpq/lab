@@ -38,6 +38,7 @@ output "smb" {
   value = [
     for vol in aws_ebs_volume.nfs :
     {
+      disk = "/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_${replace(vol.id, "-", "")}"
       id   = vol.id
       size = vol.size
       type = vol.type
