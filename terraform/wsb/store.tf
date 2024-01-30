@@ -10,6 +10,9 @@ locals {
 resource "aws_s3_bucket" "chum" {
   for_each = toset(local.s3_buckets)
   bucket   = "chum-${each.key}"
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 output "plankton" {
