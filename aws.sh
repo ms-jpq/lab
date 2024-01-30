@@ -14,7 +14,8 @@ JQ=(
 
 case "$1" in
 cost)
-  DAYS="${2:-30}"
+  MONTH=31
+  DAYS="${2:-"$MONTH"}"
   NOW="${EPOCHREALTIME%%.*}"
   DELTA=$((60 * 60 * 24 * DAYS))
   BEGIN="$(date --utc --date="@$((NOW - DELTA))" -- '+%Y-%m-%d')"
@@ -35,10 +36,10 @@ EOF
   read -r -d '' -- AWK <<-'EOF' || true
 BEGIN { sum = 0 }
 { sum += $NF }
-{ print $0 " ~>" sprintf("%0.2f", $NF * 30) }
+{ print $0 " ~>" sprintf("%0.2f", $NF * month) }
 END { print "<$> " sum }
 EOF
-  "${AWS[@]}" | "${JQ[@]}" "$JQJQ" | awk "$AWK" | column -t | sed -E -e 's/%/ /g'
+  "${AWS[@]}" | "${JQ[@]}" "$JQJQ" | awk -v month="$MONTH" "$AWK" | column -t | sed -E -e 's/%/ /g'
   ;;
 *)
   set -x
