@@ -1,7 +1,11 @@
 resource "aws_route53_zone" "sea_to_sky" {
-  name = var.le_domain
+  for_each = toset([var.le_domain])
+  name     = each.key
 }
 
 output "sea_to_sky_name_servers" {
-  value = aws_route53_zone.sea_to_sky.name_servers
+  value = {
+    for srv in aws_route53_zone.sea_to_sky :
+    srv.name => srv.name_servers
+  }
 }
