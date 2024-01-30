@@ -20,8 +20,8 @@ push)
   FILES=(
     facts/*.env
     inventory.json
-    tf/bootstrap/terraform.tfstate
-    tf/bootstrap/terraform.tfstate.backup
+    terraform/bootstrap/terraform.tfstate
+    terraform/bootstrap/terraform.tfstate.backup
   )
 
   SECRETS=()

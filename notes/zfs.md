@@ -14,6 +14,7 @@ Ensure uniqueness
 
 ```bash
 zpool import -d /dev/disk/by-id/ <pool>
+zpool import -d /dev/disk/by-id/ -a -f
 ```
 
 ## Hierarchy

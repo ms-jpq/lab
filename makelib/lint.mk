@@ -12,4 +12,4 @@ hadolint: $(VAR)/bin/hadolint
 	git ls-files --deduplicate -z -- '*Dockerfile' | xargs -0 -- '$<' --
 
 tflint: $(VAR)/bin/tflint $(VAR)/tflint.d
-	printf -- '%s\0' ./tf/* | xargs -0 -n 1 -P 0 -- '$<' --chdir
+	printf -- '%s\0' ./terraform/* | xargs -0 -n 1 -P 0 -- '$<' --chdir

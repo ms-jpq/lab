@@ -65,5 +65,5 @@ $(VAR)/bin/tofu: | $(VAR)/bin
 	unzip -o -d '$(VAR)/bin' -- "$$ZIP"
 	chmod +x '$@'
 
-$(VAR)/tflint.d: $(VAR)/bin/tflint tf/bootstrap/.tflint.hcl
-	printf -- '%s\0' ./tf/* | xargs -0 -n 1 -- '$<' --init --chdir
+$(VAR)/tflint.d: $(VAR)/bin/tflint terraform/bootstrap/.tflint.hcl
+	printf -- '%s\0' ./terraform/* | xargs -0 -n 1 -- '$<' --init --chdir
