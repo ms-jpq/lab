@@ -3,6 +3,6 @@
 set -o pipefail
 
 SWAP='/var/lib/docker/swapfile'
-dd bs=1M count=1024 if=/dev/zero of="$SWAP"
+fallocate --length 4G -- "$SWAP"
 chmod -- 600 "$SWAP"
 mkswap -- "$SWAP"
