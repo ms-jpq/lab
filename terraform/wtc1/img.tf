@@ -42,7 +42,7 @@ locals {
   user_data = {
     # TODO: index of ebs blk storage is unpredictable
     fs_setup = [
-      for n in range(1, 3) :
+      for n in range(0, 3) :
       {
         device     = "/dev/nvme${n}n1"
         filesystem = "xfs"
