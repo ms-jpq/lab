@@ -1,0 +1,6 @@
+[Unit]
+Description         = %f.sawp
+ConditionPathExists = %f
+
+[Swap]
+What                = %f

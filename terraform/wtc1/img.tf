@@ -57,10 +57,11 @@ locals {
     ]
     package_update = true
     packages       = ["zfsutils-linux"]
-    swap = {
-      filename = "/var/lib/docker/swapfile"
-      size     = "5G"
-    }
+    # TODO: swap needs to run after mkfs
+    # swap = {
+    #   filename = "/var/lib/docker/swapfile"
+    #   size     = "5G"
+    # }
     users = [
       {
         name                = "root"
@@ -77,6 +78,10 @@ data "cloudinit_config" "ci_data" {
   }
   part {
     content      = file("${path.module}/cloud-init/zpool.sh")
+    content_type = "text/x-shellscript"
+  }
+  part {
+    content      = file("${path.module}/cloud-init/swap.sh")
     content_type = "text/x-shellscript"
   }
 }
