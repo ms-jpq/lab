@@ -41,3 +41,7 @@ resource "aws_route53_record" "sea_to_sky_a4" {
   type    = "AAAA"
   zone_id = aws_route53_zone.sea_to_sky.zone_id
 }
+
+output "sea_to_sky_name_servers" {
+  value = aws_route53_zone.sea_to_sky.name_servers
+}

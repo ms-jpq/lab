@@ -121,7 +121,7 @@ sequenceDiagram
       rect rgba(255, 0, 0, 0.05)
         nginx -->>+ mda : Forward request
         mda -->>- nginx: IMAP response
-        nginx -->> user : You got mail
+        nginx -->> user : You got mail!
       end
     end
   end
