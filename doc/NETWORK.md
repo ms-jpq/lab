@@ -94,8 +94,8 @@ sequenceDiagram
     user -->> nginx : HTTP + TLS
     nginx -->>+ haproxy_nginx : User IP + auth headers
     rect rgba(0, 255, 0, 0.05)
-      haproxy_nginx -->> haproxy_nginx : Failed auth rate limit?
-      haproxy_nginx -->>- nginx: Auth status
+      haproxy_nginx -->> haproxy_nginx : Auth(z/n) + failure rate limit verify
+      haproxy_nginx -->>- nginx: Auth status + auth cookie
     end
     alt auth failed
       nginx -->> user : Authn redirect / Authz denied
@@ -103,7 +103,7 @@ sequenceDiagram
       rect rgba(255, 0, 0, 0.05)
         nginx -->>+ http_srv : Forward request
         http_srv -->>- nginx: HTTP response
-        nginx -->> user : Forward response
+        nginx -->> user : Forward response + auth cookie
       end
     end
   end
@@ -112,7 +112,7 @@ sequenceDiagram
     user -->> nginx : IMAP + TLS
     nginx -->>+ haproxy_nginx : User IP + auth headers
     rect rgba(0, 255, 0, 0.05)
-      haproxy_nginx -->> haproxy_nginx : Failed auth rate limit?
+      haproxy_nginx -->> haproxy_nginx : Auth(z/n) + failure rate limit verify
       haproxy_nginx -->>- nginx: Auth status
     end
     alt auth failed
@@ -130,7 +130,7 @@ sequenceDiagram
     user -->> nginx : SMTP + TLS (optional)
     nginx -->>+ haproxy_nginx : User IP + auth headers
     rect rgba(0, 255, 0, 0.05)
-      haproxy_nginx -->> haproxy_nginx : Failed auth rate limit?
+      haproxy_nginx -->> haproxy_nginx : Auth(z/n) + failure rate limit verify
       haproxy_nginx -->>- nginx: Auth status
     end
     alt auth failed
