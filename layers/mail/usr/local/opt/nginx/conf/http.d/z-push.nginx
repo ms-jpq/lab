@@ -2,7 +2,6 @@
 #   server_name autodiscover.*;
 #   # TODO: http2 on;
 #   listen      unix:/run/local/nginx/http.sock;
-
 #   location / {
 #     proxy_pass http://127.0.0.53:8050/;
 #   }
