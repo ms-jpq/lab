@@ -45,5 +45,3 @@ hostname_replace:
   '(.*\.)?youtu\.be$': *youtube
   '(.*\.)?reddit\.com$': &reddit reddit.m5_assert([ENV_DOMAIN])
   '(.*\.)?redd\.it$': *reddit
-  # TODO: https://github.com/zedeus/nitter/pull/985
-  '(www\.)?twitter\.com$': nitter.net

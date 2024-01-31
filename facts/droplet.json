@@ -38,7 +38,6 @@
     "teddit.ENV_DOMAIN",
     "tools.ENV_DOMAIN",
     "traefik.ENV_DOMAIN",
-    "twitter.ENV_DOMAIN",
     "unicode.ENV_DOMAIN",
     "vault.ENV_DOMAIN",
     "youtube.ENV_DOMAIN"
@@ -79,7 +78,6 @@
     "teddit",
     "tools",
     "traefik",
-    "twitter",
     "unicode",
     "vault",
     "youtube"
@@ -104,7 +102,6 @@
     "speedtest.*",
     "teddit.*",
     "tools.*",
-    "twitter.*",
     "vault.*",
     "youtube.*"
   ],
