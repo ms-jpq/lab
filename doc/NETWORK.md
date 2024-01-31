@@ -109,24 +109,6 @@ sequenceDiagram
   end
 
   rect rgba(0, 0, 255, 0.05)
-    user -->> nginx : IMAP + TLS
-    nginx -->>+ haproxy_nginx : User IP + auth headers
-    rect rgba(0, 255, 0, 0.05)
-      haproxy_nginx -->> haproxy_nginx : Auth(z/n) + failure rate limit verify
-      haproxy_nginx -->>- nginx: Auth status
-    end
-    alt auth failed
-      nginx -->> user : Nein!
-    else auth ok
-      rect rgba(255, 0, 0, 0.05)
-        nginx -->>+ mda : Forward request
-        mda -->>- nginx: IMAP response
-        nginx -->> user : You got mail!
-      end
-    end
-  end
-
-  rect rgba(0, 0, 255, 0.05)
     user -->> nginx : SMTP + TLS (optional)
     nginx -->>+ haproxy_nginx : User IP + auth headers
     rect rgba(0, 255, 0, 0.05)
@@ -147,6 +129,24 @@ sequenceDiagram
           mta -->>- nginx: SMTP response
         end
         nginx -->> user : Sent!
+      end
+    end
+  end
+
+  rect rgba(0, 0, 255, 0.05)
+    user -->> nginx : IMAP + TLS
+    nginx -->>+ haproxy_nginx : User IP + auth headers
+    rect rgba(0, 255, 0, 0.05)
+      haproxy_nginx -->> haproxy_nginx : Auth(z/n) + failure rate limit verify
+      haproxy_nginx -->>- nginx: Auth status
+    end
+    alt auth failed
+      nginx -->> user : Nein!
+    else auth ok
+      rect rgba(255, 0, 0, 0.05)
+        nginx -->>+ mda : Forward request
+        mda -->>- nginx: IMAP response
+        nginx -->> user : You got mail!
       end
     end
   end
