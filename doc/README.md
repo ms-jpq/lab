@@ -26,8 +26,10 @@
 
 - [x] HTTP + IMAP single sign on
 
-- [x] Centralized alerts
+## [Hybrid](https://github.com/ms-jpq/lab/blob/main/doc/NETWORK.md)
 
-## [Hybrid](https://github.com/ms-jpq/lab/blob/main/doc/PRIVATE_CLOUD.md)
+- [x] Overlay network via VPN gateways
 
-- []
+- [x] Recursive DNS service discovery / registration
+
+- [x] Maximally stateless + flat IPv4 + IPv6 dual stack topology
