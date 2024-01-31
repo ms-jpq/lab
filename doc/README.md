@@ -22,7 +22,7 @@
 
 - [x] Overlay networks + DNS service discovery
 
-- [x] GPU (CUDA) VM / containers
+- [x] GPU (CUDA & mdev) VM / containers
 
 - [x] HTTP + IMAP single sign on
 
