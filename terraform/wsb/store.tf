@@ -7,19 +7,16 @@ locals {
   }
 }
 
-resource "aws_s3_bucket" "chum" {
+resource "aws_s3_bucket" "chum_bucket" {
   for_each = toset(local.s3_buckets)
-  bucket   = "chum-${each.key}"
-  lifecycle {
-    prevent_destroy = true
-  }
+  bucket   = "chum-bucket-${each.key}"
 }
 
 output "plankton" {
   value = [
-    for bucket in aws_s3_bucket.chum :
+    for bucket in aws_s3_bucket.chum_bucket :
     {
-      bucket = bucket.id
+      name = bucket.id
     }
   ]
 }
