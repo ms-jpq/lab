@@ -7,8 +7,8 @@ readarray -t -- VFIO_DEVICES <<<"$VFIO_LINES"
 
 VFIO_MODS=(
   vfio
+  vfio-pci
   vfio_iommu_type1
-  vfio_pci
 )
 
 NVIDIA_MODS=(
