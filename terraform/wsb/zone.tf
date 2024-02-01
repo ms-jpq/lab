@@ -3,5 +3,5 @@ data "aws_availability_zones" "district_69" {
 }
 
 output "zones" {
-  value = data.aws_availability_zones.district_69
+  value = data.aws_availability_zones.district_69.names
 }
