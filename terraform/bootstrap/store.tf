@@ -34,7 +34,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "tfs_best_before" {
     id     = "death-and-decay"
     status = "Enabled"
     noncurrent_version_expiration {
-      newer_noncurrent_versions = 9
+      newer_noncurrent_versions = 3
       noncurrent_days           = 9
     }
   }

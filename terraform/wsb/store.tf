@@ -23,7 +23,7 @@ output "plankton" {
 
 resource "aws_ebs_volume" "nfs" {
   for_each          = local.ebs_vols
-  availability_zone = "${data.aws_region.current.name}a"
+  availability_zone = data.aws_availability_zones.district_69.names[0]
   size              = each.value.size
   type              = "gp3"
   tags = {
