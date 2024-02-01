@@ -11,7 +11,6 @@ ARGV=(
   tofu
   -chdir="${0%/*}"
   init
-  -backend-config="region=$TF_VAR_aws_region"
 )
 
 exec -- "${ARGV[@]}" "$@"

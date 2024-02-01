@@ -5,6 +5,10 @@ terraform {
       source  = "hashicorp/aws"
       version = ">= 0"
     }
+    external = {
+      source  = "hashicorp/external"
+      version = ">= 0"
+    }
   }
 }
 
@@ -14,6 +18,7 @@ terraform {
     dynamodb_table = "tfstate-wsb"
     encrypt        = true
     key            = "tfstate"
+    region         = "ca-west-1"
     # TODO: next release should fix this
     skip_region_validation = true
   }
