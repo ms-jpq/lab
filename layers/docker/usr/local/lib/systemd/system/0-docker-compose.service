@@ -1,0 +1,15 @@
+[Unit]
+Description     = Docker Compose
+
+After           = network-online.target
+
+[Service]
+Type            = oneshot
+RemainAfterExit = yes
+
+ProtectSystem   = strict
+ProtectHome     = yes
+PrivateTmp      = yes
+ReadWritePaths  = %t
+
+ExecStart       = /usr/local/opt/docker-compose/libexec/up.sh
