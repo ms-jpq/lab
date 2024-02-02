@@ -9,7 +9,7 @@ venv: $(CACHE)/venvs/$1
 $(CACHE)/venvs/$1: | /usr/share/doc/python3-venv
 	sudo -- rm -v -fr -- '$$@'
 	sudo -- python3 -m venv -- '$$@'
-	sudo -- '$$@'/bin/pip install --upgrade --requirement './venvs/$1.txt'
+	sudo -- '$$@'/bin/pip install --upgrade --cache-dir '$(CACHE)/pip' --requirement './venvs/$1.txt'
 
 endef
 
