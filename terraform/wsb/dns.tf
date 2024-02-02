@@ -23,11 +23,11 @@ data "external" "lightsail_nameserver" {
       for srv in aws_lightsail_domain.sea_to_sky
       : srv.domain_name
     ])
-    region = local.us_e1_region
+    region = local.regions.us_e1
   }
 }
 
-output "sea_to_sky2" {
+output "sea_to_sky_name_servers2" {
   value = {
     for key, val in data.external.lightsail_nameserver.result :
     key => sort(jsondecode(val))

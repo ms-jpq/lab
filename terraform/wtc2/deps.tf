@@ -5,10 +5,6 @@ terraform {
       source  = "hashicorp/http"
       version = ">= 0"
     }
-    cloudinit = {
-      source  = "hashicorp/cloudinit"
-      version = ">= 0"
-    }
     aws = {
       source  = "hashicorp/aws"
       version = ">= 0"
@@ -18,8 +14,8 @@ terraform {
 
 terraform {
   backend "s3" {
-    bucket         = "tfstate-wtc1"
-    dynamodb_table = "tfstate-wtc1"
+    bucket         = "tfstate-wtc2"
+    dynamodb_table = "tfstate-wtc2"
     encrypt        = true
     key            = "tfstate"
     region         = "ca-west-1"

@@ -1,7 +1,3 @@
-variable "github_users" {
-  type = list(string)
-}
-
 data "aws_ami" "ubuntu-lts" {
   most_recent = true
   owners      = ["amazon"]
@@ -29,16 +25,7 @@ output "ami-ubuntu-lts" {
   }
 }
 
-data "http" "gh_keys" {
-  for_each = toset(var.github_users)
-  url      = "https://github.com/${each.key}.keys"
-}
-
 locals {
-  ssh_keys = sort(flatten([
-    for resp in data.http.gh_keys :
-    split("\n", trimspace(resp.response_body))
-  ]))
   user_data = {
     # TODO: index of ebs blk storage is unpredictable
     fs_setup = [
