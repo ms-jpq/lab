@@ -21,6 +21,12 @@ resource "aws_instance" "droplet" {
   }
 }
 
+locals {
+  ip_addrs = {
+    v4 = [aws_instance.droplet.public_ip]
+    v6 = aws_instance.droplet.ipv6_addresses
+  }
+}
 
 resource "aws_volume_attachment" "cena" {
   device_name  = "/dev/sdp"
@@ -32,6 +38,5 @@ resource "aws_volume_attachment" "cena" {
 output "ec2-droplet" {
   value = {
     id = aws_instance.droplet.id
-    ip = concat([aws_instance.droplet.public_ip], aws_instance.droplet.ipv6_addresses)
   }
 }
