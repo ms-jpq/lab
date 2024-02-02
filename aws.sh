@@ -9,6 +9,7 @@ AWS=(
 
 JQ=(
   jq
+  --exit-status
   --raw-output
 )
 
@@ -56,7 +57,7 @@ metrics)
     --metric-name 'BurstCapacityTime'
     --unit 'Seconds'
   )
-  "${AWS[@]}"
+  "${AWS[@]}" | "${JQ[@]}" '.metricData[].average'
   ;;
 *)
   set -x
