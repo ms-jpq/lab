@@ -4,8 +4,14 @@ set -Eeu
 set -o pipefail
 shopt -s dotglob nullglob extglob globstar
 
-SSH="/$USER/.ssh"
+SSH="/root/.ssh"
 # shellcheck disable=SC2174
-mkdir --parents --mode 0700 -- "$SSH"
+mkdir -v --parents --mode 0700 -- "$SSH"
 # shellcheck disable=SC2154
-printf -- '%s' "$SSH_KEYS" >>"$SSH/authorized_keys"
+printf -- '\n%s\n' "$SSH_KEYS" >>"$SSH/authorized_keys"
+
+PACKAGES=(zfsutils-linux)
+
+apt-get update
+DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends --yes -- "${PACKAGES[@]}"
+exec -- zpool import -d /dev/disk/by-id/ -a -f
