@@ -11,7 +11,7 @@ $(CACHE)/weechat/venv:
 	sudo -- python3 -m venv -- '$@'
 
 $(CACHE)/weechat/venv/bin/wsdump: $(CACHE)/weechat/venv | pkg._
-	sudo -- /usr/local/opt/weechat/libexec/venv.sh
+	sudo -- /usr/local/opt/weechat/libexec/venv.sh '$(CACHE)'
 
 define IRC_GIT_TEMPLATE
 irc: $(CACHE)/weechat/$(notdir $1)

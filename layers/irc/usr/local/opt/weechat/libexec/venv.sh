@@ -2,15 +2,15 @@
 
 set -o pipefail
 
-cd -- "${0%/*}"
+CACHE="$1"
+WEECACHE="$CACHE/weechat"
 
-CACHE=/var/cache/local/weechat
 ARGV=(
-  "$CACHE/venv/bin/python3"
+  "$WEECACHE/venv/bin/python3"
   -m pip
   install
   --cache-dir "$CACHE/pip"
-  --requirement "$CACHE/weechat-matrix/requirements.txt"
+  --requirement "$WEECACHE/weechat-matrix/requirements.txt"
   --
   future
   websocket-client
