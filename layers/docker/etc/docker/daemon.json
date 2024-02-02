@@ -1,5 +1,5 @@
 {
-  "cgroup-parent": "0-docker.slice",
+  "cgroup-parent": "docker.slice",
   "default-address-pools": [
     {
       "base": "10.69.0.0/16",
