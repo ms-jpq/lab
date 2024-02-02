@@ -43,21 +43,33 @@ END { print "<$> " sum }
 EOF
   "${AWS[@]}" | "${JQ[@]}" "$JQJQ" | awk -v month="$MONTH" "$AWK" | column -t | sed -E -e 's/%/ /g'
   ;;
-metrics)
-  DELTA=$((60 * 60))
-
+cpu)
+  DELTA=$((60 * 60 * 24))
   AWS+=(
     --region us-west-2
-    lightsail get-instance-metric-data
-    --instance-name droplet
-    --start-time $((NOW - DELTA))
-    --end-time "$NOW"
-    --statistics 'Average'
-    --period 60
-    --metric-name 'BurstCapacityTime'
-    --unit 'Seconds'
+    lightsail
   )
-  "${AWS[@]}" | "${JQ[@]}" '.metricData[].average'
+  IS="$("${AWS[@]}" get-instances | "${JQ[@]}" '.instances[].name')"
+  readarray -t -- INSTANCES <<<"$IS"
+  read -r -d '' -- JQJQ <<-'EOF' || true
+.metricData[] | "\(.timestamp | sub("-[^-]+$"; "")) -> \(.average | floor) \(.unit)"
+EOF
+
+  for INSTANCE in "${INSTANCES[@]}"; do
+    AWS+=(
+      get-instance-metric-data
+      --instance-name "$INSTANCE"
+      --start-time $((NOW - DELTA))
+      --end-time "$NOW"
+      --statistics 'Average'
+      --period 60
+      --metric-name 'BurstCapacityTime'
+      --unit 'Seconds'
+    )
+
+    printf -- '%s\n' "-> $INSTANCE" >&2
+    "${AWS[@]}" | "${JQ[@]}" "$JQJQ" | sort --key 1,1 | tr -- 'T' ' '
+  done
   ;;
 *)
   set -x
