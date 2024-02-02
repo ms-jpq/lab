@@ -49,6 +49,12 @@ rm -v -rf -- "$DST/etc/hostname"
 cp -v -f -- "$BASE/../macvlan.network" "$USRN/10-macvlan.network"
 chroot "$DST" dpkg --purge --force-all -- "${DIE[@]}"
 
+for SCRIPT in "${0%/*}/../overlay.d"/*; do
+  if [[ -x "$SCRIPT" ]]; then
+    "$SCRIPT" "$DST"
+  fi
+done
+
 if [[ -n "$ZFS" ]]; then
   zfs snapshot -- "$ZFS@-"
 fi

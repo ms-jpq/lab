@@ -49,6 +49,12 @@ esac
 qemu-img convert -f qcow2 -O raw -- "$SRC" "$DST"
 systemd-nspawn --register no --as-pid2 --image "$DST" -- dpkg --purge --force-all -- "${DIE[@]}"
 
+for SCRIPT in "$BASE/../overlay.d"/*; do
+  if [[ -x "$SCRIPT" ]]; then
+    "$SCRIPT" "$DST"
+  fi
+done
+
 if [[ -n "$ZVOL" ]]; then
   zfs snapshot -- "$ZVOL@-"
 fi
