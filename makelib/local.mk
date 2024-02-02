@@ -58,7 +58,7 @@ LOCALS.$1 :=
 
 MACH.$1.DIRS := $(shell find {$1,$2} -type d)
 MACH.$1.FILES := $(shell find {$1,$2} -type f,l)
-MACH.$1.LINKS := $(shell shopt -u failglob && grep -h -v -- '^#' {$1,$2}/usr/local/opt/initd/links/*.txt | tr -s ' ' '!')
+MACH.$1.LINKS := $(shell shopt -u failglob && grep -h -v -- '^#' {$1,$2}/usr/local/opt/initd/links/*.txt | tr -s -- ' ' '!')
 
 MACH.$1.FACTS := $(FACTS) $(shell shopt -u failglob && printf -- '%s ' ./facts/$(notdir $1).*{env,json})
 
@@ -117,5 +117,5 @@ zsh/iso/libexec/hr.sh                                                           
 
 endef
 
-REF_LINKS := $(shell tr -s ' ' '!' <<<'$(REF_LINKS)')
+REF_LINKS := $(shell tr -s -- ' ' '!' <<<'$(REF_LINKS)')
 $(foreach machine,$(MACHINES),$(eval $(call LOCAL_TEMPLATE,$(machine),layers/{$(subst $(sp),$(s),$(strip _ $(shell grep -h -v -- '^#' $(machine)/usr/local/opt/initd/layers.txt)))})))

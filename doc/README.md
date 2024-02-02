@@ -20,7 +20,7 @@
 
 - [x] Scale to zero + network activated lambdas / VM / containers
 
-- [x] Overlay networks + DNS service discovery
+- [x] Overlay networks + recursive DNS service discovery / registration
 
 - [x] GPU (CUDA & mdev) VM / containers
 
@@ -28,8 +28,8 @@
 
 ## [Hybrid](https://github.com/ms-jpq/lab/blob/main/doc/NETWORK.md)
 
-- [x] Overlay network via VPN gateways
+- [x] VPN gateways
 
-- [x] Recursive DNS service discovery / registration
+- [x] Terraform → Route 53 + EBS + VPC + Launch Template + AMI + EC2
 
-- [x] Maximally stateless + flat IPv4 + IPv6 dual stack topology
+- [x] Terraform → AWS LightSail: DNS + Block Storage + VM

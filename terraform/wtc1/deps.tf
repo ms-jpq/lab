@@ -1,16 +1,16 @@
 terraform {
   required_version = ">= 0"
   required_providers {
-    http = {
-      source  = "hashicorp/http"
+    aws = {
+      source  = "hashicorp/aws"
       version = ">= 0"
     }
     cloudinit = {
       source  = "hashicorp/cloudinit"
       version = ">= 0"
     }
-    aws = {
-      source  = "hashicorp/aws"
+    http = {
+      source  = "hashicorp/http"
       version = ">= 0"
     }
   }
