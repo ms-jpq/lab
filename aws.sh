@@ -12,14 +12,15 @@ JQ=(
   --raw-output
 )
 
+NOW="${EPOCHREALTIME%%.*}"
+
 case "$1" in
 cost)
   MONTH=31
   DAYS="${2:-"$MONTH"}"
-  NOW="${EPOCHREALTIME%%.*}"
   DELTA=$((60 * 60 * 24 * DAYS))
   BEGIN="$(date --utc --date="@$((NOW - DELTA))" -- '+%Y-%m-%d')"
-  END="$(date --utc -- '+%Y-%m-%d')"
+  END="$(date --utc --date="@$NOW" -- '+%Y-%m-%d')"
 
   read -r -d '' -- JQJQ <<-'EOF' || true
 def amount: .Metrics.UnblendedCost.Amount;
@@ -40,6 +41,22 @@ BEGIN { sum = 0 }
 END { print "<$> " sum }
 EOF
   "${AWS[@]}" | "${JQ[@]}" "$JQJQ" | awk -v month="$MONTH" "$AWK" | column -t | sed -E -e 's/%/ /g'
+  ;;
+metrics)
+  DELTA=$((60 * 60))
+
+  AWS+=(
+    --region us-west-2
+    lightsail get-instance-metric-data
+    --instance-name droplet
+    --start-time $((NOW - DELTA))
+    --end-time "$NOW"
+    --statistics 'Average'
+    --period 60
+    --metric-name 'BurstCapacityTime'
+    --unit 'Seconds'
+  )
+  "${AWS[@]}"
   ;;
 *)
   set -x
