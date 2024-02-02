@@ -9,6 +9,8 @@
 + fzf
 + git
 + haproxy
++ iftop
++ iotop-c
 + ipcalc-ng
 + iperf3
 + jq
@@ -19,6 +21,7 @@
 + mosh
 + ncdu
 + neovim
++ net-tools
 + netdata
 + netdata-plugins-python
 + nfs-common
