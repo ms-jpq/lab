@@ -1,0 +1,1 @@
+../../wtc1/cloud-init/zpool.sh

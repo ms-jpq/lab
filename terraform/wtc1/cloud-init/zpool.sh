@@ -2,4 +2,4 @@
 
 set -o pipefail
 
-exec -- zpool import -d /dev/disk/by-id/ -a -f
+zpool import -d /dev/disk/by-id/ -a -f

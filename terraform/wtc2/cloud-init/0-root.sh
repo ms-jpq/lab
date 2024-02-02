@@ -10,8 +10,8 @@ mkdir -v --parents --mode 0700 -- "$SSH"
 # shellcheck disable=SC2154
 printf -- '\n%s\n' "$SSH_KEYS" >>"$SSH/authorized_keys"
 
-PACKAGES=(zfsutils-linux)
+hostnamectl hostname -- "$HOSTNAME"
 
+PACKAGES=(zfsutils-linux)
 apt-get update
 DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends --yes -- "${PACKAGES[@]}"
-exec -- zpool import -d /dev/disk/by-id/ -a -f

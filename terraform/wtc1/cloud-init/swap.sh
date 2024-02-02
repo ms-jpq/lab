@@ -2,7 +2,9 @@
 
 set -o pipefail
 
-SWAP='/var/lib/docker/swapfile'
+PREFIX='/var/lib/docker'
+mkdir -v -p -- "$PREFIX"
+SWAP="$PREFIX/swapfile"
 fallocate --length 6G -- "$SWAP"
 chmod -- 600 "$SWAP"
 mkswap -- "$SWAP"

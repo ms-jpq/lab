@@ -1,6 +1,7 @@
 data "external" "user_data" {
   program = ["${path.module}/user-data.sh"]
   query = {
+    hostname = "droplet"
     ssh_keys = jsonencode(local.ssh_keys)
   }
 }
@@ -10,7 +11,7 @@ resource "aws_lightsail_instance" "droplet" {
   availability_zone = local.zones.us_w2[0]
   blueprint_id      = "ubuntu_22_04" # aws lightsail --region us-west-2 get-blueprints | jq --raw-output '.blueprints[].blueprintId'
   bundle_id         = "small_3_0"    # aws lightsail --region us-west-2 get-bundles
-  name              = "droplet"
+  name              = data.external.user_data.query.hostname
   user_data         = data.external.user_data.result.script
 }
 
