@@ -1,6 +1,9 @@
 [Unit]
 Description     = Docker Compose
 
+BindsTo         = docker.socket
+After           = docker.socket
+
 After           = network-online.target
 
 [Service]
