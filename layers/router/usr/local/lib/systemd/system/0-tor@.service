@@ -9,6 +9,7 @@ PartOf           = tor@%i.service
 [Service]
 Type             = oneshot
 RemainAfterExit  = yes
+
 ProtectSystem    = strict
 ProtectHome      = yes
 PrivateTmp       = yes

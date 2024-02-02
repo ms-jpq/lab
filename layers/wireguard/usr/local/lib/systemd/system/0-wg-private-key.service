@@ -5,6 +5,7 @@ ConditionPathExists = !%S/local/wireguard/self.key
 [Service]
 Type                = oneshot
 RemainAfterExit     = yes
+Restart             = on-failure
 
 ProtectSystem       = strict
 ProtectHome         = yes

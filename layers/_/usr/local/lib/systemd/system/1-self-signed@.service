@@ -8,6 +8,7 @@ ConditionPathExists = !%C/local/self-signed/%I/ssl.key
 [Service]
 Type                = oneshot
 RemainAfterExit     = yes
+Restart             = on-failure
 
 ProtectSystem       = strict
 ProtectHome         = yes
