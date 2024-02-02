@@ -18,7 +18,6 @@ locals {
     ca_w1 = data.aws_availability_zones.ca_w1.names
     us_e1 = data.aws_availability_zones.us_e1.names
     us_w2 = data.aws_availability_zones.us_w2.names
-
   }
 }
 

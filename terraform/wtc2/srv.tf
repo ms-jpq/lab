@@ -28,6 +28,16 @@ locals {
   }
 }
 
+resource "aws_lightsail_instance_public_ports" "acab" {
+  provider      = aws.us_w2
+  instance_name = aws_lightsail_instance.droplet.name
+  port_info {
+    from_port = 0
+    protocol  = "all"
+    to_port   = 65535
+  }
+}
+
 resource "aws_lightsail_disk_attachment" "john_cena" {
   provider      = aws.us_w2
   disk_name     = "iscsi-droplet"
