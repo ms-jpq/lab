@@ -5,10 +5,6 @@ terraform {
       source  = "hashicorp/aws"
       version = ">= 0"
     }
-    external = {
-      source  = "hashicorp/external"
-      version = ">= 0"
-    }
     http = {
       source  = "hashicorp/http"
       version = ">= 0"
