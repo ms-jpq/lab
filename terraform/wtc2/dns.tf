@@ -19,7 +19,7 @@ resource "aws_lightsail_domain_entry" "sea_to_sky_a" {
   provider    = aws.us_e1
   domain_name = var.le_domain
   name        = ""
-  target      = aws_lightsail_instance.droplet.public_ip_address
+  target      = join("\n", local.ip_addrs.v4)
   type        = "A"
 }
 
@@ -27,7 +27,7 @@ resource "aws_lightsail_domain_entry" "sea_to_sky_a4" {
   provider    = aws.us_e1
   domain_name = var.le_domain
   name        = ""
-  target      = join("\n", aws_lightsail_instance.droplet.ipv6_addresses)
+  target      = join("\n", local.ip_addrs.v6)
   type        = "AAAA"
 }
 

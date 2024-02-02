@@ -6,6 +6,13 @@ resource "aws_lightsail_instance" "droplet" {
   name              = "droplet"
 }
 
+locals {
+  ip_addrs = {
+    v4 = [aws_lightsail_instance.droplet.public_ip_address]
+    v6 = aws_lightsail_instance.droplet.ipv6_addresses
+  }
+}
+
 resource "aws_lightsail_disk_attachment" "john_cena" {
   provider      = aws.us_w2
   disk_name     = "iscsi-droplet"
