@@ -12,7 +12,7 @@ printf -v KEYS -- '%q\n' "$SSH_KEYS"
 printf -v HOST -- '%q\n' "$HOSTNAME"
 SCRIPT="$(cat -- "${0%/*}/cloud-init"/*.sh)"
 
-B64="$(base64 --wrap 0 <<<"SSH_KEYS=$KEYS HOSTNAME=$HOST $SCRIPT")"
+B64="$(base64 --wrap 0 <<<"SSH_KEYS=${KEYS}HOSTNAME=${HOST}$SCRIPT")"
 
 read -r -d '' -- BASH <<-EOF || true
 printf -- %s $B64 | base64 --decode | bash
