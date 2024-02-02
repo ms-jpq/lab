@@ -14,6 +14,6 @@ locals {
   ]))
 }
 
-output "ssh_keys" {
-  value = local.ssh_keys
+output "ssh_sha" {
+  value = sha256(join("\n", local.ssh_keys))
 }

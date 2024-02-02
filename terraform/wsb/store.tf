@@ -5,6 +5,11 @@ locals {
       size = 9
     }
   }
+  light_vols = {
+    droplet = {
+      size = 8
+    }
+  }
 }
 
 resource "aws_s3_bucket" "chum_bucket" {
@@ -34,7 +39,15 @@ resource "aws_ebs_volume" "nfs" {
   }
 }
 
-output "smb" {
+resource "aws_lightsail_disk" "iscsi" {
+  provider          = aws.us_w2
+  for_each          = local.light_vols
+  availability_zone = local.zones.us_w2[0]
+  name              = "iscsi-${each.key}"
+  size_in_gb        = each.value.size
+}
+
+output "ebs" {
   value = [
     for vol in aws_ebs_volume.nfs :
     {
@@ -43,6 +56,16 @@ output "smb" {
       size = vol.size
       type = vol.type
       zone = vol.availability_zone
+    }
+  ]
+}
+
+output "light_vols" {
+  value = [
+    for vol in aws_lightsail_disk.iscsi :
+    {
+      disk = "/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_${replace(vol.id, "-", "")}"
+      id   = vol.id
     }
   ]
 }

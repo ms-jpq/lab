@@ -27,7 +27,7 @@ data "external" "lightsail_nameserver" {
   }
 }
 
-output "sea_to_sky_name_servers2" {
+output "lightsail_name_servers" {
   value = {
     for key, val in data.external.lightsail_nameserver.result :
     key => sort(jsondecode(val))
