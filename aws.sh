@@ -52,7 +52,7 @@ cpu)
   IS="$("${AWS[@]}" get-instances | "${JQ[@]}" '.instances[].name')"
   readarray -t -- INSTANCES <<<"$IS"
   read -r -d '' -- JQJQ <<-'EOF' || true
-.metricData[] | "\(.timestamp | sub("-[^-]+$"; "")) -> \(.average | floor) \(.unit)"
+.metricData[] | "\(.timestamp | sub("T"; " ") | sub("-[^-]+$"; "")) -> \(.average | floor) \(.unit)"
 EOF
 
   for INSTANCE in "${INSTANCES[@]}"; do
@@ -68,7 +68,7 @@ EOF
     )
 
     printf -- '%s\n' "-> $INSTANCE" >&2
-    "${AWS[@]}" | "${JQ[@]}" "$JQJQ" | sort --key 1,1 | tr -- 'T' ' '
+    "${AWS[@]}" | "${JQ[@]}" "$JQJQ" | sort --key 1,2
   done
   ;;
 *)
