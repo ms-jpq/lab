@@ -73,6 +73,10 @@ zfs send --verbose --replicate --props -- '<snapshot>' | zfs recv -v -F -- '<dat
 ```
 
 ```bash
+pv --bytes --rate --average-rate --timer
+```
+
+```bash
 # ignore snapshots (no replicate)
 zfs list -t snapshot | rg '<dataset>'
 zfs send --verbose --props -- '<snapshot>' | zfs recv -v -F -- '<dataset>'

@@ -1,10 +1,6 @@
 locals {
   s3_buckets = ["lab"]
-  ebs_vols = {
-    droplet = {
-      size = 9
-    }
-  }
+  ebs_vols   = {}
   light_vols = {
     droplet = {
       size = 8
@@ -26,13 +22,13 @@ output "plankton" {
   ]
 }
 
-resource "aws_ebs_volume" "nfs" {
+resource "aws_ebs_volume" "iscsi" {
   for_each          = local.ebs_vols
   availability_zone = local.zones.ca_w1[0]
   size              = each.value.size
   type              = "gp3"
   tags = {
-    id = "nfs-${each.key}"
+    id = "iscsi-${each.key}"
   }
   lifecycle {
     prevent_destroy = true
@@ -45,27 +41,20 @@ resource "aws_lightsail_disk" "iscsi" {
   availability_zone = local.zones.us_w2[0]
   name              = "iscsi-${each.key}"
   size_in_gb        = each.value.size
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 output "ebs" {
   value = [
-    for vol in aws_ebs_volume.nfs :
+    for vol in aws_ebs_volume.iscsi :
     {
       disk = "/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_${replace(vol.id, "-", "")}"
       id   = vol.id
       size = vol.size
       type = vol.type
       zone = vol.availability_zone
-    }
-  ]
-}
-
-output "light_vols" {
-  value = [
-    for vol in aws_lightsail_disk.iscsi :
-    {
-      disk = "/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_${replace(vol.id, "-", "")}"
-      id   = vol.id
     }
   ]
 }

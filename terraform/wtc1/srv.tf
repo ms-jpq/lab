@@ -1,7 +1,7 @@
 data "aws_ebs_volume" "john" {
   filter {
     name   = "tag:id"
-    values = ["nfs-droplet"]
+    values = ["iscsi-droplet"]
   }
   most_recent = true
 }

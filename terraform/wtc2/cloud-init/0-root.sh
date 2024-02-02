@@ -7,10 +7,15 @@ shopt -s dotglob nullglob extglob globstar
 SSH="/root/.ssh"
 # shellcheck disable=SC2174
 mkdir -v --parents --mode 0700 -- "$SSH"
-# shellcheck disable=SC2154
-printf -- '\n%s\n' "$SSH_KEYS" >>"$SSH/authorized_keys"
+{
+  printf -- '\n'
+  # shellcheck disable=SC2154
+  base64 --decode <<<"$SSH_KEYS"
+  printf -- '\n'
+} >>"$SSH/authorized_keys"
 
-hostnamectl hostname -- "$HOSTNAME"
+HOST="$(base64 --decode <<<"$HOSTNAME")"
+hostnamectl hostname -- "$HOST"
 
 PACKAGES=(zfsutils-linux)
 apt-get update
