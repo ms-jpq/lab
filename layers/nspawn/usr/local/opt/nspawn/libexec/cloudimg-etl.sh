@@ -46,7 +46,6 @@ esac
 tar --extract --directory "$DST" --file "$SRC"
 mkdir -v -p -- "$DST/root/.ssh" "$USRN"
 rm -v -rf -- "$DST/etc/hostname"
-cp -v -f -- "$BASE/../macvlan.network" "$USRN/10-macvlan.network"
 chroot "$DST" dpkg --purge --force-all -- "${DIE[@]}"
 
 for SCRIPT in "${0%/*}/../overlay.d"/*; do

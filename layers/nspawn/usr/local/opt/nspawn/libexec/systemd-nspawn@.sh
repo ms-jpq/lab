@@ -24,6 +24,7 @@ EOF
 cat -- "$CONF"/*.nspawn "$ROOT"/*.nspawn | envsubst | sponge -- "/run/systemd/nspawn/$MACHINE.nspawn"
 IPV4="$IPV4/24" IPV6="$IPV6/64" envsubst <"$BASE/host0.network" >"$HOST0"
 envsubst <"$BASE/macvlan.network" >"$MVLAN"
+chmod -- o+r "$HOST0" "$MVLAN"
 
 ARGV=(
   systemd-nspawn
