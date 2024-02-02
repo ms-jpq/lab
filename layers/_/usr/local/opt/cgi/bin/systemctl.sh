@@ -23,7 +23,7 @@ AS=(
 )
 
 for A in "${AS[@]}"; do
-  /usr/local/libexec/hr-run.sh systemctl --no-pager --all --full --show-transaction "$A"
+  /usr/local/libexec/hr-run.sh systemctl --no-pager --all --full --show-types --show-transaction "$A"
 done
 
 /usr/local/libexec/hr-run.sh systemctl --no-pager --full --show-transaction list-dependencies

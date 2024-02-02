@@ -22,7 +22,7 @@ for NAME in "$@"; do
 done
 
 sctl() {
-  "$HR" systemctl --no-pager --full --show-transaction "$@"
+  "$HR" systemctl --no-pager --full --show-types --show-transaction "$@"
 }
 
 case "$ACTION" in

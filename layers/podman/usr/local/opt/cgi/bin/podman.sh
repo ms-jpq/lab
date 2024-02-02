@@ -13,6 +13,11 @@ Content-Type: text/plain; charset=utf-8
 EOF
 
 NAME="${0##*/}"
+
+if [[ "$NAME" == "docker.sh" ]]; then
+  /usr/local/libexec/hr-run.sh systemctl --no-pager --full --lines 0 status -- docker.slice
+fi
+
 NAME="${NAME%.sh}"
 
 /usr/local/libexec/hr-run.sh "$NAME" image ls --all
