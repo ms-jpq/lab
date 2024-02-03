@@ -71,14 +71,17 @@ output "ebs" {
 }
 
 output "ls_ebs" {
-  value = {
+  value = [
     for key, val in {
       for name, json in data.external.ls_ebs.result :
       name => jsondecode(json)
     } :
-    key => {
+    {
+      id    = key
       iops  = val.iops
+      size  = val.sizeInGb
       state = val.state
+      zone  = val.location.availabilityZone
     }
-  }
+  ]
 }
