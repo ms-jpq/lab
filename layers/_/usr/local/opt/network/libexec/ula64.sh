@@ -6,5 +6,5 @@ ID="$(</etc/machine-id)"
 ULA=$((0xfd << 56))
 B3="$(b3sum --no-names --length 6 <<<"$ID")"
 MASK=$((~(0xffff << 48)))
-printf -v BITS -- '%x' $(((ULA ^ "0x$B3" << 8) >> 16 & MASK))
+printf -v BITS -- '%08x' $(((ULA ^ "0x$B3" << 8) >> 16 & MASK))
 exec -- perl -CASD -wpe 's/(.{4})(?=.)/$1:/g' <<<"$BITS"

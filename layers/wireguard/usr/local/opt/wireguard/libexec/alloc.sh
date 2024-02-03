@@ -54,7 +54,7 @@ for PEER in "${PEERS[@]}"; do
     CLIENT_PRIVATE_KEY="$VAR/peer-$ID.key"
 
     B3="0x$(b3sum --no-names --length 4 <<<"$ID")"
-    printf -v HEX_32 -- '%x' $((B3 & ~"0x$V4_MASK" | "0x$V4_NET"))
+    printf -v HEX_32 -- '%08x' $((B3 & ~"0x$V4_MASK" | "0x$V4_NET"))
 
     IPV4_OCTETS="$(perl -CASD -wpe 's/(.{2})/0x$1 /g' <<<"$HEX_32")"
     # shellcheck disable=SC2086
