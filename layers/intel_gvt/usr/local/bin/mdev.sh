@@ -17,7 +17,9 @@ up)
     vfio-iommu-type1
   )
 
-  modprobe -- "${MDEV_MODS[@]}"
+  for MOD in "${MDEV_MODS[@]}"; do
+    modprobe -- "$MOD"
+  done
 
   for IOMMU in "${MDEV_IDS[@]}"; do
     for TYPE in "/sys/bus/pci/devices/$IOMMU/mdev_supported_types"/*; do

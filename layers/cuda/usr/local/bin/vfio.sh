@@ -33,9 +33,13 @@ done
 
 case "$1" in
 up)
-  modprobe -- "${VFIO_MODS[@]}"
+  for MOD in "${VFIO_MODS[@]}"; do
+    modprobe -- "$MOD"
+  done
   systemctl stop -- "${SERVICES[@]}"
-  modprobe -r -- "${NVIDIA_MODS[@]}"
+  for MOD in "${NVIDIA_MODS[@]}"; do
+    modprobe --remove -- "$MOD"
+  done
 
   for IOMMU in "${VFIO_IDS[@]}"; do
     VENDOR="$(vendor "$IOMMU")"
