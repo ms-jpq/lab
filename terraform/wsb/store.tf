@@ -46,6 +46,17 @@ resource "aws_lightsail_disk" "iscsi" {
   }
 }
 
+data "external" "ls_ebs" {
+  program = ["${path.module}/lightsail_ebs.sh"]
+  query = {
+    region = local.regions.us_w2
+    disks = jsonencode([
+      for vol in aws_lightsail_disk.iscsi :
+      vol.id
+    ])
+  }
+}
+
 output "ebs" {
   value = [
     for vol in aws_ebs_volume.iscsi :
@@ -57,4 +68,17 @@ output "ebs" {
       zone = vol.availability_zone
     }
   ]
+}
+
+output "ls_ebs" {
+  value = {
+    for key, val in {
+      for name, json in data.external.ls_ebs.result :
+      name => jsondecode(json)
+    } :
+    key => {
+      iops  = val.iops
+      state = val.state
+    }
+  }
 }
