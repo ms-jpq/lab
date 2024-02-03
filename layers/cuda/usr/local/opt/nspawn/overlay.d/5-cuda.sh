@@ -6,7 +6,9 @@ ROOT="$1"
 
 FILES=(
   /etc/apt/sources.list.d/cuda.list
+  /etc/apt/sources.list.d/nvidia-container-toolkit.list
   /etc/apt/trusted.gpg.d/cuda.gpg
+  /etc/apt/trusted.gpg.d/nvidia-container-toolkit.gpg
 )
 
 for FILE in "${FILES[@]}"; do
