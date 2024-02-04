@@ -44,6 +44,11 @@ locals {
     ]
     package_update = true
     packages       = ["zfsutils-linux"]
+    snap = {
+      commands = [
+        ["remove", "--", "lxd"],
+      ]
+    }
     # TODO: swap needs to run after mkfs
     # swap = {
     #   filename = "/var/lib/docker/swapfile"
