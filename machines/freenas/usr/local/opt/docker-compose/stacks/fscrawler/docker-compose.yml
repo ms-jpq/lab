@@ -1,0 +1,20 @@
+---
+services:
+  srv:
+    image: docker.io/dadoonet/fscrawler:noocr
+    userns_mode: auto
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command:
+      - fscrawler
+      - job0
+      - --restart
+    network_mode: host
+    volumes:
+      - /var/lib/local/${COMPOSE_PROJECT_NAME}:/root/.fscrawler
+      - /media:/tmp/es:ro
+      - logs:/usr/share/fscrawler/logs
+
+volumes:
+  logs:
