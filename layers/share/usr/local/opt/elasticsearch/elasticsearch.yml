@@ -1,0 +1,3 @@
+---
+path.data: /var/lib/local/elasticsearch
+path.logs: /var/tmp/elasticsearch
