@@ -11,18 +11,19 @@ user: /home/ubuntu
 /home/ubuntu:
 	sudo -- useradd --user-group --create-home -- '$(@F)'
 
+SMB_CONF := /usr/local/opt/samba/main/smb.conf
 USER_SHARES := /var/lib/samba/usershares
 
-samba: /usr/local/opt/samba/main/smb.conf
+samba: $(SMB_CONF)
 /usr/local/opt/samba/smb.conf: /usr/local/opt/samba/main/smb.conf $(shell shopt -u failglob && printf -- '%s ' /usr/local/opt/samba/conf.d/*.conf)
 	cat -- $^ '$@' | sudo tee -- '$@' >/dev/null
 
 samba: $(USER_SHARES)
-$(USER_SHARES): /usr/local/etc/default/shares.env /usr/local/opt/samba/libexec/share.sh | pkg._
+$(USER_SHARES): /usr/local/etc/default/shares.env $(SMB_CONF) /usr/local/opt/samba/libexec/share.sh | pkg._
 	sudo -- mkdir -v -p -- '$@'
 	sudo -- chgrp -- sambashare '$@'
 	sudo -- chmod -- 1770 '$@'
-	sudo -- /usr/local/opt/samba/libexec/share.sh '$<'
+	sudo -- /usr/local/opt/samba/libexec/share.sh '$(SMB_CONF)' '$<'
 
 iscsi: /etc/rtslib-fb-target
 /etc/rtslib-fb-target: | pkg._

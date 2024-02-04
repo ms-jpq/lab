@@ -2,11 +2,12 @@
 
 set -o pipefail
 
-if [[ -f /.dockerenv ]] || [[ -v CI ]]; then
+if [[ -f /.dockerenv ]]; then
   exit 0
 fi
 
-ENV="$1"
+CONF="$1"
+ENV="$2"
 SMB_EXPORTS="$(sed -E -e 's/^SMB_EXPORTS=//' -- "$ENV")"
 
 USERNAME="$(id --name --user -- 1000)"
@@ -14,7 +15,7 @@ usermod --append --groups sambashare -- "$USERNAME"
 
 # shellcheck disable=SC2154
 readarray -t -d ',' -- ROWS <<<"$SMB_EXPORTS"
-NUS=(net --configfile "${0%/*}/../smb.conf" usershare)
+NUS=(net --configfile "$CONF" usershare)
 
 for ROW in "${ROWS[@]}"; do
   ROW="${ROW//[[:space:]]/''}"
