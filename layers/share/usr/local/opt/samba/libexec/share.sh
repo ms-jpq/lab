@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-if [[ -f /.dockerenv ]]; then
+if [[ -f /.dockerenv ]] || [[ -v CI ]]; then
   exit 0
 fi
 

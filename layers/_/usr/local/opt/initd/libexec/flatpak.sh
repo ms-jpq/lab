@@ -8,12 +8,7 @@ fi
 
 cd -- "${0%/*}/.."
 
-TXTS=(./flatpaks/*.txt)
-if ! ((${#TXTS[@]})); then
-  exit 0
-fi
-
-TXT="$(grep -E -h -- '^(\+|-) .+' "${TXTS[@]}")"
+TXT="$(sed -E -ne '/^[+-]/p' -- /dev/null ./flatpaks/*.txt)"
 readarray -t -- DESIRED <<<"$TXT"
 
 PKGS="$(flatpak list --app --columns application)"
