@@ -1,6 +1,11 @@
 # Spotlight
 
 ```bash
+# Live reload
+smbctl.sh smbd reload-config
+```
+
+```bash
 find /media -type f -name '.DS_Store' -delete
 ```
 
