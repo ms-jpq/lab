@@ -6,6 +6,14 @@ sp := $(e) $(e)
 
 M4 := ./libexec/m4.sh $(shell printf -- '%s ' ./layers/_/usr/local/include/m4/*.m4)
 
+define LOCAL_CLEAN_TEMPLATE
+.PHONY: clean.$(notdir $1)
+clean.$(notdir $1):
+	rm -v -rf -- '$(TMP)/$1'
+endef
+
+$(foreach machine,$(ALL_MACHINES),$(eval $(call LOCAL_CLEAN_TEMPLATE,$(machine))))
+
 
 define LOCAL_D_TEMPLATE
 $(TMP)/$1/$(patsubst $1/%,layers/__/%,$2)/: | $(TMP)/$1/$(dir $(patsubst $1/%,layers/__/%,$2))

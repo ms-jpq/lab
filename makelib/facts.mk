@@ -1,8 +1,10 @@
 .PHONY: facts
 
+ALL_MACHINES = $(patsubst %/,%,$(shell printf -- '%s ' machines/*/))
+
 ifeq ($(origin MACHINE), command line)
 ifeq ($(MACHINE),*)
-MACHINES := $(patsubst %/,%,$(shell printf -- '%s ' machines/*/))
+MACHINES := $(ALL_MACHINES)
 else
 MACHINES := $(addprefix machines/,$(MACHINE))
 endif
