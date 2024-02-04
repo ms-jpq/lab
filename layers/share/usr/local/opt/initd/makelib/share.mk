@@ -6,11 +6,6 @@ CLOBBER.FS += /etc/exports.d/* /etc/nfs.conf.d/* /etc/default/samba /var/lib/loc
 CLOBBER.ISCSI := /etc/rtslib-fb-target /etc/iscsi/nodes /etc/iscsi/send_targets
 CLOBBER.FS += $(CLOBBER.ISCSI)
 
-pkg._: | /home/ubuntu
-user: /home/ubuntu
-/home/ubuntu:
-	sudo -- useradd --user-group --create-home -- '$(@F)'
-
 SMB_CONF := /usr/local/opt/samba/main/smb.conf
 USER_SHARES := /var/lib/samba/usershares
 
