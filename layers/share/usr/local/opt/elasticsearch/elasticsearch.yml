@@ -1,3 +1,8 @@
 ---
 path.data: /var/lib/local/elasticsearch
 path.logs: /var/tmp/elasticsearch
+
+discovery.type: single-node
+network.host: "::"
+xpack.security.enabled: false
+
