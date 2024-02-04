@@ -11,9 +11,13 @@ user: /home/ubuntu
 /home/ubuntu:
 	sudo -- useradd --user-group --create-home -- '$(@F)'
 
-samba: /var/lib/local/samba/usershares
+USER_SHARES := /var/lib/samba/usershares
+samba: $(USER_SHARES)
 
-/var/lib/local/samba/usershares: | pkg._
+$(USER_SHARES): /usr/local/etc/default/shares.env | pkg._
+	set -a
+	source -- '$<'
+	set +a
 	sudo -- mkdir -v -p -- '$@'
 	sudo -- chgrp -- sambashare '$@'
 	sudo -- chmod -- 1770 '$@'
@@ -28,4 +32,4 @@ clobber.iscsi:
 	sudo -- rm -v -fr -- $(CLOBBER.ISCSI)
 
 clobber.samba:
-	sudo rm -v -fr -- /var/lib/local/samba/usershares
+	sudo rm -v -fr -- '$(USER_SHARES)'

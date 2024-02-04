@@ -6,12 +6,11 @@ if [[ -f /.dockerenv ]]; then
   exit 0
 fi
 
-# shellcheck disable=SC1091
-source -- /usr/local/etc/default/shares.env
+USERNAME="$(id --name --user -- 1000)"
+usermod --append --groups sambashare -- "$USERNAME"
 
 # shellcheck disable=SC2154
 readarray -t -d ',' -- ROWS <<<"$SMB_EXPORTS"
-
 NUS=(net --configfile "${0%/*}/../smb.conf" usershare)
 
 for ROW in "${ROWS[@]}"; do
@@ -23,7 +22,7 @@ for ROW in "${ROWS[@]}"; do
   DIR="/media/$ROW"
   NAME="${ROW##*/}"
   mkdir -v -p -- "$DIR"
-  "${NUS[@]}" add "$NAME" "$DIR" '' 'everyone:F' 'guest_ok=y'
+  runuser --user "$USERNAME" -- "${NUS[@]}" add "$NAME" "$DIR" '' 'everyone:F' 'guest_ok=y'
 done
 
 exec -- "${NUS[@]}" list --long
