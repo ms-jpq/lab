@@ -14,7 +14,7 @@ user: /home/ubuntu
 USER_SHARES := /var/lib/samba/usershares
 samba: $(USER_SHARES)
 
-$(USER_SHARES): /usr/local/etc/default/shares.env | pkg._
+$(USER_SHARES): /usr/local/etc/default/shares.env /usr/local/opt/samba/libexec/share.sh | pkg._
 	sudo -- mkdir -v -p -- '$@'
 	sudo -- chgrp -- sambashare '$@'
 	sudo -- chmod -- 1770 '$@'
