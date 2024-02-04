@@ -6,11 +6,11 @@ if [[ -f /.dockerenv ]]; then
   exit 0
 fi
 
-cd -- "${0%/*}/.."
-
 if ! command -v -- flatpak &>/dev/null; then
   exit 0
 fi
+
+cd -- "${0%/*}/.."
 
 TXT="$(sed -E -ne '/^[+-]/p' -- /dev/null ./flatpaks/*.txt)"
 readarray -t -- DESIRED <<<"$TXT"
