@@ -8,12 +8,12 @@ services:
       - "host.docker.internal:host-gateway"
     command:
       - fscrawler
-      - job0
+      - spotlight0
       - --restart
     network_mode: host
     volumes:
       - /var/lib/local/${COMPOSE_PROJECT_NAME}:/root/.fscrawler
-      - /media:/tmp/es:ro
+      - /media:/media:ro
       - logs:/usr/share/fscrawler/logs
 
 volumes:

@@ -1,5 +1,5 @@
 ---
-name: "job0"
+name: spotlight0
 elasticsearch:
   nodes:
     - url: http://localhost:9200
@@ -7,3 +7,4 @@ fs:
   continue_on_error: true
   indexed_chars: 100%
   lang_detect: true
+  url: /media
