@@ -1,2 +1,2 @@
-+ systemd-timesyncd
-- chrony
+# + systemd-timesyncd
+# - chrony
