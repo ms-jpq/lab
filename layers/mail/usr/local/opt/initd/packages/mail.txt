@@ -1,5 +1,5 @@
-# + apache2
 # + z-push-backend-imap
++ apache2
 + dovecot-imapd
 + dovecot-lmtpd
 + opensmtpd
