@@ -25,24 +25,7 @@ services:
       REDLIB_DEFAULT_DISABLE_VISIT_REDDIT_CONFIRMATION: on
       REDLIB_DEFAULT_HIDE_HLS_NOTIFICATION: on
       REDLIB_DEFAULT_USE_HLS: on
-    network_mode: service:warp
-
-  warp:
-    image: docker.io/caomingjun/warp:latest
-    userns_mode: auto
-    restart: unless-stopped
-    cap_add:
-      - NET_ADMIN
-    sysctls:
-      - net.ipv6.conf.all.disable_ipv6=0
-      - net.ipv4.conf.all.src_valid_mark=1
-    environment:
-      WARP_SLEEP: 2
-    networks:
-      - default
-      - traefik
-    volumes:
-      - warp:/var/lib/cloudflare-warp
+    network_mode: container:warp-srv-1
 
 networks:
   traefik:
