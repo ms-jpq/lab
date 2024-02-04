@@ -3,5 +3,6 @@
 + dovecot-imapd
 + dovecot-lmtpd
 + opensmtpd
-+ roundcube-core
++ php
++ roundcube
 + roundcube-sqlite3
