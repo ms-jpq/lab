@@ -39,4 +39,4 @@ pkg._: /etc/apt/trusted.gpg.d/elastic-search.gpg
 /etc/elasticsearch/jvm.options: | pkg._
 elasticsearch: /usr/local/opt/elasticsearch/jvm.options
 /usr/local/opt/elasticsearch/jvm.options: /etc/elasticsearch/jvm.options
-	sed -E -e 's#/var/log/#/var/tmp/#' -- '$<' | sudo -- tee -- '$@' >/dev/null
+	sudo -- sed -E -e 's#/var/log/#/var/tmp/#' -- '$<' | sudo -- tee -- '$@' >/dev/null

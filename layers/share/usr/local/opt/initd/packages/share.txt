@@ -1,4 +1,5 @@
 + elasticsearch
++ kibana
 + nfs-kernel-server
 + rclone
 + samba
