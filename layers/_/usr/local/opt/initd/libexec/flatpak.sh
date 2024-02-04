@@ -6,7 +6,7 @@ if [[ -f /.dockerenv ]]; then
   exit 0
 fi
 
-if ! command -v -- flatpak &>/dev/null; then
+if ! command -v -- flatpak >/dev/null; then
   exit 0
 fi
 
@@ -30,6 +30,10 @@ ADD=()
 RM=()
 
 for LINE in "${DESIRED[@]}"; do
+  if [[ -z "$LINE" ]]; then
+    continue
+  fi
+
   ACTION="${LINE%% *}"
   PKG="${LINE#* }"
 
