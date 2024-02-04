@@ -83,6 +83,7 @@
     "youtube"
   ],
   "ENV_MAIL": "me@ENV_DOMAIN",
+  "ENV_MINIFLUX_USERNAME": "ENV_MAIL",
   "ENV_PUBLIC_SITES": [
     "12ft.*",
     "ask.*",

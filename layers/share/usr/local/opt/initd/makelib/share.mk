@@ -15,13 +15,10 @@ USER_SHARES := /var/lib/samba/usershares
 samba: $(USER_SHARES)
 
 $(USER_SHARES): /usr/local/etc/default/shares.env | pkg._
-	set -a
-	source -- '$<'
-	set +a
 	sudo -- mkdir -v -p -- '$@'
 	sudo -- chgrp -- sambashare '$@'
 	sudo -- chmod -- 1770 '$@'
-	sudo --preserve-env -- /usr/local/opt/samba/libexec/share.sh
+	sudo -- /usr/local/opt/samba/libexec/share.sh '$<'
 
 iscsi: /etc/rtslib-fb-target
 /etc/rtslib-fb-target: | pkg._

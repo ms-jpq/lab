@@ -6,6 +6,9 @@ if [[ -f /.dockerenv ]]; then
   exit 0
 fi
 
+ENV="$1"
+SMB_EXPORTS="$(sed -E -e 's/^SMB_EXPORTS=//' -- "$ENV")"
+
 USERNAME="$(id --name --user -- 1000)"
 usermod --append --groups sambashare -- "$USERNAME"
 
