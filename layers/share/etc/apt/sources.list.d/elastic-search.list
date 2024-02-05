@@ -1,2 +1,2 @@
 # TODO: keep this in sync with fscrawler
-deb https://artifacts.elastic.co/packages/8.x/apt stable main
+deb https://artifacts.elastic.co/packages/7.x/apt stable main

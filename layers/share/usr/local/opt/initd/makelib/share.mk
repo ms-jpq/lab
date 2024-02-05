@@ -12,7 +12,7 @@ USER_SHARES := /var/lib/samba/usershares
 samba: /usr/local/opt/samba/smb.conf
 /usr/local/opt/samba/smb.conf: /usr/local/opt/samba/libexec/conf.sh $(SMB_CONF) $(shell shopt -u failglob && printf -- '%s ' /usr/local/opt/samba/conf.d/*.conf) | /usr/bin/envsubst
 	sudo -- '$<' '$@' $^
-	# sudo -- /usr/local/bin/smbctl.sh smbd reload-config
+	sudo -- /usr/local/bin/smbctl.sh smbd reload-config
 
 /etc/samba/smb.conf: | pkg._
 samba: $(USER_SHARES)
