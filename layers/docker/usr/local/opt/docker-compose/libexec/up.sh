@@ -25,7 +25,6 @@ XARGS=(
   xargs
   --null
   -I '%'
-  --max-args 1
   --max-procs 0
   -- "$0"
   docker compose
