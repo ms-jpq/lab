@@ -1,0 +1,6 @@
+[Unit]
+Description        = FS Veto Timer -- %f
+
+[Timer]
+OnCalendar         = weekly
+RandomizedDelaySec = 1 day
