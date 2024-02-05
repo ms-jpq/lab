@@ -4,7 +4,7 @@ set -o pipefail
 
 cd -- "${0%/*}/.."
 
-BUCKET='chum-bucket-lab'
+BUCKET='chumbucket-lab'
 TMP="$PWD/var/gpg"
 
 dir() (

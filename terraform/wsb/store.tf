@@ -10,7 +10,7 @@ locals {
 
 resource "aws_s3_bucket" "chum_bucket" {
   for_each = toset(local.s3_buckets)
-  bucket   = "chum-bucket-${each.key}"
+  bucket   = "chumbucket-${each.key}"
 }
 
 output "plankton" {
