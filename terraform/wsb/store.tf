@@ -1,5 +1,5 @@
 locals {
-  s3_buckets = ["lab"]
+  s3_buckets = ["home", "lab"]
   ebs_vols   = {}
   light_vols = {
     droplet = {
