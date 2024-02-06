@@ -221,12 +221,15 @@ def _handler(
                             break
 
             if not authorized:
-                writer.write(b"HTTP/1.0 401 Unauthorized\r\n")
-                for accept in headers.get(b"accept", ()):
-                    if b"html" in accept:
-                        break
+                if location:
+                    writer.write(b"HTTP/1.0 307 Temporary Redirect\r\n")
                 else:
-                    writer.write(b'WWW-Authenticate: Basic realm="-"\r\n')
+                    writer.write(b"HTTP/1.0 401 Unauthorized\r\n")
+                    for accept in headers.get(b"accept", ()):
+                        if b"html" in accept:
+                            break
+                    else:
+                        writer.write(b'WWW-Authenticate: Basic realm="-"\r\n')
             else:
                 proto = b"".join(headers.get(b"x-forwarded-proto", ()))
                 secure = proto != b"http"
