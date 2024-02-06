@@ -1,7 +1,12 @@
-.PHONY: push pull
+.PHONY: s3 push pull cost cpu
 
-push:
-	./libexec/s3.sh push
+S5 := $(VAR)/bin/s5cmd
 
-pull:
-	./libexec/s3.sh pull
+s3: | $(S5)
+	./libexec/s3.sh
+
+push pull: | $(S5)
+	./libexec/s3.sh '$@'
+
+cost cpu: | ./.venv/bin
+	./libexec/aws.sh '$@'

@@ -3,7 +3,7 @@
 set -o pipefail
 
 AWS=(
-  aws
+  "${0%/*}/../.venv/bin/aws"
   --output json
 )
 
@@ -52,7 +52,7 @@ cpu)
   IS="$("${AWS[@]}" get-instances | "${JQ[@]}" '.instances[].name')"
   readarray -t -- INSTANCES <<<"$IS"
   read -r -d '' -- JQJQ <<-'EOF' || true
-.metricData[] | "\(.timestamp | sub("T"; " ") | sub("-[^-]+$"; "")) -> \(.average | floor) \(.unit)"
+.metricData[] | "\(.timestamp | strftime("%Y-%m-%d %H:%M:%S")) -> \(.average | floor) \(.unit)"
 EOF
 
   for INSTANCE in "${INSTANCES[@]}"; do

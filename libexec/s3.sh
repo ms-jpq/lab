@@ -4,7 +4,8 @@ set -o pipefail
 
 cd -- "${0%/*}/.."
 
-BUCKET='chumbucket-lab'
+BUCKET='s3://chumbucket-lab'
+S5="$PWD/var/bin/s5cmd"
 TMP="$PWD/var/gpg"
 
 dir() (
@@ -14,7 +15,7 @@ dir() (
 
 case "${1:-""}" in
 '')
-  aws s3api list-objects-v2 --bucket "$BUCKET" | jq --raw-output '.Contents[].Key' | awk '{ gsub("%2F", "/"); print }'
+  "$S5" ls --humanize -- "$BUCKET" | awk '{ gsub("%2F", "/", $NF); print }' | column -t
   ;;
 push)
   FILES=(
@@ -38,11 +39,11 @@ push)
     NAME="$(jq --raw-input --raw-output '@uri' <<<"$F")"
     mv -v -f -- "$F" "$TMP/$NAME"
   done
-  aws s3 sync -- "$TMP/" "s3://$BUCKET"
+  "$S5" sync --delete -- "$TMP/" "$BUCKET"
   ;;
 pull)
   dir
-  aws s3 cp --recursive -- "s3://$BUCKET" "$TMP"
+  "$S5" cp -- "$BUCKET/*" "$TMP"
   FILES=("$TMP"/*.gpg)
   gpg -v --batch --decrypt-files -- "${FILES[@]}"
   for F in "${FILES[@]}"; do
@@ -55,7 +56,7 @@ pull)
 rmfr)
   read -r -p '>>> (yes/no)?' -- DIE
   if [[ "$DIE" == 'yes' ]]; then
-    aws s3 rm --recursive -- "s3://$BUCKET"
+    "$S5" rm --all-versions -- "$BUCKET/*"
   else
     exit 130
   fi

@@ -1,6 +1,7 @@
 [project]
-name    = "lab"
-version = "0"
+dependencies = ["awscli"]
+name         = "lab"
+version      = "0"
 
 [project.optional-dependencies]
 dev = ["mypy", "types-PyYAML", "black", "isort"]
