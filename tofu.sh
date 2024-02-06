@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-BASE="${0%/*}"
+BASE="$(realpath -- "${0%/*}")"
 
 set -a
 # shellcheck disable=SC1091
@@ -12,4 +12,5 @@ set +a
 NAME="$1"
 shift -- 1
 
+PATH="$BASE/.venv/bin:$PATH"
 exec -- "$BASE/var/bin/tofu" -chdir="$BASE/terraform/$NAME" "$@"
