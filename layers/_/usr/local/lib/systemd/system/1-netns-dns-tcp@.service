@@ -17,3 +17,4 @@ ReadWritePaths       = %t/local/dns %T
 NetworkNamespacePath = %t/netns/%I
 
 ExecStart            = socat -T 9 %j-listen:53,bind=127.0.0.53,fork unix-connect:%t/local/dns/%J.sock
+ExecReload           = kill -s SIGUSR1 -- ${MAINPID}
