@@ -37,7 +37,7 @@ else
 S5_TYPE := 64bit
 endif
 
-V_S5CMD      =  $(patsubst v%,%,$(shell ./libexec/gh-latest.sh $(VAR) peak/s5cmd))
+V_S5CMD      = $(patsubst v%,%,$(shell ./libexec/gh-latest.sh $(VAR) peak/s5cmd))
 V_SHELLCHECK = $(shell ./libexec/gh-latest.sh $(VAR) koalaman/shellcheck)
 V_SHFMT      = $(shell ./libexec/gh-latest.sh $(VAR) mvdan/sh)
 V_TFLINT     = $(shell ./libexec/gh-latest.sh $(VAR) terraform-linters/tflint)
