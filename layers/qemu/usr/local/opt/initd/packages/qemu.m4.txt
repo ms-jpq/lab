@@ -5,7 +5,6 @@
 + qemu-block-extra
 + qemu-utils
 + rlwrap
-+ socat
 + swtpm-tools
 + systemd-container
 + websockify

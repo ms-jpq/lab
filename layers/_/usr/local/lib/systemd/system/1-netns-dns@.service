@@ -12,4 +12,4 @@ PrivateTmp       = yes
 RuntimeDirectory = local/dns
 ReadWritePaths   = %t/local/dns %T
 
-ExecStart        = socat unix-listen:%t/local/dns/%I.sock,fork %I-connect:127.0.0.53:53
+ExecStart        = socat -T 9 unix-listen:%t/local/dns/%I.sock,fork %I-connect:127.0.0.53:53
