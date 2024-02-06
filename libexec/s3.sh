@@ -11,6 +11,7 @@ TMP="$PWD/var/gpg"
 dir() (
   rm -v -fr -- "$TMP"
   mkdir -v -p -- "$TMP"
+  chmod -v g-rwx,o-rwx "$TMP"
 )
 
 case "${1:-""}" in
