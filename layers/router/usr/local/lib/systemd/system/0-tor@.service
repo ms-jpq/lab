@@ -22,7 +22,7 @@ EnvironmentFile  = %t/local/ip/%J.env
 
 ExecStartPre     = /usr/local/libexec/envsubst2.sh /usr/local/opt/tor/torrc %t/local/tor/%I/torrc
 ExecStartPre     = /usr/local/libexec/envsubst2.sh /usr/local/opt/tor/70-vtor.network ${NETWORK}
-ExecStartPre     = chown -- systemd-network:systemd-network ${NETWORK}
+ExecStartPre     = chown -v -- systemd-network:systemd-network ${NETWORK}
 ExecStart        = networkctl reload
 ExecReload       = networkctl reconfigure -- ${IFACE}
 ExecStop         = -networkctl delete -- ${IFACE}

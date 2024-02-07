@@ -4,8 +4,8 @@ all: mail
 mail: /var/lib/local/vmail
 
 /var/lib/local/vmail:
-	sudo -- mkdir --parents -- '$@'
-	sudo -- chown -- '1000:1000' '$@'
+	sudo -- mkdir -v --parents -- '$@'
+	sudo -- chown -v -- '1000:1000' '$@'
 
 mail: /usr/local/opt/apache2/apache2.conf
 
