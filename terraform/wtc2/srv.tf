@@ -19,6 +19,10 @@ resource "aws_lightsail_instance" "droplet" {
   bundle_id         = "small_3_0"    # aws lightsail --region us-west-2 get-bundles
   name              = local.ls_name
   user_data         = local.user_data
+  lifecycle {
+    # https://github.com/hashicorp/terraform-provider-aws/issues/5011
+    ignore_changes = [user_data]
+  }
 }
 
 locals {
@@ -40,7 +44,7 @@ resource "aws_lightsail_instance_public_ports" "acab" {
 
 resource "aws_lightsail_disk_attachment" "john_cena" {
   provider      = aws.us_w2
-  for_each      = { "iscsi-droplet" = "/dev/xvdp" }
+  for_each      = { "iscsi-droplet" = "/dev/xvdp", "iscsi-btrfs" = "/dev/xvdq" }
   disk_name     = each.key
   disk_path     = each.value
   instance_name = aws_lightsail_instance.droplet.name

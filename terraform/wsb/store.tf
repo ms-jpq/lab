@@ -5,6 +5,9 @@ locals {
     droplet = {
       size = 8
     }
+    btrfs = {
+      size = 8
+    }
   }
 }
 
