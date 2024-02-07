@@ -8,7 +8,10 @@ BindsTo          = 2-websock-display@%i.service
 After            = 2-websock-display@%i.service
 JoinsNamespaceOf = 2-websock-display@%i.service
 
+PartOf           = machine.slice
+
 [Service]
+Slice            = machine.slice
 Restart          = on-failure
 ProtectSystem    = strict
 ProtectHome      = yes

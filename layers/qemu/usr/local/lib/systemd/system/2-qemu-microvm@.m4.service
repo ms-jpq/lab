@@ -17,6 +17,8 @@ BindsTo             = 1-mv@m\x2d%i.service
 After               = 1-mv@m\x2d%i.service
 # ])
 
+PartOf              = machine.slice
+
 [[Service]]
 Slice               = machine.slice
 Restart             = on-failure

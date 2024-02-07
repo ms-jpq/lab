@@ -6,6 +6,7 @@ After          = 2-qemu-q35@%i.service
 PartOf         = 2-websock-proxy@%i.service
 
 [Service]
+Slice          = machine.slice
 Restart        = on-failure
 ProtectSystem  = strict
 ProtectHome    = yes

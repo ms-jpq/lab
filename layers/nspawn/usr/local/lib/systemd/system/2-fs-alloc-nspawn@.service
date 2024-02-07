@@ -5,7 +5,10 @@ CollectMode         = inactive
 RequiresMountsFor   = %S/local/%J
 ConditionPathExists = !%S/local/%J/%I
 
+PartOf              = machine.slice
+
 [Service]
+Slice               = machine.slice
 Type                = oneshot
 RemainAfterExit     = yes
 

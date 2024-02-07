@@ -12,6 +12,7 @@ After               = 2-fs-alloc-nspawn@%i.service
 PartOf              = 2-nspawnd@%i.service
 
 [Service]
+Slice               = machine.slice
 Type                = oneshot
 RemainAfterExit     = yes
 

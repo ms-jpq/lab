@@ -6,6 +6,7 @@ CollectMode              = inactive
 PartOf                   = 2-qemu-q35@%i.service
 
 [Service]
+Slice                    = machine.slice
 ProtectSystem            = strict
 ProtectHome              = yes
 RuntimeDirectory         = libvirt/qemu/swtpm

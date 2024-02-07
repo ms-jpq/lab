@@ -11,6 +11,7 @@ After               = 2-fs-alloc-qemu@%i.service
 PartOf              = 2-qemu-microvm@%i.service
 
 [Service]
+Slice               = machine.slice
 Type                = oneshot
 RemainAfterExit     = yes
 
