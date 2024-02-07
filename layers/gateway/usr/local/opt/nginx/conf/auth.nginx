@@ -19,6 +19,7 @@ location @e401 {
   auth_request off;
   sub_filter   "@METHOD" $request_method;
   sub_filter   "@REDIRECT" $x_request_uri;
+  sub_filter   "@USER" $upstream_http_x_auth_user;
   root         /usr/local/opt/nginx/auth/;
   try_files    /index.html =404;
 }

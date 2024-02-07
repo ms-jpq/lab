@@ -24,6 +24,7 @@ from contextlib import asynccontextmanager, closing, nullcontext, suppress
 from fnmatch import translate
 from functools import lru_cache
 from hmac import compare_digest, digest
+from html import escape
 from http.cookies import CookieError, Morsel, SimpleCookie
 from logging import DEBUG, StreamHandler, captureWarnings, getLogger
 from pathlib import Path, PurePosixPath
@@ -255,6 +256,13 @@ def _handler(
                 for header in (b"Location: ", b"X-Original-URL: "):
                     writer.write(header)
                     writer.write(location)
+                    writer.write(b"\r\n")
+
+            if user:
+                with suppress(UnicodeError):
+                    esc = escape(user.decode()).encode()
+                    writer.write(b"X-Auth-User: ")
+                    writer.write(esc)
                     writer.write(b"\r\n")
 
             writer.write(b"\r\n")
