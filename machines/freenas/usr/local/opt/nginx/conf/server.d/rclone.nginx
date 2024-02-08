@@ -1,3 +1,11 @@
+location /s3 {
+  return 307 /s3/;
+}
+
+location /s3/ {
+  proxy_pass http://127.0.0.53:8070;
+}
+
 location /rclone {
   return 307 /journald/tail.html?_SYSTEMD_UNIT=0-rclone-mirror.service;
 }
