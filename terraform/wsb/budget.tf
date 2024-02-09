@@ -9,7 +9,7 @@ resource "aws_budgets_budget" "septims" {
   time_unit    = "MONTHLY"
 
   dynamic "notification" {
-    for_each = toset(["50", "100"])
+    for_each = toset(["10", "50", "100"])
     content {
       comparison_operator        = "GREATER_THAN"
       notification_type          = "ACTUAL"
@@ -17,5 +17,15 @@ resource "aws_budgets_budget" "septims" {
       threshold                  = tonumber(notification.key)
       threshold_type             = "PERCENTAGE"
     }
+  }
+}
+
+output "dong" {
+  value = {
+    limit = aws_budgets_budget.septims.limit_amount
+    alerts = [
+      for notif in aws_budgets_budget.septims.notification :
+      notif.threshold / 100 * aws_budgets_budget.septims.limit_amount
+    ]
   }
 }
