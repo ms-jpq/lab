@@ -3,7 +3,7 @@
 set -o pipefail
 
 RUN="$1"
-VAR="$2"
+LIB="$2"
 IFACE="$3"
 IPV4_PREFIX="$4"
 RECORD="$RUN/$IFACE.env"
@@ -20,8 +20,8 @@ readarray -t -- ROUTES <<<"$RS"
 IS="$(ip --json -4 addr show | jq --raw-output '.[].addr_info[] | "\(.local)/\(.prefixlen)"')"
 readarray -t -- INETS <<<"$IS"
 
-IPV4_A="$(sed --regexp-extended --quiet -- 's/^IPV4_IF=(.+)$/\1/p' "$RUN"/*.env "$VAR"/*.env)"
-IPV6_A="$(sed --regexp-extended --quiet -- 's/^IPV6_NETWORK=(.+)$/\1/p' "$RUN"/*.env "$VAR"/*.env)"
+IPV4_A="$(sed --regexp-extended --quiet -- 's/^IPV4_IF=(.+)$/\1/p' "$RUN"/*.env "$LIB"/*.env)"
+IPV6_A="$(sed --regexp-extended --quiet -- 's/^IPV6_NETWORK=(.+)$/\1/p' "$RUN"/*.env "$LIB"/*.env)"
 readarray -t -- IPV4_ALLOC <<<"$IPV4_A"
 readarray -t -- IPV6_ALLOC <<<"$IPV6_A"
 
