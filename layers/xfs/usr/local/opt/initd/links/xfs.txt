@@ -1,1 +1,1 @@
-/usr/local/lib/systemd/system/timers.target.wants/nftables.service /usr/lib/systemd/system/xfs_scrub_all.timer
+/usr/local/lib/systemd/system/timers.target.wants/xfs_scrub_all.timer /usr/lib/systemd/system/xfs_scrub_all.timer

@@ -2,5 +2,6 @@
 Description        = Run btrbk every 15 minutes
 
 [Timer]
-OnCalendar         = 15m
+Persistent         = yes
+OnCalendar         = *:0/15
 RandomizedDelaySec = 1m
