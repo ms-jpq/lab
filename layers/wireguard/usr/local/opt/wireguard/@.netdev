@@ -11,8 +11,9 @@ PrivateKeyFile      = m5_assert([ENV_SERVER_KEY])
 [[WireGuardPeer]]
 PersistentKeepalive = 6
 PublicKey           = $2
-AllowedIPs          = $3
+PresharedKey        = $3
 AllowedIPs          = $4
+AllowedIPs          = $5
 # ])
 
 # m5_for([X], [PEER(X)], m5_assert([ENV_PEER]))

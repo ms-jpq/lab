@@ -34,7 +34,7 @@ WG_IDS=()
 WG_LINES=()
 DNSMAQ_HOSTS=()
 
-export -- DOMAIN IPV6 IPV4 SERVER_PUBLIC_KEY SERVER_NAME CLIENT_PRIVATE_KEY
+export -- DOMAIN IPV6 IPV4 SERVER_PUBLIC_KEY SERVER_NAME CLIENT_PRIVATE_KEY CLIENT_SHARED_KEY
 MACHINE_ULA="$(/usr/local/opt/network/libexec/ula64.sh)::/56"
 
 P="$(sort --unique --field-separator ',' <<<"$WG_PEERS")"
@@ -52,6 +52,7 @@ for PEER in "${PEERS[@]}"; do
     ID="$I-$PEER"
     CIFACE="w-$HOSTNAME"
     CLIENT_PRIVATE_KEY="$VAR/peer-$ID.key"
+    CLIENT_SHARED_KEY="$VAR/peer-$ID.psk"
 
     B3="0x$(b3sum --no-names --length 4 <<<"$ID")"
     printf -v HEX_32 -- '%08x' $((B3 & ~"0x$V4_MASK" | "0x$V4_NET"))
@@ -70,11 +71,15 @@ for PEER in "${PEERS[@]}"; do
       if [[ ! -f "$CLIENT_PRIVATE_KEY" ]]; then
         wg genkey | sponge -- "$CLIENT_PRIVATE_KEY"
       fi
+      if [[ ! -f "$CLIENT_SHARED_KEY" ]]; then
+        wg genpsk | sponge -- "$CLIENT_SHARED_KEY"
+      fi
 
       CLIENT_PRIVATE_KEY="$(<"$CLIENT_PRIVATE_KEY")"
       CLIENT_PUBLIC_KEY="$(wg pubkey <<<"$CLIENT_PRIVATE_KEY")"
+      CLIENT_SHARED_KEY="$(<"$CLIENT_SHARED_KEY")"
 
-      WG_LINES+=("[$ID, $CLIENT_PUBLIC_KEY, ${IPV6%%/*}/128, ${IPV4%%/*}/32]")
+      WG_LINES+=("[$ID, $CLIENT_PUBLIC_KEY, $CLIENT_SHARED_KEY, ${IPV6%%/*}/128, ${IPV4%%/*}/32]")
 
       CONF="$(envsubst <"$SELF/peer.conf")"
       QR="$(qrencode --type utf8 <<<"$CONF")"

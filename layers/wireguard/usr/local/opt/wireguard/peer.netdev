@@ -4,6 +4,7 @@ Kind                = wireguard
 
 [WireGuard]
 PrivateKey          = ${CLIENT_PRIVATE_KEY}
+PresharedKey        = ${CLIENT_SHARED_KEY}
 
 [WireGuardPeer]
 PersistentKeepalive = 6
