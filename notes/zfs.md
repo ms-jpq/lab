@@ -1,4 +1,4 @@
-# Notes on File Systems
+# ZFS
 
 https://openzfs.github.io/openzfs-docs
 

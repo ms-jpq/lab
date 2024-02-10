@@ -7,5 +7,6 @@ ForceUnmount = yes
 TimeoutSec   = 2seconds
 Options      = soft,noatime
 
+Options      = noatime
 Where        = %f
 What         = freenas.enp2s0.pfsense.home.arpa:/%J
