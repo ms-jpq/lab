@@ -15,4 +15,5 @@ router
 share
 tv
 wireguard
+xfs
 zfs

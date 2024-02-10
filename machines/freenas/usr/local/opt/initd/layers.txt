@@ -5,4 +5,5 @@ intel_gvt
 printer
 qemu
 share
+xfs
 zfs
