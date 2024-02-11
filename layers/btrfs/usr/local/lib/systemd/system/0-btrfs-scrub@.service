@@ -1,0 +1,7 @@
+[Unit]
+Description = Btrfs Scrub Service
+
+[Service]
+Type        = oneshot
+ExecStart   = btrfs scrub start -B -- %f
+ExecReload  = btrfs scrub cancel -- %f

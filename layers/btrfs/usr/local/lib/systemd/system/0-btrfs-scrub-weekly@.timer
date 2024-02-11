@@ -1,0 +1,8 @@
+[Unit]
+Description        = Btrfs Scrub Timer
+
+[Timer]
+Unit               = 0-btrfs-scrub@%i.service
+Persistent         = true
+OnCalendar         = weekly
+RandomizedDelaySec = 1d

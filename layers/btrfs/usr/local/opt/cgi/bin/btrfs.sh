@@ -18,5 +18,8 @@ readarray -t -- LINES <<<"$FS"
 /usr/local/libexec/hr-run.sh btrfs filesystem show --si
 
 for LINE in "${LINES[@]}"; do
+  /usr/local/libexec/hr.sh '@'
   /usr/local/libexec/hr-run.sh btrfs device stats -- "$LINE"
+  /usr/local/libexec/hr-run.sh btrfs filesystem df --si -- "$LINE"
+  /usr/local/libexec/hr-run.sh btrfs scrub status --si -- "$LINE"
 done
