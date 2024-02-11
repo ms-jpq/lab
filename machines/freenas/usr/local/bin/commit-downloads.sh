@@ -29,4 +29,4 @@ RSYNC=(
 )
 
 "${RSYNC[@]}"
-chown -v --recursive -- ubuntu:ubuntu "$DST"
+chown -v --recursive -- 1000:1000 "$DST"
