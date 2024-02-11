@@ -23,7 +23,7 @@ services:
       - default
       - traefik
     ports:
-      - 127.0.0.53:18080:8080
+      - 1080:8080
 
 networks:
   traefik:

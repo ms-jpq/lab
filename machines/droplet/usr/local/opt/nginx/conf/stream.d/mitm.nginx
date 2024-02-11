@@ -1,4 +1,0 @@
-server {
-  listen     [::]:1080 ipv6only=off ssl;
-  proxy_pass 127.0.0.53:18080;
-}
