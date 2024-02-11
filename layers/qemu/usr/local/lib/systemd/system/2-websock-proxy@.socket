@@ -1,5 +1,6 @@
 [Unit]
 Description  = Proxy qemu display socket -- %t/local/vnc/%I.sock
+PartOf       = machine.slice
 
 [Socket]
 RemoveOnStop = yes
