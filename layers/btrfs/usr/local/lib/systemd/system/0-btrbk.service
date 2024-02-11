@@ -4,4 +4,5 @@ ConditionFileNotEmpty = /usr/local/opt/btrbk/main.conf
 
 [Service]
 Type                  = oneshot
+RuntimeDirectory      = local/%J
 ExecStart             = btrbk --config /usr/local/opt/btrbk/main.conf run
