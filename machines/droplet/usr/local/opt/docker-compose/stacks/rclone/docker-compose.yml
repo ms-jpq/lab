@@ -1,0 +1,55 @@
+---
+services:
+  s3:
+    image: docker.io/rclone/rclone:latest
+    userns_mode: auto
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`s3.{.+}.{.+$$}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.service=${COMPOSE_PROJECT_NAME}
+    command:
+      - serve
+      - s3
+      - --config=/dev/null
+      - --addr=:8080
+      - --auth-key=${ACCESS_KEY_ID},${SECRET_ACCESS_KEY}
+      - --
+      - /srv
+    volumes:
+      - /var/lib/local/rclone:/srv
+
+  dav:
+    image: docker.io/rclone/rclone:latest
+    userns_mode: auto
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --spider
+        - --timeout
+        - "1"
+        - --
+        - localhost:8080
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}2.loadbalancer.server.port=8080
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.rule=HostRegexp(`minio.{.+}.{.+$$}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.service=${COMPOSE_PROJECT_NAME}2
+    command:
+      - serve
+      - webdav
+      - --config=/dev/null
+      - --addr=:8080
+      - --
+      - /srv
+    volumes:
+      - /var/lib/local/rclone:/srv
+
+networks:
+  default:
+    external: true
+    name: traefik

@@ -9,6 +9,7 @@ ARGV=(
   --verbose
   --check-first
   --order-by size
+  --exclude-if-present .noclone
   --create-empty-src-dirs
   --fast-list
   --transfers $((NPROC * 2))

@@ -90,7 +90,6 @@
     "autodiscover.*",
     "bing.*",
     "bridge.*",
-    "changes.*",
     "dockerhub.*",
     "docs.*",
     "draw.*",
