@@ -1,7 +1,7 @@
 [Unit]
-Description         = Run btrbk
-ConditionPathExists = /usr/local/opt/btrbk/main.conf
+Description           = Run btrbk
+ConditionFileNotEmpty = /usr/local/opt/btrbk/main.conf
 
 [Service]
-Type                = oneshot
-ExecStart           = btrbk --config /usr/local/opt/btrbk/main.conf run
+Type                  = oneshot
+ExecStart             = btrbk --config /usr/local/opt/btrbk/main.conf run
