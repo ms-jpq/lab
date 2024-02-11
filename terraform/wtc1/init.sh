@@ -1,1 +1,0 @@
-../wsb/init.sh

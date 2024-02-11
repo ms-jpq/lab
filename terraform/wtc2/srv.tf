@@ -44,7 +44,7 @@ resource "aws_lightsail_instance_public_ports" "acab" {
 
 resource "aws_lightsail_disk_attachment" "john_cena" {
   provider      = aws.us_w2
-  for_each      = { "iscsi-droplet" = "/dev/xvdp", "iscsi-btrfs" = "/dev/xvdq" }
+  for_each      = { "iscsi-btrfs" = "/dev/xvdp" }
   disk_name     = each.key
   disk_path     = each.value
   instance_name = aws_lightsail_instance.droplet.name

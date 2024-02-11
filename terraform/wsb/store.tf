@@ -2,9 +2,6 @@ locals {
   s3_buckets = ["home", "lab"]
   ebs_vols   = {}
   light_vols = {
-    droplet = {
-      size = 8
-    }
     btrfs = {
       size = 8
     }

@@ -12,4 +12,11 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
+FS="$(df --type btrfs --output=target | sed -E -e '1d')"
+readarray -t -- LINES <<<"$FS"
+
 /usr/local/libexec/hr-run.sh btrfs filesystem show --si
+
+for LINE in "${LINES[@]}"; do
+  /usr/local/libexec/hr-run.sh btrfs device stats -- "$LINE"
+done
