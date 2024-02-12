@@ -17,8 +17,7 @@ define IRC_GIT_TEMPLATE
 irc: $(CACHE)/weechat/$(notdir $1)
 $(CACHE)/weechat/$(notdir $1):
 	if [[ -d '$$@' ]]; then
-		cd -- '$$@'
-		sudo -- git pull --no-tags '--jobs=$$(NPROC)'
+		sudo -- git -C '$$@' pull --no-tags '--jobs=$$(NPROC)'
 	else
 		sudo -- git clone --depth=1 '--jobs=$$(NPROC)' -- 'https://github.com/$1' '$$@'
 	fi
