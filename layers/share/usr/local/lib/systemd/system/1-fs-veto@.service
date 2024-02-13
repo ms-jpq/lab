@@ -8,4 +8,4 @@ ProtectHome      = yes
 ReadWritePaths   = %f
 
 WorkingDirectory = %f
-ExecStart        = find . -type f ( -name .DS_Store -or -name Thumbs.db ) -delete
+ExecStart        = find . -type f ( -name .DS_Store -or -name Thumbs.db ) -delete -print
