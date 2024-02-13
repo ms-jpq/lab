@@ -1,5 +1,4 @@
 locals {
-  s3_buckets = ["home", "lab"]
   ebs_vols = {
     btrfs = {
       size = 1
@@ -10,21 +9,6 @@ locals {
       size = 8
     }
   }
-}
-
-resource "aws_s3_bucket" "chum_bucket" {
-  for_each = toset(local.s3_buckets)
-  bucket   = "chumbucket-${each.key}"
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
-output "plankton" {
-  value = [
-    for bucket in aws_s3_bucket.chum_bucket :
-    bucket.id
-  ]
 }
 
 resource "aws_kms_key" "iscsi" {
@@ -90,6 +74,7 @@ output "ebs" {
       id   = vol.id
       kms  = local.kms_aliases[vol.kms_key_id]
       size = vol.size
+      tag  = vol.tags.id
       type = vol.type
       zone = vol.availability_zone
     }
@@ -106,7 +91,6 @@ output "ebs_lite" {
       id    = key
       iops  = val.iops
       size  = val.sizeInGb
-      state = val.state
       zone  = val.location.availabilityZone
     }
   ]

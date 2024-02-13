@@ -17,6 +17,16 @@ resource "aws_s3_bucket" "tfs" {
   bucket   = "tfstate-${each.key}"
 }
 
+resource "aws_s3_bucket_server_side_encryption_configuration" "tfs_crip" {
+  for_each = aws_s3_bucket.tfs
+  bucket   = each.value.bucket
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "aws:kms"
+    }
+  }
+}
+
 resource "aws_s3_bucket_versioning" "tfs_version" {
   for_each = aws_s3_bucket.tfs
   bucket   = each.value.id
