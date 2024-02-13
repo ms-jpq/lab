@@ -1,24 +1,19 @@
 ---
 services:
   s3:
-    image: docker.io/rclone/rclone:latest
+    image: docker.io/andrewgaul/s3proxy:latest
     userns_mode: auto
     restart: unless-stopped
     labels:
       - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`s3.{.+}.{.+$$}`)
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.service=${COMPOSE_PROJECT_NAME}
-    command:
-      - serve
-      - s3
-      - --config=/dev/null
-      - --addr=:8080
-      - --auth-key=${ACCESS_KEY_ID},${SECRET_ACCESS_KEY}
-      - --
-      - /srv
+    environment:
+      S3PROXY_CREDENTIAL:
+      S3PROXY_IDENTITY:
     volumes:
-      - /var/lib/local/rclone:/srv
+      - /var/lib/local/rclone:/data
 
   dav:
     image: docker.io/rclone/rclone:latest
