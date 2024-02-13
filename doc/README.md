@@ -30,6 +30,6 @@
 
 - [x] VPN gateways
 
-- [x] Terraform → Route 53 + EBS + VPC + Launch Template + AMI + EC2 + Budget Alerts
+- [x] Terraform → Route 53 + KMS encrypted EBS + VPC + Launch Template + AMI + EC2 + Budget Alerts
 
 - [x] Terraform → AWS LightSail: DNS + Block Storage + VM

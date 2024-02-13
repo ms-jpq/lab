@@ -1,6 +1,10 @@
 locals {
   s3_buckets = ["home", "lab"]
-  ebs_vols   = {}
+  ebs_vols = {
+    btrfs = {
+      size = 1
+    }
+  }
   light_vols = {
     btrfs = {
       size = 8
@@ -23,10 +27,30 @@ output "plankton" {
   ]
 }
 
+resource "aws_kms_key" "iscsi" {
+  for_each     = toset(keys(local.ebs_vols))
+  multi_region = true
+}
+
+resource "aws_kms_alias" "iscsi" {
+  for_each      = aws_kms_key.iscsi
+  name          = "alias/iscsi/${each.key}"
+  target_key_id = each.value.id
+}
+
+locals {
+  kms_aliases = {
+    for _, val in aws_kms_alias.iscsi :
+    val.target_key_arn => val.id
+  }
+}
+
 resource "aws_ebs_volume" "iscsi" {
-  for_each          = local.ebs_vols
+  for_each          = aws_kms_key.iscsi
   availability_zone = local.zones.ca_w1[0]
-  size              = each.value.size
+  encrypted         = true
+  kms_key_id        = each.value.arn
+  size              = local.ebs_vols[each.key].size
   type              = "gp3"
   tags = {
     id = "iscsi-${each.key}"
@@ -64,6 +88,7 @@ output "ebs" {
     {
       disk = "/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_${replace(vol.id, "-", "")}"
       id   = vol.id
+      kms  = local.kms_aliases[vol.kms_key_id]
       size = vol.size
       type = vol.type
       zone = vol.availability_zone
