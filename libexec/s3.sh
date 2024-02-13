@@ -14,7 +14,7 @@ dir() (
 )
 
 case "${1:-""}" in
-'')
+'' | s3)
   "$S5" ls --humanize -- "$BUCKET/**"
   ;;
 push)
