@@ -1,17 +1,3 @@
-locals {
-  tf_modules = [
-    for mod in [
-      for deps in fileset("${path.module}/..", "*/deps.tf") :
-      basename(dirname(deps))
-    ] :
-    mod if mod != basename(abspath(path.module))
-  ]
-}
-
-output "tf_modules" {
-  value = local.tf_modules
-}
-
 resource "aws_dynamodb_table" "tfstate" {
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "LockID"

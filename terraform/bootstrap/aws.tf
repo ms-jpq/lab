@@ -11,7 +11,7 @@ provider "aws" {
   region = "us-west-2"
 }
 
-data "aws_caller_identity" "current" {}
+data "aws_caller_identity" "self" {}
 data "aws_region" "ca_w1" {
   provider = aws.ca_w1
 }
@@ -23,7 +23,7 @@ data "aws_region" "us_w2" {
 }
 
 locals {
-  aws_account_id = data.aws_caller_identity.current.account_id
+  aws_account_id = data.aws_caller_identity.self.account_id
   regions = {
     ca_w1 = data.aws_region.ca_w1.name
     us_e1 = data.aws_region.us_e1.name
