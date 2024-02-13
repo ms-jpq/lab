@@ -9,14 +9,14 @@ S5="$PWD/var/bin/s5cmd"
 TMP="$PWD/var/gpg"
 
 dir() (
-  rm -v -fr -- "$TMP"
+  rm -fr -- "$TMP"
   mkdir -v -p -- "$TMP"
   chmod -v g-rwx,o-rwx "$TMP"
 )
 
 case "${1:-""}" in
 '')
-  "$S5" ls --humanize -- "$BUCKET" | awk '{ gsub("%2F", "/", $NF); print }' | column -t
+  "$S5" ls --humanize -- "$BUCKET/*/*"
   ;;
 push)
   FILES=(
@@ -34,23 +34,23 @@ push)
   done
 
   dir
-  gpg -v --batch --yes --encrypt-files -- "${SECRETS[@]}"
+  gpg --batch --yes --encrypt-files -- "${SECRETS[@]}"
   for F in "${SECRETS[@]}"; do
     F="$F.gpg"
-    NAME="$(jq --raw-input --raw-output '@uri' <<<"$F")"
-    mv -v -f -- "$F" "$TMP/$NAME"
+    NAME="$TMP/$F"
+    mkdir -v -p -- "${NAME%/*}"
+    mv -v -f -- "$F" "$NAME"
   done
   "$S5" sync --delete -- "$TMP/" "$BUCKET"
   ;;
 pull)
   dir
   "$S5" cp -- "$BUCKET/*" "$TMP"
-  FILES=("$TMP"/*.gpg)
+  FILES=("$TMP"/**/*.gpg)
   gpg -v --batch --decrypt-files -- "${FILES[@]}"
   for F in "${FILES[@]}"; do
     F="${F%.gpg}"
-    F2="${F#"$TMP/"}"
-    NAME="${F2//'%2F'/'/'}"
+    NAME="${F#"$TMP/"}"
     mv -v -f -- "$F" "$NAME"
   done
   ;;
