@@ -19,9 +19,7 @@ resource "aws_s3_bucket" "chum_bucket" {
 output "plankton" {
   value = [
     for bucket in aws_s3_bucket.chum_bucket :
-    {
-      name = bucket.id
-    }
+    bucket.id
   ]
 }
 
