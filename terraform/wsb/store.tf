@@ -71,7 +71,7 @@ resource "aws_lightsail_disk" "iscsi" {
   }
 }
 
-data "external" "ls_ebs" {
+data "external" "ebs_lite" {
   program = ["${path.module}/lightsail_ebs.sh"]
   query = {
     region = local.regions.us_w2
@@ -96,10 +96,10 @@ output "ebs" {
   ]
 }
 
-output "ls_ebs" {
+output "ebs_lite" {
   value = [
     for key, val in {
-      for name, json in data.external.ls_ebs.result :
+      for name, json in data.external.ebs_lite.result :
       name => jsondecode(json)
     } :
     {
