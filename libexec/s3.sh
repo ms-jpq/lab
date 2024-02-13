@@ -6,7 +6,7 @@ cd -- "${0%/*}/.."
 
 BUCKET='s3://chumbucket-lab'
 S5="$PWD/var/bin/s5cmd"
-TMP="$PWD/var/gpg"
+TMP='var/gpg'
 
 dir() (
   rm -fr -- "$TMP"
@@ -26,21 +26,17 @@ push)
     terraform/bootstrap/terraform.tfstate.backup
   )
 
-  SECRETS=()
+  dir
   for F in "${FILES[@]}"; do
     if [[ -f "$F" ]]; then
-      SECRETS+=("$F")
+      NAME="$TMP/$F"
+      mkdir -v -p -- "${NAME%/*}"
+      cp -v -R -- "$F" "$NAME"
     fi
   done
 
-  dir
-  gpg --batch --yes --encrypt-files -- "${SECRETS[@]}"
-  for F in "${SECRETS[@]}"; do
-    F="$F.gpg"
-    NAME="$TMP/$F"
-    mkdir -v -p -- "${NAME%/*}"
-    mv -v -f -- "$F" "$NAME"
-  done
+  find "$TMP" -type f -print0 | xargs -0 -- gpg --batch --yes --encrypt-files --
+  find "$TMP" -type f -not -name '*.gpg' -delete
   "$S5" sync --delete -- "$TMP/" "$BUCKET"
   ;;
 pull)
