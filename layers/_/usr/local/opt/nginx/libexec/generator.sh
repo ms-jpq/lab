@@ -10,7 +10,7 @@ for EXEC in "${0%/*}/../generators"/*; do
   if [[ -x "$EXEC" ]]; then
     printf -- '%s\0' "$EXEC"
   fi
-done | xargs --null -I '%' --max-procs 0 -- env -- '%' "$TMP" "$WWW"
+done | xargs --no-run-if-empty --null -I '%' --max-procs 0 -- env -- '%' "$TMP" "$WWW"
 
 if ! diff --recursive --brief -- "$TMP" "$RUN"; then
   rm -rf -- "$RUN/ssl/"*

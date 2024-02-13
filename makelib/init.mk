@@ -81,4 +81,4 @@ $(VAR)/bin/tofu: | $(VAR)/bin
 	chmod +x '$@'
 
 $(VAR)/tflint.d: $(VAR)/bin/tflint terraform/bootstrap/.tflint.hcl
-	printf -- '%s\0' ./terraform/* | xargs -0 -n 1 -- '$<' --init --chdir
+	printf -- '%s\0' ./terraform/* | xargs -r -0 -n 1 -- '$<' --init --chdir

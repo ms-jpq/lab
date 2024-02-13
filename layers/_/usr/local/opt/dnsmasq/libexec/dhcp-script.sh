@@ -6,4 +6,4 @@ for EXEC in "${0%/*}/../dhcp-script.d"/*; do
   if [[ -x "$EXEC" ]]; then
     printf -- '%s\0' "$EXEC"
   fi
-done | xargs --null -I '%' --max-procs 0 -- env -- '%' "$@"
+done | xargs --no-run-if-empty --null -I '%' --max-procs 0 -- env -- '%' "$@"

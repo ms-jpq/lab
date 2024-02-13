@@ -52,7 +52,7 @@ if ! [[ -v UNDER ]]; then
   else
     ARGV=()
   fi
-  printf -- '%s\0' "${MACHINES[@]}" | UNDER=1 xargs -0 -I % -P 0 -- "$0" --machine % "${ARGV[@]}" -- "$@"
+  printf -- '%s\0' "${MACHINES[@]}" | UNDER=1 xargs -r -0 -I % -P 0 -- "$0" --machine % "${ARGV[@]}" -- "$@"
   exit
 else
   MACHINE="${MACHINES[*]}"
