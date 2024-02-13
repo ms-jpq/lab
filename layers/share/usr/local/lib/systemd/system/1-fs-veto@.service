@@ -8,5 +8,4 @@ ProtectHome      = yes
 ReadWritePaths   = %f
 
 WorkingDirectory = %f
-# TODO: prune with --and .DS_Store --and Thumbs.db flag @ next fd
-ExecStart        = fdfind --hidden --no-ignore --type file --batch-size 420 --fixed-strings .DS_Store --exec-batch rm -v -fr --
+ExecStart        = find . -type f ( -name .DS_Store -or -name Thumbs.db ) -delete
