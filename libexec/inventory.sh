@@ -38,6 +38,7 @@ JQER=("${JQE[@]}" --raw-output)
 BSH=(bash --norc --noprofile -Eeuo pipefail -O dotglob -O nullglob -O extglob -O failglob -O globstar)
 CONN=(
   ssh
+  -o 'ForwardAgent=no'
   -o 'ClearAllForwardings=yes'
   -o 'ControlMaster=auto'
   -o "ControlPath=$PWD/var/tmp/%C"
