@@ -12,8 +12,19 @@ output "tf_modules" {
   value = local.tf_modules
 }
 
+resource "aws_dynamodb_table" "tfstate" {
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "LockID"
+  name         = "tfstate"
+
+  attribute {
+    name = "LockID"
+    type = "S"
+  }
+}
+
 resource "aws_s3_bucket" "tfstate" {
-  bucket        = "kfc-tfstate"
+  bucket        = "kfc-${aws_dynamodb_table.tfstate.id}"
   force_destroy = true
   lifecycle {
     prevent_destroy = true
@@ -49,30 +60,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "tfstate" {
   }
 }
 
-resource "aws_dynamodb_table" "tfstate" {
-  for_each     = toset(local.tf_modules)
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "LockID"
-  name         = "tfstate-${each.key}"
-
-  attribute {
-    name = "LockID"
-    type = "S"
+output "tfstate" {
+  value = {
+    bucket = aws_s3_bucket.tfstate.id
+    table  = aws_dynamodb_table.tfstate.id
   }
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
-output "tfs_s3_bucket" {
-  value = [
-    aws_s3_bucket.tfstate.id
-  ]
-}
-
-output "tfs_dynamodb_table" {
-  value = [
-    for table in aws_dynamodb_table.tfstate :
-    table.id
-  ]
 }

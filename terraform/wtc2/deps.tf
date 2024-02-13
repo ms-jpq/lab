@@ -15,7 +15,7 @@ terraform {
 terraform {
   backend "s3" {
     bucket         = "kfc-tfstate"
-    dynamodb_table = "tfstate-wtc2"
+    dynamodb_table = "tfstate"
     encrypt        = true
     key            = "wtc2.json"
     region         = "ca-west-1"
