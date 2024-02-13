@@ -2,11 +2,10 @@
 
 set -o pipefail
 
-cd -- "${0%/*}/.."
-
+BASE="${0%/*}/.."
 BUCKET='s3://chumbucket-lab'
-S5="$PWD/var/bin/s5cmd"
-TMP='var/gpg'
+S5="$BASE/var/bin/s5cmd"
+TMP="$BASE/var/gpg"
 
 dir() (
   rm -fr -- "$TMP"
