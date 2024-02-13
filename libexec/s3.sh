@@ -16,7 +16,7 @@ dir() (
 
 case "${1:-""}" in
 '')
-  "$S5" ls --humanize -- "$BUCKET/*/*"
+  "$S5" ls --humanize -- "$BUCKET/**"
   ;;
 push)
   FILES=(
