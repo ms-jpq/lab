@@ -2,16 +2,16 @@ locals {
   s3_buckets = ["home", "lab"]
 }
 
-resource "aws_s3_bucket" "chum_bucket" {
+resource "aws_s3_bucket" "kfc" {
   for_each = toset(local.s3_buckets)
-  bucket   = "chumbucket-${each.key}"
+  bucket   = "kfc-${each.key}"
   lifecycle {
     prevent_destroy = true
   }
 }
 
-resource "aws_s3_bucket_server_side_encryption_configuration" "chum_bucket" {
-  for_each = aws_s3_bucket.chum_bucket
+resource "aws_s3_bucket_server_side_encryption_configuration" "kfc" {
+  for_each = aws_s3_bucket.kfc
   bucket   = each.value.bucket
   rule {
     bucket_key_enabled = true
@@ -21,9 +21,9 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "chum_bucket" {
   }
 }
 
-output "plankton" {
+output "kfc" {
   value = [
-    for bucket in aws_s3_bucket.chum_bucket :
+    for bucket in aws_s3_bucket.kfc :
     bucket.id
   ]
 }

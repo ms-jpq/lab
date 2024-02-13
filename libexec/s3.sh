@@ -3,7 +3,7 @@
 set -o pipefail
 
 BASE="${0%/*}/.."
-BUCKET='s3://chumbucket-lab'
+BUCKET='s3://kfc-lab'
 S5="$BASE/var/bin/s5cmd"
 TMP="$BASE/var/gpg"
 
