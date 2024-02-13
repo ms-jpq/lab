@@ -12,14 +12,16 @@ output "tf_modules" {
   value = local.tf_modules
 }
 
-resource "aws_s3_bucket" "tfs" {
-  for_each = toset(local.tf_modules)
-  bucket   = "tfstate-${each.key}"
+resource "aws_s3_bucket" "tfstate" {
+  bucket        = "kfc-tfstate"
+  force_destroy = true
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
-resource "aws_s3_bucket_server_side_encryption_configuration" "tfs_crip" {
-  for_each = aws_s3_bucket.tfs
-  bucket   = each.value.bucket
+resource "aws_s3_bucket_server_side_encryption_configuration" "tfstate" {
+  bucket = aws_s3_bucket.tfstate.bucket
   rule {
     bucket_key_enabled = true
     apply_server_side_encryption_by_default {
@@ -28,19 +30,15 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "tfs_crip" {
   }
 }
 
-resource "aws_s3_bucket_versioning" "tfs_version" {
-  for_each = aws_s3_bucket.tfs
-  bucket   = each.value.id
-
+resource "aws_s3_bucket_versioning" "tfstate" {
+  bucket = aws_s3_bucket.tfstate.bucket
   versioning_configuration {
     status = "Enabled"
   }
 }
 
-resource "aws_s3_bucket_lifecycle_configuration" "tfs_best_before" {
-  for_each = aws_s3_bucket.tfs
-  bucket   = each.value.id
-
+resource "aws_s3_bucket_lifecycle_configuration" "tfstate" {
+  bucket = aws_s3_bucket.tfstate.bucket
   rule {
     id     = "death-and-decay"
     status = "Enabled"
@@ -51,32 +49,30 @@ resource "aws_s3_bucket_lifecycle_configuration" "tfs_best_before" {
   }
 }
 
-resource "aws_dynamodb_table" "tfs_lock" {
-  for_each     = aws_s3_bucket.tfs
+resource "aws_dynamodb_table" "tfstate" {
+  for_each     = toset(local.tf_modules)
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "LockID"
-  name         = each.value.bucket
+  name         = "tfstate-${each.key}"
 
   attribute {
     name = "LockID"
     type = "S"
   }
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 output "tfs_s3_bucket" {
   value = [
-    for bucket in aws_s3_bucket.tfs :
-    {
-      bucket = bucket.id
-    }
+    aws_s3_bucket.tfstate.id
   ]
 }
 
 output "tfs_dynamodb_table" {
   value = [
-    for table in aws_dynamodb_table.tfs_lock :
-    {
-      table = table.id
-    }
+    for table in aws_dynamodb_table.tfstate :
+    table.id
   ]
 }

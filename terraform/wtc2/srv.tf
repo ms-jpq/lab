@@ -40,6 +40,9 @@ resource "aws_lightsail_instance_public_ports" "acab" {
     protocol  = "all"
     to_port   = 65535
   }
+  lifecycle {
+    ignore_changes = [port_info]
+  }
 }
 
 resource "aws_lightsail_disk_attachment" "john_cena" {

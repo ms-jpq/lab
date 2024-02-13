@@ -14,10 +14,10 @@ terraform {
 
 terraform {
   backend "s3" {
-    bucket         = "tfstate-wsb"
+    bucket         = "kfc-tfstate"
     dynamodb_table = "tfstate-wsb"
     encrypt        = true
-    key            = "tfstate"
+    key            = "wsb.json"
     region         = "ca-west-1"
     # TODO: next release should fix this
     skip_region_validation = true
