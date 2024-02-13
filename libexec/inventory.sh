@@ -35,7 +35,7 @@ done
 
 JQE=(jq --exit-status)
 JQER=("${JQE[@]}" --raw-output)
-BSH=(bash --norc --noprofile -Eeuo pipefail -O dotglob -O nullglob -O extglob -O failglob -O globstar -c)
+BSH=(bash --norc --noprofile -Eeuo pipefail -O dotglob -O nullglob -O extglob -O failglob -O globstar)
 CONN=(
   ssh
   -o 'ClearAllForwardings=yes'
@@ -123,7 +123,7 @@ ls)
   ;;
 env)
   SCRIPT="$1"
-  shell "${BSH[@]}" "$(<"$SCRIPT")"
+  shell "${BSH[@]}" <<<"$(<"$SCRIPT")"
   ;;
 sync)
   SRC="$1"

@@ -67,9 +67,9 @@ else
     printf -v ESC -- '%q ' "$@"
   else
     SRC="./var/tmp/machines/$MACHINE/fs"
-    "${EXEC[@]}" exec -- "$(<"$SH/libexec/essentials.sh")"
+    "${EXEC[@]}" exec <<<"$(<"$SH/libexec/essentials.sh")"
     "${EXEC[@]}" sync -- "$SRC/"
     printf -v ESC -- '%q ' gmake --directory /usr/local/opt/initd "$@"
   fi
-  "${EXEC[@]}" exec -- "$ESC"
+  "${EXEC[@]}" exec -- -c "$ESC"
 fi
