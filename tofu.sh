@@ -12,5 +12,4 @@ set +a
 NAME="$1"
 shift -- 1
 
-PATH="$BASE/.venv/bin:$PATH"
 exec -- "$BASE/var/bin/tofu" -chdir="$BASE/terraform/$NAME" "$@"

@@ -88,10 +88,10 @@ output "ebs_lite" {
       name => jsondecode(json)
     } :
     {
-      id    = key
-      iops  = val.iops
-      size  = val.sizeInGb
-      zone  = val.location.availabilityZone
+      id   = key
+      iops = val.iops
+      size = val.sizeInGb
+      zone = val.location.availabilityZone
     }
   ]
 }

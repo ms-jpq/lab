@@ -3,8 +3,9 @@ locals {
 }
 
 resource "aws_s3_bucket" "kfc" {
-  for_each = toset(local.s3_buckets)
-  bucket   = "kfc-${each.key}"
+  for_each      = toset(local.s3_buckets)
+  bucket        = "kfc-${each.key}"
+  force_destroy = true
   lifecycle {
     prevent_destroy = true
   }
@@ -22,8 +23,10 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "kfc" {
 }
 
 output "kfc" {
-  value = [
-    for bucket in aws_s3_bucket.kfc :
-    bucket.id
-  ]
+  value = {
+    buckets = [
+      for bucket in aws_s3_bucket.kfc :
+      bucket.id
+    ]
+  }
 }
