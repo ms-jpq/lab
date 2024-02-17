@@ -35,7 +35,7 @@ locals {
 
 output "aws" {
   value = {
-    account_id  = local.aws_account_id,
-    regions     = local.regions
+    account_id = local.aws_account_id,
+    regions    = local.regions
   }
 }
