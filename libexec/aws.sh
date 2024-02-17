@@ -15,7 +15,10 @@ JQ=(
 
 NOW="${EPOCHREALTIME%%.*}"
 
-case "$1" in
+case "${1:-""}" in
+'' | keys)
+  "${AWS[@]}" iam list-access-keys | "${JQ[@]}"
+  ;;
 cost)
   MONTH=31
   DAYS="${2:-"$MONTH"}"
