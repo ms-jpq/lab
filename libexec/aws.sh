@@ -41,7 +41,7 @@ BEGIN { sum = 0 }
 { print $0 " ~>" sprintf("%0.2f", $NF * month) }
 END { print "<$> " sum }
 EOF
-  "${AWS[@]}" | "${JQ[@]}" "$JQJQ" | awk -v month="$MONTH" "$AWK" | column -t | sed -E -e 's/%/ /g'
+  "${AWS[@]}" | "${JQ[@]}" "$JQJQ" | awk -v month="$MONTH" "$AWK" | column -t | sed -E -e 's/^20//' -e 's/%/ /g'
   ;;
 cpu)
   DELTA=$((60 * 60 * 24))
