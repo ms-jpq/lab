@@ -8,4 +8,4 @@ fi
 
 NAME="${0##*/}"
 NAME="${NAME%.*}"
-grep -h -v -- '^#' "${0%/*}/../$NAME.targetcli" | targetcli
+sed -E -e '/^[[:space:]]*#/d' -- "${0%/*}/../$NAME.targetcli" | targetcli

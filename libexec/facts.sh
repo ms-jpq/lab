@@ -15,7 +15,7 @@ for F in "$@"; do
   fi
   case "$F" in
   *.env)
-    grep -h -v -- '^#' "$F"
+    sed -E -e '/^[[:space:]]*#/d' -- "$F"
     shift -- 1
     ;;
   *.json)
