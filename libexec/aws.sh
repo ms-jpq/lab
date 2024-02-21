@@ -16,7 +16,7 @@ JQ=(
 NOW="${EPOCHREALTIME%%.*}"
 
 case "${1:-""}" in
-'' | keys)
+'' | iam)
   "${AWS[@]}" iam list-access-keys | "${JQ[@]}"
   ;;
 cost)
