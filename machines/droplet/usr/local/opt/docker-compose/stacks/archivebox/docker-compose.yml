@@ -1,12 +1,22 @@
 ---
 services:
-  archivebox:
+  srv:
     image: docker.io/archivebox/archivebox:latest
     userns_mode: auto
     restart: unless-stopped
     depends_on:
       sonic:
         condition: service_started
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --spider
+        - --timeout
+        - "1"
+        - --
+        - localhost:8000
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8000
