@@ -4,9 +4,8 @@ StopWhenUnneeded     = yes
 CollectMode          = inactive
 ConditionPathExists  = %t/netns/%I
 
-Requires             = 1-netns@%i.service
-PartOf               = 1-netns@%i.service
-After                = 1-netns@%i.service
+BindsTo              = 1-netns-ns@%i.service
+After                = 1-netns-ns@%i.service
 
 BindsTo              = 1-netns-dns@%j.service
 After                = 1-netns-dns@%j.service
