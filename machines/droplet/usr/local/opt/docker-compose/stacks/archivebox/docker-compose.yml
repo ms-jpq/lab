@@ -4,9 +4,6 @@ services:
     image: docker.io/archivebox/archivebox:latest
     userns_mode: auto
     restart: unless-stopped
-    depends_on:
-      sonic:
-        condition: service_started
     healthcheck:
       test:
         - CMD
@@ -22,35 +19,23 @@ services:
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8000
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`archive.{.+}.{.+$$}`)
     environment:
-      # PUBLIC_INDEX: "True"
-      # PUBLIC_SNAPSHOTS: "True"
       ADMIN_PASSWORD: None
       ADMIN_USERNAME: None
       ALLOWED_HOSTS: "*"
+      HTTP_PROXY: http://warp-srv-1:1080
       MEDIA_MAX_SIZE: 50m
       PGID: 1000
-      PUBLIC_ADD_VIEW: True
       PUID: 1000
-      SEARCH_BACKEND_ENGINE: sonic
-      SEARCH_BACKEND_HOST_NAME: sonic
-      SEARCH_BACKEND_PASSWORD: ${COMPOSE_PROJECT_NAME}
-      TIMEOUT: 420
+      SAVE_PDF: False
     command:
       - server
       - --quick-init
       - 0.0.0.0:8000
+    networks:
+      - default
+      - traefik
     volumes:
       - data:/data
-
-  sonic:
-    image: docker.io/valeriansaliou/sonic:latest
-    userns_mode: auto
-    restart: unless-stopped
-    environment:
-      SEARCH_BACKEND_PASSWORD: ${COMPOSE_PROJECT_NAME}
-    volumes:
-      # - ./sonic.cfg:/etc/sonic.cfg:ro
-      - index:/var/lib/sonic/store
 
 networks:
   traefik:
@@ -59,4 +44,3 @@ networks:
 
 volumes:
   data:
-  index:
