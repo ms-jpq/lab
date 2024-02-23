@@ -14,4 +14,4 @@ ReadWritePaths    = %t/local/dns %T
 
 ExecStart         = socat -T 9 unix-listen:%t/local/dns/%I.sock,fork %I-connect:127.0.0.53:53
 ExecReload        = kill -s SIGUSR1 -- ${MAINPID}
-SuccessExitStatus = SIGTERM
+SuccessExitStatus = 143

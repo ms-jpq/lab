@@ -1,5 +1,5 @@
 {
   "ENV_MACVLAN_IFS": ["enp12s0"],
-  "ENV_NVIDIA_VERSION": "545",
+  "ENV_NVIDIA_VERSION": "550",
   "ENV_ZFS_MEM": 30
 }

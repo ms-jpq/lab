@@ -1,24 +1,26 @@
 [Unit]
-Description      = Wireguard netns -- %E/netns/%I
-StopWhenUnneeded = yes
-CollectMode      = inactive
-After            = network-online.target
+Description         = Wireguard netns -- %E/netns/%I
+StopWhenUnneeded    = yes
+CollectMode         = inactive
+After               = network-online.target
 
-BindsTo          = 1-netns@%i.service
-After            = 1-netns@%i.service
+BindsTo             = 1-netns@%i.service
+After               = 1-netns@%i.service
+
+ConditionPathExists = %t/netns/%I
 
 [Service]
-Type             = oneshot
-RemainAfterExit  = yes
-PrivateTmp       = yes
+Type                = oneshot
+RemainAfterExit     = yes
+PrivateTmp          = yes
 
-EnvironmentFile  = -/usr/local/etc/default/%I.wgns.env
-Environment      = NETNS=%I
-Environment      = FWMARK=0x0
-Environment      = CONF_DIR=%S/local/wg-netns/%I
+EnvironmentFile     = -/usr/local/etc/default/%I.wgns.env
+Environment         = NETNS=%I
+Environment         = FWMARK=0x0
+Environment         = CONF_DIR=%S/local/wg-netns/%I
 
-ExecStartPre     = mkdir -v -p -- ${CONF_DIR}
-ExecStartPre     = /usr/local/libexec/hr-run.sh /usr/local/opt/wireguard/libexec/netns.sh up     ${NETNS} ${CONF_DIR} ${FWMARK}
-ExecStart        = /usr/local/libexec/hr-run.sh /usr/local/opt/wireguard/libexec/netns.sh reload ${NETNS} ${CONF_DIR} ${FWMARK}
-ExecReload       = /usr/local/libexec/hr-run.sh /usr/local/opt/wireguard/libexec/netns.sh reload ${NETNS} ${CONF_DIR} ${FWMARK}
-ExecStop         = /usr/local/libexec/hr-run.sh /usr/local/opt/wireguard/libexec/netns.sh down   ${NETNS} ${CONF_DIR} ${FWMARK}
+ExecStartPre        = mkdir -v -p -- ${CONF_DIR}
+ExecStartPre        = /usr/local/libexec/hr-run.sh /usr/local/opt/wireguard/libexec/netns.sh up     ${NETNS} ${CONF_DIR} ${FWMARK}
+ExecStart           = /usr/local/libexec/hr-run.sh /usr/local/opt/wireguard/libexec/netns.sh reload ${NETNS} ${CONF_DIR} ${FWMARK}
+ExecReload          = /usr/local/libexec/hr-run.sh /usr/local/opt/wireguard/libexec/netns.sh reload ${NETNS} ${CONF_DIR} ${FWMARK}
+ExecStop            = /usr/local/libexec/hr-run.sh /usr/local/opt/wireguard/libexec/netns.sh down   ${NETNS} ${CONF_DIR} ${FWMARK}

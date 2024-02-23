@@ -2,8 +2,10 @@
 Description          = NetNS DNS -- %I
 StopWhenUnneeded     = yes
 CollectMode          = inactive
+ConditionPathExists  = %t/netns/%I
 
-BindsTo              = 1-netns@%i.service
+Requires             = 1-netns@%i.service
+PartOf               = 1-netns@%i.service
 After                = 1-netns@%i.service
 
 BindsTo              = 1-netns-dns@%j.service
@@ -18,4 +20,4 @@ NetworkNamespacePath = %t/netns/%I
 
 ExecStart            = socat -T 9 %j-listen:53,bind=127.0.0.53,fork unix-connect:%t/local/dns/%J.sock
 ExecReload           = kill -s SIGUSR1 -- ${MAINPID}
-SuccessExitStatus    = SIGTERM
+SuccessExitStatus    = 143
