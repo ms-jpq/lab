@@ -2,6 +2,7 @@
   "ENV_CERTBOT_SITES": [
     "12ft.ENV_DOMAIN",
     "ENV_DOMAIN",
+    "archive.ENV_DOMAIN",
     "ascii.ENV_DOMAIN",
     "ask.ENV_DOMAIN",
     "autodiscover.ENV_DOMAIN",
@@ -44,6 +45,7 @@
   ],
   "ENV_INDEX": [
     "12ft",
+    "archive",
     "ascii",
     "ask",
     "bing",

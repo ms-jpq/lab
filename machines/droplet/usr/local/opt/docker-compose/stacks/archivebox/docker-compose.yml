@@ -25,6 +25,7 @@ services:
       HTTP_PROXY: http://warp-srv-1:1080
       MEDIA_MAX_SIZE: 50m
       PGID: 1000
+      PUBLIC_ADD_VIEW: True
       PUID: 1000
       SAVE_PDF: False
     command:
@@ -35,12 +36,9 @@ services:
       - default
       - traefik
     volumes:
-      - data:/data
+      - /var/lib/local/${COMPOSE_PROJECT_NAME}:/data
 
 networks:
   traefik:
     external: true
     name: traefik
-
-volumes:
-  data:
