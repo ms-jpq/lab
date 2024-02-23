@@ -1,16 +1,17 @@
 [Unit]
-Description      = NetNS DNS -- %I
-StopWhenUnneeded = yes
-CollectMode      = inactive
+Description       = NetNS DNS -- %I
+StopWhenUnneeded  = yes
+CollectMode       = inactive
 
-After            = network-online.target
+After             = network-online.target
 
 [Service]
-ProtectSystem    = strict
-ProtectHome      = yes
-PrivateTmp       = yes
-RuntimeDirectory = local/dns
-ReadWritePaths   = %t/local/dns %T
+ProtectSystem     = strict
+ProtectHome       = yes
+PrivateTmp        = yes
+RuntimeDirectory  = local/dns
+ReadWritePaths    = %t/local/dns %T
 
-ExecStart        = socat -T 9 unix-listen:%t/local/dns/%I.sock,fork %I-connect:127.0.0.53:53
-ExecReload       = kill -s SIGUSR1 -- ${MAINPID}
+ExecStart         = socat -T 9 unix-listen:%t/local/dns/%I.sock,fork %I-connect:127.0.0.53:53
+ExecReload        = kill -s SIGUSR1 -- ${MAINPID}
+SuccessExitStatus = SIGTERM
