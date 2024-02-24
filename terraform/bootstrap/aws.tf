@@ -25,7 +25,7 @@ data "aws_region" "us_w2" {
 }
 
 locals {
-  aws_account_id = data.aws_caller_identity.whoami.account_id
+  aws_account = data.aws_caller_identity.whoami
   regions = {
     ca_w1 = data.aws_region.ca_w1.name
     us_e1 = data.aws_region.us_e1.name
@@ -35,7 +35,7 @@ locals {
 
 output "aws" {
   value = {
-    account_id = local.aws_account_id,
+    account_id = local.aws_account.account_id,
     regions    = local.regions
   }
 }

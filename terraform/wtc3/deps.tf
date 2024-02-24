@@ -5,10 +5,10 @@ terraform {
       source  = "hashicorp/aws"
       version = ">= 0"
     }
-    external = {
-      source  = "hashicorp/external"
-      version = ">= 0"
-    }
+    # external = {
+    #   source  = "hashicorp/external"
+    #   version = ">= 0"
+    # }
     vultr = {
       source  = "vultr/vultr"
       version = ">= 0"
@@ -21,7 +21,7 @@ terraform {
     bucket         = "kfc-tfstate"
     dynamodb_table = "tfstate"
     encrypt        = true
-    key            = "wsb.json"
+    key            = "wtc3.json"
     region         = "ca-west-1"
     # TODO: next release should fix this
     skip_region_validation = true
