@@ -1,0 +1,54 @@
+---
+services:
+  srv:
+    image: ghcr.io/bitmagnet-io/bitmagnet:latest
+    userns_mode: auto
+    restart: unless-stopped
+    depends_on:
+      pg:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=3333
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`dht.{.+}.{.+$$}`)
+    environment:
+      POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_HOST: pg
+      POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
+    command:
+      - worker
+      - run
+      - --keys=http_server
+      - --keys=queue_server
+      - --keys=dht_crawler
+    networks:
+      - default
+      - traefik
+
+  pg:
+    image: docker.io/library/postgres:latest
+    userns_mode: auto
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - pg_isready
+        - --username
+        - ${COMPOSE_PROJECT_NAME}
+        - --dbname
+        - ${COMPOSE_PROJECT_NAME}
+    environment:
+      POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
+    volumes:
+      - /var/lib/local/${COMPOSE_PROJECT_NAME}:/var/lib/postgresql/data
+
+networks:
+  traefik:
+    external: true
+    name: traefik
+
+volumes:
+  data:
