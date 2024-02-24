@@ -7,6 +7,9 @@ services:
     depends_on:
       pg:
         condition: service_healthy
+    deploy:
+      resources:
+        limits: {}
     healthcheck:
       test:
         - CMD
@@ -39,6 +42,18 @@ services:
     image: docker.io/library/postgres:latest
     userns_mode: auto
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 500M
+    blkio_config:
+      weight: 10
+      device_read_iops:
+        - path: ${EBS_VOL}
+          rate: 60
+      device_write_iops:
+        - path: ${EBS_VOL}
+          rate: 60
     healthcheck:
       test:
         - CMD
