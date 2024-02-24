@@ -4,7 +4,6 @@ services:
     image: docker.io/dadoonet/fscrawler:noocr
     userns_mode: auto
     restart: unless-stopped
-    user: "1000"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     command:

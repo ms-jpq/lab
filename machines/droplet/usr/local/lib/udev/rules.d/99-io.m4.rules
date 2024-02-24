@@ -1,0 +1,1 @@
+ACTION=="add|change", ENV{DEVTYPE}=="disk", SUBSYSTEM=="block", SUBSYSTEMS=="pci", ATTR{serial}="m5_assert([ENV_EBS_VOL])"

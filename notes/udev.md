@@ -3,8 +3,12 @@
 ## Query
 
 ```bash
-udevadm info --query all -- '</dev/...>'
-udevadm info --attribute-walk -- '</dev/...>'
+df --si --print-type
+udevadm info --query all -- '/dev/...'
+udevadm info --attribute-walk -- '/dev/...'
+```
+
+```bash
 udevadm info --query all -- '/sys/class/net/...'
 udevadm info --attribute-walk -- '/sys/class/net/...'
 ```

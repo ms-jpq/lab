@@ -1,8 +1,5 @@
 locals {
   ebs_vols = {
-    btrfs = {
-      size = 1
-    }
   }
   light_vols = {
     btrfs = {
