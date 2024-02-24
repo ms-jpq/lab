@@ -1,4 +1,4 @@
-data "aws_ami" "ubuntu-lts" {
+data "aws_ami" "ubuntu_lts" {
   most_recent = true
   owners      = ["amazon"]
 
@@ -18,10 +18,10 @@ data "aws_ami" "ubuntu-lts" {
   }
 }
 
-output "ami-ubuntu-lts" {
+output "ami_ubuntu_lts" {
   value = {
-    id   = data.aws_ami.ubuntu-lts.id
-    name = data.aws_ami.ubuntu-lts.name
+    id   = data.aws_ami.ubuntu_lts.id
+    name = data.aws_ami.ubuntu_lts.name
   }
 }
 
@@ -79,7 +79,7 @@ data "cloudinit_config" "ci_data" {
 }
 
 resource "aws_launch_template" "familia" {
-  image_id  = data.aws_ami.ubuntu-lts.id
+  image_id  = data.aws_ami.ubuntu_lts.id
   name      = "familia"
   user_data = data.cloudinit_config.ci_data.rendered
 
