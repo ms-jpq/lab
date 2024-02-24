@@ -28,6 +28,7 @@ services:
       PUBLIC_ADD_VIEW: True
       PUID: 1000
       SAVE_PDF: False
+      SAVE_SCREENSHOT: False
       TIMEOUT: 600
     command:
       - server
