@@ -7,6 +7,7 @@ services:
     depends_on:
       pg:
         condition: service_healthy
+    cpus: 0.25
     healthcheck:
       test:
         - CMD
@@ -22,7 +23,6 @@ services:
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=3333
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`dht.{.+}.{.+$$}`)
     environment:
-      DHT_CRAWLER_SCALING_FACTOR: 3
       POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
       POSTGRES_HOST: localhost
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
