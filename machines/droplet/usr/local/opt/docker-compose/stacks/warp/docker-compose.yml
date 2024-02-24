@@ -16,6 +16,8 @@ services:
       - traefik
     ports:
       - 127.0.0.53:9050:1080
+      - "3334:3334/tcp"
+      - "3334:3334/udp"
     volumes:
       - warp:/var/lib/cloudflare-warp
 

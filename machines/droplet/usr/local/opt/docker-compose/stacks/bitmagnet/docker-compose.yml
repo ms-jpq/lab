@@ -23,8 +23,9 @@ services:
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`dht.{.+}.{.+$$}`)
     environment:
       POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
-      POSTGRES_HOST: pg
+      POSTGRES_HOST: localhost
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_PORT: &port "6543"
       POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
     command:
       - worker
@@ -32,12 +33,7 @@ services:
       - --keys=http_server
       - --keys=queue_server
       - --keys=dht_crawler
-    networks:
-      - default
-      - traefik
-    ports:
-      - "3334:3334/tcp"
-      - "3334:3334/udp"
+    network_mode: container:warp-srv-1
 
   pg:
     image: docker.io/library/postgres:latest
@@ -47,6 +43,8 @@ services:
       test:
         - CMD
         - pg_isready
+        - --port
+        - *port
         - --username
         - ${COMPOSE_PROJECT_NAME}
         - --dbname
@@ -55,13 +53,12 @@ services:
       POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
       POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
+    command:
+      - -p
+      - *port
+    network_mode: container:warp-srv-1
     volumes:
       - /var/lib/local/${COMPOSE_PROJECT_NAME}:/var/lib/postgresql/data
-
-networks:
-  traefik:
-    external: true
-    name: traefik
 
 volumes:
   data:
