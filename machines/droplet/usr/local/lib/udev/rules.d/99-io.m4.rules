@@ -1,1 +1,1 @@
-ACTION=="add|change", ENV{DEVTYPE}=="disk", SUBSYSTEM=="block", SUBSYSTEMS=="pci", ATTR{serial}="m5_assert([ENV_EBS_VOL])"
+ACTION=="add|change", ENV{DEVTYPE}=="disk", SUBSYSTEM=="block", SUBSYSTEMS=="nvme", ATTRS{serial}=="m5_assert([ENV_EBS_VOL])", ATTR{queue/scheduler}="mq-deadline", ATTR{device/queue_depth}="4", ATTR{queue/nr_requests}="4"

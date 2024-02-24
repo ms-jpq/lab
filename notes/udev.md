@@ -24,5 +24,5 @@ udevadm control --reload-rules && udevadm trigger
 ## IO Sched
 
 ```bash
-printf -- '%s\n' /sys/block/*/{device/queue_depth,queue/{scheduler,nr_requests}} | xargs --no-run-if-empty -- batcat --theme GitHub --
+printf -- '%s\0' /sys/block/*/{device/queue_depth,queue/{scheduler,nr_requests}} | xargs --no-run-if-empty --null -- batcat --theme GitHub --
 ```
