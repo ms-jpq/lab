@@ -7,6 +7,16 @@ services:
     depends_on:
       pg:
         condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --spider
+        - --timeout
+        - "1"
+        - --
+        - localhost:3333
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=3333
@@ -25,6 +35,9 @@ services:
     networks:
       - default
       - traefik
+    ports:
+      - "3334:3334/tcp"
+      - "3334:3334/udp"
 
   pg:
     image: docker.io/library/postgres:latest
