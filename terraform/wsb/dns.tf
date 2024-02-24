@@ -23,7 +23,7 @@ data "external" "lightsail_nameserver" {
       for srv in aws_lightsail_domain.sea_to_sky
       : srv.domain_name
     ])
-    region = local.regions.us_e1
+    region = local.aws_regions.us_e1
   }
 }
 

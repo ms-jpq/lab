@@ -4,6 +4,12 @@ locals {
   light_vols = {
     btrfs = {
       size = 8
+      type = "gp3"
+    }
+  }
+  vultr_vols = {
+    btrfs = {
+      size = 120
     }
   }
 }
@@ -28,11 +34,11 @@ locals {
 
 resource "aws_ebs_volume" "iscsi" {
   for_each          = aws_kms_key.iscsi
-  availability_zone = local.zones.ca_w1[0]
+  availability_zone = local.aws_zones.ca_w1[0]
   encrypted         = true
   kms_key_id        = each.value.arn
-  size              = local.ebs_vols[each.key].size
-  type              = "gp3"
+  size              = each.value.size
+  type              = each.value.type
   tags = {
     id = "iscsi-${each.key}"
   }
@@ -44,7 +50,7 @@ resource "aws_ebs_volume" "iscsi" {
 resource "aws_lightsail_disk" "iscsi" {
   provider          = aws.us_w2
   for_each          = local.light_vols
-  availability_zone = local.zones.us_w2[0]
+  availability_zone = local.aws_zones.us_w2[0]
   name              = "iscsi-${each.key}"
   size_in_gb        = each.value.size
   lifecycle {
@@ -55,7 +61,7 @@ resource "aws_lightsail_disk" "iscsi" {
 data "external" "ebs_lite" {
   program = ["${path.module}/lightsail_ebs.sh"]
   query = {
-    region = local.regions.us_w2
+    region = local.aws_regions.us_w2
     disks = jsonencode([
       for vol in aws_lightsail_disk.iscsi :
       vol.id
@@ -89,6 +95,24 @@ output "ebs_lite" {
       iops = val.iops
       size = val.sizeInGb
       zone = val.location.availabilityZone
+    }
+  ]
+}
+
+resource "vultr_block_storage" "iscsi" {
+  for_each   = local.vultr_vols
+  block_type = "storage_opt"
+  live       = true
+  region     = local.vultr_regions.seattle
+  size_gb    = each.value.size
+}
+
+output "vblk" {
+  value = [
+    for key, val in vultr_block_storage.iscsi : {
+      id   = val.id
+      size = val.size_gb
+      zone = val.region
     }
   ]
 }

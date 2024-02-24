@@ -9,6 +9,10 @@ terraform {
     #   source  = "hashicorp/external"
     #   version = ">= 0"
     # }
+    http = {
+      source  = "hashicorp/http"
+      version = ">= 0"
+    }
     vultr = {
       source  = "vultr/vultr"
       version = ">= 0"

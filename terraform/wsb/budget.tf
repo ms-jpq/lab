@@ -23,7 +23,7 @@ resource "aws_budgets_budget" "septims" {
   }
 }
 
-output "dong" {
+output "bezos" {
   value = {
     freedom_fries = aws_budgets_budget.septims.limit_amount
     warn = [
