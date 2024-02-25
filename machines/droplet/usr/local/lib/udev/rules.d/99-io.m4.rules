@@ -1,1 +1,2 @@
-ACTION=="add|change", ENV{DEVTYPE}=="disk", SUBSYSTEM=="block", SUBSYSTEMS=="nvme", ATTR{queue/scheduler}="mq-deadline", ATTR{queue/nr_requests}="8"
+# IO limited nvme drives
+# ACTION=="add|change", ENV{DEVTYPE}=="disk", SUBSYSTEM=="block", SUBSYSTEMS=="nvme", ATTR{queue/scheduler}="mq-deadline", ATTR{queue/nr_requests}="8"
