@@ -29,7 +29,7 @@ output "vultr_plan" {
 
 resource "vultr_instance" "droplet" {
   enable_ipv6 = true
-  hostname   = "droplet"
+  hostname    = "droplet"
   os_id       = data.vultr_os.ubuntu_lts.id
   plan        = data.vultr_plan.agenda.id
   region      = local.vultr_regions.seattle

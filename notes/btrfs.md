@@ -16,3 +16,7 @@ btrfs send -v --no-data -e -- 'subvol1' 'subvol2' '...'
 ```bash
 btrfs send -e -- 'subvol1' 'subvol2' '...' | pv --bytes --rate --average-rate --timer | btrfs receive -e -- 'subvol'
 ```
+
+```bash
+btrfs subvolume list -r -- 'subvol' | cut --delimiter ' ' --fields 9- | xargs --no-run-if-empty -I % -- btrfs property set % ro false
+```

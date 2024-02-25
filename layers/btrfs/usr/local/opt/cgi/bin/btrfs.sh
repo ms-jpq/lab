@@ -27,6 +27,6 @@ for LINE in "${LINES[@]}"; do
   printf -- '\n'
   /usr/local/libexec/hr-run.sh btrfs scrub status --si -- "$LINE"
   printf -- '\n'
-  /usr/local/libexec/hr-run.sh btrfs subvolume list -- "$LINE"
+  /usr/local/libexec/hr-run.sh btrfs subvolume list --sort path -- "$LINE" | cut --delimiter ' ' --fields 9-
   printf -- '\n'
 done
