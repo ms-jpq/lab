@@ -27,6 +27,7 @@
 + netdata-plugins-python
 + nfs-common
 + nginx
++ pv
 + python3-venv
 + ripgrep
 + rsync
