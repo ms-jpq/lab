@@ -27,6 +27,7 @@ output "vultr_plan" {
   }
 }
 
+# TODO: https://github.com/vultr/terraform-provider-vultr/issues/176
 resource "vultr_instance" "droplet" {
   enable_ipv6 = true
   hostname    = "droplet"
