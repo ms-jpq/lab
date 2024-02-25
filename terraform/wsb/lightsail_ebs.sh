@@ -15,6 +15,6 @@ AWS=(
 )
 
 read -r -d '' -- JQJQ <<-'EOF' || true
-.disks[] | select([.name] | inside($disks)) | { (.name): (. | tojson) }
+[.disks[] | select([.name] | inside($disks)) | { (.name): (. | tojson) }] | add // {}
 EOF
-"${AWS[@]}" | "${JQ[@]}" --argjson disks "$DISKS" "$JQJQ" | "${JQ[@]}" --slurp 'add'
+"${AWS[@]}" | "${JQ[@]}" --argjson disks "$DISKS" "$JQJQ"

@@ -2,10 +2,6 @@ locals {
   ebs_vols = {
   }
   light_vols = {
-    btrfs = {
-      size = 8
-      type = "gp3"
-    }
   }
   vultr_vols = {
     btrfs = {
