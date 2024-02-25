@@ -28,10 +28,15 @@ output "vultr_plan" {
 }
 
 resource "vultr_instance" "droplet" {
+  enable_ipv6 = true
+  hostname   = "droplet"
   os_id       = data.vultr_os.ubuntu_lts.id
   plan        = data.vultr_plan.agenda.id
   region      = local.vultr_regions.seattle
   ssh_key_ids = [for _, val in vultr_ssh_key.keys : val.id]
+  lifecycle {
+    ignore_changes = [ssh_key_ids]
+  }
 }
 
 locals {
