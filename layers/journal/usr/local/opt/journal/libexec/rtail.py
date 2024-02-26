@@ -6,7 +6,8 @@ from io import DEFAULT_BUFFER_SIZE, BufferedIOBase
 from os import linesep
 from pathlib import Path
 from signal import SIG_DFL, SIGPIPE, signal
-from sys import stdin, stdout
+from sys import stderr, stdin, stdout
+from time import monotonic
 from typing import cast
 
 with nullcontext():
@@ -16,10 +17,11 @@ with nullcontext():
 
 with nullcontext():
     parser = ArgumentParser()
-    parser.add_argument("--flush", type=int, default=1000)
+    parser.add_argument("--flush", type=float, default=60.0)
+    parser.add_argument("--name", required=True)
     parser.add_argument("cursor_fd")
     args = parser.parse_args()
-    flush = args.flush
+    name, flush = str(args.name).encode(), args.flush
     record = Path(f"{args.cursor_fd}.cursor")
     wal = record.with_suffix(".wal")
 
@@ -27,15 +29,27 @@ with nullcontext():
 with nullcontext():
     io = cast(BufferedIOBase, stdin.buffer).raw
     acc = bytearray()
+    t0 = monotonic()
     binary = 0
     count = 0
     cursor = b""
 
 
-def _flush() -> None:
+def _flush(delta: float) -> None:
     if cursor:
         wal.write_bytes(cursor)
         wal.rename(record)
+        line = (
+            name
+            + b" : "
+            + str(count).encode()
+            + b"/"
+            + format(delta, ".2f").encode()
+            + b"s"
+            + _SEP
+        )
+        stderr.buffer.write(line)
+        stderr.buffer.flush()
 
 
 signal(SIGPIPE, SIG_DFL)
@@ -60,8 +74,10 @@ try:
             if buf[-1:] == _SEP:
                 if len(buf) == 1:
                     count += 1
-                    if count % flush == 0:
-                        _flush()
+                    t1 = monotonic()
+                    if (delta := t1 - t0) >= flush:
+                        t0 = t1
+                        _flush(delta)
                     stdout.buffer.flush()
                 else:
                     view = acc or buf
@@ -79,4 +95,4 @@ except KeyboardInterrupt:
 except BrokenPipeError:
     exit(13)
 finally:
-    _flush()
+    _flush(t0 - monotonic())

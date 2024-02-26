@@ -16,14 +16,17 @@ CAT=(
 )
 RECORD="$CURSOR.cursor"
 if [[ -f "$RECORD" ]]; then
-  set -x
   AT="Range: entries=$(<"$RECORD")"
-  set +x
+  printf -- '%s\n' "$REMOTE -> $AT" >&2
   CAT+=(--header "$AT")
 fi
 CAT+=(-- "http://$REMOTE:8080/entries?follow")
 
-TEE=("${0%/*}/rtail.py" "$CURSOR")
+TEE=(
+  "${0%/*}/rtail.py"
+  --name "$REMOTE"
+  -- "$CURSOR"
+)
 
 if [[ -z "$OUTPUT" ]]; then
   TAIL=(cat)
