@@ -23,7 +23,13 @@ cursor = b""
 
 with open(args.cursor_fd, mode="wb") as fd:
     while True:
-        if binary:
+        if binary < 0:
+            buf = io.read(1)
+            if not buf:
+                break
+            else:
+                binary, *_ = buf
+        elif binary:
             buf = io.read(binary)
             if not buf:
                 break
@@ -41,11 +47,7 @@ with open(args.cursor_fd, mode="wb") as fd:
                         acc.extend(buf)
                         idx = acc.find(_EQ)
                         if idx == -1:
-                            step = io.read(1)
-                            if not step:
-                                break
-                            else:
-                                binary, *_ = step
+                            binary = -1
                         else:
                             key = acc[:idx]
                             if key == _CURSOR:
