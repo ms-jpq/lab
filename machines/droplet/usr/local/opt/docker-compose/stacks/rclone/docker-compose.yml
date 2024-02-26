@@ -42,7 +42,7 @@ services:
       - --
       - /srv
     volumes:
-      - /var/lib/local/rclone:/srv
+      - /var/lib/local/rclone:/srv:ro
 
 networks:
   default:
