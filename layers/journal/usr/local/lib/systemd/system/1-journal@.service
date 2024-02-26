@@ -6,6 +6,7 @@ After          = network-online.target
 ProtectSystem  = strict
 ProtectHome    = yes
 PrivateTmp     = yes
+Group          = systemd-journal
 
 ReadWritePaths = %T %V %S/local/%J
 
