@@ -1,0 +1,12 @@
+[Unit]
+Description    = Tail Remote Journal -- %I
+After          = network-online.target
+
+[Service]
+ProtectSystem  = strict
+ProtectHome    = yes
+PrivateTmp     = yes
+
+ReadWritePaths = %T %V %S/local/%J
+
+ExecStart      = /usr/local/opt/journal/libexec/rtail.sh %S/local/%J %I

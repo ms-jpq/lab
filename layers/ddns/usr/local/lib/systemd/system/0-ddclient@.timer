@@ -1,6 +1,7 @@
 [Unit]
-Description       = DDNS Timer - %I
+Description        = DDNS Timer - %I
 
 [Timer]
-OnStartupSec      = 6seconds
-OnUnitInactiveSec = 10minutes
+OnStartupSec       = 6seconds
+OnUnitInactiveSec  = 10minutes
+RandomizedDelaySec = 1minute

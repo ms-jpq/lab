@@ -24,6 +24,12 @@
     "freenas.enp2s0.pfsense/youtube-dl",
     "freenas.enp2s0.pfsense/zfs.sh"
   ],
+  "ENV_JOURNAL_HOSTS": [
+    "droplet.wg0.droplet.home.arpa",
+    "esxi.enp2s0.pfsense.home.arpa",
+    "orthanc.enp2s0.pfsense.home.arpa",
+    "pfsense.enp2s0.pfsense.home.arpa"
+  ],
   "ENV_MACHINES": [
     "droplet.wg0.droplet",
     "cups.freenas.enp2s0.pfsense",
