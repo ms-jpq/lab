@@ -74,8 +74,7 @@ try:
             if buf[-1:] == _SEP:
                 if len(buf) == 1:
                     count += 1
-                    t1 = monotonic()
-                    if (delta := t1 - t0) >= flush:
+                    if (delta := (t1 := monotonic()) - t0) >= flush:
                         t0 = t1
                         _flush(delta)
                     stdout.buffer.flush()
