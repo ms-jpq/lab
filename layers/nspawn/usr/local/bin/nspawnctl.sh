@@ -77,6 +77,7 @@ disable)
   done
   ;;
 remove)
+  "$0" disable "${MACHINES[@]}"
   for MACH in "${MACHINES[@]}"; do
     ROOT="$LIB/$MACH"
     set -x

@@ -3,15 +3,17 @@
 set -o pipefail
 
 SUBVOLUME="$1"
-PARENT="${2:-""}"
+LIST=(btrfs subvolume list -- "$SUBVOLUME")
+CUT=(cut --delimiter ' ' --fields 9-)
+PARALLEL=(xargs --no-run-if-empty --null -I % --max-procs 0 --)
+DEFRAG=(btrfs -v filesystem defragment -r -- %)
 
-if [[ -n "$PARENT" ]]; then
-  SUBVOLUME="$PARENT/$SUBVOLUME"
-fi
-
-btrfs subvolume list -o -- "$SUBVOLUME" | cut --delimiter ' ' --fields 9- | xargs --no-run-if-empty -I % --max-procs 0 -- "$0" % "$SUBVOLUME"
-RO="$(btrfs property get -- "$SUBVOLUME" ro)"
-
-if [[ "$RO" != 'ro=true' ]]; then
-  exec -- btrfs -v filesystem defragment -r -- "$SUBVOLUME"
-fi
+{
+  printf -- '%s\0' "$SUBVOLUME"
+  "${LIST[@]}" | "${CUT[@]}" | while read -r -- VOL; do
+    VOL="$SUBVOLUME/$VOL"
+    if btrfs property get -- "$VOL" ro | grep -F -- 'ro=false' >/dev/null; then
+      printf -- '%s\0' "$VOL"
+    fi
+  done
+} | "${PARALLEL[@]}" "${DEFRAG[@]}"
