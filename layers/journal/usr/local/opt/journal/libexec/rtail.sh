@@ -2,8 +2,9 @@
 
 set -o pipefail
 
-OUTPUT="$1"
+CURSOR="$1"
 REMOTE="$2"
+OUTPUT="${3:-""}"
 
 CAT=(
   curl
@@ -13,7 +14,16 @@ CAT=(
   --header 'Accept: application/vnd.fdo.journal'
   -- "http://$REMOTE:8080/entries?follow"
 )
+TEE=("${0%/*}/rtail.py" "$CURSOR")
 
-"${CAT[@]}" | "${0%/*}/rtail.py"
+if [[ -z "$OUTPUT" ]]; then
+  TAIL=(cat)
+else
+  TAIL=(
+    /usr/lib/systemd/systemd-journal-remote
+    --output "$OUTPUT"
+    -- -
+  )
+fi
 
-# "${CAT[@]}" | /usr/lib/systemd/systemd-journal-remote --output "$OUTPUT" -- -
+"${CAT[@]}" | "${TEE[@]}" | "${TAIL[@]}"
