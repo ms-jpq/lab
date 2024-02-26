@@ -9,4 +9,5 @@ PrivateTmp     = yes
 
 ReadWritePaths = %T %V %S/local/%J
 
-ExecStart      = /usr/local/opt/journal/libexec/rtail.sh %S/local/%J %I
+Environment    = NAME=%S/local/%J/%I
+ExecStart      = /usr/local/opt/journal/libexec/rtail.sh ${NAME} %I ${NAME}.journal

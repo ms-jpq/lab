@@ -20,7 +20,7 @@ with nullcontext():
     parser.add_argument("cursor_fd")
     args = parser.parse_args()
     flush = args.flush
-    record = Path(f"{args.cursor_fd}.record")
+    record = Path(f"{args.cursor_fd}.cursor")
     wal = record.with_suffix(".wal")
 
 
