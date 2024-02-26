@@ -16,7 +16,7 @@ with nullcontext():
 
 with nullcontext():
     parser = ArgumentParser()
-    parser.add_argument("--flush", type=int, default=10000)
+    parser.add_argument("--flush", type=int, default=1000)
     parser.add_argument("cursor_fd")
     args = parser.parse_args()
     flush = args.flush
@@ -57,19 +57,18 @@ try:
             if not (buf := io.readline(DEFAULT_BUFFER_SIZE)):
                 break
 
-            if buf.endswith(_SEP):
+            if buf[-1:] == _SEP:
                 if len(buf) == 1:
                     count += 1
                     if count % flush == 0:
                         _flush()
                     stdout.buffer.flush()
                 else:
-                    acc.extend(buf)
-                    if (idx := acc.find(_EQ)) < 0:
+                    view = acc or buf
+                    if (idx := view.find(_EQ)) < 0:
                         binary = -1
-                    else:
-                        if acc[:idx] == _CURSOR:
-                            cursor = acc[idx + 1 : -len(_SEP)]
+                    elif view[:idx] == _CURSOR:
+                        cursor = view[idx + 1 : -len(_SEP)]
                     acc.clear()
             else:
                 acc.extend(buf)
