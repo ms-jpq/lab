@@ -7,7 +7,6 @@ services:
     depends_on:
       pg:
         condition: service_healthy
-    cpu_shares: 64
     healthcheck:
       test:
         - CMD
