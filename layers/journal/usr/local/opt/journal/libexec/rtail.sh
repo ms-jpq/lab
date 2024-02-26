@@ -6,14 +6,25 @@ CURSOR="$1"
 REMOTE="$2"
 OUTPUT="${3:-""}"
 
+RECORD="$CURSOR.record"
 CAT=(
   curl
   --fail
   --location
   --no-progress-meter
   --header 'Accept: application/vnd.fdo.journal'
+)
+
+if [[ -f "$RECORD" ]]; then
+  CAT+=(
+    --header "Range: entries=$(<"$RECORD")"
+  )
+fi
+
+CAT+=(
   -- "http://$REMOTE:8080/entries?follow"
 )
+
 TEE=("${0%/*}/rtail.py" "$CURSOR")
 
 if [[ -z "$OUTPUT" ]]; then
