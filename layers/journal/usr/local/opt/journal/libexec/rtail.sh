@@ -11,6 +11,7 @@ CAT=(
   curl
   --fail
   --location
+  --no-buffer
   --no-progress-meter
   --header 'Accept: application/vnd.fdo.journal'
 )

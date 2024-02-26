@@ -62,6 +62,7 @@ try:
                     count += 1
                     if count % flush == 0:
                         _flush()
+                    stdout.buffer.flush()
                 else:
                     acc.extend(buf)
                     if (idx := acc.find(_EQ)) < 0:
