@@ -1,7 +1,8 @@
 [Unit]
-Description = Btrfs Scrub Service
+Description       = Btrfs Scrub Service
+RequiresMountsFor = %f
 
 [Service]
-Type        = oneshot
-ExecStart   = btrfs scrub start -B -- %f
-ExecReload  = btrfs scrub cancel -- %f
+Type              = oneshot
+ExecStart         = btrfs scrub start -B -- %f
+ExecReload        = btrfs scrub cancel -- %f
