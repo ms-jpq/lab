@@ -5,11 +5,12 @@ from contextlib import nullcontext
 from io import DEFAULT_BUFFER_SIZE, BufferedIOBase
 from os import linesep
 from pathlib import Path
+from signal import SIG_DFL, SIGPIPE, signal
 from sys import stdin, stdout
 from typing import cast
 
 with nullcontext():
-    _SEP, _EQ = linesep.encode(), b"="
+    _SEP, _EQ = linesep.encode("ascii"), b"="
     _CURSOR = b"__CURSOR"
 
 
@@ -37,43 +38,45 @@ def _flush() -> None:
         wal.rename(record)
 
 
+signal(SIGPIPE, SIG_DFL)
+
+
 try:
     while True:
         if binary < 0:
-            buf = io.read(1)
-            if not buf:
+            if not (buf := io.read(1)):
                 break
-            else:
-                binary, *_ = buf
+
+            binary, *_ = buf
         elif binary:
-            buf = io.read(binary)
-            if not buf:
+            if not (buf := io.read(binary)):
                 break
-            else:
-                binary -= len(buf)
+
+            binary -= len(buf)
         else:
-            buf = io.readline(DEFAULT_BUFFER_SIZE)
-            if not buf:
+            if not (buf := io.readline(DEFAULT_BUFFER_SIZE)):
                 break
-            else:
-                if buf.endswith(_SEP):
-                    if len(buf) == 1:
-                        count += 1
-                        if count % flush == 0:
-                            _flush()
-                    else:
-                        acc.extend(buf)
-                        idx = acc.find(_EQ)
-                        if idx == -1:
-                            binary = -1
-                        else:
-                            key = acc[:idx]
-                            if key == _CURSOR:
-                                cursor = acc[idx + 1 : -len(_SEP)]
-                        acc.clear()
+
+            if buf.endswith(_SEP):
+                if len(buf) == 1:
+                    count += 1
+                    if count % flush == 0:
+                        _flush()
                 else:
                     acc.extend(buf)
+                    if (idx := acc.find(_EQ)) < 0:
+                        binary = -1
+                    else:
+                        if acc[:idx] == _CURSOR:
+                            cursor = acc[idx + 1 : -len(_SEP)]
+                    acc.clear()
+            else:
+                acc.extend(buf)
 
         stdout.buffer.write(buf)
+except KeyboardInterrupt:
+    exit(130)
+except BrokenPipeError:
+    exit(13)
 finally:
     _flush()
