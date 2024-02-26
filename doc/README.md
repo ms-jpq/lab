@@ -24,6 +24,8 @@
 
 - [x] GPU (CUDA & mdev) VM / containers
 
+- [x] Log aggregation
+
 - [x] HTTP + IMAP single sign on
 
 ## [Hybrid](https://github.com/ms-jpq/lab/blob/main/doc/NETWORK.md)
