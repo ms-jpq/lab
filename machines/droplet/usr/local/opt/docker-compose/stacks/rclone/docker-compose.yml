@@ -34,15 +34,19 @@ services:
       - traefik.http.services.${COMPOSE_PROJECT_NAME}2.loadbalancer.server.port=8080
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.rule=HostRegexp(`minio.{.+}.{.+$$}`)
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.service=${COMPOSE_PROJECT_NAME}2
+    environment:
+      RCLONE_CONFIG_S3_TYPE: s3
+      RCLONE_S3_ACCESS_KEY_ID: ${S3PROXY_IDENTITY}
+      RCLONE_S3_ENDPOINT: http://s3:80
+      RCLONE_S3_PROVIDER: aws
+      RCLONE_S3_SECRET_ACCESS_KEY: ${S3PROXY_CREDENTIAL}
     command:
       - serve
       - webdav
       - --config=/dev/null
       - --addr=:8080
       - --
-      - /srv
-    volumes:
-      - /var/lib/local/rclone:/srv:ro
+      - s3:/
 
 networks:
   default:
