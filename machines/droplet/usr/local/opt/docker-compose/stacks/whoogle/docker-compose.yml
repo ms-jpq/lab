@@ -22,10 +22,13 @@ services:
       WHOOGLE_CONFIG_URL:
       WHOOGLE_CONFIG_NEW_TAB: true
       WHOOGLE_CONFIG_VIEW_IMAGE: true
-      WHOOGLE_PROXY_LOC: warp-srv-1:1080
+      # WHOOGLE_PROXY_LOC: warp-srv-1:1080
       WHOOGLE_PROXY_TYPE: socks5
+    networks:
+      - default
+      - traefik
 
 networks:
-  default:
+  traefik:
     external: true
     name: traefik
