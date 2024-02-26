@@ -1,2 +1,3 @@
-/usr/local/lib/systemd/system/timers.target.wants/0-btrfs-scrub-weekly@var-lib-local.timer ../0-btrfs-scrub-weekly@.timer
-/usr/local/lib/systemd/system/ufw.service                                                  /dev/null
+/usr/local/lib/systemd/system/timers.target.wants/0-btrfs-defrag-weekly@var-lib-local.timer ../0-btrfs-defrag-weekly@.timer
+/usr/local/lib/systemd/system/timers.target.wants/0-btrfs-scrub-weekly@var-lib-local.timer  ../0-btrfs-scrub-weekly@.timer
+/usr/local/lib/systemd/system/ufw.service                                                   /dev/null
