@@ -6,7 +6,7 @@ from io import DEFAULT_BUFFER_SIZE, BufferedIOBase
 from os import linesep
 from pathlib import Path
 from signal import SIG_DFL, SIGPIPE, signal
-from sys import stderr, stdin, stdout
+from sys import exit, stderr, stdin, stdout
 from time import monotonic
 from typing import cast
 
@@ -96,9 +96,8 @@ try:
         stdout.buffer.write(buf)
         if blit:
             stdout.buffer.flush()
-            if (delta := (t1 := monotonic()) - t0) >= flush:
-                t0 = t1
-                _flush(delta)
+            if monotonic() - t0 >= flush:
+                break
 
 
 except KeyboardInterrupt:
