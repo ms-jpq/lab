@@ -69,7 +69,7 @@ try:
             if not binary:
                 binary = int.from_bytes(acc, byteorder="little") + 1
                 acc.clear()
-        elif binary:
+        elif binary > 0:
             if not (buf := io.read(binary)):
                 break
 
