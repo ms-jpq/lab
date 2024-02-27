@@ -6,7 +6,7 @@ from io import DEFAULT_BUFFER_SIZE, BufferedIOBase
 from os import linesep
 from pathlib import Path
 from signal import SIG_DFL, SIGPIPE, signal
-from sys import byteorder, stderr, stdin, stdout
+from sys import stderr, stdin, stdout
 from time import monotonic
 from typing import cast
 
@@ -39,9 +39,12 @@ def _flush(delta: float) -> None:
     if cursor:
         wal.write_bytes(cursor)
         wal.rename(record)
+        msg_p_s = count / delta
         line = (
             name
             + b" : "
+            + format(msg_p_s, ".2f").encode()
+            + b"/s -> "
             + str(count).encode()
             + b"/"
             + format(delta, ".2f").encode()
@@ -64,7 +67,7 @@ try:
             binary += len(buf)
             acc.extend(buf)
             if not binary:
-                binary = int.from_bytes(acc, byteorder="little")
+                binary = int.from_bytes(acc, byteorder="little") + 1
                 acc.clear()
         elif binary:
             if not (buf := io.read(binary)):
@@ -98,4 +101,4 @@ except KeyboardInterrupt:
 except BrokenPipeError:
     exit(13)
 finally:
-    _flush(t0 - monotonic())
+    _flush(monotonic() - t0)
