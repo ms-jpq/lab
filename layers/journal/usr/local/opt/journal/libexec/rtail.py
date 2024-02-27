@@ -6,7 +6,7 @@ from io import DEFAULT_BUFFER_SIZE, BufferedIOBase
 from os import linesep
 from pathlib import Path
 from signal import SIG_DFL, SIGPIPE, signal
-from sys import stderr, stdin, stdout
+from sys import byteorder, stderr, stdin, stdout
 from time import monotonic
 from typing import cast
 
@@ -58,10 +58,14 @@ signal(SIGPIPE, SIG_DFL)
 try:
     while True:
         if binary < 0:
-            if not (buf := io.read(1)):
+            if not (buf := io.read(-binary)):
                 break
 
-            binary, *_ = buf
+            binary += len(buf)
+            acc.extend(buf)
+            if not binary:
+                binary = int.from_bytes(acc, byteorder="little")
+                acc.clear()
         elif binary:
             if not (buf := io.read(binary)):
                 break
@@ -81,7 +85,7 @@ try:
                 else:
                     view = acc or buf
                     if (idx := view.find(_EQ)) < 0:
-                        binary = -1
+                        binary = -8
                     elif view[:idx] == _CURSOR:
                         cursor = view[idx + 1 : -len(_SEP)]
                     acc.clear()
