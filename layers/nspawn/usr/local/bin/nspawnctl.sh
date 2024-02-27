@@ -85,6 +85,12 @@ remove)
       exit 1
     fi
     set +x
+
+    ETC_ID="$ROOT/fs/etc/machine-id"
+    if [[ -f "$ETC_ID" ]]; then
+      rm -v -fr -- "/var/log/journal/$(<"$ETC_ID")"
+    fi
+
     # shellcheck disable=SC2154
     "$DEALLOC" "$ROOT"
   done

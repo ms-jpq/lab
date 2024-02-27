@@ -101,6 +101,7 @@ try:
                 stdout.close()
                 _flush(monotonic() - t0)
                 break
+
     kill(-args.ppid, Signals.SIGTERM)
 except KeyboardInterrupt:
     exit(130)
