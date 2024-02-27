@@ -12,4 +12,4 @@ ReadWritePaths    = %T %V %S/local/%J
 
 Environment       = TIMEOUT=60
 ExecStart         = /usr/local/opt/journal/libexec/rtail.sh %I %S/local/%J/%I.journal ${TIMEOUT}
-SuccessExitStatus = 28
+SuccessExitStatus = 143

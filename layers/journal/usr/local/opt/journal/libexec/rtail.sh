@@ -12,7 +12,6 @@ CAT=(
   --location
   --no-buffer
   --no-progress-meter
-  --max-time "$TIMEOUT"
   --header 'Accept: application/vnd.fdo.journal'
 )
 
@@ -30,4 +29,4 @@ TAIL=(
   -- -
 )
 
-"${CAT[@]}" | "${TAIL[@]}"
+timeout --preserve-status "$TIMEOUT" "${CAT[@]}" | "${TAIL[@]}"
