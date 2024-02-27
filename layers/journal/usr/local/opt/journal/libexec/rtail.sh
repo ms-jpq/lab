@@ -24,6 +24,7 @@ CAT+=(-- "http://$REMOTE:8080/entries?follow")
 
 TEE=(
   "${0%/*}/rtail.py"
+  --ppid $$
   --name "$REMOTE"
   -- "$CURSOR"
 )
@@ -38,4 +39,5 @@ else
   )
 fi
 
+trap -- 'exit 0' SIGTERM
 "${CAT[@]}" | "${TEE[@]}" | "${TAIL[@]}"

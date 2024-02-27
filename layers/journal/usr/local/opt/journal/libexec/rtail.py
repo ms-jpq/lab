@@ -3,9 +3,9 @@
 from argparse import ArgumentParser
 from contextlib import nullcontext
 from io import DEFAULT_BUFFER_SIZE, BufferedIOBase
-from os import linesep
+from os import kill, linesep
 from pathlib import Path
-from signal import SIG_DFL, SIGPIPE, signal
+from signal import Handlers, Signals, signal
 from sys import exit, stderr, stdin, stdout
 from time import monotonic
 from typing import cast
@@ -17,6 +17,7 @@ with nullcontext():
 
 with nullcontext():
     parser = ArgumentParser()
+    parser.add_argument("--ppid", type=int, required=True)
     parser.add_argument("--flush", type=float, default=60.0)
     parser.add_argument("--name", required=True)
     parser.add_argument("cursor_fd")
@@ -55,7 +56,7 @@ def _flush(delta: float) -> None:
         stderr.buffer.flush()
 
 
-signal(SIGPIPE, SIG_DFL)
+signal(Signals.SIGPIPE, Handlers.SIG_DFL)
 
 
 try:
@@ -97,12 +98,11 @@ try:
         if blit:
             stdout.buffer.flush()
             if monotonic() - t0 >= flush:
+                stdout.close()
+                _flush(monotonic() - t0)
                 break
-
-
+    kill(-args.ppid, Signals.SIGTERM)
 except KeyboardInterrupt:
     exit(130)
 except BrokenPipeError:
     exit(13)
-finally:
-    _flush(monotonic() - t0)
