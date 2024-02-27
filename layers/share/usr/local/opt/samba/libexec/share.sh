@@ -11,7 +11,7 @@ ENV="$2"
 SMB_EXPORTS="$(sed -E -e 's/^SMB_EXPORTS=//' -- "$ENV")"
 
 USERNAME="$(id --name --user -- 1000)"
-usermod --append --groups sambashare -- "$USERNAME"
+# usermod --append --groups sambashare -- "$USERNAME"
 
 # shellcheck disable=SC2154
 readarray -t -d ',' -- ROWS <<<"$SMB_EXPORTS"

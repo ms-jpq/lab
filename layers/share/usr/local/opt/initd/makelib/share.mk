@@ -22,7 +22,7 @@ samba: /usr/local/opt/samba/smb.conf
 samba: $(USER_SHARES)
 $(USER_SHARES): /usr/local/opt/samba/libexec/share.sh $(SMB_CONF) /usr/local/etc/default/shares.env | /etc/samba/smb.conf
 	sudo -- mkdir -v -p -- '$@'
-	sudo -- chgrp -- sambashare '$@'
+	# sudo -- chgrp -- sambashare '$@'
 	sudo -- chmod -- 1770 '$@'
 	sudo -- '$<' '$(SMB_CONF)' /usr/local/etc/default/shares.env
 
