@@ -2,9 +2,9 @@
 
 set -o pipefail
 
-CURSOR="$1"
-REMOTE="$2"
-OUTPUT="${3:-""}"
+REMOTE="$1"
+JOURNAL="$2"
+TIMEOUT="$3"
 
 CAT=(
   curl
@@ -12,32 +12,22 @@ CAT=(
   --location
   --no-buffer
   --no-progress-meter
+  --max-time "$TIMEOUT"
   --header 'Accept: application/vnd.fdo.journal'
 )
-RECORD="$CURSOR.cursor"
-if [[ -f "$RECORD" ]]; then
-  AT="Range: entries=$(<"$RECORD")"
+
+if [[ -f "$JOURNAL" ]]; then
+  CURSOR="$(journalctl --output json --reverse --lines 1 --file "$JOURNAL" | jq --exit-status --raw-output '.__CURSOR')"
+  AT="Range: entries=$CURSOR"
   printf -- '%s\n' "$REMOTE -> $AT" >&2
   CAT+=(--header "$AT")
 fi
 CAT+=(-- "http://$REMOTE:8080/entries?follow")
 
-TEE=(
-  "${0%/*}/rtail.py"
-  --ppid $$
-  --name "$REMOTE"
-  -- "$CURSOR"
+TAIL=(
+  /usr/lib/systemd/systemd-journal-remote
+  --output "$JOURNAL"
+  -- -
 )
 
-if [[ -z "$OUTPUT" ]]; then
-  TAIL=(cat)
-else
-  TAIL=(
-    /usr/lib/systemd/systemd-journal-remote
-    --output "$OUTPUT"
-    -- -
-  )
-fi
-
-trap -- 'exit 0' SIGTERM
-"${CAT[@]}" | "${TEE[@]}" | "${TAIL[@]}"
+"${CAT[@]}" | "${TAIL[@]}"
