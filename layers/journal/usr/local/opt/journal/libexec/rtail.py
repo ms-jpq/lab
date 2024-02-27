@@ -60,6 +60,7 @@ signal(SIGPIPE, SIG_DFL)
 
 try:
     while True:
+        blit = False
         if binary < 0:
             if not (buf := io.read(-binary)):
                 break
@@ -81,10 +82,7 @@ try:
             if buf[-1:] == _SEP:
                 if len(buf) == 1:
                     count += 1
-                    if (delta := (t1 := monotonic()) - t0) >= flush:
-                        t0 = t1
-                        _flush(delta)
-                    stdout.buffer.flush()
+                    blit = True
                 else:
                     view = acc or buf
                     if (idx := view.find(_EQ)) < 0:
@@ -96,6 +94,13 @@ try:
                 acc.extend(buf)
 
         stdout.buffer.write(buf)
+        if blit:
+            stdout.buffer.flush()
+            if (delta := (t1 := monotonic()) - t0) >= flush:
+                t0 = t1
+                _flush(delta)
+
+
 except KeyboardInterrupt:
     exit(130)
 except BrokenPipeError:
