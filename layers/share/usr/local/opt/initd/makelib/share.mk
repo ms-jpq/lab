@@ -9,6 +9,10 @@ CLOBBER.FS += $(CLOBBER.ISCSI)
 SMB_CONF := /usr/local/opt/samba/main/smb.conf
 USER_SHARES := /var/lib/samba/usershares
 
+pkg._: /etc/apt/sources.list.d/ppa_linux-schools_samba-latest.list
+/etc/apt/sources.list.d/ppa_linux-schools_samba-latest.list:
+	sudo -- ./libexec/add-ppa.sh linux-schools/samba-latest
+
 samba: /usr/local/opt/samba/smb.conf
 /usr/local/opt/samba/smb.conf: /usr/local/opt/samba/libexec/conf.sh $(SMB_CONF) $(shell shopt -u failglob && printf -- '%s ' /usr/local/opt/samba/conf.d/*.conf) | /usr/bin/envsubst
 	sudo -- '$<' '$@' $^
