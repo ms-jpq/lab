@@ -1,5 +1,6 @@
 ---
-server.host: 127.0.0.53
-server.basePath: /kibana
-server.rewriteBasePath: true
 path.data: /var/lib/local/kibana
+
+server.basePath: /kibana
+server.host: 127.0.0.53
+server.rewriteBasePath: true
