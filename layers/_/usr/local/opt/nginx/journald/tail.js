@@ -72,14 +72,17 @@ const stream = (() => {
             if (token === "\n") {
               const json = JSON.parse(acc.join(""));
               yield json;
+              const c = json.__CURSOR;
               acc.length = 0;
               timeout = t;
-              cursor = json.__CURSOR;
+              if (c) {
+                cursor = c;
+                if (params.size) {
+                  globalThis?.localStorage.setItem(CURSOR, c);
+                }
+              }
               if (performance.now() - t0 > 60 * 1000) {
                 break loop;
-              }
-              if (params.size) {
-                globalThis?.localStorage.setItem(CURSOR, cursor);
               }
             } else {
               acc.push(token);
