@@ -1,8 +1,13 @@
 [Unit]
 Description       = Tail Remote Journal -- %I
+CollectMode       = inactive-or-failed
 After             = network-online.target
 
 [Service]
+Type              = oneshot
+LogLevelMax       = warning
+SyslogLevel       = warning
+
 ProtectSystem     = strict
 ProtectHome       = yes
 PrivateTmp        = yes
