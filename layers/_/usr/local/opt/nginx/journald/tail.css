@@ -1,40 +1,52 @@
+:root {
+  --margin: 3rem;
+}
 body {
-  padding: 0;
   margin: 0;
+  padding: 0;
 
   & header,
   & main {
-    min-width: 100%;
     max-width: 100%;
+    min-width: 100%;
   }
 
   & header {
-    position: fixed;
     display: flex;
     justify-content: flex-end;
+    margin-left: var(--margin);
+    margin-right: var(--margin);
+    position: fixed;
   }
 
-  & main {
-    overflow: scroll;
-  }
+  & ol {
+    padding-left: 0;
+    & li {
+      list-style-type: none;
+      margin-left: var(--margin);
+      margin-right: var(--margin);
 
-  & li {
-    list-style-type: none;
+      & label {
+        word-wrap: break-word;
 
-    & time,
-    & label > b {
-      margin-inline-end: 1rem;
-    }
+        & > b:not(:empty),
+        & > i:not(:empty) {
+          margin-inline-end: 0.5rem;
+          word-wrap: unset;
+        }
+      }
 
-    & time {
-      font-family:
-        ui-monospace,
-        SFMono-Regular,
-        SF Mono,
-        Menlo,
-        Consolas,
-        Liberation Mono,
-        monospace;
+      & time {
+        margin-inline-end: 1rem;
+        font-family:
+          ui-monospace,
+          SFMono-Regular,
+          SF Mono,
+          Menlo,
+          Consolas,
+          Liberation Mono,
+          monospace;
+      }
     }
   }
 }

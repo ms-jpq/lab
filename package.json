@@ -3,7 +3,8 @@
   "devDependencies": {
     "@taplo/cli": "*",
     "prettier": "*",
-    "prettier-plugin-nginx": "*"
+    "prettier-plugin-nginx": "*",
+    "typescript": "*"
   },
   "type": "module"
 }

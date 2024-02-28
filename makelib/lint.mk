@@ -1,6 +1,6 @@
-.PHONY: lint mypy shellcheck hadolint tflint
+.PHONY: lint mypy shellcheck hadolint tflint tsc
 
-lint: mypy shellcheck hadolint tflint
+lint: mypy shellcheck hadolint tflint tsc
 
 mypy: ./.venv/bin
 	git ls-files --deduplicate -z -- '*.py' | xargs -r -0 -- '$</mypy' --
@@ -13,3 +13,6 @@ hadolint: $(VAR)/bin/hadolint
 
 tflint: $(VAR)/bin/tflint $(VAR)/tflint.d
 	printf -- '%s\0' ./terraform/*/ | xargs -r -0 -n 1 -P 0 -- '$<' --chdir
+
+tsc: ./node_modules/.bin
+	'$</tsc' --noEmit

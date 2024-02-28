@@ -45,7 +45,7 @@ const stream = (() => {
    * @returns {AsyncIterableIterator<Record<string, string>>}
    */
   return async function* (sym, uri) {
-    /** @type string[] */
+    /** @type {string[]} */
     const acc = [];
     let timeout = t;
     let cursor = await init_cursor();
@@ -91,8 +91,10 @@ const debounce = ((handle) => {
  * @param {Record<string, string>} json
  */
 const append = (sym, root, json) => {
+  const s = /** @type {string} */ (/** @type {unknown} */ (sym));
   const {
-    [sym]: err,
+    [s]: err,
+    CONTAINER_NAME,
     MESSAGE,
     SYSLOG_IDENTIFIER,
     _HOSTNAME,
@@ -109,25 +111,25 @@ const append = (sym, root, json) => {
   const tt =
     ts.getFullYear().toString().slice(2) +
     "/" +
-    (ts.getMonth() + 1).toString().padStart(2, 0) +
+    (ts.getMonth() + 1).toString().padStart(2, "0") +
     "/" +
-    ts.getDate().toString().padStart(2, 0) +
+    ts.getDate().toString().padStart(2, "0") +
     " " +
-    ts.getHours().toString().padStart(2, 0) +
+    ts.getHours().toString().padStart(2, "0") +
     ":" +
-    ts.getMinutes().toString().padStart(2, 0) +
+    ts.getMinutes().toString().padStart(2, "0") +
     ":" +
-    ts.getSeconds().toString().padStart(2, 0);
+    ts.getSeconds().toString().padStart(2, "0");
   const time = document.createElement("time");
   time.setAttribute("datetime", ts.toISOString());
   time.appendChild(document.createTextNode(tt));
 
   const id = document.createTextNode(
-    err?.constructor ??
+    err?.constructor?.toString() ??
       [
         ...(function* () {
           if (_HOSTNAME) {
-            yield `<${_HOSTNAME}>`;
+            yield `@${_HOSTNAME}`;
           }
           if (_KERNEL_SUBSYSTEM) {
             yield `*${_KERNEL_SUBSYSTEM}*`;
@@ -135,16 +137,27 @@ const append = (sym, root, json) => {
           if (_SYSTEMD_UNIT) {
             yield `[${_SYSTEMD_UNIT}]`;
           }
-          if (SYSLOG_IDENTIFIER) {
-            yield SYSLOG_IDENTIFIER;
-          }
         })(),
       ].join(" "),
   );
   const b = document.createElement("b");
   b.appendChild(id);
 
-  const msg = document.createTextNode(err ?? MESSAGE);
+  const ie = document.createTextNode(
+    [
+      ...(function* () {
+        if (CONTAINER_NAME) {
+          yield CONTAINER_NAME;
+        } else if (SYSLOG_IDENTIFIER) {
+          yield SYSLOG_IDENTIFIER;
+        }
+      })(),
+    ].join(" "),
+  );
+  const i = document.createElement("i");
+  i.appendChild(ie);
+
+  const msg = document.createTextNode(err ?? MESSAGE ?? "");
   const line = err
     ? (() => {
         const em = document.createElement("em");
@@ -155,6 +168,7 @@ const append = (sym, root, json) => {
 
   const label = document.createElement("label");
   label.appendChild(b);
+  label.appendChild(i);
   label.appendChild(line);
 
   li.appendChild(time);
@@ -165,7 +179,6 @@ const append = (sym, root, json) => {
     const eof = document.querySelector("input")?.checked;
     if (eof) {
       li.scrollIntoView({ block: "end" });
-      intersecting = true;
     }
   });
 };

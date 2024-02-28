@@ -9,6 +9,7 @@ facts/*.env
 inventory.json
 node_modules/
 package-lock.json
+tsconfig.tsbuildinfo
 var/
 !**/examples/*
 !*.m4.env
