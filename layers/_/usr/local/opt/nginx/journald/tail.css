@@ -19,8 +19,7 @@ body {
   }
 
   & li {
-    list-style-type: cjk-decimal;
-    margin-left: 6rem;
+    list-style-type: none;
 
     & time,
     & label > b {

@@ -1,6 +1,8 @@
 globalThis.requestIdleCallback ??= (cb) => setTimeout(cb);
 globalThis.cancelIdleCallback ??= clearTimeout;
 
+const origin = globalThis.location?.origin ?? "http://localhost:8080";
+
 /**
  * @param {string} uri
  * @param {string | undefined}  cursor
@@ -23,9 +25,20 @@ const raw_stream = async function* (uri, cursor) {
   yield coder.decode();
 };
 
+const init_cursor = async () => {
+  while (true) {
+    try {
+      const resp = await fetch(origin + "/journal-cursor.sh/");
+      return await resp.text();
+    } catch (e) {
+      await new Promise((resolve) => setTimeout(resolve, 188));
+      console.error(e);
+    }
+  }
+};
+
 const stream = (() => {
-  const t = 60,
-    c = "cursor";
+  const t = 60;
   /**
    * @param {symbol} sym
    * @param {string} uri
@@ -35,7 +48,7 @@ const stream = (() => {
     /** @type string[] */
     const acc = [];
     let timeout = t;
-    let cursor = globalThis.localStorage?.getItem(c) ?? undefined;
+    let cursor = await init_cursor();
     while (true) {
       try {
         for await (const tokens of raw_stream(uri, cursor)) {
@@ -44,7 +57,6 @@ const stream = (() => {
               const json = JSON.parse(acc.join(""));
               cursor = json.__CURSOR;
               yield json;
-              globalThis.localStorage?.setItem(c, cursor);
               acc.length = 0;
               timeout = t;
             } else {
@@ -81,11 +93,12 @@ const debounce = ((handle) => {
 const append = (sym, root, json) => {
   const {
     [sym]: err,
-    __REALTIME_TIMESTAMP,
+    MESSAGE,
+    SYSLOG_IDENTIFIER,
+    _HOSTNAME,
     _KERNEL_SUBSYSTEM,
     _SYSTEMD_UNIT,
-    SYSLOG_IDENTIFIER,
-    MESSAGE,
+    __REALTIME_TIMESTAMP,
   } = json;
 
   const ts = __REALTIME_TIMESTAMP
@@ -113,6 +126,9 @@ const append = (sym, root, json) => {
     err?.constructor ??
       [
         ...(function* () {
+          if (_HOSTNAME) {
+            yield `<${_HOSTNAME}>`;
+          }
           if (_KERNEL_SUBSYSTEM) {
             yield `*${_KERNEL_SUBSYSTEM}*`;
           }
@@ -156,9 +172,8 @@ const append = (sym, root, json) => {
 
 (async () => {
   const uri = (() => {
-    const origin = globalThis.location?.origin ?? "http://localhost:8080";
     const params = new URLSearchParams(globalThis.location?.search ?? "");
-    return origin + `/entries?boot&follow&${params}`;
+    return origin + `/entries?follow&${params}`;
   })();
 
   const sym = Symbol();
