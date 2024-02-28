@@ -1,1 +1,1 @@
-console.log("HI");
+NETDATA.themes.current = NETDATA.themes.white;
