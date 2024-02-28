@@ -1,5 +1,5 @@
 location /roundcube {
-  add_header Clear-Site-Data '"*"' always;
+  add_header Set-Cookie 'roundcube_sessauth=; Max-Age=0' always;
   return     307 /roundcube/?$args;
 }
 
