@@ -2,6 +2,7 @@
   "$schema": "https://json.schemastore.org/package.json",
   "devDependencies": {
     "@taplo/cli": "*",
+    "njs-types": "*",
     "prettier": "*",
     "prettier-plugin-nginx": "*",
     "typescript": "*"

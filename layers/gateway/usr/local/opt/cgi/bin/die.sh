@@ -6,6 +6,8 @@ if [[ ! -t 1 ]]; then
   exec <&3 >&3
 fi
 
+COOKIE=_htpasswd
+
 DOMAIN=''
 while read -r LINE; do
   LINE="${LINE%$'\r'}"
@@ -26,7 +28,7 @@ done
 
 tee -- <<-EOF
 HTTP/1.0 307
-Set-Cookie: _htpasswd=; Max-Age=0; HttpOnly; Path=/; $DOMAIN
+Set-Cookie: $COOKIE=; Max-Age=0; HttpOnly; Path=/; $DOMAIN
 Location: /
 
 EOF

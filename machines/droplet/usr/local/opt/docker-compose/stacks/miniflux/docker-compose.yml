@@ -7,6 +7,7 @@ services:
     depends_on:
       pg:
         condition: service_healthy
+    cpu_shares: 8192
     healthcheck:
       test:
         - CMD
@@ -42,6 +43,7 @@ services:
     userns_mode: auto
     restart: unless-stopped
     user: games
+    cpu_shares: 8192
     healthcheck:
       test:
         - CMD

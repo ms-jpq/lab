@@ -32,6 +32,7 @@ services:
     image: docker.io/library/redis:latest
     userns_mode: auto
     restart: unless-stopped
+    cpu_shares: 8192
     healthcheck:
       test:
         - CMD
