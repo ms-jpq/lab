@@ -7,5 +7,5 @@ location /s3/ {
 }
 
 location /rclone {
-  return 307 /journald/tail.html?_SYSTEMD_UNIT=0-rclone-mirror.service;
+  return 307 /journald/tail.html?boot&_SYSTEMD_UNIT=0-rclone-mirror.service;
 }

@@ -1,7 +1,10 @@
 globalThis.requestIdleCallback ??= (cb) => setTimeout(cb);
 globalThis.cancelIdleCallback ??= clearTimeout;
 
+const CURSOR = "cursor";
+
 const origin = globalThis.location?.origin ?? "http://localhost:8080";
+const params = new URLSearchParams(globalThis.location?.search);
 
 /**
  * @param {string} uri
@@ -33,6 +36,9 @@ const raw_stream = async function* (uri, cursor) {
 };
 
 const init_cursor = async () => {
+  if (params.size) {
+    return globalThis?.localStorage.getItem(CURSOR) ?? undefined;
+  }
   while (true) {
     try {
       const resp = await fetch(origin + "/journal-cursor.sh/");
@@ -57,6 +63,7 @@ const stream = (() => {
    */
   return async function* (sym, uri) {
     let cursor = await init_cursor();
+    console.info({ cursor });
     while (true) {
       const t0 = performance.now();
       try {
@@ -70,6 +77,9 @@ const stream = (() => {
               cursor = json.__CURSOR;
               if (performance.now() - t0 > 60 * 1000) {
                 break loop;
+              }
+              if (params.size) {
+                globalThis?.localStorage.setItem(CURSOR, cursor);
               }
             } else {
               acc.push(token);
@@ -200,11 +210,7 @@ const append = (sym, root, json) => {
 };
 
 (async () => {
-  const uri = (() => {
-    const params = new URLSearchParams(globalThis.location?.search ?? "");
-    return origin + `/entries?follow&${params}`;
-  })();
-
+  const uri = origin + `/entries?follow&${params}`;
   const sym = Symbol();
   const root = globalThis?.document?.querySelector("ol");
 

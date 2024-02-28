@@ -6,7 +6,6 @@ NPROC="$(nproc)"
 
 ARGV=(
   rclone.sh sync
-  --verbose
   --check-first
   --order-by size
   --exclude-if-present .noclone
