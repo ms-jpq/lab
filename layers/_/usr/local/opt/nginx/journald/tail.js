@@ -155,9 +155,13 @@ const append = (sym, root, json) => {
     ].join(" "),
   );
   const i = document.createElement("i");
-  i.appendChild(ie);
+  const b2 = document.createElement("b");
+  b2.appendChild(ie);
+  i.appendChild(b2);
 
-  const msg = document.createTextNode(err ?? MESSAGE ?? "");
+  const message = document.createTextNode(err ?? MESSAGE ?? "");
+  const msg = document.createElement("span");
+  msg.appendChild(message);
   const line = err
     ? (() => {
         const em = document.createElement("em");

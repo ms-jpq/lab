@@ -14,9 +14,8 @@ body {
   & header {
     display: flex;
     justify-content: flex-end;
-    margin-left: var(--margin);
-    margin-right: var(--margin);
     position: fixed;
+    right: var(--margin);
   }
 
   & ol {
@@ -27,12 +26,12 @@ body {
       margin-right: var(--margin);
 
       & label {
-        word-wrap: break-word;
-
         & > b:not(:empty),
         & > i:not(:empty) {
           margin-inline-end: 0.5rem;
-          word-wrap: unset;
+        }
+        & > span {
+          word-wrap: break-word;
         }
       }
 
