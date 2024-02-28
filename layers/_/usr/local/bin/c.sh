@@ -20,7 +20,7 @@ fi
 # OSC52 start
 printf -- '\e]52;c;'
 # OSC52 body
-base64 --wrap 0
+base64 --wrap 0 -- "$@"
 
 if ((T)); then
   # TMUX escape `ESC`

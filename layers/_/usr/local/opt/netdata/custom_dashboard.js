@@ -1,1 +1,7 @@
-NETDATA.themes.current = NETDATA.themes.white;
+(() => {
+  const key = "netdataTheme";
+  if (!localStorage.getItem(key)) {
+    localStorage.setItem(key, "White");
+    location.reload();
+  }
+})();
