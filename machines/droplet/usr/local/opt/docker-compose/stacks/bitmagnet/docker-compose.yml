@@ -22,6 +22,7 @@ services:
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=3333
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`dht.{.+}.{.+$$}`)
     environment:
+      LOG_LEVEL: error
       POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
       POSTGRES_HOST: localhost
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
