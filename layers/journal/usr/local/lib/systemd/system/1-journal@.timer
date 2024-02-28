@@ -3,5 +3,5 @@ Description        = Tail Remote Journal -- %I
 
 [Timer]
 OnActiveSec        = 0
-OnUnitInactiveSec  = 1s
-RandomizedDelaySec = 200ms
+OnUnitInactiveSec  = 2s
+RandomizedDelaySec = 1s

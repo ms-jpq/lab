@@ -2,6 +2,20 @@
 
 set -o pipefail
 
+if ! [[ -v UNDER ]]; then
+  while true; do
+    if UNDER=1 "$0" "$@"; then
+      :
+    else
+      if [[ "$?" == 143 ]]; then
+        :
+      else
+        exit 1
+      fi
+    fi
+  done
+fi
+
 REMOTE="$1"
 JOURNAL="$2"
 TIMEOUT="$3"

@@ -5,8 +5,6 @@ After             = network-online.target
 
 [Service]
 Type              = oneshot
-# LogLevelMax       = notice
-# SyslogLevel       = notice
 
 ProtectSystem     = strict
 ProtectHome       = yes
@@ -17,4 +15,3 @@ ReadWritePaths    = %T %V %S/local/%J
 
 Environment       = TIMEOUT=60
 ExecStart         = /usr/local/opt/journal/libexec/rtail.sh %I %S/local/%J/%I.journal ${TIMEOUT}
-SuccessExitStatus = 143
