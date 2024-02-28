@@ -1,17 +1,17 @@
 [Unit]
-Description       = Tail Remote Journal -- %I
-CollectMode       = inactive-or-failed
-After             = network-online.target
+Description    = Tail Remote Journal -- %I
+CollectMode    = inactive-or-failed
+After          = network-online.target
 
 [Service]
-Type              = oneshot
+Type           = oneshot
 
-ProtectSystem     = strict
-ProtectHome       = yes
-PrivateTmp        = yes
-Group             = systemd-journal
+ProtectSystem  = strict
+ProtectHome    = yes
+PrivateTmp     = yes
+Group          = systemd-journal
 
-ReadWritePaths    = %T %V %S/local/%J
+ReadWritePaths = %T %V %S/local/%J
 
-Environment       = TIMEOUT=60
-ExecStart         = /usr/local/opt/journal/libexec/rtail.sh %I %S/local/%J/%I.journal ${TIMEOUT}
+Environment    = TIMEOUT=60
+ExecStart      = /usr/local/opt/journal/libexec/rtail.sh %I %S/local/%J/%I.journal ${TIMEOUT}
