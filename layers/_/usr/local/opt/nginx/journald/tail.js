@@ -9,20 +9,27 @@ const origin = globalThis.location?.origin ?? "http://localhost:8080";
  * @returns {AsyncIterableIterator<string>}
  */
 const raw_stream = async function* (uri, cursor) {
+  const abortion = new AbortController();
   const coder = new TextDecoder();
   const headers = cursor ? { Range: `entries=${cursor}` } : undefined;
   const resp = await fetch(uri, {
     headers: { Accept: "application/json", ...headers },
+    signal: abortion.signal,
   });
   const reader = resp.body?.getReader();
-  while (true) {
-    const { value, done } = (await reader?.read()) ?? {};
-    if (done || !value) {
-      break;
+  try {
+    while (true) {
+      const { value, done } = (await reader?.read()) ?? {};
+      if (done || !value) {
+        break;
+      }
+      yield coder.decode(value, { stream: true });
     }
-    yield coder.decode(value, { stream: true });
+    yield coder.decode();
+  } finally {
+    abortion.abort();
+    console.info(".");
   }
-  yield coder.decode();
 };
 
 const init_cursor = async () => {
@@ -39,26 +46,31 @@ const init_cursor = async () => {
 
 const stream = (() => {
   const t = 60;
+  /** @type {string[]} */
+  const acc = [];
+  let timeout = t;
+
   /**
    * @param {symbol} sym
    * @param {string} uri
    * @returns {AsyncIterableIterator<Record<string, string>>}
    */
   return async function* (sym, uri) {
-    /** @type {string[]} */
-    const acc = [];
-    let timeout = t;
     let cursor = await init_cursor();
     while (true) {
+      const t0 = performance.now();
       try {
-        for await (const tokens of raw_stream(uri, cursor)) {
+        loop: for await (const tokens of raw_stream(uri, cursor)) {
           for (const token of tokens) {
             if (token === "\n") {
               const json = JSON.parse(acc.join(""));
-              cursor = json.__CURSOR;
               yield json;
               acc.length = 0;
               timeout = t;
+              cursor = json.__CURSOR;
+              if (performance.now() - t0 > 60 * 1000) {
+                break loop;
+              }
             } else {
               acc.push(token);
             }
@@ -66,10 +78,10 @@ const stream = (() => {
         }
       } catch (err) {
         yield { [sym]: err };
-        acc.length = 0;
-      } finally {
         await new Promise((resolve) => setTimeout(resolve, timeout));
         timeout = timeout * 1.6;
+      } finally {
+        acc.length = 0;
       }
     }
   };
