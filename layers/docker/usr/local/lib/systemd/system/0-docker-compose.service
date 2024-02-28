@@ -4,9 +4,13 @@ Description     = Docker Compose
 BindsTo         = docker.socket
 After           = docker.socket
 
+PartOf          = docker.service
+
 After           = network-online.target
 
 [Service]
+Slice           = docker.slice
+
 Type            = oneshot
 Restart         = on-failure
 RemainAfterExit = yes

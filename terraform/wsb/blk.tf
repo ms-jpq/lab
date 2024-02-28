@@ -4,8 +4,11 @@ locals {
   light_vols = {
   }
   vultr_vols = {
-    btrfs = {
-      size = 120
+    coral = {
+      size = 40
+    }
+    fuchsia = {
+      size = 40
     }
   }
 }

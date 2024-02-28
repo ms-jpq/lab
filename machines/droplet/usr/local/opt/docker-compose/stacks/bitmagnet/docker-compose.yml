@@ -59,7 +59,7 @@ services:
       - *port
     network_mode: container:warp-srv-1
     volumes:
-      - /var/lib/local/${COMPOSE_PROJECT_NAME}:/var/lib/postgresql/data
+      - /var/lib/local/${COMPOSE_PROJECT_NAME}/pg:/var/lib/postgresql/data
 
 volumes:
   data:
