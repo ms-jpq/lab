@@ -1,11 +1,12 @@
 [Unit]
-Description = Samba NMB Daemon
-After       = network.target network-online.target
+Description         = Samba NMB Daemon
+After               = network.target network-online.target
+ConditionPathExists = /usr/sbin/nmbd
 
 [Service]
-Restart     = on-failure
-PIDFile     = %t/samba/nmbd.pid
-LimitCORE   = infinity
+Restart             = on-failure
+PIDFile             = %t/samba/nmbd.pid
+LimitCORE           = infinity
 
-ExecStart   = /usr/sbin/nmbd --foreground --no-process-group --configfile /usr/local/opt/samba/smb.conf
-ExecReload  = /bin/kill -HUP $MAINPID
+ExecStart           = /usr/sbin/nmbd --foreground --no-process-group --configfile /usr/local/opt/samba/smb.conf
+ExecReload          = /bin/kill -HUP $MAINPID

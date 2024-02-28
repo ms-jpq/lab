@@ -1,14 +1,15 @@
 [Unit]
-Description = Samba SMB Daemon
-After       = network.target network-online.target nmbd.service winbind.service
+Description         = Samba SMB Daemon
+After               = network.target network-online.target nmbd.service winbind.service
+ConditionPathExists = /usr/sbin/smbd
 
 [Service]
-Restart     = on-failure
-PIDFile     = %t/samba/smbd.pid
+Restart             = on-failure
+PIDFile             = %t/samba/smbd.pid
 
-LimitNOFILE = 16384
-LimitCORE   = infinity
+LimitNOFILE         = 16384
+LimitCORE           = infinity
 
 # ExecStartPre    = /usr/share/samba/update-apparmor-samba-profile
-ExecStart   = /usr/sbin/smbd --foreground --no-process-group --configfile /usr/local/opt/samba/smb.conf
-ExecReload  = /bin/kill -HUP $MAINPID
+ExecStart           = /usr/sbin/smbd --foreground --no-process-group --configfile /usr/local/opt/samba/smb.conf
+ExecReload          = /bin/kill -HUP $MAINPID
