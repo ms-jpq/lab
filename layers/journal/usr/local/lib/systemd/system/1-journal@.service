@@ -5,8 +5,8 @@ After             = network-online.target
 
 [Service]
 Type              = oneshot
-# LogLevelMax       = warning
-# SyslogLevel       = warning
+# LogLevelMax       = notice
+# SyslogLevel       = notice
 
 ProtectSystem     = strict
 ProtectHome       = yes
