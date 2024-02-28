@@ -13,24 +13,26 @@ const params = new URLSearchParams(globalThis.location?.search);
  */
 const raw_stream = async function* (uri, cursor) {
   const abortion = new AbortController();
-  const coder = new TextDecoder();
   const headers = cursor ? { Range: `entries=${cursor}` } : undefined;
   const resp = await fetch(uri, {
     headers: { Accept: "application/json", ...headers },
     signal: abortion.signal,
   });
-  const reader = resp.body?.getReader();
+  const stream = resp.body?.pipeThrough(new TextDecoderStream());
+  const reader = stream?.getReader();
   try {
-    while (true) {
-      const { value, done } = (await reader?.read()) ?? {};
-      if (done || !value) {
-        break;
+    if (reader) {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done || !value) {
+          break;
+        }
+        yield value;
       }
-      yield coder.decode(value, { stream: true });
     }
-    yield coder.decode();
   } finally {
     abortion.abort();
+    await stream?.cancel();
     console.info(".");
   }
 };
