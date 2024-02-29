@@ -1,7 +1,0 @@
-[Unit]
-Description        = Tail Remote Journal -- %I
-
-[Timer]
-OnActiveSec        = 0
-OnUnitInactiveSec  = 2s
-RandomizedDelaySec = 1s
