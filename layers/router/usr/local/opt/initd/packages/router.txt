@@ -5,7 +5,6 @@
 + jool-tools
 + ndisc6
 + ntopng
-+ smcroute
 + squid
 + squidclient
 + tor
