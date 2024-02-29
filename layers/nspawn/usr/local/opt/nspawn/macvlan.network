@@ -13,3 +13,5 @@ EmitLLDP            = customer-bridge
 
 # TODO: systemd 250, move under `[[IPv6AcceptRA]]` as Token
 IPv6Token           = static:::${LO64}
+
+MulticastDNS        = yes

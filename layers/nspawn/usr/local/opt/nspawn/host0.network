@@ -14,3 +14,5 @@ Address         = ${IPV6}
 
 Gateway         = ${IPV6_ADDR}
 Gateway         = ${IPV4_ADDR}
+
+MulticastDNS    = yes
