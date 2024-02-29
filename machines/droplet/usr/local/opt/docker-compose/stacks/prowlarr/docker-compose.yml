@@ -1,0 +1,26 @@
+---
+services:
+  srv:
+    image: ghcr.io/ghcr.io/hotio/prowlarr:latest
+    userns_mode: auto
+    restart: unless-stopped
+    # healthcheck:
+    #   test:
+    #     - CMD
+    #     - wget
+    #     - --quiet
+    #     - --spider
+    #     - --timeout
+    #     - "1"
+    #     - --
+    #     - localhost:9696
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=9696
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`bt.{.+}.{.+$$}`)
+    network_mode: container:warp-srv-1
+    volumes:
+      - config:/config
+
+volumes:
+  config:
