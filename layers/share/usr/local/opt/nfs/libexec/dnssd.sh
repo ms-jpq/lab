@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-BASE="${0%/*}/.."
+SERVICES="${0%/*}/../services"
 
 E="$(sed -E -e '/^[[:space:]]*#/d' -- "$@" | awk '{ print $1 }')"
 readarray -t -- EXPORTS <<<"$E"
@@ -15,8 +15,8 @@ for EXPORT in "${EXPORTS[@]}"; do
   DNSSD="/usr/local/lib/systemd/dnssd/$NAME.dnssd"
   FILES+=("$DNSSD")
 
-  envsubst <"$BASE/nfs.dnssd" >"$DNSSD"
-  envsubst <"$BASE/nfs.service.xml" >"/etc/avahi/services/$NAME.service"
+  envsubst <"$SERVICES/nfs.dnssd" >"$DNSSD"
+  envsubst <"$SERVICES/nfs.service.xml" >"/etc/avahi/services/$NAME.service"
 done
 
 chown -v -- systemd-resolve:systemd-resolve "${FILES[@]}"

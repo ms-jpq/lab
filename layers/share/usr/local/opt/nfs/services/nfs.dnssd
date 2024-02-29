@@ -1,5 +1,5 @@
 [Service]
-Name    = %H
+Name    = %H:${EXPORT}
 Type    = _nfs._tcp
 Port    = 2049
 

@@ -6,7 +6,6 @@ if [[ -f /.dockerenv ]]; then
   exit 0
 fi
 
-BASE="${0%/*}/.."
 CONF="$1"
 ENV="$2"
 SMB_EXPORTS="$(sed -E -e 's/^SMB_EXPORTS=//' -- "$ENV")"
@@ -28,11 +27,6 @@ for ROW in "${ROWS[@]}"; do
   NAME="${ROW##*/}"
   mkdir -v -p -- "$DIR"
   chown -v -- "$USERNAME":"$USERNAME" "$DIR"
-  SHARE="$(systemd-escape -- "$NAME")"
-  DNSSD="/usr/local/lib/systemd/dnssd/smb-$SHARE.dnssd"
-  EXPORT="$NAME" envsubst <"$BASE/smb.dnssd" >"$DNSSD"
-  EXPORT="$NAME" envsubst <"$BASE/smb.service.xml" >"/etc/avahi/services/smb-$SHARE.service"
-  chown -v -- systemd-resolve:systemd-resolve "$DNSSD"
   runuser --user "$USERNAME" -- "${NUS[@]}" add "$NAME" "$DIR" '' 'everyone:F' 'guest_ok=y'
 done
 

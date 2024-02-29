@@ -10,7 +10,7 @@ SMB_CONF := /usr/local/opt/samba/main/smb.conf
 USER_SHARES := /var/lib/samba/usershares
 
 nfs: /etc/exports.d/._touch
-/etc/exports.d/._touch: /usr/local/opt/nfs/libexec/dnssd.sh $(shell shopt -u failglob && printf -- '%s ' /etc/exports.d/*.exports) | /usr/lib/systemd/network
+/etc/exports.d/._touch: /usr/local/opt/nfs/libexec/dnssd.sh $(shell shopt -u failglob && printf -- '%s ' /usr/local/opt/nfs/services/* /etc/exports.d/*.exports) | /usr/lib/systemd/network
 	sudo -- '$<' /etc/exports.d/*.exports
 	sudo -- touch -- '$@'
 
