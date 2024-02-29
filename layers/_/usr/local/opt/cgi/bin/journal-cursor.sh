@@ -12,4 +12,6 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-journalctl --output json --reverse --lines 1 --merge | jq --exit-status --raw-output '.__CURSOR'
+F="$(mktemp)"
+journalctl --output json --reverse --lines 1 --merge --cursor-file "$F" >/dev/null
+exec -- cat -- "$F"
