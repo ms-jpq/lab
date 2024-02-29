@@ -1,6 +1,6 @@
 [Service]
-Name = %H
-Type = _smb._tcp
-Port = 445
+Name    = %H
+Type    = _smb._tcp
+Port    = 445
 
-TxtText = path=${SHARE}
+TxtText = path=${EXPORT}
