@@ -1,7 +1,5 @@
-all: $(CACHE)/initd/networkd
+all: /usr/local/lib/systemd/network/._touch
 
-/usr/lib/systemd/network: pkg._
-
-$(CACHE)/initd/networkd: /usr/local/lib/systemd/network/ $(shell shopt -u failglob && printf -- '%s ' /usr/local/lib/systemd/network/*) | /usr/lib/systemd/network
-	sudo -- chown -v -R -- systemd-network:systemd-network '$<'
+/usr/local/lib/systemd/network/._touch: $(shell shopt -u failglob && printf -- '%s ' /usr/local/lib/systemd/network/**/!(._touch))
+	sudo -- chown -v -R -- systemd-network:systemd-network '$(@D)'
 	sudo -- touch -- '$@'
