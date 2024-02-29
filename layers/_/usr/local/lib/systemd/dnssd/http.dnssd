@@ -1,4 +1,4 @@
 [Service]
 Name = %H
-Type = _%N._tcp
+Type = _http._tcp
 Port = 8080

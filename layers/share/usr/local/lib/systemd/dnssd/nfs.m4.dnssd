@@ -1,6 +1,6 @@
 [[Service]]
 Name    = %H
-Type    = _%N._tcp
+Type    = _nfs._tcp
 Port    = 2049
 
 # m5_for([PATH], [

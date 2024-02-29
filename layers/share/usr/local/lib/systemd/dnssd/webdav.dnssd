@@ -1,6 +1,6 @@
 [Service]
 Name    = %H
-Type    = _%N._tcp
+Type    = _webdav._tcp
 Port    = 8080
 
 TxtText = path=/share

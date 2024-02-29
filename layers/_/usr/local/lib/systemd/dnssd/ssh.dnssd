@@ -1,4 +1,4 @@
 [Service]
 Name = %H
-Type = _%N._tcp
+Type = _ssh._tcp
 Port = 22

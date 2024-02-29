@@ -1,4 +1,4 @@
 [Service]
 Name = %H
-Type = _%N._udp
+Type = _ntp._udp
 Port = 123

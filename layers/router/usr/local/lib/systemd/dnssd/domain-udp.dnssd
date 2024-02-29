@@ -1,4 +1,4 @@
 [Service]
 Name = %H
-Type = _domain._tcp
+Type = _domain._udp
 Port = 53
