@@ -1,7 +1,8 @@
 <service-group>
-  <name replace-wildcards="yes">%h</name>
+<name replace-wildcards="yes">%h:${SHARE}</name>
   <service>
     <type>_smb._tcp</type>
     <port>445</port>
+    <txt-record>path=${SHARE}</txt-record>
   </service>
 </service-group>

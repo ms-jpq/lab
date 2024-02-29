@@ -33,6 +33,7 @@ for ROW in "${ROWS[@]}"; do
   SHARE="$(systemd-escape -- "$NAME")"
   DNSSD="/usr/local/lib/systemd/dnssd/smb-$SHARE.dnssd"
   envsubst <"$BASE/smb.dnssd" >"$DNSSD"
+  envsubst <"$BASE/smb.service.xml" >"/etc/avahi/services/smb-$SHARE.service"
   chown -v -- systemd-resolve:systemd-resolve "$DNSSD"
   runuser --user "$USERNAME" -- "${NUS[@]}" add "$NAME" "$DIR" '' 'everyone:F' 'guest_ok=y'
 done
