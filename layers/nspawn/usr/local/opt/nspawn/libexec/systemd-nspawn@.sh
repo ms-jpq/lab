@@ -9,8 +9,9 @@ DOMAIN="$4"
 
 BASE="${0%/*}/.."
 CONF='/usr/local/opt/nspawn/conf.d'
-HOST0="$ROOT/usr/local/lib/systemd/network/10-container-host0.network"
-MVLAN="$ROOT/usr/local/lib/systemd/network/10-macvlan.network"
+SYSTEMD_NETWORK="$ROOT/usr/local/lib/systemd/network"
+HOST0="$SYSTEMD_NETWORK/10-container-host0.network"
+MVLAN="$SYSTEMD_NETWORK/10-macvlan.network"
 LO64="$(/usr/local/opt/network/libexec/ip64alloc.sh <<<"$MACHINE")"
 
 # shellcheck disable=2154
@@ -22,6 +23,8 @@ $IPV6 _nspawn.$DOMAIN $MACHINE.$DOMAIN
 EOF
 
 cat -- "$CONF"/*.nspawn "$ROOT"/*.nspawn | envsubst | sponge -- "/run/systemd/nspawn/$MACHINE.nspawn"
+
+mkdir -p -- "$SYSTEMD_NETWORK"
 IPV4="$IPV4/24" IPV6="$IPV6/64" envsubst <"$BASE/host0.network" >"$HOST0"
 envsubst <"$BASE/macvlan.network" >"$MVLAN"
 chmod -- o+r "$HOST0" "$MVLAN"

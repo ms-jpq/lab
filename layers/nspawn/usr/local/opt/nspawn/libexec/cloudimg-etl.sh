@@ -7,7 +7,11 @@ DST="$2"
 BASE="${0%/*}"
 DEALLOC="$BASE/fs-dealloc.sh"
 LIB='/var/lib/local/nspawn'
-USRN="$DST/usr/local/lib/systemd/network"
+USR_SYSTEMD="$DST/usr/local/lib/systemd"
+
+USRN="$USR_SYSTEMD/network"
+USRR="$USR_SYSTEMD/resolved.conf.d"
+USRD="$USR_SYSTEMD/dnssd"
 
 DIE=(
   cloud-init
@@ -44,9 +48,13 @@ btrfs)
 esac
 
 tar --extract --directory "$DST" --file "$SRC"
-mkdir -v -p -- "$DST/root/.ssh" "$USRN"
+mkdir -v -p -- "$DST/root/.ssh" "$USRN" "$USRR" "$USRD"
 rm -v -rf -- "$DST/etc/hostname"
 chroot "$DST" dpkg --purge --force-all -- "${DIE[@]}"
+
+cp -v -- /usr/local/lib/systemd/dnssd/{device-info,ssh,workstation}.dnssd "$USRD/"
+cp -v -- /usr/local/lib/systemd/resolved.conf.d/* "$USRR/"
+chmod -v -R -- o+r "$USRN" "$USRR" "$USRD"
 
 for SCRIPT in "${0%/*}/../overlay.d"/*; do
   if [[ -x "$SCRIPT" ]]; then
