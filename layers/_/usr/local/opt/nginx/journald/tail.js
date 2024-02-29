@@ -32,7 +32,6 @@ const raw_stream = async function* (uri, cursor) {
     }
   } finally {
     abortion.abort();
-    await stream?.cancel();
     console.info(".");
   }
 };
