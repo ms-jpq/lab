@@ -3,4 +3,4 @@ Name    = %H
 Type    = _device-info._tcp
 Port    = 0
 
-TxtText = model=VMWare
+TxtText = model=Windows
