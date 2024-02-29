@@ -15,9 +15,10 @@ services:
       - default
       - traefik
     ports:
-      - 127.0.0.53:9050:1080
-      - "3334:3334/tcp"
+      - 127.0.0.53:9050:1080 # znc
+      - "3334:3334/tcp" # bitmagnet
       - "3334:3334/udp"
+      - 1090:8191 # flaresolverr
     volumes:
       - warp:/var/lib/cloudflare-warp
 

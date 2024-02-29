@@ -1,0 +1,7 @@
+---
+services:
+  srv:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    userns_mode: auto
+    restart: unless-stopped
+    network_mode: container:warp-srv-1
