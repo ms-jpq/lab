@@ -1,0 +1,4 @@
+[Service]
+Name = %H
+Type = _workstation._tcp
+Port = 9
