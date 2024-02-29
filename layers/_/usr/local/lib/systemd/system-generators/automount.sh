@@ -11,5 +11,6 @@ for MOUNT in /usr/local/lib/systemd/system/*.mount; do
   NAME="${NAME%.mount}"
   AUTO="$NAME.automount"
   cp -v -f -- /usr/local/opt/mount/@.automount "$RUN/$AUTO"
+  chmod g+r,o+r -- "$RUN/$AUTO"
   ln -v -sf -- "../$AUTO" "$WANTS/$AUTO"
 done
