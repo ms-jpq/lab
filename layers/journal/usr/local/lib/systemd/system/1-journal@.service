@@ -1,6 +1,5 @@
 [Unit]
 Description    = Tail Remote Journal -- %I
-CollectMode    = inactive-or-failed
 After          = network-online.target
 
 [Service]
