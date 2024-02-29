@@ -9,6 +9,7 @@ clobber.fs:
 
 CLOBBER.FS += /usr/local/*
 CLOBBER.FS += /etc/apt/sources.list.d/*
+CLOBBER.FS += /etc/avahi/services/*
 
 
 clobber.cache:
