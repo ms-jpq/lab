@@ -2,3 +2,6 @@
 Name = %H
 Type = _smb._tcp
 Port = 445
+
+# TODO
+# TxtText = path=${SHARE}
