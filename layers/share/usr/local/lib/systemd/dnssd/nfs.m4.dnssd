@@ -1,8 +1,0 @@
-[[Service]]
-Name    = %H
-Type    = _nfs._tcp
-Port    = 2049
-
-# m5_for([PATH], [
-TxtText = path=/media/PATH
-# ], m5_or([ENV_NFS_EXPORTS], []))

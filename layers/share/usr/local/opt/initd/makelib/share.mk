@@ -1,6 +1,6 @@
-.PHONY: user samba iscsi elasticsearch clobber.samba clobber.iscsi clobber.elasticsearch
+.PHONY: nfs samba iscsi elasticsearch clobber.samba clobber.iscsi clobber.elasticsearch
 
-all: user samba iscsi elasticsearch
+all: nfs samba iscsi elasticsearch
 
 CLOBBER.FS += /etc/exports.d/* /etc/nfs.conf.d/* /etc/default/samba /var/lib/local/samba/usershares
 CLOBBER.ISCSI := /etc/rtslib-fb-target /etc/iscsi/nodes /etc/iscsi/send_targets
@@ -8,6 +8,11 @@ CLOBBER.FS += $(CLOBBER.ISCSI)
 
 SMB_CONF := /usr/local/opt/samba/main/smb.conf
 USER_SHARES := /var/lib/samba/usershares
+
+nfs: /etc/exports.d/._touch
+/etc/exports.d/._touch: /usr/local/opt/nfs/libexec/dnssd.sh $(shell shopt -u failglob && printf -- '%s ' /etc/exports.d/*.exports) | /usr/lib/systemd/network
+	sudo -- '$<' /etc/exports.d/*.exports
+	sudo -- touch -- '$@'
 
 pkg._: /etc/apt/sources.list.d/ppa_linux-schools_samba-latest.list
 /etc/apt/sources.list.d/ppa_linux-schools_samba-latest.list:

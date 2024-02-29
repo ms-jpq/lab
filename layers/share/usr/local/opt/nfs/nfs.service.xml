@@ -1,0 +1,8 @@
+<service-group>
+<name replace-wildcards="yes">%h:${EXPORT}</name>
+  <service>
+    <type>_nfs._tcp</type>
+    <port>2049</port>
+    <txt-record>path=/media${EXPORT}</txt-record>
+  </service>
+</service-group>

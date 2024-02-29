@@ -1,0 +1,6 @@
+[Service]
+Name    = %H
+Type    = _nfs._tcp
+Port    = 2049
+
+TxtText = path=/media${EXPORT}
