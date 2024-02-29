@@ -1,5 +1,5 @@
 [Exec]
-LinkJournal           = try-guest
+LinkJournal           = try-host
 
 [Network]
 Bridge                = v-${MACHINE}
