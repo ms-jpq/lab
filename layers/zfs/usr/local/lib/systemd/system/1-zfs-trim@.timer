@@ -3,4 +3,4 @@ Description        = ZFS trim timer -- %i
 
 [Timer]
 OnCalendar         = daily
-RandomizedDelaySec = 12 hours
+RandomizedDelaySec = 12hours

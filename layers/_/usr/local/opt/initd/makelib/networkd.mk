@@ -4,7 +4,7 @@
 define SYSTEMD_CHOWN_TEMPLATE
 all: $1/._touch
 $1/._touch: $(shell shopt -u failglob && printf -- '%s ' $1/**/!(._touch)) | /usr/lib/systemd/network
-	sudo -- chown -v -R -- $2:$2 '$$(@D)'
+	sudo -- chown -R -- $2:$2 '$$(@D)'
 	sudo -- touch -- '$$@'
 endef
 

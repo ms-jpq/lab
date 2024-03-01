@@ -4,4 +4,4 @@ Description        = DDNS Timer - %I
 [Timer]
 OnStartupSec       = 6seconds
 OnUnitInactiveSec  = 10minutes
-RandomizedDelaySec = 1minute
+RandomizedDelaySec = 2minutes

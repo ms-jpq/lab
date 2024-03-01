@@ -5,4 +5,4 @@ Description        = Btrfs Defragment Timer
 Unit               = 0-btrfs-defrag@%i.service
 Persistent         = true
 OnCalendar         = weekly
-RandomizedDelaySec = 1d
+RandomizedDelaySec = 2days

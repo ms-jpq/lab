@@ -3,4 +3,4 @@ Description        = Rclone Mirror Timer
 
 [Timer]
 OnCalendar         = daily
-RandomizedDelaySec = 12 hours
+RandomizedDelaySec = 12hours

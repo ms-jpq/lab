@@ -3,4 +3,4 @@ Description        = V2fly Update Timer
 
 [Timer]
 OnCalendar         = weekly
-RandomizedDelaySec = 1 day
+RandomizedDelaySec = 2days

@@ -5,4 +5,4 @@ Description        = Btrfs Scrub Timer
 Unit               = 0-btrfs-scrub@%i.service
 Persistent         = true
 OnCalendar         = weekly
-RandomizedDelaySec = 1d
+RandomizedDelaySec = 2days

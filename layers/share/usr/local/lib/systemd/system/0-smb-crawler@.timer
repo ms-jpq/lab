@@ -1,5 +1,5 @@
 [Unit]
-Description        = Run btrbk every hour
+Description        = Run ElasticSearch Crawler when stopped
 
 [Timer]
 Persistent         = yes

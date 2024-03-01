@@ -4,4 +4,4 @@ Description        = Github Mirror Timer -- %I
 [Timer]
 Persistent         = yes
 OnCalendar         = daily
-RandomizedDelaySec = 6hours
+RandomizedDelaySec = 12hours
