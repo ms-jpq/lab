@@ -3,10 +3,11 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from grp import getgrgid
 from io import BufferedIOBase
+from itertools import chain
 from locale import getpreferredencoding
 from logging import getLogger
 from mimetypes import guess_type
-from os import stat, stat_result
+from os import environ, stat, stat_result
 from os.path import basename, commonpath, isabs, realpath, splitext
 from posixpath import sep
 from pwd import getpwuid
@@ -46,14 +47,18 @@ def _scandir(cwd: bytes) -> Iterator[bytes]:
 
         acc = bytearray()
         while buf := io.read1():
-            if acc:
-                yield bytes(acc)
-                acc.clear()
             while (idx := buf.find(b"\0")) != -1:
-                yield buf[:idx]
+                if acc:
+                    yield bytes(chain(acc, buf[:idx]))
+                else:
+                    yield buf[:idx]
+                acc.clear()
                 buf = buf[idx + 1 :]
             if buf:
                 acc.extend(buf)
+
+        if acc:
+            yield bytes(acc)
 
 
 def _get_username(uid: int) -> str:
@@ -70,7 +75,9 @@ def _get_groupname(gid: int) -> str:
         return str(gid)
 
 
-def _probedir(dir: bytes, encoding: str) -> Iterator[Tuple[bytes, stat_result]]:
+def _probedir(
+    dir: bytes, encoding: str, debug: bool
+) -> Iterator[Tuple[bytes, stat_result]]:
     assert isabs(dir)
     log = getLogger()
     for path in _scandir(dir):
@@ -81,15 +88,19 @@ def _probedir(dir: bytes, encoding: str) -> Iterator[Tuple[bytes, stat_result]]:
                 if not commonpath((linked, dir)) == dir:
                     continue
                 st = stat(linked, follow_symlinks=True)
+        except FileNotFoundError:
+            continue
         except OSError as e:
+            if debug:
+                raise e
             log.warning("%s\n%s", path.decode(encoding), e)
         else:
             yield path, st
 
 
-def ls(dir: bytes) -> Iterator[_Stat]:
+def ls(dir: bytes, debug: bool) -> Iterator[_Stat]:
     encoding = getpreferredencoding()
-    for path, st in _probedir(dir, encoding=encoding):
+    for path, st in _probedir(dir, encoding=encoding, debug=debug):
         is_dir = S_ISDIR(st.st_mode)
         name = basename(path)
 
