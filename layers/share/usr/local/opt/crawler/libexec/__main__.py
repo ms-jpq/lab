@@ -1,17 +1,16 @@
 from argparse import ArgumentParser, Namespace
-from collections.abc import Iterator, MutableSet
+from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager, suppress
 from json import loads
-from os import environ, linesep
+from os import environ
 from pathlib import Path
 from pprint import pprint
-from sys import exit, stderr, stdout
+from sys import exit, stderr
 from typing import Any, Dict
-from uuid import UUID
 
 from elasticsearch import Elasticsearch, NotFoundError
-from elasticsearch.helpers import streaming_bulk
+from elasticsearch.helpers import scan, streaming_bulk
 
 from .ls import Stat, ls
 
@@ -35,18 +34,18 @@ def _init(es: Elasticsearch, index: str, nuke: bool, debug: bool) -> None:
     if nuke:
         with suppress(NotFoundError):
             resp = es.indices.delete(index=index)
-            pprint(resp, stream=stderr)
+            pprint(resp.body, stream=stderr)
 
     try:
         resp = es.indices.get(index=index)
         if debug:
-            pprint(resp, stream=stderr)
+            pprint(resp.body, stream=stderr)
     except NotFoundError:
         json = Path(__file__).resolve(strict=True).with_name("mappings.json")
         mappings = loads(json.read_text())
         resp = es.indices.create(index=index, mappings=mappings)
         if debug:
-            pprint(resp, stream=stderr)
+            pprint(resp.body, stream=stderr)
 
 
 def _trans(index: str, st: Stat) -> Dict[str, Any]:
@@ -67,12 +66,12 @@ def _trans(index: str, st: Stat) -> Dict[str, Any]:
             "real": st.path.as_posix(),
         },
     }
-    cmd = {
+    action = {
         "_index": index,
         "_id": str(st.id),
         "_source": doc,
     }
-    return cmd
+    return action
 
 
 @contextmanager
@@ -89,7 +88,6 @@ def main() -> None:
     args = _parse_args()
     debug, index = bool(args.debug), str(args.index)
     dir = Path(args.path).resolve(strict=True)
-    chunksize = 1 if debug else 69
 
     es = Elasticsearch(hosts=(args.host,))
     _init(es, index=index, nuke=args.nuke, debug=debug)
@@ -101,18 +99,26 @@ def main() -> None:
                 yield _trans(index, st=st)
 
         def c2() -> Iterator[str]:
-            for ok, resp in streaming_bulk(
-                client=es, actions=c1(), chunk_size=chunksize
-            ):
+            for ok, resp in streaming_bulk(client=es, actions=c1()):
                 assert ok
-                yield resp["index"]["_id"]
+                id = resp["index"]["_id"]
+                yield id
 
-        acc: MutableSet[UUID] = set()
-        for id in c2():
-            acc.add(UUID(id))
-            if debug:
-                stdout.write(id)
-                stdout.write(linesep)
+        def c3() -> Iterator[Dict[str, Any]]:
+            acc = {*c2()}
+            query = {"_source": False}
+            for resp in scan(client=es, index=index, query=query):
+                id = resp["_id"]
+                if id not in acc:
+                    action = {
+                        "_id": id,
+                        "_index": index,
+                        "_op_type": "delete",
+                    }
+                    yield action
+
+        for ok, _ in streaming_bulk(client=es, actions=c3()):
+            assert ok
 
 
 try:

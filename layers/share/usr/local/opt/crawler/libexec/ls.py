@@ -61,7 +61,7 @@ def _scandir(cwd: PurePath) -> Iterator[bytes]:
                 acc.extend(buf)
 
         if acc:
-            yield bytes(acc)
+            yield acc
 
 
 def _scan(encoding: str, cwd: PurePath) -> Iterator[Path]:
