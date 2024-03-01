@@ -3,10 +3,10 @@ from collections.abc import Iterator, MutableSet
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager, suppress
 from json import loads
-from os import environ
+from os import environ, linesep
 from pathlib import Path
 from pprint import pprint
-from sys import exit, stderr
+from sys import exit, stderr, stdout
 from typing import Any, Dict
 from uuid import UUID
 
@@ -94,18 +94,25 @@ def main() -> None:
     es = Elasticsearch(hosts=(args.host,))
     _init(es, index=index, nuke=args.nuke, debug=debug)
 
-    acc: MutableSet[UUID] = set()
     with _ex() as ex:
 
-        def cont() -> Iterator[Dict[str, Any]]:
+        def c1() -> Iterator[Dict[str, Any]]:
             for st in ls(ex, dir=dir, debug=debug):
-                acc.add(st.id)
                 yield _trans(index, st=st)
 
-        for ok, resp in streaming_bulk(client=es, actions=cont(), chunk_size=chunksize):
-            assert ok
+        def c2() -> Iterator[str]:
+            for ok, resp in streaming_bulk(
+                client=es, actions=c1(), chunk_size=chunksize
+            ):
+                assert ok
+                yield resp["index"]["_id"]
+
+        acc: MutableSet[UUID] = set()
+        for id in c2():
+            acc.add(UUID(id))
             if debug:
-                pprint(resp, stream=stderr)
+                stdout.write(id)
+                stdout.write(linesep)
 
 
 try:

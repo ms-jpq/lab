@@ -15,12 +15,9 @@ from subprocess import DEVNULL, PIPE, Popen
 from typing import Optional, cast
 from uuid import NAMESPACE_URL, UUID, uuid5
 
-from .exif import Exif, exif
-
 
 @dataclass(frozen=True)
 class Stat:
-    exif: Optional[Exif]
     ext: Optional[str]
     gid: int
     id: UUID
@@ -77,11 +74,10 @@ def _scan(encoding: str, cwd: PurePath) -> Iterator[Path]:
             yield Path(s)
 
 
-def _stat(path: PurePath, st: stat_result, debug: bool) -> Stat:
+def _stat(path: PurePath, st: stat_result) -> Stat:
     is_dir = S_ISDIR(st.st_mode)
     mime, _ = guess_type(path.name, strict=False)
     stat = Stat(
-        exif=exif(path, mime=mime, debug=debug) if not is_dir else None,
         ext=None if is_dir else path.suffix,
         gid=st.st_gid,
         id=uuid5(namespace=NAMESPACE_URL, name=path.as_uri()),
@@ -113,7 +109,7 @@ def _os_stat(path: Path, dir: PurePath, debug: bool) -> Optional[Stat]:
         getLogger().warning("%s\n%s", path, e)
         return None
     else:
-        return _stat(path, st=st, debug=debug)
+        return _stat(path, st=st)
 
 
 def ls(ex: ThreadPoolExecutor, dir: Path, debug: bool) -> Iterator[Stat]:
