@@ -24,6 +24,7 @@ def _parse_args() -> Namespace:
     parser.add_argument("--host", default="http://localhost:9200")
     parser.add_argument("--index", default="smb0")
     parser.add_argument("--nuke", action="store_true")
+    parser.add_argument("--unseen-ttl", type=int, default=15 * 60)
     parser.add_argument("path", type=Path)
     return parser.parse_args()
 
@@ -103,7 +104,7 @@ def main() -> None:
         for ok, _ in streaming_bulk(client=es, actions=c1()):
             assert ok
 
-        cutoff = t0 - timedelta(hours=1)
+        cutoff = t0 - timedelta(seconds=args.unseen_ttl)
         query = {
             "range": {
                 "file.indexing_date": {
