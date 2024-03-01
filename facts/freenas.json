@@ -16,6 +16,7 @@
   "ENV_FS_TV": "media/TV",
   "ENV_FS_WALLPAPER": "wallpapers",
   "ENV_INDEX": [
+    "/die/die/die",
     "esxi.enp2s0.pfsense/qemu.sh",
     "esxi.enp2s0.pfsense/vm.html",
     "freenas.enp2s0.pfsense/bt",

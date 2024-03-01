@@ -14,6 +14,17 @@ location /-_-auth-_- {
   }
 }
 
+location /die/die/die {
+  # m5_for([PREFIX], [
+  # m5_for([SECURE], [
+  add_header Set-Cookie
+    "PREFIX[]htpasswd=; Max-Age=0; Path=/; HttpOnly; SameSite=Strict; Domain=$host; SECURE"
+    always;
+  # ], [], Secure;)
+  # ], [], __Host-, __Secure-)
+  return     307 /;
+}
+
 location @e401 {
   internal     ;
   auth_request off;

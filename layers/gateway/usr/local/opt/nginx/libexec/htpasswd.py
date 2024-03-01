@@ -147,7 +147,7 @@ def _write_auth_cookies(
     morsel["httponly"] = True
     morsel["max-age"] = int(ttl)
     morsel["path"] = "/"
-    morsel["samesite"] = "Lax"
+    morsel["samesite"] = "Strict"
     morsel["secure"] = secure
     return morsel
 
@@ -197,6 +197,10 @@ def _handler(
             assert parsed.hostname
             host = parsed.hostname.decode()
 
+            proto = b"".join(headers.get(b"x-forwarded-proto", ()))
+            secure = proto != b"http"
+            cname = "__Secure-" + cookie_name if secure else cookie_name
+
             user = None
             if commonpath((authn_path, path)) == authn_path:
                 location = b"".join(query.get(b"redirect", ()))
@@ -210,7 +214,7 @@ def _handler(
                 authorized = match(host)
                 if not authorized:
                     authorized = _read_auth_cookies(
-                        headers, name=cookie_name, secret=hmac_secret
+                        headers, name=cname, secret=hmac_secret
                     )
                 if not authorized:
                     ip = _ip(headers)
@@ -232,8 +236,6 @@ def _handler(
                     else:
                         writer.write(b'WWW-Authenticate: Basic realm="-"\r\n')
             else:
-                proto = b"".join(headers.get(b"x-forwarded-proto", ()))
-                secure = proto != b"http"
                 if location:
                     writer.write(b"HTTP/1.0 307 Temporary Redirect\r\n")
                 else:
@@ -242,7 +244,7 @@ def _handler(
                 if user:
                     cookie = _write_auth_cookies(
                         domain_parts=domain_parts,
-                        name=cookie_name,
+                        name=cname,
                         ttl=cookie_ttl,
                         secret=hmac_secret,
                         host=host,
@@ -275,7 +277,7 @@ def _parse_args() -> Namespace:
     parser.add_argument("--listening-socket", type=Path, required=True)
     parser.add_argument("--htpasswd-socket", type=Path, required=True)
     parser.add_argument("--domain_parts", type=int, default=2)
-    parser.add_argument("--cookie-name", required=True)
+    parser.add_argument("--cookie-name", default="htpasswd")
     parser.add_argument("--cookie-ttl", type=float, required=True)
     parser.add_argument("--allow-list", type=Path, nargs="*")
     parser.add_argument("--hmac-secret", type=Path, required=True)
