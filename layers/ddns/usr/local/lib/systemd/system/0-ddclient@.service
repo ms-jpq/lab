@@ -12,10 +12,11 @@ PrivateTmp       = yes
 RuntimeDirectory = local/ddclient/%I
 ReadWritePaths   = %t %T %V %C
 
+CacheDirectory   = local/ddclient
+
 Environment      = CONF=%t/local/ddclient/%I.conf
 Environment      = CACHE=%C/local/ddclient
 
 ExecStartPre     = cp -v --force -- /usr/local/opt/ddclient/%I.conf ${CONF}
 ExecStartPre     = chmod -v -- 600 ${CONF}
-ExecStartPre     = mkdir -v -p -- ${CACHE}
 ExecStart        = ddclient -foreground -daemon 0 -noquiet -cache ${CACHE}/%I.cache -file ${CONF}

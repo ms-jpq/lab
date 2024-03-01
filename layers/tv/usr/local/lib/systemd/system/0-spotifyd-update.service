@@ -9,7 +9,7 @@ ProtectHome    = yes
 PrivateTmp     = yes
 ReadWritePaths = %T %C/local
 
-Environment    = CACHE=%C/local/spotifyd
+CacheDirectory = local/%J
+Environment    = CACHE=%C/local/%J
 
-ExecStartPre   = mkdir -v -p -- ${CACHE}
 ExecStart      = /usr/local/opt/spotifyd/libexec/ensure.sh ${CACHE}

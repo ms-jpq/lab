@@ -9,13 +9,14 @@ ProtectHome         = yes
 ReadWritePaths      = %C/local
 PrivateTmp          = yes
 
-Environment         = RUN=%C/local/systemd-monitor
+CacheDirectory      = local/%J
+
+Environment         = RUN=%C/local/%J
 Environment         = USER=%u
 Environment         = HOSTNAME=%H
 Environment         = REMOTE=
 
 EnvironmentFile     = /usr/local/etc/default/systemd-monitor.env
 
-ExecStartPre        = mkdir -v -p -- ${RUN}
 ExecStart           = /usr/local/libexec/hr-run.sh /usr/local/opt/systemd-monitor/libexec/cron.sh ${RUN}
 ExecStart           = /usr/local/libexec/hr-run.sh /usr/local/opt/systemd-monitor/libexec/sendmail.sh ${RUN} ${REMOTE}

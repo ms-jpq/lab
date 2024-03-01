@@ -14,6 +14,8 @@ Type                = oneshot
 RemainAfterExit     = yes
 PrivateTmp          = yes
 
+StateDirectory      = local/wg-netns/%I
+
 EnvironmentFile     = -/usr/local/etc/default/%I.wgns.env
 Environment         = NETNS=%I
 Environment         = FWMARK=0x0
