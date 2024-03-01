@@ -10,9 +10,6 @@
         }
       }
     },
-    "content": {
-      "type": "text"
-    },
     "file": {
       "properties": {
         "content_type": {

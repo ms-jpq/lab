@@ -2,6 +2,8 @@
 
 set -o pipefail
 
+# mdimport -X | vipe
+
 JQ=(jq --exit-status --raw-output)
 T1=$(mktemp)
 T2=$(mktemp)

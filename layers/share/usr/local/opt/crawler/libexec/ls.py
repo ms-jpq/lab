@@ -1,9 +1,8 @@
 from collections.abc import Iterator
-from concurrent.futures import Executor
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from functools import partial
-from grp import getgrgid
 from io import BufferedIOBase
 from itertools import chain
 from locale import getpreferredencoding
@@ -11,7 +10,6 @@ from logging import getLogger
 from mimetypes import guess_type
 from os import stat_result
 from pathlib import Path, PurePath
-from pwd import getpwuid
 from stat import S_ISDIR, S_ISLNK
 from subprocess import DEVNULL, PIPE, Popen
 from typing import Optional, cast
@@ -20,11 +18,10 @@ from .exif import Exif, exif
 
 
 @dataclass(frozen=True)
-class _Stat:
+class Stat:
     exif: Optional[Exif]
     ext: Optional[str]
     gid: int
-    group: str
     is_dir: bool
     itime: datetime
     mime: Optional[str]
@@ -33,7 +30,6 @@ class _Stat:
     path: PurePath
     size: int
     uid: int
-    user: str
 
 
 def _scandir(cwd: PurePath) -> Iterator[bytes]:
@@ -79,28 +75,13 @@ def _scan(encoding: str, cwd: PurePath) -> Iterator[Path]:
             yield Path(s)
 
 
-def _get_username(uid: int) -> str:
-    try:
-        return getpwuid(uid).pw_name
-    except KeyError:
-        return str(uid)
-
-
-def _get_groupname(gid: int) -> str:
-    try:
-        return getgrgid(gid).gr_name
-    except KeyError:
-        return str(gid)
-
-
-def _stat(path: PurePath, st: stat_result, debug: bool) -> _Stat:
+def _stat(path: PurePath, st: stat_result, debug: bool) -> Stat:
     is_dir = S_ISDIR(st.st_mode)
     mime, _ = guess_type(path.name, strict=False)
-    stat = _Stat(
+    stat = Stat(
         exif=exif(path, mime=mime, debug=debug) if not is_dir else None,
         ext=None if is_dir else path.suffix,
         gid=st.st_gid,
-        group=_get_groupname(st.st_gid),
         is_dir=is_dir,
         itime=datetime.now(timezone.utc),
         mime=mime,
@@ -109,12 +90,11 @@ def _stat(path: PurePath, st: stat_result, debug: bool) -> _Stat:
         path=path,
         size=st.st_size,
         uid=st.st_uid,
-        user=_get_username(st.st_uid),
     )
     return stat
 
 
-def _os_stat(path: Path, dir: PurePath, debug: bool) -> Optional[_Stat]:
+def _os_stat(path: Path, dir: PurePath, debug: bool) -> Optional[Stat]:
     try:
         st = path.stat(follow_symlinks=False)
         if S_ISLNK(st.st_mode):
@@ -133,13 +113,14 @@ def _os_stat(path: Path, dir: PurePath, debug: bool) -> Optional[_Stat]:
         return _stat(path, st=st, debug=debug)
 
 
-def ls(ex: Executor, dir: Path, debug: bool) -> Iterator[_Stat]:
+def ls(dir: Path, debug: bool) -> Iterator[Stat]:
     assert dir.is_absolute()
     encoding = getpreferredencoding()
 
-    for st in ex.map(
-        partial(_os_stat, dir=dir, debug=debug),
-        _scan(encoding, cwd=dir),
-    ):
-        if st:
-            yield st
+    with ThreadPoolExecutor() as ex:
+        for st in ex.map(
+            partial(_os_stat, dir=dir, debug=debug),
+            _scan(encoding, cwd=dir),
+        ):
+            if st:
+                yield st

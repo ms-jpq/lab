@@ -9,9 +9,9 @@ from typing import Any, Iterator, Optional, Tuple
 
 @dataclass(frozen=True)
 class Exif:
+    dpi_x: Optional[int] = None
+    dpi_y: Optional[int] = None
     height: Optional[int] = None
-    raw_x: Optional[int] = None
-    raw_y: Optional[int] = None
     width: Optional[int] = None
 
 
@@ -20,8 +20,8 @@ def _parse_int(s: bytes) -> int:
 
 
 _KEYS: Mapping[bytes, Tuple[str, Callable[[bytes], Any]]] = {
-    b"Exif.Image.XResolution": ("raw_x", _parse_int),
-    b"Exif.Image.YResolution": ("raw_y", _parse_int),
+    b"Exif.Image.XResolution": ("dpi_x", _parse_int),
+    b"Exif.Image.YResolution": ("dpi_y", _parse_int),
     b"Exif.Photo.PixelXDimension": ("width", _parse_int),
     b"Exif.Photo.PixelYDimension": ("height", _parse_int),
 }

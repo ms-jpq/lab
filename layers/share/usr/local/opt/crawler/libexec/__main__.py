@@ -1,15 +1,18 @@
 from argparse import ArgumentParser, Namespace
-from concurrent.futures import ThreadPoolExecutor
+from collections.abc import Iterator, MutableSet
 from contextlib import suppress
 from json import loads
 from os import environ
-from pathlib import Path
+from pathlib import Path, PurePath
 from pprint import pprint
 from sys import exit, stderr
+from threading import Lock
+from typing import Any, Dict
 
 from elasticsearch import Elasticsearch, NotFoundError
+from elasticsearch.helpers import parallel_bulk
 
-from .ls import ls
+from .ls import Stat, ls
 
 
 def _parse_args() -> Namespace:
@@ -24,19 +27,14 @@ def _parse_args() -> Namespace:
     return parser.parse_args()
 
 
-def main() -> None:
-    args = _parse_args()
-    debug, index = bool(args.debug), str(args.index)
-
-    es = Elasticsearch(hosts=(args.host,))
-
+def _init(es: Elasticsearch, index: str, nuke: bool, debug: bool) -> None:
     if debug:
         pprint(es.info(), stream=stderr)
         for name, info in es.indices.get(index="*").body.items():
             pprint(name, stream=stderr)
             pprint(info, stream=stderr)
 
-    if args.nuke:
+    if nuke:
         with suppress(NotFoundError):
             resp = es.indices.delete(index=index)
             pprint(resp, stream=stderr)
@@ -52,10 +50,31 @@ def main() -> None:
         if debug:
             pprint(resp, stream=stderr)
 
+
+def _trans(st: Stat) -> Dict[str, Any]:
+    return {}
+
+
+def main() -> None:
+    args = _parse_args()
+    debug, index = bool(args.debug), str(args.index)
     dir = Path(args.path).resolve(strict=True)
-    with ThreadPoolExecutor() as ex:
-        for stat in ls(ex, dir=dir, debug=debug):
-            print(stat, flush=True)
+
+    es = Elasticsearch(hosts=(args.host,))
+    _init(es, index=index, nuke=args.nuke, debug=debug)
+
+    lock = Lock()
+    acc: MutableSet[PurePath] = set()
+
+    def cont() -> Iterator[Dict[str, Any]]:
+        for st in ls(dir, debug=debug):
+            with lock:
+                acc.add(st.path)
+            yield _trans(st)
+
+    for ok, resp in parallel_bulk(client=es, actions=cont()):
+        if not ok and debug:
+            pprint(resp, stream=stderr)
 
 
 try:
