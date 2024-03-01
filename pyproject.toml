@@ -1,5 +1,5 @@
 [project]
-dependencies = []
+dependencies = ["elasticsearch"]
 name         = "lab"
 version      = "0"
 

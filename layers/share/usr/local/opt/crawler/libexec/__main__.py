@@ -9,6 +9,7 @@ from elasticsearch import Elasticsearch, NotFoundError
 from .ls import ls
 
 
+
 def _parse_args() -> Namespace:
     parser = ArgumentParser()
     parser.add_argument("--debug", action="store_true")

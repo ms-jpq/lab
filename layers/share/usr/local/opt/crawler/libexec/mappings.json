@@ -1,0 +1,59 @@
+{
+  "properties": {
+    "attributes": {
+      "properties": {
+        "group": {
+          "type": "keyword"
+        },
+        "owner": {
+          "type": "keyword"
+        }
+      }
+    },
+    "content": {
+      "type": "text"
+    },
+    "file": {
+      "properties": {
+        "content_type": {
+          "type": "keyword"
+        },
+        "extension": {
+          "type": "keyword"
+        },
+        "filename": {
+          "store": true,
+          "type": "keyword"
+        },
+        "filesize": {
+          "type": "long"
+        },
+        "indexing_date": {
+          "format": "date_optional_time",
+          "type": "date"
+        },
+        "last_modified": {
+          "format": "date_optional_time",
+          "type": "date"
+        }
+      }
+    },
+    "path": {
+      "properties": {
+        "real": {
+          "fields": {
+            "fulltext": {
+              "type": "text"
+            },
+            "tree": {
+              "analyzer": "fscrawler_path",
+              "fielddata": true,
+              "type": "text"
+            }
+          },
+          "type": "keyword"
+        }
+      }
+    }
+  }
+}
