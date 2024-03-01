@@ -1,4 +1,5 @@
 + elasticsearch
++ exif
 + kibana
 + nfs-kernel-server
 + rclone
