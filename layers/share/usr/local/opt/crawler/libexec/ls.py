@@ -7,7 +7,7 @@ from locale import getpreferredencoding
 from logging import getLogger
 from mimetypes import guess_type
 from os import stat, stat_result
-from os.path import commonpath, isabs, realpath, splitext
+from os.path import basename, commonpath, isabs, realpath, splitext
 from posixpath import sep
 from pwd import getpwuid
 from stat import S_ISDIR, S_ISLNK
@@ -47,7 +47,7 @@ def _scandir(cwd: bytes) -> Iterator[bytes]:
         acc = bytearray()
         while buf := io.read1():
             if acc:
-                yield acc
+                yield bytes(acc)
                 acc.clear()
             while (idx := buf.find(b"\0")) != -1:
                 yield buf[:idx]
@@ -70,23 +70,10 @@ def _get_groupname(gid: int) -> str:
         return str(gid)
 
 
-def _probedir(
-    dir: bytes,
-) -> Iterator[Tuple[bytes, bytes, Optional[bytes], Optional[str], stat_result]]:
+def _probedir(dir: bytes, encoding: str) -> Iterator[Tuple[bytes, stat_result]]:
     assert isabs(dir)
     log = getLogger()
-    encoding = getpreferredencoding()
     for path in _scandir(dir):
-        name, ext = splitext(path)
-        try:
-            base = name.decode(encoding)
-        except UnicodeDecodeError:
-            m_type = None
-        else:
-            mime, _ = guess_type(base, strict=False)
-            m_type, _, _ = (mime or "").partition(sep)
-            m_type = m_type or None
-
         try:
             st = stat(path, follow_symlinks=False)
             if S_ISLNK(st.st_mode):
@@ -97,16 +84,34 @@ def _probedir(
         except OSError as e:
             log.warning("%s\n%s", path.decode(encoding), e)
         else:
-            yield path, name, ext or None, m_type, st
+            yield path, st
 
 
 def ls(dir: bytes) -> Iterator[_Stat]:
-    for path, name, ext, mime, st in _probedir(dir):
+    encoding = getpreferredencoding()
+    for path, st in _probedir(dir, encoding=encoding):
+        is_dir = S_ISDIR(st.st_mode)
+        name = basename(path)
+
+        if is_dir:
+            ext = None
+        else:
+            _, ext = splitext(name)
+
+        try:
+            base = name.decode(encoding)
+        except UnicodeDecodeError:
+            mime = None
+        else:
+            mimetype, _ = guess_type(base, strict=False)
+            mime, _, _ = (mimetype or "").partition(sep)
+            mime = mime or None
+
         stat = _Stat(
             ext=ext,
             gid=st.st_gid,
             group=_get_groupname(st.st_gid),
-            is_dir=S_ISDIR(st.st_mode),
+            is_dir=is_dir,
             itime=datetime.now(timezone.utc),
             mime=mime,
             mtime=datetime.fromtimestamp(st.st_mtime),
