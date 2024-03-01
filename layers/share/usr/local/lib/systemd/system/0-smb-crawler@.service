@@ -15,4 +15,4 @@ ProtectHome         = yes
 PrivateTmp          = yes
 ReadWritePaths      = %T %V
 
-ExecStart           = /usr/local/opt/crawler/libexec/main.sh
+ExecStart           = /usr/local/opt/crawler/libexec/main.sh %f

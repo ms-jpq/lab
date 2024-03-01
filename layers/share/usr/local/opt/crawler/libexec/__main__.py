@@ -2,6 +2,7 @@ from argparse import ArgumentParser, Namespace
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager, suppress
+from datetime import datetime, timedelta, timezone
 from json import loads
 from os import environ
 from pathlib import Path
@@ -10,7 +11,7 @@ from sys import exit, stderr
 from typing import Any, Dict
 
 from elasticsearch import Elasticsearch, NotFoundError
-from elasticsearch.helpers import scan, streaming_bulk
+from elasticsearch.helpers import streaming_bulk
 
 from .ls import Stat, ls
 
@@ -93,32 +94,25 @@ def main() -> None:
     _init(es, index=index, nuke=args.nuke, debug=debug)
 
     with _ex() as ex:
+        t0 = datetime.now(timezone.utc)
 
         def c1() -> Iterator[Dict[str, Any]]:
             for st in ls(ex, dir=dir, debug=debug):
                 yield _trans(index, st=st)
 
-        def c2() -> Iterator[str]:
-            for ok, resp in streaming_bulk(client=es, actions=c1()):
-                assert ok
-                id = resp["index"]["_id"]
-                yield id
-
-        def c3() -> Iterator[Dict[str, Any]]:
-            acc = {*c2()}
-            query = {"_source": False}
-            for resp in scan(client=es, index=index, query=query):
-                id = resp["_id"]
-                if id not in acc:
-                    action = {
-                        "_id": id,
-                        "_index": index,
-                        "_op_type": "delete",
-                    }
-                    yield action
-
-        for ok, _ in streaming_bulk(client=es, actions=c3()):
+        for ok, _ in streaming_bulk(client=es, actions=c1()):
             assert ok
+
+        cutoff = t0 - timedelta(hours=1)
+        query = {
+            "range": {
+                "file.indexing_date": {
+                    "lt": cutoff.isoformat(),
+                },
+            },
+        }
+        resp = es.delete_by_query(index=index, query=query)
+        pprint(resp.body, stream=stderr)
 
 
 try:
