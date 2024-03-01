@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager, suppress
 from datetime import datetime, timedelta, timezone
 from json import loads
+from logging import getLogger
 from os import environ
 from pathlib import Path
 from pprint import pprint
@@ -11,7 +12,7 @@ from sys import exit, stderr
 from typing import Any, Dict
 
 from elasticsearch import Elasticsearch, NotFoundError
-from elasticsearch.helpers import streaming_bulk
+from elasticsearch.helpers import parallel_bulk
 
 from .ls import Stat, ls
 
@@ -101,8 +102,11 @@ def main() -> None:
             for st in ls(ex, dir=dir, debug=debug):
                 yield _trans(index, st=st)
 
-        for ok, _ in streaming_bulk(client=es, actions=c1()):
+        idx = 0
+        for idx, (ok, _) in enumerate(parallel_bulk(client=es, actions=c1()), start=1):
             assert ok
+        else:
+            getLogger().warning("%s", f"ls -lR -- ... -> {idx}")
 
         cutoff = t0 - timedelta(seconds=args.unseen_ttl)
         query = {
@@ -113,7 +117,8 @@ def main() -> None:
             },
         }
         resp = es.delete_by_query(index=index, query=query)
-        pprint(resp.body, stream=stderr)
+        removed = resp.body["deleted"]
+        getLogger().warning("%s", f"rm -fr -- ... -> {removed}")
 
 
 try:
