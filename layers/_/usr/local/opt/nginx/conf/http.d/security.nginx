@@ -3,16 +3,9 @@ map $sent_http_content_security_policy $x_content_security_policy {
   default "";
 }
 
-map $sent_http_x_frame_options $x_frame_options {
-  ""      "SAMEORIGIN";
-  default "";
-}
-
-map $sent_http_x_content_type_options $x_content_type_options {
-  ""      "nosniff";
-  default "";
-}
-
-add_header Content-Security-Policy $x_content_security_policy always;
-add_header X-Frame-Options $x_frame_options always;
-add_header X-Content-Type-Options $x_content_type_options always;
+proxy_hide_header Content-Security-Policy;
+proxy_hide_header X-Content-Type-Options;
+proxy_hide_header X-Frame-Options;
+add_header        Content-Security-Policy $x_content_security_policy always;
+add_header        X-Frame-Options "SAMEORIGIN" always;
+add_header        X-Content-Type-Options "nosniff" always;

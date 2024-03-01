@@ -5,8 +5,9 @@ server {
   set         $x_machine MACH.home.arpa:8080;
 
   location / {
-    include    /usr/local/opt/nginx/conf/auth2.nginx;
-    proxy_pass http://$x_machine;
+    include           /usr/local/opt/nginx/conf/auth2.nginx;
+    proxy_pass_header Content-Security-Policy;
+    proxy_pass        http://$x_machine;
   }
 }
 

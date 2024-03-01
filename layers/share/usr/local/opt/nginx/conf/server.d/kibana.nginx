@@ -3,5 +3,6 @@ location /kibana {
 }
 
 location /kibana/ {
-  proxy_pass http://127.0.0.53:5601;
+  proxy_pass_header Content-Security-Policy;
+  proxy_pass        http://127.0.0.53:5601;
 }

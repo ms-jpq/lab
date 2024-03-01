@@ -64,6 +64,9 @@ const stream = (() => {
    */
   return async function* (sym, uri) {
     let cursor = await init_cursor();
+    if (cursor) {
+      yield { [sym]: cursor };
+    }
     console.info({ cursor });
     while (true) {
       const t0 = performance.now();
@@ -151,7 +154,7 @@ const append = (sym, root, json) => {
   time.appendChild(document.createTextNode(tt));
 
   const id = document.createTextNode(
-    err?.constructor?.toString() ??
+    err?.constructor?.name ??
       [
         ...(function* () {
           if (_HOSTNAME) {
