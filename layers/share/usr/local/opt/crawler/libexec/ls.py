@@ -113,14 +113,13 @@ def _os_stat(path: Path, dir: PurePath, debug: bool) -> Optional[Stat]:
         return _stat(path, st=st, debug=debug)
 
 
-def ls(dir: Path, debug: bool) -> Iterator[Stat]:
+def ls(ex: ThreadPoolExecutor, dir: Path, debug: bool) -> Iterator[Stat]:
     assert dir.is_absolute()
     encoding = getpreferredencoding()
 
-    with ThreadPoolExecutor() as ex:
-        for st in ex.map(
-            partial(_os_stat, dir=dir, debug=debug),
-            _scan(encoding, cwd=dir),
-        ):
-            if st:
-                yield st
+    for st in ex.map(
+        partial(_os_stat, dir=dir, debug=debug),
+        _scan(encoding, cwd=dir),
+    ):
+        if st:
+            yield st

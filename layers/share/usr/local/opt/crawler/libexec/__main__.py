@@ -1,16 +1,16 @@
 from argparse import ArgumentParser, Namespace
 from collections.abc import Iterator, MutableSet
-from contextlib import suppress
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager, suppress
 from json import loads
 from os import environ
 from pathlib import Path, PurePath
 from pprint import pprint
 from sys import exit, stderr
-from threading import Lock
 from typing import Any, Dict
 
 from elasticsearch import Elasticsearch, NotFoundError
-from elasticsearch.helpers import parallel_bulk
+from elasticsearch.helpers import streaming_bulk
 
 from .ls import Stat, ls
 
@@ -55,26 +55,37 @@ def _trans(st: Stat) -> Dict[str, Any]:
     return {}
 
 
+@contextmanager
+def _ex() -> Iterator[ThreadPoolExecutor]:
+    with ThreadPoolExecutor() as ex:
+        try:
+            yield ex
+        except:
+            ex.shutdown(wait=False, cancel_futures=True)
+            raise
+
+
 def main() -> None:
     args = _parse_args()
     debug, index = bool(args.debug), str(args.index)
     dir = Path(args.path).resolve(strict=True)
+    chunksize = 1 if debug else 69
 
     es = Elasticsearch(hosts=(args.host,))
     _init(es, index=index, nuke=args.nuke, debug=debug)
 
-    lock = Lock()
     acc: MutableSet[PurePath] = set()
+    with _ex() as ex:
 
-    def cont() -> Iterator[Dict[str, Any]]:
-        for st in ls(dir, debug=debug):
-            with lock:
+        def cont() -> Iterator[Dict[str, Any]]:
+            for st in ls(ex, dir=dir, debug=debug):
                 acc.add(st.path)
-            yield _trans(st)
+                yield _trans(st)
 
-    for ok, resp in parallel_bulk(client=es, actions=cont()):
-        if not ok and debug:
-            pprint(resp, stream=stderr)
+        for ok, resp in streaming_bulk(client=es, actions=cont(), chunk_size=chunksize):
+            assert ok
+            if debug:
+                pprint(resp, stream=stderr)
 
 
 try:
