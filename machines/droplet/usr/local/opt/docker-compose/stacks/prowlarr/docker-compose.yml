@@ -10,6 +10,7 @@ services:
         - curl
         - --fail
         - --location
+        - --user 1:1
         - --no-progress-meter
         - --max-time
         - "1"

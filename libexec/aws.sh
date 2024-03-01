@@ -26,10 +26,10 @@ cost)
   BEGIN="$(date --utc --date="@$((NOW - DELTA))" -- '+%Y-%m-%d')"
   END="$(date --utc --date="@$NOW" -- '+%Y-%m-%d')"
 
-  read -r -d '' -- JQJQ <<-'EOF' || true
+  read -r -d '' -- JQJQ <<-'JQ' || true
 def amount: .Metrics.UnblendedCost.Amount;
 .ResultsByTime[] as $t | $t.Groups[] | select(amount != "0") | "\($t.TimePeriod.End) \(.Keys[] | gsub("\\s"; "%")) \(amount)"
-EOF
+JQ
 
   AWS+=(
     ce get-cost-and-usage
@@ -38,12 +38,12 @@ EOF
     --metrics 'UnblendedCost'
     --group-by 'Type=DIMENSION,Key=SERVICE'
   )
-  read -r -d '' -- AWK <<-'EOF' || true
+  read -r -d '' -- AWK <<-'AWK' || true
 BEGIN { sum = 0 }
 { sum += $NF }
 { print $0 " ~>" sprintf("%0.2f", $NF * month) }
 END { print "<$> " sum }
-EOF
+AWK
   "${AWS[@]}" | "${JQ[@]}" "$JQJQ" | awk -v month="$MONTH" "$AWK" | column -t | sed -E -e 's/^20//' -e 's/%/ /g'
   ;;
 cpu)
@@ -54,9 +54,9 @@ cpu)
   )
   IS="$("${AWS[@]}" get-instances | "${JQ[@]}" '.instances[].name')"
   readarray -t -- INSTANCES <<<"$IS"
-  read -r -d '' -- JQJQ <<-'EOF' || true
+  read -r -d '' -- JQJQ <<-'JQ' || true
 .metricData[] | "\(.timestamp | sub("T"; " ") | sub("-..:..$"; "")) -> \(.average | floor) \(.unit)"
-EOF
+JQ
 
   for INSTANCE in "${INSTANCES[@]}"; do
     AWS+=(

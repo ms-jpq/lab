@@ -14,7 +14,7 @@ AWS=(
   lightsail get-domains
 )
 
-read -r -d '' -- JQJQ <<-'EOF' || true
+read -r -d '' -- JQJQ <<-'JQ' || true
 .domains[] | select([.name] | inside($domains)) | { (.name): ([.domainEntries[] | select(.type == "NS") | .target] | tojson) }
-EOF
+JQ
 "${AWS[@]}" | "${JQ[@]}" --argjson domains "$DOMAINS" "$JQJQ" | "${JQ[@]}" --slurp 'add'

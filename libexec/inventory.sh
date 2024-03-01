@@ -93,13 +93,13 @@ gen)
     ACC='{}'
   fi
 
-  read -r -d '' -- JSON <<-EOF || true
+  read -r -d '' -- JSON <<JSON || true
 {
   "host": null,
   "user": "root",
   "options": []
 }
-EOF
+JSON
 
   # shellcheck disable=SC2016
   for m in machines/*/; do

@@ -14,7 +14,7 @@ AWS=(
   lightsail get-disks
 )
 
-read -r -d '' -- JQJQ <<-'EOF' || true
+read -r -d '' -- JQJQ <<-'JQ' || true
 [.disks[] | select([.name] | inside($disks)) | { (.name): (. | tojson) }] | add // {}
-EOF
+JQ
 "${AWS[@]}" | "${JQ[@]}" --argjson disks "$DISKS" "$JQJQ"

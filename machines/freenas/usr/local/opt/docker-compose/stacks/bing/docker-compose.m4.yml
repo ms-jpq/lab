@@ -1,9 +1,0 @@
----
-services:
-  srv:
-    image: docker.io/msjpq/bing-daily-images:latest
-    restart: unless-stopped
-    user: "1000"
-    network_mode: host
-    volumes:
-      - /media/m5_assert([ENV_FS_WALLPAPER]):/data

@@ -2,8 +2,8 @@
 
 set -o pipefail
 
-read -r -d '' -- JQ <<-EOF || true
+read -r -d '' -- JQ <<JQ || true
 [.UTExportedTypeDeclarations[] | select(.UTTypeIcons // {} | .UTTypeIconFile).UTTypeTagSpecification // {} | .["com.apple.device-model-code"] // [] | [.]] | flatten[]
-EOF
+JQ
 
 "${0%/*}/fruit-models.py" | jq --exit-status --raw-output "$JQ" | sort

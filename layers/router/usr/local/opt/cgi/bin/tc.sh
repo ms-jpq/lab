@@ -12,7 +12,7 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-read -r -d '' -- AWK <<-'EOF' || true
+read -r -d '' -- AWK <<-'AWK' || true
 BEGIN { command = "stdbuf --output L -- numfmt --to si --field 2-" }
 
 {
@@ -25,7 +25,7 @@ BEGIN { command = "stdbuf --output L -- numfmt --to si --field 2-" }
 }
 
 END { close(command) }
-EOF
+AWK
 
 show() {
   /usr/local/libexec/hr-run.sh tc -statistics qdisc show dev "$2"

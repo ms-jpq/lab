@@ -1,5 +1,7 @@
 .PHONY: docker clobber.docker
 
+CLOBBER.FS += /etc/docker/*
+
 /usr/bin/docker: | pkg._
 docker: | /usr/bin/docker
 	/usr/local/opt/docker-compose/libexec/up.sh
