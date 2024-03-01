@@ -4,10 +4,11 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager, suppress
 from json import loads
 from os import environ
-from pathlib import Path, PurePath
+from pathlib import Path
 from pprint import pprint
 from sys import exit, stderr
 from typing import Any, Dict
+from uuid import UUID
 
 from elasticsearch import Elasticsearch, NotFoundError
 from elasticsearch.helpers import streaming_bulk
@@ -29,10 +30,7 @@ def _parse_args() -> Namespace:
 
 def _init(es: Elasticsearch, index: str, nuke: bool, debug: bool) -> None:
     if debug:
-        pprint(es.info(), stream=stderr)
-        for name, info in es.indices.get(index="*").body.items():
-            pprint(name, stream=stderr)
-            pprint(info, stream=stderr)
+        pprint(es.info().body, stream=stderr)
 
     if nuke:
         with suppress(NotFoundError):
@@ -51,8 +49,30 @@ def _init(es: Elasticsearch, index: str, nuke: bool, debug: bool) -> None:
             pprint(resp, stream=stderr)
 
 
-def _trans(st: Stat) -> Dict[str, Any]:
-    return {}
+def _trans(index: str, st: Stat) -> Dict[str, Any]:
+    doc = {
+        "attributes": {
+            "group": st.gid,
+            "owner": st.uid,
+        },
+        "file": {
+            "content_type": st.mime,
+            "extension": st.ext,
+            "filename": st.name,
+            "filesize": st.size,
+            "indexing_date": st.itime.isoformat(),
+            "last_modified": st.mtime.isoformat(),
+        },
+        "path": {
+            "real": st.path.as_posix(),
+        },
+    }
+    cmd = {
+        "_index": index,
+        "_id": str(st.id),
+        "_source": doc,
+    }
+    return cmd
 
 
 @contextmanager
@@ -74,13 +94,13 @@ def main() -> None:
     es = Elasticsearch(hosts=(args.host,))
     _init(es, index=index, nuke=args.nuke, debug=debug)
 
-    acc: MutableSet[PurePath] = set()
+    acc: MutableSet[UUID] = set()
     with _ex() as ex:
 
         def cont() -> Iterator[Dict[str, Any]]:
             for st in ls(ex, dir=dir, debug=debug):
-                acc.add(st.path)
-                yield _trans(st)
+                acc.add(st.id)
+                yield _trans(index, st=st)
 
         for ok, resp in streaming_bulk(client=es, actions=cont(), chunk_size=chunksize):
             assert ok

@@ -26,11 +26,11 @@
           "type": "long"
         },
         "indexing_date": {
-          "format": "date_optional_time",
+          "format": "strict_date_optional_time_nanos",
           "type": "date"
         },
         "last_modified": {
-          "format": "date_optional_time",
+          "format": "strict_date_optional_time_nanos",
           "type": "date"
         }
       }

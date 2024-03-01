@@ -13,6 +13,7 @@ from pathlib import Path, PurePath
 from stat import S_ISDIR, S_ISLNK
 from subprocess import DEVNULL, PIPE, Popen
 from typing import Optional, cast
+from uuid import NAMESPACE_URL, UUID, uuid5
 
 from .exif import Exif, exif
 
@@ -22,6 +23,7 @@ class Stat:
     exif: Optional[Exif]
     ext: Optional[str]
     gid: int
+    id: UUID
     is_dir: bool
     itime: datetime
     mime: Optional[str]
@@ -82,6 +84,7 @@ def _stat(path: PurePath, st: stat_result, debug: bool) -> Stat:
         exif=exif(path, mime=mime, debug=debug) if not is_dir else None,
         ext=None if is_dir else path.suffix,
         gid=st.st_gid,
+        id=uuid5(namespace=NAMESPACE_URL, name=path.as_uri()),
         is_dir=is_dir,
         itime=datetime.now(timezone.utc),
         mime=mime,
