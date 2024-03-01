@@ -58,7 +58,8 @@ while (($#)); do
 done
 
 CURL=(
-  curl --fail
+  curl
+  --fail-with-body
   --ssl-reqd
   --mail-from "$FROM"
   --mail-rcpt "$RCPT"
