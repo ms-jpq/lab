@@ -25,9 +25,11 @@ done
 rm -v --force --recursive -- "${DIE[@]}"
 
 for U in "${!FAILED[@]}"; do
-  journalctl --boot --lines 300 --unit "$U" | sponge -- "$RUN/$U.txt"
+  journalctl --boot --lines 300 --unit "$U" >"$RUN/$U.txt"
 done
 
 if ((${#FAILED[@]})); then
   printf -- '! -> %s\n' "${!FAILED[@]}"
 fi
+
+exec -- "${0%/*}/sendmail.sh" "$@"

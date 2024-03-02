@@ -18,5 +18,4 @@ Environment         = REMOTE=
 
 EnvironmentFile     = /usr/local/etc/default/systemd-monitor.env
 
-ExecStart           = /usr/local/libexec/hr-run.sh /usr/local/opt/systemd-monitor/libexec/cron.sh ${RUN}
-ExecStart           = /usr/local/libexec/hr-run.sh /usr/local/opt/systemd-monitor/libexec/sendmail.sh ${RUN} ${REMOTE}
+ExecStart           = /usr/local/opt/systemd-monitor/libexec/cron.sh ${RUN} ${REMOTE}
