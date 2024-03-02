@@ -1,0 +1,6 @@
+[Unit]
+Description        = Bing Wallpapers Timer
+
+[Timer]
+OnCalendar         = daily
+RandomizedDelaySec = 12hours
