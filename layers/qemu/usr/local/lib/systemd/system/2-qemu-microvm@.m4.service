@@ -31,7 +31,7 @@ BindReadOnlyPaths   = -%h/.ssh:%h/.ssh
 BindReadOnlyPaths   = /usr/local/opt/qemu/etc:%E/qemu
 
 EnvironmentFile     = %t/local/ip/v-%I.env
-EnvironmentFile     = -/usr/local/etc/default/%I.qemu.env
+EnvironmentFile     = -%S/local/qemu/%I/qemu.env
 
 Environment         = MACHINE=%i
 Environment         = FS=%S/local/qemu

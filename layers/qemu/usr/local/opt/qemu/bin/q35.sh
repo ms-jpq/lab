@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-LONG_OPTS='cpu:,cpu-flags:,mem:,qmp:,monitor:,tpm:,vnc:,bridge:,iscsi:,drive:,macvtap:,vfio:,mdev:,disc:'
+LONG_OPTS='cpu:,cpu-flags:,mem:,qmp:,monitor:,bios:,tpm:,vnc:,bridge:,iscsi:,drive:,macvtap:,vfio:,mdev:,disc:'
 GO="$(getopt --options='' --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
@@ -12,6 +12,7 @@ DRIVES=()
 VFIO=()
 MDEVS=()
 CDS=()
+BIOS='/usr/share/ovmf/OVMF.fd'
 while (($#)); do
   case "$1" in
   --cpu)
@@ -34,6 +35,15 @@ while (($#)); do
     ;;
   --monitor)
     MONITOR="$2"
+    shift -- 2
+    ;;
+  --bios)
+    case "${1,,}" in
+    1 | yes | true)
+      BIOS='/usr/share/seabio/bios.bin'
+      ;;
+    *) ;;
+    esac
     shift -- 2
     ;;
   --tpm)
@@ -111,7 +121,7 @@ ARGV=(
 )
 
 ARGV+=(
-  -bios '/usr/share/ovmf/OVMF.fd'
+  -bios "$BIOS"
 )
 
 ARGV+=(
