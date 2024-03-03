@@ -73,7 +73,7 @@ zfs send --verbose --replicate --props -- '<snapshot>' | zfs recv -v -F -- '<dat
 ```
 
 ```bash
-pv --bytes --rate --average-rate --timer
+pv --bytes --rate --average-rate --timer --eta --fineta --progress
 ```
 
 ```bash
