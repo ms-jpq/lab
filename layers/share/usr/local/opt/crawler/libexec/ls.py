@@ -34,7 +34,7 @@ class Stat:
 def _scandir(cwd: PurePath) -> Iterator[bytes]:
     with Popen(
         (
-            "fd",
+            "fdfind",
             "--hidden",
             "--no-ignore-vcs",
             "--print0",
