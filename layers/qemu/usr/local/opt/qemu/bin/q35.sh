@@ -38,9 +38,9 @@ while (($#)); do
     shift -- 2
     ;;
   --bios)
-    case "${1,,}" in
+    case "${2,,}" in
     1 | yes | true)
-      BIOS='/usr/share/seabio/bios.bin'
+      BIOS='/usr/share/seabios/bios.bin'
       ;;
     *) ;;
     esac
