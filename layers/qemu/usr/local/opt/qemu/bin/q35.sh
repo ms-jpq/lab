@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-LONG_OPTS='cpu:,cpu-flags:,mem:,qmp:,monitor:,bios:,tpm:,vnc:,bridge:,iscsi:,drive:,macvtap:,vfio:,mdev:,disc:'
+LONG_OPTS='cpu:,cpu-flags:,mem:,qmp:,monitor:,boot:,tpm:,vnc:,bridge:,iscsi:,drive:,macvtap:,vfio:,mdev:,disc:'
 GO="$(getopt --options='' --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
@@ -12,7 +12,6 @@ DRIVES=()
 VFIO=()
 MDEVS=()
 CDS=()
-BIOS='/usr/share/ovmf/OVMF.fd'
 while (($#)); do
   case "$1" in
   --cpu)
@@ -37,12 +36,21 @@ while (($#)); do
     MONITOR="$2"
     shift -- 2
     ;;
-  --bios)
+  --boot)
     case "${2,,}" in
-    1 | yes | true)
+    uefi)
+      BIOS='/usr/share/ovmf/OVMF.fd'
+      ;;
+    bios)
       BIOS='/usr/share/seabios/bios.bin'
       ;;
-    *) ;;
+    '' | /*)
+      BIOS="$2"
+      ;;
+    *)
+      set -x
+      exit 1
+      ;;
     esac
     shift -- 2
     ;;
@@ -120,9 +128,9 @@ ARGV=(
   -m "${MEM:-"size=8G"}"
 )
 
-ARGV+=(
-  -bios "$BIOS"
-)
+if [[ -n "${BIOS:-""}" ]]; then
+  ARGV+=(-bios "$BIOS")
+fi
 
 ARGV+=(
   -device 'virtio-rng-pci-non-transitional'
