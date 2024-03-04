@@ -1,0 +1,9 @@
+[Unit]
+Description     = Enable zswap
+
+[Service]
+Type            = oneshot
+RemainAfterExit = yes
+PrivateTmp      = yes
+
+ExecStart       = /usr/local/libexec/sponge2.sh /sys/module/zswap/parameters/enabled printf -- %%s Y
