@@ -6,6 +6,17 @@ services:
     restart: unless-stopped
     mem_swappiness: 0
     cpu_shares: 8192
+    healthcheck:
+      test:
+        - CMD
+        - "true"
+        # - wget
+        # - --quiet
+        # - --spider
+        # - --timeout
+        # - "1"
+        # - --
+        # - 127.0.0.1:8080/settings
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
