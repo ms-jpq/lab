@@ -20,7 +20,7 @@ zfs)
 esac
 
 ARGV=("$@")
-if ((USAGE < (10 ** 8))); then
+if ! (($#)) && ((USAGE < (10 ** 8))); then
   for ISO in /var/cache/local/qemu/*.iso; do
     ARGV+=(--disc "$ISO")
   done
