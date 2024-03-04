@@ -3,16 +3,18 @@
 from argparse import ArgumentParser, Namespace
 from asyncio import (
     StreamReader,
+    StreamReaderProtocol,
     StreamWriter,
+    TimeoutError,
     gather,
+    get_running_loop,
     open_unix_connection,
     run,
-    start_unix_server,
+    wait_for,
 )
 from base64 import urlsafe_b64decode, urlsafe_b64encode
 from collections.abc import (
     AsyncIterator,
-    Awaitable,
     Callable,
     Iterator,
     Mapping,
@@ -20,6 +22,7 @@ from collections.abc import (
     MutableSequence,
     Sequence,
 )
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager, closing, nullcontext, suppress
 from fnmatch import translate
 from functools import lru_cache
@@ -27,9 +30,12 @@ from hmac import compare_digest, digest
 from html import escape
 from http.cookies import CookieError, Morsel, SimpleCookie
 from logging import DEBUG, StreamHandler, captureWarnings, getLogger
+from multiprocessing import cpu_count
 from pathlib import Path, PurePosixPath
 from posixpath import commonpath, normpath
 from re import compile
+from socket import AddressFamily, socket
+from stat import S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR
 from time import time
 from typing import NewType
 from urllib.parse import SplitResultBytes, parse_qs, urlsplit
@@ -40,6 +46,8 @@ _Query = NewType("_Query", Mapping[bytes, Sequence[bytes]])
 _Req = tuple[_Method, bytes, SplitResultBytes, _Query, _Headers]
 
 _ALGORITHM = "sha512"
+_RW_RW_RW_ = (S_IRUSR | S_IWUSR) | (S_IRGRP | S_IWGRP) | (S_IROTH | S_IWOTH)
+
 
 with nullcontext():
     LOG = getLogger()
@@ -179,15 +187,19 @@ async def _subrequest(sock: Path, credentials: bytes, ip: bytes) -> bool:
         return int(status) in range(200, 299)
 
 
-def _handler(
-    sock: Path,
+async def _thread(
+    fd: int,
+    remote_sock: Path,
     authn_path: bytes,
     domain_parts: int,
     cookie_name: str,
     cookie_ttl: float,
     hmac_secret: bytes,
     allow_list: frozenset[str],
-) -> Callable[[StreamReader, StreamWriter], Awaitable[None]]:
+    timeout: float,
+) -> None:
+    sock = socket(fileno=fd)
+    loop = get_running_loop()
     match = _fnmatch(allow_list)
 
     async def cont(reader: StreamReader, writer: StreamWriter) -> None:
@@ -208,7 +220,9 @@ def _handler(
                 passwd = b"".join(query.get(b"password", ()))
                 auth = urlsafe_b64encode(user + b":" + passwd)
                 ip = _ip(headers)
-                authorized = await _subrequest(sock=sock, credentials=auth, ip=ip)
+                authorized = await _subrequest(
+                    sock=remote_sock, credentials=auth, ip=ip
+                )
             else:
                 location = None
                 authorized = match(host)
@@ -220,7 +234,7 @@ def _handler(
                     ip = _ip(headers)
                     for user, auth in _auth_headers(headers):
                         authorized = await _subrequest(
-                            sock=sock, credentials=auth, ip=ip
+                            sock=remote_sock, credentials=auth, ip=ip
                         )
                         if authorized:
                             break
@@ -269,7 +283,18 @@ def _handler(
 
             writer.write(b"\r\n")
 
-    return cont
+    async def handler(reader: StreamReader, writer: StreamWriter) -> None:
+        with suppress(TimeoutError):
+            await wait_for(cont(reader, writer), timeout=timeout)
+
+    def factory() -> StreamReaderProtocol:
+        reader = StreamReader(loop=loop)
+        protocol = StreamReaderProtocol(reader, client_connected_cb=handler, loop=loop)
+        return protocol
+
+    server = await loop.create_unix_server(factory, sock=sock)
+    async with server:
+        await server.serve_forever()
 
 
 def _parse_args() -> Namespace:
@@ -282,10 +307,11 @@ def _parse_args() -> Namespace:
     parser.add_argument("--allow-list", type=Path, nargs="*")
     parser.add_argument("--hmac-secret", type=Path, required=True)
     parser.add_argument("--authn-path", type=PurePosixPath, required=True)
+    parser.add_argument("--timeout", type=float, default=1.0)
     return parser.parse_args()
 
 
-async def main() -> None:
+def main() -> None:
     args = _parse_args()
 
     hmac_secret = Path(args.hmac_secret).read_bytes()
@@ -296,24 +322,36 @@ async def main() -> None:
         for line in path.read_text().splitlines()
         if line
     )
-    listening_socket = Path(args.listening_socket)
+    remote_sock = Path(args.htpasswd_socket)
     authn_path = PurePosixPath(args.authn_path).as_posix().encode()
     assert authn_path.startswith(b"/")
 
-    handler = _handler(
-        args.htpasswd_socket,
-        domain_parts=args.domain_parts,
-        cookie_name=args.cookie_name,
-        authn_path=authn_path,
-        cookie_ttl=args.cookie_ttl,
-        hmac_secret=hmac_secret,
-        allow_list=allow_list,
-    )
-    server = await start_unix_server(handler, path=listening_socket)
-    listening_socket.chmod(0o666)
+    listening_socket = Path(args.listening_socket)
+    listening_socket.unlink(missing_ok=True)
 
-    async with server:
-        await server.serve_forever()
+    sock = socket(family=AddressFamily.AF_UNIX)
+    sock.bind(listening_socket.as_posix())
+    listening_socket.chmod(_RW_RW_RW_)
+    fd = sock.fileno()
+
+    def cont(_: int) -> None:
+        run(
+            _thread(
+                fd=fd,
+                remote_sock=remote_sock,
+                authn_path=authn_path,
+                domain_parts=args.domain_parts,
+                cookie_name=args.cookie_name,
+                cookie_ttl=args.cookie_ttl,
+                hmac_secret=hmac_secret,
+                allow_list=allow_list,
+                timeout=args.timeout,
+            )
+        )
+
+    with ThreadPoolExecutor() as pool:
+        for _ in pool.map(cont, range(cpu_count())):
+            pass
 
 
-run(main())
+main()
