@@ -1,4 +1,4 @@
-.PHONY: qemu qemu.grub qemu.pull clobber.qemu
+.PHONY: qemu qemu.pull clobber.qemu
 
 CLOUD_IMG_AT := https://cloud-images.ubuntu.com/releases/$(VERSION_ID)/release
 KERNEL := $(CLOUD_IMG_AT)/unpacked/ubuntu-$(VERSION_ID)-server-cloudimg-$(GOARCH)-vmlinuz-generic
@@ -14,9 +14,6 @@ all: /usr/local/lib/systemd/system/2-qemu-q35@.service
 	sudo -- cp -v -f -- '$<' '$@'
 
 qemu: 2-qemu-q35@.service
-
-qemu.grub:
-	update-initramfs -u && update-grub
 
 clobber.qemu:
 	shopt -u failglob
