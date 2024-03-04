@@ -7,6 +7,7 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    mem_swappiness: 1
     cpu_shares: 8192
     healthcheck:
       test:
@@ -32,6 +33,7 @@ services:
     image: docker.io/library/redis:latest
     userns_mode: auto
     restart: unless-stopped
+    mem_swappiness: 1
     cpu_shares: 8192
     healthcheck:
       test:
