@@ -5,6 +5,10 @@ set -o pipefail
 ROOT="$1"
 shift -- 1
 
+if ! (($#)); then
+  exit 1
+fi
+
 HR='/usr/local/libexec/hr-run.sh'
 set -x
 
