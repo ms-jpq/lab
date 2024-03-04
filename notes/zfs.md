@@ -122,12 +122,6 @@ zpool status -g
 zpool remove '<pool>' '<guid>'
 ```
 
-### Time Machine
-
-```bash
-zfs set xattr=on '<zpool>/<dataset>'
-```
-
 ### Clear
 
 ```bash
