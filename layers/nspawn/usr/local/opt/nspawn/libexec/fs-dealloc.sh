@@ -37,7 +37,7 @@ zfs)
   esac
 
   for SAFE in "$@"; do
-    if [[ "$MOUNT" == "$SAFE" ]]; then
+    if [[ "$MOUNT" == "${SAFE%'/'}" ]]; then
       set -x
       exit 1
     fi
