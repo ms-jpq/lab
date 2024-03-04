@@ -44,12 +44,16 @@ kill)
   sctl kill -- "${SERVICES[@]}"
   sctl reset-failed -- "${SERVICES[@]}"
   ;;
-enable)
+enable | lazy)
   for MACH in "$@"; do
     ROOT="$LIB/$MACH"
     CM="$CACHE/$MACH"
     "$HR" mkdir -v -p -- "$CM"
-    "$HR" touch -- "$ROOT/$SERVICE_PIN" "$ROOT/$SOCK_PIN" "$CM/$SERVICE_PIN" "$CM/$SOCK_PIN"
+    PINS=("$ROOT/$SOCK_PIN" "$CM/$SOCK_PIN")
+    if [[ "$ACTION" == 'lazy' ]]; then
+      PINS+=("$ROOT/$SERVICE_PIN" "$CM/$SERVICE_PIN")
+    fi
+    "$HR" touch -- "${PINS[@]}"
   done
   if ((${#SOCKS[@]})); then
     sctl start -- "${SOCKS[@]}"
