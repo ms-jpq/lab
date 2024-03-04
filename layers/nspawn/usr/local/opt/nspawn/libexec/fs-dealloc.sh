@@ -9,8 +9,8 @@ if ! (($#)); then
   exit 1
 fi
 
+NO_DIE=(/ "$@")
 HR='/usr/local/libexec/hr-run.sh'
-set -x
 
 if ! [[ -e "$ROOT" ]]; then
   exit 0
@@ -40,7 +40,7 @@ zfs)
   *) ;;
   esac
 
-  for SAFE in "$@"; do
+  for SAFE in "${NO_DIE[@]}"; do
     if [[ "$MOUNT" == "${SAFE%'/'}" ]]; then
       set -x
       exit 1
