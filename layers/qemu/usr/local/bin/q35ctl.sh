@@ -50,7 +50,7 @@ enable | lazy)
     CM="$CACHE/$MACH"
     "$HR" mkdir -v -p -- "$CM"
     PINS=("$ROOT/$SOCK_PIN" "$CM/$SOCK_PIN")
-    if [[ "$ACTION" == 'lazy' ]]; then
+    if [[ "$ACTION" == 'enable' ]]; then
       PINS+=("$ROOT/$SERVICE_PIN" "$CM/$SERVICE_PIN")
     fi
     "$HR" touch -- "${PINS[@]}"
