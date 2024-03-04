@@ -4,6 +4,8 @@ services:
     image: quay.io/redlib/redlib:${TAG}
     userns_mode: auto
     restart: unless-stopped
+    mem_swappiness: 0
+    cpu_shares: 8192
     healthcheck:
       test:
         - CMD
