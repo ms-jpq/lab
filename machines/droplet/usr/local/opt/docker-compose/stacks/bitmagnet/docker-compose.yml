@@ -8,6 +8,7 @@ services:
       pg:
         condition: service_healthy
     cpu_shares: 128
+    cpus: 1.0
     healthcheck:
       test:
         - CMD
