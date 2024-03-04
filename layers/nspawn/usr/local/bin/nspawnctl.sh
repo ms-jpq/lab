@@ -92,7 +92,7 @@ remove)
     fi
 
     # shellcheck disable=SC2154
-    "$DEALLOC" "$ROOT"
+    "$DEALLOC" "$ROOT" /var/lib/local /var/lib/local/{nspawn,qemu}
   done
   ;;
 *)

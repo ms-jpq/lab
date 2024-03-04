@@ -20,7 +20,7 @@ qemu.grub:
 
 clobber.qemu:
 	shopt -u failglob
-	sudo -- /usr/local/opt/qemu/libexec/fs-dealloc.sh $(QEMU_IMG)
+	sudo -- /usr/local/opt/qemu/libexec/fs-dealloc.sh $(QEMU_IMG) /var/lib/local
 	# sudo -- rm -v -rf -- $(CACHE)/qemu/*
 
 pkg._: /etc/apt/sources.list.d/ppa_canonical-server_server-backports.list

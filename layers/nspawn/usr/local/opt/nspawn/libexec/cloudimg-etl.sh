@@ -6,13 +6,18 @@ SRC="$1"
 DST="$2"
 BASE="${0%/*}"
 DEALLOC="$BASE/fs-dealloc.sh"
-LIB='/var/lib/local/nspawn'
+LB=/var/lib/local
+LIB="$LB/nspawn"
 USR_SYSTEMD="$DST/usr/local/lib/systemd"
 
 USRN="$USR_SYSTEMD/network"
 USRR="$USR_SYSTEMD/resolved.conf.d"
 USRD="$USR_SYSTEMD/dnssd"
 
+SAFE=(
+  "$LB"
+  "$LIB"
+)
 DIE=(
   cloud-init
   lxd-agent-loader
@@ -21,9 +26,9 @@ DIE=(
 )
 
 if ! [[ -v UNDER ]]; then
-  "$DEALLOC" "$DST"
+  "$DEALLOC" "$DST" "${SAFE[@]}"
   if ! UNDER=1 "$0" "$@"; then
-    "$DEALLOC" "$DST"
+    "$DEALLOC" "$DST" "${SAFE[@]}"
     exit 1
   else
     exit 0

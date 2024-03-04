@@ -7,8 +7,13 @@ DST="$2"
 DIR="${DST%/*}"
 BASE="${0%/*}"
 DEALLOC="$BASE/fs-dealloc.sh"
-LIB='/var/lib/local/qemu'
+LB=/var/lib/local
+LIB="$LB/qemu"
 
+SAFE=(
+  "$LB"
+  "$LIB"
+)
 DIE=(
   lxd-agent-loader
   rsyslog
@@ -16,10 +21,10 @@ DIE=(
 )
 
 if ! [[ -v UNDER ]]; then
-  "$DEALLOC" "$DST"
+  "$DEALLOC" "$DST" "${SAFE[@]}"
   rm -v -fr -- "$DIR"
   if ! UNDER=1 "$0" "$@"; then
-    "$DEALLOC" "$DST"
+    "$DEALLOC" "$DST" "${SAFE[@]}"
     exit 1
   else
     exit 0

@@ -70,7 +70,7 @@ remove)
     fi
     "$0" disable "$MACH"
     set +x
-    /usr/local/opt/qemu/libexec/fs-dealloc.sh "$ROOT"
+    /usr/local/opt/qemu/libexec/fs-dealloc.sh "$ROOT" /var/lib/local /var/lib/local/qemu
   done
   ;;
 pin | unpin)
