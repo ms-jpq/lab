@@ -309,7 +309,7 @@ async def main() -> None:
         hmac_secret=hmac_secret,
         allow_list=allow_list,
     )
-    server = await start_unix_server(handler, listening_socket)
+    server = await start_unix_server(handler, path=listening_socket)
     listening_socket.chmod(0o666)
 
     async with server:

@@ -6,11 +6,11 @@ location /-_-auth-_- {
   proxy_set_header        Host $host;
   proxy_set_header        X-Real-IP $remote_addr;
   proxy_pass_request_body off;
-  proxy_pass              http://unix:/run/local/nginx/auth-proxy.sock:/;
+  proxy_pass              http://unix:/run/local/nginx/auth/proxy.sock:/;
 
   location /-_-auth-_-/-_- {
     proxy_intercept_errors on;
-    proxy_pass             http://unix:/run/local/nginx/auth-proxy.sock:/-_-;
+    proxy_pass             http://unix:/run/local/nginx/auth/proxy.sock:/-_-;
   }
 }
 
