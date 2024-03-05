@@ -307,6 +307,7 @@ def _parse_args() -> Namespace:
     parser.add_argument("--allow-list", type=Path, nargs="*")
     parser.add_argument("--hmac-secret", type=Path, required=True)
     parser.add_argument("--authn-path", type=PurePosixPath, required=True)
+    parser.add_argument("--nprocs", type=int, default=cpu_count())
     parser.add_argument("--timeout", type=float, default=1.0)
     return parser.parse_args()
 
@@ -350,7 +351,7 @@ def main() -> None:
         )
 
     with ThreadPoolExecutor() as pool:
-        for _ in pool.map(cont, range(cpu_count())):
+        for _ in pool.map(cont, range(args.nprocs)):
             pass
 
 
