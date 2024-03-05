@@ -1,4 +1,4 @@
 map $host $optimistic_host {
-  default                                    $host;
-  ~[^.]+\.(?<x_optimistic_host>[^.]+\.[^.]+) $x_optimistic_host;
+  default                                                       $host;
+  ~[^.]+\.(?<x_optimistic_host>[^.]+\.[^.]+|[^.]+\.home\.arpa)$ $x_optimistic_host;
 }

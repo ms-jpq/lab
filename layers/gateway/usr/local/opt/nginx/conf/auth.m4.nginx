@@ -17,9 +17,11 @@ location /-_-auth-_- {
 location /die/die/die {
   # m5_for([PREFIX], [
   # m5_for([SECURE], [
+  # m5_for([DOMAIN], [
   add_header Set-Cookie
-    "PREFIX[]htpasswd=; Max-Age=0; Path=/; HttpOnly; SameSite=Strict; Domain=$host; SECURE"
+    "PREFIX[]htpasswd=; Max-Age=0; Path=/; HttpOnly; SameSite=Strict; Domain=DOMAIN; SECURE"
     always;
+  # ], $host, $optimistic_host)
   # ], [], Secure;)
   # ], [], __Host-, __Secure-)
   return     307 /;
