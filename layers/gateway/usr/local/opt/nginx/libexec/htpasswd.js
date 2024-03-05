@@ -2,3 +2,5 @@
 
 const crypto = require("crypto");
 const querystring = require("querystring");
+
+// https://github.com/nginx/njs-examples/?tab=readme-ov-file#authorizing-requests-using-auth-request-http-authorization-auth-request
