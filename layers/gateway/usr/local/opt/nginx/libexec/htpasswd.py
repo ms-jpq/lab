@@ -22,13 +22,15 @@ from collections.abc import (
     MutableSequence,
     Sequence,
 )
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 from contextlib import asynccontextmanager, closing, nullcontext, suppress
+from dataclasses import dataclass
 from fnmatch import translate
 from functools import lru_cache
 from hmac import compare_digest, digest
 from html import escape
 from http.cookies import CookieError, Morsel, SimpleCookie
+from itertools import repeat
 from logging import DEBUG, StreamHandler, captureWarnings, getLogger
 from multiprocessing import cpu_count
 from pathlib import Path, PurePosixPath
@@ -47,6 +49,19 @@ _Req = tuple[_Method, bytes, SplitResultBytes, _Query, _Headers]
 
 _ALGORITHM = "sha512"
 _RW_RW_RW_ = (S_IRUSR | S_IWUSR) | (S_IRGRP | S_IWGRP) | (S_IROTH | S_IWOTH)
+
+
+@dataclass(frozen=True)
+class _Th:
+    fd: int
+    remote_sock: Path
+    authn_path: bytes
+    domain_parts: int
+    cookie_name: str
+    cookie_ttl: float
+    hmac_secret: bytes
+    allow_list: frozenset[str]
+    timeout: float
 
 
 with nullcontext():
@@ -187,20 +202,10 @@ async def _subrequest(sock: Path, credentials: bytes, ip: bytes) -> bool:
         return int(status) in range(200, 299)
 
 
-async def _thread(
-    fd: int,
-    remote_sock: Path,
-    authn_path: bytes,
-    domain_parts: int,
-    cookie_name: str,
-    cookie_ttl: float,
-    hmac_secret: bytes,
-    allow_list: frozenset[str],
-    timeout: float,
-) -> None:
-    sock = socket(fileno=fd)
+async def _thread(th: _Th) -> None:
+    sock = socket(fileno=th.fd)
     loop = get_running_loop()
-    match = _fnmatch(allow_list)
+    match = _fnmatch(th.allow_list)
 
     async def cont(reader: StreamReader, writer: StreamWriter) -> None:
         async with finalize(writer):
@@ -211,30 +216,30 @@ async def _thread(
 
             proto = b"".join(headers.get(b"x-forwarded-proto", ()))
             secure = proto != b"http"
-            cname = "__Secure-" + cookie_name if secure else cookie_name
+            cname = "__Secure-" + th.cookie_name if secure else th.cookie_name
 
             user = None
-            if commonpath((authn_path, path)) == authn_path:
+            if commonpath((th.authn_path, path)) == th.authn_path:
                 location = b"".join(query.get(b"redirect", ()))
                 user = b"".join(query.get(b"username", ()))
                 passwd = b"".join(query.get(b"password", ()))
                 auth = urlsafe_b64encode(user + b":" + passwd)
                 ip = _ip(headers)
                 authorized = await _subrequest(
-                    sock=remote_sock, credentials=auth, ip=ip
+                    sock=th.remote_sock, credentials=auth, ip=ip
                 )
             else:
                 location = None
                 authorized = match(host)
                 if not authorized:
                     authorized = _read_auth_cookies(
-                        headers, name=cname, secret=hmac_secret
+                        headers, name=cname, secret=th.hmac_secret
                     )
                 if not authorized:
                     ip = _ip(headers)
                     for user, auth in _auth_headers(headers):
                         authorized = await _subrequest(
-                            sock=remote_sock, credentials=auth, ip=ip
+                            sock=th.remote_sock, credentials=auth, ip=ip
                         )
                         if authorized:
                             break
@@ -257,10 +262,10 @@ async def _thread(
 
                 if user:
                     cookie = _write_auth_cookies(
-                        domain_parts=domain_parts,
+                        domain_parts=th.domain_parts,
                         name=cname,
-                        ttl=cookie_ttl,
-                        secret=hmac_secret,
+                        ttl=th.cookie_ttl,
+                        secret=th.hmac_secret,
                         host=host,
                         secure=secure,
                         user=user,
@@ -285,7 +290,7 @@ async def _thread(
 
     async def handler(reader: StreamReader, writer: StreamWriter) -> None:
         with suppress(TimeoutError):
-            await wait_for(cont(reader, writer), timeout=timeout)
+            await wait_for(cont(reader, writer), timeout=th.timeout)
 
     def factory() -> StreamReaderProtocol:
         reader = StreamReader(loop=loop)
@@ -295,6 +300,10 @@ async def _thread(
     server = await loop.create_unix_server(factory, sock=sock)
     async with server:
         await server.serve_forever()
+
+
+def _srv(th: _Th) -> None:
+    run(_thread(th))
 
 
 def _parse_args() -> Namespace:
@@ -335,23 +344,20 @@ def main() -> None:
     listening_socket.chmod(_RW_RW_RW_)
     fd = sock.fileno()
 
-    def cont(_: int) -> None:
-        run(
-            _thread(
-                fd=fd,
-                remote_sock=remote_sock,
-                authn_path=authn_path,
-                domain_parts=args.domain_parts,
-                cookie_name=args.cookie_name,
-                cookie_ttl=args.cookie_ttl,
-                hmac_secret=hmac_secret,
-                allow_list=allow_list,
-                timeout=args.timeout,
-            )
-        )
+    th = _Th(
+        fd=fd,
+        remote_sock=remote_sock,
+        authn_path=authn_path,
+        domain_parts=args.domain_parts,
+        cookie_name=args.cookie_name,
+        cookie_ttl=args.cookie_ttl,
+        hmac_secret=hmac_secret,
+        allow_list=allow_list,
+        timeout=args.timeout,
+    )
 
-    with ThreadPoolExecutor() as pool:
-        for _ in pool.map(cont, range(args.nprocs)):
+    with ProcessPoolExecutor() as pool:
+        for _ in pool.map(_srv, repeat(th, times=args.nprocs)):
             pass
 
 
