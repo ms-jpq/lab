@@ -25,7 +25,7 @@ services:
     environment:
       LOG_LEVEL: error
       POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
-      POSTGRES_HOST: localhost
+      POSTGRES_HOST: pg
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
       POSTGRES_PORT: &port "6543"
       POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
@@ -35,7 +35,12 @@ services:
       - --keys=http_server
       - --keys=queue_server
       - --keys=dht_crawler
-    network_mode: container:warp-srv-1
+    ports:
+      - "3334:3334/tcp"
+      - "3334:3334/udp"
+    networks:
+      - default
+      - traefik
 
   pg:
     image: docker.io/library/postgres:latest
@@ -58,9 +63,15 @@ services:
     command:
       - -p
       - *port
-    network_mode: container:warp-srv-1
+    ports:
+      - "6543:6543"
     volumes:
       - /var/lib/local/${COMPOSE_PROJECT_NAME}/pg:/var/lib/postgresql/data
+
+networks:
+  traefik:
+    external: true
+    name: traefik
 
 volumes:
   data:
