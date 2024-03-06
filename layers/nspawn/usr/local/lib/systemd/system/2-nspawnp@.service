@@ -18,5 +18,6 @@ RemainAfterExit     = yes
 
 Environment         = SRC=%C/local/nspawn/cloud.img
 Environment         = DST=%S/local/nspawn/%I
+Environment         = HOSTNAME=%H
 
 ExecStart           = /usr/local/opt/nspawn/libexec/systemd-prepawn@.sh ${SRC} ${DST}
