@@ -1,0 +1,3 @@
+[Files]
+Bind = /media/downloads:/media/downloads
+Bind = /media/tmp:/media/tmp
