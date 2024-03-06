@@ -1,1 +1,2 @@
++ pgbouncer
 + postgresql
