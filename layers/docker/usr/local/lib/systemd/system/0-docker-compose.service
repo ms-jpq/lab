@@ -12,7 +12,6 @@ After           = network-online.target
 Slice           = docker.slice
 
 Type            = oneshot
-Restart         = on-failure
 RemainAfterExit = yes
 
 ProtectSystem   = strict
