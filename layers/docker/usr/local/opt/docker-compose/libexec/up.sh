@@ -4,12 +4,31 @@ set -o pipefail
 
 if [[ -v UNDER ]]; then
   CODE=0
-  if ! "$@"; then
-    CODE=1
-    {
-      printf -- '%q ' "$@"
-      printf -- '\n'
-    } >&2
+  FILE="$1"
+  COMPOSE=(
+    docker compose
+    --file "$FILE"
+    --progress plain
+  )
+  UP=(
+    "${COMPOSE[@]}"
+    up
+    --detach
+    --remove-orphans
+  )
+  DOWN=(
+    "${COMPOSE[@]}"
+    down
+    --remove-orphans
+  )
+  if ! "${UP[@]}"; then
+    if "${DOWN[@]}" && ! "${UP[@]}"; then
+      CODE=1
+      {
+        printf -- '%q ' "$@"
+        printf -- '\n'
+      } >&2
+    fi
   fi
   exit "$CODE"
 fi
@@ -26,14 +45,7 @@ XARGS=(
   --null
   -I '%'
   --max-procs 0
-  -- "$0"
-  docker compose
-  --file '%'
-  --progress plain
-  up
-  --detach
-  --remove-orphans
-  "$@"
+  -- "$0" '%'
 )
 
 printf -- '%s\0' "$BASE/../stacks"/*/docker-compose.yml | UNDER=1 "${XARGS[@]}"
