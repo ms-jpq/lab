@@ -10,7 +10,7 @@ data "vultr_plan" "agenda" {
   }
   filter {
     name   = "ram"
-    values = [2048]
+    values = [4096]
   }
   filter {
     name   = "vcpu_count"
