@@ -88,7 +88,10 @@ remove)
 
     ETC_ID="$ROOT/fs/etc/machine-id"
     if [[ -f "$ETC_ID" ]]; then
-      rm -v -fr -- "/var/log/journal/$(<"$ETC_ID")"
+      MACH_ID="$(<"$ETC_ID")"
+      if [[ -n "$MACH_ID" ]]; then
+        rm -v -fr -- "/var/log/journal/$MACH_ID"
+      fi
     fi
 
     # shellcheck disable=SC2154

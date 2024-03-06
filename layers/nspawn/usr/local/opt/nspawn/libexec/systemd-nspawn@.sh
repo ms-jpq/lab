@@ -36,9 +36,9 @@ ARGV=(
   --notify-ready yes
   -U
   # --private-users pick
-  --private-users-ownership auto
   --network-veth
-  --link-journal try-guest
+  --link-journal try-host
+  --private-users-ownership map
   --settings override
   --machine "$MACHINE"
   --directory "$ROOT"

@@ -1,9 +1,9 @@
 [Exec]
-LinkJournal           = try-host
+# TODO: when zfs supports idmap
+# PrivateUsers          = pick
 
 [Network]
 Bridge                = v-${MACHINE}
 
 [Files]
-PrivateUsers          = pick
 PrivateUsersOwnership = map
