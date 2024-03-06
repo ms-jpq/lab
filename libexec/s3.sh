@@ -34,7 +34,7 @@ push)
     fi
   done
 
-  find "$TMP" -type f -print0 | xargs -r -0 -- gpg --batch --yes --encrypt-files --
+  find "$TMP" -type f -exec gpg --batch --yes --encrypt-files -- '{}' +
   find "$TMP" -type f -not -name '*.gpg' -delete
   "$S5" sync --delete -- "$TMP/" "$BUCKET"
   ;;
