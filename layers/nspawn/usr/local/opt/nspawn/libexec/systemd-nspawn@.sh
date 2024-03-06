@@ -22,7 +22,7 @@ $IPV4 _nspawn.$DOMAIN $MACHINE.$DOMAIN
 $IPV6 _nspawn.$DOMAIN $MACHINE.$DOMAIN
 EOF
 
-cat -- "$CONF"/*.nspawn "$ROOT"/*.nspawn | envsubst | sponge -- "/run/systemd/nspawn/$MACHINE.nspawn"
+cat -- /dev/null "$CONF"/*.nspawn "${ROOT%/*}"/*.nspawn | envsubst | sponge -- "/run/systemd/nspawn/$MACHINE.nspawn"
 
 mkdir -p -- "$SYSTEMD_NETWORK"
 IPV4="$IPV4/24" IPV6="$IPV6/64" envsubst <"$BASE/host0.network" >"$HOST0"
