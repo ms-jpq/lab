@@ -34,6 +34,9 @@ $$(LOCAL.$1.F): $2 | $$(LOCAL.$1.FF)
 ifeq (!,$(findstring !,$2))
 	cp -f -- '$$<' '$$@'
 else
+ifeq (.pin,$(notdir $2))
+	chmod +t '$$(@D)'
+endif
 	cp -P -f -- '$$<' '$$@'
 endif
 endif
