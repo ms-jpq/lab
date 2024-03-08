@@ -1,0 +1,4 @@
+[Service]
+Name = %H
+Type = _postgresql._tcp
+Port = 5432

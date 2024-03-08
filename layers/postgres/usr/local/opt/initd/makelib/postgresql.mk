@@ -2,6 +2,16 @@
 all: psql
 
 define PSQL_TEMPLATE
+psql: $1/conf.d
+
+psql: $1/conf.d
+$1/conf.d:
+	mkdir -v -p -- '$$@'
+
+psql: /usr/local/etc/default/$(notdir $1).psql.env
+/usr/local/etc/default/$(notdir $1).psql.env:
+	touch -- '$$@'
+
 psql: /var/lib/local/postgresql/$(subst -,/,$(notdir $1))
 /var/lib/local/postgresql/$(subst -,/,$(notdir $1)):
 	mkdir -v -p -- '$$@'
