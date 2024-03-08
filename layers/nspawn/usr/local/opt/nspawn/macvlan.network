@@ -15,3 +15,12 @@ EmitLLDP            = customer-bridge
 IPv6Token           = static:::${LO64}
 
 MulticastDNS        = yes
+
+[DHCPv4]
+UseDNS              = no
+
+[DHCPv6]
+UseDNS              = no
+
+[IPv6AcceptRA]
+UseDNS              = no

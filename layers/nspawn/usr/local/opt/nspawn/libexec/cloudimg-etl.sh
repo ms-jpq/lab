@@ -58,7 +58,7 @@ rm -v -rf -- "$DST/etc/hostname"
 chroot "$DST" dpkg --purge --force-all -- "${DIE[@]}"
 
 cp -v -- /usr/local/lib/systemd/dnssd/{device-info,ssh,workstation}.dnssd "$USRD/"
-cp -v -- /usr/local/lib/systemd/resolved.conf.d/* "$USRR/"
+cp -v -- /usr/local/lib/systemd/resolved.conf.d/* "$BASE/../resolved.conf.d/"/* "$USRR/"
 chmod -v -R -- o+r "$USRN" "$USRR" "$USRD"
 
 for SCRIPT in "${0%/*}/../overlay.d"/*; do
