@@ -12,5 +12,8 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-/usr/local/libexec/hr-run.sh zpool iostat -y -v -l -L -- 1 1
-/usr/local/libexec/hr-run.sh zpool iostat -y -w -L -- 1 1
+{
+  printf -- '%s ' -v -l -L -- 1 1
+  printf -- '\n'
+  printf -- '%s ' -w -L -- 1 1
+} | sed -E -e 's/ $//' | parallel --quote --colsep ' ' -- /usr/local/libexec/hr-run.sh zpool iostat -y
