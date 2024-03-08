@@ -12,7 +12,5 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-for _ in {0..6}; do
-  /usr/local/libexec/hr-run.sh zpool iostat -y -v -l -L -- 1 1
-  printf -- '\n'
-done
+/usr/local/libexec/hr-run.sh zpool iostat -y -v -l -L -- 1 1
+/usr/local/libexec/hr-run.sh zpool iostat -y -w -L -- 1 1
