@@ -1,6 +1,8 @@
 .PHONY: psql
 all: psql
 
+/usr/lib/postgresql: pkg._
+
 define PSQL_TEMPLATE
 psql: $1/conf.d
 
@@ -15,6 +17,10 @@ $1/conf.d:
 psql: /usr/local/etc/default/$(notdir $1).psql.env
 /usr/local/etc/default/$(notdir $1).psql.env:
 	touch -- '$$@'
+
+psql: /var/lib/local/postgresql/$(notdir $1)
+/var/lib/local/postgresql/$(notdir $1): | /usr/lib/postgresql
+	/usr/local/opt/postgresql/libexec/initdb.sh '$(notdir $1)' '$$@'
 
 endef
 
