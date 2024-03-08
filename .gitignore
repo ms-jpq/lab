@@ -11,6 +11,7 @@ node_modules/
 package-lock.json
 tsconfig.tsbuildinfo
 var/
+!**/default/*.env
 !**/examples/*
 !*.m4.env
 !layers/**/var/
