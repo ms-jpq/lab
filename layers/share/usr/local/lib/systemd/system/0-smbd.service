@@ -12,4 +12,4 @@ LimitCORE           = infinity
 
 # ExecStartPre    = /usr/share/samba/update-apparmor-samba-profile
 ExecStart           = /usr/sbin/smbd --foreground --no-process-group --configfile /usr/local/opt/samba/smb.conf
-ExecReload          = /bin/kill -HUP $MAINPID
+ExecReload          = kill -s HUP -- ${MAINPID}

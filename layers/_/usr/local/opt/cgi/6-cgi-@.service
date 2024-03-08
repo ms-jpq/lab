@@ -1,18 +1,19 @@
 [Unit]
-Description     = CGI -- /usr/local/opt/cgi/bin/%J
-CollectMode     = inactive-or-failed
+Description      = CGI -- /usr/local/opt/cgi/bin/%J
+CollectMode      = inactive-or-failed
 
-BindsTo         = %p.socket
-After           = %p.socket
+BindsTo          = %p.socket
+After            = %p.socket
 
 [Service]
-Type            = oneshot
+Type             = oneshot
+SyslogIdentifier = %p
 
-ProtectSystem   = strict
-ProtectHome     = yes
-PrivateTmp      = yes
-ReadWritePaths  = %t %T %V
-TimeoutStartSec = 1m
+ProtectSystem    = strict
+ProtectHome      = yes
+PrivateTmp       = yes
+ReadWritePaths   = %t %T %V
+TimeoutStartSec  = 1m
 
-EnvironmentFile = -/usr/local/etc/default/%J.cgi.env
-ExecStart       = /usr/local/opt/cgi/bin/%J
+EnvironmentFile  = -/usr/local/etc/default/%J.cgi.env
+ExecStart        = /usr/local/opt/cgi/bin/%J

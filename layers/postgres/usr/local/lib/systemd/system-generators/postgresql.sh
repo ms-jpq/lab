@@ -6,7 +6,7 @@ RUN="$1"
 WANTS="$RUN/multi-user.target.wants"
 
 mkdir -v -p -- "$WANTS"
-for CLUSTER in /usr/local/opt/postgresql/conf/*/; do
+for CLUSTER in /usr/local/opt/postgresql/clusters/*/; do
   CLUSTER="${CLUSTER%/}"
   CLUSTER="${CLUSTER##*/}"
   VERSION="${CLUSTER%%'-'*}"

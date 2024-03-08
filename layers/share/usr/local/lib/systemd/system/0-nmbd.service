@@ -9,4 +9,4 @@ PIDFile             = %t/samba/nmbd.pid
 LimitCORE           = infinity
 
 ExecStart           = /usr/sbin/nmbd --foreground --no-process-group --configfile /usr/local/opt/samba/smb.conf
-ExecReload          = /bin/kill -HUP $MAINPID
+ExecReload          = kill -s HUP -- ${MAINPID}
