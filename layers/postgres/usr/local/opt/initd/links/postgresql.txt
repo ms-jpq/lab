@@ -1,1 +1,2 @@
+/usr/local/lib/systemd/system/pgbouncer.service  /dev/null
 /usr/local/lib/systemd/system/postgresql.service /dev/null
