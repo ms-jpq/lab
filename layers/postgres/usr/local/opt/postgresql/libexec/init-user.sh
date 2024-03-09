@@ -3,6 +3,7 @@
 set -o pipefail
 
 DB="$1"
+SHADOW="$2"
 shift -- 1
 
 PSQL=(
@@ -45,4 +46,4 @@ WITH
   PASSWORD '$PASSWORD';
 SQL
 
-printf -- '%s\n' "$DB -> $PASSWORD"
+printf -- '%s\n' "$DB -> $PASSWORD" | tee -- "$SHADOW"

@@ -5,7 +5,12 @@ set -o pipefail
 CLUSTER="$1"
 PGDATA="$2"
 BASE="${0%/*}"
+DB="${CLUSTER#*'-'}"
 USER=postgres
+
+if [[ -d "$PGDATA" ]]; then
+  exit 0
+fi
 
 RUN=(
   runuser
@@ -48,3 +53,10 @@ chown -v -- "$USER:$USER" "$PGDATA"
 "${RUN[@]}" "${ARGV[@]}"
 "${RUN[@]}" mkdir -v -p -- "$PGDATA/conf.d"
 ID="$CLUSTER" envsubst <"$BASE/../postgresql.conf" | "${RUN[@]}" sponge -- "$PGDATA/postgresql.conf"
+
+if ! systemd-notify --booted; then
+  exit 0
+fi
+
+systemctl start -- 0-pgbouncer "postgresql@$CLUSTER"
+"${RUN[@]}" "$BASE/init-user.sh" "$DB" "$PGDATA/init.user"
