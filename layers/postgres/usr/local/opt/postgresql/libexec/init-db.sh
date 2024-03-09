@@ -4,7 +4,14 @@ set -o pipefail
 
 CLUSTER="$1"
 PGDATA="$2"
+BASE="${0%/*}"
 USER=postgres
+
+RUN=(
+  runuser
+  --user "$USER"
+  --
+)
 
 # https://www.postgresql.org/docs/current/app-initdb.html
 # TODO: use icu @ PG 16
@@ -12,7 +19,7 @@ ARGV=(
   env --ignore-environment
   --
   TZ=Etc/UTC
-  "${0%/*}/pg-path.sh" "$CLUSTER"
+  "$BASE/pg-path.sh" "$CLUSTER"
   initdb
   --pgdata "$PGDATA"
   --locale C.UTF-8
@@ -37,4 +44,7 @@ done
 
 mkdir -v -p -- "$PGDATA"
 chown -v -- "$USER:$USER" "$PGDATA"
-exec -- runuser --user "$USER" -- "${ARGV[@]}"
+
+"${RUN[@]}" "${ARGV[@]}"
+"${RUN[@]}" mkdir -v -p -- "$PGDATA/conf.d"
+ID="$CLUSTER" envsubst <"$BASE/../postgresql.conf" | "${RUN[@]}" sponge -- "$PGDATA/postgresql.conf"
