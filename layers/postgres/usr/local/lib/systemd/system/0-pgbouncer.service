@@ -1,6 +1,8 @@
 [Unit]
 Description      = PG Bouncer
 
+After            = network-online.target
+
 [Service]
 Restart          = on-failure
 ProtectSystem    = strict
@@ -11,7 +13,7 @@ RuntimeDirectory = postgresql
 
 User             = postgres
 Group            = postgres
-
+KillSignal       = SIGINT
 
 ExecStart        = pgbouncer -- /usr/local/opt/postgresql/pgbouncer.ini
 ExecReload       = kill -s HUP -- ${MAINPID}

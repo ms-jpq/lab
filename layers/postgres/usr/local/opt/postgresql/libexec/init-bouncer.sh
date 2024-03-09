@@ -10,9 +10,10 @@ shift -- 1
 [databases]
 EOF
 
-  for DB in "$@"; do
+  for CLUSTER in "$@"; do
+    DB="${CLUSTER#*'-'}"
     tee -- <<-EOF
-$DB = dbname=postgres host=/run/local/postgresql/$DB
+$DB = dbname=postgres host=/run/local/postgresql/$CLUSTER
 EOF
   done
 
