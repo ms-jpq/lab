@@ -13,7 +13,9 @@ RuntimeDirectory = postgresql
 
 User             = postgres
 Group            = postgres
+
 KillSignal       = SIGINT
+TimeoutStopSec   = 1minute
 
 ExecStart        = pgbouncer -- /usr/local/opt/postgresql/pgbouncer.ini
 ExecReload       = kill -s HUP -- ${MAINPID}
