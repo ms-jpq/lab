@@ -6,7 +6,7 @@ all: psql
 define PSQL_TEMPLATE
 psql: /var/lib/local/postgresql/$1/PG_VERSION
 /var/lib/local/postgresql/$1/PG_VERSION: | /usr/lib/postgresql
-	/usr/local/opt/postgresql/libexec/init-db.sh '$1' '$$(@D)'
+	sudo -- /usr/local/opt/postgresql/libexec/init-db.sh '$1' '$$(@D)'
 endef
 
 PSQL_CLUSTERS := /usr/local/etc/default/postgresql.env
