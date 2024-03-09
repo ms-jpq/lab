@@ -3,7 +3,7 @@
 set -o pipefail
 
 if ! systemd-notify --booted; then
-  exit
+  exit 0
 fi
 
 NAME="${0##*/}"

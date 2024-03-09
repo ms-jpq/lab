@@ -6,6 +6,8 @@ CLUSTER="$1"
 PGDATA="$2"
 USER=postgres
 
+# https://www.postgresql.org/docs/current/app-initdb.html
+# TODO: use icu @ PG 16
 ARGV=(
   env --ignore-environment
   --
@@ -15,6 +17,23 @@ ARGV=(
   --pgdata "$PGDATA"
   --locale C.UTF-8
 )
+
+OPTIONS=(
+  cluster_name="$CLUSTER"
+  external_pid_file="$PGDATA/postmaster.pid"
+  hba_file="$PGDATA/pg_hba.conf"
+  ident_file="$PGDATA/pg_ident.conf"
+  include_dir="/usr/local/opt/postgresql/$CLUSTER/conf.d"
+  listen_addresses=''
+  stats_temp_directory='/tmp/pgstats'
+  unix_socket_directories="/run/local/postgresql/$CLUSTER"
+  unix_socket_permissions='0220'
+)
+
+for OPTION in "${OPTIONS[@]}"; do
+  printf -- '%s\n' "TODO: --set $OPTION"
+  # ARGV+=(--set "$OPTION")
+done
 
 mkdir -v -p -- "$PGDATA"
 chown -v -- "$USER:$USER" "$PGDATA"
