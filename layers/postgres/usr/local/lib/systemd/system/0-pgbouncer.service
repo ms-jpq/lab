@@ -1,6 +1,9 @@
 [Unit]
 Description      = PG Bouncer
 
+Requires         = 1-self-signed@%j.service
+After            = 1-self-signed@%j.service
+
 After            = network-online.target
 
 [Service]
