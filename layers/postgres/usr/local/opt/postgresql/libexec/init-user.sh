@@ -18,6 +18,12 @@ PSQL=(
   --file -
 )
 
+ENCODE=(
+  jq --exit-status
+  --raw-input --raw-output
+  '@uri'
+)
+
 if [[ -v NUKE ]]; then
   "${PSQL[@]}" --set=role="$ROLE" <<-'SQL'
 DROP USER IF EXISTS :role;
@@ -35,7 +41,7 @@ if "${PSQL[@]}" <<<"$USERS" | jq --exit-status --arg role "$ROLE" '.[] | select(
   exit 0
 fi
 
-PASSWORD="$(openssl rand -base64 32 | tr -d -- '\n')"
+PASSWORD="$(openssl rand -base64 64 | tr -d -- '\n')"
 export -- PASSWORD
 
 # TODO: use :pass @ PG 16, \getenv is undefined in 14
@@ -43,11 +49,11 @@ export -- PASSWORD
 "${PSQL[@]}" --set=role="$ROLE" <<-SQL
 CREATE USER :role
 WITH
-  PASSWORD '$PASSWORD';
+  SUPERUSER PASSWORD '$PASSWORD';
 SQL
 
 printf -- '%s\n' "$ROLE -> $PASSWORD" | sponge -- "$SHADOW"
 
-CONN="$ROLE:$(jq --exit-status --raw-input --raw-output '@uri' <<<"$PASSWORD")"
+CONN="$ROLE:$("${ENCODE[@]}" <<<"$PASSWORD")"
 printf -v PSQL -- '%q ' psql -- "postgres://$CONN@$HOSTNAME/$ROLE"
 printf -- '%s\n' "$PSQL" >&2
