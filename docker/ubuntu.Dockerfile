@@ -17,5 +17,4 @@ COPY . /srv
 
 ENV LOCAL=1
 RUN useradd --user-group --create-home -- ubuntu && mkdir -p -- /usr/share/doc/avahi-daemon/examples && touch -- /usr/share/doc/avahi-daemon/examples/ssh.service
-RUN gmake example
-RUN ./main.sh --machine -
+RUN gmake example && ./main.sh --machine -

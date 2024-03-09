@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-if ! systemd-notify --booted; then
+if [[ -f /.dockerenv ]] || ! systemd-notify --booted; then
   exit 0
 fi
 
