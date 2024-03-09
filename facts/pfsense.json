@@ -12,11 +12,13 @@
   ],
   "ENV_HOST_ALLOW_LIST": [
     "freenas.enp2s0.pfsense.home.arpa@tcp*https",
+    "freenas.enp2s0.pfsense.home.arpa@tcp*postgresql",
     "XBOX.enp2s0.pfsense.home.arpa@tcp*3074",
     "XBOX.enp2s0.pfsense.home.arpa@udp*3074"
   ],
   "ENV_HOST_FORWARD_LIST": [
     "freenas.enp2s0.pfsense.home.arpa@tcp*https:https",
+    "freenas.enp2s0.pfsense.home.arpa@tcp*postgresql:postgresql",
     "XBOX.enp2s0.pfsense.home.arpa@tcp*3074:3074",
     "XBOX.enp2s0.pfsense.home.arpa@udp*3074:3074"
   ],

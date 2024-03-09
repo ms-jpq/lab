@@ -58,4 +58,6 @@ if ! systemd-notify --booted; then
 fi
 
 systemctl start -- "postgresql@$CLUSTER"
+systemctl status -- "postgresql@$CLUSTER"
+
 "${RUN[@]}" "$BASE/init-user.sh" "$CLUSTER" "$PGDATA/init.user"

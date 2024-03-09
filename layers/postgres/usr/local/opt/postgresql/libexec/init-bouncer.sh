@@ -5,6 +5,10 @@ set -o pipefail
 INI="$1"
 shift -- 1
 
+if ! [[ -f "$INI" ]] && systemd-notify --booted; then
+  systemctl daemon-reload
+fi
+
 {
   tee -- <<-'EOF'
 [databases]
