@@ -7,13 +7,15 @@ PGDATA="$2"
 USER=postgres
 
 ARGV=(
+  env --ignore-environment
+  --
+  TZ=Etc/UTC
+  "${0%/*}/pg-path.sh" "$CLUSTER"
   initdb
   --pgdata "$PGDATA"
-  --no-locale
+  --locale C.UTF-8
 )
-
-export -- TZ=Etc/UTC
 
 mkdir -v -p -- "$PGDATA"
 chown -v -- "$USER:$USER" "$PGDATA"
-exec -- runuser --user "$USER" -- "${0%/*}/pg-path.sh" "$CLUSTER" "${ARGV[@]}"
+exec -- runuser --user "$USER" -- "${ARGV[@]}"
