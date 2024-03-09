@@ -18,9 +18,9 @@ psql: /usr/local/etc/default/$(notdir $1).psql.env
 /usr/local/etc/default/$(notdir $1).psql.env:
 	touch -- '$$@'
 
-psql: /var/lib/local/postgresql/$(notdir $1)
-/var/lib/local/postgresql/$(notdir $1): | /usr/lib/postgresql
-	/usr/local/opt/postgresql/libexec/init-db.sh '$(notdir $1)' '$$@'
+psql: /var/lib/local/postgresql/$(notdir $1)/PG_VERSION
+/var/lib/local/postgresql/$(notdir $1)/PG_VERSION: | /usr/lib/postgresql
+	/usr/local/opt/postgresql/libexec/init-db.sh '$(notdir $1)' '$$(@D)'
 
 endef
 
@@ -29,5 +29,5 @@ PSQL_DATABASES := $(patsubst %/,%,$(shell shopt -u failglob && printf -- '%s ' /
 $(foreach cluster,$(PSQL_DATABASES),$(eval $(call PSQL_TEMPLATE,$(cluster))))
 
 psql: /usr/local/opt/postgresql/pgbouncer.database.ini
-/usr/local/opt/postgresql/pgbouncer.database.ini: $(PSQL_DATABASES)
-	sudo -- /usr/local/opt/postgresql/libexec/init-bouncer.sh '$@' $(notdir $^)
+/usr/local/opt/postgresql/pgbouncer.database.ini: /usr/local/opt/postgresql/libexec/init-bouncer.sh $(PSQL_DATABASES)
+	sudo -- '$<' '$@' $(notdir $(PSQL_DATABASES))

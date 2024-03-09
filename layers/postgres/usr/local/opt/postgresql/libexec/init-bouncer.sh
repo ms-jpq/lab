@@ -12,7 +12,6 @@ EOF
 
   for DB in "$@"; do
     tee -- <<-EOF
-[databases]
 $DB = host=/run/local/postgresql/$DB
 EOF
   done

@@ -9,8 +9,9 @@ PrivateTmp       = yes
 ReadWritePaths   = %t %T %V
 RuntimeDirectory = postgresql
 
-User             = postgresql
-Group            = postgresql
+User             = postgres
+Group            = postgres
+
 
 ExecStart        = pgbouncer -- /usr/local/opt/postgresql/pgbouncer.ini
 ExecReload       = kill -s HUP -- ${MAINPID}
