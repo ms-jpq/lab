@@ -12,7 +12,7 @@ EOF
 
   for DB in "$@"; do
     tee -- <<-EOF
-$DB = host=/run/local/postgresql/$DB
+$DB = dbname=postgres host=/run/local/postgresql/$DB
 EOF
   done
 
