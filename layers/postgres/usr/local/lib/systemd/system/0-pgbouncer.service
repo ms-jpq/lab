@@ -11,7 +11,7 @@ Restart          = on-failure
 ProtectSystem    = strict
 ProtectHome      = yes
 PrivateTmp       = yes
-ReadWritePaths   = %t %T %V
+ReadWritePaths   = %t %T %V %C/local/self-signed/%J
 RuntimeDirectory = postgresql
 
 User             = postgres
@@ -20,5 +20,6 @@ Group            = postgres
 KillSignal       = SIGINT
 TimeoutStopSec   = 1minute
 
+ExecStartPre     = !chown -v -R -- ${USER}:${USER} %C/local/self-signed/%J
 ExecStart        = pgbouncer -- /usr/local/opt/postgresql/pgbouncer.ini
 ExecReload       = kill -s HUP -- ${MAINPID}
