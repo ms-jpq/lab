@@ -5,10 +5,9 @@ set -o pipefail
 CLUSTER="$1"
 PGDATA="$2"
 BASE="${0%/*}"
-DB="${CLUSTER#*'-'}"
 USER=postgres
 
-if [[ -d "$PGDATA" ]]; then
+if find "$PGDATA" -type d -not -empty | grep -F -- "$PGDATA"; then
   exit 0
 fi
 
@@ -58,5 +57,5 @@ if ! systemd-notify --booted; then
   exit 0
 fi
 
-systemctl start -- 0-pgbouncer "postgresql@$CLUSTER"
-"${RUN[@]}" "$BASE/init-user.sh" "$DB" "$PGDATA/init.user"
+systemctl start -- "postgresql@$CLUSTER"
+"${RUN[@]}" "$BASE/init-user.sh" "$CLUSTER" "$PGDATA/init.user"

@@ -6,4 +6,4 @@ CLUSTER="$1"
 shift -- 1
 HOST="/run/local/postgresql/$CLUSTER"
 
-exec -- runuser --user postgres -- psql --host="$HOST" "$@"
+exec -- psql --host "$HOST" --username postgres "$@"
