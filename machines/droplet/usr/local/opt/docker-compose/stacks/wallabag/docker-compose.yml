@@ -4,22 +4,23 @@ services:
     image: docker.io/wallabag/wallabag:latest
     userns_mode: auto
     restart: unless-stopped
-    mem_swappiness: 0
-    cpu_shares: 8192
-    # healthcheck:
-    #   test:
-    #     - CMD
-    #     - wget
-    #     - --quiet
-    #     - --spider
-    #     - --timeout
-    #     - "1"
-    #     - --
-    #     - localhost:8080/about
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --no-progress-meter
+        - --max-time
+        - "3"
+        - --
+        - 127.0.0.1:80
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`rss.{.+}.{.+$$}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`pocket.{.+}.{.+$$}`)
     environment:
       SYMFONY__ENV__DATABASE_DRIVER: pdo_pgsql
       SYMFONY__ENV__DATABASE_HOST:
@@ -31,6 +32,17 @@ services:
     networks:
       - default
       - traefik
+
+  redis:
+    image: docker.io/library/redis:latest
+    userns_mode: auto
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - incr
+        - ping
 
 networks:
   traefik:
