@@ -9,16 +9,16 @@ services:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
-    healthcheck:
-      test:
-        - CMD
-        - curl
-        - --fail
-        - --no-progress-meter
-        - --max-time
-        - "1"
-        - --
-        - 127.0.0.1:80
+    # healthcheck:
+    #   test:
+    #     - CMD
+    #     - curl
+    #     - --fail
+    #     - --no-progress-meter
+    #     - --max-time
+    #     - "1"
+    #     - --
+    #     - 127.0.0.1:80
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
