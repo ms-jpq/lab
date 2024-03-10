@@ -18,3 +18,8 @@ EOF
   done
 
 } >"$INI"
+
+SVC='0-pgbouncer.service'
+if systemd-notify --booted && systemctl list-units --all --output json -- "$SVC" | jq --exit-status '.[]'; then
+  systemctl try-reload-or-restart -- "$SVC"
+fi

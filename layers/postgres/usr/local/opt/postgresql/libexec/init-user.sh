@@ -3,7 +3,7 @@
 set -o pipefail
 
 CLUSTER="$1"
-SHADOW="$2"
+SHADOW="/var/lib/local/postgresql/$CLUSTER/init.user"
 ROLE="${CLUSTER#*'-'}"
 shift -- 1
 
@@ -16,12 +16,6 @@ PSQL=(
   --command '\a'
   --command '\t'
   --file -
-)
-
-ENCODE=(
-  jq --exit-status
-  --raw-input --raw-output
-  '@uri'
 )
 
 if [[ -v NUKE ]]; then
@@ -52,8 +46,4 @@ WITH
   SUPERUSER PASSWORD '$PASSWORD';
 SQL
 
-printf -- '%s\n' "$ROLE -> $PASSWORD" | sponge -- "$SHADOW"
-
-CONN="$ROLE:$("${ENCODE[@]}" <<<"$PASSWORD")"
-printf -v PSQL -- '%q ' psql -- "postgres://$CONN@$HOSTNAME/$ROLE"
-printf -- '%s\n' "$PSQL" >&2
+printf -- '%s\n' "$ROLE -> $PASSWORD" | runuser --user postgres -- sponge -- "$SHADOW"

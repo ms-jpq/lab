@@ -22,8 +22,8 @@ default_user_preferences:
   autoplay: true
   continue: true
   default_home: Trending
-  local: true
-  quality: dash
+  # local: true
+  # quality: dash
   region: CA
   related_videos: true
   save_player_pos: true

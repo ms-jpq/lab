@@ -53,12 +53,7 @@ chown -v -- "$USER:$USER" "$PGDATA"
 "${RUN[@]}" mkdir -v -p -- "$PGDATA/conf.d"
 ID="$CLUSTER" envsubst <"$BASE/../postgresql.conf" | "${RUN[@]}" sponge -- "$PGDATA/postgresql.conf"
 
-if ! systemd-notify --booted; then
-  exit 0
+if systemd-notify --booted; then
+  systemctl start -- "postgresql@$CLUSTER"
+  "$BASE/init-user.sh" "$CLUSTER"
 fi
-
-systemctl start -- "postgresql@$CLUSTER"
-
-SHADOW="$PGDATA/init.user"
-"$BASE/init-user.sh" "$CLUSTER" "$SHADOW"
-chown -v -- "$USER:$USER" "$SHADOW"
