@@ -21,7 +21,6 @@ services:
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`rss.{.+}.{.+$$}`)
     environment:
-      # YOUTUBE_EMBED_URL_OVERRIDE: https://youtube.${DOMAIN}/embed/
       ADMIN_PASSWORD:
       ADMIN_USERNAME:
       BASE_URL:
@@ -32,12 +31,13 @@ services:
       HTTPS_PROXY: &proxy http://warp-srv-1:1080
       HTTP_CLIENT_TIMEOUT: 120
       HTTP_PROXY: *proxy
-      INVIDIOUS_INSTANCE: https://youtube.${DOMAIN}
+      INVIDIOUS_INSTANCE: youtube.${DOMAIN}
       PROXY_IMAGES: all
       PROXY_MEDIA_TYPES: image,audio,video
       PROXY_OPTION: all
       RUN_MIGRATIONS: 1
       WORKER_POOL_SIZE:
+      YOUTUBE_EMBED_URL_OVERRIDE: https://youtube.${DOMAIN}/embed/
     networks:
       - default
       - traefik
