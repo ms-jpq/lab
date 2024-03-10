@@ -297,7 +297,7 @@ async def _thread(th: _Th) -> None:
         protocol = StreamReaderProtocol(reader, client_connected_cb=handler, loop=loop)
         return protocol
 
-    server = await loop.create_unix_server(factory, sock=sock)
+    server = await loop.create_unix_server(factory, backlog=1, sock=sock)
     async with server:
         await server.serve_forever()
 
