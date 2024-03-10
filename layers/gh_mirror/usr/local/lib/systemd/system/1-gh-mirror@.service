@@ -4,7 +4,7 @@ Description    = Github Mirror Service -- %I
 [Service]
 Type           = oneshot
 ProtectSystem  = strict
-ProtectHome    = yes
+ProtectHome    = tmpfs
 PrivateTmp     = yes
 ReadWritePaths = %T %S/local
 
