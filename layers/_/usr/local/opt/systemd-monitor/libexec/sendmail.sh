@@ -23,17 +23,22 @@ fi
 
 TMP="$(mktemp)"
 
+ACC=()
+for TXT in "${TXTS[@]}"; do
+  printf -- '%s\n' "> ${TXT##*/}" >>"$TMP"
+  ACC+=(--attachment "$TXT")
+done
+
+read -r -- LINES <"$TMP"
+TITLE="${LINES[*]}"
+
 SENDMAIL=(
   /usr/local/libexec/sendmail.sh
   --rcpt "$REMOTE"
-  --subject "$HOSTNAME - ${TXTS[*]}"
+  --subject "$HOSTNAME - $TITLE"
   --body "$TMP"
+  "${ACC[@]}"
 )
-
-for TXT in "${TXTS[@]}"; do
-  printf -- '%s\n' "> ${TXT##*/}" >>"$TMP"
-  SENDMAIL+=(--attachment "$TXT")
-done
 
 SENDMAIL+=(-- --insecure)
 
