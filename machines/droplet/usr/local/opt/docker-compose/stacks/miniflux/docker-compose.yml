@@ -15,7 +15,7 @@ services:
         - --timeout
         - "1"
         - --
-        - localhost:8080
+        - localhost:8080/about
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
