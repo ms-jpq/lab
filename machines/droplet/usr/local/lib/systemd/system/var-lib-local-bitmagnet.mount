@@ -1,7 +1,0 @@
-[Unit]
-Description = Mount -- btrfs:%f
-
-[Mount]
-Options     = noatime,compress=zstd
-Where       = %f
-What        = LABEL=coral
