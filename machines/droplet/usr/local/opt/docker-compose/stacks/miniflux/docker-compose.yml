@@ -29,6 +29,7 @@ services:
       CREATE_ADMIN: 1
       DATABASE_URL:
       HTTPS_PROXY: &proxy http://warp-srv-1:1080
+      HTTP_CLIENT_PROXY: *proxy
       HTTP_CLIENT_TIMEOUT: &timeout 600
       HTTP_PROXY: *proxy
       INVIDIOUS_INSTANCE: youtube.${DOMAIN}
