@@ -13,8 +13,8 @@ PSQL=(
   --quiet
   --single-transaction
   --dbname postgres
-  --command '\a'
-  --command '\t'
+  --no-align
+  --tuples-only
   --file -
 )
 
