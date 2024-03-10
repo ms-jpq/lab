@@ -36,7 +36,7 @@ from multiprocessing import cpu_count
 from pathlib import Path, PurePosixPath
 from posixpath import commonpath, normpath
 from re import compile
-from socket import AddressFamily, socket
+from socket import AddressFamily, SocketKind, fromfd, socket
 from stat import S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR
 from time import time
 from typing import NewType
@@ -203,7 +203,7 @@ async def _subrequest(sock: Path, credentials: bytes, ip: bytes) -> bool:
 
 
 async def _thread(th: _Th) -> None:
-    sock = socket(fileno=th.fd)
+    sock = fromfd(th.fd, family=AddressFamily.AF_UNIX, type=SocketKind.SOCK_STREAM)
     loop = get_running_loop()
     match = _fnmatch(th.allow_list)
 
