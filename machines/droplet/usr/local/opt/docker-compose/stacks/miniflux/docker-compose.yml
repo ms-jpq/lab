@@ -36,6 +36,7 @@ services:
       PROXY_MEDIA_TYPES: image,audio,video
       PROXY_OPTION: all
       RUN_MIGRATIONS: 1
+      WORKER_POOL_SIZE:
     networks:
       - default
       - traefik
