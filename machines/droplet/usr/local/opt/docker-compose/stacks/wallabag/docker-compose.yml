@@ -1,10 +1,12 @@
 ---
 services:
   srv:
-    image: docker.io/wallabag/wallabag:latest
+    image: &img docker.io/wallabag/wallabag:latest
     userns_mode: auto
     restart: unless-stopped
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
     healthcheck:
@@ -21,7 +23,7 @@ services:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`pocket.{.+}.{.+$$}`)
-    environment:
+    environment: &env
       SYMFONY__ENV__DATABASE_DRIVER: pdo_pgsql
       SYMFONY__ENV__DATABASE_HOST:
       SYMFONY__ENV__DATABASE_NAME: wallabag
@@ -32,6 +34,16 @@ services:
     networks:
       - default
       - traefik
+    volumes:
+      - data:/var/www/wallabag/web/assets/images
+
+  migrate:
+    image: *img
+    userns_mode: auto
+    restart: unless-stopped
+    environment: *env
+    command:
+      - migrate
 
   redis:
     image: docker.io/library/redis:latest
@@ -48,3 +60,6 @@ networks:
   traefik:
     external: true
     name: traefik
+
+volumes:
+  data:
