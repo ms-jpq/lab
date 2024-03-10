@@ -38,6 +38,7 @@ services:
       - serve
       - webdav
       - --config=/dev/null
+      - --dir-cache-time=0
       - --addr=:8080
       - --
       - /data

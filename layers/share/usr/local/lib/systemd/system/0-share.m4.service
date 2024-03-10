@@ -18,4 +18,4 @@ BindPaths                = /media/SHARE:%t/local/%J/mnt/SHARE
 # ], m5_assert([ENV_WEB_EXPORTS]))
 
 # TODO: rclone can listen on unix sockets on later versions
-ExecStart                = rclone serve webdav --config /dev/null --addr=127.0.0.53:8090 --baseurl=/share -- %t/local/%J/mnt
+ExecStart                = rclone serve webdav --config=/dev/null --dir-cache-time=0 --addr=127.0.0.53:8090 --baseurl=/share -- %t/local/%J/mnt
