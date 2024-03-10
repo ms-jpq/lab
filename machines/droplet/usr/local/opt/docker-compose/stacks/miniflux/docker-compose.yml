@@ -4,9 +4,6 @@ services:
     image: ghcr.io/miniflux/miniflux:latest
     userns_mode: auto
     restart: unless-stopped
-    # depends_on:
-    #   pg:
-    #     condition: service_healthy
     mem_swappiness: 0
     cpu_shares: 8192
     healthcheck:
@@ -38,28 +35,6 @@ services:
     networks:
       - default
       - traefik
-
-  # pg:
-  #   image: docker.io/library/postgres:latest
-  #   userns_mode: auto
-  #   restart: unless-stopped
-  #   user: games
-  #   mem_swappiness: 0
-  #   cpu_shares: 8192
-  #   healthcheck:
-  #     test:
-  #       - CMD
-  #       - pg_isready
-  #       - --username
-  #       - ${COMPOSE_PROJECT_NAME}
-  #       - --dbname
-  #       - ${COMPOSE_PROJECT_NAME}
-  #   environment:
-  #     POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
-  #     POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
-  #     POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
-  #   volumes:
-  #     - /var/lib/local/${COMPOSE_PROJECT_NAME}:/var/lib/postgresql/data
 
 networks:
   traefik:
