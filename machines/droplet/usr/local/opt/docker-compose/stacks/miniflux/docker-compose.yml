@@ -28,7 +28,9 @@ services:
       CLEANUP_ARCHIVE_UNREAD_DAYS: -1
       CREATE_ADMIN: 1
       DATABASE_URL:
-      HTTP_PROXY: http://warp-srv-1:1080
+      HTTPS_PROXY: &proxy http://warp-srv-1:1080
+      HTTP_CLIENT_TIMEOUT: 120
+      HTTP_PROXY: *proxy
       INVIDIOUS_INSTANCE:
       PROXY_IMAGES: all
       PROXY_MEDIA_TYPES: image,audio,video
