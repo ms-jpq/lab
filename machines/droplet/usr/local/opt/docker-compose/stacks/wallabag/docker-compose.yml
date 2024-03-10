@@ -30,7 +30,7 @@ services:
       SYMFONY__ENV__DATABASE_PASSWORD:
       SYMFONY__ENV__DATABASE_PORT: 5432
       SYMFONY__ENV__DATABASE_USER:
-      SYMFONY__ENV__DOMAIN_NAME: https://${COMPOSE_PROJECT_NAME}.${DOMAIN}
+      SYMFONY__ENV__DOMAIN_NAME: https://pocket.${DOMAIN}
     networks:
       - default
       - traefik
