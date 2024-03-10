@@ -3,4 +3,4 @@
 set -o pipefail
 
 sysctl -- kernel.task_delayacct=1
-iotop --processes --accumulated --fullcmdline --only
+exec -- iotop --processes --accumulated --fullcmdline --only "$@"
