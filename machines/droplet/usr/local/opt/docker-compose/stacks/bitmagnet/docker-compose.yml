@@ -20,7 +20,6 @@ services:
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=3333
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`dht.{.+}.{.+$$}`)
     environment:
-      LOG_LEVEL: error
       POSTGRES_DB: bitmagnet
       POSTGRES_USER:
       POSTGRES_HOST:
