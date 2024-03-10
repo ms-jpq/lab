@@ -26,7 +26,6 @@ http {
   tcp_nopush                on;
   # brotli on;
   include                   /etc/nginx/mime.types;
-  include                   /usr/local/opt/nginx/conf/proxy_params.nginx;
   include                   /usr/local/opt/nginx/conf/ssl.nginx;
 
   map $http_upgrade $connection_upgrade {

@@ -4,7 +4,7 @@ server {
   include     /usr/local/opt/nginx/conf/server.d/http-alt.nginx;
 
   location / {
-    include          /usr/local/opt/nginx/conf/proxy_params.nginx;
+    include          /usr/local/opt/nginx/conf/http.d/proxy_params.nginx;
     proxy_set_header Host localhost;
     proxy_set_header Authorization "Basic Y3VwczpjdXBz";
     proxy_pass       http://unix:/run/cups/cups.sock:/;
