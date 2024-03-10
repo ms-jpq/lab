@@ -8,4 +8,8 @@ ProtectHome    = yes
 PrivateTmp     = yes
 ReadWritePaths = %T %S/local
 
+User           = 1000
+Group          = 1000
+
+StateDirectory = local/gh_mirror/%I
 ExecStart      = /usr/local/opt/gh_mirror/libexec/mirror.sh %S/local/gh_mirror %I

@@ -1,0 +1,12 @@
+[Unit]
+Description              = Github HTTP Service -- %I
+
+[Service]
+Restart                  = on-failure
+ProtectSystem            = strict
+ProtectHome              = yes
+RuntimeDirectoryPreserve = yes
+PrivateTmp               = yes
+
+# TODO: rclone can listen on unix sockets on later versions
+ExecStart                = rclone serve http --config=/dev/null --dir-cache-time=0 --addr=127.0.0.53:8123 --baseurl=/gh-mirror/%i -- %t/local/%J/mnt
