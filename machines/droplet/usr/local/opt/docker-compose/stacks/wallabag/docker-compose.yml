@@ -16,7 +16,7 @@ services:
         - --fail
         - --no-progress-meter
         - --max-time
-        - "3"
+        - "1"
         - --
         - 127.0.0.1:80
     labels:
@@ -40,10 +40,13 @@ services:
   migrate:
     image: *img
     userns_mode: auto
-    restart: unless-stopped
     environment: *env
+    entrypoint:
+      - sh
+      - -c
     command:
-      - migrate
+      - |-
+        /entrypoint.sh migrate || :
 
   redis:
     image: docker.io/library/redis:latest
