@@ -4,7 +4,7 @@ services:
     image: &img docker.io/wallabag/wallabag:latest
     userns_mode: auto
     restart: unless-stopped
-    depends_on:
+    depends_on: &deps
       migrate:
         condition: service_started
       redis:
@@ -40,6 +40,16 @@ services:
       - host.home.arpa:host-gateway
     volumes:
       - data:/var/www/wallabag/web/assets/images
+
+  import:
+    image: *img
+    userns_mode: auto
+    restart: unless-stopped
+    depends_on: *deps
+    environment: *env
+    command:
+      - import
+      - pocket
 
   migrate:
     image: *img
