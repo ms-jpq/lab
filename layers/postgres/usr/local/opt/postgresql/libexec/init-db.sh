@@ -46,7 +46,7 @@ for OPTION in "${OPTIONS[@]}"; do
   # ARGV+=(--set "$OPTION")
 done
 
-/usr/local/libexec/fs-alloc.sh "${PGDATA%/*}" "$PGDATA"
+/usr/local/libexec/fs-alloc.sh "$PGDATA"
 chown -v -- "$USER:$USER" "$PGDATA"
 
 "${RUN[@]}" "${ARGV[@]}"

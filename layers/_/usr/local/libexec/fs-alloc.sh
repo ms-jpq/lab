@@ -2,8 +2,8 @@
 
 set -o pipefail
 
-LIB="$1"
-ROOT="$2"
+ROOT="$(realpath -- "$1")"
+LIB="${ROOT%/*}"
 
 FS="$(stat --file-system --format %T -- "$LIB")"
 

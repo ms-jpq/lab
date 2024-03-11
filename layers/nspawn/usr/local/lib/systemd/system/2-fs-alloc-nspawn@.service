@@ -12,7 +12,6 @@ Slice               = machine.slice
 Type                = oneshot
 RemainAfterExit     = yes
 
-Environment         = LIB=%S/local/%J
 Environment         = ROOT=%S/local/%J/%I
 
-ExecStart           = /usr/local/libexec/fs-alloc.sh ${LIB} ${ROOT}
+ExecStart           = /usr/local/libexec/fs-alloc.sh ${ROOT}
