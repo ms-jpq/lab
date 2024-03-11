@@ -41,15 +41,15 @@ services:
     volumes:
       - data:/var/www/wallabag/web/assets/images
 
-  import:
-    image: *img
-    userns_mode: auto
-    restart: unless-stopped
-    depends_on: *deps
-    environment: *env
-    command:
-      - import
-      - pocket
+  # import:
+  #   image: *img
+  #   userns_mode: auto
+  #   restart: unless-stopped
+  #   depends_on: *deps
+  #   environment: *env
+  #   command:
+  #     - import
+  #     - pocket
 
   migrate:
     image: *img
