@@ -42,3 +42,5 @@ for F in /var/lib/local/postgresql/*/init.user; do
   /usr/local/libexec/hr.sh
   printf -- '\n'
 done
+
+/usr/local/libexec/hr-run.sh systemctl --no-pager status --lines 0 -- 'postgresql@*.service' || true

@@ -35,7 +35,7 @@ if "${PSQL[@]}" <<<"$USERS" | jq --exit-status --arg role "$ROLE" '.[] | select(
   exit 0
 fi
 
-PASSWORD="$(openssl rand -base64 64 | tr -d -- '\n')"
+PASSWORD="$(openssl rand -base64 64 | tr -d -- '\n' | tr -- '/' '-')"
 export -- PASSWORD
 
 # TODO: use :pass @ PG 16, \getenv is undefined in 14
