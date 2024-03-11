@@ -14,7 +14,7 @@ data "vultr_plan" "agenda" {
   }
   filter {
     name   = "vcpu_count"
-    values = [1]
+    values = [2]
   }
 }
 
