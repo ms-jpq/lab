@@ -31,7 +31,7 @@ CAT=(
 
 if [[ -f "$JOURNAL" ]]; then
   F="$(mktemp)"
-  journalctl --output json --reverse --lines 1 --merge --cursor-file "$F" >/dev/null
+  journalctl --output json --reverse --lines 0 --merge --cursor-file "$F" >/dev/null
   CURSOR="$(<"$F")"
   AT="Range: entries=$CURSOR"
   CAT+=(--header "$AT")
