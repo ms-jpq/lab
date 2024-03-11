@@ -13,7 +13,7 @@ nspawn: /usr/local/lib/systemd/system/2-nspawnd@.service
 
 clobber.nspawn:
 	shopt -u failglob
-	sudo -- /usr/local/opt/nspawn/libexec/fs-dealloc.sh $(NSPAWN_IMG) $(CACHE)
+	sudo -- /usr/local/libexec/fs-dealloc.sh $(NSPAWN_IMG) $(CACHE)
 	sudo -- rm -v -rf -- $(CACHE)/nspawn/*
 
 TARBUNTU := https://cloud-images.ubuntu.com/releases/$(VERSION_ID)/release/ubuntu-$(VERSION_ID)-server-cloudimg-$(GOARCH)-root.tar.xz

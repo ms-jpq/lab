@@ -17,7 +17,7 @@ qemu: 2-qemu-q35@.service
 
 clobber.qemu:
 	shopt -u failglob
-	sudo -- /usr/local/opt/qemu/libexec/fs-dealloc.sh $(QEMU_IMG) $(CACHE)
+	sudo -- /usr/local/libexec/fs-dealloc.sh $(QEMU_IMG) $(CACHE)
 	sudo -- rm -v -rf -- $(CACHE)/qemu/*
 
 pkg._: /etc/apt/sources.list.d/ppa_canonical-server_server-backports.list

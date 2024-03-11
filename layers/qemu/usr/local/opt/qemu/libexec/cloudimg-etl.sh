@@ -6,7 +6,7 @@ SRC="$1"
 DST="$2"
 DIR="${DST%/*}"
 BASE="${0%/*}"
-DEALLOC="$BASE/fs-dealloc.sh"
+DEALLOC='/usr/local/libexec/fs-dealloc.sh'
 LB=/var/lib/local
 LIB="$LB/qemu"
 

@@ -15,4 +15,4 @@ RemainAfterExit     = yes
 Environment         = LIB=%S/local/%J
 Environment         = ROOT=%S/local/%J/%I
 
-ExecStart           = /usr/local/opt/%J/libexec/fs-alloc.sh ${LIB} ${ROOT}
+ExecStart           = /usr/local/libexec/fs-alloc.sh ${LIB} ${ROOT}

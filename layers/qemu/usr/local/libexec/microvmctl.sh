@@ -2,4 +2,4 @@
 
 set -o pipefail
 
-export -- SERVICE_NAME='2-qemu-microvm' LIB='qemu' DEALLOC='/usr/local/opt/qemu/libexec/fs-dealloc.sh'
+export -- SERVICE_NAME='2-qemu-microvm' LIB='qemu'

@@ -94,8 +94,7 @@ remove)
       fi
     fi
 
-    # shellcheck disable=SC2154
-    "$DEALLOC" "$ROOT" /var/lib/local /var/lib/local/{nspawn,qemu}
+    /usr/local/libexec/fs-dealloc.sh "$ROOT" /var/lib/local /var/lib/local/{nspawn,qemu}
   done
   ;;
 *)

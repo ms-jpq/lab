@@ -2,4 +2,4 @@
 
 set -o pipefail
 
-export -- SERVICE_NAME='2-nspawnd' LIB='nspawn' DEALLOC='/usr/local/opt/nspawn/libexec/fs-dealloc.sh'
+export -- SERVICE_NAME='2-nspawnd' LIB='nspawn'

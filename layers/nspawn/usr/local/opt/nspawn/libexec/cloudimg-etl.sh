@@ -5,7 +5,7 @@ set -o pipefail
 SRC="$1"
 DST="$2"
 BASE="${0%/*}"
-DEALLOC="$BASE/fs-dealloc.sh"
+DEALLOC='/usr/local/libexec/fs-dealloc.sh'
 LB=/var/lib/local
 LIB="$LB/nspawn"
 USR_SYSTEMD="$DST/usr/local/lib/systemd"
