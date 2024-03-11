@@ -42,8 +42,13 @@ services:
         - redis-cli
         - incr
         - ping
+    volumes:
+      - data:/data
 
 networks:
   traefik:
     external: true
     name: traefik
+
+volumes:
+  data:

@@ -62,6 +62,8 @@ services:
         - redis-cli
         - incr
         - ping
+    volumes:
+      - data:/data
 
 networks:
   traefik:
