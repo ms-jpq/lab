@@ -11,33 +11,9 @@ services:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`postgres.{.+}.{.+$$}`)
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.middlewares=${COMPOSE_PROJECT_NAME}
-      - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}.redirectRegex.regex=(^https?://[^/]+/$$)
-      - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}.redirectRegex.replacement=$${1}?pgsql=pg&username=${COMPOSE_PROJECT_NAME}&db=${COMPOSE_PROJECT_NAME}
     networks:
       - default
       - traefik
-
-  pg:
-    image: docker.io/library/postgres:latest
-    userns_mode: auto
-    restart: unless-stopped
-    healthcheck:
-      test:
-        - CMD
-        - pg_isready
-        - --username
-        - ${COMPOSE_PROJECT_NAME}
-        - --dbname
-        - ${COMPOSE_PROJECT_NAME}
-    environment:
-      POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
-      POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
-      POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
-    ports:
-      - 5432:5432
-    volumes:
-      - data:/var/lib/postgresql/data
 
 networks:
   traefik:
