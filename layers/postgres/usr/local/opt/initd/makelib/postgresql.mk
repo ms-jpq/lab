@@ -15,5 +15,5 @@ endef
 $(foreach cluster,$(PSQL_DATABASES),$(eval $(call PSQL_TEMPLATE,$(cluster))))
 
 psql: /usr/local/opt/postgresql/pgbouncer.database.ini
-/usr/local/opt/postgresql/pgbouncer.database.ini: /usr/local/opt/postgresql/libexec/init-bouncer.sh $(PSQL_CLUSTERS)
+/usr/local/opt/postgresql/pgbouncer.database.ini: /usr/local/opt/postgresql/libexec/init-bouncer.sh /usr/local/opt/postgresql/pgbouncer.ini $(PSQL_CLUSTERS)
 	sudo -- '$<' '$@' $(PSQL_DATABASES)
