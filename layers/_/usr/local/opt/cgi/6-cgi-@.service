@@ -7,7 +7,7 @@ After            = %p.socket
 
 [Service]
 Type             = oneshot
-SyslogIdentifier = %p
+SyslogIdentifier = %n
 
 ProtectSystem    = strict
 ProtectHome      = yes
