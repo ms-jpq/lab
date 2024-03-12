@@ -12,6 +12,8 @@ services:
     mem_swappiness: 0
     environment:
       WARP_SLEEP: 2
+    tmpfs:
+      - /run
     networks:
       - default
       - traefik
