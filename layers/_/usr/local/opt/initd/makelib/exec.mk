@@ -1,5 +1,5 @@
 .PHONY: reload
 
 reload: | all
-	systemctl daemon-reload --no-pager --show-transaction
-	./libexec/systemd-reload.sh
+	sudo -- systemctl daemon-reload --no-pager --show-transaction
+	sudo -- systemctl --no-pager --show-transaction --failed --no-block -- restart '*'
