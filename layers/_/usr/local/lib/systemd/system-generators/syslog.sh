@@ -4,8 +4,11 @@ set -o pipefail
 
 RUN="$1"
 
+CONF=/usr/local/opt/-.service
 for I in {0..9}; do
   DROPIN="$RUN/$I-.service.d"
   mkdir -v -p -- "$DROPIN"
-  cp -v -f -- /usr/local/opt/-.service "$DROPIN/-.conf"
+  NAME="$DROPIN/-.conf"
+  cp -v -f -- "$CONF" "$NAME"
+  CONF="$NAME"
 done
