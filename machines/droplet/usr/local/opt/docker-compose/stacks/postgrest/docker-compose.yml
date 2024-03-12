@@ -25,13 +25,14 @@ services:
     healthcheck:
       test:
         - CMD
-        - wget
-        - --quiet
-        - --spider
-        - --timeout
+        - curl
+        - --fail
+        - --location
+        - --no-progress-meter
+        - --max-time
         - "1"
         - --
-        - localhost:8080
+        - 127.0.0.1:8080
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}2.loadbalancer.server.port=8080
