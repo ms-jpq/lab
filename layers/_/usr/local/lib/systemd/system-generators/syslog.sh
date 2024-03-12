@@ -10,5 +10,6 @@ for I in {0..9}; do
   mkdir -v -p -- "$DROPIN"
   NAME="$DROPIN/-.conf"
   cp -v -f -- "$CONF" "$NAME"
+  chmod g+r,o+r -- "$NAME"
   CONF="$NAME"
 done
