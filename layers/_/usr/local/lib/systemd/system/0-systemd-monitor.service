@@ -1,6 +1,6 @@
 [Unit]
 Description         = Polling for failed services
-ConditionPathExists = /usr/local/libexec/hr-run.sh
+ConditionPathExists = /usr/local/opt/systemd-monitor/libexec/cron.sh
 
 [Service]
 Type                = oneshot

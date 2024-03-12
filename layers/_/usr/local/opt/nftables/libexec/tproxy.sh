@@ -8,8 +8,8 @@ TABLE=100
 
 for P in "${PROTO[@]}"; do
   # ((TABLE++))
-  /usr/local/libexec/hr-run.sh ip "$P" route add local default dev lo table "$TABLE"
+  ip "$P" route add local default dev lo table "$TABLE"
   for MARK in "${MARKS[@]}"; do
-    /usr/local/libexec/hr-run.sh ip "$P" rule add fwmark "$MARK" lookup "$TABLE"
+    ip "$P" rule add fwmark "$MARK" lookup "$TABLE"
   done
 done

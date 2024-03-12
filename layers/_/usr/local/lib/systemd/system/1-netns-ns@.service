@@ -14,8 +14,8 @@ RemainAfterExit     = yes
 RuntimeDirectory    = local/netns/%I
 Environment         = NETNS=%I
 
-ExecStart           = /usr/local/libexec/hr-run.sh ip netns add ${NETNS}
-ExecStart           = /usr/local/libexec/hr-run.sh ip --netns ${NETNS} link set dev lo up
-ExecStart           = /usr/local/libexec/hr-run.sh cp -v -f -- /usr/local/opt/netns/resolv.conf %t/local/netns/%I/resolv.conf
-ExecStop            = -/usr/local/libexec/hr-run.sh ip netns del ${NETNS}
+ExecStart           = ip netns add ${NETNS}
+ExecStart           = ip --netns ${NETNS} link set dev lo up
+ExecStart           = cp -v -f -- /usr/local/opt/netns/resolv.conf %t/local/netns/%I/resolv.conf
+ExecStop            = -ip netns del ${NETNS}
 ExecStopPost        = rm -v -fr -- %t/local/netns/%I

@@ -4,4 +4,4 @@ set -o pipefail
 
 UNIT="$1"
 NAME="${UNIT%-*}"
-/usr/local/libexec/hr-run.sh podman network rm --force -- "systemd-$NAME"
+exec -- podman network rm --force -- "systemd-$NAME"

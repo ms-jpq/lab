@@ -27,4 +27,4 @@ case $# in
   ;;
 esac
 
-exec -- /usr/local/libexec/hr-run.sh zfs diff -F -- "$LHS" "$RHS"
+exec -- zfs diff -F -- "$LHS" "$RHS"

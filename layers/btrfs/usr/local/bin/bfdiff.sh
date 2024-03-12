@@ -27,4 +27,4 @@ case $# in
   ;;
 esac
 
-exec -- /usr/local/libexec/hr-run.sh btrfs send --no-data -p -- "$LHS" "$RHS"
+exec -- btrfs send --no-data -p -- "$LHS" "$RHS"

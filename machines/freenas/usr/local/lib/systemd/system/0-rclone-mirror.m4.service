@@ -20,4 +20,4 @@ TemporaryFileSystem = /media:ro
 BindReadOnlyPaths   = /media/PATH:/media/PATH
 # ], m5_assert([ENV_RCLONE_LOCAL]))
 
-ExecStart           = /usr/local/libexec/hr-run.sh /usr/local/opt/rclone/libexec/sync.sh m5_assert([ENV_RCLONE_REMOTE])
+ExecStart           = /usr/local/opt/rclone/libexec/sync.sh m5_assert([ENV_RCLONE_REMOTE])
