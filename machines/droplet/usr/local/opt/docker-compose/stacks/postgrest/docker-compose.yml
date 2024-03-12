@@ -4,6 +4,24 @@ services:
     image: docker.io/postgrest/postgrest:latest
     userns_mode: auto
     restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=3000
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`postgrest.{.+}.{.+$$}`)
+    environment:
+      PGRST_DB_URI:
+      PGRST_OPENAPI_SERVER_PROXY_URI: http://[::]:3000
+    networks:
+      - default
+      - traefik
+
+  swagger:
+    image: docker.io/swaggerapi/swagger-ui:latest
+    depends_on:
+      srv:
+        condition: service_started
+    userns_mode: auto
+    restart: unless-stopped
     healthcheck:
       test:
         - CMD
@@ -16,26 +34,15 @@ services:
         - localhost:8080
     labels:
       - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=3000
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`postgrest.{.+}.{.+$$}`)
-    environment:
-      PGRST_DB_URI:
-
-  swagger:
-    image: docker.io/swaggerapi/swagger-ui:latest
-    userns_mode: auto
-    restart: unless-stopped
-    labels:
-      - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`postgreswagger.{.+}.{.+$$}`)
     environment:
       API_URL: http://srv:3000/
+    networks:
+      - default
+      - traefik
 
 networks:
-  default:
+  traefik:
     external: true
     name: traefik
-
-volumes:
-  data:
