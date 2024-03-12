@@ -21,7 +21,10 @@ esac
 
 ARGZ=("$@")
 if [[ -z "${ARGV:-""}" ]] && ((USAGE < (10 ** 8))); then
-  for ISO in /var/cache/local/qemu/*.iso; do
+  FIND=(find /var/cache/local/qemu -type f -name '*.iso' -exec stat --printf '%s %n\0' -- '{}' ';')
+  SORT=(sort --zero-terminated --reverse --numeric-sort --key '1,1')
+  CUT=(cut --zero-terminated --delimiter ' ' --fields 2)
+  "${FIND[@]}" | "${SORT[@]}" | "${CUT[@]}" | while IFS= read -r -d '' -- ISO; do
     ARGZ+=(--disc "$ISO")
   done
 fi
