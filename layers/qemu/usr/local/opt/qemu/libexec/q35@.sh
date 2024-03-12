@@ -19,11 +19,11 @@ zfs)
   ;;
 esac
 
-ARGV=("$@")
-if ! (($#)) && ((USAGE < (10 ** 8))); then
+ARGZ=("$@")
+if [[ -z "${ARGV:-""}" ]] && ((USAGE < (10 ** 8))); then
   for ISO in /var/cache/local/qemu/*.iso; do
-    ARGV+=(--disc "$ISO")
+    ARGZ+=(--disc "$ISO")
   done
 fi
 
-exec -- "${0%/*}/../bin/q35.sh" "${ARGV[@]}"
+exec -- "${0%/*}/../bin/q35.sh" "${ARGZ[@]}"
