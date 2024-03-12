@@ -34,11 +34,11 @@ for F in /var/lib/local/postgresql/*/init.user; do
   NAME="${NAME##*/}"
   printf -- '%s\n' "$NAME"
   LINE="$(<"$F")"
-  printf -- '%s\n' "$LINE"
   NAME="${LINE%%' '*}"
-  PASS="$(cut --delimiter ' ' --fields 3- <<<"$LINE" | jq --exit-status --raw-input --raw-output '@uri')"
+  PASSWD="$(cut --delimiter ' ' --fields 3- <<<"$LINE")"
+  PASS="$(jq --exit-status --raw-input --raw-output '@uri' <<<"$PASSWD")"
   printf -v PSQL -- '%q ' psql -- "postgres://$NAME:$PASS@$HOST/$NAME"
-  printf -- '%s\n' "$PSQL"
+  printf -- '%s\n' "postgres://$NAME:$PASSWD@$HOST/$NAME" "$PSQL"
   /usr/local/libexec/hr.sh
   printf -- '\n'
 done

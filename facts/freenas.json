@@ -43,7 +43,12 @@
   ],
   "ENV_MACVLAN_IFS": ["enp108s0", "eno1"],
   "ENV_NFS_EXPORTS": ["downloads", "media", "wallpapers"],
-  "ENV_PG_CLUSTERS": ["14/miniflux", "14/shiori", "14/wallabag"],
+  "ENV_PG_CLUSTERS": [
+    "14/miniflux",
+    "14/postgrest",
+    "14/shiori",
+    "14/wallabag"
+  ],
   "ENV_PUBLIC_SITES": [],
   "ENV_RCLONE_LOCAL": ["gray", "hao", "media", "misc", "wallpapers"],
   "ENV_RCLONE_REMOTE": "jotta-archive:/",
