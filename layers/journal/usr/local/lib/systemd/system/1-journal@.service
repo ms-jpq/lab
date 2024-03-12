@@ -1,18 +1,18 @@
 [Unit]
-Description      = Tail Remote Journal -- %I
-After            = network-online.target
+Description    = Tail Remote Journal -- %I
+After          = network-online.target
 
 [Service]
-Type             = oneshot
-Restart          = on-failure
-RestartSec       = 2s
+Type           = oneshot
+Restart        = on-failure
+RestartSec     = 2s
 
-ProtectSystem    = strict
-ProtectHome      = yes
-PrivateTmp       = yes
-Group            = systemd-journal
+ProtectSystem  = strict
+ProtectHome    = yes
+PrivateTmp     = yes
+Group          = systemd-journal
 
-ReadWritePaths   = %T %V %S/local/%J
+ReadWritePaths = %T %V %S/local/%J
 
-Environment      = TIMEOUT=60
-ExecStart        = /usr/local/opt/journal/libexec/rtail.sh %I %S/local/%J/%I.journal ${TIMEOUT}
+Environment    = TIMEOUT=60
+ExecStart      = /usr/local/opt/journal/libexec/rtail.sh %I %S/local/%J/%I.journal ${TIMEOUT}
