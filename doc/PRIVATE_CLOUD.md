@@ -172,3 +172,23 @@ sequenceDiagram
     end
   end
 ```
+
+## Durable Postgres IaC
+
+- Continuous & incremental snapshots
+
+```mermaid
+flowchart LR
+  client1["client"] -- user1:pass2@host/dbname1 --> pg_bouncer["proxy"]
+  client2["client"] -- user1:pass2@host/dbname2 --> pg_bouncer
+  client3["client"] -- user2:pass3@host/dbname3 --> pg_bouncer
+  pg_bouncer --> postgres1["postgres"]
+  pg_bouncer --> postgres2["postgres"]
+  pg_bouncer --> postgres3["postgres"]
+  postgres1 --> cow1["copy on write filesystem"]
+  postgres2 --> cow2["copy on write filesystem"]
+  postgres3 --> cow3["copy on write filesystem"]
+  cow1 --> blk["abstract block device"]
+  cow2 --> blk
+  cow3 --> blk
+```

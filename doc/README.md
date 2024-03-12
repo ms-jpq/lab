@@ -24,7 +24,7 @@
 
 - [x] GPU (CUDA & mdev) VM / containers
 
-- [x] Durable Postgres IAC
+- [x] Durable Postgres IaC
 
 - [x] Log aggregation
 
