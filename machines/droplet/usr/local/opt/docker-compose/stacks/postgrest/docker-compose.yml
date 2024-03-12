@@ -34,8 +34,8 @@ services:
         - localhost:8080
     labels:
       - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`postgreswagger.{.+}.{.+$$}`)
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}2.loadbalancer.server.port=8080
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.rule=HostRegexp(`postgreswagger.{.+}.{.+$$}`)
     environment:
       API_URL: http://srv:3000/
     networks:
