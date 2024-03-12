@@ -24,6 +24,9 @@ services:
     # network_mode: container:warp-srv-1
     volumes:
       - ./conf.yml:/invidious/config/config.yml:ro
+    networks:
+      - default
+      - traefik
 
   pg:
     image: docker.io/library/postgres:latest
@@ -52,4 +55,3 @@ networks:
 
 volumes:
   data:
-  warp:
