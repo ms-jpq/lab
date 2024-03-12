@@ -76,6 +76,9 @@ remove)
     set +x
     /usr/local/libexec/fs-dealloc.sh "$ROOT" /var/lib/local /var/lib/local/qemu
   done
+  if ((${#SOCKS[@]})); then
+    sctl stop -- "${SOCKS[@]}"
+  fi
   ;;
 pin | unpin)
   microvmctl.sh "${ARGV[@]}"

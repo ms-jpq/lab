@@ -24,6 +24,8 @@
 
 - [x] GPU (CUDA & mdev) VM / containers
 
+- [x] Durable Postgres IAC
+
 - [x] Log aggregation
 
 - [x] HTTP + IMAP single sign on
