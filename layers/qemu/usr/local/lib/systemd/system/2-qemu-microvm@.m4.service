@@ -21,7 +21,6 @@ PartOf              = machine.slice
 
 [[Service]]
 Slice               = machine.slice
-Restart             = on-failure
 ProtectSystem       = strict
 ProtectHome         = tmpfs
 PrivateTmp          = yes
