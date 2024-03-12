@@ -8,7 +8,6 @@ services:
       redis:
         condition: service_healthy
     mem_swappiness: 0
-    cpu_shares: 8192
     healthcheck:
       test:
         - CMD
@@ -34,7 +33,6 @@ services:
     userns_mode: auto
     restart: unless-stopped
     mem_swappiness: 0
-    cpu_shares: 8192
     healthcheck:
       test:
         - CMD
