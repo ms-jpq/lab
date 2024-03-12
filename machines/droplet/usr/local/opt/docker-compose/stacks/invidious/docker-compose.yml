@@ -21,7 +21,7 @@ services:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=3000
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`youtube.{.+}.{.+$$}`)
-    network_mode: container:warp-srv-1
+    # network_mode: container:warp-srv-1
     volumes:
       - ./conf.yml:/invidious/config/config.yml:ro
 
@@ -41,7 +41,7 @@ services:
       POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
       POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
-    network_mode: container:warp-srv-1
+    # network_mode: container:warp-srv-1
     volumes:
       - data:/var/lib/postgresql/data
 

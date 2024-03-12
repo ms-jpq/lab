@@ -19,10 +19,10 @@ services:
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=5000
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`bing.{.+}.{.+$$}`)
     environment:
-      WHOOGLE_CONFIG_URL:
-      WHOOGLE_CONFIG_NEW_TAB: true
-      WHOOGLE_CONFIG_VIEW_IMAGE: true
       # WHOOGLE_PROXY_LOC: warp-srv-1:1080
+      WHOOGLE_CONFIG_NEW_TAB: true
+      WHOOGLE_CONFIG_URL:
+      WHOOGLE_CONFIG_VIEW_IMAGE: true
       WHOOGLE_PROXY_TYPE: socks5
     networks:
       - default

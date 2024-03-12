@@ -15,9 +15,9 @@ server:
 
 outgoing:
   max_request_timeout: 6.0
-  proxies:
-    all://:
-      - socks5://warp-srv-1:1080
+  # proxies:
+  #   all://:
+  #     - socks5://warp-srv-1:1080
 
 search:
   autocomplete: google

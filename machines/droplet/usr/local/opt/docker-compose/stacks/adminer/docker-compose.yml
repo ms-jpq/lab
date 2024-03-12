@@ -4,9 +4,6 @@ services:
     image: docker.io/library/adminer:latest
     userns_mode: auto
     restart: unless-stopped
-    depends_on:
-      pg:
-        condition: service_healthy
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080

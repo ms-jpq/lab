@@ -24,7 +24,7 @@ services:
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`pocket.{.+}.{.+$$}`)
     environment: &env
-      HTTP_PROXY: http://warp-srv-1:1080
+      # HTTP_PROXY: http://warp-srv-1:1080
       SYMFONY__ENV__DATABASE_DRIVER: pdo_pgsql
       SYMFONY__ENV__DATABASE_HOST:
       SYMFONY__ENV__DATABASE_NAME: wallabag

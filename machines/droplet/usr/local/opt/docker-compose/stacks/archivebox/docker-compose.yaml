@@ -20,10 +20,10 @@ services:
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8000
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`archive.{.+}.{.+$$}`)
     environment:
+      # HTTP_PROXY: http://warp-srv-1:1080
       ADMIN_PASSWORD: None
       ADMIN_USERNAME: None
       ALLOWED_HOSTS: "*"
-      HTTP_PROXY: http://warp-srv-1:1080
       MEDIA_MAX_SIZE: 50m
       PGID: 1000
       PUBLIC_ADD_VIEW: True

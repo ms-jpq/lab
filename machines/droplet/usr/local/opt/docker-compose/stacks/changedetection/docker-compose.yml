@@ -9,9 +9,9 @@ services:
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=5000
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`changes.{.+}.{.+$$}`)
     environment:
+      # HTTPS_PROXY: socks5h://warp-srv-1:1080
+      # HTTP_PROXY: socks5h://warp-srv-1:1080
       BASE_URL:
-      HTTP_PROXY: socks5h://warp-srv-1:1080
-      HTTPS_PROXY: socks5h://warp-srv-1:1080
       USE_X_SETTINGS: 1
     volumes:
       - /var/lib/local/${COMPOSE_PROJECT_NAME}:/datastore
