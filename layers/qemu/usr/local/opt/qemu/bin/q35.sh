@@ -205,8 +205,6 @@ for VF in "${VFIO[@]}"; do
   ARGV+=(-device "vfio-pci-nohotplug,host=$VF")
 done
 
-ARGV+=(-device 'intel-iommu,intremap=on,caching-mode=on')
-
 for MDEV in "${MDEVS[@]}"; do
   # display=on,ramfb=on,x-igd-opregion=on
   ARGV+=(-device "vfio-pci-nohotplug,sysfsdev=$MDEV")
