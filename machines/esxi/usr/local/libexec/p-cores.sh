@@ -11,4 +11,7 @@ read -r -d '' -- FILTER <<-'JQ' || true
 [.cpus[] | select(.core | IN($pcores[])) | .cpu] | join(",")
 JQ
 
+printf -- '%s\t' 'CORES:'
+"${JQ[@]}" --raw-output 'join(",")' <<<"$P_CORES"
+printf -- '%s\t' 'CPUS:'
 "${JQ[@]}" --raw-output --argjson pcores "$P_CORES" "$FILTER" <<<"$CPUS"
