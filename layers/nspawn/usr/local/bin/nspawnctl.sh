@@ -52,18 +52,8 @@ unpin)
     "$HR" chmod -v -t -- "$LIB/$MACH"
   done
   ;;
-start)
-  sctl start -- "${SERVICES[@]}"
-  ;;
-restart)
-  sctl restart -- "${SERVICES[@]}"
-  ;;
-stop)
-  sctl stop -- "${SERVICES[@]}"
-  ;;
-kill)
-  sctl kill -- "${SERVICES[@]}"
-  sctl reset-failed -- "${SERVICES[@]}"
+start | restart | stop | kill)
+  sctl "$ACTION" -- "${SERVICES[@]}"
   ;;
 enable)
   for MACH in "${MACHINES[@]}"; do

@@ -31,18 +31,8 @@ case "$ACTION" in
   "$HR" tree --dirsfirst -F -a -L 3 -- "$LIB"
   sctl status --lines 0 -- '2-qemu-q35@*.service'
   ;;
-start)
-  sctl start -- "${SERVICES[@]}"
-  ;;
-restart)
-  sctl restart -- "${SERVICES[@]}"
-  ;;
-stop)
-  sctl stop -- "${SERVICES[@]}"
-  ;;
-kill)
-  sctl kill -- "${SERVICES[@]}"
-  sctl reset-failed -- "${SERVICES[@]}"
+start | restart | stop | reload | kill)
+  sctl "$ACTION" -- "${SERVICES[@]}"
   ;;
 enable | lazy)
   for MACH in "$@"; do
