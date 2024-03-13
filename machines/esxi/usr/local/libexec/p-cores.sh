@@ -8,10 +8,12 @@ JQ=(jq --exit-status)
 P_CORES="$("${JQ[@]}" '.cpus[].core' <<<"$CPUS" | sort | uniq --repeated | "${JQ[@]}" --slurp)"
 
 read -r -d '' -- FILTER <<-'JQ' || true
-[.cpus[] | select(.core | IN($pcores[])) | .cpu] | join(",")
+[.cpus[] | select(.core | IN($pcores[])) | .cpu | tonumber] as $cpus |
+{
+  cores: $pcores | map(tonumber),
+  cpus: $cpus,
+  threads: [$cpus[] | select(. % 2 == 0)]
+}
 JQ
 
-printf -- '%s\t' 'CORES:'
-"${JQ[@]}" --raw-output 'join(",")' <<<"$P_CORES"
-printf -- '%s\t' 'CPUS:'
-"${JQ[@]}" --raw-output --argjson pcores "$P_CORES" "$FILTER" <<<"$CPUS"
+"${JQ[@]}" --argjson pcores "$P_CORES" --compact-output "$FILTER" <<<"$CPUS"
