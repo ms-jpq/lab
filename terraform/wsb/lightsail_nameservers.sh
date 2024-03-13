@@ -15,6 +15,6 @@ AWS=(
 )
 
 read -r -d '' -- JQJQ <<-'JQ' || true
-.domains[] | select([.name] | inside($domains)) | { (.name): ([.domainEntries[] | select(.type == "NS") | .target] | tojson) }
+.domains[] | select(.name | IN($domains[])) | { (.name): ([.domainEntries[] | select(.type == "NS") | .target] | tojson) }
 JQ
 "${AWS[@]}" | "${JQ[@]}" --argjson domains "$DOMAINS" "$JQJQ" | "${JQ[@]}" --slurp 'add'

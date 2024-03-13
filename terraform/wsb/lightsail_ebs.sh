@@ -15,6 +15,6 @@ AWS=(
 )
 
 read -r -d '' -- JQJQ <<-'JQ' || true
-[.disks[] | select([.name] | inside($disks)) | { (.name): (. | tojson) }] | add // {}
+[.disks[] | select(.name | IN($disks[])) | { (.name): (. | tojson) }] | add // {}
 JQ
 "${AWS[@]}" | "${JQ[@]}" --argjson disks "$DISKS" "$JQJQ"
