@@ -21,7 +21,10 @@ PartOf              = machine.slice
 
 [[Service]]
 Slice               = machine.slice
+Type                = forking
+PIDFile             = %t/local/qemu/%I/qemu.pid
 Restart             = on-failure
+
 ProtectSystem       = strict
 ProtectHome         = tmpfs
 PrivateTmp          = yes

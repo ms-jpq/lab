@@ -119,6 +119,16 @@ unset -- IFS
 
 ARGV=(
   qemu-system-x86_64
+)
+
+if [[ -n "${PIDFILE:-""}" ]]; then
+  ARGV+=(
+    -pidfile "$PIDFILE"
+    -daemonize
+  )
+fi
+
+ARGV+=(
   -compat 'deprecated-input=crash'
   -nodefaults
   -no-user-config
