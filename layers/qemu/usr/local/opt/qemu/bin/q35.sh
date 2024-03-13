@@ -186,12 +186,14 @@ if [[ -n "${BRIDGE:-""}" ]]; then
   ARGV+=(-nic "bridge,$NIC,br=$BRIDGE")
 fi
 
+FD=3
 for MACVTAP in "${TAPS[@]}"; do
   SYS="/sys/class/net/$MACVTAP"
   IFI="$(<"$SYS/ifindex")"
   MACADDR="$(<"$SYS/address")"
-  exec 3<>"/dev/tap$IFI"
-  ARGV+=(-nic "tap,fd=3,$NIC,mac=$MACADDR")
+  exec {FD}<>"/dev/tap$IFI"
+  ARGV+=(-nic "tap,fd=$FD,$NIC,mac=$MACADDR")
+  ((FD++))
 done
 
 if [[ -n "${INITIATOR_NAME:-""}" ]]; then
