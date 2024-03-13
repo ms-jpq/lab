@@ -3,7 +3,7 @@
 set -o pipefail
 
 if [[ ! -t 1 ]]; then
-  exec >&3
+  exec <&3 >&3
 
 fi
 
