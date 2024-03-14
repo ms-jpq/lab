@@ -177,7 +177,7 @@ const append = (sym, root, json) => {
       ...(function* () {
         if (CONTAINER_NAME) {
           yield CONTAINER_NAME;
-        } else if (SYSLOG_IDENTIFIER) {
+        } else if (SYSLOG_IDENTIFIER && SYSLOG_IDENTIFIER !== _SYSTEMD_UNIT) {
           yield SYSLOG_IDENTIFIER;
         }
       })(),
