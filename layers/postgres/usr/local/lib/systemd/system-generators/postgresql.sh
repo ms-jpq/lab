@@ -3,12 +3,17 @@
 set -o pipefail
 
 RUN="$1"
-WANTS="$RUN/multi-user.target.wants"
+WANTS="$RUN/postgresql.service.wants"
+
+# shellcheck disable=SC1091
+source -- /usr/local/etc/default/postgresql.env
+
+# shellcheck disable=SC2154
+readarray -t -d ',' -- CLUSTERS <<<"$PG_CLUSTERS"
 
 mkdir -v -p -- "$WANTS"
-for CLUSTER in /var/lib/local/postgresql/*/PG_VERSION; do
-  CLUSTER="${CLUSTER%/*}"
-  CLUSTER="${CLUSTER##*/}"
+for CLUSTER in "${CLUSTERS[@]}"; do
+  CLUSTER="$(systemd-escape -- "${CLUSTER//[[:space:]]/''}")"
   VERSION="${CLUSTER%%'-'*}"
   NAME="${CLUSTER#*'-'}"
   ln -v -sf -- /usr/lib/systemd/system/postgresql@.service "$WANTS/postgresql@$VERSION-$NAME.service"
