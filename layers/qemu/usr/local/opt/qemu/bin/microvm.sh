@@ -86,7 +86,7 @@ ARGV+=(
   -no-user-config
   -nographic
   -machine 'microvm,x-option-roms=off,pit=off,pic=off,isa-serial=off,rtc=off,accel=kvm'
-  -cpu host
+  -cpu 'host,migratable=off'
   -smp "$CPUS"
   -m "${MEM:-"size=1G"}"
 )
