@@ -1,4 +1,5 @@
 {
+  "ENV_BTRFS_MNTS": ["fuchsia:/var/lib/local"],
   "ENV_CERTBOT_SITES": [
     "12ft.ENV_DOMAIN",
     "ENV_DOMAIN",
