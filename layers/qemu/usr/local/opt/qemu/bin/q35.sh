@@ -220,8 +220,13 @@ for IDX in "${!DRIVES[@]}"; do
   )
 done
 
-for CD in "${CDS[@]}"; do
-  ARGV+=(-drive "if=ide,media=cdrom,file=$CD")
+for IDX in "${!CDS[@]}"; do
+  CD="${CDS[$IDX]}"
+  ID="cd$IDX"
+  ARGV+=(
+    -blockdev "${BLKOPTS}file.driver=file,read-only=on,node-name=$ID,file.filename=$CD"
+    -device "virtio-blk-pci-non-transitional,drive=$ID"
+  )
 done
 
 for VF in "${VFIO[@]}"; do
