@@ -119,6 +119,7 @@ unset -- IFS
 
 ARGV=(
   qemu-system-x86_64
+  -name "$(uuidgen),debug-threads=on"
 )
 
 if [[ -n "${PIDFILE:-""}" ]]; then

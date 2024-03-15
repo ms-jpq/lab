@@ -71,6 +71,7 @@ fi
 
 ARGV=(
   qemu-system-x86_64-microvm
+  -name "$(uuidgen),debug-threads=on"
 )
 
 if [[ -n "${PIDFILE:-""}" ]]; then
