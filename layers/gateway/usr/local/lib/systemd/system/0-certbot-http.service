@@ -2,6 +2,7 @@
 Description         = Certbot renew -- %i
 After               = 0-certbot-update.service
 
+RequiresMountsFor   = %S/local
 ConditionPathExists = %C/local/certbot/venv/bin/certbot
 
 [Service]
