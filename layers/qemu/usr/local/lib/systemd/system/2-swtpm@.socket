@@ -1,0 +1,9 @@
+[Unit]
+Description      = SWTPM -- %t/libvirt/qemu/swtpm/%I.sock
+StopWhenUnneeded = yes
+
+PartOf           = 2-qemu-q35@%i.service
+
+[Socket]
+RemoveOnStop     = yes
+ListenStream     = %t/libvirt/qemu/swtpm/%I.sock

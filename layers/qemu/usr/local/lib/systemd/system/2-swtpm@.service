@@ -1,27 +1,22 @@
 [Unit]
-Description              = SWTPM -- %t/libvirt/qemu/swtpm/%I.sock
-StopWhenUnneeded         = yes
-CollectMode              = inactive
+Description     = SWTPM -- %t/libvirt/qemu/swtpm/%I.service
 
-PartOf                   = 2-qemu-q35@%i.service
+BindsTo         = %N.socket
+After           = %N.socket
 
 [Service]
-Slice                    = machine.slice
-ProtectSystem            = strict
-ProtectHome              = yes
-RuntimeDirectory         = libvirt/qemu/swtpm
-RuntimeDirectoryPreserve = yes
-PrivateTmp               = yes
-ReadWritePaths           = %t/libvirt/qemu/swtpm %T
+Slice           = machine.slice
+ProtectSystem   = strict
+ProtectHome     = yes
+PrivateTmp      = yes
+ReadWritePaths  = %T
 
-User                     = swtpm
-Group                    = swtpm
+User            = swtpm
+Group           = swtpm
 
-Environment              = TPM_PATH=%T/%I
-Environment              = TPM_SOCK=%t/libvirt/qemu/swtpm/%I.sock
+AppArmorProfile = unconfined
+Environment     = TPM_PATH=%T/%I
 
-ExecStartPre             = mkdir -v -p -- ${TPM_PATH}
-# ExecStartPre             = swtpm_setup --tpm-state ${TPM_PATH} --tpm2 --create-platform-cert --display
-ExecStart                = swtpm socket --tpmstate dir=${TPM_PATH} --ctrl type=unixio,path=${TPM_SOCK} --tpm2
-ExecStartPost            = /usr/local/libexec/retry.sh 0.1 stat -- ${TPM_SOCK}
-ExecStopPost             = rm -v -fr -- ${TPM_SOCK}
+ExecStartPre    = mkdir -v -p -- ${TPM_PATH}
+# ExecStartPre   = swtpm_setup --tpm-state ${TPM_PATH} --tpm2 --create-platform-cert --display
+ExecStart       = swtpm socket --tpmstate dir=${TPM_PATH} --ctrl type=unixio,fd=3 --tpm2
