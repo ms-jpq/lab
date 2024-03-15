@@ -3,7 +3,7 @@
 set -o pipefail
 
 RUN="$1"
-WANTS="$RUN/multi-user.target.wants"
+WANTS="$RUN/local-fs.target.wants"
 
 # shellcheck disable=SC1091
 source -- /usr/local/etc/default/btrfs.env
@@ -17,9 +17,9 @@ for MOUNT in "${MOUNTS[@]}"; do
   LABEL="${MOUNT%%':'*}"
   DIR="$(systemd-escape -- "${MOUNT#*':/'}")"
   MNT="$RUN/$DIR.mount"
-  AUTO="$RUN/$DIR.automount"
+  AUTO="$DIR.automount"
   LABEL="$LABEL" envsubst </usr/local/opt/mount/btrfs@.mount >"$MNT"
-  cp -v -f -- /usr/local/opt/mount/@.automount "$AUTO"
-  chmod g+r,o+r -- "$MNT" "$AUTO"
+  cp -v -f -- /usr/local/opt/mount/@.automount "$RUN/$AUTO"
+  chmod g+r,o+r -- "$MNT" "$RUN/$AUTO"
   ln -v -sf -- "../$AUTO" "$WANTS/$AUTO"
 done
