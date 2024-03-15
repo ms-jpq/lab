@@ -15,7 +15,7 @@
 + iperf3
 + jq
 + language-pack-zh-hans
-+ linux-generic-hwe-[]m5_assert([ENV_VERSION_ID])
++ linux-lowlatency-hwe-[]m5_assert([ENV_VERSION_ID])
 + m4
 + moreutils
 + mosh
