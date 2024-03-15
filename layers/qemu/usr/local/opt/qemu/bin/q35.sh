@@ -173,7 +173,7 @@ ARGV+=(
 if [[ -n "${VNC:-""}" ]]; then
   ARGV+=(
     -display "vnc=unix:$VNC"
-    -device 'virtio-gpu-pci'
+    -device 'virtio-vga'
     # TODO model=virtio-sound-pci @ qemu8.2
     -audio 'driver=none,model=hda'
   )
