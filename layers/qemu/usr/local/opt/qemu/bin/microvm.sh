@@ -100,15 +100,17 @@ KERNEL_COMMANDS=(
   "root=$ROOT"
 )
 
-CON='con0'
 ARGV+=(
   -kernel "$KERNEL"
   -initrd "$INITRD"
   -append "${KERNEL_COMMANDS[*]}"
+)
+
+CON='con0'
+ARGV+=(
   -device 'virtio-serial-device'
   -device "virtconsole,chardev=$CON"
 )
-
 if [[ -n "${CONSOLE:-""}" ]]; then
   ARGV+=(-chardev "socket,server=on,wait=off,id=$CON,path=$CONSOLE")
 else
@@ -148,12 +150,23 @@ for IDX in "${!TAPS[@]}"; do
   ((FD++))
 done
 
-for IDX in "${!DRIVES[@]}"; do
-  ID="dri$IDX"
-  DRIVE="${DRIVES[$IDX]}"
+BLKDEV_OPTIONS=(
+  raw
   # TODO io_uring
+  file.aio=threads
+  cache.direct=on
+)
+printf -v BLKOPTS -- '%s,' "${BLKDEV_OPTIONS[@]}"
+for IDX in "${!DRIVES[@]}"; do
+  ID="blk$IDX"
+  DRIVE="${DRIVES[$IDX]}"
+  if [[ -b "$DRIVE" ]]; then
+    DRIVER='host_device'
+  else
+    DRIVER='file'
+  fi
   ARGV+=(
-    -drive "if=none,format=raw,aio=threads,cache=none,id=$ID,file=$DRIVE"
+    -blockdev "${BLKOPTS}file.driver=$DRIVER,node-name=$ID,file.filename=$DRIVE"
     -device "virtio-blk-device,drive=$ID"
   )
 done

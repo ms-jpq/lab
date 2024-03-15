@@ -200,11 +200,23 @@ if [[ -n "${INITIATOR_NAME:-""}" ]]; then
   ARGV+=(-iscsi "initiator-name=$INITIATOR_NAME")
 fi
 
+BLKDEV_OPTIONS=(
+  raw
+  # TODO io_uring
+  file.aio=threads
+  cache.direct=on
+)
+printf -v BLKOPTS -- '%s,' "${BLKDEV_OPTIONS[@]}"
 for IDX in "${!DRIVES[@]}"; do
   DRIVE="${DRIVES[$IDX]}"
-  ID="dri$IDX"
+  ID="blk$IDX"
+  if [[ -b "$DRIVE" ]]; then
+    DRIVER='host_device'
+  else
+    DRIVER='file'
+  fi
   ARGV+=(
-    -drive "if=none,format=raw,aio=io_uring,cache=none,id=$ID,file=$DRIVE"
+    -blockdev "${BLKOPTS}file.driver=$DRIVER,node-name=$ID,file.filename=$DRIVE"
     -device "virtio-blk-pci-non-transitional,drive=$ID"
   )
 done
