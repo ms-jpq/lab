@@ -202,8 +202,7 @@ fi
 
 BLKDEV_OPTIONS=(
   raw
-  # TODO io_uring
-  file.aio=threads
+  file.aio=io_uring
   cache.direct=on
 )
 printf -v BLKOPTS -- '%s,' "${BLKDEV_OPTIONS[@]}"
