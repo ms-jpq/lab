@@ -68,6 +68,7 @@ ExecStartPre        = touch -- "${ROOT}/.#fs.lck"
 ExecStopPost        = rm -v -rf -- "${ROOT}/.#fs.lck"
 
 ExecStart           = /usr/local/opt/qemu/bin/%J.sh m4_ifelse(m5_argn(1, m5_assert([ENV_MACVLAN_IFS])), [], [], [--macvtap ${MACVTAP}]) \
+                      --name ${MACHINE} \
                       --cpu ${CPU} \
                       --mem ${MEMORY} \
                       --qmp ${QMP} \

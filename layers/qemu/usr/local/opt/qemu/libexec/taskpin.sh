@@ -5,6 +5,7 @@ set -o pipefail
 PIDFILE="$1"
 PID="$(<"$PIDFILE")"
 
+# https://docs.python.org/3/library/os.html#os.sched_setaffinity
 for TASK in "/proc/$PID/task"/*; do
   NAME="$(grep -- '^Name:' "$TASK/status" | cut --field 2-)"
   printf -- '%s\n' "$NAME" >&2

@@ -2,10 +2,11 @@
 
 set -o pipefail
 
-LONG_OPTS='cpu:,cpu-flags:,mem:,qmp:,monitor:,boot:,tpm:,vnc:,bridge:,iscsi:,drive:,macvtap:,vfio:,mdev:,disc:'
+LONG_OPTS='name:,cpu:,cpu-flags:,mem:,qmp:,monitor:,boot:,tpm:,vnc:,bridge:,iscsi:,drive:,macvtap:,vfio:,mdev:,disc:'
 GO="$(getopt --options='' --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
+NAME="$(uuidgen)"
 CPU_FLAGS=()
 TAPS=()
 DRIVES=()
@@ -14,6 +15,10 @@ MDEVS=()
 CDS=()
 while (($#)); do
   case "$1" in
+  --name)
+    NAME="$2"
+    shift -- 2
+    ;;
   --cpu)
     CPUS="$2"
     shift -- 2
@@ -119,7 +124,7 @@ unset -- IFS
 
 ARGV=(
   qemu-system-x86_64
-  -name "$(uuidgen),debug-threads=on"
+  -name "$NAME,debug-threads=on"
 )
 
 if [[ -n "${PIDFILE:-""}" ]]; then
