@@ -175,7 +175,7 @@ if [[ -n "${VNC:-""}" ]]; then
     -display "vnc=unix:$VNC"
     -device 'virtio-vga'
     # TODO model=virtio-sound-pci @ qemu8.2
-    -audio 'driver=none,model=hda'
+    -device 'ich9-intel-hda'
   )
 else
   ARGV+=(-nographic)
