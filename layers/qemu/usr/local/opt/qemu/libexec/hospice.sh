@@ -2,6 +2,10 @@
 
 set -o pipefail
 
+if ! [[ -v MAINPID ]]; then
+  exit
+fi
+
 if ! timeout "$@"; then
   CODE="$?"
   if ((CODE == 124)); then
