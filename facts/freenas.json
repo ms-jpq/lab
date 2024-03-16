@@ -12,7 +12,6 @@
   "ENV_FS_DOWNLOADS": "downloads",
   "ENV_FS_MOVIES": "media/Movies",
   "ENV_FS_NTFS": "ntfs",
-  "ENV_FS_RCLONE": ["downloads", "gray", "hao", "media", "misc", "wallpapers"],
   "ENV_FS_TV": "media/TV",
   "ENV_FS_WALLPAPER": "wallpapers",
   "ENV_INDEX": [
@@ -49,7 +48,14 @@
     "14/wallabag"
   ],
   "ENV_PUBLIC_SITES": [],
-  "ENV_RCLONE_LOCAL": ["gray", "hao", "media", "misc", "wallpapers"],
+  "ENV_RCLONE_LOCAL": [
+    "gray",
+    "hao",
+    "media",
+    "misc",
+    "wallpapers",
+    "downloads/done"
+  ],
   "ENV_RCLONE_REMOTE": "jotta-archive:/",
   "ENV_SMB_EXPORTS": [
     "downloads",
