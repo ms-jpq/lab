@@ -5,10 +5,10 @@
  */
 const rate_limit = async (request) => {
   const {
-    ["Auth-Pass"]: auth_password,
+    ["Auth-Pass"]: auth_password = "",
     ["Auth-Protocol"]: auth_protocol,
     ["Auth-Smtp-To"]: smtp_to = "",
-    ["Auth-User"]: auth_user,
+    ["Auth-User"]: auth_user = "",
     ["Client-Ip"]: client_ip,
   } = request.headersIn;
 
@@ -18,7 +18,7 @@ const rate_limit = async (request) => {
 
   switch (auth_protocol) {
     case "smtp":
-      if (smtp_to.indexOf("/") === -1) {
+      if (smtp_to.indexOf("/") !== -1) {
         request.headersOut["Auth-Error-Code"] = "553";
         request.headersOut["Auth-Status"] =
           "Requested action not taken: mailbox name not allowed";
