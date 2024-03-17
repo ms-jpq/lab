@@ -19,7 +19,9 @@ const rate_limit = async (request) => {
   switch (auth_protocol) {
     case "smtp":
       if (smtp_to.indexOf("/") === -1) {
-        request.headersOut["Auth-Status"] = "Invalid SMTP recipient";
+        request.headersOut["Auth-Error-Code"] = "553";
+        request.headersOut["Auth-Status"] =
+          "Requested action not taken: mailbox name not allowed";
       } else {
         request.headersOut["Auth-Port"] = "2525";
         request.headersOut["Auth-Server"] = "127.0.0.53";
@@ -27,25 +29,23 @@ const rate_limit = async (request) => {
       }
       return request.return(200);
     case "imap":
-      if (smtp_to.indexOf("/") === -1) {
-        request.headersOut["Auth-Status"] = "Invalid SMTP recipient";
+      const basic = Buffer.from(`${auth_user}:${auth_password}`).toString(
+        "base64",
+      );
+      const resp = await fetch("http://unix:/run/haproxy/htpasswd.sock", {
+        headers: {
+          "X-Real-IP": client_ip,
+          Authorization: `Basic ${basic}`,
+        },
+      });
+      if (resp.ok) {
+        request.headersOut["Auth-Port"] = "1443";
+        request.headersOut["Auth-Server"] = "127.0.0.53";
+        request.headersOut["Auth-Status"] = "OK";
       } else {
-        const basic = Buffer.from(`${auth_user}:${auth_password}`).toString(
-          "base64",
-        );
-        const resp = await fetch("http://unix:/run/haproxy/htpasswd.sock", {
-          headers: {
-            "X-Real-IP": client_ip,
-            Authorization: `Basic ${basic}`,
-          },
-        });
-        if (resp.ok) {
-          request.headersOut["Auth-Port"] = "1443";
-          request.headersOut["Auth-Server"] = "127.0.0.53";
-          request.headersOut["Auth-Status"] = "OK";
-        } else {
-          request.headersOut["Auth-Status"] = "Invalid login or password";
-        }
+        request.headersOut["Auth-Error-Code"] = "535 5.7.8";
+        request.headersOut["Auth-Status"] =
+          "Authentication credentials invalid";
       }
       return request.return(200);
     default:
