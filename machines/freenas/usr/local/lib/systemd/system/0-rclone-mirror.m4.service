@@ -9,6 +9,9 @@ ConditionPathExists = /usr/local/opt/rclone/libexec/sync.sh
 
 [[Service]]
 Type                = oneshot
+IOAccounting        = yes
+IPAccounting        = yes
+
 ProtectSystem       = strict
 ProtectHome         = yes
 PrivateTmp          = yes

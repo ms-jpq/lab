@@ -2,8 +2,6 @@
 
 set -o pipefail
 
-OUT="$1"
-
 CURL=(
   curl
   --fail-with-body
@@ -13,6 +11,7 @@ CURL=(
 )
 
 if ! [[ -v UNDER ]]; then
+  OUT="$1"
   COUNT="${2:-7}"
   URI="https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=$COUNT"
   JQ=(
@@ -22,15 +21,22 @@ if ! [[ -v UNDER ]]; then
   )
 
   read -r -d '' -- JQ1 <<'JQ' || true
-.images[] | "\(.startdate | sub("^(?<y>.{4})(?<m>.{2})(?<d>.{2})$"; "\(.y)_\(.m)_\(.d)") ) https://bing.com\(.url | sub("&.+$"; "")) \((.title | gsub("\\s"; " ")))"
+[.images[] | "\(.startdate | sub("^(?<y>.{4})(?<m>.{2})(?<d>.{2})$"; "\(.y)_\(.m)_\(.d)") ) https://bing.com\(.url | sub("&.+$"; "")) \((.title | gsub("\\s"; " ")))"] | join("\u0000")
 JQ
 
-  "${CURL[@]}" -- "$URI" | "${JQ[@]}" "$JQ1" | UNDER=1 xargs --no-run-if-empty -L 1 --max-procs 0 -- "$0" "$OUT"
+  "${CURL[@]}" -- "$URI" | "${JQ[@]}" "$JQ1" | UNDER=1 xargs --no-run-if-empty --null --max-args 1 --max-procs 0 -- "$0" "$OUT"
 else
-  DATE="$2"
-  URI="$3"
-  shift -- 3
-  TITLE="$*"
+  OUT="$1"
+  CUT=(
+    cut
+    --delimiter ' '
+    --fields
+  )
+  set -x
+  DATE="$("${CUT[@]}" 1,1 <<<"$2")"
+  URI="$("${CUT[@]}" 2,2 <<<"$2")"
+  TITLE="$("${CUT[@]}" 3- <<<"$2")"
+
   NAME="$OUT/$DATE $TITLE.${URI##*.}"
   if ! [[ -f "$NAME" ]]; then
     TMP="$NAME.tmp"
