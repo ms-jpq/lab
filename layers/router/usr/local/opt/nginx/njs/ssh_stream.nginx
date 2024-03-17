@@ -1,0 +1,15 @@
+stream {
+  js_path   "/usr/local/opt/nginx/njs/";
+  js_import main from ssh_stream.js;
+
+  map $x_ssh_detect $x_http_upstream {
+    "ssh"   "localhost:22";
+    default "/run/local/nginx/80.sock";
+  }
+
+  server {
+    listen     80;
+    js_preread main.ssh_detect;
+    proxy_pass $x_http_upstream;
+  }
+}
