@@ -23,7 +23,5 @@ terraform {
     encrypt        = true
     key            = "wsb.json"
     region         = "ca-west-1"
-    # TODO: next release should fix this
-    skip_region_validation = true
   }
 }
