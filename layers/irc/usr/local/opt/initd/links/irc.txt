@@ -1,1 +1,1 @@
-/usr/local/lib/systemd/system/multi-user.target.wants/znc.service /usr/lib/systemd/system/znc.service
+/usr/local/lib/systemd/system/default.target.wants/znc.service /usr/lib/systemd/system/znc.service

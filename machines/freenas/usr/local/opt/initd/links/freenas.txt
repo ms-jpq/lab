@@ -1,8 +1,8 @@
-/usr/local/lib/systemd/system/multi-user.target.wants/qbittorrent-nox@1000.service /usr/lib/systemd/system/qbittorrent-nox@.service
-/usr/local/lib/systemd/system/timers.target.wants/1-fs-veto@media.timer            ../1-fs-veto@.timer
-/usr/local/lib/systemd/system/timers.target.wants/1-gh-mirror@ms\x2djpq.timer      ../1-gh-mirror@.timer
-/usr/local/lib/systemd/system/timers.target.wants/1-zfs-trim@black.timer           ../1-zfs-trim@.timer
-/usr/local/lib/systemd/system/timers.target.wants/zfs-scrub-monthly@gold.timer     /usr/lib/systemd/system/zfs-scrub-monthly@.timer
-/usr/local/lib/systemd/system/timers.target.wants/zfs-scrub-weekly@black.timer     /usr/lib/systemd/system/zfs-scrub-weekly@.timer
-/usr/local/lib/systemd/system/timers.target.wants/zfs-scrub-weekly@pink.timer      /usr/lib/systemd/system/zfs-scrub-weekly@.timer
-/usr/local/lib/systemd/system/timers.target.wants/zfs-scrub-weekly@red.timer       /usr/lib/systemd/system/zfs-scrub-weekly@.timer
+/usr/local/lib/systemd/system/default.target.wants/qbittorrent-nox@1000.service /usr/lib/systemd/system/qbittorrent-nox@.service
+/usr/local/lib/systemd/system/timers.target.wants/1-fs-veto@media.timer         ../1-fs-veto@.timer
+/usr/local/lib/systemd/system/timers.target.wants/1-gh-mirror@ms\x2djpq.timer   ../1-gh-mirror@.timer
+/usr/local/lib/systemd/system/timers.target.wants/1-zfs-trim@black.timer        ../1-zfs-trim@.timer
+/usr/local/lib/systemd/system/timers.target.wants/zfs-scrub-monthly@gold.timer  /usr/lib/systemd/system/zfs-scrub-monthly@.timer
+/usr/local/lib/systemd/system/timers.target.wants/zfs-scrub-weekly@black.timer  /usr/lib/systemd/system/zfs-scrub-weekly@.timer
+/usr/local/lib/systemd/system/timers.target.wants/zfs-scrub-weekly@pink.timer   /usr/lib/systemd/system/zfs-scrub-weekly@.timer
+/usr/local/lib/systemd/system/timers.target.wants/zfs-scrub-weekly@red.timer /usr/lib/systemd/system/zfs-scrub-weekly@.timer
