@@ -2,4 +2,5 @@
 /usr/local/lib/systemd/system/motd-news.timer                                      /dev/null
 /usr/local/lib/systemd/system/sockets.target.wants/systemd-journal-gatewayd.socket /usr/lib/systemd/system/systemd-journal-gatewayd.socket
 /usr/local/lib/systemd/system/sysinit.target.wants/nftables.service                /usr/lib/systemd/system/nftables.service
+/usr/local/lib/systemd/system/ufw.service                                          /dev/null
 /usr/local/lib/systemd/system/update-notifier-motd.timer                           /dev/null
