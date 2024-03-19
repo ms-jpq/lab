@@ -2,4 +2,4 @@
 
 set -o pipefail
 
-exec -- "${0%/*}/../libexec/rclone" --config /var/lib/local/rclone/rclone.conf "$@"
+exec -- rclone --config /var/lib/local/rclone/rclone.conf "$@"

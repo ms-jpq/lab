@@ -6,16 +6,19 @@ Restart                  = on-failure
 ProtectSystem            = strict
 ProtectHome              = yes
 ReadWritePaths           = %t/local/%J
-RuntimeDirectory         = local/%J local/%J/mnt
+RuntimeDirectory         = local/%J
 RuntimeDirectoryPreserve = yes
 PrivateTmp               = yes
 
 User                     = 1000
-Group                    = 1000
+Group                    = www-data
+
+TemporaryFileSystem      = /media:ro
 
 # m5_for([SHARE], [
-BindPaths                = /media/SHARE:%t/local/%J/mnt/SHARE
+BindPaths                = /media/SHARE:/media/SHARE
 # ], m5_assert([ENV_WEB_EXPORTS]))
 
-# TODO: rclone can listen on unix sockets on later versions
-ExecStart                = rclone serve webdav --config=/dev/null --dir-cache-time=0 --addr=127.0.0.53:8090 --baseurl=/share -- %t/local/%J/mnt
+Environment              = SOCK=%t/local/%J/webdav.sock
+ExecStart                = rclone serve webdav --config=/dev/null --dir-cache-time=0 --addr=${SOCK} --baseurl=/share -- /media
+ExecStartPost            = /usr/local/libexec/retry.sh 0.1 chmod -- g+w ${SOCK}

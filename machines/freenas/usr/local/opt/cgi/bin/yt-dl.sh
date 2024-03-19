@@ -22,5 +22,5 @@ printf -v L4 -- '%b' "$L3"
 
 printf -- '%s\n' "$L4"
 
-/var/cache/local/youtube-dl/bin --cache-dir /var/tmp --newline -- "$L4" 2>&1
+yt-dlp --cache-dir /var/tmp --newline -- "$L4" 2>&1
 figlet <<<'<3'

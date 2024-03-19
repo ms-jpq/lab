@@ -3,7 +3,6 @@ Description         = Rclone Mirror Service
 After               = network-online.target
 RequiresMountsFor   = /media %S/local/rclone
 
-ConditionPathExists = /usr/local/libexec/rclone
 ConditionPathExists = %S/local/rclone/rclone.conf
 ConditionPathExists = /usr/local/opt/rclone/libexec/sync.sh
 
