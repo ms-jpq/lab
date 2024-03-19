@@ -1,6 +1,7 @@
 # + libnginx-mod-http-brotli-static
 + b3sum
 + bat
++ bottom
 + cowsay
 + dnsmasq
 + fd-find
