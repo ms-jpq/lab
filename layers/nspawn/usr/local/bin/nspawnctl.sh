@@ -86,6 +86,7 @@ remove)
 
     /usr/local/libexec/fs-dealloc.sh "$ROOT" /var/lib/local /var/lib/local/{nspawn,qemu}
   done
+  sctl reset-failed -- "${SERVICES[@]}"
   ;;
 *)
   printf -- '%s' '>? '
