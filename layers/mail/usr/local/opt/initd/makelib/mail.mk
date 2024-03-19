@@ -16,13 +16,14 @@ mail: /usr/local/opt/apache2/apache2.conf
 
 
 define ZPUSH_TEMPLATE
-/etc/z-push/$1.conf.php: | pkg._
-mail: /usr/local/opt/z-push/$1.conf.php
+/opt/z-push/$1/config.php: | pkg._
 
-/usr/local/opt/z-push/$1.conf.php: /usr/local/opt/z-push/libexec/$1.sed /etc/z-push/$1.conf.php
-	sudo -- /usr/local/libexec/sponge2.sh '$$@' '$$<' /etc/z-push/$1.conf.php
+mail: /usr/local/opt/z-push/$(patsubst .%,%,$2.conf.php)
+/usr/local/opt/z-push/$(patsubst .%,%,$2.conf.php): /usr/local/opt/z-push/libexec/$2.sed /opt/z-push/$1/config.php
+	sudo -- /usr/local/libexec/sponge2.sh '$$@' '$$<' /opt/z-push/$1/config.php
+	! git diff --no-index --no-prefix --color-moved -- '/opt/z-push/$1/config.php' '$$@'
 endef
 
-Z_PUSH_PHP := autodiscover imap z-push
+Z_PUSH_PHP := autodiscover backend/imap .
 
-# $(foreach php,$(Z_PUSH_PHP),$(eval $(call ZPUSH_TEMPLATE,$(php))))
+$(foreach php,$(Z_PUSH_PHP),$(eval $(call ZPUSH_TEMPLATE,$(php),$(subst .,,$(notdir $(php))))))
