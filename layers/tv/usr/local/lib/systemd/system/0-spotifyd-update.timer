@@ -1,6 +1,0 @@
-[Unit]
-Description        = Spotifyd Update Timer
-
-[Timer]
-OnCalendar         = weekly
-RandomizedDelaySec = 2days

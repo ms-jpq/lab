@@ -10,6 +10,3 @@ v2fly: /usr/local/opt/v2fly/$1.json
 endef
 
 $(foreach v2,server client,$(eval $(call V2FLY_TEMPLATE,$(v2))))
-
-/var/lib/local/v2fly/v2ray: /usr/bin/unzip
-	sudo -- /usr/local/opt/v2fly/libexec/ensure.sh
