@@ -6,5 +6,6 @@ nginx: /usr/local/opt/nginx/conf/._touch
 	sudo -- /usr/local/libexec/try-reload.sh nginx.service
 	sudo -- touch -- '$@'
 
-nginx.lint:
-	'$<'/bin/gixy -- /usr/local/opt/nginx/conf/main.nginx
+/opt/python3/gixy: | pkg._
+nginx.lint: /opt/python3/gixy
+	PYTHONPATH='$<' '$</bin/gixy' -- /usr/local/opt/nginx/conf/main.nginx

@@ -2,6 +2,6 @@
 
 set -o pipefail
 
-PYTHONPATH="$(realpath -- "${0%/*}/..")"
+PYTHONPATH="$(realpath -- "${0%/*}/.."):/opt/python3/elasticsearch"
 export -- PYTHONPATH
-exec -- /var/cache/local/venvs/crawler/bin/python3 -m libexec "$@"
+exec -- python3 -m libexec "$@"

@@ -1,6 +1,7 @@
 + elasticsearch
 + kibana
 + nfs-kernel-server
++ py-elasticsearch
 + rclone
 + samba
 + samba-vfs-modules

@@ -1,0 +1,18 @@
+[Unit]
+Description       = Certbot renew -- %i
+After             = 0-certbot-update.service
+
+RequiresMountsFor = %S/local
+
+[Service]
+Type              = oneshot
+ProtectSystem     = strict
+ProtectHome       = yes
+PrivateTmp        = yes
+ReadWritePaths    = %t/local/nginx %T %S/local %C/local
+
+Environment       = PYTHONPATH=/opt/python3/certbot
+Environment       = USER=%u
+Environment       = HOSTNAME=%H.home.arpa
+
+ExecStart         = /usr/local/opt/certbot/libexec/certonly.sh
