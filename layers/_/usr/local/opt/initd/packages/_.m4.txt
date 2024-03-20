@@ -7,6 +7,7 @@
 + fd-find
 + figlet
 + fzf
++ gay
 + gettext-base
 + git
 + haproxy
@@ -29,6 +30,7 @@
 + nginx
 + parallel
 + pv
++ py-gixy
 + python3-venv
 + ripgrep
 + rsync

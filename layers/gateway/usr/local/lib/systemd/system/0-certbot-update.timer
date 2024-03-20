@@ -1,7 +1,0 @@
-[Unit]
-Description        = Certbot update timer
-
-[Timer]
-Persistent         = yes
-OnCalendar         = weekly
-RandomizedDelaySec = 2days
