@@ -11,7 +11,6 @@ ProtectHome       = yes
 PrivateTmp        = yes
 ReadWritePaths    = %t/local/nginx %T %S/local %C/local
 
-Environment       = PYTHONPATH=/opt/python3/certbot
 Environment       = USER=%u
 Environment       = HOSTNAME=%H.home.arpa
 

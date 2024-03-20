@@ -29,4 +29,4 @@ for SITE in "${SITES[@]}"; do
   fi
 done
 
-exec -- "${CERTBOT[@]}"
+PYTHONPATH=/opt/python3/certbot exec -- "${CERTBOT[@]}"
