@@ -4,14 +4,6 @@ server {
   listen      unix:/run/local/nginx/http.sock;
 
   location / {
-    proxy_pass http://127.0.0.53:8025;
-  }
-
-  location /roundcube {
-    return 307 /roundcube/;
-  }
-
-  location /roundcube/ {
-    return 420;
+    proxy_pass http://127.0.0.53:8050;
   }
 }
