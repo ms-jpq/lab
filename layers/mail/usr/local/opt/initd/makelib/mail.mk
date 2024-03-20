@@ -20,8 +20,8 @@ define ZPUSH_TEMPLATE
 
 mail: /usr/local/opt/z-push/$(patsubst .%,%,$2.conf.php)
 /usr/local/opt/z-push/$(patsubst .%,%,$2.conf.php): /usr/local/opt/z-push/libexec/$2.sed /opt/z-push/$1/config.php
-	sudo -- /usr/local/libexec/sponge2.sh '$$@' '$$<' /opt/z-push/$1/config.php
-	! git diff --no-index --no-prefix --color-moved -- '/opt/z-push/$1/config.php' '$$@'
+	sudo -- /usr/local/libexec/sponge2.sh '$$@' '$$<' /usr/share/z-push/$1/config.php
+	! git diff --no-index --no-prefix --color-moved -- '/usr/share/z-push/$1/config.php' '$$@'
 endef
 
 Z_PUSH_PHP := autodiscover backend/imap .
