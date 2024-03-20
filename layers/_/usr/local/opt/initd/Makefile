@@ -30,4 +30,4 @@ APT_INSTALL := DEBIAN_FRONTEND=noninteractive sudo --preserve-env -- apt-get ins
 include lib/*.mk
 include makelib/*.mk
 
-all: pkg venv
+all: pkg
