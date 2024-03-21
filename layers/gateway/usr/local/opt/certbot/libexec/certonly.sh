@@ -10,7 +10,7 @@ mkdir -v -p -- "$LOG"
 readarray -t -- SITES </usr/local/etc/default/certbot.env
 
 CERTBOT=(
-  /var/cache/local/certbot/venv/bin/certbot
+  /opt/python3/certbot/bin/certbot
   certonly
   --non-interactive --agree-tos
   --keep-until-expiring
