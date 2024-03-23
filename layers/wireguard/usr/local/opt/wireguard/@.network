@@ -3,14 +3,12 @@ Name              = ${IFACE}
 
 [Link]
 RequiredForOnline = no
-Multicast         = yes
 
 [Network]
-IPMasquerade      = ${IPMASQUERADE}
+IPForward         = yes
 
 Address           = ${IPV6_IF}
 Address           = ${IPV4_IF}
 
 Domains           = ~${DOMAIN}
 DNS               = ${IPV6_ADDR} ${IPV4_ADDR}
-MulticastDNS      = resolve

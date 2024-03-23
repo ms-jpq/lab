@@ -93,7 +93,7 @@ for PEER in "${PEERS[@]}"; do
 
       HTML_TITLE="$ID" HTML_PRE="$CONF" HTML_CODE="$QR" envsubst <"$SELF/peer.html" | sponge -- "$CACHE/$ID.html"
       IFACE="$CIFACE" IPV6_IF="$MACHINE_ULA" envsubst <"$SELF/peer.netdev" | sponge -- "$CACHE/$ID.netdev"
-      IPMASQUERADE=no IPV6_IF="$IPV6" IPV4_IF="$IPV4" IFACE="$CIFACE" DOMAIN="$HOSTNAME.home.arpa" envsubst <"$SELF/@.network" | sponge -- "$CACHE/$ID.network"
+      IPV6_IF="$IPV6" IPV4_IF="$IPV4" IFACE="$CIFACE" DOMAIN="$HOSTNAME.home.arpa" envsubst <"$SELF/@.network" | sponge -- "$CACHE/$ID.network"
       break
     fi
   done

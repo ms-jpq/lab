@@ -1,3 +1,2 @@
 [NetDev]
 Name = ${IFACE}
-Kind = ${KIND}
