@@ -84,9 +84,12 @@ remove)
       fi
     fi
 
+    SVC="$SERVICE_NAME@$(systemd-escape -- "$MACH").service"
     /usr/local/libexec/fs-dealloc.sh "$ROOT" /var/lib/local /var/lib/local/{nspawn,qemu}
+    if systemctl --failed --lines 0 status -- "$SVC" >/dev/null; then
+      sctl reset-failed -- "$SVC"
+    fi
   done
-  sctl reset-failed -- "${SERVICES[@]}" || true
   ;;
 *)
   printf -- '%s' '>? '
