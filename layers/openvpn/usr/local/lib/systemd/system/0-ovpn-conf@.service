@@ -1,0 +1,19 @@
+[Unit]
+Requires       = 0-ovpn-private-key.service
+After          = 0-ovpn-private-key.service
+
+BindsTo        = 1-ip-alloc@%i.service
+After          = 1-ip-alloc@%i.service
+
+BindsTo        = 1-vtun@%i.service
+After          = 1-vtun@%i.service
+
+[Service]
+Type           = oneshot
+
+ProtectSystem  = strict
+ProtectHome    = yes
+PrivateTmp     = yes
+
+ReadWritePaths = %t %T
+ExecStart      = true
