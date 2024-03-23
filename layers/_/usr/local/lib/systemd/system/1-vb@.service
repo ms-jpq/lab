@@ -27,6 +27,7 @@ ReadWritePaths       = %t/systemd %T
 EnvironmentFile      = %t/local/ip/%I.env
 EnvironmentFile      = -/usr/local/etc/default/%I.%J.env
 
+Environment          = KIND=bridge
 Environment          = NETWORKD_DHCP=no
 Environment          = IFACE=%I
 Environment          = DOMAIN=%I.%H.home.arpa
