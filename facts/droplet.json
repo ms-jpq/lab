@@ -53,6 +53,8 @@
   ],
   "ENV_MAIL": "me@ENV_DOMAIN",
   "ENV_MINIFLUX_USERNAME": "ENV_MAIL",
+  "ENV_OVPN_PEERS": "ENV_WG_PEERS",
+  "ENV_OVPN_SERVER_NAME": "ENV_WG_SERVER_NAME",
   "ENV_PUBLIC_SITES": [
     "12ft.*",
     "ask.*",

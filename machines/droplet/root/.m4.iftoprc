@@ -1,2 +1,2 @@
-interface: ENV_WAN_IF
+interface: m5_assert([ENV_WAN_IF])
 port-display: on
