@@ -7,7 +7,6 @@ BindsTo             = 1-vb@v\x2d%i.service
 After               = 1-vb@v\x2d%i.service
 
 BindsTo             = dnsmasq@v\x2d%i.service
-Before              = dnsmasq@v\x2d%i.service
 
 Wants               = 2-pemu-%j@%i.service
 After               = 2-pemu-%j@%i.service

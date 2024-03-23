@@ -2,11 +2,11 @@
 Requires       = 0-ovpn-private-key.service
 After          = 0-ovpn-private-key.service
 
-BindsTo        = 1-ip-alloc@%i.service
-After          = 1-ip-alloc@%i.service
+BindsTo        = 1-ip-alloc@o\x2d%i.service
+After          = 1-ip-alloc@o\x2d%i.service
 
-BindsTo        = 1-vtun@%i.service
-After          = 1-vtun@%i.service
+BindsTo        = 1-vtun@o\x2d%i.service
+After          = 1-vtun@o\x2d%i.service
 
 [Service]
 Type           = oneshot
@@ -16,4 +16,4 @@ ProtectHome    = yes
 PrivateTmp     = yes
 
 ReadWritePaths = %t %T
-ExecStart      = true
+ExecStart      = sleep -- 999
