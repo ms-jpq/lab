@@ -1,1 +1,1 @@
-+ wireguard-tools
++ openvpn
