@@ -40,7 +40,7 @@ PROTOCOLS=(
   ['udp']="$OVPN_UDP_PORT"
 )
 
-CLIENT_CA="$(<"$SERVER_CRT")"
+CLIENT_CA="$(<"$CLIENT_CRT")"
 CLIENT_CRT="$(<"$CLIENT_CRT_SIGNED")"
 CLIENT_KEY="$(<"$CLIENT_KEY")"
 CLIENT_TLS_CRYPT="$(<"$CLIENT_TLS_CRYPT")"
@@ -51,7 +51,7 @@ for PROTOCOL in "${!PROTOCOLS[@]}"; do
   SHORT="${PROTOCOL%-*}"
   OVPN_SERVER_PORT="${PROTOCOLS[$PROTOCOL]}"
   envsubst <"$ROOT/client.ovpn"
-  cat -- "$ROOT/common.ovpn" "$ROOT/$SHORT.ovpn"
+  cat -- "$ROOT/common.ovpn" "$ROOT/$SHORT.client.ovpn"
 
   /usr/local/libexec/hr.sh
   /usr/local/libexec/hr.sh
