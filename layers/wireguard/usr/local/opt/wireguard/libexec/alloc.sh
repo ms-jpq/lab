@@ -35,7 +35,8 @@ WG_LINES=()
 DNSMAQ_HOSTS=()
 
 export -- DOMAIN IPV6 IPV4 SERVER_PUBLIC_KEY SERVER_NAME CLIENT_PRIVATE_KEY CLIENT_SHARED_KEY
-MACHINE_ULA="$(/usr/local/opt/network/libexec/ula64.sh)::/56"
+# shellcheck disable=SC2154
+MACHINE_ULA="$IPV48_NET"
 
 P="$(sort --unique --field-separator ',' <<<"$WG_PEERS")"
 readarray -t -d ',' -- PEERS <<<"$P"
@@ -46,7 +47,7 @@ for PEER in "${PEERS[@]}"; do
   fi
 
   # shellcheck disable=SC2154
-  IPV6="$IPV6_NETWORK:$(b3sum --no-names --length 8 <<<"$PEER" | perl -CASD -wpe 's/(.{4})(?=.)/$1:/g')/56"
+  IPV6="$IPV6_NETWORK:$(b3sum --no-names --length 8 <<<"$PEER" | perl -CASD -wpe 's/(.{4})(?=.)/$1:/g')/64"
 
   for ((I = 0; ; I++)); do
     ID="$I-$PEER"

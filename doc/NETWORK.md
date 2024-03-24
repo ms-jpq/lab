@@ -42,7 +42,7 @@ flowchart LR
 
 ULA - `120/128` bits of freedom, enough bytes for **globally unique deterministic hashing** → BLAKE3
 
-- `48` bits for machine-id derived **globally unique** subnet (upper `fd**:****:****:****::/56`)
+- `48` bits for machine-id derived **globally unique** subnet (upper `fd**:****:****::/48`)
 
 - `64` bits for machine-id derived **globally unique** `SLAAC` address suffix (lower `::****:****:****:****/64`)
 

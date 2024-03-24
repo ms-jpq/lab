@@ -43,7 +43,7 @@ done
 IPV4_IF="$("${0%/*}/ip4alloc.py" --verbose --no "${NOPE[@]}" -- "$IPV4_PREFIX")"
 IPV4_ADDR="${IPV4_IF%%/*}"
 
-IPV6_ULA="$("${0%/*}/ula64.sh" "$IFACE")"
+IPV6_ULA="$("${0%/*}/ula48.sh")"
 for ((i = 0; ; i++)); do
   printf -v I -- '%04x' "$i"
   IPV6_NETWORK="$IPV6_ULA:$I"
@@ -73,6 +73,8 @@ IPV6_IF=$IPV6_ADDR/64
 IPV6_ADDR=$IPV6_ADDR
 IPV6_NETWORK=$IPV6_NETWORK
 IPV6_NET=$IPV6_NETWORK:0000:0000:0000:0000/64
+IPV48_NETWORK=$IPV6_ULA
+IPV48_NET=${IPV6_ULA}:0000:0000:0000:0000:0000/48
 EOF
 
 exec -- cat -- "$RECORD"
