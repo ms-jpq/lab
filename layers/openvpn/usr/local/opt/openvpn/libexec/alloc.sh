@@ -10,6 +10,7 @@ OVPN_UDP_PORT="$5"
 OVPN_PEERS="$6"
 
 SELF="${0%/*}/.."
+TITLE=openvpn
 
 rm -v -fr -- "${CACHE:?}"/*
 
@@ -24,6 +25,8 @@ PROTOCOLS=(
 
 P="$(sort --unique --field-separator ',' <<<"$OVPN_PEERS")"
 readarray -t -d ',' -- PEERS <<<"$P"
+
+OVPN_IDS=()
 for PEER in "${PEERS[@]}"; do
   PEER="$(printf -- '%s' "${PEER//[[:space:]]/''}" | jq --slurp --raw-input --raw-output '@uri')"
   if [[ -z "$PEER" ]]; then
@@ -39,10 +42,15 @@ for PEER in "${PEERS[@]}"; do
     OVPN_SERVER_PORT="${PROTOCOLS[$PROTOCOL]}"
     SHORT="${PROTOCOL%-*}"
 
+    NAME="$PEER-$SHORT"
+    CONF="$CACHE/$NAME.txt"
     {
       envsubst <"$SELF/client.ovpn"
       cat -- "$SELF/common.ovpn" "$SELF/$SHORT.ovpn"
-    } >"$CACHE/$PEER-$SHORT.ovpn"
+    } | sponge -- "$CONF"
+    OVPN_IDS+=("$NAME")
   done
-
 done
+
+IFS=','
+/usr/local/libexec/m4.sh -D"ENV_TITLE=$TITLE" -D"ENV_PEER=${OVPN_IDS[*]}" "$SELF/index.html" | sponge -- "$CACHE/index.html"
