@@ -20,16 +20,15 @@ SERVER_SSL=/var/cache/local/self-signed/ovpn
 SERVER_CRT="$SERVER_SSL/ssl.crt"
 SERVER_KEY="$SERVER_SSL/ssl.key"
 
-CLIENT="$(uuidgen | tr -d -- '-')"
+SUBJ="/CN=$(uuidgen | tr -d -- '-')"
 CLIENT_CRT="$(mktemp)"
 CLIENT_KEY="$(mktemp)"
 CLIENT_REQ="$(mktemp)"
 CLIENT_CRT_SIGNED="$(mktemp)"
 CLIENT_TLS_CRYPT="$(mktemp)"
 
-openssl req -x509 -newkey rsa:4096 -sha256 -days "$DAYS" -nodes -subj "/CN=$CLIENT" -out "$CLIENT_CRT" -keyout "$CLIENT_KEY"
-# openssl x509 -x509toreq -days "$DAYS" -in "$CLIENT_CRT" -signkey "$CLIENT_KEY" -out "$CLIENT_REQ"
-openssl req -new -key "$CLIENT_KEY" -subj "/CN=$CLIENT" -out "$CLIENT_REQ"
+openssl req -x509 -newkey rsa:4096 -sha256 -days "$DAYS" -nodes -subj "$SUBJ" -out "$CLIENT_CRT" -keyout "$CLIENT_KEY"
+openssl req -new -key "$CLIENT_KEY" -subj "$SUBJ" -out "$CLIENT_REQ"
 openssl req -x509 -CAcreateserial -sha256 -days "$DAYS" -CA "$SERVER_CRT" -CAkey "$SERVER_KEY" -in "$CLIENT_REQ" -out "$CLIENT_CRT_SIGNED"
 openvpn --tls-crypt-v2 "$SERVER_TLS_CRYPT" --genkey tls-crypt-v2-client "$CLIENT_TLS_CRYPT"
 
@@ -41,7 +40,7 @@ PROTOCOLS=(
   ['udp']="$OVPN_UDP_PORT"
 )
 
-CLIENT_CA="$(<"$CLIENT_CRT")"
+CLIENT_CA="$(<"$SERVER_CRT")"
 CLIENT_CRT="$(<"$CLIENT_CRT_SIGNED")"
 CLIENT_KEY="$(<"$CLIENT_KEY")"
 CLIENT_TLS_CRYPT="$(<"$CLIENT_TLS_CRYPT")"
