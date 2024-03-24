@@ -1,5 +1,6 @@
 [NetDev]
-Name = ${IFACE}
-Kind = tun
+Name  = ${IFACE}
+Kind  = tun
 
 [Tun]
+Group = systemd-network
