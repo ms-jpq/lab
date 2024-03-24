@@ -28,7 +28,8 @@ CLIENT_CRT_SIGNED="$(mktemp)"
 CLIENT_TLS_CRYPT="$(mktemp)"
 
 openssl req -x509 -newkey rsa:4096 -sha256 -days "$DAYS" -nodes -subj "/CN=$CLIENT" -out "$CLIENT_CRT" -keyout "$CLIENT_KEY"
-openssl x509 -x509toreq -days "$DAYS" -in "$CLIENT_CRT" -signkey "$SERVER_KEY" -out "$CLIENT_REQ"
+# openssl x509 -x509toreq -days "$DAYS" -in "$CLIENT_CRT" -signkey "$CLIENT_KEY" -out "$CLIENT_REQ"
+openssl req -new -key "$CLIENT_KEY" -subj "/CN=$CLIENT" -out "$CLIENT_REQ"
 openssl req -x509 -CAcreateserial -sha256 -days "$DAYS" -CA "$SERVER_CRT" -CAkey "$SERVER_KEY" -in "$CLIENT_REQ" -out "$CLIENT_CRT_SIGNED"
 openvpn --tls-crypt-v2 "$SERVER_TLS_CRYPT" --genkey tls-crypt-v2-client "$CLIENT_TLS_CRYPT"
 
