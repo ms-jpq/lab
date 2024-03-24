@@ -12,4 +12,47 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-exec -- /usr/local/libexec/hr-run.sh tree -- /var/tmp
+ROOT=/usr/local/opt/openvpn
+DAYS=6969
+
+SERVER_TLS_CRYPT=/var/lib/local/openvpn/tls-crypt-v2-server.key
+SERVER_SSL=/var/cache/local/self-signed/ovpn
+SERVER_CRT="$SERVER_SSL/ssl.crt"
+SERVER_KEY="$SERVER_SSL/ssl.key"
+
+CLIENT="$(uuidgen | tr -d -- '-')"
+CLIENT_CRT="$(mktemp)"
+CLIENT_KEY="$(mktemp)"
+CLIENT_REQ="$(mktemp)"
+CLIENT_CRT_SIGNED="$(mktemp)"
+CLIENT_TLS_CRYPT="$(mktemp)"
+
+openssl req -x509 -newkey rsa:4096 -sha256 -days "$DAYS" -nodes -subj "/CN=$CLIENT" -out "$CLIENT_CRT" -keyout "$CLIENT_KEY"
+openssl x509 -x509toreq -days "$DAYS" -in "$CLIENT_CRT" -signkey "$SERVER_KEY" -out "$CLIENT_REQ"
+openssl req -x509 -CAcreateserial -sha256 -days "$DAYS" -CA "$SERVER_CRT" -CAkey "$SERVER_KEY" -in "$CLIENT_REQ" -out "$CLIENT_CRT_SIGNED"
+openvpn --tls-crypt-v2 "$SERVER_TLS_CRYPT" --genkey tls-crypt-v2-client "$CLIENT_TLS_CRYPT"
+
+declare -A -- PROTOCOLS=()
+# shellcheck disable=SC1091
+source -- /usr/local/etc/default/o-0.ovpn.env
+PROTOCOLS=(
+  ['tcp-client']="$OVPN_TCP_PORT"
+  ['udp']="$OVPN_UDP_PORT"
+)
+
+CLIENT_CA="$(<"$SERVER_CRT")"
+CLIENT_CRT="$(<"$CLIENT_CRT_SIGNED")"
+CLIENT_KEY="$(<"$CLIENT_KEY")"
+CLIENT_TLS_CRYPT="$(<"$CLIENT_TLS_CRYPT")"
+
+export -- OVPN_SERVER_NAME OVPN_SERVER_PORT PROTOCOL CLIENT_CA CLIENT_CRT CLIENT_KEY CLIENT_TLS_CRYPT
+
+for PROTOCOL in "${!PROTOCOLS[@]}"; do
+  SHORT="${PROTOCOL%-*}"
+  OVPN_SERVER_PORT="${PROTOCOLS[$PROTOCOL]}"
+  envsubst <"$ROOT/client.ovpn"
+  cat -- "$ROOT/common.ovpn" "$ROOT/$SHORT.ovpn"
+
+  /usr/local/libexec/hr.sh
+  /usr/local/libexec/hr.sh
+done

@@ -1,0 +1,18 @@
+[Unit]
+Description         = OpenVPN Gen Keys -- %S/local/openvpn/tls-crypt-v2-server.key
+ConditionPathExists = !%S/local/openvpn/tls-crypt-v2-server.key
+
+[Service]
+Type                = oneshot
+RemainAfterExit     = yes
+Restart             = on-failure
+
+ProtectSystem       = strict
+ProtectHome         = yes
+PrivateTmp          = yes
+ReadWritePaths      = %S/local/openvpn %T
+
+Environment         = KEY=%S/local/openvpn/tls-crypt-v2-server.key
+
+ExecCondition       = sh -c '! "$@"' - test -f ${KEY}
+ExecStart           = openvpn --genkey tls-crypt-v2-server ${KEY}

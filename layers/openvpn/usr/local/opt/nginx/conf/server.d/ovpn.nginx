@@ -1,7 +1,0 @@
-location /ovpn {
-  return 307 /ovpn/;
-}
-
-location /ovpn/ {
-  alias /var/cache/local/openvpn/;
-}
