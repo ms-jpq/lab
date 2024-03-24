@@ -1,0 +1,2 @@
+/usr/local/lib/systemd/system/default.target.wants/1-ovpn-tcp@0.service ../1-ovpn-tcp@.service
+/usr/local/lib/systemd/system/default.target.wants/1-ovpn-udp@0.service ../1-ovpn-udp@.service
