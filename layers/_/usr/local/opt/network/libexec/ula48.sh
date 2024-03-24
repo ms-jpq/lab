@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-ID="$(</etc/machine-id)"
+ID="$HOSTNAME"
 ULA=$((0xfd << 56))
 B3="$(b3sum --no-names --length 6 <<<"$ID")"
 MASK=$((~(0xffff << 48)))

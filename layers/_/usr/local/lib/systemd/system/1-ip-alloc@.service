@@ -17,6 +17,7 @@ RuntimeDirectoryPreserve = yes
 ReadWritePaths           = %t/local/ip %T
 
 Environment              = LOCK=%t/local/ip
+Environment              = HOSTNAME=%H
 Environment              = IFACE=%I
 Environment              = IPV4_PREFIX=24
 
