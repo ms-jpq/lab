@@ -2,12 +2,12 @@
   "ENV_BLK_EXPORTS": [],
   "ENV_CERTBOT_SITES": [
     "ENV_DOMAIN",
-    "droplet.wg0.droplet.ENV_DOMAIN",
+    "droplet.w-0.droplet.ENV_DOMAIN",
     "cups.freenas.enp2s0.pfsense.ENV_DOMAIN",
     "esxi.enp2s0.pfsense.ENV_DOMAIN",
     "freenas.enp2s0.pfsense.ENV_DOMAIN",
     "orthanc.enp2s0.pfsense.ENV_DOMAIN",
-    "pfsense.wg0.pfsense.ENV_DOMAIN"
+    "pfsense.w-0.pfsense.ENV_DOMAIN"
   ],
   "ENV_FS_DOWNLOADS": "downloads",
   "ENV_FS_MOVIES": "media/Movies",
@@ -26,18 +26,18 @@
     "orthanc.enp2s0.pfsense/vm.html"
   ],
   "ENV_JOURNAL_HOSTS": [
-    "droplet.wg0.droplet.home.arpa",
+    "droplet.w-0.droplet.home.arpa",
     "esxi.enp2s0.pfsense.home.arpa",
     "orthanc.enp2s0.pfsense.home.arpa",
     "pfsense.enp2s0.pfsense.home.arpa"
   ],
   "ENV_MACHINES": [
-    "droplet.wg0.droplet",
+    "droplet.w-0.droplet",
     "cups.freenas.enp2s0.pfsense",
     "esxi.enp2s0.pfsense",
     "freenas.enp2s0.pfsense",
     "orthanc.enp2s0.pfsense",
-    "pfsense.wg0.pfsense"
+    "pfsense.w-0.pfsense"
   ],
   "ENV_MACVLAN_IFS": ["enp108s0", "eno1"],
   "ENV_NFS_EXPORTS": ["downloads", "media", "wallpapers"],
