@@ -3,12 +3,12 @@
     "ENV_DOMAIN=freenas.enp2s0.pfsense.home.arpa",
     "cups.freenas.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN",
     "cups.freenas.enp2s0.pfsense.home.arpa=freenas.enp2s0.pfsense.home.arpa",
-    "droplet.wg0.droplet.ENV_DOMAIN=ENV_DOMAIN",
+    "droplet.w-0.droplet.ENV_DOMAIN=ENV_DOMAIN",
     "esxi.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN",
     "freenas.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN",
     "orthanc.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN",
-    "pfsense.ENV_DOMAIN=_gateway.wg0.pfsense.home.arpa",
-    "pfsense.wg0.pfsense.ENV_DOMAIN=ENV_DOMAIN"
+    "pfsense.ENV_DOMAIN=_gateway.w-0.pfsense.home.arpa",
+    "pfsense.w-0.pfsense.ENV_DOMAIN=ENV_DOMAIN"
   ],
   "ENV_HOST_ALLOW_LIST": [
     "freenas.enp2s0.pfsense.home.arpa@tcp*https",
