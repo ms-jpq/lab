@@ -12,6 +12,11 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
+NAME="${0##*/}"
+NAME="${NAME%.sh}"
+NAME="${NAME#*.}"
+L="${#NAME}"
+
 ROOT=/usr/local/opt/openvpn
 DAYS=6969
 
@@ -48,11 +53,12 @@ CLIENT_TLS_CRYPT="$(<"$CLIENT_TLS_CRYPT")"
 export -- OVPN_SERVER_NAME OVPN_SERVER_PORT PROTOCOL CLIENT_CA CLIENT_CRT CLIENT_KEY CLIENT_TLS_CRYPT
 
 for PROTOCOL in "${!PROTOCOLS[@]}"; do
+  if [[ "$NAME" != "${PROTOCOL:0:$L}" ]]; then
+    continue
+  fi
+
   SHORT="${PROTOCOL%-*}"
   OVPN_SERVER_PORT="${PROTOCOLS[$PROTOCOL]}"
   envsubst <"$ROOT/client.ovpn"
   cat -- "$ROOT/common.ovpn" "$ROOT/$SHORT.client.ovpn"
-
-  /usr/local/libexec/hr.sh
-  /usr/local/libexec/hr.sh
 done
