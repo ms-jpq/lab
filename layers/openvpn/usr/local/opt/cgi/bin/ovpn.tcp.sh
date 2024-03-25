@@ -59,6 +59,6 @@ for PROTOCOL in "${!PROTOCOLS[@]}"; do
 
   SHORT="${PROTOCOL%-*}"
   OVPN_SERVER_PORT="${PROTOCOLS[$PROTOCOL]}"
-  envsubst <"$ROOT/client.ovpn"
   cat -- "$ROOT/common.ovpn" "$ROOT/$SHORT.client.ovpn"
+  envsubst <"$ROOT/client.ovpn"
 done
