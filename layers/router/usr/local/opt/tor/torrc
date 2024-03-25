@@ -6,7 +6,7 @@ TransPort      0.0.0.0:1080
 TransPort      [::]:1080
 
 AutomapHostsOnResolve  1
-# VirtualAddrNetworkIPv4 192.168.0.0/16
+VirtualAddrNetworkIPv4 192.168.0.0/16
 VirtualAddrNetworkIPv6 ${IPV6_NETWORK}:0000:0000:0000:0000/64
 
 # Allow debugging
