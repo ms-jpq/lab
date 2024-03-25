@@ -1,4 +1,6 @@
 [[Unit]]
+After = 1-ip-alloc@o\x2dtcp0.service
+After = 1-ip-alloc@o\x2dudp0.service
 After = 1-ip-alloc@w\x2d0.service
 
 # m5_for([IF_NAME], [
