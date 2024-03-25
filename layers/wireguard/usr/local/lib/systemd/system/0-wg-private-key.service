@@ -1,5 +1,6 @@
 [Unit]
 Description         = Wireguard -- %S/local/wireguard/self.key
+RequiresMountsFor   = %S/local/wireguard
 ConditionPathExists = !%S/local/wireguard/self.key
 
 [Service]
@@ -14,7 +15,6 @@ ReadWritePaths      = %S/local %T
 
 Environment         = KEY=%S/local/wireguard/self.key
 
-ExecCondition       = sh -c '! "$@"' - test -f ${KEY}
 ExecStart           = /usr/local/libexec/sponge2.sh ${KEY} wg genkey
 ExecStart           = chmod 660 -- ${KEY}
 ExecStart           = chown -v -- systemd-network:systemd-network ${KEY}
