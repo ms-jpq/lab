@@ -9,7 +9,7 @@ upstream udp_upstream_fallback {
 include /usr/local/opt/nginx/conf/v2fly.nginx;
 
 server {
-  listen     [::]:80 ipv6only=off;
+  listen     127.0.0.53:80;
   proxy_pass unix:/run/local/nginx/acme.sock;
 }
 
