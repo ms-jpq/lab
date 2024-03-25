@@ -12,11 +12,6 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-NAME="${0##*/}"
-NAME="${NAME%.sh}"
-NAME="${NAME#*.}"
-L="${#NAME}"
-
 ROOT=/usr/local/opt/openvpn
 DAYS=6969
 
@@ -37,28 +32,15 @@ openssl req -new -key "$CLIENT_KEY" -subj "$SUBJ" -out "$CLIENT_REQ"
 openssl req -x509 -CAcreateserial -sha256 -days "$DAYS" -CA "$SERVER_CRT" -CAkey "$SERVER_KEY" -in "$CLIENT_REQ" -out "$CLIENT_CRT_SIGNED"
 openvpn --tls-crypt-v2 "$SERVER_TLS_CRYPT" --genkey tls-crypt-v2-client "$CLIENT_TLS_CRYPT"
 
-declare -A -- PROTOCOLS=()
 # shellcheck disable=SC1091
 source -- /usr/local/etc/default/o-0.ovpn.env
-PROTOCOLS=(
-  ['tcp-client']="$OVPN_TCP_PORT"
-  ['udp']="$OVPN_UDP_PORT"
-)
 
 CLIENT_CA="$(<"$SERVER_CRT")"
 CLIENT_CRT="$(<"$CLIENT_CRT_SIGNED")"
 CLIENT_KEY="$(<"$CLIENT_KEY")"
 CLIENT_TLS_CRYPT="$(<"$CLIENT_TLS_CRYPT")"
 
-export -- OVPN_SERVER_NAME OVPN_SERVER_PORT PROTOCOL CLIENT_CA CLIENT_CRT CLIENT_KEY CLIENT_TLS_CRYPT
+export -- OVPN_SERVER_NAME OVPN_TCP_PORT OVPN_UDP_PORT PROTOCOL CLIENT_CA CLIENT_CRT CLIENT_KEY CLIENT_TLS_CRYPT
 
-for PROTOCOL in "${!PROTOCOLS[@]}"; do
-  if [[ "$NAME" != "${PROTOCOL:0:$L}" ]]; then
-    continue
-  fi
-
-  SHORT="${PROTOCOL%-*}"
-  OVPN_SERVER_PORT="${PROTOCOLS[$PROTOCOL]}"
-  cat -- "$ROOT/common.ovpn" "$ROOT/$SHORT.client.ovpn"
-  envsubst <"$ROOT/client.ovpn"
-done
+cat -- "$ROOT/common.ovpn"
+envsubst <"$ROOT/client.ovpn"
