@@ -47,7 +47,7 @@ for PEER in "${PEERS[@]}"; do
   fi
 
   # shellcheck disable=SC2154
-  IPV6="$IPV6_NETWORK:$(b3sum --no-names --length 8 <<<"$PEER" | perl -CASD -wpe 's/(.{4})(?=.)/$1:/g')/64"
+  IPV6="$IPV6_NETWORK:$(b3sum --no-names --length 8 <<<"$PEER" | perl -CASD -wpe 's/(.{4})(?=.)/$1:/g')/48"
 
   for ((I = 0; ; I++)); do
     ID="$I-$PEER"
@@ -93,7 +93,8 @@ for PEER in "${PEERS[@]}"; do
       } | sponge -- "$CACHE/$ID.txt"
 
       HTML_TITLE="$ID" HTML_PRE="$CONF" HTML_CODE="$QR" envsubst <"$SELF/peer.html" | sponge -- "$CACHE/$ID.html"
-      IFACE="$CIFACE" IPV6_IF="$MACHINE_ULA" envsubst <"$SELF/peer.netdev" | sponge -- "$CACHE/$ID.netdev"
+      # shellcheck disable=SC2154
+      IFACE="$CIFACE" IPV6_IF="$MACHINE_ULA" IPV4_IF="$IPV4_NET" envsubst <"$SELF/peer.netdev" | sponge -- "$CACHE/$ID.netdev"
       IPV6_IF="$IPV6" IPV4_IF="$IPV4" IFACE="$CIFACE" DOMAIN="$HOSTNAME.home.arpa" envsubst <"$SELF/@.network" | sponge -- "$CACHE/$ID.network"
       break
     fi
