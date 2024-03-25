@@ -1,4 +1,0 @@
-ddns
-router
-wireguard
-xfs

@@ -1,4 +1,5 @@
 ddns
+openvpn
 router
 wireguard
 xfs
