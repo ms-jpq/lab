@@ -25,7 +25,7 @@ SERVER_SSL=/var/cache/local/self-signed/ovpn
 SERVER_CRT="$SERVER_SSL/ssl.crt"
 SERVER_KEY="$SERVER_SSL/ssl.key"
 
-SUBJ="/CN=$(uuidgen | tr -d -- '-')"
+SUBJ="/CN=$(uuidgen)"
 CLIENT_CRT="$(mktemp)"
 CLIENT_KEY="$(mktemp)"
 CLIENT_REQ="$(mktemp)"
