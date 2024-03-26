@@ -6,8 +6,6 @@ upstream udp_upstream_fallback {
   server unix:/dev/null;
 }
 
-include /usr/local/opt/nginx/conf/v2fly.nginx;
-
 server {
   listen     127.0.0.53:8000;
   proxy_pass unix:/run/local/nginx/acme.sock;

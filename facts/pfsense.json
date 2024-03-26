@@ -1,23 +1,10 @@
 {
-  "ENV_CNAMES": [
-    "ENV_DOMAIN=freenas.enp2s0.pfsense.home.arpa",
-    "cups.freenas.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN",
-    "cups.freenas.enp2s0.pfsense.home.arpa=freenas.enp2s0.pfsense.home.arpa",
-    "droplet.w-0.droplet.ENV_DOMAIN=ENV_DOMAIN",
-    "esxi.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN",
-    "freenas.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN",
-    "orthanc.enp2s0.pfsense.ENV_DOMAIN=ENV_DOMAIN",
-    "pfsense.ENV_DOMAIN=_gateway.w-0.pfsense.home.arpa",
-    "pfsense.w-0.pfsense.ENV_DOMAIN=ENV_DOMAIN"
-  ],
   "ENV_HOST_ALLOW_LIST": [
-    "freenas.enp2s0.pfsense.home.arpa@tcp*https",
     "freenas.enp2s0.pfsense.home.arpa@tcp*postgresql",
     "XBOX.enp2s0.pfsense.home.arpa@tcp*3074",
     "XBOX.enp2s0.pfsense.home.arpa@udp*3074"
   ],
   "ENV_HOST_FORWARD_LIST": [
-    "freenas.enp2s0.pfsense.home.arpa@tcp*https:https",
     "freenas.enp2s0.pfsense.home.arpa@tcp*postgresql:postgresql",
     "XBOX.enp2s0.pfsense.home.arpa@tcp*3074:3074",
     "XBOX.enp2s0.pfsense.home.arpa@udp*3074:3074"
@@ -32,5 +19,5 @@
     "gray-phone",
     "gray-laptop"
   ],
-  "ENV_WG_SERVER_NAME": "pfsense.ENV_DOMAIN"
+  "ENV_WG_SERVER_NAME": "ENV_DOMAIN"
 }

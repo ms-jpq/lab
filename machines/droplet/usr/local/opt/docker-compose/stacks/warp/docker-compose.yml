@@ -19,7 +19,7 @@ services:
       - traefik
     ports:
       - 127.0.0.53:9050:1080 # znc
-      - 1090:8191 # flaresolverr
+      # - 1090:8191 # flaresolverr
     volumes:
       - warp:/var/lib/cloudflare-warp
 
