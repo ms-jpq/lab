@@ -16,7 +16,7 @@
 
 ## [Private](https://github.com/ms-jpq/lab/blob/main/doc/PRIVATE_CLOUD.md)
 
-- [x] Sub-second VM / Container spin up/down
+- [x] Sub-second VM / Container instantiation
 
 - [x] Scale to zero + network activated lambdas / VM / containers
 
