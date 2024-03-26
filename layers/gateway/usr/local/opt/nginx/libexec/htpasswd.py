@@ -30,6 +30,7 @@ from functools import lru_cache
 from hmac import compare_digest, digest
 from html import escape
 from http.cookies import CookieError, Morsel, SimpleCookie
+from ipaddress import IPv4Address, IPv6Address, IPv6Interface, IPv6Network, ip_interface
 from itertools import repeat
 from logging import DEBUG, StreamHandler, captureWarnings, getLogger
 from multiprocessing import cpu_count
@@ -39,7 +40,7 @@ from re import compile
 from socket import AddressFamily, SocketKind, fromfd, socket
 from stat import S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR
 from time import time
-from typing import NewType
+from typing import NewType, Union
 from urllib.parse import SplitResultBytes, parse_qs, urlsplit
 
 _Method = NewType("_Method", bytes)
@@ -47,21 +48,26 @@ _Headers = NewType("_Headers", Mapping[bytes, Sequence[bytes]])
 _Query = NewType("_Query", Mapping[bytes, Sequence[bytes]])
 _Req = tuple[_Method, bytes, SplitResultBytes, _Query, _Headers]
 
-_ALGORITHM = "sha512"
-_RW_RW_RW_ = (S_IRUSR | S_IWUSR) | (S_IRGRP | S_IWGRP) | (S_IROTH | S_IWOTH)
+
+_IP = Union[IPv6Address, IPv4Address]
 
 
 @dataclass(frozen=True)
 class _Th:
-    fd: int
-    remote_sock: Path
+    allow_list: frozenset[str]
     authn_path: bytes
-    domain_parts: int
     cookie_name: str
     cookie_ttl: float
+    domain_parts: int
+    fd: int
     hmac_secret: bytes
-    allow_list: frozenset[str]
+    max_ipv6_prefix: int
+    remote_sock: Path
     timeout: float
+
+
+_ALGORITHM = "sha512"
+_RW_RW_RW_ = (S_IRUSR | S_IWUSR) | (S_IRGRP | S_IWGRP) | (S_IROTH | S_IWOTH)
 
 
 with nullcontext():
@@ -101,9 +107,14 @@ async def _parse(reader: StreamReader) -> _Req:
     return _Method(method.upper()), ps, parsed, _Query(query), _Headers(headers)
 
 
-def _ip(headers: _Headers) -> bytes:
+def _ip(headers: _Headers, max_ipv6_prefix: int) -> _IP:
     for ip in headers.get(b"x-real-ip", []):
-        return ip
+        if isinstance(iface := ip_interface(ip.decode()), IPv6Interface):
+            prefix = min(iface.network.prefixlen, max_ipv6_prefix)
+            net = IPv6Network((iface.network.network_address, prefix), strict=False)
+            return next(net.hosts())
+        else:
+            return iface.ip
     else:
         assert False
 
@@ -188,14 +199,15 @@ async def finalize(writer: StreamWriter) -> AsyncIterator[None]:
             await writer.wait_closed()
 
 
-async def _subrequest(sock: Path, credentials: bytes, ip: bytes) -> bool:
+async def _subrequest(sock: Path, credentials: bytes, ip: _IP) -> bool:
+    addr = ip.exploded.encode()
     reader, writer = await open_unix_connection(sock)
     async with finalize(writer):
         writer.write(b"GET / HTTP/1.0\r\nAuthorization: Basic ")
         writer.write(credentials)
         writer.write(b"\r\n")
         writer.write(b"X-Real-IP: ")
-        writer.write(ip)
+        writer.write(addr)
         writer.write(b"\r\n\r\n")
         _, line = await gather(writer.drain(), anext(reader))
         _, status, *_ = line.strip().split()
@@ -224,7 +236,7 @@ async def _thread(th: _Th) -> None:
                 user = b"".join(query.get(b"username", ()))
                 passwd = b"".join(query.get(b"password", ()))
                 auth = urlsafe_b64encode(user + b":" + passwd)
-                ip = _ip(headers)
+                ip = _ip(headers, max_ipv6_prefix=th.max_ipv6_prefix)
                 authorized = await _subrequest(
                     sock=th.remote_sock, credentials=auth, ip=ip
                 )
@@ -236,7 +248,7 @@ async def _thread(th: _Th) -> None:
                         headers, name=cname, secret=th.hmac_secret
                     )
                 if not authorized:
-                    ip = _ip(headers)
+                    ip = _ip(headers, max_ipv6_prefix=th.max_ipv6_prefix)
                     for user, auth in _auth_headers(headers):
                         authorized = await _subrequest(
                             sock=th.remote_sock, credentials=auth, ip=ip
@@ -318,6 +330,7 @@ def _parse_args() -> Namespace:
     parser.add_argument("--authn-path", type=PurePosixPath, required=True)
     parser.add_argument("--nprocs", type=int, default=cpu_count())
     parser.add_argument("--timeout", type=float, default=1.0)
+    parser.add_argument("--max-ipv6-prefix", type=int, default=56)
     return parser.parse_args()
 
 
@@ -345,14 +358,15 @@ def main() -> None:
     fd = sock.fileno()
 
     th = _Th(
-        fd=fd,
-        remote_sock=remote_sock,
+        allow_list=allow_list,
         authn_path=authn_path,
-        domain_parts=args.domain_parts,
         cookie_name=args.cookie_name,
         cookie_ttl=args.cookie_ttl,
+        domain_parts=args.domain_parts,
+        fd=fd,
         hmac_secret=hmac_secret,
-        allow_list=allow_list,
+        max_ipv6_prefix=args.max_ipv6_prefix,
+        remote_sock=remote_sock,
         timeout=args.timeout,
     )
 
