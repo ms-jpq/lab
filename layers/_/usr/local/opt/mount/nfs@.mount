@@ -1,5 +1,5 @@
 [Unit]
-Description  = Mount -- freenas.local/%J:%f
+Description  = Mount -- ${NFS_SERVER}/%J:%f
 
 [Mount]
 Type         = nfs4
@@ -9,4 +9,4 @@ Options      = soft,noatime
 
 Options      = noatime
 Where        = %f
-What         = freenas.enp2s0.pfsense.home.arpa:/%J
+What         = ${NFS_SERVER}:/%J
