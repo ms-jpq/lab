@@ -1,4 +1,4 @@
 [Files]
-Bind = /media/downloads:/media/downloads
+# Bind = /media/downloads:/media/downloads
 # TODO: idshift
 Bind = /media/shared:/media/shared

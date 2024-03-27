@@ -3,5 +3,5 @@ Description        = Polling for failed services
 
 [Timer]
 OnActiveSec        = 0
-OnUnitInactiveSec  = 6minutes
-RandomizedDelaySec = 2minutes
+OnUnitInactiveSec  = 1minute
+RandomizedDelaySec = 12seconds
