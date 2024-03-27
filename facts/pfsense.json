@@ -1,4 +1,5 @@
 {
+  "ENV_443_FWD": "freenas.enp2s0.ENV_MACHINE.home.arpa",
   "ENV_HOST_ALLOW_LIST": [
     "freenas.enp2s0.pfsense.home.arpa@tcp*postgresql",
     "XBOX.enp2s0.pfsense.home.arpa@tcp*3074",

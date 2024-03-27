@@ -1,5 +1,5 @@
 map $pid $x_fourfourthree {
-  default "freenas.enp2s0.m5_assert([ENV_MACHINE]).home.arpa:443";
+  default "m5_assert([ENV_443_FWD]):443";
 }
 
 server {
