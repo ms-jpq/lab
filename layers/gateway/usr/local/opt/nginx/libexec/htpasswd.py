@@ -109,7 +109,10 @@ async def _parse(reader: StreamReader) -> _Req:
 
 def _ip(headers: _Headers, max_ipv6_prefix: int) -> _IP:
     for ip in headers.get(b"x-real-ip", []):
-        if isinstance(iface := ip_interface(ip.decode()), IPv6Interface):
+        if ip == b"unix:":
+            LOG.warn("%s", headers)
+            return IPv6Address(0)
+        elif isinstance(iface := ip_interface(ip.decode()), IPv6Interface):
             prefix = min(iface.network.prefixlen, max_ipv6_prefix)
             net = IPv6Network((iface.network.network_address, prefix), strict=False)
             return next(net.hosts())
