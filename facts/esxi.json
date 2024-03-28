@@ -2,6 +2,7 @@
   "ENV_MACVLAN_IFS": ["enp7s0"],
   "ENV_NFS_MNTS": ["freenas.enp2s0.pfsense.home.arpa:/media/downloads"],
   "ENV_NVIDIA_VERSION": "550",
+  "ENV_PG_CLUSTERS": ["14/demo"],
   "ENV_VFIO_PCI_DEVICE_IDS": ["01:00.0[,]multifunction=on", "01:00.1"],
   "ENV_ZFS_MEM": 30
 }
