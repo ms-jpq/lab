@@ -55,7 +55,7 @@ imap)
     --no-progress-meter
     --user "$AUTH_USER:$AUTH_PASS"
     --header "X-Real-IP: $CLIENT_IP"
-    --unix-socket /run/haproxy/htpasswd.sock
+    --unix-socket /run/local/nginx/direct_auth.sock
     -- localhost
   )
 

@@ -32,12 +32,15 @@ const rate_limit = async (request) => {
       const basic = Buffer.from(`${auth_user}:${auth_password}`).toString(
         "base64",
       );
-      const resp = await fetch("http://unix:/run/haproxy/htpasswd.sock", {
-        headers: {
-          "X-Real-IP": client_ip,
-          Authorization: `Basic ${basic}`,
+      const resp = await fetch(
+        "http://unix:/run/local/nginx/direct_auth.sock",
+        {
+          headers: {
+            "X-Real-IP": client_ip,
+            Authorization: `Basic ${basic}`,
+          },
         },
-      });
+      );
       if (resp.ok) {
         request.headersOut["Auth-Port"] = "1443";
         request.headersOut["Auth-Server"] = "127.0.0.53";
