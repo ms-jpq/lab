@@ -4,6 +4,8 @@ ConditionPathExists = /usr/local/opt/systemd-monitor/libexec/cron.sh
 
 [Service]
 Type                = oneshot
+LogLevelMax         = notice
+SyslogLevel         = notice
 ProtectSystem       = strict
 ProtectHome         = yes
 ReadWritePaths      = %C/local
