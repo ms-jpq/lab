@@ -14,6 +14,7 @@ CERTBOT=(
   certonly
   --non-interactive --agree-tos
   --keep-until-expiring
+  --renew-with-new-domains
   --expand
   --work-dir /var/tmp
   --webroot
