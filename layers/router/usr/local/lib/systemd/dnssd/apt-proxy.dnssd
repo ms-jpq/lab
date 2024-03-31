@@ -1,0 +1,4 @@
+[Service]
+Name = %H
+Type = _apt_proxy._tcp
+Port = 8888
