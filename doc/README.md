@@ -1,24 +1,34 @@
-# Welcome to my pet cloud.
+# Walk Through
 
-## Design Goals
+@home ML cloud
 
-### [DX](https://github.com/ms-jpq/lab/blob/main/doc/DX.md)
+## What Is It?
 
-- [x] 100ms max iteration time
+Bare-metal solution for provisioning a mini cloud on consumer hardware.
 
-- [x] Idempotent deployment + instant rollback
+## Motivation
+
+If you had 5 weeks vs. 5 months vs. 5 years to think about a problem, how would your solution differ?
+
+---
+
+# Design Goals
+
+- [x] 100ms max incremental builds, ~1s feedback loop
+
+- [x] Idempotent deployment, ubiquitous sandboxing, quick & clean rollback
 
 - [x] Daily + continuous CI verification
 
-- [?] Minimum maintenance
+- [x] Minimum maintenance
 
-## Cloud
+---
 
-## [Private](https://github.com/ms-jpq/lab/blob/main/doc/PRIVATE_CLOUD.md)
+# Constituents
 
 - [x] Sub-second VM / Container instantiation
 
-- [x] Scale to zero + network activated lambdas / VM / containers
+- [x] Scale to zero + network activated lambdas / VM / Containers
 
 - [x] Overlay networks + recursive DNS service discovery / registration
 
@@ -26,14 +36,336 @@
 
 - [x] Durable Postgres IaC
 
-- [x] Log aggregation
+- [x] Crash consistent DB / VM / Container snapshots
+
+- [x] Log aggregation + live alerts
 
 - [x] HTTP + IMAP single sign on
 
-## [Hybrid](https://github.com/ms-jpq/lab/blob/main/doc/NETWORK.md)
+- [x] VPN Gateways + SSH bastion
 
-- [x] VPN gateways
+- [ ] ...etc
 
-- [x] Terraform → Route 53 + KMS encrypted EBS + VPC + Launch Template + AMI + EC2 + Budget Alerts
+---
 
-- [x] Terraform → AWS LightSail: DNS + Block Storage + VM
+# Passion Project
+
+Labour of ~~love?~~ **hate**.
+
+- Why the hell is there a version on everything in k8s?
+
+  - Just gonna break at inconvenient time
+
+- This library is 5 years old and has 7 major versions?
+
+- Why is Ansible so slow and keeps getting slower?
+
+  - Why does it have 16 levels of variable precedence?
+
+- Generalized annoyance
+
+  - Lots of Microk8s scripts don't even have basic `-e` error checking?
+
+  - LXD sending SIGKILL instead of SIGTERM to display daemons, thus making cleaning up impossible?
+
+  - et al.
+
+---
+
+# Prior Art
+
+- Ansible ⇒ Popular desired state configuration tool
+
+- LXD / Libvirt ⇒ Canonical / Redhat's Container + VM orchestration platforms
+
+- Dockerd / k8s
+
+- Half a decade of thinking about it
+
+---
+
+# ~~Magnets~~ containers how do they work?
+
+- We live in the world of ~~containers~~ systemd
+
+  - cgroups
+
+  - network namespace
+
+  - mount namespace
+
+  - local DNS server
+
+  - OSI transport layer proxies
+
+  - unified log driver
+
+  - etc.
+
+## Modern container runtimes
+
+> Why are we rewriting Linux daemons, when Linux has a system daemon
+
+```json
+{ "exec-opts": ["native.cgroupdriver=systemd"] }
+```
+
+```yaml
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+---
+cgroupDriver: systemd
+```
+
+---
+
+# Building of sandbox: observations
+
+1. I want to run containers because they are a good way to run sandboxed programs
+
+   These programs are already provided by Linux distros
+
+2. Containers are just Linux processes running under certain isolations
+
+   These isolations are provided by the Linux system daemon
+
+3. Just run everything on vanilla Linux??
+
+   Use system daemon to enforce **immutability** and other isolations → container like multi-tenancy
+
+4. Culture of Linux
+
+   "If you break user space, I will kill you" - Linus
+
+   "How do we remove deprecated features when CentOS exists?" - OpenZFS developer
+
+---
+
+# UNIX Load order
+
+## Program Search Path
+
+```bash
+printf -- %s "$PATH" | tr -- ':' '\n'
+```
+
+```txt
+/usr/local/sbin
+/usr/local/bin
+/usr/sbin
+/usr/bin
+/sbin
+/bin
+/usr/games
+/usr/local/games
+```
+
+## Systemd Search Path
+
+```txt
+/etc/systemd/system.control/*
+/run/systemd/system.control/*
+/run/systemd/transient/*
+/run/systemd/generator.early/*
+/etc/systemd/system/*
+/etc/systemd/system.attached/*
+/run/systemd/system/*
+/run/systemd/system.attached/*
+/run/systemd/generator/*
+…
+/usr/lib/systemd/system/*
+/run/systemd/generator.late/*
+```
+
+---
+
+# 💡
+
+**Q:** Why does `homebrew (x86)` install everything under `/usr/local/*`
+
+    Because it's empty
+
+**Q:** Does systemd allow configuration overriding?
+
+    Yes
+
+**Q:** Does systemd load configurations from `/usr/local/*`?
+
+    Yes, yes
+
+**Q:** Put everything under `/usr/local/*` and make rest of `/` immutable?
+
+    Yes, yes, yes
+
+---
+
+# Linux System Daemon
+
+```yaml
+# docker-compose.yml
+volumes:
+  - ./main.nginx:/etc/nginx/nginx.conf:ro
+```
+
+I regret not making systemd enforce maximum isolation by default - Lennart Poettering
+
+    if he did, it would break backward compatibility and probably never have became main stream
+
+```systemd
+# /usr/local/lib/systemd/system/nginx.service.d/0-override.conf
+
+# make `/` read-only, instead of shipping another copy of Linux
+[Service]
+ProtectSystem     = strict
+ReadWritePaths    = /run /var/tmp
+BindReadOnlyPaths = /usr/local/opt/nginx/conf/main.nginx:/etc/nginx/nginx.conf
+```
+
+## Control-Alt-Delete
+
+```bash
+rm -fr -- /usr/local/*
+```
+
+---
+
+# Everything is a file
+
+- UNIX configurations are just files
+
+- Build desired `/usr/local/*` file set via layering of desired configurations
+
+- Sync to target machines
+
+- Reload or restart system services if configuration differs
+
+```txt
+.
+├── facts
+│  └── (...).{env,json}
+├── layers
+│  └── (...)/
+├── machines
+│  └── (...)/
+├── makelib
+│  └── (...).mk
+└── terraform
+   └── (...)
+```
+
+---
+
+# Boomer-core
+
+Boomer tech aren't fast because they were better.
+
+Computers were just slow.
+
+## `make`
+
+- Incremental builds
+
+- Maximum parallelism
+
+  - Shuffle order
+
+- Recursively make Makefiles (Think Ruby stdlib https://www.rubydoc.info/stdlib/mkmf/MakeMakefile)
+
+## `m4`
+
+- Text templating
+
+- Only data structure is list
+
+- Only control structure is if & redirect & macro
+
+  - Not even for loops
+
+  - Recursion again
+
+## `rsync`
+
+- Free idempotency
+
+- Synergize with Make's timestamp based delta
+
+## `ln`
+
+- Git stores symlinks
+
+- Why repeat yourself
+
+## `bash`
+
+### High Level Language
+
+What is the building block?
+
+#### Haskell?
+
+Functions
+
+```haskell
+functions . pointfree . compose
+```
+
+#### Bash
+
+Programs
+
+```bash
+program | program | program
+```
+
+---
+
+# Everything everywhere, at once
+
+- Local make → SSH send script → Cached envfile of remote machine
+
+- Local make → SSH pipe lining → Remote make
+
+```mermaid
+sequenceDiagram
+  actor make as GNUMake
+  participant machine1 as Machine
+  participant machine2 as Machine
+
+  par
+    rect rgba(0, 0, 255, 0.05)
+      par
+        make-->>make : cp files / links
+      and
+        opt cached
+          rect rgba(0, 255, 0, 0.05)
+            make-->>+machine2 : env?
+            machine2-->>-make : nproc, hosttype, version_id, etc.
+          end
+        end
+        make-->>make : m4 templates
+      and
+        make-->>make : deference links that begin with `!`
+      end
+      make->>machine2 : rsync deltas
+      machine2-->>machine2 : make deltas
+    end
+  and
+    rect rgba(0, 0, 255, 0.05)
+      par
+        make-->>make : cp files / links
+      and
+        opt cached
+          rect rgba(0, 255, 0, 0.05)
+            make-->>+machine1 : env?
+            machine1-->>-make : nproc, hosttype, version_id, etc.
+          end
+        end
+        make-->>make : m4 templates
+      and
+        make-->>make : deference links that begin with `!`
+      end
+      make->>machine1 : rsync deltas
+      machine1-->>machine1 : make deltas
+    end
+  end
+```

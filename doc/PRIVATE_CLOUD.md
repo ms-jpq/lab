@@ -62,7 +62,7 @@ sequenceDiagram
       end
       rect rgba(0, 255, 0, 0.05)
         alt Container
-          machine-->>machine : connect to external nfs file system
+          machine-->>machine : auto mount external nfs file system
         else VM
           machine-->>machine : connect to external iscsi block storage
         end
