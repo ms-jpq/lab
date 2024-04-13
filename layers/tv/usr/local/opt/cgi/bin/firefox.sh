@@ -14,8 +14,7 @@ while read -r LINE; do
   fi
 
   LHS="${LINE%%:*}"
-  KEY="${LHS,,}"
-  case "$KEY" in
+  case "${LHS,,}" in
   content-length)
     BYTES="${LINE##*: }"
     ;;
