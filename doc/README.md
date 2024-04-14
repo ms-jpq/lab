@@ -72,6 +72,98 @@ Labour of ~~love?~~ **hate**.
 
 ---
 
+# ...
+
+```mermaid
+mindmap
+  root)Linux(
+    ((Network))
+      (DNS)
+        Local
+          DHCP Domains
+          mdns["mDNS (Bonjour)"]
+          Recursive Routing
+          Packet Redirect
+          Deterministic IPv6
+        Public
+          DDNS
+            Cloudflare API
+          Terraform IAC
+            Route53
+            LightSail
+      (VPN Overlays)
+        OpenVPN
+          Port Sharing
+        Wireguard
+      (Ingress)
+        Application Layer
+        Transport Layer
+          TCP
+            TLS
+          UDP
+    ((Storage))
+      (CoW - Copy on Write)
+        Snapshots
+        Maintenance
+          Defragmentation
+          Scrubbing
+          TRIM
+      (Object - S3)
+        AWS
+        S3 API
+      (RDMBS)
+        PostgreSQL
+      (Sharing)
+        WebDav
+        NFS
+        SMB
+        ISCSI
+    ((Isolation))
+      (VMs)
+        MicroVMs
+          Kernel Boot
+        Full Emulation
+          Software TPM
+          Display Proxy
+            Scale from Zero
+      (Containers)
+        Nspawn
+        OCI
+      (Lambdas)
+    ((GPU))
+      CUDA
+      VFIO
+      MDEV
+    ((Aggeration))
+      (Logging)
+      (Push Alerts)
+        SMTP
+        Active Sync
+    ((Perf))
+      (Monitoring)
+      (Tuning)
+        TCP Congestion Control
+        IO Scheduler / Queuing
+        Packet Prioritization
+        ZFS Parameters
+    ((Security))
+      (Firewall)
+        Segmentation
+      (Proxy Layer)
+        HTTP
+        SMTP
+        IMAP
+    ((Misc))
+      (OpenPGP)
+        Public APT Repo
+          Package Pipeline
+        Secret Store
+      NTP
+      CUPS
+```
+
+---
+
 # Prior Art
 
 - Ansible ⇒ Popular desired state configuration tool
