@@ -72,7 +72,7 @@ Labour of ~~love?~~ **hate**.
 
 ---
 
-# ...
+# Complexity
 
 ```mermaid
 mindmap
@@ -164,6 +164,10 @@ mindmap
 
 ---
 
+# Reducing Complexity
+
+---
+
 # Prior Art
 
 - Ansible ⇒ Popular desired state configuration tool
@@ -172,7 +176,7 @@ mindmap
 
 - Dockerd / k8s
 
-- Half a decade of thinking about it
+- Over half a decade of thinking about it
 
 ---
 
