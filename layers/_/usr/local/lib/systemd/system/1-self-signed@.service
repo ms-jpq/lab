@@ -21,7 +21,7 @@ Environment         = PEM=%C/local/self-signed/%I/ssl.pem
 Environment         = CRT=%C/local/self-signed/%I/ssl.crt
 Environment         = KEY=%C/local/self-signed/%I/ssl.key
 
-ExecStart           = openssl req -x509 -newkey rsa:4096 -sha256 -days 6969 -nodes -subj /CN=%H -out ${CRT} -keyout ${KEY}
+ExecStart           = openssl req -x509 -newkey rsa:4096 -days 6969 -nodes -subj /CN=%H -out ${CRT} -keyout ${KEY}
 ExecStart           = dd oflag=append conv=notrunc if=${CRT} of=${PEM}
 ExecStart           = dd oflag=append conv=notrunc if=${KEY} of=${PEM}
 ExecStop            = rm -v -fr -- ${DIR}
