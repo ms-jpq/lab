@@ -1,6 +1,6 @@
 # Walk Through
 
-@home ML cloud
+@home cloud
 
 ## What Is It?
 
@@ -100,10 +100,12 @@ mindmap
         Transport Layer
           TCP
             TLS
+              Lets Encrypt
+              OpenSSL
           UDP
     ((Storage))
-      (CoW - Copy on Write)
-        Snapshots
+      (Copy on Write)
+        Policy Based Snapshots
         Maintenance
           Defragmentation
           Scrubbing
@@ -120,12 +122,12 @@ mindmap
         ISCSI
     ((Isolation))
       (VMs)
+        Cloud-Init
         MicroVMs
           Kernel Boot
         Full Emulation
           Software TPM
-          Display Proxy
-            Scale from Zero
+          TCP ↔ Websocket
       (Containers)
         Nspawn
         OCI
@@ -137,9 +139,9 @@ mindmap
     ((Aggeration))
       (Logging)
       (Push Alerts)
-        SMTP
+        Mail
         Active Sync
-    ((Perf))
+    ((Performance))
       (Monitoring)
       (Tuning)
         TCP Congestion Control
@@ -147,9 +149,10 @@ mindmap
         Packet Prioritization
         ZFS Parameters
     ((Security))
-      (Firewall)
+      (Network + Transport Layer)
+        Firewall
         Segmentation
-      (Proxy Layer)
+      (Protocol Layer)
         HTTP
         SMTP
         IMAP
@@ -157,18 +160,20 @@ mindmap
       (OpenPGP)
         Public APT Repo
           Package Pipeline
+          Background Update
         Secret Store
       NTP
       CUPS
+      Github Mirror
 ```
 
 ---
 
 # Reducing Complexity
 
----
+??????
 
-# Prior Art
+## Prior Art
 
 - Ansible ⇒ Popular desired state configuration tool
 
@@ -465,3 +470,27 @@ sequenceDiagram
     end
   end
 ```
+
+---
+
+## Orthogonality: Ensuring independence of service environments
+
+- **Immutable root**: Instead of pulling in numerous images of Linux user space, service processes are prevented from modifying the root file system, thereby making the root file system analogous to a shared base image in OCI containers.
+
+- **Transient environment**: Service processes are granted write privileges to clean slate temporary file systems, for both IPC and caching.
+
+- **Isolated network**: Service processes are spawned under their own network namespace if necessary, with a loopback proxy straddling the host ↔ private network namespaces. To reduce overhead, this is performed as a last resort with UNIX sockets being the preferred IPC mechanism.
+
+## Standardization: Ensuring generality of service interfaces
+
+- **Consistent logging**: Service logs are redirected to standard file descriptors, and syslog sockets, which are then aggregated by the host journal, which in turn is centralized by a unified journaling service.
+
+- **Configuration overlay**: Instead of overriding service configuration in place, service configuration files are mounted as read-only overlays. Thus maintaining the read-only root and making it trivial to roll-back to original configuration.
+
+- **State shift**: Using mount namespaces, service states are transparently shifted onto a CoW file system, which is governed by snapshot policies. This allows for constant time, crash consistent, and deduplicated backups.
+
+## Logistics: Ensuring delivery of service dependencies
+
+- **Consistent deployment**: Service dependencies are resolved by the native package manager, and only the native package manager.
+
+- **Native overlay**: A daily build + distribution CI pipeline is maintained for the native package format, which is then overlaid via the package manager onto the read-only root file system.
