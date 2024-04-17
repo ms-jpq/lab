@@ -1,6 +1,5 @@
 cuda
 nspawn
-postgres
 qemu
 xfs
 zfs

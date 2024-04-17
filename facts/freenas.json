@@ -45,7 +45,8 @@
     "14/miniflux",
     "14/postgrest",
     "14/shiori",
-    "14/wallabag"
+    "14/wallabag",
+    "14/demo"
   ],
   "ENV_PUBLIC_SITES": [],
   "ENV_RCLONE_LOCAL": [
