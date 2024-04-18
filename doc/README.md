@@ -1,14 +1,10 @@
 # Walk Through
 
-@home cloud
+"We have cloud at home" - mom
 
-## What Is It?
+## Think Mark, Think
 
-Bare-metal solution for provisioning a mini cloud on consumer hardware.
-
-## Motivation
-
-If you had 5 weeks vs. 5 months vs. 5 years to think about a problem, how would your solution differ?
+If you had 5 days vs. 5 weeks vs. 5 months vs. 5 years to think about a problem, how would your solution differ?
 
 ---
 
@@ -26,25 +22,25 @@ If you had 5 weeks vs. 5 months vs. 5 years to think about a problem, how would 
 
 # Constituents
 
-- [x] Sub-second VM / Container instantiation
+- Sub-second VM / Container instantiation
 
-- [x] Scale to zero + network activated lambdas / VM / Containers
+- Scale to zero + network activated lambdas / VM / Containers
 
-- [x] Overlay networks + recursive DNS service discovery / registration
+- Overlay networks + recursive DNS service discovery / registration
 
-- [x] GPU (CUDA & mdev) VM / containers
+- GPU (CUDA & mdev) VM / containers
 
-- [x] Durable Postgres IaC
+- Durable Postgres IaC
 
-- [x] Crash consistent DB / VM / Container snapshots
+- Crash consistent DB / VM / Container snapshots
 
-- [x] Log aggregation + live alerts
+- Log aggregation + live alerts
 
-- [x] HTTP + IMAP single sign on
+- HTTP + IMAP single sign on
 
-- [x] VPN Gateways + SSH bastion
+- Wireguard + OpenVPN Gateways + SSH bastion
 
-- [ ] ...etc
+- ...etc
 
 ---
 
@@ -66,7 +62,7 @@ Labour of ~~love?~~ **hate**.
 
   - Lots of Microk8s scripts don't even have basic `-e` error checking?
 
-  - LXD sending SIGKILL instead of SIGTERM to display daemons, thus making cleaning up impossible?
+  - LXD (Canonical's OpenShift) sending SIGKILL instead of SIGTERM to display daemons, thus making cleaning up impossible.
 
   - et al.
 
@@ -171,17 +167,27 @@ mindmap
 
 # Reducing Complexity
 
-??????
+Over half a decade of thinking about it
 
 ## Prior Art
 
 - Ansible ⇒ Popular desired state configuration tool
 
-- LXD / Libvirt ⇒ Canonical / Redhat's Container + VM orchestration platforms
+- LXD / Libvirt ⇒ Canonical / Red Hat's Container + VM orchestration platforms
 
 - Dockerd / k8s
 
-- Over half a decade of thinking about it
+- Systemd-Nspawn
+
+---
+
+# Containers
+
+- **Orthogonality**: Ensuring independence of service environments
+
+- **Standardization**: Ensuring generality of service interfaces
+
+- **Logistics**: Ensuring delivery of service dependencies
 
 ---
 
@@ -220,29 +226,7 @@ cgroupDriver: systemd
 
 ---
 
-# Building of sandbox: observations
-
-1. I want to run containers because they are a good way to run sandboxed programs
-
-   These programs are already provided by Linux distros
-
-2. Containers are just Linux processes running under certain isolations
-
-   These isolations are provided by the Linux system daemon
-
-3. Just run everything on vanilla Linux??
-
-   Use system daemon to enforce **immutability** and other isolations → container like multi-tenancy
-
-4. Culture of Linux
-
-   "If you break user space, I will kill you" - Linus
-
-   "How do we remove deprecated features when CentOS exists?" - OpenZFS developer
-
----
-
-# UNIX Load order
+# Non Sequitur: Executable Load order
 
 ## Program Search Path
 
@@ -286,21 +270,25 @@ printf -- %s "$PATH" | tr -- ':' '\n'
 
     Because it's empty
 
-**Q:** Does systemd allow configuration overriding?
+**Q:** Does `Systemd` load configurations from `/usr/local/*`?
 
     Yes
 
-**Q:** Does systemd load configurations from `/usr/local/*`?
+**Q:** Does `Systemd` allow service configuration overriding?
 
-    Yes, yes
+    Yes, Yes
 
-**Q:** Put everything under `/usr/local/*` and make rest of `/` immutable?
+**Q:** Is it possible override inviduiual service configurations such that the private mountspace of each service load configurations from `/usr/local/*`?
 
     Yes, yes, yes
 
+**Q:** Put everything under `/usr/local/*` and make `/` immutable?
+
+    Yes, yes, yes, yes
+
 ---
 
-# Linux System Daemon
+# ~~OCI~~ Systemd Containers
 
 ```yaml
 # docker-compose.yml
@@ -310,12 +298,10 @@ volumes:
 
 I regret not making systemd enforce maximum isolation by default - Lennart Poettering
 
-    if he did, it would break backward compatibility and probably never have became main stream
-
 ```systemd
 # /usr/local/lib/systemd/system/nginx.service.d/0-override.conf
 
-# make `/` read-only, instead of shipping another copy of Linux
+# treat read-only `/` as OCI base image layer
 [Service]
 ProtectSystem     = strict
 ReadWritePaths    = /run /var/tmp
@@ -352,70 +338,6 @@ rm -fr -- /usr/local/*
 │  └── (...).mk
 └── terraform
    └── (...)
-```
-
----
-
-# Boomer-core
-
-Boomer tech aren't fast because they were better.
-
-Computers were just slow.
-
-## `make`
-
-- Incremental builds
-
-- Maximum parallelism
-
-  - Shuffle order
-
-- Recursively make Makefiles (Think Ruby stdlib https://www.rubydoc.info/stdlib/mkmf/MakeMakefile)
-
-## `m4`
-
-- Text templating
-
-- Only data structure is list
-
-- Only control structure is if & redirect & macro
-
-  - Not even for loops
-
-  - Recursion again
-
-## `rsync`
-
-- Free idempotency
-
-- Synergize with Make's timestamp based delta
-
-## `ln`
-
-- Git stores symlinks
-
-- Why repeat yourself
-
-## `bash`
-
-### High Level Language
-
-What is the building block?
-
-#### Haskell?
-
-Functions
-
-```haskell
-functions . pointfree . compose
-```
-
-#### Bash
-
-Programs
-
-```bash
-program | program | program
 ```
 
 ---
@@ -473,24 +395,359 @@ sequenceDiagram
 
 ---
 
-## Orthogonality: Ensuring independence of service environments
+# Sub-second VM / Containers
 
-- **Immutable root**: Instead of pulling in numerous images of Linux user space, service processes are prevented from modifying the root file system, thereby making the root file system analogous to a shared base image in OCI containers.
+- "Daemonless" `systemd` services (in the `podman` sense)
 
-- **Transient environment**: Service processes are granted write privileges to clean slate temporary file systems, for both IPC and caching.
+- Concurrent initialization
 
-- **Isolated network**: Service processes are spawned under their own network namespace if necessary, with a loopback proxy straddling the host ↔ private network namespaces. To reduce overhead, this is performed as a last resort with UNIX sockets being the preferred IPC mechanism.
+```mermaid
+sequenceDiagram
+  participant machine as Machine
+  participant machine_slice as VM / Container
+  actor user
 
-## Standardization: Ensuring generality of service interfaces
+  critical ahead of time cache
+    rect rgba(0, 0, 255, 0.05)
+      rect rgba(0, 255, 0, 0.05)
+        par
+          machine-->>machine : unpack .tar / .qcow2 onto COW file systems (brtfs, zfs, xfs for reflink only)
+        and
+          machine-->>machine : unpack kernel + initrd
+        end
+      end
+    end
+  end
 
-- **Consistent logging**: Service logs are redirected to standard file descriptors, and syslog sockets, which are then aggregated by the host journal, which in turn is centralized by a unified journaling service.
+  user->>+machine : container / VM please
 
-- **Configuration overlay**: Instead of overriding service configuration in place, service configuration files are mounted as read-only overlays. Thus maintaining the read-only root and making it trivial to roll-back to original configuration.
+  critical almost instantaneous
+    rect rgba(0, 0, 255, 0.05)
+      par
+        rect rgba(0, 255, 0, 0.05)
+          rect rgba(255, 0, 0, 0.05)
+            par
+              machine-->>machine : fork COW file systems
+            and
+              machine-->>machine : provision DNS zone + network toplogy
+            end
+          end
+          machine-->>machine : overlay cloud-init / sysprep with hostname, IP, SSH key, etc
+        end
+      and
+        rect rgba(0, 255, 0, 0.05)
+          par
+            machine-->>machine : provision DNS zone + network toplogy
+            machine-->>machine : setup host <-> vm / container bridge
+            machine-->>machine : setup firewall / ip forwarding rules
+          and
+            machine-->>machine : setup vm / container <-> external macvlan/tap interface
+          end
+        end
+      and
+        opt Q35 VM
+          rect rgba(0, 255, 0, 0.05)
+            machine-->>machine : spawn TPM daemon
+          end
+        end
+      end
+      rect rgba(0, 255, 0, 0.05)
+        alt Container
+          machine-->>machine : auto mount external nfs file system
+        else VM
+          machine-->>machine : connect to external iscsi block storage
+        end
+      end
+      machine-->>machine_slice : spawn
+    end
+  end
 
-- **State shift**: Using mount namespaces, service states are transparently shifted onto a CoW file system, which is governed by snapshot policies. This allows for constant time, crash consistent, and deduplicated backups.
+  rect rgba(0, 0, 255, 0.05)
+    alt if container
+      rect rgba(0, 0, 255, 0.05)
+        machine_slice-->>machine : systemd-notify ready!
+      end
+    else if q35 (windows)
+      rect rgba(0, 255, 0, 0.05)
+        par
+          machine-->>machine : setup ingress UNIX socket
+        and
+          machine-->>machine : set [ingress UNIX <-> websocket <-> VNC UNIX] proxy to pending activation
+        and
+          machine-->>machine_slice : attach VM display to VNC UNIX socket
+        and
+          rect rgba(255, 0, 0, 0.05)
+            opt if hard drive not written to
+              machine-->>machine_slice : attach windows iso / virtio drivers
+            end
+          end
+        end
+      end
+    end
+  end
 
-## Logistics: Ensuring delivery of service dependencies
+  machine->>-user : OK
+```
 
-- **Consistent deployment**: Service dependencies are resolved by the native package manager, and only the native package manager.
+---
 
-- **Native overlay**: A daily build + distribution CI pipeline is maintained for the native package format, which is then overlaid via the package manager onto the read-only root file system.
+# Scale from zero + network activation
+
+- Network socket activated services
+
+- Shutdown on idle
+
+```mermaid
+sequenceDiagram
+  participant fat_lambda as Fat Lambda
+  participant lambda as Lambda
+  participant system_daemon as System Daemon
+  participant nginx_lb as Load Balancer
+  participant user as User
+
+  critical
+    rect rgba(0, 0, 255, 0.05)
+      system_daemon-->>lambda : enumerate lambda functions
+      system_daemon-->>system_daemon : setup UNIX socket for each function
+      system_daemon-->>nginx_lb : live reload nginx, add path to each UNIX socket
+    end
+  end
+
+  loop
+    rect rgba(0, 0, 255, 0.05)
+      user->>+nginx_lb : send request to `/<path>`
+      nginx_lb-->>nginx_lb : protocol layer authn / authz
+      rect rgba(0, 255, 0, 0.05)
+        alt if rejected
+          nginx_lb-->>nginx_lb : redirect for auth
+        else if function sized lambda
+          rect rgba(255, 0, 0, 0.05)
+            nginx_lb-->>+system_daemon : forward request to socket
+            system_daemon-->>+lambda : spawn, attach request to file descriptor (fd) 3
+            lambda-->>lambda : read request <fd 3
+            lambda-->>lambda : process request
+            lambda-->>-system_daemon : stream response >fd 3
+            system_daemon-->>-nginx_lb : forward response from socket
+          end
+        else if fat lambda, ie. windows VM
+          rect rgba(255, 0, 0, 0.05)
+            nginx_lb-->>+system_daemon : forward request to socket
+            rect rgba(255, 255, 0, 0.05)
+              par
+                system_daemon-->>lambda : spawn long lived websocket proxy
+              and
+                system_daemon-->>fat_lambda : start VM if not already started
+              end
+            end
+            rect rgba(255, 255, 0, 0.05)
+              loop
+                lambda-->>fat_lambda : send keyboard + mouse movements
+                fat_lambda-->>lambda : send display updates
+              end
+            end
+            lambda-->>system_daemon : transport forwarding
+            system_daemon-->>-nginx_lb : connect VM display to user
+          end
+          rect rgba(255, 0, 0, 0.05)
+            opt shutdown on idle transport
+              rect rgba(255, 255, 0, 0.05)
+                par
+                  system_daemon-->>lambda : shutdown on socket inactivity
+                and
+                  system_daemon-->>fat_lambda : shutdown on socket inactivity
+                end
+              end
+            end
+          end
+        end
+      end
+      nginx_lb->>-user : response
+    end
+  end
+```
+
+---
+
+# Durable Postgres IaC
+
+- Continuous & incremental snapshots
+
+```mermaid
+flowchart LR
+  client1["client"] -- user1:pass2@host/dbname1 --> pg_bouncer["proxy"]
+  client2["client"] -- user1:pass2@host/dbname2 --> pg_bouncer
+  client3["client"] -- user2:pass3@host/dbname3 --> pg_bouncer
+  pg_bouncer --> postgres1["postgres"]
+  pg_bouncer --> postgres2["postgres"]
+  pg_bouncer --> postgres3["postgres"]
+  postgres1 --> cow1["copy on write filesystem"]
+  postgres2 --> cow2["copy on write filesystem"]
+  postgres3 --> cow3["copy on write filesystem"]
+  cow1 --> blk["abstract block device"]
+  cow2 --> blk
+  cow3 --> blk
+```
+
+---
+
+# DNS
+
+- Machines are responsible for DNS queries on their subdomains, recursively.
+
+- i.e. Root machines are queried for **`[A -> B]`**, next level machines are queried for **`[C -> D]`**, and so so.
+
+```mermaid
+flowchart LR
+  machine1["< root domain / machine >"] -- A --> interface1["< ifname >"]
+  machine1 -- A --> interface2["< ifname >"]
+  interface1 -- B --> machine2["< machine name >"]
+  machine2 -- C --> interface3["< ifname >"]
+  machine2 -- C --> interface4["< ifname >"]
+  interface3 -- D --> host1["< machine / VM / container >"]
+  interface3 -- D --> host2["< machine / VM / container >"]
+  interface4 -- D --> host3["< machine / VM / container >"]
+  interface2 -- B --> machine3["< machine name >"]
+  machine3 -- C --> interface5["< ifname >"]
+```
+
+---
+
+# IP allocations
+
+- Zero coordination: Globally unique addresses, trivially routable DNS → IP.
+
+- Internal coordination: Machine level locking, machines handle DNS → IP translation via `DHCP` leases.
+
+- Centralized coordination: IPv4 partitioning mechanism.
+
+```mermaid
+flowchart LR
+  local --> maybe1{stateful?}
+  maybe1 -- yes --> local_l["machine internal coordination"]
+  maybe1 -- no --> lock_free["zero coordination"]
+  global --> maybe2{stateful?}
+  maybe2 -- no --> lock_free["zero coordination"]
+  maybe2 -- yes --> global_l["centralized coordination"]
+```
+
+---
+
+# IPv6
+
+ULA - `120/128` bits of freedom, enough bytes for **globally unique deterministic hashing** → BLAKE3
+
+- `48` bits for machine-id derived **globally unique** subnet (upper `fd**:****:****::/48`)
+
+- `64` bits for machine-id derived **globally unique** `SLAAC` address suffix (lower `::****:****:****:****/64`)
+
+- `16` bits left for machine local interfaces (sequential ID), **deterministically ordered** via `udev` naming scheme for "physical" interfaces and first come, first served for virtual interfaces
+
+Stateless global topology.
+
+Stateless `host` → `VM / container` topology, since `host` has prior knowledge of `VM / container` ID as hash inputs.
+
+---
+
+# IPv4
+
+Private ranges - `{24,20,16}/32` bits of freedom, insufficient entropy for stateless solutions.
+
+```mermaid
+flowchart TB
+  pool["all private subnets"] -- initial --> used["subtract unavailable subnets"]
+  mark["mark subnets unavailable"] -- initial --> used
+  used --> unused["sort available subnets by size"]
+  unused --> alloc["allocate network from smallest available subnet"]
+  alloc --> used
+```
+
+---
+
+# Overlay Network
+
+Site to Site WireGuard gateways.
+
+---
+
+# Load Balancer + ACL
+
+- MTA: Mail Transfer Agent
+
+- MDA: Mail Delivery Agent
+
+```mermaid
+sequenceDiagram
+  actor user as User
+  participant nginx as Load Balancer
+  participant letsencrypt as Certificate Authority
+  participant haproxy_nginx as Auth Server
+  participant http_srv as HTTP Services
+  participant mda as MDA
+  participant mta as MTA
+
+  rect rgba(0, 0, 255, 0.05)
+    nginx -->>+ letsencrypt: HTTP-01 challenge
+    letsencrypt -->>- nginx: Certificate
+  end
+
+  rect rgba(0, 0, 255, 0.05)
+    user -->> nginx : HTTP + TLS
+    nginx -->>+ haproxy_nginx : User IP + auth headers
+    rect rgba(0, 255, 0, 0.05)
+      haproxy_nginx -->> haproxy_nginx : Auth(z/n) + failure rate limit verify
+      haproxy_nginx -->>- nginx: Auth status + auth cookie
+    end
+    alt auth failed
+      nginx -->> user : Authn redirect / Authz denied
+    else auth ok
+      rect rgba(255, 0, 0, 0.05)
+        nginx -->>+ http_srv : Forward request
+        http_srv -->>- nginx: HTTP response
+        nginx -->> user : Forward response + auth cookie
+      end
+    end
+  end
+
+  rect rgba(0, 0, 255, 0.05)
+    user -->> nginx : SMTP + TLS (optional)
+    nginx -->>+ haproxy_nginx : User IP + auth headers
+    rect rgba(0, 255, 0, 0.05)
+      haproxy_nginx -->> haproxy_nginx : Auth(z/n) + failure rate limit verify
+      haproxy_nginx -->>- nginx: Auth status
+    end
+    alt auth failed
+      nginx -->> user : Nein!
+    else auth ok
+      rect rgba(255, 0, 0, 0.05)
+        nginx -->>+ mta : Forward mail
+        par
+          rect rgba(255, 255, 0, 0.05)
+            mta -->>+ mda: Forward mail
+            mda -->>- mta: Ack
+          end
+        and
+          mta -->>- nginx: SMTP response
+        end
+        nginx -->> user : Sent!
+      end
+    end
+  end
+
+  rect rgba(0, 0, 255, 0.05)
+    user -->> nginx : IMAP + TLS
+    nginx -->>+ haproxy_nginx : User IP + auth headers
+    rect rgba(0, 255, 0, 0.05)
+      haproxy_nginx -->> haproxy_nginx : Auth(z/n) + failure rate limit verify
+      haproxy_nginx -->>- nginx: Auth status
+    end
+    alt auth failed
+      nginx -->> user : Nein!
+    else auth ok
+      rect rgba(255, 0, 0, 0.05)
+        nginx -->>+ mda : Forward request
+        mda -->>- nginx: IMAP response
+        nginx -->> user : You got mail!
+      end
+    end
+  end
+```
