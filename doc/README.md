@@ -179,9 +179,7 @@ Half a decade's worth of iterations.
 
 - Systemd-Nspawn
 
----
-
-# Containers
+## Containers
 
 - **Orthogonality**: Ensuring independence of service environments
 
@@ -193,7 +191,7 @@ Half a decade's worth of iterations.
 
 # ~~Magnets~~ containers how do they work?
 
-- We live in the world of ~~containers~~ systemd
+- We live in the world of ~~containers~~ **Systemd**
 
   - cgroups
 
@@ -207,7 +205,7 @@ Half a decade's worth of iterations.
 
   - unified log driver
 
-  - etc.
+  - etc
 
 ## Modern container runtimes
 
@@ -317,6 +315,50 @@ BindReadOnlyPaths = /usr/local/opt/nginx/conf/main.nginx:/etc/nginx/nginx.conf
 ```bash
 rm -fr -- /usr/local/*
 ```
+
+---
+
+# Orthogonality
+
+## Immutable root
+
+Instead of pulling in numerous images of Linux user space, service processes are prevented from modifying the root file system. This serves to make the root file system analogous to a shared base image in OCI containers.
+
+## Transient environment
+
+Service processes are granted write privileges to clean slate temporary file systems, for both inter-process communication (IPC) and caching.
+
+## Isolated network
+
+Service processes are spawned under their own network namespace if necessary, with a loopback proxy straddling the host ↔ private network namespaces. To reduce overhead, this is performed as a last resort with UNIX sockets being the preferred IPC mechanism.
+
+---
+
+# Standardization
+
+## Consistent logging
+
+Service logs are redirected to standard file descriptors, and syslog sockets, which are then aggregated by the host journal. This is, in turn, centralized by a unified journaling service.
+
+## Configuration overlay
+
+Instead of overriding service configuration in place, service configuration files are mounted as read-only overlays. By doing so, maintaining the read-only root and making it trivial to roll-back to original configuration.
+
+## State shift
+
+Using mount namespaces, service states are transparently shifted onto a CoW file system, which is governed by snapshot policies. This allows for constant time, crash consistent, and deduplicated backups.
+
+---
+
+# Logistics
+
+## Consistent deployment
+
+Service dependencies are resolved by the native package manager and only the native package manager.
+
+## Native overlay
+
+Instead of OCI tarballs, a daily build + distribution CI pipeline is maintained for the native package format which is then overlaid via the package manager onto the read-only root file system.
 
 ---
 
@@ -751,9 +793,3 @@ flowchart TB
   unused --> alloc["allocate network from smallest available subnet"]
   alloc --> used
 ```
-
----
-
-# Overlay Network
-
-Site to Site WireGuard gateways.
