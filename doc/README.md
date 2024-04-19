@@ -165,7 +165,7 @@ mindmap
 
 ---
 
-# Reducing Complexity
+# Taming Complexity
 
 Half a decade's worth of iterations.
 
@@ -362,6 +362,34 @@ Instead of OCI tarballs, a daily build + distribution CI pipeline is maintained 
 
 ---
 
+# Reusable Service Templates
+
+Composition of containerized services.
+
+```mermaid
+flowchart LR
+  dns["DNS"] --> facade["VM / Container facade"]
+  ip["IP allocation"] --> vbr["Network Bridge / Tap device"]
+  subgraph "Service Set"
+    vbr --> firewall["Firewall + IP forwarding"]
+  end
+  firewall --> facade
+  fork["Fork CoW filesystem"] --> facade
+  sys-prep["Cloud-init / Root overlay"] --> facade
+  mount["Mount external NFS / iSCSI"] --> facade
+  tpm["VM only - TPM daemon"] --> facade
+  subgraph "Service Set"
+    socket["UNIX listening socket"] --> display["VM only - Display Proxy"]
+  end
+  display --> facade
+  subgraph "Service Set"
+    socket --> nginx-mon["Socket watcher"]
+    nginx-mon -- "Reload nginx on fs events" --> nginx["Nginx"]
+  end
+```
+
+---
+
 # Everything is a file
 
 - UNIX configurations are just files
@@ -440,10 +468,6 @@ sequenceDiagram
     end
   end
 ```
-
----
-
-# Reusable Service Templates
 
 ---
 
