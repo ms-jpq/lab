@@ -1,9 +1,13 @@
 {
   "ENV_BTRFS_MNTS": ["fuchsia:/var/lib/local"],
   "ENV_CERTBOT_SITES": [
-    "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN,SUB_DOMAIN.ENV_DOMAIN2,], ENV_INDEX, ENV_CS)"
+    "12ft.ENV_DOMAIN",
+    "ENV_DOMAIN",
+    "autodiscover.ENV_DOMAIN",
+    "ipfs.ENV_DOMAIN",
+    "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN,], ENV_INDEX)",
+    "s3.ENV_DOMAIN"
   ],
-  "ENV_CS": ["12ft", "autodiscover", "ipfs", "s3"],
   "ENV_INDEX": [
     "12ft",
     "archive",
