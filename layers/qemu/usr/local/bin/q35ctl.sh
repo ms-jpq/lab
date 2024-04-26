@@ -16,6 +16,10 @@ SOCK_PIN='.#2-websock-proxy@.socket'
 SERVICES=()
 SOCKS=()
 for NAME in "$@"; do
+  NAME="${NAME,,}"
+  NAME="${NAME:0:12}"
+  NAME="${NAME//[^A-z0-9]/'-'}"
+
   MACH="$(systemd-escape -- "$NAME")"
   SERVICES+=("2-qemu-q35@$MACH.service")
   SOCKS+=("2-websock-proxy@$MACH.socket")

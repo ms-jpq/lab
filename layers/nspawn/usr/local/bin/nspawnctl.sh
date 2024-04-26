@@ -18,6 +18,9 @@ LIB="/var/lib/local/$LIB"
 MACHINES=()
 SERVICES=()
 for MACH in "$@"; do
+  MACH="${MACH,,}"
+  MACH="${MACH:0:12}"
+  MACH="${MACH//[^A-z0-9]/'-'}"
   MACHINES+=("$MACH")
   SERVICES+=("$SERVICE_NAME@$(systemd-escape -- "$MACH").service")
 done

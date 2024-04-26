@@ -1,6 +1,7 @@
 [Unit]
 Description         = Self signed certs for %H @ %C/local/self-signed/%I
 
+RequiresMountsFor   = %C/local/self-signed
 ConditionPathExists = !%C/local/self-signed/%I/ssl.pem
 ConditionPathExists = !%C/local/self-signed/%I/ssl.crt
 ConditionPathExists = !%C/local/self-signed/%I/ssl.key

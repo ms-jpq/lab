@@ -11,9 +11,6 @@ LinkLocalAddressing = yes
 LLDP                = yes
 EmitLLDP            = customer-bridge
 
-# TODO: systemd 250, move under `[[IPv6AcceptRA]]` as Token
-IPv6Token           = static:::${LO64}
-
 MulticastDNS        = yes
 
 [DHCPv4]
@@ -24,3 +21,4 @@ UseDNS              = no
 
 [IPv6AcceptRA]
 UseDNS              = no
+Token               = static:::${LO64}

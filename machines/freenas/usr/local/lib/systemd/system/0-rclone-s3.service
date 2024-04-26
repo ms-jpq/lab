@@ -11,5 +11,8 @@ ProtectHome         = yes
 PrivateTmp          = yes
 ReadWritePaths      = %T %V
 
-# TODO: is this even worth it?
-ExecStart           = /usr/local/libexec/rclone serve s3 --config /dev/null --addr=127.0.0.53:8070 --baseurl /s3 --read-only -- /media
+User                = 1000
+Group               = www-data
+
+Environment         = SOCK=%t/local/s3.sock
+ExecStart           = rclone serve s3 --config=/dev/null --dir-cache-time=0 --addr=${SOCK} --baseurl=/s3 -- /media

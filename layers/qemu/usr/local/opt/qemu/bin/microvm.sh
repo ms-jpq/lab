@@ -2,6 +2,7 @@
 
 set -o pipefail
 
+# TODO: smbios
 LONG_OPTS='name:,cpu:,mem:,qmp:,monitor:,console:,bridge:,kernel:,initrd:,drive:,root:,macvtap:'
 GO="$(getopt --options='' --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"

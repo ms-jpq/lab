@@ -29,6 +29,7 @@ ARGV=(
   --locale C.UTF-8
 )
 
+# TODO -- external_pid_file??
 OPTIONS=(
   cluster_name="$CLUSTER"
   external_pid_file="$PGDATA/postmaster.pid"
@@ -42,8 +43,7 @@ OPTIONS=(
 )
 
 for OPTION in "${OPTIONS[@]}"; do
-  printf -- '%s\n' "TODO: --set $OPTION"
-  # ARGV+=(--set "$OPTION")
+  ARGV+=(--set "$OPTION")
 done
 
 /usr/local/libexec/fs-alloc.sh "$PGDATA"

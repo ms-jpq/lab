@@ -11,9 +11,6 @@ DHCP                               = yes
 IPv6AcceptRA                       = yes
 DHCPPrefixDelegation               = yes
 
-# TODO: remove this in systemd 250
-DHCPv6PrefixDelegation             = yes
-IPv6Token                          = static:::69:420:420:69
 
 MulticastDNS                       = no
 DNSOverTLS                         = opportunistic
@@ -34,10 +31,9 @@ ForceDHCPv6PDOtherInformation      = yes
 DHCPv6Client                       = always
 Token                              = static:::69:420:420:69
 
-# TODO: systemd 250
-# [[DHCPPrefixDelegation]]
-# UplinkInterface                    = :self
-# Token                              = static:::69:420:420:69
+[[DHCPPrefixDelegation]]
+UplinkInterface                    = :self
+Token                              = static:::69:420:420:69
 
 # [[CAKE]]
 # TODO: re-enable on newer systemd

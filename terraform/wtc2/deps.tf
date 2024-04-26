@@ -19,7 +19,5 @@ terraform {
     encrypt        = true
     key            = "wtc2.json"
     region         = "ca-west-1"
-    # TODO: next release should fix this
-    skip_region_validation = true
   }
 }
