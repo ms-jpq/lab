@@ -1,8 +1,8 @@
 + genisoimage
 + novnc
 + ovmf
-+ qemu
 + qemu-block-extra
++ qemu-system
 + qemu-utils
 + rlwrap
 + swtpm-tools
