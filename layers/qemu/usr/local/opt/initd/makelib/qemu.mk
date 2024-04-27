@@ -20,7 +20,7 @@ clobber.qemu:
 	sudo -- /usr/local/libexec/fs-dealloc.sh $(QEMU_IMG) $(CACHE)
 	sudo -- rm -v -rf -- $(CACHE)/qemu/*
 
-pkg._: /etc/apt/sources.list.d/ppa_canonical-server_server-backports.list
+# pkg._: /etc/apt/sources.list.d/ppa_canonical-server_server-backports.list
 /etc/apt/sources.list.d/ppa_canonical-server_server-backports.list:
 	sudo -- ./libexec/add-ppa.sh canonical-server/server-backports
 
