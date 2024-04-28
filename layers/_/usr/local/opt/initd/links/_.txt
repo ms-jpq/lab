@@ -1,3 +1,4 @@
+/etc/netns                                                                         ../run/local/netns
 /usr/local/lib/systemd/system/dnsmasq.service                                      /dev/null
 /usr/local/lib/systemd/system/motd-news.timer                                      /dev/null
 /usr/local/lib/systemd/system/sockets.target.wants/systemd-journal-gatewayd.socket /usr/lib/systemd/system/systemd-journal-gatewayd.socket
