@@ -39,6 +39,7 @@
 + ssh-import-id
 + systemd-journal-remote
 + systemd-oomd
++ systemd-resolved
 + tree
 + ttyd
 + unattended-upgrades
