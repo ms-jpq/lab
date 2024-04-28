@@ -1,4 +1,3 @@
-# + libnginx-mod-http-brotli-static
 + b3sum
 + bat
 + bottom
@@ -39,8 +38,11 @@
 + ssh-import-id
 + systemd-journal-remote
 + systemd-oomd
-+ systemd-resolved
 + tree
 + ttyd
 + unattended-upgrades
 + unzip
+# m4_ifelse(ENV_VERSION_ID, [22.04], [], [
++ libnginx-mod-http-brotli-static
++ systemd-resolved
+# ])
