@@ -29,16 +29,18 @@ ARGV=(
   --locale C.UTF-8
 )
 
-# TODO -- external_pid_file??
+true && exit
+
+RUNTIME="/run/local/postgresql/$CLUSTER"
 OPTIONS=(
   cluster_name="$CLUSTER"
-  external_pid_file="$PGDATA/postmaster.pid"
+  external_pid_file="$RUNTIME/postmaster.pid"
   hba_file="$PGDATA/pg_hba.conf"
   ident_file="$PGDATA/pg_ident.conf"
   include_dir="/usr/local/opt/postgresql/$CLUSTER/conf.d"
   listen_addresses=''
   stats_temp_directory='/tmp/pgstats'
-  unix_socket_directories="/run/local/postgresql/$CLUSTER"
+  unix_socket_directories="$RUNTIME"
   unix_socket_permissions='0220'
 )
 
