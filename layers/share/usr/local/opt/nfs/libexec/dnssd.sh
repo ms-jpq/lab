@@ -19,4 +19,4 @@ for EXPORT in "${EXPORTS[@]}"; do
   envsubst <"$SERVICES/nfs.service.xml" >"/etc/avahi/services/$NAME.service"
 done
 
-chown -v -- systemd-resolve:systemd-resolve "${FILES[@]}"
+chown -v -- systemd-resolve:systemd-resolve "${FILES[@]}" || cat /etc/passwd
