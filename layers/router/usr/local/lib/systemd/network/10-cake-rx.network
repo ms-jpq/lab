@@ -4,6 +4,9 @@ Name                   = cake-rx
 [Link]
 RequiredForOnline      = no
 
+[QDisc]
+Parent                 = ingress
+
 [CAKE]
 Parent                 = ingress
 Handle                 = ffff

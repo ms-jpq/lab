@@ -39,8 +39,15 @@ SED=(
   -e '1s/%/ /g'
 )
 
-show() {
-  /usr/local/libexec/hr-run.sh tc -statistics qdisc show dev "$2" >"$TMP"
+declare -A -- TR=()
+TR=(
+  ['TX']="$WAN_IF"
+  # ['RX']='cake-rx'
+)
+
+for KEY in "${!TR[@]}"; do
+  VAL="${TR["$KEY"]}"
+  /usr/local/libexec/hr-run.sh tc -statistics qdisc show dev "$VAL" >"$TMP"
   readarray -t -- LINES <"$TMP"
 
   EMPTY=0
@@ -60,13 +67,11 @@ show() {
     fi
   done
 
-  {
-    printf -- '%s\n' "${LINES[@]:0:M1}"
-    printf -- '%s\n' "${LINES[@]:M1:M2-M1}" | awk "$AWK" | "${SED[@]}" | column -t | pr --omit-pagination --indent=2
-    printf -- '%s\n' "${LINES[@]:M2}"
-  }
-}
+  /usr/local/libexec/hr.sh
+  printf -- '%s\n' "$KEY"
+  /usr/local/libexec/hr.sh
 
-show RX cake-rx
-# shellcheck disable=SC2154
-show TX "$WAN_IF"
+  printf -- '%s\n' "${LINES[@]:0:M1}"
+  printf -- '%s\n' "${LINES[@]:M1:M2-M1}" | awk "$AWK" | "${SED[@]}" | column -t | pr --omit-pagination --indent=2
+  printf -- '%s\n' "${LINES[@]:M2}"
+done
