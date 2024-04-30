@@ -4,8 +4,5 @@
 + dnsdist
 + microsocks
 + ndisc6
-+ squid
-+ squid-deb-proxy
-+ squidclient
 + tor
 + unbound

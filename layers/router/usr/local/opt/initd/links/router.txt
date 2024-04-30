@@ -1,3 +1,2 @@
 /usr/local/etc/default/tc.sh.cgi.env                     cake.tc.env
-/usr/local/lib/systemd/system/squid-deb-proxy.service    /dev/null
 /usr/local/lib/systemd/system/unbound-resolvconf.service /dev/null
