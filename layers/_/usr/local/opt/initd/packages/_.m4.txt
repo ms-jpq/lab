@@ -27,7 +27,7 @@
 + netdata
 + netdata-plugins-python
 + nfs-common
-+ nginx
++ nginx-extras
 + parallel
 + pv
 + py-gixy
