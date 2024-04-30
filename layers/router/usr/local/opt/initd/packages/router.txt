@@ -1,6 +1,5 @@
 # + jool-dkms
 # + jool-tools
-# + ntopng
 + chrony
 + dnsdist
 + microsocks
