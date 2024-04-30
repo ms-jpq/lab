@@ -17,10 +17,10 @@ Environment     = WAN_IF=
 Environment     = IFB=%I-rx
 Environment     = QDISC=ffff:
 
-ExecStartPre    = /usr/lib/systemd/systemd-networkd-wait-online --interface ${IFB}
+# ExecStartPre    = /usr/lib/systemd/systemd-networkd-wait-online --interface ${IFB}
 # TX
-ExecStart       = tc qdisc  replace dev ${WAN_IF} root cake ingress nat dual-dsthost $TC_TX
+# ExecStart       = tc qdisc  replace dev ${WAN_IF} root cake ingress nat dual-dsthost $TC_TX
 # RX
-ExecStart       = tc qdisc  replace dev ${IFB}    root cake egress  nat dual-srchost $TC_RX
-ExecStart       = tc qdisc  replace dev ${WAN_IF} handle ${QDISC} ingress
+# ExecStart       = tc qdisc  replace dev ${IFB}    root cake egress  nat dual-srchost $TC_RX
+# ExecStart       = tc qdisc  replace dev ${WAN_IF} handle ${QDISC} ingress
 ExecStart       = tc filter replace dev ${WAN_IF} parent ${QDISC} matchall action mirred egress redirect dev ${IFB}

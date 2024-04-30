@@ -32,6 +32,10 @@ Token                              = static:::69:420:420:69
 UplinkInterface                    = :self
 Token                              = static:::69:420:420:69
 
+[[QDisc]]
+Parent                             = ingress
+Handle                             = ffff
+
 [[CAKE]]
 NAT                                = yes
 FlowIsolationMode                  = dual-src-host

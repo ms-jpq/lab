@@ -42,7 +42,7 @@ SED=(
 declare -A -- TR=()
 TR=(
   ['TX']="$WAN_IF"
-  # ['RX']='cake-rx'
+  ['RX']='cake-rx'
 )
 
 for KEY in "${!TR[@]}"; do
