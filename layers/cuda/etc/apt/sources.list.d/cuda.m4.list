@@ -1,1 +1,1 @@
-deb http://developer.download.nvidia.com/compute/cuda/repos/m5_assert([ENV_ID])[]m4_patsubst(m5_assert([ENV_VERSION_ID]), [\.], [])/m5_assert([ENV_HOSTTYPE])/ /
+# deb http://developer.download.nvidia.com/compute/cuda/repos/m5_assert([ENV_ID])[]m4_patsubst(m5_assert([ENV_VERSION_ID]), [\.], [])/m5_assert([ENV_HOSTTYPE])/ /

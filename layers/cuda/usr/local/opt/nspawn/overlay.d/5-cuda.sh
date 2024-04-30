@@ -2,6 +2,8 @@
 
 set -o pipefail
 
+true && exit
+
 ROOT="$1"
 
 FILES=(
