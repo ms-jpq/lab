@@ -41,3 +41,4 @@ NAT                                = yes
 FlowIsolationMode                  = dual-src-host
 PriorityQueueingPreset             = diffserv4
 Wash                               = yes
+RTTSec                             = 100ms

@@ -1,16 +1,16 @@
 [Match]
-Name                   = cake-rx
+Name                    = cake-rx
 
 [Link]
-RequiredForOnline      = no
+RequiredForOnline       = no
 
-[QDisc]
-Parent                 = ingress
+[Network]
+ConfigureWithoutCarrier = yes
 
 [CAKE]
-Parent                 = ingress
-Handle                 = ffff
-NAT                    = yes
-FlowIsolationMode      = dual-dst-host
-PriorityQueueingPreset = besteffort
-Wash                   = yes
+Handle                  = ffff
+NAT                     = yes
+FlowIsolationMode       = dual-dst-host
+PriorityQueueingPreset  = besteffort
+Wash                    = yes
+RTTSec                  = 10ms
