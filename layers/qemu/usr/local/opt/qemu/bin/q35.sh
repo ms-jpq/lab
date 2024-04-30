@@ -178,11 +178,12 @@ ARGV+=(
 )
 
 if [[ -n "${VNC:-""}" ]]; then
+  AUD='aud0'
   ARGV+=(
     -display "vnc=unix:$VNC"
     -device 'virtio-vga'
-    # TODO model=virtio-sound-pci @ qemu8.2
-    -device 'ich9-intel-hda'
+    -device "virtio-sound-pci,audiodev=$AUD"
+    -audiodev "driver=none,id=$AUD"
   )
 else
   ARGV+=(-nographic)
