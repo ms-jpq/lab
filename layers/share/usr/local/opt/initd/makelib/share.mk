@@ -15,9 +15,9 @@ nfs: /etc/exports.d/._touch
 	sudo -- '$<' /etc/exports.d/*.exports
 	sudo -- touch -- '$@'
 
-pkg._: /etc/apt/sources.list.d/ppa_linux-schools_samba-latest.list
-/etc/apt/sources.list.d/ppa_linux-schools_samba-latest.list:
-	sudo -- ./libexec/add-ppa.sh linux-schools/samba-latest
+# pkg._: /etc/apt/sources.list.d/ppa_linux-schools_samba-latest.list
+# /etc/apt/sources.list.d/ppa_linux-schools_samba-latest.list:
+# 	sudo -- ./libexec/add-ppa.sh linux-schools/samba-latest
 
 samba: /usr/local/opt/samba/smb.conf
 /usr/local/opt/samba/smb.conf: /usr/local/opt/samba/libexec/conf.sh $(SMB_CONF) $(shell shopt -u failglob && printf -- '%s ' /usr/local/opt/samba/conf.d/*.conf) | /usr/bin/envsubst
