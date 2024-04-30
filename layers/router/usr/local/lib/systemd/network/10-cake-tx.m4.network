@@ -24,9 +24,6 @@ UseSIP                             = no
 WithoutRA                          = solicit
 UseDelegatedPrefix                 = yes
 
-# TODO: remove this in systemd 250
-ForceDHCPv6PDOtherInformation      = yes
-
 [[IPv6AcceptRA]]
 DHCPv6Client                       = always
 Token                              = static:::69:420:420:69
@@ -35,9 +32,8 @@ Token                              = static:::69:420:420:69
 UplinkInterface                    = :self
 Token                              = static:::69:420:420:69
 
-# [[CAKE]]
-# TODO: re-enable on newer systemd
-# NAT                                = yes
-# FlowIsolationMode                  = dual-src-host
-# PriorityQueueingPreset             = diffserv4
-# Wash                               = yes
+[[CAKE]]
+NAT                                = yes
+FlowIsolationMode                  = dual-src-host
+PriorityQueueingPreset             = diffserv4
+Wash                               = yes

@@ -1,14 +1,13 @@
 [Match]
-Name              = cake-rx
+Name                   = cake-rx
 
 [Link]
-RequiredForOnline = no
+RequiredForOnline      = no
 
-# TODO: re-enable on newer systemd
-# [CAKE]
-# Parent                 = ingress
-# Handle                 = ffff
-# NAT                    = yes
-# FlowIsolationMode      = dual-dst-host
-# PriorityQueueingPreset = besteffort
-# Wash                   = yes
+[CAKE]
+Parent                 = ingress
+Handle                 = ffff
+NAT                    = yes
+FlowIsolationMode      = dual-dst-host
+PriorityQueueingPreset = besteffort
+Wash                   = yes

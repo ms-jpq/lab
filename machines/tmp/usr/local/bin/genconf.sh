@@ -6,8 +6,6 @@ IF='nordlynx'
 A="$(ip --json addr show dev "$IF" | jq --exit-status --raw-output '.[].addr_info[] | "\(.local)/\(.prefixlen)"' | sed -E -n -e 's/(.+)/Address = \1/p')"
 readarray -t -- ADDRS <<<"$A"
 
-# TODO -- next version of resolvctl supports JSON
-
 D="$(resolvectl dns -- "$IF")"
 D="${D#*':'}"
 readarray -t -d ' ' -- DNS <<<"$D"
