@@ -16,4 +16,4 @@ AllowedIPs          = $4
 AllowedIPs          = $5
 # ])
 
-# m5_for([X], [PEER(X)], m5_assert([ENV_PEER]))
+# m5_for([X_X], [PEER(X_X)], m5_assert([ENV_PEER]))
