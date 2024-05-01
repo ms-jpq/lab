@@ -10,6 +10,7 @@ events {
 
 http {
   access_log                off;
+  log_not_found             off;
   client_body_temp_path     /var/tmp/client_body;
   fastcgi_temp_path         /var/tmp/fastcgi;
   proxy_temp_path           /var/tmp/proxy;
@@ -20,11 +21,15 @@ http {
   absolute_redirect         off;
   charset                   "UTF-8";
   client_max_body_size      0;
-  log_not_found             off;
+  brotli                    on;
+  brotli_static             on;
+  brotli_types              *;
+  gzip                      on;
+  gzip_static               on;
+  gzip_types                *;
   sendfile                  on;
   ssl_prefer_server_ciphers on;
   tcp_nopush                on;
-  # brotli on;
   include                   /etc/nginx/mime.types;
   include                   /usr/local/opt/nginx/conf/ssl.nginx;
 
