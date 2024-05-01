@@ -6,6 +6,8 @@ CollectMode       = inactive
 After             = network-online.target
 
 [Service]
+Restart           = on-failure
+
 ProtectSystem     = strict
 ProtectHome       = yes
 PrivateTmp        = yes

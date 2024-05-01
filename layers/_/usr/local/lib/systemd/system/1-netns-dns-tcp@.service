@@ -11,6 +11,8 @@ BindsTo              = 1-netns-dns@%j.service
 After                = 1-netns-dns@%j.service
 
 [Service]
+Restart              = on-failure
+
 ProtectSystem        = strict
 ProtectHome          = yes
 PrivateTmp           = yes
