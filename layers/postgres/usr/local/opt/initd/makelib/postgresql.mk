@@ -1,6 +1,10 @@
 .PHONY: psql
 all: psql
 
+pkg._: /etc/apt/trusted.gpg.d/pgdg.asc
+/etc/apt/trusted.gpg.d/pgdg.asc:
+	sudo -- $(CURL) --output '$@' -- 'https://www.postgresql.org/media/keys/ACCC4CF8.asc'
+
 /usr/lib/postgresql: pkg._
 
 PSQL_CLUSTERS := /usr/local/etc/default/postgresql.env
