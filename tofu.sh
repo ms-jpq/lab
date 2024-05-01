@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-BASE="$(realpath -- "${0%/*}")"
+BASE="${0%/*}"
 
 set -a
 # shellcheck disable=SC1091
