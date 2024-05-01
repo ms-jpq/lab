@@ -16,6 +16,20 @@ resource "aws_lightsail_domain" "sea_to_sky" {
   domain_name = each.key
 }
 
+resource "google_dns_managed_zone" "sea_to_sky" {
+  provider = google.ca_e2
+  for_each = toset([var.le_domain])
+  name     = "s2s-${each.key}"
+  dns_name = each.key
+}
+
+output "google_dns_name_servers" {
+  value = {
+    for srv in google_dns_managed_zone.sea_to_sky :
+    srv.dns_name => srv.name_servers
+  }
+}
+
 data "external" "lightsail_nameserver" {
   program = ["${path.module}/lightsail_nameservers.sh"]
   query = {
