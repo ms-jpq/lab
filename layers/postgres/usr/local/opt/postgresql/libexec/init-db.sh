@@ -29,17 +29,17 @@ ARGV=(
   --locale C.UTF-8
 )
 
-true && exit
-
+# https://www.postgresql.org/docs/current/config-setting.html
 RUNTIME="/run/local/postgresql/$CLUSTER"
 OPTIONS=(
   cluster_name="$CLUSTER"
-  external_pid_file="$RUNTIME/postmaster.pid"
+  external_pid_file="$RUNTIME/postgresql.pid"
   hba_file="$PGDATA/pg_hba.conf"
   ident_file="$PGDATA/pg_ident.conf"
   include_dir="/usr/local/opt/postgresql/$CLUSTER/conf.d"
   listen_addresses=''
   stats_temp_directory='/tmp/pgstats'
+  timezone='Etc/UTC'
   unix_socket_directories="$RUNTIME"
   unix_socket_permissions='0220'
 )
@@ -53,7 +53,6 @@ chown -v -- "$USER:$USER" "$PGDATA"
 
 "${RUN[@]}" "${ARGV[@]}"
 "${RUN[@]}" mkdir -v -p -- "$PGDATA/conf.d"
-ID="$CLUSTER" envsubst <"$BASE/../postgresql.conf" | "${RUN[@]}" sponge -- "$PGDATA/postgresql.conf"
 
 if systemd-notify --booted; then
   systemctl start -- "postgresql@$CLUSTER"
