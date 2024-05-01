@@ -3,9 +3,16 @@ locals {
   }
   light_vols = {
   }
+  compute_vols = {
+    fuchsia = {
+      size = 20
+      type = "pd-standard"
+    }
+  }
   vultr_vols = {
     fuchsia = {
       size = 40
+      type = "storage_opt"
     }
   }
 }
@@ -95,9 +102,32 @@ output "ebs_lite" {
   ]
 }
 
+resource "google_compute_disk" "iscsi" {
+  provider = google.ca_e2
+  for_each = local.compute_vols
+  name     = "iscsi-${each.key}"
+  size     = each.value.size
+  type     = each.value.type
+  zone     = local.gcp_regions.ca_e2[0]
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+output "compute_disk" {
+  value = [
+    for key, val in google_compute_disk.iscsi :
+    {
+      id   = val.id
+      size = val.size
+      zone = val.zone
+    }
+  ]
+}
+
 resource "vultr_block_storage" "iscsi" {
   for_each   = local.vultr_vols
-  block_type = "storage_opt"
+  block_type = each.value.type
   label      = "iscsi-${each.key}"
   live       = true
   region     = local.vultr_regions.seattle
