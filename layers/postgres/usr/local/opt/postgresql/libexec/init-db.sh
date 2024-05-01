@@ -18,7 +18,6 @@ RUN=(
 )
 
 # https://www.postgresql.org/docs/current/app-initdb.html
-# TODO: use icu @ PG 16
 ARGV=(
   env --ignore-environment
   --
