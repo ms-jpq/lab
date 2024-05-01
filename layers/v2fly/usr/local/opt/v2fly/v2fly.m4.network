@@ -10,8 +10,8 @@
 # m4_pushdef([SUFFIX], m4_substr(B3, 0, 4):m4_substr(B3, 4, 4):m4_substr(B3, 8, 4):m4_substr(B3, 12, 4))
 # m4_pushdef([SALTED], m4_substr(m4_esyscmd(b3sum --no-names --length 8 <<<'PROTOCOL-TRANS-ENV_V2R_SEED'), 0, 16))
 # PROTOCOL-TRANS SALTED
-# TODO: systemd 250, move under `[[IPv6AcceptRA]]` as Token
-IPv6Token = static:::SUFFIX
+[[IPv6AcceptRA]]
+Token = static:::SUFFIX
 # ])
 # ], TRANSPORTS)
 # ], PROTOCOLS)
