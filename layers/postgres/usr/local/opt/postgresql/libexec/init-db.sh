@@ -26,7 +26,9 @@ ARGV=(
   "$BASE/pg-path.sh" "$CLUSTER"
   initdb
   --pgdata "$PGDATA"
-  --locale C.UTF-8
+  --locale-provider icu
+  --icu-locale zh_Hans_CN
+  --locale zh_CN.UTF-8
 )
 
 # https://www.postgresql.org/docs/current/config-setting.html
