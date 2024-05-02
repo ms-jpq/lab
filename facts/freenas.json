@@ -39,7 +39,7 @@
     "orthanc.enp2s0.pfsense",
     "pfsense.w-0.pfsense"
   ],
-  "ENV_MACVLAN_IFS": ["enp108s0", "eno1"],
+  "ENV_MACVLAN_IFS": ["enp109s0", "eno1"],
   "ENV_NFS_EXPORTS": ["downloads", "media", "wallpapers"],
   "ENV_PG_CLUSTERS": [
     "14/miniflux",
