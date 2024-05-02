@@ -119,7 +119,7 @@ resource "vultr_block_storage" "iscsi" {
   }
 }
 
-output "vblk" {
+output "vultr_blk" {
   value = [
     for key, val in vultr_block_storage.iscsi : {
       id   = val.id

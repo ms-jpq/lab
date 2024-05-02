@@ -1,1 +1,1 @@
-../wsb/gcp.tf
+../bootstrap/gcp.tf
