@@ -1,6 +1,7 @@
 data "google_compute_image" "ubuntu_lts" {
-  family      = "ubuntu-24"
+  family      = "ubuntu-2404-lts-arm64"
   most_recent = true
+  project     = "ubuntu-os-cloud"
 }
 
 output "ami_ubuntu_lts" {
