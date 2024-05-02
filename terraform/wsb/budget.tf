@@ -46,6 +46,7 @@ data "google_iam_role" "bill_gates" {
   name     = "roles/billing.admin"
 }
 
+# gcloud auth application-default login
 resource "google_billing_account_iam_member" "tinker" {
   provider           = google.ca_e2
   billing_account_id = var.gcp_billing_account
@@ -53,13 +54,13 @@ resource "google_billing_account_iam_member" "tinker" {
   role               = data.google_iam_role.bill_gates.name
 }
 
-resource "google_billing_budget" "septims" {
-  provider        = google.ca_e2
-  billing_account = var.gcp_billing_account
-  amount {
-    specified_amount {
-      currency_code = "USD"
-      units         = local.budget
-    }
-  }
-}
+# resource "google_billing_budget" "septims" {
+#   provider        = google.ca_e2
+#   billing_account = var.gcp_billing_account
+#   amount {
+#     specified_amount {
+#       currency_code = "USD"
+#       units         = local.budget
+#     }
+#   }
+# }
