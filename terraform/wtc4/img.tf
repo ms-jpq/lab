@@ -53,7 +53,7 @@ data "cloudinit_config" "ci_data" {
 
 resource "google_compute_instance_template" "familia" {
   provider     = google.ca_e2
-  project      = local.gcp_project
+  project      = data.google_compute_disk.john.project
   machine_type = "e2-small"
   disk {
     source_image = data.google_compute_image.ubuntu_lts.self_link
