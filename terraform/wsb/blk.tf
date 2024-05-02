@@ -22,7 +22,7 @@ resource "aws_ebs_volume" "iscsi" {
   encrypted         = true
   kms_key_id        = each.value.arn
   size              = each.value.size
-  type              = each.value.type
+  type              = "gp3"
   tags = {
     id = "iscsi-${each.key}"
   }
@@ -89,11 +89,11 @@ resource "google_compute_disk" "iscsi" {
   for_each = local.compute_vols
   name     = "iscsi-${each.key}"
   size     = each.value.size
-  type     = each.value.type
+  type     = "pd-standard"
   zone     = local.gcp_regions.ca_e2[0]
-  # lifecycle {
-  #   prevent_destroy = true
-  # }
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 output "compute_disk" {
@@ -109,7 +109,7 @@ output "compute_disk" {
 
 resource "vultr_block_storage" "iscsi" {
   for_each   = local.vultr_vols
-  block_type = each.value.type
+  block_type = "storage_opt"
   label      = "iscsi-${each.key}"
   live       = true
   region     = local.vultr_regions.seattle

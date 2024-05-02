@@ -1,6 +1,6 @@
 resource "aws_vpc" "fastx" {
   assign_generated_ipv6_cidr_block = true
-  cidr_block                       = "10.0.0.0/16"
+  cidr_block                       = local.vpc_cidr
   enable_dns_hostnames             = true
 }
 

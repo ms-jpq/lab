@@ -8,7 +8,7 @@ resource "google_compute_network" "fastx" {
 resource "google_compute_subnetwork" "onlyfams" {
   provider         = google.ca_e2
   project          = data.google_compute_disk.john.project
-  ip_cidr_range    = "10.0.0.0/8"
+  ip_cidr_range    = local.vpc_cidr
   ipv6_access_type = "EXTERNAL"
   name             = "onlyfams"
   network          = google_compute_network.fastx.id

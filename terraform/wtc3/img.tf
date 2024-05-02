@@ -2,7 +2,7 @@
 data "vultr_os" "ubuntu_lts" {
   filter {
     name   = "name"
-    values = ["Ubuntu 22.04 LTS x64"]
+    values = ["Ubuntu 24.04 LTS x64"]
   }
 }
 
