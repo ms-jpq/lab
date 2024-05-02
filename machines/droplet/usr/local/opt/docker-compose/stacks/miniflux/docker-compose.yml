@@ -32,10 +32,9 @@ services:
       HTTP_CLIENT_PROXY: http://warp-srv-1:1080
       HTTP_CLIENT_TIMEOUT: &timeout 600
       INVIDIOUS_INSTANCE: youtube.${DOMAIN}
-      PROXY_HTTP_CLIENT_TIMEOUT: *timeout
-      PROXY_IMAGES: all
-      PROXY_MEDIA_TYPES: image,audio,video
-      PROXY_OPTION: all
+      MEDIA_PROXY_HTTP_CLIENT_TIMEOUT: *timeout
+      MEDIA_PROXY_RESOURCE_TYPES: image,audio,video
+      MEDIA_PROXY_MODE: all
       RUN_MIGRATIONS: 1
       WORKER_POOL_SIZE:
       YOUTUBE_EMBED_URL_OVERRIDE: https://youtube.${DOMAIN}/embed/
