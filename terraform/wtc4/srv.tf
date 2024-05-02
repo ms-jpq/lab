@@ -11,11 +11,6 @@ resource "google_compute_instance_from_template" "droplet" {
   name                     = "droplet"
   source_instance_template = google_compute_instance_template.familia.self_link
   zone                     = data.google_compute_disk.john.zone
-  network_interface {
-    access_config {
-      nat_ip = google_compute_address.vinfast.address
-    }
-  }
 }
 
 resource "google_compute_attached_disk" "cena" {

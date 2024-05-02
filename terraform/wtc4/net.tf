@@ -1,9 +1,3 @@
-resource "google_compute_address" "vinfast" {
-  provider = google.ca_e2
-  project  = data.google_compute_disk.john.project
-  name     = "vinfast"
-}
-
 resource "google_compute_network" "fastx" {
   provider                = google.ca_e2
   project                 = data.google_compute_disk.john.project
@@ -21,13 +15,14 @@ resource "google_compute_subnetwork" "onlyfams" {
   stack_type       = "IPV4_IPV6"
 }
 
-# resource "google_compute_firewall" "acab" {
-#   provider      = google.ca_e2
-#   project       = data.google_compute_disk.john.project
-#   name          = "acab"
-#   network       = google_compute_network.fastx.id
-#   source_ranges = ["0.0.0.0/0", "::/0"]
-#   allow {
-#     protocol = "all"
-#   }
-# }
+resource "google_compute_firewall" "acab" {
+  provider      = google.ca_e2
+  project       = data.google_compute_disk.john.project
+  for_each      = { v4 = "0.0.0.0/0", v6 = "::/0" }
+  name          = "acab-${each.key}"
+  network       = google_compute_network.fastx.id
+  source_ranges = [each.value]
+  allow {
+    protocol = "all"
+  }
+}
