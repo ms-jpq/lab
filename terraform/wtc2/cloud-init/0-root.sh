@@ -20,5 +20,3 @@ hostnamectl hostname -- "$HOST"
 PACKAGES=(zfsutils-linux)
 apt-get update
 DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends --yes -- "${PACKAGES[@]}"
-
-snap remove -- lxd

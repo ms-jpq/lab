@@ -14,7 +14,7 @@ data "aws_ami" "ubuntu_lts" {
 
   filter {
     name   = "name"
-    values = ["*ubuntu-jammy-22.04-amd64-server*"]
+    values = ["*ubuntu-noble-24.04-amd64-server*"]
   }
 }
 
@@ -44,11 +44,6 @@ locals {
     ]
     package_update = true
     packages       = ["zfsutils-linux"]
-    snap = {
-      commands = [
-        ["remove", "--", "lxd"],
-      ]
-    }
     # TODO: swap needs to run after mkfs
     # swap = {
     #   filename = "/var/lib/docker/swapfile"
