@@ -1,7 +1,11 @@
+locals {
+  gcp_disk = "fuchsia"
+}
+
 data "google_compute_disk" "john" {
   provider = google.ca_e2
   project  = local.gcp_project
-  name     = "iscsi-fuchsia"
+  name     = "iscsi-${local.gcp_disk}"
   zone     = local.gcp_regions.ca_e2[0]
 }
 

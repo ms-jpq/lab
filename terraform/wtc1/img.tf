@@ -26,6 +26,7 @@ output "ami_ubuntu_lts" {
 }
 
 locals {
+  cloud_init_scripts = "${path.module}/cloud-init"
   user_data = {
     # TODO: index of ebs blk storage is unpredictable
     fs_setup = [
@@ -47,7 +48,7 @@ locals {
     # TODO: swap needs to run after mkfs
     # swap = {
     #   filename = "/var/lib/docker/swapfile"
-    #   size     = "5G"
+    #   size     = "6G"
     # }
     users = [
       {
@@ -63,13 +64,12 @@ data "cloudinit_config" "ci_data" {
     content      = yamlencode(local.user_data)
     content_type = "text/cloud-config"
   }
-  part {
-    content      = file("${path.module}/cloud-init/zpool.sh")
-    content_type = "text/x-shellscript"
-  }
-  part {
-    content      = file("${path.module}/cloud-init/swap.sh")
-    content_type = "text/x-shellscript"
+  dynamic "part" {
+    for_each = fileset(local.cloud_init_scripts, "*.sh")
+    content {
+      content      = file("${local.cloud_init_scripts}/${part.value}")
+      content_type = "text/x-shellscript"
+    }
   }
 }
 
