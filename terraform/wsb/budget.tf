@@ -19,7 +19,7 @@ resource "aws_budgets_budget" "septims" {
   dynamic "notification" {
     for_each = toset([
       for i in range(0, 9) :
-      100 + tostring(i * 50)
+      tostring(100 + i * 50)
     ])
     content {
       comparison_operator        = "GREATER_THAN"
@@ -61,6 +61,15 @@ resource "google_billing_account_iam_member" "tinker" {
 #     specified_amount {
 #       currency_code = "USD"
 #       units         = local.budget
+#     }
+#   }
+#   dynamic "threshold_rules" {
+#     for_each = toset([
+#       for i in range(0, 9) :
+#       tostring(1 + i * 0.05)
+#     ])
+#     content {
+#       threshold_percent = tonumber(threshold_rules.key)
 #     }
 #   }
 # }
