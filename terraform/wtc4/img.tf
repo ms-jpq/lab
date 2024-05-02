@@ -61,6 +61,9 @@ resource "google_compute_instance_template" "familia" {
   network_interface {
     stack_type = google_compute_subnetwork.onlyfams.stack_type
     subnetwork = google_compute_subnetwork.onlyfams.id
+    ipv6_access_config {
+      network_tier = "PREMIUM"
+    }
   }
   metadata = {
     user-data = data.cloudinit_config.ci_data.rendered
