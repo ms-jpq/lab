@@ -2,12 +2,9 @@ variable "mein_email" {
   type = string
 }
 
-variable "gcp_billing_account" {
-  type = string
-}
-
 locals {
-  budget = 10
+  budget              = 10
+  gcp_billing_account = data.google_project.lordaeron.billing_account
 }
 
 resource "aws_budgets_budget" "septims" {
@@ -49,11 +46,10 @@ data "google_iam_role" "bill_gates" {
 # gcloud auth application-default login
 resource "google_billing_account_iam_member" "tinker" {
   provider           = google.ca_e2
-  billing_account_id = var.gcp_billing_account
+  billing_account_id = local.gcp_billing_account
   member             = "serviceAccount:${data.google_service_account.whoami.email}"
   role               = data.google_iam_role.bill_gates.name
 }
-
 
 resource "google_monitoring_notification_channel" "wall_st" {
   provider     = google.ca_e2
@@ -67,7 +63,7 @@ resource "google_monitoring_notification_channel" "wall_st" {
 
 resource "google_billing_budget" "septims" {
   provider        = google.ca_e2
-  billing_account = var.gcp_billing_account
+  billing_account = local.gcp_billing_account
   all_updates_rule {
     disable_default_iam_recipients = true
     monitoring_notification_channels = [
@@ -79,6 +75,9 @@ resource "google_billing_budget" "septims" {
       currency_code = "USD"
       units         = tostring(local.budget)
     }
+  }
+  budget_filter {
+    calendar_period = "MONTH"
   }
   dynamic "threshold_rules" {
     for_each = toset([
