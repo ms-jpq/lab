@@ -1,1 +1,1 @@
-../wsb/dns_vars.tf
+../wsb/dns.tf
