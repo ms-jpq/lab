@@ -10,6 +10,7 @@ resource "google_dns_record_set" "sea_to_sky_mx" {
   managed_zone = data.google_dns_managed_zone.sea_to_sky.name
   name         = data.google_dns_managed_zone.sea_to_sky.dns_name
   rrdatas      = ["1 ${data.google_dns_managed_zone.sea_to_sky.dns_name}"]
+  ttl          = local.dns_ttl
   type         = "MX"
 }
 
@@ -19,6 +20,7 @@ resource "google_dns_record_set" "sea_to_sky_c" {
   managed_zone = data.google_dns_managed_zone.sea_to_sky.name
   name         = "*.${data.google_dns_managed_zone.sea_to_sky.dns_name}"
   rrdatas      = [data.google_dns_managed_zone.sea_to_sky.dns_name]
+  ttl          = local.dns_ttl
   type         = "CNAME"
 }
 
@@ -28,6 +30,7 @@ resource "google_dns_record_set" "sea_to_sky_a" {
   managed_zone = data.google_dns_managed_zone.sea_to_sky.name
   name         = data.google_dns_managed_zone.sea_to_sky.dns_name
   rrdatas      = local.ip_addrs.v4
+  ttl          = local.dns_ttl
   type         = "A"
 }
 
@@ -37,6 +40,7 @@ resource "google_dns_record_set" "sea_to_sky_a4" {
   managed_zone = data.google_dns_managed_zone.sea_to_sky.name
   name         = data.google_dns_managed_zone.sea_to_sky.dns_name
   rrdatas      = local.ip_addrs.v6
+  ttl          = local.dns_ttl
   type         = "AAAA"
 }
 
