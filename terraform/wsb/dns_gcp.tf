@@ -1,6 +1,5 @@
 resource "google_dns_managed_zone" "sea_to_sky" {
-  provider = google.ca_e2
-  project  = local.gcp_project
+  provider = google.kalimdor
   for_each = toset([var.le_domain])
   name     = replace(each.key, ".", "-")
   dns_name = "${each.key}."

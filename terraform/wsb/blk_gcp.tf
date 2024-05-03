@@ -1,11 +1,10 @@
 resource "google_compute_disk" "iscsi" {
-  provider = google.ca_e2
-  project  = local.gcp_project
+  provider = google.kalimdor
   for_each = local.compute_vols
   name     = "iscsi-${each.key}"
   size     = each.value.size
   type     = "pd-standard"
-  zone     = local.gcp_regions.ca_e2[0]
+  zone     = local.gcp_regions.kalimdor[0]
   lifecycle {
     prevent_destroy = true
   }
