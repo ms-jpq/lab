@@ -1,49 +1,44 @@
-# resource "google_monitoring_notification_channel" "wall_st" {
-#   project      = local.gcp_project
-#   display_name = "wall_st"
-#   type         = "email"
-#   labels = {
-#     email_address = var.mein_email
-#   }
-# }
+provider "google" {
+  alias       = "dalaran"
+  credentials = "${path.module}/../../facts/gcp.dalaran.env.json"
+  project     = "dalaran-3"
+}
+
+resource "google_monitoring_notification_channel" "potm" {
+  provider     = google.dalaran
+  display_name = "wall_st"
+  type         = "email"
+  labels = {
+    email_address = var.mein_email
+  }
+}
 
 data "google_billing_account" "tinker" {
   provider        = google.dalaran
   billing_account = "012EEF-C61BAC-5A298A"
 }
 
-data "google_iam_role" "pmc" {
-  name = "roles/serviceusage.serviceUsageConsumer"
+resource "google_billing_budget" "septims" {
+  provider        = google.dalaran
+  billing_account = data.google_billing_account.tinker.id
+  all_updates_rule {
+    disable_default_iam_recipients = true
+    monitoring_notification_channels = [
+      google_monitoring_notification_channel.potm.id,
+    ]
+  }
+  amount {
+    specified_amount {
+      units = tostring(local.budget)
+    }
+  }
+  dynamic "threshold_rules" {
+    for_each = toset([
+      for i in range(0, 9) :
+      tostring(1 + i * 0.05)
+    ])
+    content {
+      threshold_percent = tonumber(threshold_rules.key)
+    }
+  }
 }
-
-data "google_service_account" "kalimdor" {
-  provider   = google.kalimdor
-  account_id = "sudo-user"
-}
-
-resource "google_project_iam_member" "kalimdor_pmc" {
-  provider = google.dalaran
-  member   = "serviceAccount:${data.google_service_account.kalimdor.email}"
-  project  = "dalaran-3"
-  role     = data.google_iam_role.pmc.name
-}
-
-# resource "google_billing_budget" "septims" {
-#   provider        = google.kalimdor
-#   billing_account = data.google_billing_account.tinker.id
-#   amount {
-#     specified_amount {
-#       currency_code = "USD"
-#       units         = tostring(local.budget)
-#     }
-#   }
-#   dynamic "threshold_rules" {
-#     for_each = toset([
-#       for i in range(0, 1) :
-#       tostring(1 + i * 0.05)
-#     ])
-#     content {
-#       threshold_percent = tonumber(threshold_rules.key)
-#     }
-#   }
-# }

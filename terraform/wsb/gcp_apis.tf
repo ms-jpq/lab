@@ -4,12 +4,15 @@ resource "google_project_service" "dalaran" {
     "billingbudgets.googleapis.com",
     "cloudbilling.googleapis.com",
     "iam.googleapis.com",
+    "monitoring.googleapis.com",
   ])
   service = each.key
 }
 
 resource "google_project_service" "kalimdor" {
   provider = google.kalimdor
-  for_each = toset(["compute.googleapis.com"])
-  service  = each.key
+  for_each = toset([
+    "compute.googleapis.com"
+  ])
+  service = each.key
 }
