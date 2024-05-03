@@ -1,3 +1,6 @@
-listen  0.0.0.0:443 ssl proxy_protocol;
-listen  [::]:443 ssl proxy_protocol;
-include /usr/local/opt/nginx/conf/auth.nginx;
+listen     0.0.0.0:443 quic;
+listen     0.0.0.0:443 ssl proxy_protocol;
+listen     [::]:443 quic;
+listen     [::]:443 ssl proxy_protocol;
+add_header Alt-Svc 'h3=":443"';
+include    /usr/local/opt/nginx/conf/auth.nginx;

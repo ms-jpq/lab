@@ -4,6 +4,7 @@ map $pid $x_fourfourthree {
 
 server {
   listen         [[::]]:443 ipv6only=off;
+  listen         [[::]]:443 ipv6only=off udp;
   proxy_pass     $x_fourfourthree;
   proxy_protocol on;
 }
