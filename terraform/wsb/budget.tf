@@ -60,7 +60,7 @@ resource "google_billing_account_iam_member" "tinker" {
 #   amount {
 #     specified_amount {
 #       currency_code = "USD"
-#       units         = local.budget
+#       units         = tostring(local.budget)
 #     }
 #   }
 #   dynamic "threshold_rules" {
