@@ -9,8 +9,5 @@ locals {
     }
   }
   vultr_vols = {
-    fuchsia = {
-      size = 40
-    }
   }
 }
