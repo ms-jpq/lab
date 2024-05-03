@@ -5,7 +5,9 @@ provider "google" {
 }
 
 provider "google" {
-  alias       = "kalimdor"
-  credentials = "${path.module}/../../facts/gcp.kalimdor.env.json"
-  project     = "kalimdor-3"
+  alias                 = "kalimdor"
+  credentials           = "${path.module}/../../facts/gcp.kalimdor.env.json"
+  project               = "kalimdor-3"
+  billing_project       = "dalaran-3"
+  user_project_override = true
 }

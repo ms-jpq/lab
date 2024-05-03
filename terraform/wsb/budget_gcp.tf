@@ -12,7 +12,7 @@ data "google_billing_account" "tinker" {
 }
 
 resource "google_billing_budget" "septims" {
-  provider        = google.dalaran
+  provider        = google.kalimdor
   billing_account = data.google_billing_account.tinker.id
   display_name    = "Example Billing Budget"
   amount {
