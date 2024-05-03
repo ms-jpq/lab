@@ -1,6 +1,5 @@
 server {
   server_name autodiscover.*;
-  # TODO: http2 on;
   listen      unix:/run/local/nginx/http.sock;
 
   location / {

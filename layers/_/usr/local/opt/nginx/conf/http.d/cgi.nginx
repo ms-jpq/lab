@@ -1,6 +1,4 @@
 server {
-  # TODO http2
-  # https://trac.nginx.org/nginx/ticket/816, nginx 1.25.1
   listen  unix:/run/local/nginx/cgi.sock default_server;
   include /usr/local/opt/nginx/conf/server.d/*.nginx;
   include /run/local/nginx/conf/server.d/*.nginx;

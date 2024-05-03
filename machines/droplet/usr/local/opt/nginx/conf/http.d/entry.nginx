@@ -1,5 +1,4 @@
 server {
-  # TODO: http2 on;
   listen        unix:/run/local/nginx/http.sock default_server;
   include       /usr/local/opt/nginx/conf/auth.nginx;
   merge_slashes off;
@@ -12,7 +11,6 @@ server {
 
 server {
   server_name local.*;
-  # TODO: http2 on;
   listen      unix:/run/local/nginx/http.sock;
   include     /usr/local/opt/nginx/conf/auth.nginx;
 

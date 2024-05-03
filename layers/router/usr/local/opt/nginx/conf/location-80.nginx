@@ -1,5 +1,4 @@
 server {
-  # TODO: http2
   listen 127.0.0.53:8000;
 
   location / {

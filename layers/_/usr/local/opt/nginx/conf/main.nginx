@@ -33,6 +33,8 @@ http {
   include                   /etc/nginx/mime.types;
   include                   /usr/local/opt/nginx/conf/ssl.nginx;
 
+  # TODO: https://trac.nginx.org/nginx/ticket/816, nginx 1.25.1
+  # http2 on;
   map $http_upgrade $connection_upgrade {
     default upgrade;
     ''      close;
