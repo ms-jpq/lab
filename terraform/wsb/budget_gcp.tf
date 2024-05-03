@@ -28,22 +28,22 @@ resource "google_project_iam_member" "kalimdor_pmc" {
   role     = data.google_iam_role.pmc.name
 }
 
-resource "google_billing_budget" "septims" {
-  provider        = google.kalimdor
-  billing_account = data.google_billing_account.tinker.id
-  amount {
-    specified_amount {
-      currency_code = "USD"
-      units         = tostring(local.budget)
-    }
-  }
-  dynamic "threshold_rules" {
-    for_each = toset([
-      for i in range(0, 1) :
-      tostring(1 + i * 0.05)
-    ])
-    content {
-      threshold_percent = tonumber(threshold_rules.key)
-    }
-  }
-}
+# resource "google_billing_budget" "septims" {
+#   provider        = google.kalimdor
+#   billing_account = data.google_billing_account.tinker.id
+#   amount {
+#     specified_amount {
+#       currency_code = "USD"
+#       units         = tostring(local.budget)
+#     }
+#   }
+#   dynamic "threshold_rules" {
+#     for_each = toset([
+#       for i in range(0, 1) :
+#       tostring(1 + i * 0.05)
+#     ])
+#     content {
+#       threshold_percent = tonumber(threshold_rules.key)
+#     }
+#   }
+# }
