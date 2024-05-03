@@ -9,5 +9,9 @@ terraform {
       source  = "hashicorp/google"
       version = ">= 0"
     }
+    local = {
+      source  = "hashicorp/local"
+      version = ">= 0"
+    }
   }
 }
