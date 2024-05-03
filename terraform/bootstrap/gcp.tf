@@ -78,10 +78,17 @@ resource "local_sensitive_file" "nathrezim" {
   filename       = "${path.module}/../../facts/gcp.${each.key}.env.json"
 }
 
+locals {
+  gcp_apis = [
+    "cloudresourcemanager.googleapis.com",
+    "serviceusage.googleapis.com",
+  ]
+}
+
 resource "google_project_service" "proudmoore" {
   for_each = merge([
     for k1, acc in google_service_account.cenarius : {
-      for k2 in ["serviceusage.googleapis.com"] :
+      for k2 in local.gcp_apis :
       "${k1}-${k2}" => {
         project = acc.project
         service = k2
