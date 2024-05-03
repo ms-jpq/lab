@@ -62,7 +62,6 @@ resource "google_monitoring_notification_channel" "wall_st" {
 }
 
 resource "google_billing_budget" "septims" {
-  provider        = google.ca_e2
   billing_account = local.gcp_billing_account
   all_updates_rule {
     disable_default_iam_recipients = true
