@@ -18,7 +18,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8000
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`archive.{.+}.{.+$$}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^archive\.`)
     environment:
       # HTTP_PROXY: http://warp-srv-1:1080
       ADMIN_PASSWORD: None

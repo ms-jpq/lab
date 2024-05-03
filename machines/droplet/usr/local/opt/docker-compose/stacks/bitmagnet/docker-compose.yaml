@@ -18,7 +18,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=3333
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`dht.{.+}.{.+$$}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^dht\.`)
     environment:
       POSTGRES_DB: bitmagnet
       POSTGRES_USER:

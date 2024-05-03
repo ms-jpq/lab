@@ -20,10 +20,10 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=4000
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`ascii.{.+}.{.+$$}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^ascii\.`)
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.service=${COMPOSE_PROJECT_NAME}
       - traefik.http.services.${COMPOSE_PROJECT_NAME}2.loadbalancer.server.port=4002
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.rule=HostRegexp(`unicode.{.+}.{.+$$}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.rule=HostRegexp(`^unicode\.`)
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.service=${COMPOSE_PROJECT_NAME}2
     environment:
       SECRET_KEY_BASE:

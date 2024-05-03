@@ -7,7 +7,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8088
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`superset.{.+}.{.+$$}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^superset\.`)
     environment:
       SUPERSET_SECRET_KEY:
     # docker exec -- superset-srv-1 superset fab create-admin --firstname admin --lastname admin --email admin@localhost --username admin --password admin

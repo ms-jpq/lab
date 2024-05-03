@@ -20,7 +20,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=9001
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`docs.{.+}.{.+$$}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^docs\.`)
     environment:
       DB_HOST: pg
       DB_NAME: ${COMPOSE_PROJECT_NAME}

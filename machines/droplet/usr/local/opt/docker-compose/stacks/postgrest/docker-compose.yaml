@@ -7,7 +7,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=3000
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`postgrest.{.+}.{.+$$}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^postgrest\.`)
     environment:
       PGRST_DB_URI:
       PGRST_OPENAPI_SERVER_PROXY_URI: http://[::]:3000
@@ -36,7 +36,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}2.loadbalancer.server.port=8080
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.rule=HostRegexp(`postgreswagger.{.+}.{.+$$}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.rule=HostRegexp(`^postgreswagger\.`)
     environment:
       API_URL: http://srv:3000/
     networks:

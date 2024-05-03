@@ -20,7 +20,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}-k.loadbalancer.server.port=5601
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-k.rule=HostRegexp(`elastic.{.+}.{.+$$}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-k.rule=HostRegexp(`^elastic\.`)
     environment:
       SERVER_NAME:
       ELASTICSEARCH_SSL_VERIFICATIONMODE: none
@@ -46,7 +46,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}-e.loadbalancer.server.port=9200
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-e.rule=HostRegexp(`es.{.+}.{.+$$}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-e.rule=HostRegexp(`^es\.`)
     environment:
       discovery.type: single-node
       xpack.security.enabled: false
@@ -77,7 +77,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}-l.loadbalancer.server.port=9600
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-l.rule=HostRegexp(`log.{.+}.{.+$$}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-l.rule=HostRegexp(`^log\.`)
     networks:
       - default
       - traefik

@@ -18,7 +18,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=9696
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`bt.{.+}.{.+$$}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^bt\.`)
     networks:
       - default
       - traefik
