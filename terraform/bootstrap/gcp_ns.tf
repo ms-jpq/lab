@@ -19,19 +19,27 @@ resource "google_project" "wc3" {
 
 resource "google_service_account" "wc3" {
   for_each   = google_project.wc3
-  account_id = each.key
+  account_id = "sudo-user"
   project    = each.value.project_id
 }
 
 data "google_iam_role" "kleptocrat" {
-  name = "roles/owner"
+  for_each = toset(["roles/owner"])
+  name     = each.key
 }
 
 resource "google_project_iam_member" "wc3" {
-  for_each = google_service_account.wc3
-  project  = each.value.project
-  role     = data.google_iam_role.kleptocrat.name
-  member   = "serviceAccount:${each.value.email}"
+  for_each = merge([for k1, acc in google_service_account.wc3 : {
+    for k2, role in data.google_iam_role.kleptocrat :
+    "${k1}-${k2}" => {
+      email   = acc.email
+      project = acc.project
+      role    = role.name
+    }
+  }]...)
+  member  = "serviceAccount:${each.value.email}"
+  project = each.value.project
+  role    = each.value.role
 }
 
 resource "google_service_account_key" "wc3" {
@@ -40,5 +48,9 @@ resource "google_service_account_key" "wc3" {
 }
 
 output "gcp_projects" {
-  value = { for _, acc in google_service_account.wc3 : acc.project => acc.email }
+  value = { for _, acc in google_service_account.wc3 :
+    acc.project => {
+      owner = acc.email
+    }
+  }
 }
