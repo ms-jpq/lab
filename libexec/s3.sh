@@ -20,7 +20,7 @@ case "${1:-""}" in
   ;;
 push)
   FILES=(
-    facts/*.env
+    facts/*.{env,env.json}
     inventory.json
     terraform/bootstrap/terraform.tfstate
     terraform/bootstrap/terraform.tfstate.backup
