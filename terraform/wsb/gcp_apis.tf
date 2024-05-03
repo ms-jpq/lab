@@ -1,7 +1,11 @@
 resource "google_project_service" "dalaran" {
   provider = google.dalaran
-  for_each = toset(["billingbudgets.googleapis.com"])
-  service  = each.key
+  for_each = toset([
+    "billingbudgets.googleapis.com",
+    "cloudbilling.googleapis.com",
+    "iam.googleapis.com",
+  ])
+  service = each.key
 }
 
 resource "google_project_service" "kalimdor" {
