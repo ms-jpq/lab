@@ -9,9 +9,3 @@ provider "google" {
   credentials = "${path.module}/../../facts/gcp.kalimdor.env.json"
   project     = "kalimdor-3"
 }
-
-resource "google_project_service" "kalimdor" {
-  provider = google.kalimdor
-  for_each = toset(["compute.googleapis.com"])
-  service  = each.key
-}
