@@ -5,3 +5,7 @@ variable "le_domain" {
 locals {
   dns_ttl = 60
 }
+
+output "dns_ttl" {
+  value = local.dns_ttl
+}
