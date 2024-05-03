@@ -2,27 +2,27 @@ provider "google" {
   alias = "root"
 }
 
-resource "google_project" "dalaran" {
-  provider   = google.root
-  name       = "dalaran"
-  project_id = "dalaran-2"
+locals {
+  gcp_projects = {
+    dalaran   = "dalaran-3",
+    kalimdor  = "kalimdor-3",
+    lordaeron = "lordaeron-2"
+  }
 }
 
-resource "google_project" "kalimdor" {
+resource "google_project" "wc3" {
   provider   = google.root
-  name       = "kalimdor"
-  project_id = "kalimdor-2"
+  for_each   = local.gcp_projects
+  name       = each.key
+  project_id = each.value
 }
 
-# resource "google_project" "lordaeron" {
-#   provider   = google.root
-#   name       = "lordaeron"
-#   project_id = "lordaeron-2"
-# }
+resource "google_service_account" "wc3" {
+  for_each   = google_project.wc3
+  account_id = each.key
+  project    = each.value.project_id
+}
 
 output "gcp_projects" {
-  value = {
-    dalaran  = google_project.dalaran.project_id
-    kalimdor = google_project.kalimdor.project_id
-  }
+  value = { for _, acc in google_service_account.wc3 : acc.project => acc.email }
 }
