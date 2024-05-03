@@ -13,8 +13,7 @@ server {
 
 server {
   listen     [::]:443 ipv6only=off ssl;
-  # TODO: wait for h2c support in nginx
-  # ssl_alpn   h2 http/1.1;
+  ssl_alpn   h2 http/1.1;
   proxy_pass $tcp_upstream;
 }
 

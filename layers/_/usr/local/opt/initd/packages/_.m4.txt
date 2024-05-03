@@ -27,7 +27,7 @@
 + netdata
 + netdata-plugins-python
 + nfs-common
-+ nginx-extras
++ nginx
 + parallel
 + pv
 + py-gixy
@@ -43,9 +43,5 @@
 + unattended-upgrades
 + unzip
 # m4_ifelse(ENV_VERSION_ID, [22.04], [], [
-+ libnginx-mod-http-brotli-filter
-+ libnginx-mod-http-brotli-static
-+ libnginx-mod-http-js
-+ libnginx-mod-stream-js
 + systemd-resolved
 # ])

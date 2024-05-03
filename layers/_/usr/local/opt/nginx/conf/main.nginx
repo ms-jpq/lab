@@ -21,20 +21,16 @@ http {
   absolute_redirect         off;
   charset                   "UTF-8";
   client_max_body_size      0;
-  brotli                    on;
-  brotli_static             on;
-  brotli_types              *;
   gzip                      on;
   gzip_static               on;
   gzip_types                *;
+  http2                     on;
   sendfile                  on;
   ssl_prefer_server_ciphers on;
   tcp_nopush                on;
   include                   /etc/nginx/mime.types;
   include                   /usr/local/opt/nginx/conf/ssl.nginx;
 
-  # TODO: https://trac.nginx.org/nginx/ticket/816, nginx 1.25.1
-  # http2 on;
   map $http_upgrade $connection_upgrade {
     default upgrade;
     ''      close;
