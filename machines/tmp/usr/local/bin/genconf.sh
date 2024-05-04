@@ -22,5 +22,5 @@ for D in "${DNS[@]}"; do
 done
 
 IFS=$'\n'
-CONF="$(wg showconf "$IF" | sed -E -e "${SED[@]}")"
+CONF="$(wg showconf "$IF" | sed -E "${SED[@]}")"
 printf -- '%s\n' "$CONF"
