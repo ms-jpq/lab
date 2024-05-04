@@ -90,13 +90,13 @@ reload() {
         P=6
       fi
 
-      ip "-$P" route add "$ADDR" dev "$WG"
+      ip "-$P" route replace "$ADDR" dev "$WG"
     done
 
     if ! ((ADDED++)); then
       PT=(4 6)
       for P in "${PT[@]}"; do
-        ip "-$P" route add default dev "$WG"
+        ip "-$P" route replace default dev "$WG"
       done
     fi
   done

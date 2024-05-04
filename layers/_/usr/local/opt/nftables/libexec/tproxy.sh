@@ -8,7 +8,7 @@ TABLE=100
 
 for P in "${PROTO[@]}"; do
   # ((TABLE++))
-  ip "$P" route add local default dev lo table "$TABLE"
+  ip "$P" route replace local default dev lo table "$TABLE"
   for MARK in "${MARKS[@]}"; do
     ip "$P" rule add fwmark "$MARK" lookup "$TABLE"
   done
