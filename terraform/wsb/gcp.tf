@@ -5,6 +5,13 @@ provider "google" {
   region      = "northamerica-northeast2"
 }
 
+provider "google" {
+  alias       = "lordaeron"
+  credentials = "${path.module}/../../facts/gcp.lordaeron.env.json"
+  project     = "lordaeron-2"
+  region      = "us-west1"
+}
+
 data "google_project" "kalimdor" {
   provider = google.kalimdor
 }
@@ -14,7 +21,9 @@ data "google_compute_zones" "kalimdor" {
 }
 
 locals {
-  gcp_project = data.google_project.kalimdor.project_id
+  gcp_projects = {
+    kalimdor = data.google_project.kalimdor.project_id
+  }
   gcp_regions = {
     kalimdor = data.google_compute_zones.kalimdor.names
   }
@@ -22,7 +31,7 @@ locals {
 
 output "gcp" {
   value = {
-    project = local.gcp_project
-    regions = local.gcp_regions
+    projects = local.gcp_projects
+    regions  = local.gcp_regions
   }
 }
