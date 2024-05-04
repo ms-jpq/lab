@@ -1,12 +1,10 @@
 data "google_dns_managed_zone" "sea_to_sky" {
-  provider = google.ca_e2
-  project  = data.google_compute_disk.john.project
+  provider = google.kalimdor
   name     = replace(var.le_domain, ".", "-")
 }
 
 resource "google_dns_record_set" "sea_to_sky_mx" {
-  provider     = google.ca_e2
-  project      = data.google_compute_disk.john.project
+  provider     = google.kalimdor
   managed_zone = data.google_dns_managed_zone.sea_to_sky.name
   name         = data.google_dns_managed_zone.sea_to_sky.dns_name
   rrdatas      = ["1 ${data.google_dns_managed_zone.sea_to_sky.dns_name}"]
@@ -15,8 +13,7 @@ resource "google_dns_record_set" "sea_to_sky_mx" {
 }
 
 resource "google_dns_record_set" "sea_to_sky_c" {
-  provider     = google.ca_e2
-  project      = data.google_compute_disk.john.project
+  provider     = google.kalimdor
   managed_zone = data.google_dns_managed_zone.sea_to_sky.name
   name         = "*.${data.google_dns_managed_zone.sea_to_sky.dns_name}"
   rrdatas      = [data.google_dns_managed_zone.sea_to_sky.dns_name]
@@ -25,8 +22,7 @@ resource "google_dns_record_set" "sea_to_sky_c" {
 }
 
 resource "google_dns_record_set" "sea_to_sky_a" {
-  provider     = google.ca_e2
-  project      = data.google_compute_disk.john.project
+  provider     = google.kalimdor
   managed_zone = data.google_dns_managed_zone.sea_to_sky.name
   name         = data.google_dns_managed_zone.sea_to_sky.dns_name
   rrdatas      = local.ip_addrs.v4
@@ -35,8 +31,7 @@ resource "google_dns_record_set" "sea_to_sky_a" {
 }
 
 resource "google_dns_record_set" "sea_to_sky_a4" {
-  provider     = google.ca_e2
-  project      = data.google_compute_disk.john.project
+  provider     = google.kalimdor
   managed_zone = data.google_dns_managed_zone.sea_to_sky.name
   name         = data.google_dns_managed_zone.sea_to_sky.dns_name
   rrdatas      = local.ip_addrs.v6

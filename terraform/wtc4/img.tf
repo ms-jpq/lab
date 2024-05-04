@@ -66,8 +66,7 @@ locals {
 }
 
 resource "google_compute_instance_template" "familia" {
-  provider     = google.ca_e2
-  project      = data.google_compute_disk.john.project
+  provider     = google.kalimdor
   machine_type = "e2-small"
   disk {
     disk_type    = local.compute_disk_type
