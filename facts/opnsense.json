@@ -13,12 +13,6 @@
   "ENV_LAN_IFS": ["enp2s0", "enp4s0", "eno1"],
   "ENV_OVPN_SERVER_NAME": "ENV_WG_SERVER_NAME",
   "ENV_WAN_IF": "enp1s0",
-  "ENV_WG_PEERS": [
-    "hao-phone",
-    "hao-laptop",
-    "hao-tablet",
-    "gray-phone",
-    "gray-laptop"
-  ],
+  "ENV_WG_PEERS": ["pfsense"],
   "ENV_WG_SERVER_NAME": "ENV_DOMAIN"
 }
