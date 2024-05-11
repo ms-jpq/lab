@@ -1,10 +1,11 @@
 locals {
   bastion_buckets = ["kfc-tfstate"]
+  s2_users        = ["i6", "dev", "work"]
 }
 
 resource "aws_iam_user" "s2" {
-  for_each = toset(["s2"])
-  name     = each.key
+  for_each = toset(local.s2_users)
+  name     = "s2-${each.key}"
 }
 
 data "aws_iam_policy_document" "s2" {
@@ -33,6 +34,12 @@ resource "aws_iam_access_key" "s2" {
   user     = each.key
 }
 
+resource "local_sensitive_file" "s2" {
+  for_each = aws_iam_access_key.s2
+  content  = each.value.secret
+  filename = "${path.module}/../../facts/s2.${each.key}.env.key"
+}
+
 resource "aws_s3_bucket" "kfc" {
   for_each      = toset(local.buckets)
   bucket        = "kfc-${each.key}"
@@ -59,5 +66,9 @@ output "aws_s3" {
       for bucket in aws_s3_bucket.kfc :
       bucket.id
     ]
+    accounts = {
+      for key, access_key in aws_iam_access_key.s2 :
+      key => access_key.id
+    }
   }
 }

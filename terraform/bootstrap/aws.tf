@@ -15,7 +15,6 @@ data "aws_iam_policy" "sudo" {
 resource "aws_iam_user_policy_attachment" "sudo" {
   for_each = {
     (aws_iam_user.sudo.name) = data.aws_iam_policy.sudo.arn
-    # (aws_iam_user.s2.name)   = aws_iam_policy.s2.arn
   }
   user       = each.key
   policy_arn = each.value

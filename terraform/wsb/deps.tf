@@ -5,16 +5,12 @@ terraform {
       source  = "hashicorp/aws"
       version = ">= 0"
     }
-    external = {
-      source  = "hashicorp/external"
-      version = ">= 0"
-    }
     google = {
       source  = "hashicorp/google"
       version = ">= 0"
     }
-    vultr = {
-      source  = "vultr/vultr"
+    local = {
+      source  = "hashicorp/local"
       version = ">= 0"
     }
   }
