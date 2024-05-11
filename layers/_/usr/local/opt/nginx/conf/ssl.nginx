@@ -1,3 +1,4 @@
+ssl_protocols       TLSv1.3;
 ssl_certificate     /var/cache/local/self-signed/nginx/ssl.crt;
 ssl_certificate_key /var/cache/local/self-signed/nginx/ssl.key;
 include             /run/local/nginx/conf/ssl/*.nginx;
