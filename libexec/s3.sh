@@ -38,12 +38,12 @@ push)
   find "$TMP" -type f -exec gpg --batch --yes --encrypt-files -- '{}' +
   find "$TMP" -type f -not -name '*.gpg' -delete
   pushd -- "$TMP"
-  "$S5" sync --delete -- ./ "$BUCKET"
+  "$S5" sync --delete -- ./ "$BUCKET" | cut -d ' ' -f -2
   ;;
 pull)
   dir
   pushd -- "$TMP"
-  "$S5" cp -- "$BUCKET/*" .
+  "$S5" cp -- "$BUCKET/*" . | cut -d ' ' -f -2
   popd
   FILES=("$TMP"/**/*.gpg)
   gpg -v --batch --decrypt-files -- "${FILES[@]}"
