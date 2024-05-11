@@ -1,0 +1,22 @@
+---
+services:
+  stirling_pdf:
+    image: frooodle/s-pdf:latest
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^pdf\.`)
+    environment:
+      DOCKER_ENABLE_SECURITY: false
+      INSTALL_BOOK_AND_ADVANCED_HTML_OPS: false
+      LANGS: en_GB
+    volumes:
+      - /var/lib/local/pdf:/configs
+      - log:/logs
+networks:
+  traefik:
+    external: true
+    name: traefik
+
+volumes:
+  logs:
