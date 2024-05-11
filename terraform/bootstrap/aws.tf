@@ -17,6 +17,12 @@ resource "aws_iam_access_key" "pgp" {
   user     = each.key
 }
 
+resource "local_sensitive_file" "sponge" {
+  for_each = aws_iam_access_key.pgp
+  content  = each.value.secret
+  filename = "${path.module}/../../facts/aws.${each.key}.env.key"
+}
+
 output "aws" {
   value = {
     iam = {
