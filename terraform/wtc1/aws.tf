@@ -1,1 +1,1 @@
-../bootstrap/aws.tf
+../wsb/aws.tf
