@@ -35,10 +35,20 @@ resource "google_billing_budget" "septims" {
   dynamic "threshold_rules" {
     for_each = toset([
       for i in range(0, 9) :
-      tostring(1 + i * 0.05)
+      tostring(1 + i * 0.5)
     ])
     content {
       threshold_percent = tonumber(threshold_rules.key)
     }
+  }
+}
+
+output "schmidt" {
+  value = {
+    poutine = google_billing_budget.septims.amount[0].specified_amount[0].units
+    warn = [
+      for rule in google_billing_budget.septims.threshold_rules :
+      rule.threshold_percent * google_billing_budget.septims.amount[0].specified_amount[0].units
+    ]
   }
 }
