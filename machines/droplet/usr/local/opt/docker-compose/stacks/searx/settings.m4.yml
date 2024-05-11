@@ -8,7 +8,6 @@ redis:
 server:
   base_url: https://ask.m5_assert([ENV_DOMAIN2])
   http_protocol_version: "1.1"
-  image_proxy: true
   # public_instance: true
   secret_key: |-
     m4_esyscmd([uuidgen])
