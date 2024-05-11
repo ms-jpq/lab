@@ -1,4 +1,3 @@
-*.env.json
 *.gpg
 *.isorted
 *.plan
@@ -8,6 +7,7 @@
 .terraform/
 .venv/
 facts/*.env
+facts/*.env.*
 inventory.json
 node_modules/
 package-lock.json

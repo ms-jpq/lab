@@ -1,14 +1,25 @@
+locals {
+  aws_profile     = "sudo"
+  aws_credentials = "${path.module}/../../facts/aws.${local.aws_profile}.env.ini"
+}
+
 provider "aws" {
-  alias  = "ca_w1"
-  region = "ca-west-1"
+  alias                    = "ca_w1"
+  region                   = "ca-west-1"
+  profile                  = local.aws_profile
+  shared_credentials_files = [local.aws_credentials]
 }
 provider "aws" {
-  alias  = "us_e1"
-  region = "us-east-1"
+  alias                    = "us_e1"
+  region                   = "us-east-1"
+  profile                  = local.aws_profile
+  shared_credentials_files = [local.aws_credentials]
 }
 provider "aws" {
-  alias  = "us_w2"
-  region = "us-west-2"
+  alias                    = "us_w2"
+  region                   = "us-west-2"
+  profile                  = local.aws_profile
+  shared_credentials_files = [local.aws_credentials]
 }
 
 data "aws_caller_identity" "whoami" {

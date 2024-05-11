@@ -42,8 +42,12 @@ resource "aws_iam_access_key" "s2" {
 
 resource "local_sensitive_file" "s2" {
   for_each = aws_iam_access_key.s2
-  content  = each.value.secret
-  filename = "${path.module}/../../facts/s2.${each.key}.env.key"
+  filename = "${path.module}/../../facts/s2.${each.key}.env.ini"
+  content  = <<-INI
+  [${each.key}]
+  aws_access_key_id = ${each.value.id}
+  aws_secret_access_key = ${each.value.secret}
+  INI
 }
 
 resource "aws_s3_bucket" "kfc" {

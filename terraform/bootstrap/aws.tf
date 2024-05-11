@@ -27,15 +27,19 @@ resource "aws_iam_access_key" "pgp" {
 
 resource "local_sensitive_file" "sponge" {
   for_each = aws_iam_access_key.pgp
-  content  = each.value.secret
-  filename = "${path.module}/../../facts/aws.${each.key}.env.key"
+  filename = "${path.module}/../../facts/aws.${each.key}.env.ini"
+  content  = <<-INI
+  [${each.key}]
+  aws_access_key_id = ${each.value.id}
+  aws_secret_access_key = ${each.value.secret}
+  INI
 }
 
 output "aws" {
   value = {
     iam = {
-      root = data.aws_caller_identity.whoami.arn
-      sudo = aws_iam_user.sudo.arn
+      whoami = data.aws_caller_identity.whoami.arn
+      sudo   = aws_iam_user.sudo.arn
     }
     keys = {
       for key, access_key in aws_iam_access_key.pgp :
