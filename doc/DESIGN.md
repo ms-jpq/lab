@@ -32,7 +32,7 @@ mindmap
             Cloudflare API
           Terraform IAC
             Route53
-            LightSail
+            GCP CloudDNS
       (VPN Overlays)
         OpenVPN
           Port Sharing

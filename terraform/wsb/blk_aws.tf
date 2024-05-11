@@ -31,28 +31,6 @@ resource "aws_ebs_volume" "iscsi" {
   }
 }
 
-resource "aws_lightsail_disk" "iscsi" {
-  provider          = aws.us_w2
-  for_each          = local.light_vols
-  availability_zone = local.aws_zones.us_w2[0]
-  name              = "iscsi-${each.key}"
-  size_in_gb        = each.value.size
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
-data "external" "ebs_lite" {
-  program = ["${path.module}/lightsail_ebs.sh"]
-  query = {
-    region = local.aws_regions.us_w2
-    disks = jsonencode([
-      for vol in aws_lightsail_disk.iscsi :
-      vol.id
-    ])
-  }
-}
-
 output "ebs" {
   value = [
     for vol in aws_ebs_volume.iscsi :
@@ -64,21 +42,6 @@ output "ebs" {
       tag  = vol.tags.id
       type = vol.type
       zone = vol.availability_zone
-    }
-  ]
-}
-
-output "ebs_lite" {
-  value = [
-    for key, val in {
-      for name, json in data.external.ebs_lite.result :
-      name => jsondecode(json)
-    } :
-    {
-      id   = key
-      iops = val.iops
-      size = val.sizeInGb
-      zone = val.location.availabilityZone
     }
   ]
 }
