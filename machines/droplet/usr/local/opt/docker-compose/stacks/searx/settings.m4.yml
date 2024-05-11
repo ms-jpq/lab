@@ -6,7 +6,7 @@ redis:
   url: redis://redis:6379/0
 
 server:
-  base_url: https://ask.m5_assert([ENV_DOMAIN])
+  base_url: https://ask.m5_assert([ENV_DOMAIN2])
   http_protocol_version: "1.1"
   image_proxy: true
   # public_instance: true
@@ -42,7 +42,7 @@ enabled_plugins:
   - "Hostname replace"
 
 hostname_replace:
-  '(.*\.)?youtube\.com$': &youtube youtube.m5_assert([ENV_DOMAIN])
+  '(.*\.)?youtube\.com$': &youtube youtube.m5_assert([ENV_DOMAIN2])
   '(.*\.)?youtu\.be$': *youtube
-  '(.*\.)?reddit\.com$': &reddit reddit.m5_assert([ENV_DOMAIN])
+  '(.*\.)?reddit\.com$': &reddit reddit.m5_assert([ENV_DOMAIN2])
   '(.*\.)?redd\.it$': *reddit

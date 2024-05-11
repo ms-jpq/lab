@@ -7,7 +7,9 @@
     "autodiscover.ENV_DOMAIN",
     "ipfs.ENV_DOMAIN",
     "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN,], ENV_INDEX)",
-    "s3.ENV_DOMAIN"
+    "reddit.ENV_DOMAIN2",
+    "s3.ENV_DOMAIN",
+    "youtube.ENV_DOMAIN2"
   ],
   "ENV_INDEX": [
     "12ft",

@@ -1,10 +1,10 @@
 ---
 services:
-  stirling_pdf:
+  srv:
     image: frooodle/s-pdf:latest
     labels:
       - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^pdf\.`)
     environment:
       DOCKER_ENABLE_SECURITY: false
