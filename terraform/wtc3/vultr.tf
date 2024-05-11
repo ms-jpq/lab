@@ -1,1 +1,0 @@
-../wsb/vultr.tf

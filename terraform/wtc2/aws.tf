@@ -1,1 +1,0 @@
-../bootstrap/aws.tf

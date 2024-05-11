@@ -1,1 +1,0 @@
-../wsb/zone.tf
