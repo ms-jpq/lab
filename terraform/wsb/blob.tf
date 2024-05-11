@@ -1,3 +1,3 @@
 locals {
-  buckets = ["home", "lab"]
+  s3_buckets = ["kfc-home", "kfc-lab"]
 }

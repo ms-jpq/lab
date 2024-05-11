@@ -18,7 +18,7 @@ data "aws_iam_policy_document" "s2" {
     actions = ["*"]
     effect  = "Deny"
     resources = flatten([
-      for bucket in local.bastion_buckets : [
+      for bucket in concat(local.s3_buckets, local.bastion_buckets) : [
         "arn:aws:s3:::${bucket}",
         "arn:aws:s3:::${bucket}/*"
     ]])
@@ -27,6 +27,12 @@ data "aws_iam_policy_document" "s2" {
 
 resource "aws_iam_policy" "s2" {
   policy = data.aws_iam_policy_document.s2.json
+}
+
+resource "aws_iam_user_policy_attachment" "sudo" {
+  for_each   = { for _, user in aws_iam_user.s2 : user.name => aws_iam_policy.s2.arn }
+  user       = each.key
+  policy_arn = each.value
 }
 
 resource "aws_iam_access_key" "s2" {
@@ -41,8 +47,8 @@ resource "local_sensitive_file" "s2" {
 }
 
 resource "aws_s3_bucket" "kfc" {
-  for_each      = toset(local.buckets)
-  bucket        = "kfc-${each.key}"
+  for_each      = toset(local.s3_buckets)
+  bucket        = each.key
   force_destroy = true
   lifecycle {
     prevent_destroy = true
@@ -66,7 +72,7 @@ output "aws_s3" {
       for bucket in aws_s3_bucket.kfc :
       bucket.id
     ]
-    accounts = {
+    s2_accounts = {
       for key, access_key in aws_iam_access_key.s2 :
       key => access_key.id
     }

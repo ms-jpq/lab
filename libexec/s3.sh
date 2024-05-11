@@ -5,7 +5,7 @@ shopt -u failglob
 
 BASE="${0%/*}/.."
 BUCKET='s3://kfc-lab'
-S5="$BASE/var/bin/s5cmd"
+S5="$(realpath -- "$BASE/var/bin/s5cmd")"
 TMP="$BASE/var/gpg"
 
 dir() (
@@ -20,7 +20,7 @@ case "${1:-""}" in
   ;;
 push)
   FILES=(
-    facts/*.{env,env.json}
+    facts/*.{env,env.*}
     inventory.json
     terraform/bootstrap/terraform.tfstate
     terraform/bootstrap/terraform.tfstate.backup
@@ -37,11 +37,14 @@ push)
 
   find "$TMP" -type f -exec gpg --batch --yes --encrypt-files -- '{}' +
   find "$TMP" -type f -not -name '*.gpg' -delete
-  "$S5" sync --delete -- "$TMP/" "$BUCKET"
+  pushd -- "$TMP"
+  "$S5" sync --delete -- ./ "$BUCKET"
   ;;
 pull)
   dir
-  "$S5" cp -- "$BUCKET/*" "$TMP"
+  pushd -- "$TMP"
+  "$S5" cp -- "$BUCKET/*" .
+  popd
   FILES=("$TMP"/**/*.gpg)
   gpg -v --batch --decrypt-files -- "${FILES[@]}"
   for F in "${FILES[@]}"; do
