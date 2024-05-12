@@ -6,9 +6,12 @@ if [[ ! -t 1 ]]; then
   exec <&3 >&3
 fi
 
-tee -- <<-'EOF'
+NAME="$(uuidgen).ovpn"
+
+tee -- <<-EOF
 HTTP/1.0 200 OK
 Content-Type: text/plain; charset=utf-8
+Content-Disposition: attachment; filename="$NAME"
 
 EOF
 
