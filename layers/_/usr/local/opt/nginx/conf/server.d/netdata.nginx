@@ -5,3 +5,7 @@ location /netdata {
 location /netdata/ {
   proxy_pass http://127.0.0.1:19999/;
 }
+
+location /netdata/v2/ {
+  return 307 /netdata/v1/;
+}
