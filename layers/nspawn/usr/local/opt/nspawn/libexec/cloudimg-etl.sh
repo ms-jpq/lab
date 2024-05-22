@@ -62,11 +62,11 @@ cp -v -- /usr/local/lib/systemd/resolved.conf.d/* "$BASE/../resolved.conf.d/"/* 
 chmod -v -R -- o+r "$USRN" "$USRR" "$USRD"
 
 for SCRIPT in "${0%/*}/../overlay.d"/*; do
-  if [[ -x "$SCRIPT" ]]; then
+  if [[ -x $SCRIPT ]]; then
     "$SCRIPT" "$DST"
   fi
 done
 
-if [[ -n "$ZFS" ]]; then
+if [[ -n $ZFS ]]; then
   zfs snapshot -- "$ZFS@-"
 fi

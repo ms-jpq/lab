@@ -11,9 +11,9 @@ mkdir -p -- "$SSL"
 
 for DIR in "$LIVE"/*; do
   DOMAIN="${DIR##*/}"
-  if ! [[ -d "$DIR" ]]; then
+  if ! [[ -d $DIR ]]; then
     continue
   fi
   CHKSUM="$(cat -- "$DIR"/* | b3sum --no-names)"
-  DOMAIN="$DOMAIN" CHKSUM="$CHKSUM" envsubst <'/usr/local/opt/certbot/certbot.nginx' | sponge -- "$SSL/$DOMAIN.nginx"
+  DOMAIN="$DOMAIN" CHKSUM="$CHKSUM" envsubst < '/usr/local/opt/certbot/certbot.nginx' | sponge -- "$SSL/$DOMAIN.nginx"
 done

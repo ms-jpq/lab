@@ -7,7 +7,7 @@ LOG=/var/cache/local/certbot/logs
 
 mkdir -v -p -- "$LOG"
 
-readarray -t -- SITES </usr/local/etc/default/certbot.env
+readarray -t -- SITES < /usr/local/etc/default/certbot.env
 
 CERTBOT=(
   /opt/python3/certbot/bin/certbot
@@ -25,7 +25,7 @@ CERTBOT=(
 )
 
 for SITE in "${SITES[@]}"; do
-  if [[ -n "$SITE" ]]; then
+  if [[ -n $SITE ]]; then
     CERTBOT+=(--domains "$SITE")
   fi
 done

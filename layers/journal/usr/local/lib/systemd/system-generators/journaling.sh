@@ -10,7 +10,7 @@ WANTS="$RUN/default.target.wants"
 source -- /usr/local/etc/default/journal.env
 
 # shellcheck disable=SC2154
-readarray -t -d ',' -- HOSTS <<<"$JOURNAL_HOSTS"
+readarray -t -d ',' -- HOSTS <<< "$JOURNAL_HOSTS"
 
 mkdir -v -p -- "$WANTS"
 for NAME in "${HOSTS[@]}"; do

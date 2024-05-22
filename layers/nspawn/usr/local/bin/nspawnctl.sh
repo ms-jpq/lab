@@ -74,22 +74,22 @@ remove)
   for MACH in "${MACHINES[@]}"; do
     ROOT="$LIB/$MACH"
     set -x
-    if [[ -k "$ROOT" ]] || [[ -f "$ROOT/.#fs.lck" ]]; then
+    if [[ -k $ROOT ]] || [[ -f "$ROOT/.#fs.lck" ]]; then
       exit 1
     fi
     set +x
 
     ETC_ID="$ROOT/fs/etc/machine-id"
-    if [[ -f "$ETC_ID" ]]; then
-      MACH_ID="$(<"$ETC_ID")"
-      if [[ -n "$MACH_ID" ]]; then
+    if [[ -f $ETC_ID ]]; then
+      MACH_ID="$(< "$ETC_ID")"
+      if [[ -n $MACH_ID ]]; then
         rm -v -fr -- "/var/log/journal/$MACH_ID"
       fi
     fi
 
     SVC="$SERVICE_NAME@$(systemd-escape -- "$MACH").service"
     /usr/local/libexec/fs-dealloc.sh "$ROOT" /var/lib/local /var/lib/local/{nspawn,qemu}
-    if systemctl --failed --lines 0 status -- "$SVC" >/dev/null; then
+    if systemctl --failed --lines 0 status -- "$SVC" > /dev/null; then
       sctl reset-failed -- "$SVC"
     fi
   done

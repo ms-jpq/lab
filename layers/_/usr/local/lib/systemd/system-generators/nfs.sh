@@ -10,7 +10,7 @@ WANTS="$RUN/remote-fs.target.wants"
 source -- /usr/local/etc/default/nfs.env
 
 # shellcheck disable=SC2154
-readarray -t -d ',' -- MOUNTS <<<"$NFS_MNTS"
+readarray -t -d ',' -- MOUNTS <<< "$NFS_MNTS"
 
 mkdir -v -p -- "$WANTS"
 for MOUNT in "${MOUNTS[@]}"; do
@@ -19,7 +19,7 @@ for MOUNT in "${MOUNTS[@]}"; do
   DIR="$(systemd-escape -- "${MOUNT#*':/'}")"
   MNT="$RUN/$DIR.mount"
   AUTO="$DIR.automount"
-  NFS_SERVER="$NFS_SERVER" envsubst </usr/local/opt/mount/nfs@.mount >"$MNT"
+  NFS_SERVER="$NFS_SERVER" envsubst < /usr/local/opt/mount/nfs@.mount > "$MNT"
   cp -v -f -- /usr/local/opt/mount/@.automount "$RUN/$AUTO"
   chmod g+r,o+r -- "$MNT" "$RUN/$AUTO"
   ln -v -sf -- "../$AUTO" "$WANTS/$AUTO"

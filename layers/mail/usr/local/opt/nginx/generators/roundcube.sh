@@ -11,7 +11,7 @@ LS="$(
   done | jq --raw-input --raw-output '[.] | map("\(.)#\(. | @uri)")[]'
 )"
 
-readarray -t -- LINES <<<"$LS"
+readarray -t -- LINES <<< "$LS"
 
 IFS=','
 PARAMS="${LINES[*]}"

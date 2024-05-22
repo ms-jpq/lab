@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-read -r -d '' -- JQ <<JQ || true
+read -r -d '' -- JQ << JQ || true
 [.UTExportedTypeDeclarations[] | select(.UTTypeIcons // {} | .UTTypeIconFile).UTTypeTagSpecification // {} | .["com.apple.device-model-code"] // [] | [.]] | flatten[]
 JQ
 

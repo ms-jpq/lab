@@ -28,7 +28,7 @@ push)
 
   dir
   for F in "${FILES[@]}"; do
-    if [[ -f "$F" ]]; then
+    if [[ -f $F ]]; then
       NAME="$TMP/$F"
       mkdir -v -p -- "${NAME%/*}"
       cp -v -R -- "$F" "$NAME"
@@ -55,7 +55,7 @@ pull)
   ;;
 rmfr)
   read -r -p '>>> (yes/no)?' -- DIE
-  if [[ "$DIE" == 'yes' ]]; then
+  if [[ $DIE == 'yes' ]]; then
     "$S5" rm --all-versions -- "$BUCKET/*"
   else
     exit 130

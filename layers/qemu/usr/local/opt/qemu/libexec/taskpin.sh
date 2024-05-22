@@ -3,7 +3,7 @@
 set -o pipefail
 
 PIDFILE="$1"
-PID="$(<"$PIDFILE")"
+PID="$(< "$PIDFILE")"
 
 # https://docs.python.org/3/library/os.html#os.sched_setaffinity
 for TASK in "/proc/$PID/task"/*; do

@@ -10,7 +10,7 @@ shift -- 1
 printf -- '%s=%q\n' 'ENV_MACHINE' "$MACHINE"
 
 for F in "$@"; do
-  if ! [[ -s "$F" ]]; then
+  if ! [[ -s $F ]]; then
     continue
   fi
   case "$F" in

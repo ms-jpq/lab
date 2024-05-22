@@ -14,12 +14,12 @@ USERNAME="$(id --name --user -- 1000)"
 # usermod --append --groups sambashare -- "$USERNAME"
 
 # shellcheck disable=SC2154
-readarray -t -d ',' -- ROWS <<<"$SMB_EXPORTS"
+readarray -t -d ',' -- ROWS <<< "$SMB_EXPORTS"
 NUS=(net --configfile "$CONF" usershare)
 
 for ROW in "${ROWS[@]}"; do
   ROW="${ROW//[[:space:]]/''}"
-  if [[ -z "$ROW" ]]; then
+  if [[ -z $ROW ]]; then
     continue
   fi
 

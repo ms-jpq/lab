@@ -70,7 +70,7 @@ while (($#)); do
   esac
 done
 
-if [[ -z "${CPUS:-""}" ]]; then
+if [[ -z ${CPUS:-""} ]]; then
   NPROCS="$(nproc)"
   CPUS="cpus=$((NPROCS / 2))"
 fi
@@ -80,7 +80,7 @@ ARGV=(
   -name "$NAME,debug-threads=on"
 )
 
-if [[ -n "${PIDFILE:-""}" ]]; then
+if [[ -n ${PIDFILE:-""} ]]; then
   ARGV+=(
     -pidfile "$PIDFILE"
     -daemonize
@@ -119,7 +119,7 @@ ARGV+=(
   -device 'virtio-serial-device'
   -device "virtconsole,chardev=$CON"
 )
-if [[ -n "${CONSOLE:-""}" ]]; then
+if [[ -n ${CONSOLE:-""} ]]; then
   ARGV+=(-chardev "socket,server=on,wait=off,id=$CON,path=$CONSOLE")
 else
   ARGV+=(-chardev "stdio,id=$CON")
@@ -127,15 +127,15 @@ fi
 
 ARGV+=(-device virtio-rng-device)
 
-if [[ -n "${QMP:-""}" ]]; then
+if [[ -n ${QMP:-""} ]]; then
   ARGV+=(-qmp "unix:$QMP,server,nowait")
 fi
 
-if [[ -n "${MONITOR:-""}" ]]; then
+if [[ -n ${MONITOR:-""} ]]; then
   ARGV+=(-monitor "unix:$MONITOR,server,nowait")
 fi
 
-if [[ -n "${BRIDGE:-""}" ]]; then
+if [[ -n ${BRIDGE:-""} ]]; then
   ID='br0'
   ARGV+=(
     -netdev "bridge,id=$ID,br=$BRIDGE"
@@ -148,9 +148,9 @@ for IDX in "${!TAPS[@]}"; do
   ID="mv$IDX"
   MACVTAP="${TAPS[$IDX]}"
   SYS="/sys/class/net/$MACVTAP"
-  IFI="$(<"$SYS/ifindex")"
-  MACADDR="$(<"$SYS/address")"
-  exec {FD}<>"/dev/tap$IFI"
+  IFI="$(< "$SYS/ifindex")"
+  MACADDR="$(< "$SYS/address")"
+  exec {FD}<> "/dev/tap$IFI"
   ARGV+=(
     -netdev "tap,fd=$FD,id=$ID"
     -device "virtio-net-device,netdev=$ID,mac=$MACADDR"
@@ -168,7 +168,7 @@ printf -v BLKOPTS -- '%s,' "${BLKDEV_OPTIONS[@]}"
 for IDX in "${!DRIVES[@]}"; do
   ID="blk$IDX"
   DRIVE="${DRIVES[$IDX]}"
-  if [[ -b "$DRIVE" ]]; then
+  if [[ -b $DRIVE ]]; then
     DRIVER='host_device'
   else
     DRIVER='file'

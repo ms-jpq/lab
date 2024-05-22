@@ -6,14 +6,14 @@ if [[ ! -t 1 ]]; then
   exec <&3 >&3
 fi
 
-tee -- <<-'EOF'
+tee -- <<- 'EOF'
 HTTP/1.0 200 OK
 Content-Type: text/plain; charset=utf-8
 
 EOF
 
 FS="$(df --type btrfs --output=target | sed -E -e '1d')"
-readarray -t -- LINES <<<"$FS"
+readarray -t -- LINES <<< "$FS"
 
 /usr/local/libexec/hr-run.sh btrfs filesystem show --si
 

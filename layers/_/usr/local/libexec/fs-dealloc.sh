@@ -12,7 +12,7 @@ fi
 NO_DIE=(/ "$@")
 HR='/usr/local/libexec/hr-run.sh'
 
-if ! [[ -e "$ROOT" ]]; then
+if ! [[ -e $ROOT ]]; then
   exit 0
 fi
 
@@ -21,7 +21,7 @@ case "$FS" in
 tmpfs)
   while true; do
     ZVOl="$(readlink -- "$ROOT")"
-    if [[ "$ZVOL" =~ ^/dev/zvol ]]; then
+    if [[ $ZVOL =~ ^/dev/zvol ]]; then
       ZVOL="${ZVOl#/dev/zvol/}"
       break
     fi
@@ -41,7 +41,7 @@ zfs)
   esac
 
   for SAFE in "${NO_DIE[@]}"; do
-    if [[ "$MOUNT" == "${SAFE%'/'}" ]]; then
+    if [[ $MOUNT == "${SAFE%'/'}" ]]; then
       set -x
       exit 1
     fi

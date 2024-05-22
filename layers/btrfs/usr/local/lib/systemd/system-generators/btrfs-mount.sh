@@ -10,7 +10,7 @@ WANTS="$RUN/local-fs.target.wants"
 source -- /usr/local/etc/default/btrfs.env
 
 # shellcheck disable=SC2154
-readarray -t -d ',' -- MOUNTS <<<"$BTRFS_MNTS"
+readarray -t -d ',' -- MOUNTS <<< "$BTRFS_MNTS"
 
 mkdir -v -p -- "$WANTS"
 for MOUNT in "${MOUNTS[@]}"; do
@@ -19,7 +19,7 @@ for MOUNT in "${MOUNTS[@]}"; do
   DIR="$(systemd-escape -- "${MOUNT#*':/'}")"
   MNT="$RUN/$DIR.mount"
   AUTO="$DIR.automount"
-  LABEL="$LABEL" envsubst </usr/local/opt/mount/btrfs@.mount >"$MNT"
+  LABEL="$LABEL" envsubst < /usr/local/opt/mount/btrfs@.mount > "$MNT"
   cp -v -f -- /usr/local/opt/mount/@.automount "$RUN/$AUTO"
   chmod g+r,o+r -- "$MNT" "$RUN/$AUTO"
   ln -v -sf -- "../$AUTO" "$WANTS/$AUTO"

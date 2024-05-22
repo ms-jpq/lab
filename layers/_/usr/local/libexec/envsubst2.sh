@@ -6,4 +6,4 @@ SRC="$1"
 DST="$2"
 shift -- 2
 
-envsubst "$@" <"$SRC" | sponge -- "$DST"
+envsubst "$@" < "$SRC" | sponge -- "$DST"

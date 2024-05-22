@@ -9,9 +9,9 @@ WANTS="$RUN/default.target.wants"
 # shellcheck disable=SC1091
 source -- /usr/local/etc/default/lan.env
 # shellcheck disable=SC2154
-LAN_IFS="$(sort <<<"${LAN_IFS//' '/$'\n'}")"
+LAN_IFS="$(sort <<< "${LAN_IFS//' '/$'\n'}")"
 
-readarray -t -- INTERFACES <<<"$LAN_IFS"
+readarray -t -- INTERFACES <<< "$LAN_IFS"
 SEEN=()
 
 mkdir -v -p -- "$WANTS"
@@ -24,7 +24,7 @@ for NAME in "${INTERFACES[@]}"; do
   PREV="ENV_IFS=${SEEN[*]}"
   unset -- IFS
   OVERRIDE="$ALLOCD/0-override.conf"
-  /usr/local/libexec/m4.sh -D"$PREV" -- /usr/local/opt/network/1-ip-alloc.m4@.service >"$OVERRIDE"
+  /usr/local/libexec/m4.sh -D"$PREV" -- /usr/local/opt/network/1-ip-alloc.m4@.service > "$OVERRIDE"
   chmod g+r,o+r -- "$OVERRIDE"
   ln -v -sf -- /usr/local/lib/systemd/system/1-lan@.service "$WANTS/1-lan@$NAME.service"
   SEEN+=("$NAME")

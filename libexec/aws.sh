@@ -26,7 +26,7 @@ cost)
   BEGIN="$(date --utc --date="@$((NOW - DELTA))" -- '+%Y-%m-%d')"
   END="$(date --utc --date="@$NOW" -- '+%Y-%m-%d')"
 
-  read -r -d '' -- JQJQ <<-'JQ' || true
+  read -r -d '' -- JQJQ <<- 'JQ' || true
 def amount: .Metrics.UnblendedCost.Amount;
 .ResultsByTime[] as $t | $t.Groups[] | select(amount != "0") | "\($t.TimePeriod.End) \(.Keys[] | gsub("\\s"; "%")) \(amount)"
 JQ
@@ -38,7 +38,7 @@ JQ
     --metrics 'UnblendedCost'
     --group-by 'Type=DIMENSION,Key=SERVICE'
   )
-  read -r -d '' -- AWK <<-'AWK' || true
+  read -r -d '' -- AWK <<- 'AWK' || true
 BEGIN { sum = 0 }
 { sum += $NF }
 { print $0 " ~>" sprintf("%0.2f", $NF * month) }
@@ -53,8 +53,8 @@ cpu)
     lightsail
   )
   IS="$("${AWS[@]}" get-instances | "${JQ[@]}" '.instances[].name')"
-  readarray -t -- INSTANCES <<<"$IS"
-  read -r -d '' -- JQJQ <<-'JQ' || true
+  readarray -t -- INSTANCES <<< "$IS"
+  read -r -d '' -- JQJQ <<- 'JQ' || true
 .metricData[] | "\(.timestamp | sub("T"; " ") | sub("-..:..$"; "")) -> \(.average | floor) \(.unit)"
 JQ
 

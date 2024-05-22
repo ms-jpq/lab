@@ -25,7 +25,7 @@ while (($#)); do
     shift -- 2
     ;;
   --cpu-flags)
-    if [[ -n "$2" ]]; then
+    if [[ -n $2 ]]; then
       CPU_FLAGS+=("$2")
     fi
     shift -- 2
@@ -106,7 +106,7 @@ while (($#)); do
   esac
 done
 
-if [[ -z "${CPUS:-""}" ]]; then
+if [[ -z ${CPUS:-""} ]]; then
   NPROCS="$(nproc)"
   CPUS="cpus=$((NPROCS / 2))"
 fi
@@ -128,7 +128,7 @@ ARGV=(
   -name "$NAME,debug-threads=on"
 )
 
-if [[ -n "${PIDFILE:-""}" ]]; then
+if [[ -n ${PIDFILE:-""} ]]; then
   ARGV+=(
     -pidfile "$PIDFILE"
     -daemonize
@@ -145,7 +145,7 @@ ARGV+=(
   -m "${MEM:-"size=8G"}"
 )
 
-if [[ -n "${BIOS:-""}" ]]; then
+if [[ -n ${BIOS:-""} ]]; then
   ARGV+=(-bios "$BIOS")
 fi
 
@@ -154,15 +154,15 @@ ARGV+=(
   -device 'virtio-balloon-pci-non-transitional,deflate-on-oom=on,free-page-reporting=on'
 )
 
-if [[ -n "${QMP:-""}" ]]; then
+if [[ -n ${QMP:-""} ]]; then
   ARGV+=(-qmp "unix:$QMP,server,nowait")
 fi
 
-if [[ -n "${MONITOR:-""}" ]]; then
+if [[ -n ${MONITOR:-""} ]]; then
   ARGV+=(-monitor "unix:$MONITOR,server,nowait")
 fi
 
-if [[ -n "${TPM:-""}" ]]; then
+if [[ -n ${TPM:-""} ]]; then
   ID1='chtp0'
   ID2='tpm0'
   ARGV+=(
@@ -177,7 +177,7 @@ ARGV+=(
   -device 'virtio-tablet-pci'
 )
 
-if [[ -n "${VNC:-""}" ]]; then
+if [[ -n ${VNC:-""} ]]; then
   AUD='aud0'
   ARGV+=(
     -display "vnc=unix:$VNC"
@@ -190,21 +190,21 @@ else
 fi
 
 NIC='model=virtio-net-pci-non-transitional'
-if [[ -n "${BRIDGE:-""}" ]]; then
+if [[ -n ${BRIDGE:-""} ]]; then
   ARGV+=(-nic "bridge,$NIC,br=$BRIDGE")
 fi
 
 FD=3
 for MACVTAP in "${TAPS[@]}"; do
   SYS="/sys/class/net/$MACVTAP"
-  IFI="$(<"$SYS/ifindex")"
-  MACADDR="$(<"$SYS/address")"
-  exec {FD}<>"/dev/tap$IFI"
+  IFI="$(< "$SYS/ifindex")"
+  MACADDR="$(< "$SYS/address")"
+  exec {FD}<> "/dev/tap$IFI"
   ARGV+=(-nic "tap,fd=$FD,$NIC,mac=$MACADDR")
   ((FD++))
 done
 
-if [[ -n "${INITIATOR_NAME:-""}" ]]; then
+if [[ -n ${INITIATOR_NAME:-""} ]]; then
   ARGV+=(-iscsi "initiator-name=$INITIATOR_NAME")
 fi
 
@@ -217,7 +217,7 @@ printf -v BLKOPTS -- '%s,' "${BLKDEV_OPTIONS[@]}"
 for IDX in "${!DRIVES[@]}"; do
   DRIVE="${DRIVES[$IDX]}"
   ID="blk$IDX"
-  if [[ -b "$DRIVE" ]]; then
+  if [[ -b $DRIVE ]]; then
     DRIVER='host_device'
   else
     DRIVER='file'

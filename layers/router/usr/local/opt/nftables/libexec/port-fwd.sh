@@ -14,23 +14,23 @@ for FILE in /run/local/dnsmasq/*/leases; do
   DOMAIN="${FILE%/*}"
   DOMAIN="${DOMAIN##*/}.$HOSTNAME.home.arpa"
   LS="$(awk '{ print($1, $3, $4) }' "$FILE")"
-  readarray -t -- LSS <<<"$LS"
+  readarray -t -- LSS <<< "$LS"
 
   for LINE in "${LSS[@]}"; do
     EXP="${LINE%% *}"
-    if [[ "$EXP" == 'duid' ]]; then
+    if [[ $EXP == 'duid' ]]; then
       continue
     fi
 
     LINE="${LINE#"$EXP" }"
     IP="${LINE%% *}"
     NAME="${LINE#"$IP" }"
-    if [[ "$NAME" == '*' ]]; then
+    if [[ $NAME == '*' ]]; then
       continue
     fi
 
-    if [[ "$IP" =~ : ]]; then
-      if [[ "$IP" =~ ^fd ]]; then
+    if [[ $IP =~ : ]]; then
+      if [[ $IP =~ ^fd ]]; then
         STAT='i'
       else
         STAT='e'
@@ -42,12 +42,12 @@ for FILE in /run/local/dnsmasq/*/leases; do
   done
 done
 
-printf -- '%s\n' "${SED[@]}" >"$SCRIPT"
+printf -- '%s\n' "${SED[@]}" > "$SCRIPT"
 
 {
   cat -- "$NFT/0-flush.conf"
   sed --regexp-extended --quiet --file "$SCRIPT" "$NFT/1-elements.conf"
-} >"$NEW"
+} > "$NEW"
 
 if ! diff --brief -- "$OLD" "$NEW"; then
   mv -v -f -- "$NEW" "$OLD"

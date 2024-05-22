@@ -35,7 +35,7 @@ done
 SH="./var/sh"
 INVENTORY='./inventory.json'
 
-if [[ "${MACHINES[*]}" != '*' ]]; then
+if [[ ${MACHINES[*]} != '*' ]]; then
   for MACHINE in "${MACHINES[@]}"; do
     if ! [[ -d "machines/$MACHINE" ]]; then
       exit 1
@@ -67,7 +67,7 @@ else
     printf -v ESC -- '%q ' "$@"
   else
     SRC="./var/tmp/machines/$MACHINE/fs"
-    "${EXEC[@]}" exec <<<"$(<"$SH/libexec/essentials.sh")"
+    "${EXEC[@]}" exec <<< "$(< "$SH/libexec/essentials.sh")"
     "${EXEC[@]}" sync -- "$SRC/"
     printf -v ESC -- '%q ' gmake --directory /usr/local/opt/initd "$@"
   fi

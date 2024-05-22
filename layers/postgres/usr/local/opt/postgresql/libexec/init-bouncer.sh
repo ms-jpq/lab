@@ -6,17 +6,17 @@ INI="$1"
 shift -- 1
 
 {
-  tee -- <<-'EOF'
+  tee -- <<- 'EOF'
 [databases]
 EOF
 
   for CLUSTER in "$@"; do
     DB="${CLUSTER#*'-'}"
-    tee -- <<-EOF
+    tee -- <<- EOF
 $DB = dbname=postgres host=/run/local/postgresql/$CLUSTER
 EOF
   done
 
-} >"$INI"
+} > "$INI"
 
 /usr/local/libexec/try-reload.sh 0-pgbouncer.service

@@ -9,6 +9,6 @@ shift -- 3
 
 USERNAME="$(id --name --user -- 1000)"
 {
-  USERNAME="$USERNAME" envsubst <"$SRC"
+  USERNAME="$USERNAME" envsubst < "$SRC"
   cat -- /dev/null "$@"
-} >"$DST"
+} > "$DST"

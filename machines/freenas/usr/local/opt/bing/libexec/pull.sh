@@ -20,7 +20,7 @@ if ! [[ -v UNDER ]]; then
     --raw-output
   )
 
-  read -r -d '' -- JQ1 <<'JQ' || true
+  read -r -d '' -- JQ1 << 'JQ' || true
 [.images[] | "\(.startdate | sub("^(?<y>.{4})(?<m>.{2})(?<d>.{2})$"; "\(.y)_\(.m)_\(.d)") ) https://bing.com\(.url | sub("&.+$"; "")) \((.title | gsub("\\s"; " ")))"] | join("\u0000")
 JQ
 
@@ -33,12 +33,12 @@ else
     --fields
   )
   set -x
-  DATE="$("${CUT[@]}" 1,1 <<<"$2")"
-  URI="$("${CUT[@]}" 2,2 <<<"$2")"
-  TITLE="$("${CUT[@]}" 3- <<<"$2")"
+  DATE="$("${CUT[@]}" 1,1 <<< "$2")"
+  URI="$("${CUT[@]}" 2,2 <<< "$2")"
+  TITLE="$("${CUT[@]}" 3- <<< "$2")"
 
   NAME="$OUT/$DATE $TITLE.${URI##*.}"
-  if ! [[ -f "$NAME" ]]; then
+  if ! [[ -f $NAME ]]; then
     TMP="$NAME.tmp"
     "${CURL[@]}" --output "$TMP" -- "$URI"
     mv -v -f -- "$TMP" "$NAME"

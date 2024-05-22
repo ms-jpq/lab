@@ -13,7 +13,7 @@ RESOLV="$ETC/resolv.conf"
 WGC="$(mktemp)"
 
 b2() {
-  NAME="w-$(b3sum --no-names --length 8 <<<"$NETNS$*")"
+  NAME="w-$(b3sum --no-names --length 8 <<< "$NETNS$*")"
   printf -- '%s' "${NAME::15}"
 }
 
@@ -41,19 +41,19 @@ reload() {
     WG="$(b2 "$CONF")"
 
     DS="$(sed -E --quiet -e 's/DNS =(.+)/\1/p' -- "$CONF")"
-    readarray -t -d ',' -- DNS_SERVERS <<<"$DS"
+    readarray -t -d ',' -- DNS_SERVERS <<< "$DS"
 
     for DNS in "${DNS_SERVERS[@]}"; do
-      readarray -t -d ' ' -- DS <<<"$DNS"
+      readarray -t -d ' ' -- DS <<< "$DNS"
       for D in "${DS[@]}"; do
         D="${D//[[:space:]]/''}"
-        if [[ -n "$D" ]]; then
+        if [[ -n $D ]]; then
           DNS_SRV+=("$D")
         fi
       done
     done
 
-    sed -E -e '/^(Address|DNS) .*/d' -- "$CONF" >"$WGC"
+    sed -E -e '/^(Address|DNS) .*/d' -- "$CONF" > "$WGC"
     ip link set dev "$WG" up
     wg syncconf "$WG" "$WGC"
     wg set "$WG" fwmark "$FWMARK"
@@ -62,11 +62,11 @@ reload() {
     CURRENT_ADDR="$(ip --json addr show dev "$WG" | jq --raw-output '.[].addr_info[].local')"
 
     declare -A -- ACC=()
-    readarray -t -- ADDRESSES <<<"$ADDRC"
-    readarray -t -- CURRENT <<<"$CURRENT_ADDR"
+    readarray -t -- ADDRESSES <<< "$ADDRC"
+    readarray -t -- CURRENT <<< "$CURRENT_ADDR"
 
     for ADDRS in "${ADDRESSES[@]}"; do
-      readarray -t -d ',' -- ADDR <<<"$ADDRS"
+      readarray -t -d ',' -- ADDR <<< "$ADDRS"
       for A in "${ADDR[@]}"; do
         A="${A//[[:space:]]/''}"
         ACC["$A"]=1
@@ -74,7 +74,7 @@ reload() {
     done
 
     for ADDR in "${CURRENT[@]}"; do
-      if [[ -n "$ADDR" ]] && [[ -z "${ACC["$ADDR"]:-""}" ]]; then
+      if [[ -n $ADDR ]] && [[ -z ${ACC["$ADDR"]:-""} ]]; then
         ip addr del "$ADDR" dev "$WG"
       fi
     done
@@ -86,7 +86,7 @@ reload() {
     for ADDR in "${!ACC[@]}"; do
       ADDR="${ADDR//[[:space:]]/''}"
       P=4
-      if [[ "$ADDR" =~ : ]]; then
+      if [[ $ADDR =~ : ]]; then
         P=6
       fi
 

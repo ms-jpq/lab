@@ -8,7 +8,7 @@ fi
 
 while read -r LINE; do
   LINE="${LINE%%$'\r'}"
-  if [[ -z "$LINE" ]]; then
+  if [[ -z $LINE ]]; then
     break
   fi
 
@@ -37,8 +37,8 @@ done
 
 case "$AUTH_PROTOCOL" in
 smtp)
-  if ! [[ "$AUTH_SMTP_TO" =~ / ]]; then
-    tee -- <<-'EOF'
+  if ! [[ $AUTH_SMTP_TO =~ / ]]; then
+    tee -- <<- 'EOF'
 HTTP/1.0 200 OK
 Auth-Status: OK
 Auth-Server: 127.0.0.53
@@ -60,7 +60,7 @@ imap)
   )
 
   if "${CURL[@]}"; then
-    tee -- <<-'EOF'
+    tee -- <<- 'EOF'
 HTTP/1.0 200 OK
 Auth-Status: OK
 Auth-Server: 127.0.0.53
@@ -75,7 +75,7 @@ EOF
   ;;
 esac
 
-tee -- <<-'EOF'
+tee -- <<- 'EOF'
 HTTP/1.0 200 OK
 Auth-Status: Invalid login or password
 

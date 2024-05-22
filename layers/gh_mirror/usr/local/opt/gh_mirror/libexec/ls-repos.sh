@@ -17,18 +17,18 @@ CURL=(
 
 JSON="$("${CURL[@]}")"
 LS="$(sed -E -n -e 's/^link: (.+)$/\1/p' -- "$TMP")"
-readarray -t -d ',' -- LLS <<<"$LS"
+readarray -t -d ',' -- LLS <<< "$LS"
 
 export -- NEXT_URI=''
 for L in "${LLS[@]}"; do
   L="${L//[[:space:]]/}"
-  if [[ -z "$L" ]]; then
+  if [[ -z $L ]]; then
     continue
   fi
-  if [[ "$L" =~ ^\<([^\>]+)\>\;rel=\"([^\"]+)\"$ ]]; then
+  if [[ $L =~ ^\<([^\>]+)\>\;rel=\"([^\"]+)\"$ ]]; then
     LINK="${BASH_REMATCH[1]}"
     REL="${BASH_REMATCH[2]}"
-    if [[ "$REL" == 'next' ]]; then
+    if [[ $REL == 'next' ]]; then
       NEXT_URI="$LINK"
     fi
   else
@@ -36,7 +36,7 @@ for L in "${LLS[@]}"; do
   fi
 done
 
-jq --exit-status --raw-output '.[].clone_url // ""' <<<"$JSON"
-if [[ -n "$NEXT_URI" ]]; then
+jq --exit-status --raw-output '.[].clone_url // ""' <<< "$JSON"
+if [[ -n $NEXT_URI ]]; then
   exec -- "$0" "$@"
 fi

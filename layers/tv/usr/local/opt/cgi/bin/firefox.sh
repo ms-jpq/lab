@@ -9,7 +9,7 @@ fi
 BYTES=0
 while read -r LINE; do
   LINE="${LINE%$'\r'}"
-  if [[ -z "$LINE" ]]; then
+  if [[ -z $LINE ]]; then
     break
   fi
 
@@ -24,7 +24,7 @@ done
 
 URI="$(head --bytes "$BYTES" | jq --exit-status --raw-output '.uri')"
 
-tee <<-'EOF'
+tee <<- 'EOF'
 HTTP/1.0 200 OK
 Content-Type: text/plain; charset=utf-8
 

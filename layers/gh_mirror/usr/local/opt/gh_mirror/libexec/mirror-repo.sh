@@ -15,7 +15,7 @@ COPY="$WORKSPACE/$BASENAME"
 NPROC="$(nproc)"
 mkdir -v -p -- "$BARE" "$WORKSPACE"
 
-if ! [[ -d "$MIRROR" ]]; then
+if ! [[ -d $MIRROR ]]; then
   git clone --mirror --jobs="$NPROC" -- "$URI" "$MIRROR"
 else
   pushd -- "$MIRROR"
@@ -23,7 +23,7 @@ else
   popd
 fi
 
-if ! [[ -d "$COPY" ]]; then
+if ! [[ -d $COPY ]]; then
   git clone --jobs="$NPROC" -- "$MIRROR" "$COPY"
 else
   pushd -- "$COPY"

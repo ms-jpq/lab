@@ -39,7 +39,7 @@ AUTO="$DATA/$LAN/autoload/$NAME"
 
 case "$ACTION" in
 install)
-  if [[ -f "$SRC" ]]; then
+  if [[ -f $SRC ]]; then
     ln -v -sf -- "$SRC" "$DST"
     ln -v -sf -- "../$NAME" "$AUTO"
   fi

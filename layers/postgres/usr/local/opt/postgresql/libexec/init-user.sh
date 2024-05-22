@@ -19,19 +19,19 @@ PSQL=(
 )
 
 if [[ -v NUKE ]]; then
-  "${PSQL[@]}" --set=role="$ROLE" <<-'SQL'
+  "${PSQL[@]}" --set=role="$ROLE" <<- 'SQL'
 DROP USER IF EXISTS :role;
 SQL
 fi
 
-read -r -d '' -- USERS <<-'SQL' || true
+read -r -d '' -- USERS <<- 'SQL' || true
 SELECT
   JSON_AGG(usename)
 FROM
   pg_shadow;
 SQL
 
-if "${PSQL[@]}" <<<"$USERS" | jq --exit-status --arg role "$ROLE" '.[] | select(. == $role)'; then
+if "${PSQL[@]}" <<< "$USERS" | jq --exit-status --arg role "$ROLE" '.[] | select(. == $role)'; then
   exit 0
 fi
 
@@ -40,7 +40,7 @@ export -- PASSWORD
 
 # TODO: use :pass @ PG 16, \getenv is undefined in 14
 # --command '\getenv pass PASSWORD'
-"${PSQL[@]}" --set=role="$ROLE" <<-SQL
+"${PSQL[@]}" --set=role="$ROLE" <<- SQL
 CREATE USER :role
 WITH
   SUPERUSER PASSWORD '$PASSWORD';

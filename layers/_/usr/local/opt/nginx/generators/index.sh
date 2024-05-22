@@ -19,11 +19,11 @@ for SOCK in "$CGI"*.sock; do
 done
 
 for TXT in "$SELF"/*.index; do
-  readarray -t -- INDEX <"$TXT"
+  readarray -t -- INDEX < "$TXT"
   HREFS+=("${INDEX[@]}")
 done
 
 IFS=','
 /usr/local/libexec/m4.sh -D"ENV_HOST=$HOSTNAME" -D"ENV_HREFS=${HREFS[*]}" "$SELF/index.html" | sponge -- "$WWW/index.html"
-/usr/local/libexec/m4.sh -D"ENV_SOCKS=${SOCKS[*]}" '/usr/local/opt/cgi/location.nginx' >"$RUN/server.d/cgi.nginx"
+/usr/local/libexec/m4.sh -D"ENV_SOCKS=${SOCKS[*]}" '/usr/local/opt/cgi/location.nginx' > "$RUN/server.d/cgi.nginx"
 unset -- IFS

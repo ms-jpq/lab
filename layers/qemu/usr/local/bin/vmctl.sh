@@ -26,7 +26,7 @@ esac
 
 SOCKET="$RUN/$MACHINE/$SOCK.sock"
 if (($#)); then
-  exec -- nc -U -- "$SOCKET" <<<"$*"
+  exec -- nc -U -- "$SOCKET" <<< "$*"
 else
   exec -- rlwrap -- nc -U -- "$SOCKET"
 fi

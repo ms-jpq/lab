@@ -56,13 +56,13 @@ RSY=(
 conn() {
   # shellcheck disable=SC2016
   JSON="$("${JQER[@]}" --arg key "$MACHINE" '.[$key] // {}' "$INVENTORY")"
-  HOST="$("${JQER[@]}" '.host' <<<"$JSON")"
-  USER="$("${JQER[@]}" '.user // "root"' <<<"$JSON")"
-  OPTS="$(jq --raw-output '(.options // [])[]' <<<"$JSON")"
-  readarray -t -- OPTIONS <<<"$OPTS"
+  HOST="$("${JQER[@]}" '.host' <<< "$JSON")"
+  USER="$("${JQER[@]}" '.user // "root"' <<< "$JSON")"
+  OPTS="$(jq --raw-output '(.options // [])[]' <<< "$JSON")"
+  readarray -t -- OPTIONS <<< "$OPTS"
   OOS=()
   for O in "${OPTIONS[@]}"; do
-    if [[ -n "$O" ]]; then
+    if [[ -n $O ]]; then
       OOS+=("$O")
     fi
   done
@@ -87,13 +87,13 @@ shell() {
 
 case "$ACTION" in
 gen)
-  if [[ -f "$INVENTORY" ]]; then
-    ACC="$(<"$INVENTORY")"
+  if [[ -f $INVENTORY ]]; then
+    ACC="$(< "$INVENTORY")"
   else
     ACC='{}'
   fi
 
-  read -r -d '' -- JSON <<JSON || true
+  read -r -d '' -- JSON << JSON || true
 {
   "host": null,
   "user": "root",
@@ -105,14 +105,14 @@ JSON
   for m in machines/*/; do
     m="${m#*/}"
     m="${m%/}"
-    LEAF="$("${JQE[@]}" --arg val "$m" '.host = $val' <<<"$JSON")"
-    ACC="$("${JQE[@]}" --arg key "$m" --argjson val "$LEAF" '.[$key] = .[$key] // $val' <<<"$ACC")"
+    LEAF="$("${JQE[@]}" --arg val "$m" '.host = $val' <<< "$JSON")"
+    ACC="$("${JQE[@]}" --arg key "$m" --argjson val "$LEAF" '.[$key] = .[$key] // $val' <<< "$ACC")"
   done
-  printf -- '%s\n' "$ACC" >"$INVENTORY"
-  "${JQE[@]}" <<<"$ACC"
+  printf -- '%s\n' "$ACC" > "$INVENTORY"
+  "${JQE[@]}" <<< "$ACC"
   ;;
 ls)
-  if [[ -f "$INVENTORY" ]]; then
+  if [[ -f $INVENTORY ]]; then
     "${JQER[@]}" '. // {} | keys[]' "$INVENTORY"
   else
     MS='./machines/'
@@ -124,7 +124,7 @@ ls)
   ;;
 env)
   SCRIPT="$1"
-  shell "${BSH[@]}" <<<"$(<"$SCRIPT")"
+  shell "${BSH[@]}" <<< "$(< "$SCRIPT")"
   ;;
 sync)
   SRC="$1"

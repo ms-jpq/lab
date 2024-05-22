@@ -44,7 +44,7 @@ enable | lazy)
     CM="$CACHE/$MACH"
     "$HR" mkdir -v -p -- "$CM"
     PINS=("$ROOT/$SOCK_PIN" "$CM/$SOCK_PIN")
-    if [[ "$ACTION" == 'enable' ]]; then
+    if [[ $ACTION == 'enable' ]]; then
       PINS+=("$ROOT/$SERVICE_PIN" "$CM/$SERVICE_PIN")
     fi
     "$HR" touch -- "${PINS[@]}"
@@ -63,7 +63,7 @@ remove)
   for MACH in "$@"; do
     ROOT="$LIB/$MACH"
     set -x
-    if [[ -k "$ROOT" ]] || [[ -f "$ROOT/.#fs.lck" ]]; then
+    if [[ -k $ROOT ]] || [[ -f "$ROOT/.#fs.lck" ]]; then
       exit 1
     fi
     "$0" disable "$MACH"

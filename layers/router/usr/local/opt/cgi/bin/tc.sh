@@ -6,7 +6,7 @@ if [[ ! -t 1 ]]; then
   exec <&3 >&3
 fi
 
-tee -- <<-'EOF'
+tee -- <<- 'EOF'
 HTTP/1.0 200 OK
 Content-Type: text/plain; charset=utf-8
 
@@ -14,7 +14,7 @@ EOF
 
 TMP=$(mktemp)
 
-read -r -d '' -- AWK <<-'AWK' || true
+read -r -d '' -- AWK <<- 'AWK' || true
 BEGIN { command = "stdbuf --output L -- numfmt --to si --field 2-" }
 
 {
@@ -47,14 +47,14 @@ TR=(
 
 for KEY in "${!TR[@]}"; do
   VAL="${TR["$KEY"]}"
-  /usr/local/libexec/hr-run.sh tc -statistics qdisc show dev "$VAL" >"$TMP"
-  readarray -t -- LINES <"$TMP"
+  /usr/local/libexec/hr-run.sh tc -statistics qdisc show dev "$VAL" > "$TMP"
+  readarray -t -- LINES < "$TMP"
 
   EMPTY=0
   M1=-1
   M2=-1
   for IDX in "${!LINES[@]}"; do
-    if [[ "${LINES["$IDX"]}" =~ ^[[:space:]]*$ ]]; then
+    if [[ ${LINES["$IDX"]} =~ ^[[:space:]]*$ ]]; then
       case $((++EMPTY)) in
       1)
         M1=$((IDX + 1))

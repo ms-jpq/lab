@@ -7,7 +7,7 @@ if ! [[ -v UNDER ]]; then
     if UNDER=1 "$0" "$@"; then
       :
     else
-      if [[ "$?" == 143 ]]; then
+      if [[ $? == 143 ]]; then
         :
       else
         exit 1
@@ -29,10 +29,10 @@ CAT=(
   --header 'Accept: application/vnd.fdo.journal'
 )
 
-if [[ -f "$JOURNAL" ]]; then
+if [[ -f $JOURNAL ]]; then
   F="$(mktemp)"
-  journalctl --output json --reverse --lines 0 --merge --cursor-file "$F" >/dev/null
-  CURSOR="$(<"$F")"
+  journalctl --output json --reverse --lines 0 --merge --cursor-file "$F" > /dev/null
+  CURSOR="$(< "$F")"
   AT="Range: entries=$CURSOR"
   CAT+=(--header "$AT")
 fi

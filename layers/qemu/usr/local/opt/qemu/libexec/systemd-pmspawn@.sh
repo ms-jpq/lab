@@ -15,7 +15,7 @@ zfs)
   DESTINATION="$(findmnt --noheadings --output source --target "$DIR")"
   ZVOL="$DESTINATION/$RAW"
   mkdir -v -p -- "$DST"
-  if [[ -n "$SRC" ]]; then
+  if [[ -n $SRC ]]; then
     SOURCE="$(readlink -- "$SRC")"
     SOURCE="${SOURCE#/dev/zvol/}"
     LATEST="$(zfs list -t snapshot -H -o name -- "$SOURCE" | tail --lines 1)"
@@ -28,7 +28,7 @@ zfs)
   udevadm trigger
   ;;
 btrfs)
-  if [[ -n "$SRC" ]]; then
+  if [[ -n $SRC ]]; then
     btrfs subvolume snapshot -- "${SRC%/*}" "$DST"
     qemu-img resize -f raw -- "$ROOT" +"$SIZE"
   else
@@ -38,7 +38,7 @@ btrfs)
   ;;
 *)
   mkdir -v -p -- "$DST"
-  if [[ -n "$SRC" ]]; then
+  if [[ -n $SRC ]]; then
     cp -v -a -f --reflink=auto -- "$SRC" "$ROOT"
     qemu-img resize -f raw -- "$ROOT" +"$SIZE"
   else

@@ -7,22 +7,22 @@ if ! systemd-notify --booted; then
   exit 0
 fi
 
-if ! command -v -- flatpak >/dev/null; then
+if ! command -v -- flatpak > /dev/null; then
   exit 0
 fi
 
 cd -- "${0%/*}/.."
 
 TXT="$(sed -E -ne '/^[+-]/p' -- /dev/null ./flatpaks/*.txt)"
-readarray -t -- DESIRED <<<"$TXT"
+readarray -t -- DESIRED <<< "$TXT"
 
 PKGS="$(flatpak list --app --columns application)"
-readarray -t -- INSTALLED <<<"$PKGS"
+readarray -t -- INSTALLED <<< "$PKGS"
 
 declare -A -- PRESENT=()
 
 for PKG in "${INSTALLED[@]}"; do
-  if [[ -n "$PKG" ]]; then
+  if [[ -n $PKG ]]; then
     PRESENT["$PKG"]=1
   fi
 done
@@ -31,7 +31,7 @@ ADD=()
 RM=()
 
 for LINE in "${DESIRED[@]}"; do
-  if [[ -z "$LINE" ]]; then
+  if [[ -z $LINE ]]; then
     continue
   fi
 
@@ -40,12 +40,12 @@ for LINE in "${DESIRED[@]}"; do
 
   case "$ACTION" in
   +)
-    if [[ -z "${PRESENT["$PKG"]:-""}" ]]; then
+    if [[ -z ${PRESENT["$PKG"]:-""} ]]; then
       ADD+=("$PKG")
     fi
     ;;
   -)
-    if [[ -n "${PRESENT["$PKG"]:-""}" ]]; then
+    if [[ -n ${PRESENT["$PKG"]:-""} ]]; then
       RM+=("$PKG")
     fi
     ;;

@@ -10,7 +10,7 @@ fi
 HOST="$HOSTNAME"
 while read -r LINE; do
   LINE="${LINE%$'\r'}"
-  if [[ -z "$LINE" ]]; then
+  if [[ -z $LINE ]]; then
     break
   fi
 
@@ -24,7 +24,7 @@ while read -r LINE; do
   esac
 done
 
-tee -- <<-'EOF'
+tee -- <<- 'EOF'
 HTTP/1.0 200 OK
 Content-Type: text/plain; charset=utf-8
 
@@ -34,10 +34,10 @@ for F in /var/lib/local/postgresql/*/init.user; do
   NAME="${F%/*}"
   NAME="${NAME##*/}"
   printf -- '%s\n' "$NAME"
-  LINE="$(<"$F")"
+  LINE="$(< "$F")"
   NAME="${LINE%%' '*}"
-  PASSWD="$(cut --delimiter ' ' --fields 3- <<<"$LINE")"
-  PASS="$(jq --exit-status --raw-input --raw-output '@uri' <<<"$PASSWD")"
+  PASSWD="$(cut --delimiter ' ' --fields 3- <<< "$LINE")"
+  PASS="$(jq --exit-status --raw-input --raw-output '@uri' <<< "$PASSWD")"
   printf -v PSQL -- '%q ' psql -- "postgres://$NAME:$PASS@$HOST/$NAME"
   printf -- '%s\n' "postgres://$NAME:$PASSWD@$HOST/$NAME" "$PSQL"
   /usr/local/libexec/hr.sh

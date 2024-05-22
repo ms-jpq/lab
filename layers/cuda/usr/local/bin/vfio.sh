@@ -3,7 +3,7 @@
 set -o pipefail
 
 VFIO_LINES="$(lspci -mm | awk '/VGA/ && /NVIDIA/ { print "0000:"$1 }')"
-readarray -t -- VFIO_DEVICES <<<"$VFIO_LINES"
+readarray -t -- VFIO_DEVICES <<< "$VFIO_LINES"
 
 VFIO_MODS=(
   vfio
@@ -44,10 +44,10 @@ up)
   for IOMMU in "${VFIO_IDS[@]}"; do
     VENDOR="$(vendor "$IOMMU")"
     printf -- '%q -> %q\n' "$IOMMU" "$VENDOR"
-    printf -- '%s' "$VENDOR" >"/sys/bus/pci/drivers/nvidia/remove_id" || true
-    printf -- '%s' "$IOMMU" >"/sys/bus/pci/devices/$IOMMU/driver/unbind" || true
-    printf -- '%s' "$VENDOR" >"/sys/bus/pci/drivers/vfio-pci/new_id" || true
-    printf -- '%s' "$IOMMU" >"/sys/bus/pci/drivers/vfio-pci/bind" || true
+    printf -- '%s' "$VENDOR" > "/sys/bus/pci/drivers/nvidia/remove_id" || true
+    printf -- '%s' "$IOMMU" > "/sys/bus/pci/devices/$IOMMU/driver/unbind" || true
+    printf -- '%s' "$VENDOR" > "/sys/bus/pci/drivers/vfio-pci/new_id" || true
+    printf -- '%s' "$IOMMU" > "/sys/bus/pci/drivers/vfio-pci/bind" || true
   done
 
   tree -- /dev/vfio
@@ -58,10 +58,10 @@ down)
   for IOMMU in "${VFIO_IDS[@]}"; do
     VENDOR="$(vendor "$IOMMU")"
     printf -- '%q -> %q\n' "$IOMMU" "$VENDOR"
-    printf -- '%s' "$VENDOR" >"/sys/bus/pci/drivers/vfio-pci/remove_id" || true
-    printf -- '%s' "$IOMMU" >"/sys/bus/pci/drivers/vfio-pci/unbind" || true
-    printf -- '%s' "$VENDOR" >"/sys/bus/pci/drivers/nvidia/new_id" || true
-    printf -- '%s' "$IOMMU" >"/sys/bus/pci/drivers/nvidia/bind" || true
+    printf -- '%s' "$VENDOR" > "/sys/bus/pci/drivers/vfio-pci/remove_id" || true
+    printf -- '%s' "$IOMMU" > "/sys/bus/pci/drivers/vfio-pci/unbind" || true
+    printf -- '%s' "$VENDOR" > "/sys/bus/pci/drivers/nvidia/new_id" || true
+    printf -- '%s' "$IOMMU" > "/sys/bus/pci/drivers/nvidia/bind" || true
   done
 
   tree -- /dev/vfio

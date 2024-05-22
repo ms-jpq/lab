@@ -10,7 +10,7 @@ WANTS="$RUN/default.target.wants"
 source -- /usr/local/etc/default/postgresql.env
 
 # shellcheck disable=SC2154
-readarray -t -d ',' -- CLUSTERS <<<"$PG_CLUSTERS"
+readarray -t -d ',' -- CLUSTERS <<< "$PG_CLUSTERS"
 
 mkdir -v -p -- "$WANTS"
 for CLUSTER in "${CLUSTERS[@]}"; do

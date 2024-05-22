@@ -5,9 +5,9 @@ set -o pipefail
 CPUS="$(lscpu --extended --json)"
 JQ=(jq --exit-status)
 # intel E cores do not have hyperthreading -> 2 cpus / core
-P_CORES="$("${JQ[@]}" '.cpus[].core' <<<"$CPUS" | sort | uniq --repeated | "${JQ[@]}" --slurp)"
+P_CORES="$("${JQ[@]}" '.cpus[].core' <<< "$CPUS" | sort | uniq --repeated | "${JQ[@]}" --slurp)"
 
-read -r -d '' -- FILTER <<-'JQ' || true
+read -r -d '' -- FILTER <<- 'JQ' || true
 [.cpus[] | select(.core | IN($pcores[])) | .cpu | tonumber] as $cpus |
 {
   cores: $pcores | map(tonumber),
@@ -16,4 +16,4 @@ read -r -d '' -- FILTER <<-'JQ' || true
 }
 JQ
 
-"${JQ[@]}" --argjson pcores "$P_CORES" --compact-output "$FILTER" <<<"$CPUS"
+"${JQ[@]}" --argjson pcores "$P_CORES" --compact-output "$FILTER" <<< "$CPUS"

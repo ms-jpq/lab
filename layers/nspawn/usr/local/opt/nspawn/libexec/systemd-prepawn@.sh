@@ -25,5 +25,5 @@ btrfs)
   ;;
 esac
 
-cat -- ~/.ssh/authorized_keys ~/.ssh/*.pub >"$ROOT/root/.ssh/authorized_keys"
+cat -- ~/.ssh/authorized_keys ~/.ssh/*.pub > "$ROOT/root/.ssh/authorized_keys"
 chroot "$ROOT" ssh-keygen -A

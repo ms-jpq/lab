@@ -53,14 +53,14 @@ else
   FILE="$2"
   LEN="${#DIR}"
 
-  if [[ -z "$FILE" ]]; then
+  if [[ -z $FILE ]]; then
     exit
   fi
-  if [[ -L "$FILE" ]]; then
+  if [[ -L $FILE ]]; then
     if ! FILE="$(realpath -- "$FILE")"; then
       exit
     fi
-    if ! [[ "${FILE:0:$LEN}" == "$DIR" ]]; then
+    if ! [[ ${FILE:0:LEN} == "$DIR" ]]; then
       exit
     fi
   fi
@@ -68,15 +68,15 @@ else
   ITIME="${EPOCHREALTIME%%.*}"
   BASENAME="${FILE##*/}"
   EXT=''
-  if ! [[ -d "$FILE" ]]; then
-    if [[ "$FILE" =~ .+(\.[^.]+)$ ]]; then
+  if ! [[ -d $FILE ]]; then
+    if [[ $FILE =~ .+(\.[^.]+)$ ]]; then
       EXT="${BASH_REMATCH[1]}"
     fi
   fi
   MIME="$(file --brief --mime -- "$FILE")"
   ST="$(stat --format '%u %g %s %Y' -- "$FILE")"
-  read -r -- FUID FGID SIZE MTIME <<<"$ST"
-  read -r -d '' -- SCRIPT <<-'JQ' || true
+  read -r -- FUID FGID SIZE MTIME <<< "$ST"
+  read -r -d '' -- SCRIPT <<- 'JQ' || true
 {
   "attributes": {
     "group": $group,
@@ -112,7 +112,7 @@ JQ
     "$SCRIPT"
   )
 
-  tee -- <<-JSON || true
+  tee -- <<- JSON || true
 { "index": { "_index": "$INDEX" } }
 JSON
   exec -- "${JQ[@]}"

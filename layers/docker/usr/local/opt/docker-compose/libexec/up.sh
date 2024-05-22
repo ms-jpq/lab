@@ -37,7 +37,7 @@ fi
 BASE="${0%/*}"
 NETWORK="$BASE/network.sh"
 
-if [[ -x "$NETWORK" ]]; then
+if [[ -x $NETWORK ]]; then
   "$NETWORK"
 fi
 

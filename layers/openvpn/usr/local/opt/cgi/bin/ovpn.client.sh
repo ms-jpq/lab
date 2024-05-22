@@ -8,7 +8,7 @@ fi
 
 NAME="$(uuidgen).ovpn"
 
-tee -- <<-EOF
+tee -- <<- EOF
 HTTP/1.0 200 OK
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: attachment; filename="$NAME"
@@ -38,12 +38,12 @@ openvpn --tls-crypt-v2 "$SERVER_TLS_CRYPT" --genkey tls-crypt-v2-client "$CLIENT
 # shellcheck disable=SC1091
 source -- /usr/local/etc/default/o-0.ovpn.env
 
-CLIENT_CA="$(<"$SERVER_CRT")"
-CLIENT_CRT="$(<"$CLIENT_CRT_SIGNED")"
-CLIENT_KEY="$(<"$CLIENT_KEY")"
-CLIENT_TLS_CRYPT="$(<"$CLIENT_TLS_CRYPT")"
+CLIENT_CA="$(< "$SERVER_CRT")"
+CLIENT_CRT="$(< "$CLIENT_CRT_SIGNED")"
+CLIENT_KEY="$(< "$CLIENT_KEY")"
+CLIENT_TLS_CRYPT="$(< "$CLIENT_TLS_CRYPT")"
 
 export -- OVPN_SERVER_NAME OVPN_TCP_PORT OVPN_UDP_PORT PROTOCOL CLIENT_CA CLIENT_CRT CLIENT_KEY CLIENT_TLS_CRYPT
 
 cat -- "$ROOT/common.ovpn"
-envsubst <"$ROOT/client.ovpn"
+envsubst < "$ROOT/client.ovpn"

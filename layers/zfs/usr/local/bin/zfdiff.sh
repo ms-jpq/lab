@@ -5,7 +5,7 @@ set -o pipefail
 case $# in
 1)
   LINES="$(zfs list -t snapshot -o name -H -- "$@" | tail --lines 2)"
-  readarray -t -- LR <<<"$LINES"
+  readarray -t -- LR <<< "$LINES"
   LHS="${LR[0]}"
   RHS="${LR[1]}"
   ;;

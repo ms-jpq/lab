@@ -10,17 +10,17 @@ read -r L1
 L1="${L1#* }"
 L1="${L1% *}"
 
-tee <<-'EOF'
+tee <<- 'EOF'
 HTTP/1.0 200 OK
 Content-Type: text/plain; charset=utf-8
 
 EOF
 
 L2="${L1#*uri=}"
-L3="$(sed -E -e 's/\+/ /g' -e 's/%/\\x/g' <<<"$L2")"
+L3="$(sed -E -e 's/\+/ /g' -e 's/%/\\x/g' <<< "$L2")"
 printf -v L4 -- '%b' "$L3"
 
 printf -- '%s\n' "$L4"
 
 yt-dlp --cache-dir /var/tmp --newline -- "$L4" 2>&1
-figlet <<<'<3'
+figlet <<< '<3'
