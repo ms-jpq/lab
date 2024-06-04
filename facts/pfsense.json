@@ -1,7 +1,7 @@
 {
   "ENV_443_FWD": "freenas.enp2s0.ENV_MACHINE.home.arpa",
   "ENV_CNAMES": [
-    "cups.freenas.enp2s0.ENV_MACHINE.home.arpa=freenas.enp2s0.ENV_MACHINE.home.arpa"
+    "cups.pfsense.enp2s0.ENV_MACHINE.home.arpa=pfsense.enp2s0.ENV_MACHINE.home.arpa"
   ],
   "ENV_HOST_ALLOW_LIST": ["freenas.enp2s0.pfsense.home.arpa@tcp*postgresql"],
   "ENV_HOST_FORWARD_LIST": [

@@ -3,7 +3,7 @@
   "ENV_CERTBOT_SITES": [
     "ENV_DOMAIN",
     "droplet.w-0.droplet.ENV_DOMAIN",
-    "cups.freenas.enp2s0.pfsense.ENV_DOMAIN",
+    "cups.pfsense.enp2s0.pfsense.ENV_DOMAIN",
     "esxi.enp2s0.pfsense.ENV_DOMAIN",
     "freenas.enp2s0.pfsense.ENV_DOMAIN",
     "orthanc.enp2s0.pfsense.ENV_DOMAIN",
@@ -33,7 +33,7 @@
   ],
   "ENV_MACHINES": [
     "droplet.w-0.droplet",
-    "cups.freenas.enp2s0.pfsense",
+    "cups.pfsense.enp2s0.pfsense",
     "esxi.enp2s0.pfsense",
     "freenas.enp2s0.pfsense",
     "orthanc.enp2s0.pfsense",
