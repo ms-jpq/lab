@@ -1,5 +1,6 @@
 ddns
 openvpn
+printer
 router
 wireguard
 xfs

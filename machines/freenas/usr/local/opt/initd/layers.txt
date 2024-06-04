@@ -3,7 +3,6 @@ gh_mirror
 intel_gvt
 journal
 postgres
-printer
 qemu
 share
 xfs
