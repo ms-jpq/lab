@@ -7,6 +7,7 @@
   "ENV_HOST_FORWARD_LIST": [
     "freenas.enp2s0.pfsense.home.arpa@tcp*postgresql:postgresql"
   ],
+  "ENV_IOT_IFS": ["enp4s0", "eno1"],
   "ENV_LAN_IFS": ["enp2s0", "enp4s0", "eno1"],
   "ENV_OVPN_SERVER_NAME": "ENV_WG_SERVER_NAME",
   "ENV_WAN_IF": "enp1s0",
