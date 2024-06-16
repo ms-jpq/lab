@@ -47,7 +47,7 @@ hostnames:
     '(.*\.)?redd\.it$': *reddit
   high_priority:
     - '(.*\.)?github\.com$'
-    - '(.*\.)?reddit\.com$'
+    - '(.*\.)?reddit\.m5_assert([ENV_DOMAIN2])$'
   remove:
     - '(.*\.)?facebook.com$'
     - '(.*\.)?pinterest.com$'
