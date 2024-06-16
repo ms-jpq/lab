@@ -18,12 +18,11 @@ services:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^pastebin\.`)
-    tmpfs:
-      - /run
-      - /tmp
     volumes:
       - ./conf.php:/srv/cfg/conf.php:ro
-      - tmp:/var/lib/nginx/tmp
+      - run:/run
+      - tmp:/tmp
+      - tmp2:/var/lib/nginx/tmp
       - data:/srv/data
 
 networks:
@@ -33,4 +32,6 @@ networks:
 
 volumes:
   data:
+  run:
   tmp:
+  tmp2:
