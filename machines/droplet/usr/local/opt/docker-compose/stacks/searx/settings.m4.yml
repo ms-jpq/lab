@@ -35,7 +35,6 @@ ui:
   results_on_new_tab: true
 
 enabled_plugins:
-  - Self Information
   - Tracker URL remover
   - Ahmia blacklist
   - Hostnames plugin
