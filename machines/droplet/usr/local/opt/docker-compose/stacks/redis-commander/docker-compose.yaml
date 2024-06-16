@@ -37,19 +37,16 @@ services:
         - redis-cli
         - incr
         - ping
+    tmpfs:
+      - /data
     command:
       - redis-server
       - --requirepass
       - ${COMPOSE_PROJECT_NAME}
     ports:
       - 6379:6379
-    volumes:
-      - redis:/data
 
 networks:
   traefik:
     external: true
     name: traefik
-
-volumes:
-  redis:

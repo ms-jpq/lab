@@ -39,13 +39,10 @@ services:
         - redis-cli
         - incr
         - ping
-    volumes:
-      - redis:/data
+    tmpfs:
+      - /data
 
 networks:
   traefik:
     external: true
     name: traefik
-
-volumes:
-  redis:

@@ -45,13 +45,10 @@ services:
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
       POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
     # network_mode: container:warp-srv-1
-    volumes:
-      - data:/var/lib/postgresql/data
+    tmpfs:
+      - /var/lib/postgresql/data
 
 networks:
   traefik:
     external: true
     name: traefik
-
-volumes:
-  data:

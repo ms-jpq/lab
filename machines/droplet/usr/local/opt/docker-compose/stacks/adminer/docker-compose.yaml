@@ -16,6 +16,3 @@ networks:
   traefik:
     external: true
     name: traefik
-
-volumes:
-  data:
