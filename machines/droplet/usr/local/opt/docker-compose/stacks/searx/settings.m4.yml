@@ -45,6 +45,9 @@ hostnames:
     '(.*\.)?youtu\.be$': *youtube
     '(.*\.)?reddit\.com$': &reddit reddit.m5_assert([ENV_DOMAIN2])
     '(.*\.)?redd\.it$': *reddit
+  high_priority:
+    - '(.*\.)?github\.com$'
+    - '(.*\.)?reddit\.com$'
   remove:
     - '(.*\.)?facebook.com$'
     - '(.*\.)?pinterest.com$'
