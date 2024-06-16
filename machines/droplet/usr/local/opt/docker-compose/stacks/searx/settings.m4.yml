@@ -48,6 +48,9 @@ hostnames:
   high_priority:
     - '(.*\.)?github\.com$'
     - '^reddit\.m5_assert([ENV_DOMAIN2])$'
+  low_priority:
+    - '(.*\.)?medium\.com$'
+    - '(.*\.)?twitter\.com$'
   remove:
     - '(.*\.)?facebook.com$'
     - '(.*\.)?pinterest.com$'
