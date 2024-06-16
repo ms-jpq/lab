@@ -47,6 +47,8 @@ hostnames:
     '(.*\.)?redd\.it$': *reddit
   high_priority:
     - '(.*\.)?github\.com$'
+    - '(.*\.)?stackoverflow.com$'
+    - '(.*\.)?ycombinator.com$'
     - '^reddit\.m5_assert([ENV_DOMAIN2])$'
   low_priority:
     - '(.*\.)?medium\.com$'
