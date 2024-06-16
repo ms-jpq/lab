@@ -40,7 +40,7 @@ services:
         - incr
         - ping
     volumes:
-      - data:/data
+      - redis:/data
 
 networks:
   traefik:
@@ -48,4 +48,4 @@ networks:
     name: traefik
 
 volumes:
-  data:
+  redis:

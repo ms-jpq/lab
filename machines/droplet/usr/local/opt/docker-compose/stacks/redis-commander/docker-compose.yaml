@@ -44,7 +44,7 @@ services:
     ports:
       - 6379:6379
     volumes:
-      - data:/data
+      - redis:/data
 
 networks:
   traefik:
@@ -52,4 +52,4 @@ networks:
     name: traefik
 
 volumes:
-  data:
+  redis:

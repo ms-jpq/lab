@@ -13,7 +13,7 @@ server:
     m4_esyscmd([uuidgen])
 
 outgoing:
-  max_request_timeout: 6.0
+  max_request_timeout: 3.0
   # proxies:
   #   all://:
   #     - socks5://warp-srv-1:1080
@@ -31,6 +31,7 @@ search:
 ui:
   center_alignment: true
   hotkeys: vim
+  infinite_scroll: true
   results_on_new_tab: true
 
 enabled_plugins:
