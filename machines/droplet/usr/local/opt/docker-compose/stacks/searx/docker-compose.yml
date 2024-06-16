@@ -26,6 +26,7 @@ services:
       - default
       - traefik
     volumes:
+      - etc:/etc/searxng
       - ./settings.yml:/etc/searxng/settings.yml:ro
 
   redis:
@@ -46,3 +47,6 @@ networks:
   traefik:
     external: true
     name: traefik
+
+volumes:
+  etc:

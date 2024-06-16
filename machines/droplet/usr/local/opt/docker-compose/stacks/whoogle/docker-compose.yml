@@ -27,8 +27,13 @@ services:
     networks:
       - default
       - traefik
+    volumes:
+      - conf:/config
 
 networks:
   traefik:
     external: true
     name: traefik
+
+volumes:
+  conf:
