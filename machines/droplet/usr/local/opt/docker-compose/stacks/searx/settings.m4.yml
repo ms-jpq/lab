@@ -35,14 +35,19 @@ ui:
   results_on_new_tab: true
 
 enabled_plugins:
-  - "Hash plugin"
-  - "Self Information"
-  - "Tracker URL remover"
-  - "Ahmia blacklist"
-  - "Hostname replace"
+  - Hash plugin
+  - Self Information
+  - Tracker URL remover
+  - Ahmia blacklist
+  - Hostnames plugin
+  - Basic Calculator
 
-hostname_replace:
-  '(.*\.)?youtube\.com$': &youtube youtube.m5_assert([ENV_DOMAIN2])
-  '(.*\.)?youtu\.be$': *youtube
-  '(.*\.)?reddit\.com$': &reddit reddit.m5_assert([ENV_DOMAIN2])
-  '(.*\.)?redd\.it$': *reddit
+hostnames:
+  replace:
+    '(.*\.)?youtube\.com$': &youtube youtube.m5_assert([ENV_DOMAIN2])
+    '(.*\.)?youtu\.be$': *youtube
+    '(.*\.)?reddit\.com$': &reddit reddit.m5_assert([ENV_DOMAIN2])
+    '(.*\.)?redd\.it$': *reddit
+  remove:
+    - '(.*\.)?facebook.com$'
+    - '(.*\.)?pinterest.com$'
