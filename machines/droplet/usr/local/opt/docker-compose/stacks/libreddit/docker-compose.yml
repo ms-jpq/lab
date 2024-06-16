@@ -21,11 +21,14 @@ services:
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^reddit\.`)
     environment:
+      REDLIB_AUTOPLAY_VIDEOS: on
       REDLIB_DEFAULT_AUTOPLAY_VIDEOS: on
       REDLIB_DEFAULT_BLUR_NSFW: on
       REDLIB_DEFAULT_COMMENT_SORT: top
       REDLIB_DEFAULT_DISABLE_VISIT_REDDIT_CONFIRMATION: on
       REDLIB_DEFAULT_HIDE_HLS_NOTIFICATION: on
+      REDLIB_DEFAULT_USE_HLS: on
+      REDLIB_DEFAULT_WIDE: on
     # network_mode: container:warp-srv-1
     networks:
       - default
