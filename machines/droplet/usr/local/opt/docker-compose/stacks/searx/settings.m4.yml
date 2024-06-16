@@ -38,7 +38,6 @@ enabled_plugins:
   - Tracker URL remover
   - Ahmia blacklist
   - Hostnames plugin
-  - Basic Calculator
 
 hostnames:
   replace:
