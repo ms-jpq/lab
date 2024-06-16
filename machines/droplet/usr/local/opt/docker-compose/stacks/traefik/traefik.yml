@@ -16,3 +16,5 @@ serversTransport:
 entryPoints:
   http:
     address: :8888
+    forwardedHeaders:
+      insecure: true

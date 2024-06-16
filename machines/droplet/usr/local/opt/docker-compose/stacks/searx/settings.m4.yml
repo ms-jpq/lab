@@ -35,7 +35,6 @@ ui:
   results_on_new_tab: true
 
 enabled_plugins:
-  - Hash plugin
   - Self Information
   - Tracker URL remover
   - Ahmia blacklist
@@ -51,3 +50,4 @@ hostnames:
   remove:
     - '(.*\.)?facebook.com$'
     - '(.*\.)?pinterest.com$'
+    - '(.*\.)?quora.com$'
