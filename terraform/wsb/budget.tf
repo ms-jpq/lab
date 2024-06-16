@@ -1,5 +1,6 @@
 variable "mein_email" {
-  type = string
+  sensitive = true
+  type      = string
 }
 
 locals {
