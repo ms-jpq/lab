@@ -41,20 +41,42 @@ enabled_plugins:
 
 hostnames:
   replace:
-    '(.*\.)?youtube\.com$': &youtube youtube.m5_assert([ENV_DOMAIN2])
-    '(.*\.)?youtu\.be$': *youtube
-    '(.*\.)?reddit\.com$': &reddit reddit.m5_assert([ENV_DOMAIN2])
-    '(.*\.)?redd\.it$': *reddit
+    '(.+\.)?youtube\.com$': &youtube youtube.m5_assert([ENV_DOMAIN2])
+    '(.+\.)?youtu\.be$': *youtube
+    '(.+\.)?reddit\.com$': &reddit reddit.m5_assert([ENV_DOMAIN2])
+    '(.+\.)?redd\.it$': *reddit
   high_priority:
-    - '(.*\.)?discourse.group$'
-    - '(.*\.)?github\.com$'
-    - '(.*\.)?stackoverflow.com$'
-    - '(.*\.)?ycombinator.com$'
-    - '^reddit\.m5_assert([ENV_DOMAIN2])$'
+    - (.+\.)?askubuntu\.com$
+    - (.+\.)?developer\.apple\.com$
+    - (.+\.)?developer\.mozilla\.org$
+    - (.+\.)?discourse\.group$
+    - (.+\.)?docs\.python\.org$
+    - (.+\.)?genius\.com$
+    - (.+\.)?github\.(com|io)$
+    - (.+\.)?gitlab\.com$
+    - (.+\.)?imdb\.com$
+    - (.+\.)?investopedia\.com$
+    - (.+\.)?learn\.microsoft\.com$
+    - (.+\.)?mayoclinic\.org$
+    - (.+\.)?nih\.gov$
+    - (.+\.)?postgresql\.org$
+    - (.+\.)?registry\.terraform\.io$
+    - (.+\.)?rottentomatoes\.com$
+    - (.+\.)?serverfault\.com$
+    - (.+\.)?stackexchange\.com$
+    - (.+\.)?stackoverflow\.com$
+    - (.+\.)?superuser\.com$
+    - (.+\.)?wiki\.archlinux\.org$
+    - (.+\.)?ycombinator.com$
+    - ^reddit\.m5_assert([ENV_DOMAIN2])$
   low_priority:
-    - '(.*\.)?medium\.com$'
-    - '(.*\.)?twitter\.com$'
+    - (.+\.)?medium\.com$
+    - (.+\.)?twitter\.com$
   remove:
-    - '(.*\.)?facebook.com$'
-    - '(.*\.)?pinterest.com$'
-    - '(.*\.)?quora.com$'
+    - (.+\.)?facebook.com$
+    - (.+\.)?hackernoon.com$
+    - (.+\.)?pinterest(\.[^.]+){1,2}$
+    - (.+\.)?quora.com$
+    - (.+\.)?thehackernews.com$
+    - (.+\.)?w3schools.com$
+    - (.+\.)?webmd.com$
