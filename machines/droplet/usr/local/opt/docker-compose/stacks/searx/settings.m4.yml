@@ -46,6 +46,7 @@ hostnames:
     '(.*\.)?reddit\.com$': &reddit reddit.m5_assert([ENV_DOMAIN2])
     '(.*\.)?redd\.it$': *reddit
   high_priority:
+    - '(.*\.)?discourse.group$'
     - '(.*\.)?github\.com$'
     - '(.*\.)?stackoverflow.com$'
     - '(.*\.)?ycombinator.com$'
