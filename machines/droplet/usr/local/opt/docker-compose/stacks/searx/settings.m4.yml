@@ -47,30 +47,40 @@ hostnames:
     '(.+\.)?reddit\.com$': &reddit reddit.m5_assert([ENV_DOMAIN2])
     '(.+\.)?redd\.it$': *reddit
   high_priority:
+    - (.+\.)?(ask)?ubuntu\.com$
     - (.+\.)?archlinux\.org$
-    - (.+\.)?askubuntu\.com$
+    - (.+\.)?clojure\.org$
+    - (.+\.)?debian\.org$
     - (.+\.)?developer\.apple\.com$
     - (.+\.)?developer\.mozilla\.org$
     - (.+\.)?discourse\.group$
+    - (.+\.)?docs\.oracle\.com$
     - (.+\.)?genius\.com$
     - (.+\.)?github\.(com|io)$
     - (.+\.)?gitlab\.com$
+    - (.+\.)?gnu\.org$
     - (.+\.)?go\.dev$
+    - (.+\.)?haskell\.org$
     - (.+\.)?imdb\.com$
     - (.+\.)?investopedia\.com$
+    - (.+\.)?kotlinlang\.org$
     - (.+\.)?learn\.microsoft\.com$
     - (.+\.)?mayoclinic\.org$
     - (.+\.)?nih\.gov$
     - (.+\.)?nodejs\.org$
+    - (.+\.)?php\.net$
     - (.+\.)?postgresql\.org$
     - (.+\.)?python\.org$
+    - (.+\.)?r-project\.org$
     - (.+\.)?rottentomatoes\.com$
     - (.+\.)?rubyapi\.org$
     - (.+\.)?rust-lang\.org$
     - (.+\.)?serverfault\.com$
+    - (.+\.)?ss64\.com$
     - (.+\.)?stackexchange\.com$
     - (.+\.)?stackoverflow\.com$
     - (.+\.)?superuser\.com$
+    - (.+\.)?swi-prolog\.org$
     - (.+\.)?terraform\.io$
     - (.+\.)?ycombinator\.com$
     - ^reddit\.m5_assert([ENV_DOMAIN2])$
