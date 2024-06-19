@@ -57,6 +57,7 @@ hostnames:
     - (.+\.)?discourse\.group$
     - (.+\.)?docs\.oracle\.com$
     - (.+\.)?genius\.com$
+    - (.+\.)?gitbook\.io$
     - (.+\.)?github\.(com|io)$
     - (.+\.)?gitlab\.com$
     - (.+\.)?gnu\.org$
@@ -93,6 +94,7 @@ hostnames:
     - (.+\.)?twitter\.com$
   remove:
     - (.+\.)?facebook\.com$
+    - (.+\.)?freecodecamp\.org$
     - (.+\.)?hackernoon\.com$
     - (.+\.)?msn\.com$
     - (.+\.)?pinterest(\.[^.]+){1,2}$

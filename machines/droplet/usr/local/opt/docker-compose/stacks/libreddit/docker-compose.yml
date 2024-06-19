@@ -28,6 +28,7 @@ services:
       REDLIB_DEFAULT_DISABLE_VISIT_REDDIT_CONFIRMATION: on
       REDLIB_DEFAULT_HIDE_HLS_NOTIFICATION: on
       REDLIB_DEFAULT_USE_HLS: on
+      REDLIB_SUBSCRIPTIONS:
     # network_mode: container:warp-srv-1
     networks:
       - default
