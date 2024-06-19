@@ -49,6 +49,7 @@ hostnames:
   high_priority:
     - (.+\.)?(ask)?ubuntu\.com$
     - (.+\.)?archlinux\.org$
+    - (.+\.)?cbc\.ca$
     - (.+\.)?clojure\.org$
     - (.+\.)?debian\.org$
     - (.+\.)?developer\.apple\.com$
@@ -85,6 +86,7 @@ hostnames:
     - (.+\.)?ycombinator\.com$
     - ^reddit\.m5_assert([ENV_DOMAIN2])$
   low_priority:
+    - (.+\.)?\.au$
     - (.+\.)?docs\.ruby-lang\.org$
     - (.+\.)?medium\.com$
     - (.+\.)?ruby-doc\.org$
