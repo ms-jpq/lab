@@ -39,6 +39,7 @@ enabled_plugins:
   - Ahmia blacklist
   - Hostnames plugin
 
+# https://kagi.com/stats?stat=leaderboard
 hostnames:
   replace:
     '(.+\.)?youtube\.com$': &youtube youtube.m5_assert([ENV_DOMAIN2])
@@ -62,19 +63,23 @@ hostnames:
     - (.+\.)?postgresql\.org$
     - (.+\.)?registry\.terraform\.io$
     - (.+\.)?rottentomatoes\.com$
+    - (.+\.)?rubyapi\.org$
     - (.+\.)?serverfault\.com$
     - (.+\.)?stackexchange\.com$
     - (.+\.)?stackoverflow\.com$
     - (.+\.)?superuser\.com$
     - (.+\.)?wiki\.archlinux\.org$
-    - (.+\.)?ycombinator.com$
+    - (.+\.)?ycombinator\.com$
     - ^reddit\.m5_assert([ENV_DOMAIN2])$
   low_priority:
+    - (.+\.)?docs\.ruby-lang\.org$
     - (.+\.)?medium\.com$
+    - (.+\.)?ruby-doc\.org$
     - (.+\.)?twitter\.com$
   remove:
     - (.+\.)?facebook.com$
     - (.+\.)?hackernoon.com$
+    - (.+\.)?msn\.com$
     - (.+\.)?pinterest(\.[^.]+){1,2}$
     - (.+\.)?quora.com$
     - (.+\.)?thehackernews.com$
