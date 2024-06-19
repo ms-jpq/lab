@@ -47,28 +47,31 @@ hostnames:
     '(.+\.)?reddit\.com$': &reddit reddit.m5_assert([ENV_DOMAIN2])
     '(.+\.)?redd\.it$': *reddit
   high_priority:
+    - (.+\.)?archlinux\.org$
     - (.+\.)?askubuntu\.com$
     - (.+\.)?developer\.apple\.com$
     - (.+\.)?developer\.mozilla\.org$
     - (.+\.)?discourse\.group$
-    - (.+\.)?docs\.python\.org$
     - (.+\.)?genius\.com$
     - (.+\.)?github\.(com|io)$
     - (.+\.)?gitlab\.com$
+    - (.+\.)?go\.dev$
     - (.+\.)?imdb\.com$
     - (.+\.)?investopedia\.com$
     - (.+\.)?learn\.microsoft\.com$
     - (.+\.)?mayoclinic\.org$
     - (.+\.)?nih\.gov$
+    - (.+\.)?nodejs\.org$
     - (.+\.)?postgresql\.org$
-    - (.+\.)?registry\.terraform\.io$
+    - (.+\.)?python\.org$
     - (.+\.)?rottentomatoes\.com$
     - (.+\.)?rubyapi\.org$
+    - (.+\.)?rust-lang\.org$
     - (.+\.)?serverfault\.com$
     - (.+\.)?stackexchange\.com$
     - (.+\.)?stackoverflow\.com$
     - (.+\.)?superuser\.com$
-    - (.+\.)?wiki\.archlinux\.org$
+    - (.+\.)?terraform\.io$
     - (.+\.)?ycombinator\.com$
     - ^reddit\.m5_assert([ENV_DOMAIN2])$
   low_priority:
@@ -77,11 +80,11 @@ hostnames:
     - (.+\.)?ruby-doc\.org$
     - (.+\.)?twitter\.com$
   remove:
-    - (.+\.)?facebook.com$
-    - (.+\.)?hackernoon.com$
+    - (.+\.)?facebook\.com$
+    - (.+\.)?hackernoon\.com$
     - (.+\.)?msn\.com$
     - (.+\.)?pinterest(\.[^.]+){1,2}$
-    - (.+\.)?quora.com$
-    - (.+\.)?thehackernews.com$
-    - (.+\.)?w3schools.com$
-    - (.+\.)?webmd.com$
+    - (.+\.)?quora\.com$
+    - (.+\.)?thehackernews\.com$
+    - (.+\.)?w3schools\.com$
+    - (.+\.)?webmd\.com$
