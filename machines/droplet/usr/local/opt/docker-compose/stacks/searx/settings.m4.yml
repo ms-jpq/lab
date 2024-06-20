@@ -102,7 +102,6 @@ hostnames:
     - ^([^.]+\.)*medium\.com$
     - ^([^.]+\.)*ruby-doc\.org$
     - ^([^.]+\.)*sourceforge\.net$
-    - ^([^.]+\.)*towardsdatascience\.com$
     - ^([^.]+\.)*twitter\.com$
     - ^([^.]+\.)*x\.com$
   remove:
@@ -115,5 +114,6 @@ hostnames:
     - ^([^.]+\.)*pinterest(\.[^.]+){1,2}$
     - ^([^.]+\.)*quora\.com$
     - ^([^.]+\.)*thehackernews\.com$
+    - ^([^.]+\.)*towardsdatascience\.com$
     - ^([^.]+\.)*w3schools\.com$
     - ^([^.]+\.)*webmd\.com$
