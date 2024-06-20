@@ -51,8 +51,11 @@ hostnames:
     - (.+\.)?archlinux\.org$
     - (.+\.)?cbc\.ca$
     - (.+\.)?clojure\.org$
+    - (.+\.)?cppreference\.com$
+    - (.+\.)?css-tricks\.com$
     - (.+\.)?debian\.org$
     - (.+\.)?developer\.apple\.com$
+    - (.+\.)?developer\.chrome\.com$
     - (.+\.)?developer\.mozilla\.org$
     - (.+\.)?discourse\.group$
     - (.+\.)?docs\.oracle\.com$
@@ -104,6 +107,7 @@ hostnames:
     - (.+\.)?facebook\.com$
     - (.+\.)?freecodecamp\.org$
     - (.+\.)?hackernoon\.com$
+    - (.+\.)?macworld\.com$
     - (.+\.)?msn\.com$
     - (.+\.)?pinterest(\.[^.]+){1,2}$
     - (.+\.)?quora\.com$
