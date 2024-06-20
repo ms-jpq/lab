@@ -57,6 +57,7 @@ hostnames:
     - ^([^.]+\.)*developer\.apple\.com$
     - ^([^.]+\.)*developer\.chrome\.com$
     - ^([^.]+\.)*developer\.mozilla\.org$
+    - ^([^.]+\.)*dictionary\.com$
     - ^([^.]+\.)*discourse\.group$
     - ^([^.]+\.)*docs\.oracle\.com$
     - ^([^.]+\.)*genius\.com$
@@ -91,6 +92,7 @@ hostnames:
     - ^([^.]+\.)*superuser\.com$
     - ^([^.]+\.)*swi-prolog\.org$
     - ^([^.]+\.)*terraform\.io$
+    - ^([^.]+\.)*thesaurus\.com$
     - ^([^.]+\.)*ycombinator\.com$
     - ^bbs(\.[^.]+){1,}
     - ^community(\.[^.]+){1,}
