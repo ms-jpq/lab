@@ -90,6 +90,7 @@
     "bcachefs",
     "btrfs",
     "commandline",
+    "git",
     "hackernews",
     "haproxy",
     "linux",
@@ -100,6 +101,7 @@
     "systemd",
     "technology",
     "tmux",
+    "vim",
     "zfs"
   ],
   "ENV_V2R_CLIENT": 0,
