@@ -65,8 +65,11 @@ hostnames:
     - (.+\.)?haskell\.org$
     - (.+\.)?imdb\.com$
     - (.+\.)?investopedia\.com$
+    - (.+\.)?kernel\.org$
     - (.+\.)?kotlinlang\.org$
+    - (.+\.)?kubernetes\.io$
     - (.+\.)?learn\.microsoft\.com$
+    - (.+\.)?linux\.org$
     - (.+\.)?mayoclinic\.org$
     - (.+\.)?nih\.gov$
     - (.+\.)?nodejs\.org$
@@ -91,10 +94,12 @@ hostnames:
     - ^reddit\.m5_assert([ENV_DOMAIN2])$
   low_priority:
     - (.+\.)?\.au$
+    - (.+\.)?apidock\.com$
     - (.+\.)?docs\.ruby-lang\.org$
     - (.+\.)?medium\.com$
     - (.+\.)?ruby-doc\.org$
     - (.+\.)?twitter\.com$
+    - (.+\.)?x\.com$
   remove:
     - (.+\.)?facebook\.com$
     - (.+\.)?freecodecamp\.org$
