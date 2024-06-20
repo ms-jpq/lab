@@ -85,6 +85,8 @@ hostnames:
     - (.+\.)?swi-prolog\.org$
     - (.+\.)?terraform\.io$
     - (.+\.)?ycombinator\.com$
+    - ^bbs(\..+){1,}
+    - ^forums?(\..+){1,}
     - ^reddit\.m5_assert([ENV_DOMAIN2])$
   low_priority:
     - (.+\.)?\.au$
