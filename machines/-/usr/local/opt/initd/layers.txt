@@ -1,3 +1,4 @@
+# irc
 # v2fly
 -
 btrfs
@@ -6,7 +7,6 @@ docker
 gateway
 gh_mirror
 intel_gvt
-irc
 journal
 mail
 nspawn
