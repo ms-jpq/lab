@@ -84,6 +84,7 @@ hostnames:
     - ^([^.]+\.)*rubyapi\.org$
     - ^([^.]+\.)*rust-lang\.org$
     - ^([^.]+\.)*serverfault\.com$
+    - ^([^.]+\.)*sqlite\.org$
     - ^([^.]+\.)*ss64\.com$
     - ^([^.]+\.)*stackexchange\.com$
     - ^([^.]+\.)*stackoverflow\.com$
@@ -96,7 +97,7 @@ hostnames:
     - ^forums?(\.[^.]+){1,}
     - ^reddit\.m5_assert([ENV_DOMAIN2])$
   low_priority:
-    - ^([^.]+\.)*\.au$
+    - ^([^.]+\.)*\.(au|in|uk|eu)$
     - ^([^.]+\.)*apidock\.com$
     - ^([^.]+\.)*docs\.ruby-lang\.org$
     - ^([^.]+\.)*medium\.com$
