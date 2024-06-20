@@ -80,14 +80,17 @@
     "vault.*",
     "youtube.*"
   ],
-  "ENV_REDLIB_SUBSCRIPTIONS": [
+  "ENV_REDLIB_DEFAULT_SUBSCRIPTIONS": [
     "LocalLLaMA",
     "MoonlightStreaming",
     "Searx",
+    "Terraform",
     "Ubuntu",
     "aws",
     "bcachefs",
     "btrfs",
+    "commandline",
+    "hackernews",
     "haproxy",
     "linux",
     "nginx",
