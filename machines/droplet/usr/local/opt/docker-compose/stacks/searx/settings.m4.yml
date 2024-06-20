@@ -42,10 +42,10 @@ enabled_plugins:
 # https://kagi.com/stats?stat=leaderboard
 hostnames:
   replace:
-    '(.+\.)?youtube\.com$': &youtube youtube.m5_assert([ENV_DOMAIN2])
-    '(.+\.)?youtu\.be$': *youtube
-    '(.+\.)?reddit\.com$': &reddit reddit.m5_assert([ENV_DOMAIN2])
-    '(.+\.)?redd\.it$': *reddit
+    '^([^.]+\.)*youtube\.com$': &youtube youtube.m5_assert([ENV_DOMAIN2])
+    '^([^.]+\.)*youtu\.be$': *youtube
+    '^([^.]+\.)*reddit\.com$': &reddit reddit.m5_assert([ENV_DOMAIN2])
+    '^([^.]+\.)*redd\.it$': *reddit
   high_priority:
     - ^([^.]+\.)*(ask)?ubuntu\.com$
     - ^([^.]+\.)*archlinux\.org$
@@ -91,9 +91,9 @@ hostnames:
     - ^([^.]+\.)*swi-prolog\.org$
     - ^([^.]+\.)*terraform\.io$
     - ^([^.]+\.)*ycombinator\.com$
-    - ^bbs(\..+){1,}
-    - ^community(\..+){1,}
-    - ^forums?(\..+){1,}
+    - ^bbs(\.[^.]+){1,}
+    - ^community(\.[^.]+){1,}
+    - ^forums?(\.[^.]+){1,}
     - ^reddit\.m5_assert([ENV_DOMAIN2])$
   low_priority:
     - ^([^.]+\.)*\.au$
