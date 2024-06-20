@@ -101,9 +101,12 @@ hostnames:
     - (.+\.)?docs\.ruby-lang\.org$
     - (.+\.)?medium\.com$
     - (.+\.)?ruby-doc\.org$
+    - (.+\.)?sourceforge\.net$
+    - (.+\.)?towardsdatascience\.com$
     - (.+\.)?twitter\.com$
     - (.+\.)?x\.com$
   remove:
+    - (.+\.)?chegg\.com$
     - (.+\.)?facebook\.com$
     - (.+\.)?freecodecamp\.org$
     - (.+\.)?hackernoon\.com$
