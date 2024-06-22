@@ -2,11 +2,12 @@
   "ENV_BLK_EXPORTS": [],
   "ENV_CERTBOT_SITES": [
     "ENV_DOMAIN",
-    "droplet.w-0.droplet.ENV_DOMAIN",
     "cups.pfsense.enp2s0.pfsense.ENV_DOMAIN",
-    "esxi.enp2s0.pfsense.ENV_DOMAIN",
+    "droplet.w-0.droplet.ENV_DOMAIN",
+    "esxi.enp1s0.opnsense",
     "freenas.enp2s0.pfsense.ENV_DOMAIN",
-    "orthanc.enp2s0.pfsense.ENV_DOMAIN",
+    "opnsense.w-0.opnsense",
+    "orthanc.enp1s0.opnsense",
     "pfsense.w-0.pfsense.ENV_DOMAIN"
   ],
   "ENV_FS_DOWNLOADS": "downloads",
