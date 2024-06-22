@@ -56,7 +56,8 @@ RSY=(
 conn() {
   # shellcheck disable=SC2016
   JSON="$("${JQER[@]}" --arg key "$MACHINE" '.[$key] // {}' "$INVENTORY")"
-  HOST="$("${JQER[@]}" '.host' <<< "$JSON")"
+  # shellcheck disable=SC2016
+  HOST="$("${JQER[@]}" --arg host "$MACHINE" '.host // $host' <<< "$JSON")"
   USER="$("${JQER[@]}" '.user // "root"' <<< "$JSON")"
   OPTS="$(jq --raw-output '(.options // [])[]' <<< "$JSON")"
   readarray -t -- OPTIONS <<< "$OPTS"
