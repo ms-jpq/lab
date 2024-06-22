@@ -27,8 +27,9 @@
   ],
   "ENV_JOURNAL_HOSTS": [
     "droplet.w-0.droplet.home.arpa",
-    "esxi.enp2s0.pfsense.home.arpa",
-    "orthanc.enp2s0.pfsense.home.arpa",
+    "esxi.enp1s0.opnsense.home.arpa",
+    "opnsense.w-0.opnsense.home.arpa",
+    "orthanc.enp1s0.opnsense.home.arpa",
     "pfsense.enp2s0.pfsense.home.arpa"
   ],
   "ENV_MACHINES": [
