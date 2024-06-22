@@ -32,11 +32,12 @@
     "pfsense.enp2s0.pfsense.home.arpa"
   ],
   "ENV_MACHINES": [
-    "droplet.w-0.droplet",
     "cups.pfsense.enp2s0.pfsense",
-    "esxi.enp2s0.pfsense",
+    "droplet.w-0.droplet",
+    "esxi.enp1s0.opnsense",
     "freenas.enp2s0.pfsense",
-    "orthanc.enp2s0.pfsense",
+    "opnsense.w-0.opnsense",
+    "orthanc.enp1s0.opnsense",
     "pfsense.w-0.pfsense"
   ],
   "ENV_MACVLAN_IFS": ["enp109s0", "eno1"],
