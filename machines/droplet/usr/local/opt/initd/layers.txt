@@ -1,8 +1,6 @@
 btrfs
 docker
 gateway
-irc
 mail
-openvpn
 v2fly
 wireguard
