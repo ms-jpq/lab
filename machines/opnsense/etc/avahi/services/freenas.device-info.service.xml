@@ -1,0 +1,9 @@
+<service-group>
+  <name>freenas</name>
+  <host-name>freenas.enp2s0.pfsense.home.arpa</host-name>
+  <service>
+    <type>_device-info._tcp</type>
+    <port>0</port>
+    <txt-record>model=Windows</txt-record>
+  </service>
+</service-group>

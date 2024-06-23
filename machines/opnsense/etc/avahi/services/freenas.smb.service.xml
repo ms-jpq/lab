@@ -1,0 +1,8 @@
+<service-group>
+  <name>freenas</name>
+  <host-name>freenas.enp2s0.pfsense.home.arpa</host-name>
+  <service>
+    <type>_smb._tcp</type>
+    <port>445</port>
+  </service>
+</service-group>
