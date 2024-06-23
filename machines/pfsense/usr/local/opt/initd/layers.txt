@@ -1,3 +1,4 @@
+avahi
 ddns
 openvpn
 printer
