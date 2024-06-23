@@ -29,15 +29,17 @@ for FILE in /run/local/dnsmasq/*/leases; do
       continue
     fi
 
+    TR="$NAME.$DOMAIN"
+    TR="${TR//'.'/'\.'}"
     if [[ $IP =~ : ]]; then
       if [[ $IP =~ ^fd ]]; then
         STAT='i'
       else
         STAT='e'
       fi
-      SED+=("s/'$NAME.$DOMAIN.6$STAT'/$IP/p")
+      SED+=("s/'$TR\.6$STAT'/$IP/p")
     else
-      SED+=("s/'$NAME.$DOMAIN.4'/$IP/p")
+      SED+=("s/'$TR\.4'/$IP/p")
     fi
   done
 done

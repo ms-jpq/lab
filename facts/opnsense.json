@@ -2,7 +2,9 @@
   "ENV_443_FWD": "freenas.enp2s0.pfsense.home.arpa",
   "ENV_CNAMES": [],
   "ENV_HOST_ALLOW_LIST": ["esxi.enp1s0.opnsense.home.arpa@tcp*postgresql"],
-  "ENV_HOST_FORWARD_LIST": [],
+  "ENV_HOST_FORWARD_LIST": [
+    "esxi.enp1s0.opnsense.home.arpa@tcp*postgresql:postgresql"
+  ],
   "ENV_IOT_IFS": [],
   "ENV_LAN_IFS": ["enp1s0"],
   "ENV_OVPN_SERVER_NAME": "ENV_WG_SERVER_NAME",
