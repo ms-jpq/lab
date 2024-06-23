@@ -44,7 +44,7 @@
   ],
   "ENV_MACVLAN_IFS": ["enp109s0", "eno1"],
   "ENV_NFS_EXPORTS": ["downloads", "media", "wallpapers"],
-  "ENV_PG_CLUSTERS": ["16/miniflux", "16/wallabag"],
+  "ENV_PG_CLUSTERS": [],
   "ENV_PUBLIC_SITES": [],
   "ENV_RCLONE_LOCAL": [
     "gray",
