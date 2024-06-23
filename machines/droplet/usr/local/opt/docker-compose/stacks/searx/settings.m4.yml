@@ -85,6 +85,7 @@ hostnames:
     - ^([^.]+\.)*rubyapi\.org$
     - ^([^.]+\.)*rust-lang\.org$
     - ^([^.]+\.)*serverfault\.com$
+    - ^([^.]+\.)*spiceworks\.com$
     - ^([^.]+\.)*sqlite\.org$
     - ^([^.]+\.)*ss64\.com$
     - ^([^.]+\.)*stackexchange\.com$
