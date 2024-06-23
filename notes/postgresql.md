@@ -1,5 +1,13 @@
 # PostgreSQL
 
+## ZFS
+
+```bash
+zfs set recordsize=32K '<dataset>'
+```
+
+## Dump
+
 ```bash
 # Not `.s.PGSQL.5432` required
 pg_dump --dbname 'postgres' --username 'postgres' --no-owner --host '/run/local/postgresql/<instance>'
