@@ -3,8 +3,8 @@ location /bt {
 }
 
 location /bt/ {
-  include           /usr/local/opt/nginx/conf/http.d/proxy_params.nginx;
-  proxy_set_header  X-Forwarded-Host $host;
-  proxy_cookie_path / "/; Secure";
-  proxy_pass        http://unix:/run/local/ns-proxy/qbt.sock:/;
+  include          /usr/local/opt/nginx/conf/http.d/proxy_params.nginx;
+  proxy_set_header Origin "";
+  proxy_set_header Referer "";
+  proxy_pass       http://unix:/run/local/ns-proxy/qbt.sock:/;
 }
