@@ -17,7 +17,7 @@
   "ENV_FS_WALLPAPER": "wallpapers",
   "ENV_INDEX": [
     "/die/die/die",
-    "esxi.enp2s0.pfsense/vm.html",
+    "esxi.enp1s0.opnsense/vm.html",
     "freenas.enp2s0.pfsense/bt",
     "freenas.enp2s0.pfsense/journald/tail.html",
     "freenas.enp2s0.pfsense/rclone",
