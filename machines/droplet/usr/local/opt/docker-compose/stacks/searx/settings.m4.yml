@@ -62,6 +62,8 @@ hostnames:
     - ^([^.]+\.)*dictionary\.com$
     - ^([^.]+\.)*discourse\.group$
     - ^([^.]+\.)*docs\.oracle\.com$
+    - ^([^.]+\.)*edu$
+    - ^([^.]+\.)*gc\.ca$
     - ^([^.]+\.)*genius\.com$
     - ^([^.]+\.)*gitbook\.io$
     - ^([^.]+\.)*github\.(com|io)$
