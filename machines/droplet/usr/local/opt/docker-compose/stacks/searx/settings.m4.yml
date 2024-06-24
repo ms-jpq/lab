@@ -94,6 +94,7 @@ hostnames:
     - ^([^.]+\.)*swi-prolog\.org$
     - ^([^.]+\.)*terraform\.io$
     - ^([^.]+\.)*thesaurus\.com$
+    - ^([^.]+\.)*wikipedia\.org$
     - ^([^.]+\.)*ycombinator\.com$
     - ^bbs(\.[^.]+){1,}
     - ^community(\.[^.]+){1,}
