@@ -48,10 +48,12 @@ hostnames:
     '^([^.]+\.)*redd\.it$': *reddit
   high_priority:
     - ^([^.]+\.)*(ask)?ubuntu\.com$
+    - ^([^.]+\.)*(meta)?cpan\.org$
     - ^([^.]+\.)*archlinux\.org$
     - ^([^.]+\.)*cbc\.ca$
     - ^([^.]+\.)*clojure\.org$
     - ^([^.]+\.)*cppreference\.com$
+    - ^([^.]+\.)*crates\.io$
     - ^([^.]+\.)*css-tricks\.com$
     - ^([^.]+\.)*debian\.org$
     - ^([^.]+\.)*developer\.apple\.com$
@@ -74,15 +76,20 @@ hostnames:
     - ^([^.]+\.)*kubernetes\.io$
     - ^([^.]+\.)*learn\.microsoft\.com$
     - ^([^.]+\.)*linux\.org$
+    - ^([^.]+\.)*lua\.org$
     - ^([^.]+\.)*mayoclinic\.org$
     - ^([^.]+\.)*nih\.gov$
     - ^([^.]+\.)*nodejs\.org$
+    - ^([^.]+\.)*npmjs\.org$
+    - ^([^.]+\.)*perl\.org$
     - ^([^.]+\.)*php\.net$
     - ^([^.]+\.)*postgresql\.org$
+    - ^([^.]+\.)*pypi\.org$
     - ^([^.]+\.)*python\.org$
     - ^([^.]+\.)*r-project\.org$
     - ^([^.]+\.)*rottentomatoes\.com$
     - ^([^.]+\.)*rubyapi\.org$
+    - ^([^.]+\.)*rubygems\.org$
     - ^([^.]+\.)*rust-lang\.org$
     - ^([^.]+\.)*serverfault\.com$
     - ^([^.]+\.)*spiceworks\.com$
@@ -120,8 +127,10 @@ hostnames:
     - ^([^.]+\.)*macworld\.com$
     - ^([^.]+\.)*msn\.com$
     - ^([^.]+\.)*pinterest(\.[^.]+){1,2}$
+    - ^([^.]+\.)*programiz\.com$
     - ^([^.]+\.)*quora\.com$
     - ^([^.]+\.)*thehackernews\.com$
     - ^([^.]+\.)*towardsdatascience\.com$
+    - ^([^.]+\.)*tutorialspoint\.com$
     - ^([^.]+\.)*w3schools\.com$
     - ^([^.]+\.)*webmd\.com$
