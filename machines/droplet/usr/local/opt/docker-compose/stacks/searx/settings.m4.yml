@@ -109,6 +109,7 @@ hostnames:
     - ^([^.]+\.)*terraform\.io$
     - ^([^.]+\.)*thesaurus\.com$
     - ^([^.]+\.)*wikipedia\.org$
+    - ^([^.]+\.)*wiktionary\.org$
     - ^([^.]+\.)*ycombinator\.com$
     - ^bbs(\.[^.]+){1,}
     - ^community(\.[^.]+){1,}
