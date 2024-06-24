@@ -111,6 +111,8 @@ hostnames:
     - ^([^.]+\.)*x\.com$
   remove:
     - ^([^.]+\.)*chegg\.com$
+    - ^([^.]+\.)*codecademy\.com$
+    - ^([^.]+\.)*dev\.to$
     - ^([^.]+\.)*facebook\.com$
     - ^([^.]+\.)*freecodecamp\.org$
     - ^([^.]+\.)*geeksforgeeks\.org$
