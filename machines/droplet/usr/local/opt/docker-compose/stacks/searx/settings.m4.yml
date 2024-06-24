@@ -53,6 +53,7 @@ hostnames:
     - ^([^.]+\.)*blogspot\.com$
     - ^([^.]+\.)*cbc\.ca$
     - ^([^.]+\.)*clojure\.org$
+    - ^([^.]+\.)*costco\.(ca|com)$
     - ^([^.]+\.)*cppreference\.com$
     - ^([^.]+\.)*crates\.io$
     - ^([^.]+\.)*css-tricks\.com$
