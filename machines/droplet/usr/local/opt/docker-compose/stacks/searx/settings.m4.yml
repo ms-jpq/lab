@@ -113,6 +113,7 @@ hostnames:
     - ^([^.]+\.)*chegg\.com$
     - ^([^.]+\.)*facebook\.com$
     - ^([^.]+\.)*freecodecamp\.org$
+    - ^([^.]+\.)*geeksforgeeks\.org$
     - ^([^.]+\.)*hackernoon\.com$
     - ^([^.]+\.)*macworld\.com$
     - ^([^.]+\.)*msn\.com$
