@@ -79,8 +79,10 @@ hostnames:
     - ^([^.]+\.)*kubernetes\.io$
     - ^([^.]+\.)*learn\.microsoft\.com$
     - ^([^.]+\.)*linux\.org$
+    - ^([^.]+\.)*lobste\.rs$
     - ^([^.]+\.)*lua\.org$
     - ^([^.]+\.)*mayoclinic\.org$
+    - ^([^.]+\.)*neovim\.io$
     - ^([^.]+\.)*nih\.gov$
     - ^([^.]+\.)*nodejs\.org$
     - ^([^.]+\.)*npmjs\.org$
@@ -122,6 +124,7 @@ hostnames:
   remove:
     - ^([^.]+\.)*chegg\.com$
     - ^([^.]+\.)*codecademy\.com$
+    - ^([^.]+\.)*codersrank\.io$
     - ^([^.]+\.)*dev\.to$
     - ^([^.]+\.)*facebook\.com$
     - ^([^.]+\.)*freecodecamp\.org$
