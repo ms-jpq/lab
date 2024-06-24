@@ -50,6 +50,7 @@ hostnames:
     - ^([^.]+\.)*(ask)?ubuntu\.com$
     - ^([^.]+\.)*(meta)?cpan\.org$
     - ^([^.]+\.)*archlinux\.org$
+    - ^([^.]+\.)*blogspot\.com$
     - ^([^.]+\.)*cbc\.ca$
     - ^([^.]+\.)*clojure\.org$
     - ^([^.]+\.)*cppreference\.com$
