@@ -87,6 +87,7 @@ hostnames:
     - ^([^.]+\.)*nodejs\.org$
     - ^([^.]+\.)*npmjs\.org$
     - ^([^.]+\.)*perl\.org$
+    - ^([^.]+\.)*pewresearch\.org$
     - ^([^.]+\.)*php\.net$
     - ^([^.]+\.)*postgresql\.org$
     - ^([^.]+\.)*pypi\.org$
