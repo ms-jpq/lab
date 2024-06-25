@@ -133,6 +133,7 @@ hostnames:
     - ^([^.]+\.)*freecodecamp\.org$
     - ^([^.]+\.)*geeksforgeeks\.org$
     - ^([^.]+\.)*hackernoon\.com$
+    - ^([^.]+\.)*howtogeek\.com$
     - ^([^.]+\.)*macworld\.com$
     - ^([^.]+\.)*msn\.com$
     - ^([^.]+\.)*pinterest(\.[^.]+){1,2}$
