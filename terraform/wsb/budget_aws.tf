@@ -20,11 +20,12 @@ resource "aws_budgets_budget" "septims" {
 }
 
 output "bezos" {
+  # sensitive = true
   value = {
     freedom_fries = aws_budgets_budget.septims.limit_amount
-    warn = [
-      for notif in aws_budgets_budget.septims.notification :
-      notif.threshold / 100 * aws_budgets_budget.septims.limit_amount
-    ]
+    # warn = [
+    #   for notif in aws_budgets_budget.septims.notification :
+    #   notif.threshold / 100 * aws_budgets_budget.septims.limit_amount
+    # ]
   }
 }
