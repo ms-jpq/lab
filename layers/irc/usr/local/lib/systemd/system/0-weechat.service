@@ -3,7 +3,7 @@ Description       = Weechat IRClient
 BindsTo           = znc.service
 After             = znc.service
 
-RequiresMountsFor = %S/local/$J
+RequiresMountsFor = %S/local/%J
 
 [Service]
 Restart           = always
