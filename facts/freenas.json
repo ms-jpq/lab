@@ -46,7 +46,7 @@
   "ENV_MACVLAN_IFS": ["enp109s0", "eno1"],
   "ENV_NFS_EXPORTS": ["downloads", "media", "wallpapers"],
   "ENV_PG_CLUSTERS": [],
-  "ENV_PUBLIC_SITES": [],
+  "ENV_PUBLIC_SITES": ["plex.*"],
   "ENV_RCLONE_LOCAL": [
     "gray",
     "hao",
