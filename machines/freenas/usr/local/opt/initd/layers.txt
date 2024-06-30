@@ -2,6 +2,7 @@ gateway
 gh_mirror
 intel_gvt
 journal
+media
 postgres
 qemu
 share

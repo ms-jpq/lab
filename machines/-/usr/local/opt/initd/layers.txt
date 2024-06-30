@@ -10,6 +10,7 @@ intel_gvt
 irc
 journal
 mail
+media
 nspawn
 openvpn
 postgres

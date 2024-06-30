@@ -1,0 +1,6 @@
+Types: deb
+URIs: https://repo.jellyfin.org/m5_assert([ENV_ID])
+Suites: m5_assert([ENV_VERSION_CODENAME])
+Components: main
+Architectures: m4_ifelse(m5_assert([ENV_HOSTTYPE]), [x86_64], [amd64], [ENV_HOSTTYPE])
+Signed-By: /etc/apt/trusted.gpg.d/jellyfin.gpg
