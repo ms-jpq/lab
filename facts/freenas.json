@@ -18,6 +18,7 @@
   "ENV_FS_WALLPAPER": "wallpapers",
   "ENV_INDEX": [
     "/die/die/die",
+    "cups.pfsense.enp2s0.pfsense",
     "esxi.enp1s0.opnsense/vm.html",
     "freenas.enp2s0.pfsense/bt",
     "freenas.enp2s0.pfsense/journald/tail.html",
@@ -25,7 +26,8 @@
     "freenas.enp2s0.pfsense/share",
     "freenas.enp2s0.pfsense/youtube-dl",
     "freenas.enp2s0.pfsense/zfs.sh",
-    "orthanc.enp2s0.pfsense/vm.html"
+    "orthanc.enp2s0.pfsense/vm.html",
+    "plex.freenas.enp2s0.pfsense"
   ],
   "ENV_JOURNAL_HOSTS": [
     "droplet.w-0.droplet.home.arpa",
@@ -35,7 +37,6 @@
     "pfsense.enp2s0.pfsense.home.arpa"
   ],
   "ENV_MACHINES": [
-    "cups.pfsense.enp2s0.pfsense",
     "droplet.w-0.droplet",
     "esxi.enp1s0.opnsense",
     "freenas.enp2s0.pfsense",
