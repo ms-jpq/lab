@@ -99,6 +99,7 @@ hostnames:
     - ^([^.]+\.)*rubygems\.org$
     - ^([^.]+\.)*rust-lang\.org$
     - ^([^.]+\.)*serverfault\.com$
+    - ^([^.]+\.)*sonatype\.com$
     - ^([^.]+\.)*spiceworks\.com$
     - ^([^.]+\.)*sqlite\.org$
     - ^([^.]+\.)*ss64\.com$
