@@ -27,6 +27,7 @@ services:
       - traefik
     volumes:
       - etc:/etc/searxng
+      - ./limiter.toml:/etc/searxng/limiter.toml:ro
       - ./settings.yml:/etc/searxng/settings.yml:ro
 
   redis:
