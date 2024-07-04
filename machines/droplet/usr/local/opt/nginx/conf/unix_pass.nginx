@@ -1,0 +1,3 @@
+real_ip_header   proxy_protocol;
+include          /usr/local/opt/nginx/conf/http.d/proxy_params.nginx;
+proxy_set_header X-Real-IP $proxy_protocol_addr;
