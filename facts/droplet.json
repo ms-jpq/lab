@@ -3,13 +3,10 @@
   "ENV_CERTBOT_SITES": [
     "12ft.ENV_DOMAIN",
     "ENV_DOMAIN",
-    "ask.ENV_DOMAIN2",
     "autodiscover.ENV_DOMAIN",
     "ipfs.ENV_DOMAIN",
     "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN,], ENV_INDEX)",
-    "reddit.ENV_DOMAIN2",
-    "s3.ENV_DOMAIN",
-    "youtube.ENV_DOMAIN2"
+    "s3.ENV_DOMAIN"
   ],
   "ENV_INDEX": [
     "12ft",
