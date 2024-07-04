@@ -6,11 +6,11 @@ redis:
   url: redis://redis:6379/0
 
 server:
-  method: GET
-  query_in_title: true
-  public_instance: true
   base_url: https://ask.m5_assert([ENV_DOMAIN])
   http_protocol_version: "1.1"
+  limiter: true
+  method: GET
+  public_instance: true
   secret_key: |-
     m4_esyscmd([uuidgen])
 
@@ -34,7 +34,9 @@ ui:
   center_alignment: true
   hotkeys: vim
   infinite_scroll: true
+  query_in_title: true
   results_on_new_tab: true
+  static_use_hash: true
 
 enabled_plugins:
   - Hash plugin
