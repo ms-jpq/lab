@@ -5,9 +5,8 @@ server {
   merge_slashes  off;
 
   location / {
-    include        /usr/local/opt/nginx/conf/auth2.nginx;
-    proxy_protocol on;
-    proxy_pass     http://127.0.0.53:10080/;
+    include    /usr/local/opt/nginx/conf/auth2.nginx;
+    proxy_pass http://127.0.0.53:10080/;
   }
 }
 
