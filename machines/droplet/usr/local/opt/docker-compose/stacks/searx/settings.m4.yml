@@ -6,9 +6,10 @@ redis:
   url: redis://redis:6379/0
 
 server:
-  base_url: https://ask.m5_assert([ENV_DOMAIN2])
+  method: GET
+  public_instance: true
+  base_url: https://ask.m5_assert([ENV_DOMAIN])
   http_protocol_version: "1.1"
-  # public_instance: true
   secret_key: |-
     m4_esyscmd([uuidgen])
 
@@ -45,9 +46,9 @@ enabled_plugins:
 # https://kagi.com/stats?stat=leaderboard
 hostnames:
   replace:
-    '^([^.]+\.)*youtube\.com$': &youtube youtube.m5_assert([ENV_DOMAIN2])
+    '^([^.]+\.)*youtube\.com$': &youtube youtube.m5_assert([ENV_DOMAIN])
     '^([^.]+\.)*youtu\.be$': *youtube
-    '^([^.]+\.)*reddit\.com$': &reddit reddit.m5_assert([ENV_DOMAIN2])
+    '^([^.]+\.)*reddit\.com$': &reddit reddit.m5_assert([ENV_DOMAIN])
     '^([^.]+\.)*redd\.it$': *reddit
   high_priority:
     - ^([^.]+\.)*(ask)?ubuntu\.com$
@@ -118,7 +119,7 @@ hostnames:
     - ^bbs(\.[^.]+){1,}
     - ^community(\.[^.]+){1,}
     - ^forums?(\.[^.]+){1,}
-    - ^reddit\.m5_assert([ENV_DOMAIN2])$
+    - ^reddit\.m5_assert([ENV_DOMAIN])$
   low_priority:
     - ^([^.]+\.)*\.(au|in|uk|eu)$
     - ^([^.]+\.)*apidock\.com$

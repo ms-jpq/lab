@@ -9,6 +9,7 @@ api:
   insecure: true
 
 ping: {}
+accessLog: {}
 
 serversTransport:
   insecureSkipVerify: true

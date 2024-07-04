@@ -8,16 +8,16 @@ services:
       redis:
         condition: service_healthy
     mem_swappiness: 0
-    healthcheck:
-      test:
-        - CMD
-        - wget
-        - --quiet
-        - --spider
-        - --timeout
-        - "1"
-        - --
-        - 127.0.0.1:8080
+    # healthcheck:
+    #   test:
+    #     - CMD
+    #     - wget
+    #     - --quiet
+    #     - --spider
+    #     - --timeout
+    #     - "1"
+    #     - --
+    #     - 127.0.0.1:8080
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
@@ -26,9 +26,8 @@ services:
       - default
       - traefik
     volumes:
-      - etc:/etc/searxng
-      - ./limiter.toml:/etc/searxng/limiter.toml:ro
-      - ./settings.yml:/etc/searxng/settings.yml:ro
+      - ./limiter.toml:/etc/searxng/limiter.toml
+      - ./settings.yml:/etc/searxng/settings.yml
 
   redis:
     image: docker.io/library/redis:latest
@@ -49,5 +48,3 @@ networks:
     external: true
     name: traefik
 
-volumes:
-  etc:
