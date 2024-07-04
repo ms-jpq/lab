@@ -1,5 +1,5 @@
 server {
-  listen        unix:/run/local/nginx/http.sock default_server;
+  listen        unix:/run/local/nginx/http.sock default_server proxy_protocol;
   include       /usr/local/opt/nginx/conf/auth.nginx;
   merge_slashes off;
 
@@ -10,8 +10,17 @@ server {
 }
 
 server {
+  server_name autodiscover.*;
+  listen      unix:/run/local/nginx/http.sock proxy_protocol;
+
+  location / {
+    proxy_pass http://unix:/run/local/nginx/z-push.sock;
+  }
+}
+
+server {
   server_name local.*;
-  listen      unix:/run/local/nginx/http.sock;
+  listen      unix:/run/local/nginx/http.sock proxy_protocol;
   include     /usr/local/opt/nginx/conf/auth.nginx;
 
   location / {
