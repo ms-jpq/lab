@@ -7,11 +7,6 @@ upstream udp_upstream_fallback {
 }
 
 server {
-  listen     127.0.0.53:8000;
-  proxy_pass unix:/run/local/nginx/acme.sock;
-}
-
-server {
   listen         [::]:443 ipv6only=off ssl;
   ssl_alpn       h2 http/1.1;
   proxy_protocol on;

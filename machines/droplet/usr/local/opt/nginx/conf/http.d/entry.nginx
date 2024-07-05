@@ -1,4 +1,12 @@
 server {
+  listen [::]:80 ipv6only=off;
+
+  location / {
+    proxy_pass http://unix:/run/local/nginx/acme.sock;
+  }
+}
+
+server {
   listen         unix:/run/local/nginx/http.sock default_server proxy_protocol;
   include        /usr/local/opt/nginx/conf/auth.nginx;
   real_ip_header proxy_protocol;
