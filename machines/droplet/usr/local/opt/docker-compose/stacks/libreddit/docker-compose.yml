@@ -18,7 +18,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^reddit\.`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^(www\.)?reddit\.`)
     environment:
       REDLIB_AUTOPLAY_VIDEOS: on
       REDLIB_DEFAULT_AUTOPLAY_VIDEOS: on
