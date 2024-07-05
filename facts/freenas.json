@@ -26,7 +26,7 @@
     "freenas.enp2s0.pfsense/share",
     "freenas.enp2s0.pfsense/youtube-dl",
     "freenas.enp2s0.pfsense/zfs.sh",
-    "orthanc.enp2s0.pfsense/vm.html",
+    "orthanc.enp1s0.opnsense/vm.html",
     "plex.freenas.enp2s0.pfsense"
   ],
   "ENV_JOURNAL_HOSTS": [
