@@ -15,7 +15,7 @@ server:
     m4_esyscmd([uuidgen])
 
 outgoing:
-  max_request_timeout: 3.0
+  max_request_timeout: 2.0
   # proxies:
   #   all://:
   #     - socks5://warp-srv-1:1080
