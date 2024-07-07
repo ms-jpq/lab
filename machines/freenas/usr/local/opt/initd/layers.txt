@@ -6,5 +6,4 @@ media
 postgres
 qemu
 share
-xfs
 zfs
