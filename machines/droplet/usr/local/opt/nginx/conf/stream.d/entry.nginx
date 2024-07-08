@@ -3,7 +3,7 @@ upstream tcp_upstream_fallback {
 }
 
 upstream udp_upstream_fallback {
-  server unix:/dev/null;
+  server unix:/run/local/nginx/http3.sock;
 }
 
 server {
