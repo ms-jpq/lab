@@ -294,6 +294,7 @@
   ],
   "ENV_REDLIB_DEFAULT_SUBSCRIPTIONS": [
     "Adulting",
+    "AeroPress",
     "CleaningTips",
     "Cooking",
     "Costco",
@@ -303,6 +304,7 @@
     "EnaiRim",
     "ExperiencedDevs",
     "FoodNYC",
+    "HappyWoofGifs",
     "IKEA",
     "LocalLLaMA",
     "MealPrepSunday",
@@ -314,6 +316,7 @@
     "Terraform",
     "ThrottleHouse",
     "Ubuntu",
+    "WC3",
     "aws",
     "bcachefs",
     "btrfs",
