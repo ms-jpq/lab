@@ -36,7 +36,6 @@ ui:
   infinite_scroll: true
   query_in_title: true
   results_on_new_tab: true
-  static_use_hash: true
 
 enabled_plugins:
   - Hash plugin
