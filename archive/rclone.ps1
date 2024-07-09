@@ -14,6 +14,7 @@ $argv = @(
     '--config=NUL'
     '--dir-cache-time=9s'
     '--network-mode'
+    '--read-only'
     '--no-modtime',
     "--cache-dir=$cache"
     '--vfs-cache-mode=full'
@@ -24,5 +25,5 @@ $argv = @(
     ':http:/share/'
     '*'
 )
-
+# READ ONLY doesn't work LMAO
 rclone @argv
