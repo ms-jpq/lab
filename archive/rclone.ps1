@@ -7,4 +7,4 @@ $PSNativeCommandUseErrorActionPreference = $true
 
 Set-Location -- $PSScriptRoot
 
-rclone --config=NUL --dir-cache-time=0 --smb-host freenas.enp2s0.pfsense.home.arpa mount -- :smb:/ R:
+rclone --config=NUL --dir-cache-time=0 --network-mode --http-url=http://freenas.enp2s0.pfsense.home.arpa:8080 mount -- :http:/share/ "*"
