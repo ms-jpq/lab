@@ -20,5 +20,5 @@ BindPaths                = /media/SHARE:/media/SHARE
 # ], m5_assert([ENV_WEB_EXPORTS]))
 
 Environment              = SOCK=%t/local/%J/webdav.sock
-ExecStart                = rclone serve webdav --config=/dev/null --dir-cache-time=0 --addr=${SOCK} --baseurl=/share -- /media
+ExecStart                = rclone serve webdav --config=/dev/null --dir-cache-time=0 --vfs-cache-mode=off --addr=${SOCK} --baseurl=/share -- /media
 ExecStartPost            = /usr/local/libexec/retry.sh 0.1 chmod -- g+w ${SOCK}
