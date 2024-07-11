@@ -8,8 +8,7 @@
     "freenas.enp2s0.pfsense.ENV_DOMAIN",
     "opnsense.w-0.opnsense.ENV_DOMAIN",
     "orthanc.enp1s0.opnsense.ENV_DOMAIN",
-    "pfsense.w-0.pfsense.ENV_DOMAIN",
-    "plex.freenas.enp2s0.pfsense.ENV_DOMAIN"
+    "pfsense.w-0.pfsense.ENV_DOMAIN"
   ],
   "ENV_FS_DOWNLOADS": "downloads",
   "ENV_FS_MOVIES": "media/Movies",
@@ -26,8 +25,7 @@
     "freenas.enp2s0.pfsense/share",
     "freenas.enp2s0.pfsense/youtube-dl",
     "freenas.enp2s0.pfsense/zfs.sh",
-    "orthanc.enp1s0.opnsense/vm.html",
-    "plex.freenas.enp2s0.pfsense"
+    "orthanc.enp1s0.opnsense/vm.html"
   ],
   "ENV_JOURNAL_HOSTS": [
     "droplet.w-0.droplet.home.arpa",
@@ -47,7 +45,7 @@
   "ENV_MACVLAN_IFS": ["enp109s0", "eno1"],
   "ENV_NFS_EXPORTS": ["downloads", "media", "wallpapers"],
   "ENV_PG_CLUSTERS": [],
-  "ENV_PUBLIC_SITES": ["plex.*"],
+  "ENV_PUBLIC_SITES": [],
   "ENV_RCLONE_LOCAL": [
     "gray",
     "hao",
