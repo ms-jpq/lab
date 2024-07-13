@@ -29,6 +29,12 @@ locals {
   ])[0]
 }
 
+resource "digitalocean_ssh_key" "kms" {
+  for_each   = toset(local.ssh_keys)
+  name       = sha256(each.value)
+  public_key = each.value
+}
+
 resource "digitalocean_droplet" "droplet" {
   droplet_agent = false
   image         = local.do_image.id
@@ -36,7 +42,7 @@ resource "digitalocean_droplet" "droplet" {
   name          = "droplet"
   region        = local.do_region
   size          = local.do_size.slug
-  ssh_keys      = local.ssh_keys
+  ssh_keys      = [for key in digitalocean_ssh_key.kms : key.id]
 }
 
 locals {
