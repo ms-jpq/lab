@@ -1,6 +1,5 @@
 variable "github_users" {
-  sensitive = true
-  type      = list(string)
+  type = list(string)
 }
 
 data "http" "gh_keys" {
