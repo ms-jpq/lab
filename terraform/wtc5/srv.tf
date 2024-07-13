@@ -8,12 +8,12 @@ data "digitalocean_sizes" "super" {
     values = local.do_regions
   }
   sort {
-    direction = "desc"
-    key       = "memory"
-  }
-  sort {
     direction = "asc"
     key       = "price_monthly"
+  }
+  sort {
+    direction = "desc"
+    key       = "memory"
   }
 }
 
@@ -27,6 +27,10 @@ locals {
     for region in local.do_size.regions :
     region if contains(local.do_regions, region)
   ])[0]
+}
+
+output "supersize" {
+  value = local.do_size
 }
 
 resource "digitalocean_ssh_key" "kms" {
