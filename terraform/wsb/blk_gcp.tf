@@ -1,3 +1,4 @@
+# TODO: add KMS
 resource "google_compute_disk" "iscsi" {
   provider = google.kalimdor
   for_each = local.compute_vols

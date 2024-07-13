@@ -1,9 +1,4 @@
 locals {
-  ebs_vols = {
-  }
-  compute_vols = {
-    fuchsia = {
-      size = 20
-    }
-  }
+  ebs_vols     = {}
+  compute_vols = {}
 }
