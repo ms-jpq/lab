@@ -22,8 +22,11 @@ locals {
     for size in data.digitalocean_sizes.super.sizes :
     size if size.memory >= 4096
   ]
-  do_size   = local.do_sizes[0]
-  do_region = local.do_size.regions[0]
+  do_size = local.do_sizes[0]
+  do_region = sort([
+    for region in local.do_size.regions :
+    region if contains(local.do_regions, region)
+  ])[0]
 }
 
 resource "digitalocean_droplet" "droplet" {

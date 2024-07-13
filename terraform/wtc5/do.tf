@@ -11,8 +11,8 @@ data "digitalocean_regions" "abbottabad" {
 }
 
 locals {
-  do_regions = [
+  do_regions = toset([
     for region in data.digitalocean_regions.abbottabad.regions :
     region.slug
-  ]
+  ])
 }
