@@ -28,7 +28,7 @@ server {
   add_header     Alt-Svc 'h3=":443"' always;
 
   location / {
-    proxy_pass http://unix:/run/local/nginx/z-push.sock;
+    proxy_pass http://unix:/run/local/nginx/z-push.sock:/;
   }
 }
 
@@ -41,7 +41,8 @@ server {
   add_header     Alt-Svc 'h3=":443"' always;
 
   location / {
-    include    /usr/local/opt/nginx/conf/auth2.nginx;
-    proxy_pass http://unix:/run/local/nginx/cgi.sock;
+    include           /usr/local/opt/nginx/conf/auth2.nginx;
+    proxy_pass_header Content-Security-Policy;
+    proxy_pass        http://unix:/run/local/nginx/cgi.sock:/;
   }
 }
