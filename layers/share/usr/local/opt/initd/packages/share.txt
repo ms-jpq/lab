@@ -2,7 +2,7 @@
 + kibana
 + nfs-kernel-server
 + py-elasticsearch
-+ rclone
++ rclone-mnt
 + samba
 + samba-vfs-modules
 + targetcli-fb
