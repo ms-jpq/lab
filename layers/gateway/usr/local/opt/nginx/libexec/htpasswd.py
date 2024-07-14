@@ -30,7 +30,7 @@ from functools import lru_cache
 from hmac import compare_digest, digest
 from html import escape
 from http.cookies import CookieError, Morsel, SimpleCookie
-from io import BytesIO
+from io import DEFAULT_BUFFER_SIZE, BytesIO
 from ipaddress import IPv4Address, IPv6Address, IPv6Interface, IPv6Network, ip_interface
 from itertools import repeat
 from logging import DEBUG, StreamHandler, captureWarnings, getLogger
@@ -315,7 +315,9 @@ async def _thread(th: _Th) -> None:
         protocol = StreamReaderProtocol(reader, client_connected_cb=handler, loop=loop)
         return protocol
 
-    server = await loop.create_unix_server(factory, backlog=1, sock=sock)
+    server = await loop.create_unix_server(
+        factory, backlog=DEFAULT_BUFFER_SIZE, sock=sock
+    )
     async with server:
         await server.serve_forever()
 
