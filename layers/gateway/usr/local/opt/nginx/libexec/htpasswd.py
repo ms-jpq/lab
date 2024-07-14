@@ -30,6 +30,7 @@ from functools import lru_cache
 from hmac import compare_digest, digest
 from html import escape
 from http.cookies import CookieError, Morsel, SimpleCookie
+from io import BytesIO
 from ipaddress import IPv4Address, IPv6Address, IPv6Interface, IPv6Network, ip_interface
 from itertools import repeat
 from logging import DEBUG, StreamHandler, captureWarnings, getLogger
@@ -258,21 +259,22 @@ async def _thread(th: _Th) -> None:
                         if authorized:
                             break
 
+            w = BytesIO()
             if not authorized:
                 if location:
-                    writer.write(b"HTTP/1.0 307 Temporary Redirect\r\n")
+                    w.write(b"HTTP/1.0 307 Temporary Redirect\r\n")
                 else:
-                    writer.write(b"HTTP/1.0 401 Unauthorized\r\n")
+                    w.write(b"HTTP/1.0 401 Unauthorized\r\n")
                     for accept in headers.get(b"accept", ()):
                         if b"html" in accept:
                             break
                     else:
-                        writer.write(b'WWW-Authenticate: Basic realm="-"\r\n')
+                        w.write(b'WWW-Authenticate: Basic realm="-"\r\n')
             else:
                 if location:
-                    writer.write(b"HTTP/1.0 307 Temporary Redirect\r\n")
+                    w.write(b"HTTP/1.0 307 Temporary Redirect\r\n")
                 else:
-                    writer.write(b"HTTP/1.0 204 No Content\r\n")
+                    w.write(b"HTTP/1.0 204 No Content\r\n")
 
                 if user:
                     cookie = _write_auth_cookies(
@@ -284,23 +286,25 @@ async def _thread(th: _Th) -> None:
                         secure=secure,
                         user=user,
                     )
-                    writer.write(str(cookie).encode())
-                    writer.write(b"\r\n")
+                    w.write(str(cookie).encode())
+                    w.write(b"\r\n")
 
             if location:
                 for header in (b"Location: ", b"X-Original-URL: "):
-                    writer.write(header)
-                    writer.write(location)
-                    writer.write(b"\r\n")
+                    w.write(header)
+                    w.write(location)
+                    w.write(b"\r\n")
 
             if user:
                 with suppress(UnicodeError):
                     esc = escape(user.decode()).encode()
-                    writer.write(b"X-Auth-User: ")
-                    writer.write(esc)
-                    writer.write(b"\r\n")
+                    w.write(b"X-Auth-User: ")
+                    w.write(esc)
+                    w.write(b"\r\n")
 
-            writer.write(b"\r\n")
+            w.write(b"\r\n")
+            buf = w.getbuffer()
+            writer.write(buf)
 
     async def handler(reader: StreamReader, writer: StreamWriter) -> None:
         with suppress(TimeoutError):
