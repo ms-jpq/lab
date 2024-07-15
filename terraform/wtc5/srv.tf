@@ -30,7 +30,13 @@ locals {
 }
 
 output "supersize" {
-  value = local.do_size
+  value = {
+    disk     = "${local.do_size.disk}GB"
+    memory   = "${local.do_size.memory}MB"
+    price    = "${local.do_size.price_monthly}USD"
+    transfer = "${local.do_size.transfer}TB"
+    vcpus    = local.do_size.vcpus
+  }
 }
 
 resource "digitalocean_ssh_key" "kms" {
