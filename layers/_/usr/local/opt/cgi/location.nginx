@@ -10,7 +10,6 @@ location /PATH/ {
   proxy_http_version        1.0;
   chunked_transfer_encoding off;
   gzip                      off;
-  proxy_buffering           off;
   proxy_pass                http://unix:SOCK:/;
 }
 
