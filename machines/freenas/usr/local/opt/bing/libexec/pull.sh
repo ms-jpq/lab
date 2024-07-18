@@ -6,6 +6,7 @@ CURL=(
   curl
   --fail-with-body
   --location
+  --remove-on-error
   --create-dirs
   --no-progress-meter
 )
@@ -39,8 +40,6 @@ else
 
   NAME="$OUT/$DATE $TITLE.${URI##*.}"
   if ! [[ -f $NAME ]]; then
-    TMP="$NAME.tmp"
-    "${CURL[@]}" --output "$TMP" -- "$URI"
-    mv -v -f -- "$TMP" "$NAME"
+    "${CURL[@]}" --output "$NAME" -- "$URI"
   fi
 fi
