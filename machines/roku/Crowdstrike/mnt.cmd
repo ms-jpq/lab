@@ -1,1 +1,1 @@
-pwsh.exe -NonInteractive -WindowStyle Minimized "%SYSTEMDRIVE%\Crowdstrike\rclone-mnt.ps1"
+pwsh.exe -NoProfile -NonInteractive -WindowStyle Minimized "%SYSTEMDRIVE%\Crowdstrike\rclone-mnt.ps1"
