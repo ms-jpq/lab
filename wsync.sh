@@ -30,10 +30,17 @@ RSH=(
   ssh
   --
 )
-TAR='"%PROGRAMFILES%\Git\usr\bin\tar"'
+TAR=(
+  '"%PROGRAMFILES%\Git\usr\bin\tar"'
+  -v
+  --extract
+  --preserve-permissions
+  --keep-directory-symlink
+  --directory
+)
 SINK='/c'
 
 for MACHINE in "${MACHINES[@]}"; do
   SRC="machines/$MACHINE"
-  tar --create --directory "$SRC" -- . | "${RSH[@]}" "$MACHINE" "$TAR" --extract --preserve-permissions --keep-directory-symlink --directory "$SINK"
+  tar --create --directory "$SRC" -- . | "${RSH[@]}" "$MACHINE" "${TAR[@]}" "$SINK"
 done
