@@ -7,7 +7,7 @@ Set-PSReadLineKeyHandler -Key 'Tab' -Function 'MenuComplete'
 Set-PSReadLineOption -PredictionViewStyle ListView
 Set-PSReadLineOption -MaximumHistoryCount 10000
 
-Set-PSReadLineOption -HistoryNoDuplicates -HistorySavePath (Join-Path -Path $HOME '.local' 'state' 'shell_history' 'pwsh')
+Set-PSReadLineOption -HistoryNoDuplicates
 
 Set-PSReadLineOption -Colors @{
     ContinuationPrompt     = $PSStyle.Foreground.Yellow
