@@ -91,6 +91,7 @@ hostnames:
     - ^([^.]+\.)*lua\.org$
     - ^([^.]+\.)*mayoclinic\.org$
     - ^([^.]+\.)*neovim\.io$
+    - ^([^.]+\.)*nginx\.org$
     - ^([^.]+\.)*nih\.gov$
     - ^([^.]+\.)*nodejs\.org$
     - ^([^.]+\.)*npmjs\.org$
