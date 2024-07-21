@@ -3,7 +3,7 @@ server {
   # m4_define([SMTP_CONF], [
   auth_http http://unix:/run/local/nginx/cgi.sock:/sieve.sh/;
   protocol  smtp;
-  smtp_auth none;
+  smtp_auth none plain login cram-md5;
   # ])
   SMTP_CONF
 }

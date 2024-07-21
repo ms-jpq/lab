@@ -37,7 +37,7 @@ done
 
 case "$AUTH_PROTOCOL" in
 smtp)
-  if ! [[ $AUTH_SMTP_TO =~ / ]]; then
+  if ! [[ ${AUTH_SMTP_TO:-""} =~ / ]]; then
     tee -- <<- 'EOF'
 HTTP/1.0 200 OK
 Auth-Status: OK
