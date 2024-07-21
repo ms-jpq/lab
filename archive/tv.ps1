@@ -5,7 +5,7 @@ $ErrorActionPreference = 'Stop'
 $PSStyle.OutputRendering = 'PlainText'
 
 
-$sch_ns = "\scripts-open-browser\"
+$sch_ns = '\scripts-open-browser\'
 $uri = "$input"
 $encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($uri))
 $pwsh = @"
@@ -22,4 +22,4 @@ $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument ($argv | J
 Register-ScheduledTask -TaskPath $sch_ns -TaskName (New-Guid) -Force -Action $action | Start-ScheduledTask
 Unregister-ScheduledTask -Confirm:$false -TaskPath $sch_ns
 
-$uri
+$uri | Write-Output

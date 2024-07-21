@@ -13,4 +13,4 @@ $zip = New-Object IO.Compression.ZipArchive([Console]::OpenStandardInput())
 $items = Get-ChildItem -Recurse -Path $tmp | Move-Item -PassThru -Destination $dst
 Remove-Item -Recurse -Force -Path $tmp
 
-$items
+$items | Write-Output
