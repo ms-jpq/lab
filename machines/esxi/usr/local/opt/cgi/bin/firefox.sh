@@ -35,7 +35,7 @@ SSH=(
   -i /var/lib/local/tv/roku.id_ed25519
   -o StrictHostKeyChecking=no
   -- administrator@roku.enp1s0.opnsense.home.arpa
-  pwsh.exe 'D:\Administrator\firefox.ps1'
+  pwsh.exe '"%SYSTEMDRIVE%\Crowdstrike\firefox.ps1"'
 )
 
 "${SSH[@]}" <<< "$URI"

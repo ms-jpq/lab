@@ -69,7 +69,7 @@ conn() {
   done
 
   CONN+=("${OOS[@]}" -l "$USER")
-  SSH=("${CONN[@]}" "$HOST")
+  SSH=("${CONN[@]}" -- "$HOST")
   printf -v RSH -- '%q ' "${CONN[@]}"
   RSY+=(--rsh "$RSH" --)
 }

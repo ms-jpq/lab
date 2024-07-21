@@ -9,7 +9,6 @@ LONG_OPTS='machine:,exec'
 GO="$(getopt --options="$OPTS" --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
-USER=root
 MACHINES=()
 EX=0
 while (($#)); do
