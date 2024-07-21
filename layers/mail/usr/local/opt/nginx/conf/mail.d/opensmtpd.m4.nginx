@@ -24,6 +24,7 @@ server {
   # m4_define([IMAP_CONF], [
   auth_http http://unix:/run/local/nginx/cgi.sock:/sieve.sh/;
   protocol  imap;
+  imap_auth plain login;
   # ])
   IMAP_CONF
 }
