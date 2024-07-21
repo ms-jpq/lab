@@ -56,7 +56,6 @@ stream {
 }
 
 mail {
-  resolver                 127.0.0.53;
   proxy_pass_error_message on;
   include                  /usr/local/opt/nginx/conf/ssl.nginx;
   include                  /usr/local/opt/nginx/conf/mail.d/*.nginx;
