@@ -38,14 +38,13 @@ done
 case "$AUTH_PROTOCOL" in
 smtp)
   if ! [[ ${AUTH_SMTP_TO:-""} =~ / ]]; then
-    tee -- <<- 'EOF'
+    exec -- tee -- <<- 'EOF'
 HTTP/1.0 200 OK
 Auth-Status: OK
 Auth-Server: 127.0.0.53
 Auth-Port: 2525
 
 EOF
-    exit 0
   fi
   ;;
 imap)
@@ -60,14 +59,13 @@ imap)
   )
 
   if "${CURL[@]}"; then
-    tee -- <<- 'EOF'
+    exec -- tee -- <<- 'EOF'
 HTTP/1.0 200 OK
 Auth-Status: OK
 Auth-Server: 127.0.0.53
 Auth-Port: 1443
 
 EOF
-    exit 0
   fi
   ;;
 *)
