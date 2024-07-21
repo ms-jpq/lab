@@ -18,6 +18,7 @@ $argv = @(
     '--no-modtime',
     "--cache-dir=$cache"
     '--vfs-cache-mode=full'
+    "--webdav-vendor=rclone",
     "--http-url=$remote"
     "--volname=$vol"
     'mount'
