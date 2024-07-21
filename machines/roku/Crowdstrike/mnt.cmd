@@ -1,1 +1,1 @@
-pwsh.exe "%SYSTEMDRIVE%\Crowdstrike\mnt.ps1"
+pwsh.exe "%SYSTEMDRIVE%\Crowdstrike\rclone-mnt.ps1"
