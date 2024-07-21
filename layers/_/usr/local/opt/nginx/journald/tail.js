@@ -51,6 +51,27 @@ const init_cursor = async () => {
   }
 };
 
+const parse_ansi = (() => {
+  const ansiPattern =
+    "[\\u001B\\u009B][[\\]()#;?]*" +
+    "(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*" +
+    "|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)" +
+    "|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-ntqry=><~]))";
+  const ansi = new RegExp(ansiPattern, "ug");
+
+  /**
+   * @param {string[]} codes
+   */
+  return (codes) => {
+    try {
+      const str = String.fromCharCode(...codes);
+      return str.replace(ansi, "");
+    } catch {
+      return "";
+    }
+  };
+})();
+
 const stream = (() => {
   const t = 60;
   /** @type {string[]} */
@@ -75,6 +96,11 @@ const stream = (() => {
           for (const token of tokens) {
             if (token === "\n") {
               const json = JSON.parse(acc.join(""));
+              for (const [key, value] of Object.entries(json)) {
+                if (Array.isArray(value)) {
+                  json[key] = parse_ansi(value);
+                }
+              }
               yield json;
               const c = json.__CURSOR;
               acc.length = 0;
