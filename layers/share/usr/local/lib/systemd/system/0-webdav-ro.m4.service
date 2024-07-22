@@ -13,7 +13,7 @@ PrivateTmp               = yes
 User                     = 1000
 Group                    = www-data
 
-TemporaryFileSystem      = /media:ro
+TemporaryFileSystem      = %E:ro %S:ro /media:ro
 
 # m5_for([SHARE], [
 BindReadOnlyPaths        = /media/SHARE:/media/SHARE
