@@ -6,7 +6,7 @@ if ! [[ -v INVOCATION_ID ]]; then
   UNIT="${0##*/}"
   UNIT="${UNIT%.sh}"
   SVC="$UNIT.service"
-  if systemctl is-active --quiet -- "$SVC"; then
+  if systemctl list-units --all --output json -- "$SVC" | jq --exit-status 'any(.sub == "start" or .sub == "running")' > /dev/null; then
     exec -- journalctl --boot --follow --unit "$SVC"
   else
     exec -- systemd-run --service-type oneshot --no-block --unit "$UNIT" -- "$0" "$@"
