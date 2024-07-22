@@ -22,7 +22,8 @@
     "freenas.enp2s0.pfsense/bt",
     "freenas.enp2s0.pfsense/journald/tail.html",
     "freenas.enp2s0.pfsense/rclone",
-    "freenas.enp2s0.pfsense/share",
+    "freenas.enp2s0.pfsense/webdav/ro",
+    "freenas.enp2s0.pfsense/webdav/rw",
     "freenas.enp2s0.pfsense/youtube-dl",
     "freenas.enp2s0.pfsense/zfs.sh",
     "orthanc.enp1s0.opnsense/vm.html"
@@ -66,6 +67,7 @@
     "time-machine-stainless",
     "wallpapers"
   ],
-  "ENV_WEB_EXPORTS": "ENV_NFS_EXPORTS",
+  "ENV_WEB_RO_EXPORTS": "ENV_NFS_EXPORTS",
+  "ENV_WEB_RW_EXPORTS": "ENV_NFS_EXPORTS",
   "ENV_ZFS_MEM": 70
 }

@@ -4,7 +4,7 @@ set -o pipefail
 
 RUN="$1"
 
-CONF=/usr/local/opt/-.service
+CONF=/usr/local/opt/syslog/-.service
 for I in {0..9}; do
   DROPIN="$RUN/$I-.service.d"
   mkdir -v -p -- "$DROPIN"

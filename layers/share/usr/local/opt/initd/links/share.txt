@@ -1,3 +1,4 @@
-/usr/local/lib/systemd/system/default.target.wants/0-share.service       ../0-share.service
+/usr/local/lib/systemd/system/default.target.wants/0-webdav-ro.service   ../0-webdav-ro.service
+/usr/local/lib/systemd/system/default.target.wants/0-webdav-rw.service   ../0-webdav-rw.service
 /usr/local/lib/systemd/system/default.target.wants/elasticsearch.service /usr/lib/systemd/system/elasticsearch.service
 /usr/local/lib/systemd/system/default.target.wants/kibana.service        /usr/lib/systemd/system/kibana.service
