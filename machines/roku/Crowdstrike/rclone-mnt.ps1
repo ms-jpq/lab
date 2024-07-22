@@ -1,9 +1,7 @@
-#!/usr/bin/env -S -- pwsh -NoProfile -NonInteractive
+#!/usr/bin/env -S -- powershell.exe -NoProfile -NonInteractive
 
 Set-StrictMode -Version 'Latest'
 $ErrorActionPreference = 'Stop'
-$PSStyle.OutputRendering = 'PlainText'
-$PSNativeCommandUseErrorActionPreference = $true
 
 Set-Location -- $PSScriptRoot
 
