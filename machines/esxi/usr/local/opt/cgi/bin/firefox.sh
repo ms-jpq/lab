@@ -36,7 +36,7 @@ SSH=(
   -o StrictHostKeyChecking=no
   -o UserKnownHostsFile=/dev/null
   -- administrator@roku.enp1s0.opnsense.home.arpa
-  pwsh.exe -NoProfile -NonInteractive
+  powershell.exe -NoProfile -NonInteractive
   '"%SYSTEMDRIVE%\Crowdstrike\firefox.ps1"'
 )
 
