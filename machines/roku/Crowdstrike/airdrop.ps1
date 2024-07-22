@@ -4,7 +4,7 @@ Set-StrictMode -Version 'Latest'
 $ErrorActionPreference = 'Stop'
 
 
-$dst = Join-Path -- $env:HOME 'Desktop'
+$dst = [Environment]::GetFolderPath([Environment+SpecialFolder]::Desktop)
 $tmp = [IO.Directory]::CreateTempSubdirectory()
 $zip = New-Object IO.Compression.ZipArchive([Console]::OpenStandardInput())
 
