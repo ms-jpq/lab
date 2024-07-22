@@ -8,7 +8,7 @@ $PSNativeCommandUseErrorActionPreference = $true
 Set-Location -- $PSScriptRoot
 
 $remote = 'http://freenas.enp2s0.pfsense.home.arpa:8080'
-$vol = 'rclone'
+$vol = 'freenas'
 $cache = 'D:\rclone.cache'
 $argv = @(
     '--config=NUL'
@@ -23,7 +23,7 @@ $argv = @(
     "--volname=$vol"
     'mount'
     '--'
-    ':http:/share/'
+    ':http:/webdav/rw'
     '*'
 )
 # READ ONLY doesn't work LMAO
