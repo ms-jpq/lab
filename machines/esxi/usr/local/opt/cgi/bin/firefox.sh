@@ -34,6 +34,7 @@ SSH=(
   ssh
   -i /var/lib/local/tv/roku.id_ed25519
   -o StrictHostKeyChecking=no
+  -o UserKnownHostsFile=/dev/null
   -- administrator@roku.enp1s0.opnsense.home.arpa
   pwsh.exe '"%SYSTEMDRIVE%\Crowdstrike\firefox.ps1"'
 )
