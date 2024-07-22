@@ -36,7 +36,8 @@ SSH=(
   -o StrictHostKeyChecking=no
   -o UserKnownHostsFile=/dev/null
   -- administrator@roku.enp1s0.opnsense.home.arpa
-  pwsh.exe '"%SYSTEMDRIVE%\Crowdstrike\firefox.ps1"'
+  pwsh.exe -NoProfile -NonInteractive
+  '"%SYSTEMDRIVE%\Crowdstrike\firefox.ps1"'
 )
 
 "${SSH[@]}" <<< "$URI"
