@@ -2,6 +2,6 @@ server {
   listen [::]:80 ipv6only=off;
 
   location / {
-    proxy_pass http://unix:/run/local/nginx/acme.sock;
+    proxy_pass http://unix:/run/local/nginx/acme.sock:/;
   }
 }

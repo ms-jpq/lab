@@ -8,7 +8,8 @@
     "freenas.enp2s0.pfsense.ENV_DOMAIN",
     "opnsense.w-0.opnsense.ENV_DOMAIN",
     "orthanc.enp1s0.opnsense.ENV_DOMAIN",
-    "pfsense.w-0.pfsense.ENV_DOMAIN"
+    "pfsense.w-0.pfsense.ENV_DOMAIN",
+    "public.ENV_DOMAIN"
   ],
   "ENV_FS_DOWNLOADS": "downloads",
   "ENV_FS_MOVIES": "media/Movies",
@@ -46,7 +47,7 @@
   "ENV_MACVLAN_IFS": ["enp109s0", "eno1"],
   "ENV_NFS_EXPORTS": ["downloads", "media", "wallpapers"],
   "ENV_PG_CLUSTERS": [],
-  "ENV_PUBLIC_SITES": [],
+  "ENV_PUBLIC_SITES": ["public.*"],
   "ENV_RCLONE_LOCAL": [
     "gray",
     "hao",

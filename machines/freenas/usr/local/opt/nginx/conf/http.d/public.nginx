@@ -1,0 +1,8 @@
+server {
+  server_name public.*;
+  include     /usr/local/opt/nginx/conf/listen.nginx;
+
+  location / {
+    proxy_pass http://unix:/run/local/webdav/ro.sock:/webdav/ro/;
+  }
+}

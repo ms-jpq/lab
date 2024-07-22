@@ -60,7 +60,7 @@ const parse_ansi = (() => {
   const ansi = new RegExp(ansiPattern, "ug");
 
   /**
-   * @param {string[]} codes
+   * @param {number[]} codes
    */
   return (codes) => {
     try {
