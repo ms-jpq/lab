@@ -5,7 +5,7 @@ $ErrorActionPreference = 'Stop'
 
 $sch_ns = '\scripts-open-browser\'
 $uri = [Console]::In.ReadToEnd().TrimEnd()
-$encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("`"$uri`""))
+$encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($uri))
 $pwsh = @"
 Start-Process -- ([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String("$encoded")))
 "@
