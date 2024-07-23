@@ -21,10 +21,6 @@ while read -r LINE; do
   client-ip)
     CLIENT_IP="${LINE##*: }"
     ;;
-  auth-smtp-to)
-    AUTH_SMTP_TO="${LINE##*<}"
-    AUTH_SMTP_TO="${AUTH_SMTP_TO%%>*}"
-    ;;
   auth-user)
     AUTH_USER="${LINE##*: }"
     ;;
@@ -37,15 +33,13 @@ done
 
 case "$AUTH_PROTOCOL" in
 smtp)
-  if ! [[ ${AUTH_SMTP_TO:-""} =~ / ]]; then
-    exec -- tee -- <<- 'EOF'
+  exec -- tee -- <<- 'EOF'
 HTTP/1.0 200 OK
 Auth-Status: OK
 Auth-Server: 127.0.0.53
 Auth-Port: 2525
 
 EOF
-  fi
   ;;
 imap)
   CURL=(
