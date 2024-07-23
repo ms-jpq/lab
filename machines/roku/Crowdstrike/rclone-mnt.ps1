@@ -13,15 +13,15 @@ $argv = @(
     '--dir-cache-time=9s'
     '--network-mode'
     '--read-only'
-    '--no-modtime',
     "--cache-dir=$cache"
     '--vfs-cache-mode=full'
-    "--webdav-vendor=rclone",
+    '--webdav-vendor=rclone',
+    '--webdav-pacer-min-sleep=0',
     "--http-url=$remote"
     "--volname=$vol"
     'mount'
     '--'
-    ':http:/webdav/rw'
+    ':http:/webdav/rw/'
     '*'
 )
 # READ ONLY doesn't work LMAO
