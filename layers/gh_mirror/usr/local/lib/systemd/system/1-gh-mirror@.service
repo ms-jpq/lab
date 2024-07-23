@@ -1,15 +1,16 @@
 [Unit]
-Description    = Github Mirror Service -- %I
+Description     = Github Mirror Service -- %I
 
 [Service]
-Type           = oneshot
-ProtectSystem  = strict
-ProtectHome    = tmpfs
-PrivateTmp     = yes
-ReadWritePaths = %T %S/local
+Type            = oneshot
+ProtectSystem   = strict
+ProtectHome     = tmpfs
+PrivateTmp      = yes
+ReadWritePaths  = %T %S/local
 
-User           = 1000
-Group          = 1000
+User            = 1000
+Group           = 1000
 
-StateDirectory = local/gh_mirror/%I
-ExecStart      = /usr/local/opt/gh_mirror/libexec/mirror.sh %S/local/gh_mirror %I
+StateDirectory  = local/gh_mirror/%I
+EnvironmentFile = -/usr/local/etc/default/%I.gh-mirror.env
+ExecStart       = /usr/local/opt/gh_mirror/libexec/mirror.sh %S/local/gh_mirror %I
