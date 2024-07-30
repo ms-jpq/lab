@@ -1,1 +1,0 @@
-../../../Crowdstrike/mnt.cmd
