@@ -1,5 +1,4 @@
-proxy_protocol on;
-xclient        off;
+xclient off;
 
 server {
   listen    [[::]]:25 ipv6only=off;
@@ -23,11 +22,12 @@ server {
 }
 
 server {
-  listen    [[::]]:143 ipv6only=off;
+  listen         [[::]]:143 ipv6only=off;
   # m4_define([IMAP_CONF], [
-  auth_http http://unix:/run/local/nginx/cgi.sock:/sieve.sh/;
-  protocol  imap;
-  imap_auth plain login;
+  auth_http      http://unix:/run/local/nginx/cgi.sock:/sieve.sh/;
+  protocol       imap;
+  proxy_protocol on;
+  imap_auth      plain login;
   # ])
   IMAP_CONF
 }
