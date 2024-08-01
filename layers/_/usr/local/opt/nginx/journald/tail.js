@@ -5,6 +5,7 @@ const CURSOR = "cursor";
 
 const origin = globalThis.location?.origin ?? "http://localhost:8080";
 const params = new URLSearchParams(globalThis.location?.search);
+const COUNT = 999;
 
 /**
  * @param {string} uri
@@ -161,7 +162,10 @@ const append = (sym, root, json) => {
   const ts = __REALTIME_TIMESTAMP
     ? new Date(Number(__REALTIME_TIMESTAMP) / 1000)
     : new Date();
-  const li = document.createElement("li");
+  const li =
+    (root.childElementCount >= COUNT ? root.firstElementChild : undefined) ??
+    document.createElement("li");
+  li.replaceChildren();
 
   const tt =
     ts.getFullYear().toString().slice(2) +
