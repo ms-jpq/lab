@@ -12,6 +12,8 @@ while read -r LINE; do
     break
   fi
 
+  printf -- '%s\n' "$LINE" >&2
+
   LHS="${LINE%%:*}"
   KEY="${LHS,,}"
   case "$KEY" in
