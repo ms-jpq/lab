@@ -59,7 +59,7 @@ imap)
 HTTP/1.0 200 OK
 Auth-Status: OK
 Auth-Server: 127.0.0.53
-Auth-Port: 1443
+Auth-Port: 2443
 
 EOF
   fi

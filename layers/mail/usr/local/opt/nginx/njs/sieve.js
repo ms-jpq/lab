@@ -42,7 +42,7 @@ const rate_limit = async (request) => {
         },
       );
       if (resp.ok) {
-        request.headersOut["Auth-Port"] = "1443";
+        request.headersOut["Auth-Port"] = "2443";
         request.headersOut["Auth-Server"] = "127.0.0.53";
         request.headersOut["Auth-Status"] = "OK";
       } else {
