@@ -56,7 +56,6 @@ stream {
 }
 
 mail {
-  xclient                  off;
   proxy_pass_error_message on;
   include                  /usr/local/opt/nginx/conf/ssl.nginx;
   include                  /usr/local/opt/nginx/conf/mail.d/*.nginx;

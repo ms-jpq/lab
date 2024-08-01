@@ -1,3 +1,6 @@
+proxy_protocol on;
+xclient        off;
+
 server {
   listen    [[::]]:25 ipv6only=off;
   # m4_define([SMTP_CONF], [
