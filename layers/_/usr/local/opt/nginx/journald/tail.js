@@ -5,7 +5,7 @@ const CURSOR = "cursor";
 
 const origin = globalThis.location?.origin ?? "http://localhost:8080";
 const params = new URLSearchParams(globalThis.location?.search);
-const COUNT = 999;
+const COUNT = 9999;
 
 /**
  * @param {string} uri
