@@ -51,9 +51,10 @@ resource "aws_route53_record" "sea_to_sky_ptr" {
 
 output "dns_aws" {
   value = {
-    a  = aws_route53_record.sea_to_sky_a.records
-    a4 = aws_route53_record.sea_to_sky_a4.records
-    c  = aws_route53_record.sea_to_sky_c.records
-    mx = aws_route53_record.sea_to_sky_mx.records
+    a   = aws_route53_record.sea_to_sky_a.records
+    a4  = aws_route53_record.sea_to_sky_a4.records
+    c   = aws_route53_record.sea_to_sky_c.records
+    mx  = aws_route53_record.sea_to_sky_mx.records
+    ptr = toset(flatten([for srv in aws_route53_record.sea_to_sky_ptr : srv.records]))
   }
 }
