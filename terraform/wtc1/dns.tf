@@ -34,7 +34,22 @@ resource "aws_route53_record" "sea_to_sky_a4" {
   zone_id = data.aws_route53_zone.sea_to_sky.zone_id
 }
 
-output "dns" {
+resource "aws_route53_record" "sea_to_sky_ptr" {
+  for_each = toset(concat([
+    for record in local.ip_addrs.v4 :
+    "${join(".", reverse(split(".", record)))}.in-addr.arpa."
+    ], [
+    for record in local.ip_addrs.v6 :
+    "${join(".", reverse([for part in split(":", record) : part if part != ""]))}.ip6.arpa."
+  ]))
+  name    = each.key
+  records = [data.aws_route53_zone.sea_to_sky.name]
+  ttl     = local.dns_ttl
+  type    = "PTR"
+  zone_id = data.aws_route53_zone.sea_to_sky.zone_id
+}
+
+output "dns_aws" {
   value = {
     a  = aws_route53_record.sea_to_sky_a.records
     a4 = aws_route53_record.sea_to_sky_a4.records

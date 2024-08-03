@@ -55,7 +55,7 @@ resource "google_dns_record_set" "sea_to_sky_a4" {
 #   type         = "PTR"
 # }
 
-output "dns" {
+output "dns_gcp" {
   value = {
     a  = google_dns_record_set.sea_to_sky_a.rrdatas
     a4 = google_dns_record_set.sea_to_sky_a4.rrdatas
