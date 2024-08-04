@@ -1,6 +1,6 @@
-.PHONY: lint mypy shellcheck hadolint tsc
+.PHONY: lint mypy shellcheck hadolint tflint tsc
 
-lint: mypy shellcheck hadolint tflint tsc
+lint: mypy shellcheck hadolint tsc
 
 mypy: ./.venv/bin
 	git ls-files --deduplicate -z -- '*.py' | xargs -r -0 -- '$</mypy' --
