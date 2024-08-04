@@ -12,4 +12,4 @@ set +a
 NAME="$1"
 shift -- 1
 
-exec -- "$BASE/var/bin/tofu" -chdir="$BASE/terraform/$NAME" "$@"
+exec -- "$BASE/var/bin/terraform" -chdir="$BASE/terraform/$NAME" "$@"

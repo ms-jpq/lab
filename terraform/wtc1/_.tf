@@ -1,6 +1,10 @@
 terraform {
   required_version = ">= 0"
   required_providers {
+    functions = {
+      source  = "ms-jpq/functions"
+      version = ">= 0"
+    }
     aws = {
       source  = "hashicorp/aws"
       version = ">= 0"

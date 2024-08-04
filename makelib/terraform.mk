@@ -2,7 +2,7 @@
 
 define TERRAFORM_TEMPLATE
 tofu: $(dir $1)/.terraform
-$(dir $1)/.terraform: | $(VAR)/bin/tofu
+$(dir $1)/.terraform: | $(VAR)/bin/terraform
 	'$$|' -chdir='$$(@D)' get
 endef
 

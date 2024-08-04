@@ -35,14 +35,11 @@ resource "aws_route53_record" "sea_to_sky_a4" {
 }
 
 resource "aws_route53_record" "sea_to_sky_ptr" {
-  for_each = toset(concat([
-    for record in local.ip_addrs.v4 :
-    "${join(".", reverse(split(".", record)))}.in-addr.arpa."
-    ], [
-    for record in local.ip_addrs.v6 :
-    "${join(".", reverse([for part in split(":", record) : part if part != ""]))}.ip6.arpa."
-  ]))
-  name    = each.key
+  for_each = toset(concat(
+    [for record in local.ip_addrs.v4 : ip_address(record).reverse_pointer],
+    [for record in local.ip_addrs.v6 : ip_address(record).reverse_pointer]
+  ))
+  name    = "${each.value}."
   records = [data.aws_route53_zone.sea_to_sky.name]
   ttl     = local.dns_ttl
   type    = "PTR"

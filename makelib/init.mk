@@ -41,7 +41,7 @@ V_S5CMD      = $(patsubst v%,%,$(shell ./libexec/gh-latest.sh $(VAR) peak/s5cmd)
 V_SHELLCHECK = $(shell ./libexec/gh-latest.sh $(VAR) koalaman/shellcheck)
 V_SHFMT      = $(shell ./libexec/gh-latest.sh $(VAR) mvdan/sh)
 V_TFLINT     = $(shell ./libexec/gh-latest.sh $(VAR) terraform-linters/tflint)
-V_TOFU       = $(patsubst v%,%,$(shell ./libexec/gh-latest.sh $(VAR) opentofu/opentofu))
+V_TOFU       = $(patsubst v%,%,$(shell ./libexec/gh-latest.sh $(VAR) hashicorp/terraform))
 
 S5_OS = $(shell perl -CASD -wpe 's/([a-z])/\u$$1/;s/Darwin/macOS/' <<<'$(OS)')
 HADO_OS = $(shell perl -CASD -wpe 's/([a-z])/\u$$1/' <<<'$(OS)')
@@ -73,8 +73,8 @@ $(VAR)/bin/s5cmd: | $(VAR)/bin
 	$(CURL) -- "$$URI" | tar --extract --gz --file - --directory '$(VAR)/bin'
 	chmod +x '$@'
 
-$(VAR)/bin/tofu: | $(VAR)/bin
-	URI='https://github.com/opentofu/opentofu/releases/latest/download/tofu_$(V_TOFU)_$(OS)_$(GOARCH).zip'
+$(VAR)/bin/terraform: | $(VAR)/bin
+	URI='https://releases.hashicorp.com/terraform/$(V_TOFU)/terraform_$(V_TOFU)_$(OS)_$(GOARCH).zip'
 	ZIP='$(TMP)/tofu.zip'
 	$(CURL) --output "$$ZIP" -- "$$URI"
 	unzip -o -d '$(VAR)/bin' -- "$$ZIP"
