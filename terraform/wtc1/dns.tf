@@ -34,16 +34,18 @@ resource "aws_route53_record" "sea_to_sky_a4" {
   zone_id = data.aws_route53_zone.sea_to_sky.zone_id
 }
 
+resource "aws_route53_zone" "squamish" {
+  for_each = local.dns_ptrs
+  name     = each.value
+}
+
 resource "aws_route53_record" "sea_to_sky_ptr" {
-  for_each = toset(concat(
-    [for record in local.ip_addrs.v4 : provider::functions::ip_address(record).reverse_pointer],
-    [for record in local.ip_addrs.v6 : provider::functions::ip_address(record).reverse_pointer]
-  ))
-  name    = "${each.value}."
-  records = [data.aws_route53_zone.sea_to_sky.name]
-  ttl     = local.dns_ttl
-  type    = "PTR"
-  zone_id = data.aws_route53_zone.sea_to_sky.zone_id
+  for_each = local.dns_ptrs
+  name     = "${each.key}."
+  records  = [data.aws_route53_zone.sea_to_sky.name]
+  ttl      = local.dns_ttl
+  type     = "PTR"
+  zone_id  = aws_route53_zone.squamish[each.key].zone_id
 }
 
 output "dns_aws" {
