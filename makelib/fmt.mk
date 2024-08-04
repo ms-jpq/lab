@@ -23,5 +23,5 @@ nginx: ./node_modules/.bin
 taplo: ./node_modules/.bin
 	git ls-files --deduplicate -z -- '*.toml' | xargs -r -0 -- '$</taplo' format --
 
-terraform-fmt: $(VAR)/bin/tofu
+terraform-fmt: $(VAR)/bin/terraform
 	git ls-files --deduplicate -z -- '*.tf' | xargs -r -0 -- '$<' fmt --write --
