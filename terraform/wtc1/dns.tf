@@ -36,16 +36,19 @@ resource "aws_route53_record" "sea_to_sky_a4" {
 
 resource "aws_route53_zone" "squamish" {
   for_each = local.dns_ptrs
-  name     = each.value
+  name     = each.key
 }
 
 resource "aws_route53_record" "sea_to_sky_ptr" {
-  for_each = local.dns_ptrs
-  name     = "${each.key}."
-  records  = [data.aws_route53_zone.sea_to_sky.name]
-  ttl      = local.dns_ttl
-  type     = "PTR"
-  zone_id  = aws_route53_zone.squamish[each.key].zone_id
+  for_each = merge([
+    for zone, addrs in local.dns_ptrs :
+    { for addr in addrs : addr => zone }
+  ]...)
+  name    = "${each.key}."
+  records = [data.aws_route53_zone.sea_to_sky.name]
+  ttl     = local.dns_ttl
+  type    = "PTR"
+  zone_id = aws_route53_zone.squamish[each.value].zone_id
 }
 
 output "dns_aws" {
