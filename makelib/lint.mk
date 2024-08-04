@@ -1,4 +1,4 @@
-.PHONY: lint mypy shellcheck hadolint tflint tsc
+.PHONY: lint mypy shellcheck hadolint tsc
 
 lint: mypy shellcheck hadolint tflint tsc
 
