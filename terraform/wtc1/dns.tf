@@ -34,22 +34,22 @@ resource "aws_route53_record" "sea_to_sky_a4" {
   zone_id = data.aws_route53_zone.sea_to_sky.zone_id
 }
 
-resource "aws_route53_zone" "squamish" {
-  for_each = local.dns_ptrs
-  name     = each.key
-}
-
-resource "aws_route53_record" "sea_to_sky_ptr" {
-  for_each = merge([
-    for zone, addrs in local.dns_ptrs :
-    { for addr in addrs : addr => zone }
-  ]...)
-  name    = "${each.key}."
-  records = [data.aws_route53_zone.sea_to_sky.name]
-  ttl     = local.dns_ttl
-  type    = "PTR"
-  zone_id = aws_route53_zone.squamish[each.value].zone_id
-}
+# resource "aws_route53_zone" "squamish" {
+#   for_each = local.dns_ptrs
+#   name     = each.key
+# }
+#
+# resource "aws_route53_record" "sea_to_sky_ptr" {
+#   for_each = merge([
+#     for zone, addrs in local.dns_ptrs :
+#     { for addr in addrs : addr => zone }
+#   ]...)
+#   name    = "${each.key}."
+#   records = [data.aws_route53_zone.sea_to_sky.name]
+#   ttl     = local.dns_ttl
+#   type    = "PTR"
+#   zone_id = aws_route53_zone.squamish[each.value].zone_id
+# }
 
 output "dns_aws" {
   value = {
@@ -57,6 +57,6 @@ output "dns_aws" {
     a4  = aws_route53_record.sea_to_sky_a4.records
     c   = aws_route53_record.sea_to_sky_c.records
     mx  = aws_route53_record.sea_to_sky_mx.records
-    ptr = toset([for srv in aws_route53_record.sea_to_sky_ptr : srv.name])
+    # ptr = toset([for srv in aws_route53_record.sea_to_sky_ptr : srv.name])
   }
 }
