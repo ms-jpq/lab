@@ -39,21 +39,25 @@ resource "google_dns_record_set" "sea_to_sky_a4" {
   type         = "AAAA"
 }
 
-# resource "google_dns_record_set" "sea_to_sky_ptr" {
-#   provider = google.kalimdor
-#   for_each = toset(concat([
-#     for record in local.ip_addrs.v4 :
-#     "${join(".", reverse(split(".", record)))}.in-addr.arpa."
-#     ], [
-#     for record in local.ip_addrs.v6 :
-#     "${join(".", reverse([for part in split(":", record) : part if part != ""]))}.ip6.arpa."
-#   ]))
-#   managed_zone = data.google_dns_managed_zone.sea_to_sky.name
-#   name         = each.value
-#   rrdatas      = [data.google_dns_managed_zone.sea_to_sky.dns_name]
-#   ttl          = local.dns_ttl
-#   type         = "PTR"
-# }
+resource "google_dns_managed_zone" "squamish" {
+  provider = google.kalimdor
+  for_each = local.dns_ptrs
+  name     = replace(each.key, ".", "-")
+  dns_name = "${each.key}."
+}
+
+resource "google_dns_record_set" "sea_to_sky_ptr" {
+  provider = google.kalimdor
+  for_each = merge([
+    for zone, addrs in local.dns_ptrs :
+    { for addr in addrs : addr => zone }
+  ]...)
+  managed_zone = google_dns_managed_zone.squamish[each.value].name
+  name         = "${each.key}."
+  rrdatas      = [data.google_dns_managed_zone.sea_to_sky.dns_name]
+  ttl          = local.dns_ttl
+  type         = "PTR"
+}
 
 output "dns_gcp" {
   value = {
