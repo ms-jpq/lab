@@ -21,7 +21,7 @@ services:
       - flame.type=app
       - flame.name=SpeedTest
       - flame.url=https://speed.${DOMAIN}
-      - flame.icon=docker
+      - flame.icon=car-speed-limiter
     volumes:
       - data:/database
 

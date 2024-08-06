@@ -26,7 +26,7 @@ services:
       - flame.type=app
       - flame.name=Wallabag
       - flame.url=https://pocket.${DOMAIN}
-      - flame.icon=docker
+      - flame.icon=bookmark-multiple
     environment: &env # HTTP_PROXY: http://warp-srv-1:1080
       SYMFONY__ENV__DATABASE_DRIVER: pdo_pgsql
       SYMFONY__ENV__DATABASE_HOST:

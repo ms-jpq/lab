@@ -21,7 +21,7 @@ services:
       - flame.type=app
       - flame.name=ItTools
       - flame.url=https://tools.${DOMAIN}
-      - flame.icon=docker
+      - flame.icon=tools
     networks:
       - default
       - traefik

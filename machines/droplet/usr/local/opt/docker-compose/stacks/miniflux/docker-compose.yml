@@ -22,7 +22,7 @@ services:
       - flame.type=app
       - flame.name=Miniflux
       - flame.url=https://rss.${DOMAIN}
-      - flame.icon=docker
+      - flame.icon=rss-box
     environment:
       # HTTPS_PROXY: http://warp-srv-1:1080
       # HTTP_PROXY: *proxy

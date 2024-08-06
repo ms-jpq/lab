@@ -25,7 +25,7 @@ services:
       - flame.type=app
       - flame.name=Searx
       - flame.url=https://ask.${DOMAIN}
-      - flame.icon=docker
+      - flame.icon=search-web
     networks:
       - default
       - traefik

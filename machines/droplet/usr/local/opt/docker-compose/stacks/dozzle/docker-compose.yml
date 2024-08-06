@@ -11,7 +11,7 @@ services:
       - flame.type=app
       - flame.name=Dozzle
       - flame.url=https://docker.${DOMAIN}
-      - flame.icon=docker
+      - flame.icon=archive-refresh
     volumes:
       - /run/docker.sock:/var/run/docker.sock:ro
 

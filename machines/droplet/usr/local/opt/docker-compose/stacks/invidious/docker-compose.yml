@@ -24,7 +24,7 @@ services:
       - flame.type=app
       - flame.name=Invidious
       - flame.url=https://youtube.${DOMAIN}
-      - flame.icon=docker
+      - flame.icon=youtube-tv
     # network_mode: container:warp-srv-1
     volumes:
       - ./conf.yml:/invidious/config/config.yml:ro

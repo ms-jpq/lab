@@ -11,7 +11,7 @@ services:
       - flame.type=app
       - flame.name=12ft
       - flame.url=https://12ft.${DOMAIN}
-      - flame.icon=docker
+      - flame.icon=ladder
     environment:
       RULESET: https://t.ly/14PSf
     networks:

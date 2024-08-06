@@ -22,7 +22,7 @@ services:
       - flame.type=app
       - flame.name=Traefik
       - flame.url=https://traefik.${DOMAIN}
-      - flame.icon=docker
+      - flame.icon=traffic-light
     networks:
       - default
       - traefik

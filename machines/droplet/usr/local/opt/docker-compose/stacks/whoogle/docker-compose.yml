@@ -21,7 +21,7 @@ services:
       - flame.type=app
       - flame.name=Whoogle
       - flame.url=https://bing.${DOMAIN}
-      - flame.icon=docker
+      - flame.icon=magnify
     environment:
       # WHOOGLE_PROXY_LOC: warp-srv-1:1080
       WHOOGLE_CONFIG_NEW_TAB: true
