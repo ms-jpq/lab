@@ -8,6 +8,10 @@ services:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^docker\.`)
+      - flame.type=app
+      - flame.name=Dozzle
+      - flame.url=https://docker.${DOMAIN}
+      - flame.icon=docker
     volumes:
       - /run/docker.sock:/var/run/docker.sock:ro
 

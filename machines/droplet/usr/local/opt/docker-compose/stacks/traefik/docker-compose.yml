@@ -19,6 +19,10 @@ services:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^${COMPOSE_PROJECT_NAME}\.`)
+      - flame.type=app
+      - flame.name=Traefik
+      - flame.url=https://traefik.${DOMAIN}
+      - flame.icon=docker
     networks:
       - default
       - traefik

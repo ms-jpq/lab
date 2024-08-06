@@ -19,6 +19,10 @@ services:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^rss\.`)
+      - flame.type=app
+      - flame.name=Miniflux
+      - flame.url=https://rss.${DOMAIN}
+      - flame.icon=docker
     environment:
       # HTTPS_PROXY: http://warp-srv-1:1080
       # HTTP_PROXY: *proxy

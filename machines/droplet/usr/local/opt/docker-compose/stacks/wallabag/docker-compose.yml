@@ -24,7 +24,7 @@ services:
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^pocket\.`)
       - flame.type=app
-      - flame.name=Pocket
+      - flame.name=Wallabag
       - flame.url=https://pocket.${DOMAIN}
       - flame.icon=docker
     environment: &env # HTTP_PROXY: http://warp-srv-1:1080

@@ -8,6 +8,10 @@ services:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^bridge\.`)
+      - flame.type=app
+      - flame.name=RSSbr
+      - flame.url=https://bridge.${DOMAIN}
+      - flame.icon=docker
     volumes:
       - ./config.ini.php:/config/config.ini.php:ro
 

@@ -22,6 +22,10 @@ services:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^ask\.`)
+      - flame.type=app
+      - flame.name=Searx
+      - flame.url=https://ask.${DOMAIN}
+      - flame.icon=docker
     networks:
       - default
       - traefik
