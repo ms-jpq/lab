@@ -9,6 +9,10 @@ services:
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=5005
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.priority=-1
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=PathPrefix(`/`)
+      - flame.type=app
+      - flame.name=/
+      - flame.url=https://${MAIN_DOMAIN}
+      - flame.icon=lan
     networks:
       - default
       - traefik
