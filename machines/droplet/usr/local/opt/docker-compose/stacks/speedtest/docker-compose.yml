@@ -20,7 +20,7 @@ services:
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^${COMPOSE_PROJECT_NAME}\.`)
       - flame.type=app
       - flame.name=SpeedTest
-      - flame.url=https://speed.${DOMAIN}
+      - flame.url=https://speedtest.${DOMAIN}
       - flame.icon=car-speed-limiter
     volumes:
       - data:/database
