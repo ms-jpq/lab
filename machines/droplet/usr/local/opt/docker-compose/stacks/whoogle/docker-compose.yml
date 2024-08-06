@@ -18,6 +18,10 @@ services:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=5000
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^bing\.`)
+      - flame.type=app
+      - flame.name=Whoogle
+      - flame.url=https://bing.${DOMAIN}
+      - flame.icon=docker
     environment:
       # WHOOGLE_PROXY_LOC: warp-srv-1:1080
       WHOOGLE_CONFIG_NEW_TAB: true

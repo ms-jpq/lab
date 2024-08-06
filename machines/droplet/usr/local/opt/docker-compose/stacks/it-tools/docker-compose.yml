@@ -18,6 +18,10 @@ services:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^tools\.`)
+      - flame.type=app
+      - flame.name=ItTools
+      - flame.url=https://tools.${DOMAIN}
+      - flame.icon=docker
     networks:
       - default
       - traefik

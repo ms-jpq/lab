@@ -18,6 +18,10 @@ services:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^${COMPOSE_PROJECT_NAME}\.`)
+      - flame.type=app
+      - flame.name=SpeedTest
+      - flame.url=https://speed.${DOMAIN}
+      - flame.icon=docker
     volumes:
       - data:/database
 
