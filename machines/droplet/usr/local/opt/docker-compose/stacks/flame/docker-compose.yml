@@ -13,6 +13,8 @@ services:
       - flame.name=/
       - flame.url=https://${MAIN_DOMAIN}
       - flame.icon=lan
+    environment:
+      PASSWORD:
     networks:
       - default
       - traefik

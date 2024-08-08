@@ -26,11 +26,11 @@ services:
       - flame.url=https://youtube.${DOMAIN}
       - flame.icon=youtube-tv
     # network_mode: container:warp-srv-1
-    volumes:
-      - ./conf.yml:/invidious/config/config.yml:ro
     networks:
       - default
       - traefik
+    volumes:
+      - ./conf.yml:/invidious/config/config.yml:ro
 
   pg:
     image: docker.io/library/postgres:latest
