@@ -3,6 +3,6 @@
 set -o pipefail
 
 NETDEV="$*"
-if CONF="$(wg showconf "$NETDEV")"; then
+if CONF="$(wg showconf "$NETDEV" | sed -E -e '/^ListenPort/d')"; then
   wg syncconf "$NETDEV" /dev/fd/0 <<< "$CONF"
 fi
