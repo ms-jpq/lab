@@ -1,14 +1,15 @@
 [Unit]
-Description        = Synchronize WG DDNS -- %I
-StopWhenUnneeded   = yes
+Description         = Synchronize WG DDNS -- %I
+StopWhenUnneeded    = yes
+ConditionPathExists = /usr/local/lib/systemd/network/%I.netdev
 
-After              = network-online.target
+After               = network-online.target
 
-PartOf             = systemd-networkd.service
-Requisite          = systemd-networkd.service
-After              = systemd-networkd.service
+PartOf              = systemd-networkd.service
+Requisite           = systemd-networkd.service
+After               = systemd-networkd.service
 
 [Timer]
-OnStartupSec       = 0
-OnUnitInactiveSec  = 3minutes
-RandomizedDelaySec = 1minutes
+OnStartupSec        = 0
+OnUnitInactiveSec   = 3minutes
+RandomizedDelaySec  = 1minutes

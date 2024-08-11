@@ -4,5 +4,5 @@ set -o pipefail
 
 NETDEV="$*"
 if CONF="$(wg showconf "$NETDEV")"; then
-  wg syncconf "$NETDEV" - <<< "$CONF"
+  wg syncconf "$NETDEV" /dev/fd/0 <<< "$CONF"
 fi
