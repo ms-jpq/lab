@@ -2,7 +2,12 @@
 
 set -o pipefail
 
-NETDEV="$*"
-if CONF="$(wg showconf "$NETDEV" | sed -E -e '/^ListenPort/d')"; then
-  wg syncconf "$NETDEV" /dev/fd/0 <<< "$CONF"
+NETDEV="$1"
+NETDEV_FILE="$2"
+
+if CONF="$(wg showconf "$NETDEV" | sed -E -e '/^ListenPort/d' -e '/^Endpoint/d')"; then
+  {
+    printf -- '%s\n' "$CONF"
+    sed -E -n -e '/^Endpoint/p' -- "$NETDEV_FILE"
+  } | wg syncconf "$NETDEV" /dev/fd/0
 fi
