@@ -1,0 +1,19 @@
+[Unit]
+Description    = Synchronize WG DDNS -- %I
+
+After          = network-online.target
+
+PartOf         = systemd-networkd.service
+Requisite      = systemd-networkd.service
+After          = systemd-networkd.service
+
+[Service]
+Type           = oneshot
+
+ProtectSystem  = strict
+ProtectHome    = yes
+PrivateTmp     = yes
+ReadWritePaths = %t %T
+
+
+ExecStart      = /usr/local/opt/network/libexec/wg-ddhs.sh %I

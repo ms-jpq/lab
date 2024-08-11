@@ -3,13 +3,13 @@
 set -o pipefail
 
 RUN="$1"
-WANTS="$RUN/default.target.wants"
+WANTS="$RUN/timers.target.wants"
 
 NETDEVS='/usr/local/lib/systemd/network'
 SEARCH=(sed -E -n -e '/^\[WireGuard\]$/F' -- "$NETDEVS"/*.netdev)
 SELECT=(xargs -r -I % -- sed -E -n -e 's/^Name[[:space:]]*=[[:space:]]*(.*)$/\1/p' -- %)
 ROWS=$("${SEARCH[@]}" | "${SELECT[@]}")
-readarray -t -d '' -- NETDEVS <<< "$ROWS"
+readarray -t -- NETDEVS <<< "$ROWS"
 
 mkdir -p -- "$WANTS"
 for NETDEV in "${NETDEVS[@]}"; do
