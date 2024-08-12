@@ -1,0 +1,10 @@
+[Unit]
+Description  = Mount -- %J:%f
+
+[Mount]
+Type         = rclone
+ForceUnmount = yes
+TimeoutSec   = 2seconds
+Options      = _netdev,args2env,allow-non-empty,allow-other,config=/dev/null,dir-cache-time=9s,webdav-vendor=rclone,webdav-pacer-min-sleep=0,vfs-cache-mode=full,cache-dir=%C/local/rclone/%p,ro,http-url=http://freenas.enp2s0.pfsense.home.arpa:8080/webdav/rw/
+Where        = %f
+What         = :http:
