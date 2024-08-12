@@ -12,4 +12,4 @@ User                     = 1000
 Group                    = www-data
 
 Environment              = SOCK=%t/local/gh-mirror/%i.sock
-ExecStart                = rclone serve http --config=/dev/null --dir-cache-time=0 --vfs-cache-mode=off --addr=${SOCK} --baseurl=/gh-mirror/%i -- %t/local/%J/mnt
+ExecStart                = rclone serve http --config=/dev/null --dir-cache-time=0 --poll-interval=0 --vfs-cache-mode=off --addr=${SOCK} --baseurl=/gh-mirror/%i -- %t/local/%J/mnt

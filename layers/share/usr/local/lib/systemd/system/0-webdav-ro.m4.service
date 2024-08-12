@@ -22,5 +22,5 @@ BindReadOnlyPaths        = /media/SHARE:/media/SHARE
 Environment              = SOCK=%t/local/webdav/%j.sock
 Environment              = READONLY=--read-only
 
-ExecStart                = rclone serve webdav --config=/dev/null --dir-cache-time=0 --vfs-cache-mode=off --addr=${SOCK} --baseurl=/webdav/%j $READONLY -- /media
+ExecStart                = rclone serve webdav --config=/dev/null --dir-cache-time=0 --poll-interval=0 --vfs-cache-mode=off --addr=${SOCK} --baseurl=/webdav/%j $READONLY -- /media
 ExecStartPost            = /usr/local/libexec/retry.sh 0.1 chmod -- g+w ${SOCK}

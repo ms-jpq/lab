@@ -15,4 +15,4 @@ User                = 1000
 Group               = www-data
 
 Environment         = SOCK=%t/local/s3.sock
-ExecStart           = rclone serve s3 --config=/dev/null --dir-cache-time=0 --addr=${SOCK} --baseurl=/s3 -- /media
+ExecStart           = rclone serve s3 --config=/dev/null --dir-cache-time=0 --poll-interval=0 --vfs-cache-mode=off --addr=${SOCK} --baseurl=/s3 -- /media

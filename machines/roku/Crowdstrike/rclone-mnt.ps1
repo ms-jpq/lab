@@ -11,6 +11,7 @@ $cache = 'D:\rclone.cache'
 $argv = @(
     '--config=NUL'
     '--dir-cache-time=9s'
+    '--poll-interval=8s'
     '--network-mode'
     '--read-only'
     "--cache-dir=$cache"

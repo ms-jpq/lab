@@ -39,6 +39,7 @@ services:
       - webdav
       - --config=/dev/null
       - --dir-cache-time=0
+      - --poll-interval=0
       - --addr=:8080
       - --
       - /data
