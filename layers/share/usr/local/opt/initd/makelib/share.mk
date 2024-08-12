@@ -25,7 +25,7 @@ samba: /usr/local/opt/samba/._touch
 
 /usr/local/opt/samba/._touch: /usr/local/opt/samba/smb.conf
 	sudo -- /usr/local/bin/smbctl.sh smbd reload-config
-	touch -- '$@'
+	sudo -- touch -- '$@'
 
 /etc/samba/smb.conf: | pkg._
 samba: $(USER_SHARES)
