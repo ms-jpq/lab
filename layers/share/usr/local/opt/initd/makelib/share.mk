@@ -19,10 +19,13 @@ nfs: /etc/exports.d/._touch
 # /etc/apt/sources.list.d/ppa_linux-schools_samba-latest.list:
 # 	sudo -- ./libexec/add-ppa.sh linux-schools/samba-latest
 
-samba: /usr/local/opt/samba/smb.conf
+samba: /usr/local/opt/samba/._touch
 /usr/local/opt/samba/smb.conf: /usr/local/opt/samba/libexec/conf.sh $(SMB_CONF) $(shell shopt -u failglob && printf -- '%s ' /usr/local/opt/samba/conf.d/*.conf) | /usr/bin/envsubst
 	sudo -- '$<' '$@' $^
+
+/usr/local/opt/samba/._touch: /usr/local/opt/samba/smb.conf
 	sudo -- /usr/local/bin/smbctl.sh smbd reload-config
+	touch -- '$@'
 
 /etc/samba/smb.conf: | pkg._
 samba: $(USER_SHARES)
