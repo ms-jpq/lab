@@ -2,4 +2,5 @@ cuda
 nspawn
 postgres
 qemu
+share
 zfs
