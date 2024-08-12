@@ -26,7 +26,11 @@ for ROW in "${ROWS[@]}"; do
   DIR="/media/$ROW"
   NAME="${ROW##*/}"
   mkdir -v -p -- "$DIR"
-  chown -v -- "$USERNAME":"$USERNAME" "$DIR"
+  STAT="$(stat --format='%U:%G' -- "$DIR")"
+  UG="$USERNAME":"$USERNAME"
+  if [[ $STAT != "$UG" ]]; then
+    chown -v -- "$UG" "$DIR"
+  fi
   runuser --user "$USERNAME" -- "${NUS[@]}" add "$NAME" "$DIR" '' 'everyone:F' 'guest_ok=y'
 done
 
