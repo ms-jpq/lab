@@ -10,8 +10,8 @@ $vol = 'freenas'
 $cache = 'D:\rclone.cache'
 $argv = @(
     '--config=NUL'
-    '--dir-cache-time=9s'
-    '--poll-interval=8s'
+    '--dir-cache-time=166ss'
+    '--poll-interval=88s'
     '--network-mode'
     '--read-only'
     "--cache-dir=$cache"
