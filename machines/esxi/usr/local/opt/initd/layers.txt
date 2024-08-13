@@ -2,5 +2,6 @@ cuda
 nspawn
 postgres
 qemu
+rclone_mnt
 share
 zfs
