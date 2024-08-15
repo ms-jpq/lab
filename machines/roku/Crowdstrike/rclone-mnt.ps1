@@ -9,17 +9,18 @@ $remote = 'http://freenas.enp2s0.pfsense.home.arpa:8080'
 $vol = 'freenas'
 $cache = 'D:\rclone.cache'
 $argv = @(
-    '--config=NUL'
-    '--dir-cache-time=166ss'
-    '--poll-interval=88s'
-    '--network-mode'
-    '--read-only'
     "--cache-dir=$cache"
-    '--vfs-cache-mode=full'
-    '--webdav-vendor=rclone',
-    '--webdav-pacer-min-sleep=0',
     "--http-url=$remote"
     "--volname=$vol"
+    '--config=NUL'
+    '--dir-cache-time=166ss'
+    '--network-mode'
+    '--poll-interval=88s'
+    '--read-only'
+    '--use-mmap',
+    '--vfs-cache-mode=full'
+    '--webdav-pacer-min-sleep=0',
+    '--webdav-vendor=rclone',
     'mount'
     '--'
     ':http:/webdav/rw/'
