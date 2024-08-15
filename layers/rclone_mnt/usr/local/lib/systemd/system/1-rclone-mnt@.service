@@ -1,0 +1,28 @@
+[Unit]
+Description     = Rclone Mount -- %I
+After           = network-online.target
+Before          = smb.service
+
+[Service]
+Type            = notify
+Restart         = on-failure
+RestartSec      = 2s
+
+EnvironmentFile = /usr/local/etc/default/%i.rmount.env
+
+Environment     = WHAT=
+Environment     = ARGV=
+Environment     = WHERE=/media/%I
+Environment     = CACHE=%C/local/rclone/%i
+
+ExecStart       = rclone mount \
+                --allow-non-empty \
+                --allow-other \
+                --use-mmap \
+                --cache-dir ${CACHE} \
+                --config /dev/null \
+                --gid 1000 \
+                --uid 1000 \
+                --webdav-pacer-min-sleep 0 \
+                $ARGV -- ${WHAT} ${WHERE}
+ExecStop        = fusermount -u -- ${WHERE}

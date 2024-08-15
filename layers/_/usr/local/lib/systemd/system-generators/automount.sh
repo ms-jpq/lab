@@ -15,7 +15,7 @@ for MOUNT in /usr/local/lib/systemd/system/*.mount; do
   cp -v -f -- /usr/local/opt/mount/@.automount "$RUN/$AUTO"
   chmod g+r,o+r -- "$RUN/$AUTO"
 
-  if grep --perl-regexp -- '^Type\s*=\s*nfs' "$MOUNT"; then
+  if grep -E -e '^Type\s*=\s*nfs' -e '_netdev' -- "$MOUNT"; then
     WANTS="$REMOTE"
   else
     WANTS="$LOCAL"
