@@ -2,6 +2,7 @@
 Description              = Webdav Server - %J
 
 [[Service]]
+Type                     = notify
 Restart                  = on-failure
 ProtectSystem            = strict
 ProtectHome              = yes

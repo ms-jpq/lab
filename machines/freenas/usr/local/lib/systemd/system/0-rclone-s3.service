@@ -6,6 +6,7 @@ RequiresMountsFor   = /media %S/local/rclone
 ConditionPathExists = /usr/local/libexec/rclone
 
 [Service]
+Type                = notify
 ProtectSystem       = strict
 ProtectHome         = yes
 PrivateTmp          = yes

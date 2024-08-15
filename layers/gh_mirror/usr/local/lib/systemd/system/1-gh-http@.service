@@ -2,6 +2,7 @@
 Description              = Github HTTP Service -- %I
 
 [Service]
+Type                     = notify
 Restart                  = on-failure
 ProtectSystem            = strict
 ProtectHome              = yes
