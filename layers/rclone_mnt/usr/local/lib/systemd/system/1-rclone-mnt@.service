@@ -8,6 +8,10 @@ Type            = notify
 Restart         = on-failure
 RestartSec      = 2s
 
+# User            = 1000
+# Group           = 1000
+CacheDirectory  = local/rclone/%i
+
 EnvironmentFile = /usr/local/etc/default/%i.rmount.env
 
 Environment     = WHAT=
@@ -15,8 +19,9 @@ Environment     = ARGV=
 Environment     = WHERE=/media/%I
 Environment     = CACHE=%C/local/rclone/%i
 
+ExecStartPre    = !mkdir -v -p -- /media/%I
+ExecStartPre    = !chown -v -- 1000:1000 /media/%I
 ExecStart       = rclone mount \
-                    --vfs-refresh \
                     --allow-non-empty \
                     --allow-other \
                     --cache-dir ${CACHE} \
@@ -24,6 +29,7 @@ ExecStart       = rclone mount \
                     --gid 1000 \
                     --uid 1000 \
                     --use-mmap \
+                    --vfs-refresh \
                     --webdav-pacer-min-sleep 0 \
                     $ARGV -- ${WHAT} ${WHERE}
 ExecReload      = kill -s HUP -- ${MAINPID}
