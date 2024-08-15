@@ -22,7 +22,7 @@ Environment     = VFS_MAX_SIZE=1G
 Environment     = VFS_CACHE_MODE=off
 Environment     = DIR_CACHE_TIME=0
 Environment     = POLL_INTERVAL=0
-Environment     = READONLY=--read-only
+Environment     = READONLY=--read-only --vfs-fast-fingerprint
 Environment     = ARGV=
 
 ExecStartPre    = !-fusermount -u -- ${WHERE}
