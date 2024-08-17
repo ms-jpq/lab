@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-cd -- "${0%/*}"
+cd -- "${0%/*}/.."
 
 OPTS='m:,e'
 LONG_OPTS='machine:,exec'
