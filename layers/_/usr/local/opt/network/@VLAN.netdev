@@ -1,0 +1,6 @@
+[NetDev]
+Name = ${IFACE}
+Kind = vlan
+
+[VLAN]
+Id   = ${VLAN}

@@ -12,6 +12,8 @@ LinkLocalAddressing     = yes
 LLDP                    = yes
 EmitLLDP                = customer-bridge
 
+VLAN                    = ${VLAN}
+
 Address                 = ${IPV4_IF}
 Address                 = ${IPV6_IF}
 
