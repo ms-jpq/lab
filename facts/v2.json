@@ -1,7 +1,7 @@
 {
   "ENV_DOMAIN": "localhost",
-  "ENV_HOST_ALLOW_LIST": "",
-  "ENV_HOST_FORWARD_LIST": "",
+  "ENV_HOST_ALLOW_LIST": [],
+  "ENV_HOST_FORWARD_LIST": [],
   "ENV_LAN_IFS": ["enp1s0"],
   "ENV_V2R_CLIENT": 1,
   "ENV_WAN_IF": "enp2s0",

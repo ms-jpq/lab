@@ -1,9 +1,15 @@
 {
   "ENV_443_FWD": "freenas.enp2s0.pfsense.home.arpa",
   "ENV_CNAMES": [],
-  "ENV_HOST_ALLOW_LIST": ["esxi.enp1s0.opnsense.home.arpa@tcp*postgresql"],
+  "ENV_HOST_ALLOW_LIST": [
+    "esxi.enp1s0.opnsense.home.arpa@tcp*postgresql",
+    "XBOX.enp1s0.opnsense.home.arpa@tcp*3074",
+    "XBOX.enp1s0.opnsense.home.arpa@udp*3074"
+  ],
   "ENV_HOST_FORWARD_LIST": [
-    "esxi.enp1s0.opnsense.home.arpa@tcp*postgresql:postgresql"
+    "esxi.enp1s0.opnsense.home.arpa@tcp*postgresql:postgresql",
+    "XBOX.enp1s0.opnsense.home.arpa@tcp*3074:3074",
+    "XBOX.enp1s0.opnsense.home.arpa@udp*3074:3074"
   ],
   "ENV_IOT_IFS": [],
   "ENV_LAN_IFS": ["enp1s0"],
