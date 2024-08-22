@@ -151,7 +151,8 @@ fi
 
 ARGV+=(
   -device 'virtio-rng-pci-non-transitional'
-  -device 'virtio-balloon-pci-non-transitional,deflate-on-oom=on,free-page-reporting=on'
+  # Windows Sucks
+  # -device 'virtio-balloon-pci-non-transitional,deflate-on-oom=on,free-page-reporting=on'
 )
 
 if [[ -n ${QMP:-""} ]]; then
