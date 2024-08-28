@@ -21,6 +21,10 @@ services:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8081
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^redis\.`)
+      - flame.type=app
+      - flame.name=Redis
+      - flame.url=https://redis.${DOMAIN}
+      - flame.icon=database-clock
     environment:
       REDIS_HOSTS: lo:redis:6379:0:${COMPOSE_PROJECT_NAME}
     networks:
