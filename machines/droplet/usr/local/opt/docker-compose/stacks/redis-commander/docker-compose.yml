@@ -45,8 +45,8 @@ services:
       - /data
     command:
       - redis-server
-      - --requirepass
-      - ${COMPOSE_PROJECT_NAME}
+      # - --requirepass
+      # - ${COMPOSE_PROJECT_NAME}
     ports:
       - 6379:6379
 
