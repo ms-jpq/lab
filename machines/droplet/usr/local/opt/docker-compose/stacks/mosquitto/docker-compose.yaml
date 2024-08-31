@@ -8,7 +8,7 @@ services:
       - default
       - traefik
     ports:
-      - 1883:1883
+      - 127.0.0.53:11883:1883
     volumes:
       - data:/mosquitto/data
       - log:/mosquitto/log

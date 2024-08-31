@@ -45,7 +45,7 @@ services:
       MYSQL_ROOT_PASSWORD: ${COMPOSE_PROJECT_NAME}
       MYSQL_USER: ${COMPOSE_PROJECT_NAME}
     ports:
-      - 3306:3306
+      - 127.0.0.53:33306:3306
     volumes:
       - data:/var/lib/mysql
 
