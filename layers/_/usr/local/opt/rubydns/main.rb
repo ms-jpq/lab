@@ -6,24 +6,22 @@ require('optparse')
 
 require_relative('dns')
 
-Thread.tap do
-  _1.abort_on_exception = true
-  _1.report_on_exception = false
-end
+Thread.tap { _1.abort_on_exception = true }
 
 options, =
   {}.then do |into|
     parsed =
       OptionParser
       .new do
-        _1.on('--verbose VERBOSE', TrueClass)
-        _1.on('--upstream UPSTREAM', String)
+        _1.on('--listen LISTEN', Array)
+        _1.on('--upstream UPSTREAM', Array)
       end
         .parse(ARGV, into:)
     [into, parsed]
   end
 
-options => { verbose:, upstream: }
+options => { listen:, upstream: }
+sockets = listen.map { Socket.tcp_server_sockets(_1) }
 
 recv = [
   Ractor
@@ -42,6 +40,7 @@ recv = [
   Ractor
     .new do
       Ractor.receive => Array => socks
+      pp socks
       next if socks.empty?
 
       Socket.accept_loop(socks) do |src, addr|
@@ -50,11 +49,11 @@ recv = [
         Ractor.yield(req, move: true)
       end
     end
-    .tap { _1.send([], move: true) }
+    .tap { _1.send(sockets, move: true) }
 ].each(&:close_incoming)
 
-Etc
-  .nprocessors
+Etc.nprocessors => Integer => nprocs
+1
   .times
   .map do
     Ractor
