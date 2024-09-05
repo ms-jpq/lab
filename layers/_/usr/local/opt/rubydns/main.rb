@@ -1,9 +1,12 @@
 #!/usr/bin/env -S -- ruby
 # frozen_string_literal: true
 
+require('etc')
 require('optparse')
 require('resolv')
 require('socket')
+
+require_relative('dns')
 
 Thread.tap do
   _1.abort_on_exception = true
@@ -16,7 +19,7 @@ options, =
       OptionParser
       .new do
         _1.on('--verbose VERBOSE', TrueClass)
-        _1.on('--upstream [NAME]', String)
+        _1.on('--upstream UPSTREAM', String)
       end
         .parse(ARGV, into:)
     [into, parsed]
@@ -24,17 +27,47 @@ options, =
 
 options => { verbose:, upstream: }
 
-tcp_socks = ''
-udp_socks = ''
+recv = [
+  Ractor
+    .new do
+      Ractor.receive => Array => socks
+      return if socks.empty?
 
-Ractor.new do
-  Socket.udp_server_loop_on(udp_socks) do |msg, msg_src|
-    [msg, msg_src] => [String, Socket::UDPSource]
-  end
-end
+      Socket.udp_server_loop_on(socks) do |msg, src|
+        [msg, src] => [String, Socket::UDPSource]
+        addr = src.remote_address
+        req = Request.new(msg:, addr:, src:)
+        Ractor.yield(req, move: true)
+      end
+    end
+    .tap { _1.send([], move: true) },
+  Ractor
+    .new do
+      Ractor.receive => Array => socks
+      return if socks.empty?
 
-Ractor.new do
-  Socket.accept_loop(tcp_socks) do |sock, addr|
-    [sock, addr] => [Socket, Addrinfo]
+      Socket.accept_loop(socks) do |src, addr|
+        [src, addr] => [Socket, Addrinfo]
+        req = Request.new(msg: nil, addr:, src:)
+        Ractor.yield(req, move: true)
+      end
+    end
+    .tap { _1.send([], move: true) }
+].each(&:close_incoming)
+
+Etc
+  .nprocessors
+  .times
+  .map do
+    Ractor
+      .new do
+        Ractor.receive => Array => ractors
+        loop do
+          Ractor.select(*ractors, move: true) => [Ractor, Request => req]
+          req.read => String => msg
+          req.write(msg)
+        end
+      end
+      .tap { _1.send(recv) }
   end
-end
+  .each(&:take)
