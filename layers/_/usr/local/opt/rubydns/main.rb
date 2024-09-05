@@ -3,8 +3,6 @@
 
 require('etc')
 require('optparse')
-require('resolv')
-require('socket')
 
 require_relative('dns')
 
@@ -31,7 +29,7 @@ recv = [
   Ractor
     .new do
       Ractor.receive => Array => socks
-      return if socks.empty?
+      next if socks.empty?
 
       Socket.udp_server_loop_on(socks) do |msg, src|
         [msg, src] => [String, Socket::UDPSource]
@@ -44,7 +42,7 @@ recv = [
   Ractor
     .new do
       Ractor.receive => Array => socks
-      return if socks.empty?
+      next if socks.empty?
 
       Socket.accept_loop(socks) do |src, addr|
         [src, addr] => [Socket, Addrinfo]
@@ -63,9 +61,12 @@ Etc
       .new do
         Ractor.receive => Array => ractors
         loop do
-          Ractor.select(*ractors, move: true) => [Ractor, Request => req]
-          req.read => String => msg
-          req.write(msg)
+          case Ractor.select(*ractors, move: true)
+          in [_, nil]
+            break
+          in [Ractor, Request => req]
+            DNS.parse(req)
+          end
         end
       end
       .tap { _1.send(recv) }

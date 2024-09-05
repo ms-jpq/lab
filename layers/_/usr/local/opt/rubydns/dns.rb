@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require('socket')
+require('resolv')
+
 Request =
   Data.define(:msg, :addr, :src) do
     def read
@@ -21,3 +24,11 @@ Request =
       end
     end
   end
+
+module DNS
+  def parse(req)
+    req => Request
+    req.read => String => msg
+    req.write(msg)
+  end
+end
