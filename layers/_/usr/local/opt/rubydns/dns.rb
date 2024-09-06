@@ -1,10 +1,15 @@
 # frozen_string_literal: true
 
-require('socket')
+require('logger')
 require('resolv')
+require('socket')
 
 Request =
   Data.define(:msg, :addr, :src) do
+    def share
+      Ractor.make_shareable(self)
+    end
+
     def read
       case src
       in Socket

@@ -21,32 +21,31 @@ options, =
   end
 
 options => { listen:, upstream: }
-sockets = listen.map { Socket.tcp_server_sockets(_1) }
+sockets = listen.flat_map { Socket.tcp_server_sockets(_1) }
 
 recv = [
+  # Ractor
+  #   .new do
+  #     Ractor.receive => Array => socks
+  #     next if socks.empty?
+  #
+  #     Socket.udp_server_loop_on(socks) do |msg, src|
+  #       [msg, src] => [String, Socket::UDPSource]
+  #       addr = src.remote_address
+  #       req = Request.new(msg:, addr:, src:)
+  #       Ractor.yield(req, move: true)
+  #     end
+  #   end
+  #   .tap { _1.send([], move: true) },
   Ractor
     .new do
       Ractor.receive => Array => socks
-      next if socks.empty?
-
-      Socket.udp_server_loop_on(socks) do |msg, src|
-        [msg, src] => [String, Socket::UDPSource]
-        addr = src.remote_address
-        req = Request.new(msg:, addr:, src:)
-        Ractor.yield(req, move: true)
-      end
-    end
-    .tap { _1.send([], move: true) },
-  Ractor
-    .new do
-      Ractor.receive => Array => socks
-      pp socks
       next if socks.empty?
 
       Socket.accept_loop(socks) do |src, addr|
         [src, addr] => [Socket, Addrinfo]
         req = Request.new(msg: nil, addr:, src:)
-        Ractor.yield(req, move: true)
+        Ractor.yield(req.share, move: true)
       end
     end
     .tap { _1.send(sockets, move: true) }
@@ -62,7 +61,6 @@ Etc.nprocessors => Integer => nprocs
         loop do
           case Ractor.select(*ractors, move: true)
           in [_, nil]
-            break
           in [Ractor, Request => req]
             DNS.parse(req)
           end
@@ -71,3 +69,5 @@ Etc.nprocessors => Integer => nprocs
       .tap { _1.send(recv) }
   end
   .each(&:take)
+
+pp(:EOF)
