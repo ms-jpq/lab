@@ -6,6 +6,7 @@ require('etc')
 require('optparse')
 
 require_relative('dns')
+pp(Process.pid)
 
 Thread.tap { _1.abort_on_exception = true }
 
@@ -23,44 +24,49 @@ options, =
 
 proto = Abbrev.abbrev(%i[udp tcp])
 options => { listen:, upstream: }
-grouped =
+
+sockets =
   listen
-  .group_by { proto.fetch(_1.split(':', 2).first) }
-  .transform_values { |v| v.map { _1.split(':', 2).last } }
-{ udp: [], tcp: [] }.merge(grouped) => { udp:, tcp: }
-
-udp_socks = udp.flat_map { Socket.udp_server_sockets(_1) }
-tcp_socks = tcp.flat_map { Socket.tcp_server_sockets(_1) }
-
-recv = [
-  Ractor
-    .new do
-      Ractor.receive => Array => socks
-      next if socks.empty?
-
-      Socket.udp_server_loop_on(socks) do |msg, src|
-        [msg, src] => [String, Socket::UDPSource]
-        req = Request.new(msg:, src:)
-        Ractor.yield(req, move: true)
+  .map do
+    _1.split(':', 2) => [p, addr]
+    [proto.fetch(p), addr]
+  end
+    .flat_map do
+      case _1
+      in [:udp, addr]
+        Socket.udp_server_sockets(addr)
+      in [:tcp, addr]
+        Socket.tcp_server_sockets(addr)
       end
     end
-    .tap { _1.send(udp_socks, move: true) },
-  Ractor
-    .new do
-      Ractor.receive => Array => socks
-      next if socks.empty?
 
-      Socket.accept_loop(socks) do |src, addr|
-        [src, addr] => [Socket, Addrinfo]
-        req = Request.new(msg: nil, src:)
-        Ractor.yield(req, move: true)
+recv =
+  sockets.map do |socket|
+    Ractor
+      .new do
+        Ractor.receive => Socket => sock
+        opt = sock.getsockopt(Socket::SOL_SOCKET, Socket::SO_TYPE)
+        case opt.int
+        when Socket::SOCK_STREAM
+          Socket.accept_loop([sock]) do |soc, addr|
+            [soc, addr] => [Socket, Addrinfo]
+            Ractor.yield(soc, move: true)
+          end
+        when Socket::SOCK_DGRAM
+          Socket.accept_loop([sock]) do |soc, addr|
+            [soc, addr] => [Socket, Addrinfo]
+            Ractor.yield(soc, move: true)
+          end
+        end
       end
-    end
-    .tap { _1.send(tcp_socks, move: true) }
-].each(&:close_incoming)
+      .tap do
+        _1.send(socket, move: true)
+        _1.close_incoming
+      end
+  end
 
 Etc.nprocessors => Integer => nprocs
-1
+nprocs
   .times
   .map do
     Ractor
@@ -74,8 +80,8 @@ Etc.nprocessors => Integer => nprocs
           case Ractor.select(*ractors, move: true)
           in [_, nil]
             rs -= 1
-          in [Ractor, Request => req]
-            parse(req)
+          in [Ractor, Socket => socket]
+            p socket
           end
         end
       end
