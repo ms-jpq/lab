@@ -1,6 +1,7 @@
 #!/usr/bin/env -S -- ruby
 # frozen_string_literal: true
 
+require('abbrev')
 require('etc')
 require('optparse')
 
@@ -20,8 +21,15 @@ options, =
     [into, parsed]
   end
 
+proto = Abbrev.abbrev(%i[udp tcp])
 options => { listen:, upstream: }
-sockets = listen.flat_map { Socket.tcp_server_sockets(_1) }
+{ udp: [], tcp: [] }.merge(
+  listen.group_by { proto.fetch(_1.split(':', 2).first) }
+)
+                    .transform_values { |v| v.map { _1.split(':', 2).last } } => { udp:, tcp: }
+
+udp_socks = udp.flat_map { Socket.udp_server_sockets(_1) }
+tcp_socks = tcp.flat_map { Socket.tcp_server_sockets(_1) }
 
 recv = [
   Ractor
@@ -35,7 +43,7 @@ recv = [
         Ractor.yield(req, move: true)
       end
     end
-    .tap { _1.send([], move: true) },
+    .tap { _1.send(udp_socks, move: true) },
   Ractor
     .new do
       Ractor.receive => Array => socks
@@ -47,7 +55,7 @@ recv = [
         Ractor.yield(req, move: true)
       end
     end
-    .tap { _1.send(sockets, move: true) }
+    .tap { _1.send(tcp_socks, move: true) }
 ].each(&:close_incoming)
 
 Etc.nprocessors => Integer => nprocs
