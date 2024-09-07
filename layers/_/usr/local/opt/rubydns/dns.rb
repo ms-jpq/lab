@@ -5,15 +5,11 @@ require('resolv')
 require('socket')
 
 Request =
-  Data.define(:msg, :addr, :src) do
-    def share
-      Ractor.make_shareable(self)
-    end
-
+  Data.define(:msg, :src) do
     def read
       case src
       in Socket
-        src.write(rsp)
+        src.read
       else
         msg
       end
