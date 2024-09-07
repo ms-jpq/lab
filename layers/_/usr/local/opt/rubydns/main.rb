@@ -23,10 +23,11 @@ options, =
 
 proto = Abbrev.abbrev(%i[udp tcp])
 options => { listen:, upstream: }
-{ udp: [], tcp: [] }.merge(
-  listen.group_by { proto.fetch(_1.split(':', 2).first) }
-)
-                    .transform_values { |v| v.map { _1.split(':', 2).last } } => { udp:, tcp: }
+grouped =
+  listen
+  .group_by { proto.fetch(_1.split(':', 2).first) }
+  .transform_values { |v| v.map { _1.split(':', 2).last } }
+{ udp: [], tcp: [] }.merge(grouped) => { udp:, tcp: }
 
 udp_socks = udp.flat_map { Socket.udp_server_sockets(_1) }
 tcp_socks = tcp.flat_map { Socket.tcp_server_sockets(_1) }
