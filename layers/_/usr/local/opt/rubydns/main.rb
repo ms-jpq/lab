@@ -46,21 +46,19 @@ recv =
       sock => Socket
       close_incoming
       opt = sock.getsockopt(Socket::SOL_SOCKET, Socket::SO_TYPE)
-      step =
-        case opt.int
-        when Socket::SOCK_STREAM
-          loop do
-            sock.accept => [Socket => conn, Addrinfo]
-            conn
-          end
-        when Socket::SOCK_DGRAM
-          loop do
-            sock.recvfrom(100_000) => [String => msg, Addrinfo => addr]
-            ai = Socket.sockaddr_in(addr.ip_port, addr.ip_address)
-            [sock.dup, ai, msg]
-          end
+      case opt.int
+      when Socket::SOCK_STREAM
+        loop do
+          sock.accept => [Socket => conn, Addrinfo]
+          Ractor.yield(conn, move: true)
         end
-      Ractor.yield(step, move: true)
+      when Socket::SOCK_DGRAM
+        loop do
+          sock.recvfrom(100_000) => [String => msg, Addrinfo => addr]
+          ai = Socket.sockaddr_in(addr.ip_port, addr.ip_address)
+          Ractor.yield([sock.dup, ai, msg])
+        end
+      end
     end
   end
 
@@ -70,14 +68,12 @@ nprocs
   .map do
     Ractor.new(recv) do |ractors|
       extend(DNS)
-
       ractors => Array
-      rs = ractors.length
 
-      while rs.positive?
+      loop do
         case Ractor.select(*ractors, move: true)
         in [_, nil]
-          rs -= 1
+          break
         in [Ractor, Socket => conn]
           p conn
         in [Ractor, [Socket => sock, String => ai, String => msg]]
