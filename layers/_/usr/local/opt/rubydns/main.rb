@@ -3,7 +3,10 @@
 
 require('abbrev')
 require('etc')
+require('logger')
 require('optparse')
+require('resolv')
+require('socket')
 
 require_relative('dns')
 puts(Process.pid)
@@ -42,7 +45,7 @@ sockets =
   end
   .to_a
 
-recv =
+rx =
   sockets.map do |socket|
     Ractor.new(socket) do |sock|
       sock => Socket
@@ -64,27 +67,32 @@ recv =
     end
   end
 
-Etc.nprocessors => Integer => nprocs
-nprocs
-  .times
-  .map do
-    Ractor.new(recv) do |ractors|
-      extend(DNS)
-      ractors => Array
+tx = Etc.nprocessors
+        .times
+        .map do
+  Ractor.new(rx) do |ractors|
+    extend(DNS)
+    ractors => Array
 
-      loop do
-        case Ractor.select(*ractors, move: true)
-        in [_, nil]
-          break
-        in [Ractor, Socket => conn]
-          begin
-          ensure
-            conn.close
-          end
-        in [Ractor, [Socket => sock, String => ai, String => msg]]
-          sock.send(msg, 0, ai)
+    loop do
+      case Ractor.select(*ractors, move: true)
+      in [_, nil]
+        break
+      in [Ractor, Socket => conn]
+        begin
+          len = conn.read(2).unpack1('n')
+          msg = conn.read(len)
+          rsp = parse(msg:)
+          conn.write(rsp)
+        ensure
+          conn.close
         end
+      in [Ractor, [Socket => sock, String => ai, String => msg]]
+        rsp = parse(msg:)
+        sock.send(rsp, 0, ai)
       end
     end
   end
-  .each(&:take)
+end
+
+Ractor.select(*tx)
