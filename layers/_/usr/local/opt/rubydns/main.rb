@@ -42,50 +42,49 @@ sockets =
 
 recv =
   sockets.map do |socket|
-    Ractor
-      .new do
-        Ractor.receive => Socket => sock
-        opt = sock.getsockopt(Socket::SOL_SOCKET, Socket::SO_TYPE)
+    Ractor.new(socket) do |sock|
+      sock => Socket
+      close_incoming
+      opt = sock.getsockopt(Socket::SOL_SOCKET, Socket::SO_TYPE)
+      step =
         case opt.int
         when Socket::SOCK_STREAM
-          Socket.accept_loop([sock]) do |soc, addr|
-            [soc, addr] => [Socket, Addrinfo]
-            Ractor.yield(soc, move: true)
+          loop do
+            sock.accept => [Socket => conn, Addrinfo]
+            conn
           end
         when Socket::SOCK_DGRAM
-          Socket.accept_loop([sock]) do |soc, addr|
-            [soc, addr] => [Socket, Addrinfo]
-            Ractor.yield(soc, move: true)
+          loop do
+            sock.recvfrom(100_000) => [String => msg, Addrinfo => addr]
+            ai = Socket.sockaddr_in(addr.ip_port, addr.ip_address)
+            [sock.dup, ai, msg]
           end
         end
-      end
-      .tap do
-        _1.send(socket, move: true)
-        _1.close_incoming
-      end
+      Ractor.yield(step, move: true)
+    end
   end
 
 Etc.nprocessors => Integer => nprocs
 nprocs
   .times
   .map do
-    Ractor
-      .new do
-        extend(DNS)
+    Ractor.new(recv) do |ractors|
+      extend(DNS)
 
-        Ractor.receive => Array => ractors
-        rs = ractors.length
+      ractors => Array
+      rs = ractors.length
 
-        while rs.positive?
-          case Ractor.select(*ractors, move: true)
-          in [_, nil]
-            rs -= 1
-          in [Ractor, Socket => socket]
-            p socket
-          end
+      while rs.positive?
+        case Ractor.select(*ractors, move: true)
+        in [_, nil]
+          rs -= 1
+        in [Ractor, Socket => conn]
+          p conn
+        in [Ractor, [Socket => sock, String => ai, String => msg]]
+          sock.send(msg, 0, ai)
         end
       end
-      .tap { _1.send(recv) }
+    end
   end
   .each(&:take)
 
