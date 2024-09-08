@@ -6,7 +6,7 @@ require('etc')
 require('optparse')
 
 require_relative('dns')
-pp(Process.pid)
+puts(Process.pid)
 
 Thread.tap { _1.abort_on_exception = true }
 
@@ -27,18 +27,20 @@ options => { listen:, upstream: }
 
 sockets =
   listen
+  .lazy
   .map do
     _1.split(':', 2) => [p, addr]
     [proto.fetch(p), addr]
   end
-    .flat_map do
-      case _1
-      in [:udp, addr]
-        Socket.udp_server_sockets(addr)
-      in [:tcp, addr]
-        Socket.tcp_server_sockets(addr)
-      end
+  .flat_map do
+    case _1
+    in [:udp, addr]
+      Socket.udp_server_sockets(addr)
+    in [:tcp, addr]
+      Socket.tcp_server_sockets(addr)
     end
+  end
+  .to_a
 
 recv =
   sockets.map do |socket|
@@ -47,14 +49,14 @@ recv =
       close_incoming
       opt = sock.getsockopt(Socket::SOL_SOCKET, Socket::SO_TYPE)
       case opt.int
-      when Socket::SOCK_STREAM
+      in Socket::SOCK_STREAM
         loop do
           sock.accept => [Socket => conn, Addrinfo]
           Ractor.yield(conn, move: true)
         end
-      when Socket::SOCK_DGRAM
+      in Socket::SOCK_DGRAM
         loop do
-          sock.recvfrom(100_000) => [String => msg, Addrinfo => addr]
+          sock.recvfrom(Resolv::DNS::UDPSize) => [String => msg, Addrinfo => addr]
           ai = Socket.sockaddr_in(addr.ip_port, addr.ip_address)
           Ractor.yield([sock.dup, ai, msg])
         end
@@ -75,7 +77,10 @@ nprocs
         in [_, nil]
           break
         in [Ractor, Socket => conn]
-          p conn
+          begin
+          ensure
+            conn.close
+          end
         in [Ractor, [Socket => sock, String => ai, String => msg]]
           sock.send(msg, 0, ai)
         end
@@ -83,5 +88,3 @@ nprocs
     end
   end
   .each(&:take)
-
-pp(:EOF)
