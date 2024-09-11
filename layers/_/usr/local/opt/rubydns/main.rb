@@ -107,6 +107,7 @@ def resolve(dns:, query:)
         dns.getresources(name, typeclass).each { y << [name, _1] }
       end
     end
+    .lazy
     .each { rsp.add_answer(_1, _2.ttl, _2) }
   rsp
 end
@@ -134,6 +135,7 @@ end
 def main
   Thread.tap { _1.abort_on_exception = true }
 
+  pp Process.pid
   parse_args => { listen:, upstream: }
   sockets = bind_sockets(listen:)
   tx = ractors(sockets:)
