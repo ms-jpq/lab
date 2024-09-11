@@ -45,54 +45,55 @@ sockets =
   end
   .to_a
 
-rx =
-  sockets.map do |socket|
-    Ractor.new(socket) do |sock|
-      sock => Socket
-      close_incoming
-      opt = sock.getsockopt(Socket::SOL_SOCKET, Socket::SO_TYPE)
+tx =
+  sockets.map do |sock|
+    sock => Socket
+    opt = sock.getsockopt(Socket::SOL_SOCKET, Socket::SO_TYPE)
+
+    Fiber.new do
       case opt.int
       in Socket::SOCK_STREAM
         loop do
           sock.accept => [Socket => conn, Addrinfo]
-          Ractor.yield(conn, move: true)
+          len = conn.read(2).unpack1('n')
+          req = conn.read(len)
+          rsp = Fiber.yield(req)
+          conn.write(rsp)
+        ensure
+          conn&.close
         end
       in Socket::SOCK_DGRAM
         loop do
-          sock.recvfrom(Resolv::DNS::UDPSize) => [String => msg, Addrinfo => addr]
+          sock.recvfrom(Resolv::DNS::UDPSize) => [String => req, Addrinfo => addr]
           ai = Socket.sockaddr_in(addr.ip_port, addr.ip_address)
-          Ractor.yield([sock.dup, ai, msg])
+          rsp = Fiber.yield(req)
+          sock.send(rsp, 0, ai)
         end
       end
     end
   end
 
-tx = Etc.nprocessors
-        .times
-        .map do
-  Ractor.new(rx) do |ractors|
-    extend(DNS)
-    ractors => Array
-
-    loop do
-      case Ractor.select(*ractors, move: true)
-      in [_, nil]
-        break
-      in [Ractor, Socket => conn]
-        begin
-          len = conn.read(2).unpack1('n')
-          msg = conn.read(len)
-          rsp = parse(msg:)
-          conn.write(rsp)
-        ensure
-          conn.close
-        end
-      in [Ractor, [Socket => sock, String => ai, String => msg]]
-        rsp = parse(msg:)
-        sock.send(rsp, 0, ai)
+Resolv::DNS.open do |dns|
+  loop do
+    case Ractor.select(*tx, move: true)
+    in [_, nil]
+      break
+    in [Ractor, Socket => conn]
+      begin
+        query(dns:, msg:)
+        conn.write(query)
+      rescue IOError => e
+        Logger.error(e)
+      ensure
+        conn.close
+      end
+    in [Ractor, [Socket => sock, String => ai, String => msg]]
+      query = query(dns:, msg:)
+      begin
+        sock.send(query, 0, ai)
+      rescue IOError => e
+        Logger.error(e)
       end
     end
   end
 end
-
-Ractor.select(*tx)
