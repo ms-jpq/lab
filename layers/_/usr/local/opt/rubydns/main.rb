@@ -6,6 +6,7 @@ require('etc')
 require('ipaddr')
 require('logger')
 require('optparse')
+require('pathname')
 require('resolv')
 require('socket')
 
@@ -17,6 +18,7 @@ def parse_args
         .new do
           _1.on('--listen LISTEN', Array)
           _1.on('--upstream UPSTREAM', Array)
+          _1.on('--pid PIDFILE', String)
         end
           .parse(ARGV, into:)
       [into, parsed]
@@ -27,14 +29,11 @@ end
 
 def bind_sockets(listen:)
   listen => Array
-  proto = Abbrev.abbrev(%i[udp tcp])
   listen
     .lazy
-    .map do
-      _1.split(':', 2) => [p, addr]
-      [proto.fetch(p), addr]
-    end
     .flat_map do
+      _1.split(':', 2) => [ip, port]
+      addr = Addrinfo.new(ip, port)
       case _1
       in [:udp, addr]
         Socket.udp_server_sockets(addr)
@@ -45,39 +44,32 @@ def bind_sockets(listen:)
     .to_a
 end
 
-def fwd_tcp(address:)
-  Ractor.new(address) do |addr|
-    logger = Logger.new($stderr)
+def fwd_tcp(logger:, addr:)
+  [logger, addr] => [Logger, Addrinfo]
+  addr.connect do |sock|
     loop do
-      Socket.tcp(addr.ip_address, addr.ip_port) do |sock|
-        Ractor.receive => String => req
-        sock.write([req.bytesize].pack('n'))
-        sock.write(req)
-        len = sock.read(2).unpack1('n')
-        rsp = sock.read(len)
-        Ractor.yield(rsp.freeze)
-      end
-    rescue IOError => e
-      logger.error(e)
+      Ractor.receive => String => req
+      sock.write([req.bytesize].pack('n'))
+      sock.write(req)
+      sock.read(2).unpack1('n') => Integer => len
+      sock.read(len) => String => rsp
+      Ractor.yield(rsp.freeze)
     end
   end
+rescue IOError => e
+  logger.error(e)
 end
 
-def fwd_udp(address:)
-  Ractor.new(address) do |addr|
-    logger = Logger.new($stderr)
-    loop do
-      Socket.udp(addr.ip_address, addr.ip_port) do |sock|
-        Ractor.receive => String => req
-        ai = Socket.sockaddr_in(addr.ip_port, addr.ip_address)
-        sock.send(req, 0, ai)
-        rsp, = sock.recvfrom(Resolv::DNS::UDPSize)
-        Ractor.yield(rsp.freeze)
-      end
-    rescue IOError => e
-      logger.error(e)
-    end
+def fwd_udp(logger:, addr:)
+  [logger, addr] => [Logger, Addrinfo]
+  addr.connect do |sock|
+    Ractor.receive => String => req
+    sock.write(req)
+    sock.read(Resolv::DNS::UDPSize) => String => rsp
+    Ractor.yield(rsp.freeze)
   end
+rescue IOError => e
+  logger.error(e)
 end
 
 def recv_tcp(logger:, sock:)
@@ -115,10 +107,10 @@ def ractors(sockets:)
       logger = Logger.new($stderr)
       case sock.local_address.socktype
       in Socket::SOCK_STREAM
-        ractor = fwd_tcp(address:)
+        fwd_tcp(address:)
         loop { recv_tcp(logger:, sock:) }
       in Socket::SOCK_DGRAM
-        ractor = fwd_udp(address:)
+        fwd_udp(address:)
         loop { recv_udp(logger:, sock:) }
       end
     end
@@ -185,8 +177,9 @@ end
 def main
   Thread.tap { _1.abort_on_exception = true }
 
-  pp Process.pid
-  parse_args => { listen:, upstream: }
+  parse_args => { pid:, listen:, upstream: }
+  Pathname(pid).write(Process.pid.to_s)
+
   sockets = bind_sockets(listen:)
   tx = ractors(sockets:)
   serve(tx:)
