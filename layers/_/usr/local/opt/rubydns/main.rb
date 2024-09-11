@@ -78,8 +78,7 @@ def ractors(sockets:)
     Ractor.new(socket) do |sock|
       sock => Socket
       logger = Logger.new($stderr)
-      opt = sock.getsockopt(Socket::SOL_SOCKET, Socket::SO_TYPE)
-      case opt.int
+      case sock.local_address.socktype
       in Socket::SOCK_STREAM
         loop { run_tcp(logger:, sock:) }
       in Socket::SOCK_DGRAM
@@ -100,7 +99,7 @@ def srv_fail(query:)
     end
 end
 
-def resolve(dns:, query:)
+def resolve(dns:, query:, &reject)
   dns => Resolv::DNS
   query.qr = 1
   query.ra = 1
@@ -112,18 +111,23 @@ def resolve(dns:, query:)
       end
     end
     .lazy
-    .reject do
-      next unless _2.instance_of?(Resolv::DNS::Resource::IN::AAAA)
-
-      !IPAddr.new(_2.address.to_s).private?
-    end
+    .reject(&reject)
     .each { query.add_answer(_1, _2.ttl, _2) }
   query
 end
 
 def query(dns:, msg:)
   query = Resolv::DNS::Message.decode(msg)
-  resolve(dns:, query:)
+  resolve(dns:, query:) do
+    _1 => Resolv::DNS::Name
+    home = Resolv::DNS::Name.create('home.arpa.')
+    unless _1.subdomain_of?(home) &&
+           _2.instance_of?(Resolv::DNS::Resource::IN::AAAA)
+      next
+    end
+
+    !IPAddr.new(_2.address.to_s).private?
+  end
 rescue StandardError => e
   logger.error(e)
   srv_fail(query:)
