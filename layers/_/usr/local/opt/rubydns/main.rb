@@ -3,6 +3,7 @@
 
 require('abbrev')
 require('etc')
+require('ipaddr')
 require('logger')
 require('optparse')
 require('resolv')
@@ -101,13 +102,8 @@ end
 
 def resolve(dns:, query:)
   dns => Resolv::DNS
-  rsp =
-    Resolv::DNS::Message
-    .new(query.id)
-    .tap do
-      _1.qr = 1
-      _1.aa = 1
-    end
+  query.qr = 1
+  query.ra = 1
   Enumerator
     .new do |y|
       query.each_question do |name, typeclass|
@@ -116,8 +112,13 @@ def resolve(dns:, query:)
       end
     end
     .lazy
-    .each { rsp.add_answer(_1, _2.ttl, _2) }
-  rsp
+    .reject do
+      next unless _2.instance_of?(Resolv::DNS::Resource::IN::AAAA)
+
+      !IPAddr.new(_2.address.to_s).private?
+    end
+    .each { query.add_answer(_1, _2.ttl, _2) }
+  query
 end
 
 def query(dns:, msg:)
