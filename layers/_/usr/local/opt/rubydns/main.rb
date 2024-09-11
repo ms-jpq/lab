@@ -45,7 +45,42 @@ def bind_sockets(listen:)
     .to_a
 end
 
-def run_tcp(logger:, sock:)
+def fwd_tcp(address:)
+  Ractor.new(address) do |addr|
+    logger = Logger.new($stderr)
+    loop do
+      Socket.tcp(addr.ip_address, addr.ip_port) do |sock|
+        Ractor.receive => String => req
+        sock.write([req.bytesize].pack('n'))
+        sock.write(req)
+        len = sock.read(2).unpack1('n')
+        rsp = sock.read(len)
+        Ractor.yield(rsp.freeze)
+      end
+    rescue IOError => e
+      logger.error(e)
+    end
+  end
+end
+
+def fwd_udp(address:)
+  Ractor.new(address) do |addr|
+    logger = Logger.new($stderr)
+    loop do
+      Socket.udp(addr.ip_address, addr.ip_port) do |sock|
+        Ractor.receive => String => req
+        ai = Socket.sockaddr_in(addr.ip_port, addr.ip_address)
+        sock.send(req, 0, ai)
+        rsp, = sock.recvfrom(Resolv::DNS::UDPSize)
+        Ractor.yield(rsp.freeze)
+      end
+    rescue IOError => e
+      logger.error(e)
+    end
+  end
+end
+
+def recv_tcp(logger:, sock:)
   sock => Socket
   sock.accept => [Socket => conn, Addrinfo]
   len = conn.read(2).unpack1('n')
@@ -61,7 +96,7 @@ ensure
   conn&.close
 end
 
-def run_udp(logger:, sock:)
+def recv_udp(logger:, sock:)
   sock => Socket
   sock.recvfrom(Resolv::DNS::UDPSize) => [String => req, Addrinfo => addr]
   ai = Socket.sockaddr_in(addr.ip_port, addr.ip_address)
@@ -80,9 +115,11 @@ def ractors(sockets:)
       logger = Logger.new($stderr)
       case sock.local_address.socktype
       in Socket::SOCK_STREAM
-        loop { run_tcp(logger:, sock:) }
+        ractor = fwd_tcp(address:)
+        loop { recv_tcp(logger:, sock:) }
       in Socket::SOCK_DGRAM
-        loop { run_udp(logger:, sock:) }
+        ractor = fwd_udp(address:)
+        loop { recv_udp(logger:, sock:) }
       end
     end
   end
