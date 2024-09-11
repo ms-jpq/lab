@@ -8,8 +8,6 @@ require('optparse')
 require('resolv')
 require('socket')
 
-Thread.tap { _1.abort_on_exception = true }
-
 def parse_args
   options, =
     {}.then do |into|
@@ -101,13 +99,7 @@ end
 
 def resolve(dns:, query:)
   dns => Resolv::DNS
-  rsp =
-    Resolv::DNS::Message
-    .new(query.id)
-    .tap do
-      _1.qr = 1
-      _1.aa = 1
-    end
+  rsp = Resolv::DNS::Message.new(query.id)
   Enumerator
     .new do |y|
       query.each_question do |name, typeclass|
@@ -127,11 +119,8 @@ rescue StandardError => e
   srv_fail(query:)
 end
 
-def main
-  pp Process.pid
-  parse_args => { listen:, upstream: }
-  sockets = bind_sockets(listen:)
-  tx = ractors(sockets:)
+def serve(tx:)
+  tx => Array
   Resolv::DNS.open do |dns|
     loop do
       Ractor.select(*tx) => [Ractor => ractor, String => msg]
@@ -140,6 +129,15 @@ def main
       ractor.send(rsp)
     end
   end
+end
+
+def main
+  Thread.tap { _1.abort_on_exception = true }
+
+  parse_args => { listen:, upstream: }
+  sockets = bind_sockets(listen:)
+  tx = ractors(sockets:)
+  serve(tx:)
 end
 
 main
