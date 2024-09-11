@@ -10,10 +10,6 @@ require('socket')
 
 Thread.tap { _1.abort_on_exception = true }
 
-pp Process.pid
-
-Logger.new($stderr)
-
 def parse_args
   options, =
     {}.then do |into|
@@ -31,6 +27,7 @@ def parse_args
 end
 
 def bind_sockets(listen:)
+  listen => Array
   proto = Abbrev.abbrev(%i[udp tcp])
   listen
     .lazy
@@ -49,7 +46,7 @@ def bind_sockets(listen:)
     .to_a
 end
 
-def run_udp(sock:)
+def run_udp(logger:, sock:)
   sock => Socket
   sock.accept => [Socket => conn, Addrinfo]
   len = conn.read(2).unpack1('n')
@@ -57,17 +54,21 @@ def run_udp(sock:)
   Ractor.yield(req.freeze)
   rsp = Ractor.receive
   conn.write(rsp)
+rescue IOError => e
+  logger.error(e)
 ensure
   conn&.close
 end
 
-def run_tcp(sock:)
+def run_tcp(logger:, sock:)
   sock => Socket
   sock.recvfrom(Resolv::DNS::UDPSize) => [String => req, Addrinfo => addr]
   ai = Socket.sockaddr_in(addr.ip_port, addr.ip_address)
   Ractor.yield(req.freeze)
   rsp = Ractor.receive
   sock.send(rsp, 0, ai)
+rescue IOError => e
+  logger.error(e)
 end
 
 def ractors(sockets:)
@@ -75,12 +76,13 @@ def ractors(sockets:)
   sockets.map do |socket|
     Ractor.new(socket) do |sock|
       sock => Socket
+      logger = Logger.new($stderr)
       opt = sock.getsockopt(Socket::SOL_SOCKET, Socket::SO_TYPE)
       case opt.int
-      when Socket::SOCK_STREAM
-        loop { run_udp(sock:) }
-      when Socket::SOCK_DGRAM
-        loop { run_tcp(sock:) }
+      in Socket::SOCK_STREAM
+        loop { run_udp(logger:, sock:) }
+      in Socket::SOCK_DGRAM
+        loop { run_tcp(logger:, sock:) }
       end
     end
   end
@@ -88,28 +90,33 @@ end
 
 def srv_fail(query:)
   Resolv::DNS::Message
-    .new(query&.id || 0)
+    .new(query&.id.to_i)
     .tap do
       _1.qr = 1
-      _1.opcode = query&.opcode || Resolv::DNS::OpCode::Query
       _1.aa = 1
-      _1.rd = 0
-      _1.ra = 0
+      _1.opcode = query&.opcode || Resolv::DNS::OpCode::Query
       _1.rcode = Resolv::DNS::RCode::ServFail
     end
 end
 
 def resolve(dns:, query:)
-  Resolv::DNS::Message
+  dns => Resolv::DNS
+  rsp =
+    Resolv::DNS::Message
     .new(query.id)
-    .tap do |rsp|
+    .tap do
+      _1.qr = 1
+      _1.aa = 1
+    end
+  Enumerator
+    .new do |y|
       query.each_question do |name, typeclass|
         name => Resolv::DNS::Name
-        dns
-          .getresources(name, typeclass)
-          .each { rsp.add_answer(name, _1.ttl, _1) }
+        dns.getresources(name, typeclass).each { y << [name, _1] }
       end
     end
+    .each { rsp.add_answer(_1, _2.ttl, _2) }
+  rsp
 end
 
 def query(dns:, msg:)
@@ -121,6 +128,7 @@ rescue StandardError => e
 end
 
 def main
+  pp Process.pid
   parse_args => { listen:, upstream: }
   sockets = bind_sockets(listen:)
   tx = ractors(sockets:)
@@ -128,6 +136,7 @@ def main
     loop do
       Ractor.select(*tx) => [Ractor => ractor, String => msg]
       rsp = query(dns:, msg:).encode
+    ensure
       ractor.send(rsp)
     end
   end
