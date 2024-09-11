@@ -8,7 +8,7 @@ module DNS
 
     Fiber.new do
       case opt.int
-      in Socket::SOCK_STREAM
+      when Socket::SOCK_STREAM
         loop do
           sock.accept => [Socket => conn, Addrinfo]
           len = conn.read(2).unpack1('n')
@@ -18,7 +18,7 @@ module DNS
         ensure
           conn&.close
         end
-      in Socket::SOCK_DGRAM
+      when Socket::SOCK_DGRAM
         loop do
           sock.recvfrom(Resolv::DNS::UDPSize) => [
             String => req,
@@ -34,6 +34,7 @@ module DNS
 
   def srv_fail(query: nil)
     query => Resolv::DNS::Message | nil
+
     Resolv::DNS::Message
       .new(query&.id || 0)
       .tap do
@@ -48,8 +49,9 @@ module DNS
   end
 
   def query(dns:, msg:)
-    msg => String
+    [dns, msg] => [Resolv::DNS, String]
     Resolv::DNS::Message.decode(msg) => Resolv::DNS::Message => query
+
     rsp = Resolv::DNS::Message.new(query.id)
     query.each_question do |name, typeclass|
       name => Resolv::DNS::Name

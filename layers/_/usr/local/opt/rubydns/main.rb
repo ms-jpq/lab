@@ -51,10 +51,10 @@ sockets
       extend(DNS)
       fib = srv(sock:)
       Resolv::DNS.open do |dns|
-        msg = fib.transfer
+        rsp = ''
         loop do
-          rsp = query(dns:, msg:)
           msg = fib.transfer(rsp)
+          rsp = query(dns:, msg:)
         end
       end
     end
