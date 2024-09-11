@@ -1,7 +1,6 @@
 #!/usr/bin/env -S -- ruby
 # frozen_string_literal: true
 
-require('English')
 require('abbrev')
 require('etc')
 require('logger')
@@ -9,7 +8,7 @@ require('optparse')
 require('resolv')
 require('socket')
 
-require_relative('dns')
+pp Process.pid
 
 Thread.tap { _1.abort_on_exception = true }
 
@@ -45,18 +44,69 @@ sockets =
     end
     .to_a
 
-sockets
-  .map do |sock|
-    Thread.new do
-      extend(DNS)
-      fib = srv(sock:)
-      Resolv::DNS.open do |dns|
-        rsp = ''
+ractors =
+  sockets.map do |socket|
+    Ractor.new(socket) do |sock|
+      sock => Socket
+      opt = sock.getsockopt(Socket::SOL_SOCKET, Socket::SO_TYPE)
+
+      case opt.int
+      when Socket::SOCK_STREAM
         loop do
-          msg = fib.transfer(rsp)
-          rsp = query(dns:, msg:)
+          sock.accept => [Socket => conn, Addrinfo]
+          len = conn.read(2).unpack1('n')
+          req = conn.read(len)
+          Ractor.yield(req.freeze)
+          rsp = Ractor.receive
+          conn.write(rsp)
+        ensure
+          conn&.close
+        end
+      when Socket::SOCK_DGRAM
+        loop do
+          sock.recvfrom(Resolv::DNS::UDPSize) => [
+            String => req,
+            Addrinfo => addr
+          ]
+          ai = Socket.sockaddr_in(addr.ip_port, addr.ip_address)
+          Ractor.yield(req.freeze)
+          rsp = Ractor.receive
+          sock.send(rsp, 0, ai)
         end
       end
     end
   end
-  .each(&:join)
+
+Resolv::DNS.open do |dns|
+  loop do
+    Ractor.select(*ractors) => [Ractor => ractor, String => msg]
+    reply =
+      begin
+        Resolv::DNS::Message.decode(msg) => query
+
+        Resolv::DNS::Message
+          .new(query.id)
+          .tap do |rsp|
+            query.each_question do |name, typeclass|
+              name => Resolv::DNS::Name
+              dns
+                .getresources(name, typeclass)
+                .each { rsp.add_answer(name, _1.ttl, _1) }
+            end
+          end
+      rescue StandardError => e
+        Logger.new($stderr).error(e)
+        Resolv::DNS::Message
+          .new(query&.id || 0)
+          .tap do
+            _1.qr = 1
+            _1.opcode = query&.opcode || 0
+            _1.aa = 1
+            _1.rd = 0
+            _1.ra = 0
+            _1.rcode = Resolv::DNS::RCode::ServFail
+          end
+      end
+    ractor.send(reply.encode)
+  end
+end
