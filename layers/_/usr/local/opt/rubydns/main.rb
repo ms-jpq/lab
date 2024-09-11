@@ -44,13 +44,15 @@ def bind_sockets(listen:)
     .to_a
 end
 
-def run_udp(logger:, sock:)
+def run_tcp(logger:, sock:)
   sock => Socket
   sock.accept => [Socket => conn, Addrinfo]
   len = conn.read(2).unpack1('n')
   req = conn.read(len)
   Ractor.yield(req.freeze)
   rsp = Ractor.receive
+  len = [rsp.bytesize].pack('n')
+  conn.write(len)
   conn.write(rsp)
 rescue IOError => e
   logger.error(e)
@@ -58,7 +60,7 @@ ensure
   conn&.close
 end
 
-def run_tcp(logger:, sock:)
+def run_udp(logger:, sock:)
   sock => Socket
   sock.recvfrom(Resolv::DNS::UDPSize) => [String => req, Addrinfo => addr]
   ai = Socket.sockaddr_in(addr.ip_port, addr.ip_address)
@@ -78,9 +80,9 @@ def ractors(sockets:)
       opt = sock.getsockopt(Socket::SOL_SOCKET, Socket::SO_TYPE)
       case opt.int
       in Socket::SOCK_STREAM
-        loop { run_udp(logger:, sock:) }
-      in Socket::SOCK_DGRAM
         loop { run_tcp(logger:, sock:) }
+      in Socket::SOCK_DGRAM
+        loop { run_udp(logger:, sock:) }
       end
     end
   end
@@ -99,7 +101,13 @@ end
 
 def resolve(dns:, query:)
   dns => Resolv::DNS
-  rsp = Resolv::DNS::Message.new(query.id)
+  rsp =
+    Resolv::DNS::Message
+    .new(query.id)
+    .tap do
+      _1.qr = 1
+      _1.aa = 1
+    end
   Enumerator
     .new do |y|
       query.each_question do |name, typeclass|
