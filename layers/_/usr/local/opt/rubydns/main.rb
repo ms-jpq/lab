@@ -10,6 +10,8 @@ require('pathname')
 require('resolv')
 require('socket')
 
+UDP_SIZE = Resolv::DNS::UDPSize * 8
+
 AI =
   Data.define(:proto, :ip, :port) do
     def addr = Addrinfo.public_send(proto, ip, port).freeze
@@ -70,7 +72,7 @@ end
 
 def recv_udp(sock:, &blk)
   [sock, blk] => [Socket, Proc]
-  sock.recvfrom(Resolv::DNS::UDPSize) => [String => req, Addrinfo => addr]
+  sock.recvfrom(UDP_SIZE) => [String => req, Addrinfo => addr]
   ai = Socket.sockaddr_in(addr.ip_port, addr.ip_address)
   blk.call(req&.freeze) => String => rsp
   sock.send(rsp, 0, ai)
@@ -110,7 +112,7 @@ def send_udp(addr:, req:)
   [addr, req] => [AI, String]
   conn = addr.conn
   conn.write(req)
-  conn.recvfrom(Resolv::DNS::UDPSize) => [String => rsp, Addrinfo]
+  conn.recvfrom(UDP_SIZE) => [String => rsp, Addrinfo]
   rsp
 ensure
   conn&.close
