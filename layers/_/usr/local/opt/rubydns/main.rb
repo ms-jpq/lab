@@ -129,7 +129,7 @@ def xform(logger:, msg:)
   dns.answer.reject! do
     [_1, _2, _3] => [Resolv::DNS::Name, Integer, Resolv::DNS::Resource]
     unless _1.subdomain_of?(home) &&
-           _3.instance_of?(Resolv::DNS::Resource::IN::AAAA)
+           (_3.is_a?(Resolv::DNS::Resource::IN::A) || _3.is_a?(Resolv::DNS::Resource::IN::AAAA))
       next
     end
 
