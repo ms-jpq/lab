@@ -48,7 +48,7 @@ def parse_args
   options
 end
 
-def recv_tcp(logger:, sock:)
+def recv_tcp(logger:, sock:, &blk)
   [logger, sock] => [Logger, Socket]
   rsp = ''
   conn = self.then do
@@ -57,8 +57,7 @@ def recv_tcp(logger:, sock:)
     conn.read(len) => String => req
     conn
   ensure
-    Ractor.yield(req&.freeze)
-    Ractor.receive => String => rsp
+    blk.call(req&.freeze) => String => rsp
   end
   [rsp.bytesize].pack('n') => String => len
   conn&.write(len)
@@ -69,38 +68,37 @@ ensure
   conn&.close
 end
 
-def recv_udp(logger:, sock:)
+def recv_udp(logger:, sock:, &blk)
   [logger, sock] => [Logger, Socket]
   rsp = ''
   ai = self.then do
     sock.recvfrom(Resolv::DNS::UDPSize) => [String => req, Addrinfo => addr]
     Socket.sockaddr_in(addr.ip_port, addr.ip_address)
   ensure
-    Ractor.yield(req&.freeze)
-    Ractor.receive => String => rsp
+    blk.call(req&.freeze) => String => rsp
   end
   sock.send(rsp, 0, ai)
 rescue IOError => e
   logger.error(e)
 end
 
-def do_recv(addr:)
+def do_recv(addr:, &blk)
   addr => AI
-  Ractor.new(addr) do |a|
+  Fiber.new do
     logger = new_logger
-    sock = a.bind
+    sock = addr.bind
     case sock.local_address.socktype
     in Socket::SOCK_STREAM
-      loop { recv_tcp(logger:, sock:) }
+      loop { recv_tcp(logger:, sock:, &blk) }
     in Socket::SOCK_DGRAM
-      loop { recv_udp(logger:, sock:) }
+      loop { recv_udp(logger:, sock:, &blk) }
     end
   end
+  .resume
 end
 
-def send_tcp(logger:, addr:)
-  [logger, addr] => [Logger, AI]
-  Ractor.receive => String => req
+def send_tcp(logger:, addr:, req:)
+  [logger, addr, req] => [Logger, AI, String]
   tap do
     conn = addr.conn
     [req.bytesize].pack('n') => String => len
@@ -109,39 +107,39 @@ def send_tcp(logger:, addr:)
     conn.read(2).unpack1('n') => Integer => len
     conn.read(len) => String => rsp
   ensure
-    Ractor.yield(rsp&.freeze)
+    Fiber.yield(rsp&.freeze)
     conn&.close
   end
 rescue IOError => e
   logger.error(e)
 end
 
-def send_udp(logger:, addr:)
-  [logger, addr] => [Logger, AI]
-  Ractor.receive => String => req
+def send_udp(logger:, addr:, req:)
+  [logger, addr, req] => [Logger, AI, String]
   tap do
     sock = addr.conn
     sock.write(req)
     sock.recvfrom(Resolv::DNS::UDPSize) => [String => rsp, Addrinfo]
   ensure
-    Ractor.yield(rsp&.freeze)
+    Fiber.yield(rsp&.freeze)
     sock&.close
   end
 rescue IOError => e
   logger.error(e)
 end
 
-def do_send(addr:)
+def do_send(addr:, req:)
   addr => AI
-  Ractor.new(addr) do |addr|
+  Fiber.new do
     logger = new_logger
     case addr.proto
     in :tcp
-      loop { send_tcp(logger:, addr:) }
+      loop { send_tcp(logger:, addr:, req:) }
     in :udp
-      loop { send_udp(logger:, addr:) }
+      loop { send_udp(logger:, addr:, req:) }
     end
   end
+  .resume
 end
 
 def xform(logger:, msg:)
@@ -164,19 +162,6 @@ rescue StandardError => e
   msg
 end
 
-def do_fwd(logger:, rs:, ch:)
-  [logger, rs, ch] => [Logger, Array, Ractor]
-  Thread.new do
-    loop do
-      Ractor.select(*rs) => [Ractor => r, String => req]
-      ch.send(req)
-      ch.take => String => msg
-      xform(logger:, msg:) => String => rsp
-      r.send(rsp)
-    end
-  end
-end
-
 def main
   Thread.tap { _1.abort_on_exception = true }
 
@@ -184,14 +169,17 @@ def main
   Pathname(pid).write(Process.pid.to_s)
 
   recv = listen.flat_map { AI.parse(addr: _1) }
-  snd = upstream.flat_map { AI.parse(addr: _1) }
-  rx = recv.map { [_1.proto, do_recv(addr: _1)] }.group_by(&:first)
-
+  snd = upstream.lazy.flat_map { AI.parse(addr: _1) }.group_by(&:proto)
   logger = new_logger
-  snd.map do |addr|
-    rs = rx.fetch(addr.proto).map(&:last)
-    ch = do_send(addr:)
-    do_fwd(logger:, rs:, ch:)
+  recv.map do |addr|
+    Thread.new do
+      do_recv(addr:) do |req|
+        addr = snd.fetch(addr.proto).sample
+        do_send(addr:, req:) => String => msg
+        xform(logger:, msg:) => String => rsp
+        rsp
+      end
+    end
   end
   .each(&:join)
 end
