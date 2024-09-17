@@ -29,6 +29,8 @@ AI = Data.define(:proto, :ip, :port) do
   end
 end
 
+def new_logger = Logger.new($stderr)
+
 def parse_args
   options, =
     {}.then do |into|
@@ -48,9 +50,10 @@ end
 
 def recv_tcp(logger:, sock:)
   [logger, sock] => [Logger, Socket]
-  sock.accept => [Socket => conn, Addrinfo]
+  conn = nil
   rsp = ''
   tap do
+    sock.accept => [Socket => conn, Addrinfo]
     conn.read(2).unpack1('n') => Integer => len
     conn.read(len) => String => req
   ensure
@@ -58,8 +61,8 @@ def recv_tcp(logger:, sock:)
     Ractor.receive => String => rsp
   end
   [rsp.bytesize].pack('n') => String => len
-  conn.write(len)
-  conn.write(rsp)
+  conn&.write(len)
+  conn&.write(rsp)
 rescue IOError => e
   logger.error(e)
 ensure
@@ -84,7 +87,7 @@ end
 def do_recv(addr:)
   addr => AI
   Ractor.new(addr) do |a|
-    logger = Logger.new($stderr)
+    logger = new_logger
     sock = a.bind
     case sock.local_address.socktype
     in Socket::SOCK_STREAM
@@ -100,7 +103,8 @@ def send_tcp(logger:, addr:)
   Ractor.receive => String => req
   tap do
     sock = addr.conn
-    sock.write([req.bytesize].pack('n'))
+    [req.bytesize].pack('n') => String => len
+    sock.write(len)
     sock.write(req)
     sock.read(2).unpack1('n') => Integer => len
     sock.read(len) => String => rsp
@@ -129,7 +133,7 @@ end
 def do_send(addr:)
   addr => AI
   Ractor.new(addr) do |addr|
-    logger = Logger.new($stderr)
+    logger = new_logger
     case addr.proto
     in :tcp
       loop { send_tcp(logger:, addr:) }
@@ -139,9 +143,11 @@ def do_send(addr:)
   end
 end
 
-def xform(msg:)
+def xform(logger:, msg:)
+  [logger, msg] => [Logger, String]
   dns = Resolv::DNS::Message.decode(msg)
   home = Resolv::DNS::Name.create('home.arpa.')
+
   dns.answer.reject! do
     [_1, _2, _3] => [Resolv::DNS::Name, Integer, Resolv::DNS::Resource]
     unless _1.subdomain_of?(home) &&
@@ -153,18 +159,18 @@ def xform(msg:)
   end
   dns.encode
 rescue StandardError => e
-  p e
+  logger.error(e)
   msg
 end
 
-def do_fwd(rs:, ch:)
-  [rs, ch] => [Array, Ractor]
+def do_fwd(logger:, rs:, ch:)
+  [logger, rs, ch] => [Logger, Array, Ractor]
   Thread.new do
     loop do
       Ractor.select(*rs) => [Ractor => r, String => req]
       ch.send(req)
       ch.take => String => msg
-      xform(msg:) => String => rsp
+      xform(logger:, msg:) => String => rsp
       r.send(rsp)
     end
   end
@@ -179,11 +185,12 @@ def main
   recv = listen.flat_map { AI.parse(addr: _1) }
   snd = upstream.flat_map { AI.parse(addr: _1) }
   rx = recv.map { [_1.proto, do_recv(addr: _1)] }.group_by(&:first)
-  tx = snd.map { [_1.proto, do_send(addr: _1)] }.group_by(&:first)
 
-  %i[tcp udp].flat_map do |proto|
-    rs = rx.fetch(proto, []).map(&:last)
-    tx.fetch(proto, []).lazy.map(&:last).map { do_fwd(rs:, ch: _1) }.to_a
+  logger = new_logger
+  snd.map do |addr|
+    rs = rx.fetch(addr.proto).map(&:last)
+    ch = do_send(addr:)
+    do_fwd(logger:, rs:, ch:)
   end
   .each(&:join)
 end
