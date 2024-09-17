@@ -67,6 +67,8 @@ def recv_tcp(sock:, &blk)
     [rsp.bytesize].pack('n') => String => len
     conn&.write(len)
     conn&.write(rsp)
+  rescue IOError => e
+    logger.error(e)
   ensure
     conn&.close
   end
@@ -79,6 +81,8 @@ def recv_udp(sock:, &blk)
     ai = Socket.sockaddr_in(addr.ip_port, addr.ip_address)
     blk.call(req&.freeze) => String => rsp
     sock.send(rsp, 0, ai)
+  rescue IOError => e
+    logger.error(e)
   end
 end
 
