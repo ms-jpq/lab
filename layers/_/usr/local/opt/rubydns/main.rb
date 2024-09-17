@@ -12,32 +12,6 @@ require('socket')
 
 UDP_SIZE = Resolv::DNS::UDPSize * 8
 
-AI =
-  Data.define(:proto, :ip, :port) do
-    def addr = Addrinfo.public_send(proto, ip, port).freeze
-
-    def bind
-      loop do
-        return(
-          addr.bind.tap do
-            _1.listen(Socket::SOMAXCONN) if _1.local_address.socktype == Socket::SOCK_STREAM
-          end
-        )
-      rescue Errno::EADDRNOTAVAIL
-        sleep(1)
-      end
-    end
-
-    def conn = addr.connect
-
-    def self.parse(addr:)
-      addr => String
-      addr.reverse.split(':', 2).map(&:reverse) => [p, ip]
-      port = Integer(p)
-      %i[tcp udp].map { AI.new(proto: _1, ip:, port:) }
-    end
-  end
-
 def parse_args
   options, =
     {}.then do |into|
@@ -53,6 +27,26 @@ def parse_args
     end
 
   options
+end
+
+def parse_addrs(addr)
+  addr => String
+  addr.reverse.split(':', 2).map(&:reverse) => [p, ip]
+  port = Integer(p)
+  [Addrinfo.tcp(ip, port), Addrinfo.udp(ip, port)]
+end
+
+def bind(rx:)
+  rx => Addrinfo
+  loop do
+    return(
+      rx.bind.tap do
+        _1.listen(Socket::SOMAXCONN) if _1.local_address.socktype == Socket::SOCK_STREAM
+      end
+    )
+  rescue Errno::EADDRNOTAVAIL
+    sleep(1)
+  end
 end
 
 def recv_tcp(sock:, &blk)
@@ -87,8 +81,8 @@ def recv_udp(sock:, &blk)
 end
 
 def do_recv(logger:, rx:, &blk)
-  [logger, rx, blk] => [Logger, AI, Proc]
-  sock = rx.bind
+  [logger, rx, blk] => [Logger, Addrinfo, Proc]
+  sock = bind(rx:)
   loop do
     case sock.local_address.socktype
     in Socket::SOCK_STREAM
@@ -101,9 +95,9 @@ def do_recv(logger:, rx:, &blk)
   end
 end
 
-def send_tcp(addr:, req:)
-  [addr, req] => [AI, String]
-  conn = addr.conn
+def send_tcp(tx:, req:)
+  [tx, req] => [Addrinfo, String]
+  conn = tx.connect
   [req.bytesize].pack('n') => String => len
   conn.write(len)
   conn.write(req)
@@ -116,9 +110,9 @@ ensure
   conn&.close
 end
 
-def send_udp(addr:, req:)
-  [addr, req] => [AI, String]
-  conn = addr.conn
+def send_udp(tx:, req:)
+  [tx, req] => [Addrinfo, String]
+  conn = tx.connect
   conn.write(req)
   conn.recvfrom(UDP_SIZE) => [String => rsp, Addrinfo]
   rsp
@@ -127,12 +121,12 @@ ensure
 end
 
 def do_send(logger:, tx:, req:)
-  [logger, tx, req] => [Logger, AI, String]
-  case tx.proto
-  in :tcp
-    send_tcp(addr: tx, req:)
-  in :udp
-    send_udp(addr: tx, req:)
+  [logger, tx, req] => [Logger, Addrinfo, String]
+  case tx.socktype
+  in Socket::SOCK_STREAM
+    send_tcp(tx:, req:)
+  in Socket::SOCK_DGRAM
+    send_udp(tx:, req:)
   end
 rescue IOError => e
   logger.error(e)
@@ -162,14 +156,14 @@ def main
   parse_args => { pid:, listen:, upstream: }
   Pathname(pid).write(Process.pid.to_s)
 
-  recv = listen.flat_map { AI.parse(addr: _1) }
-  snd = upstream.lazy.flat_map { AI.parse(addr: _1) }.group_by(&:proto)
+  recv = listen.flat_map(&method(:parse_addrs))
+  snd = upstream.lazy.flat_map(&method(:parse_addrs)).group_by(&:socktype)
 
   threads =
     recv.map do |rx|
       Thread.new do
         do_recv(logger:, rx:) do |req|
-          tx = snd.fetch(rx.proto).sample
+          tx = snd.fetch(rx.socktype).sample
           do_send(logger:, tx:, req:) => String => msg
           xform(logger:, msg:) => String => rsp
           rsp
