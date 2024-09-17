@@ -46,53 +46,44 @@ def parse_args
   options
 end
 
-def recv_tcp(logger:, sock:, &blk)
-  [logger, sock, blk] => [Logger, Socket, Proc]
-  rsp = ''
-  conn = self.then do
-    sock.accept => [Socket => conn, Addrinfo]
-    conn.read(2).unpack1('n') => Integer => len
-    conn.read(len) => String => req
-    conn
-  ensure
-    blk.call(req&.freeze) => String => rsp
-  end
+def recv_tcp(sock:, &blk)
+  [sock, blk] => [Socket, Proc]
+  sock.accept => [Socket => conn, Addrinfo]
+  conn.read(2).unpack1('n') => Integer => len
+  conn.read(len) => String => req
+  blk.call(req&.freeze) => String => rsp
   [rsp.bytesize].pack('n') => String => len
   conn&.write(len)
   conn&.write(rsp)
-rescue IOError => e
-  logger.error(e)
 ensure
   conn&.close
 end
 
-def recv_udp(logger:, sock:, &blk)
-  [logger, sock, blk] => [Logger, Socket, Proc]
-  rsp = ''
-  ai = self.then do
-    sock.recvfrom(Resolv::DNS::UDPSize) => [String => req, Addrinfo => addr]
-    Socket.sockaddr_in(addr.ip_port, addr.ip_address)
-  ensure
-    blk.call(req&.freeze) => String => rsp
-  end
+def recv_udp(sock:, &blk)
+  [sock, blk] => [Socket, Proc]
+  sock.recvfrom(Resolv::DNS::UDPSize) => [String => req, Addrinfo => addr]
+  ai = Socket.sockaddr_in(addr.ip_port, addr.ip_address)
+  blk.call(req&.freeze) => String => rsp
   sock.send(rsp, 0, ai)
-rescue IOError => e
-  logger.error(e)
 end
 
 def do_recv(logger:, rx:, &blk)
   [logger, rx, blk] => [Logger, AI, Proc]
   sock = rx.bind
-  case sock.local_address.socktype
-  in Socket::SOCK_STREAM
-    loop { recv_tcp(logger:, sock:, &blk) }
-  in Socket::SOCK_DGRAM
-    loop { recv_udp(logger:, sock:, &blk) }
+  loop do
+    case sock.local_address.socktype
+    in Socket::SOCK_STREAM
+      recv_tcp(sock:, &blk)
+    in Socket::SOCK_DGRAM
+      recv_udp(sock:, &blk)
+    end
+  rescue IOError => e
+    logger.error(e)
   end
 end
 
-def send_tcp(logger:, addr:, req:)
-  [logger, addr, req] => [Logger, AI, String]
+def send_tcp(addr:, req:)
+  [addr, req] => [AI, String]
   conn = addr.conn
   [req.bytesize].pack('n') => String => len
   conn.write(len)
@@ -100,20 +91,16 @@ def send_tcp(logger:, addr:, req:)
   conn.read(2).unpack1('n') => Integer => len
   conn.read(len) => String => rsp
   rsp
-rescue IOError => e
-  logger.error(e)
 ensure
   conn&.close
 end
 
-def send_udp(logger:, addr:, req:)
-  [logger, addr, req] => [Logger, AI, String]
+def send_udp(addr:, req:)
+  [addr, req] => [AI, String]
   conn = addr.conn
   conn.write(req)
   conn.recvfrom(Resolv::DNS::UDPSize) => [String => rsp, Addrinfo]
   rsp
-rescue IOError => e
-  logger.error(e)
 ensure
   conn&.close
 end
@@ -122,10 +109,12 @@ def do_send(logger:, tx:, req:)
   [logger, tx, req] => [Logger, AI, String]
   case tx.proto
   in :tcp
-    send_tcp(logger:, addr: tx, req:)
+    send_tcp(addr: tx, req:)
   in :udp
-    send_udp(logger:, addr: tx, req:)
+    send_udp(addr: tx, req:)
   end
+rescue IOError => e
+  logger.error(e)
 end
 
 def xform(logger:, msg:)
@@ -143,7 +132,7 @@ def xform(logger:, msg:)
     !IPAddr.new(_3.address.to_s).private?
   end
   dns.encode
-rescue StandardError => e
+rescue Resolv::DNS::DecodeError => e
   logger.error(e)
   msg
 end
