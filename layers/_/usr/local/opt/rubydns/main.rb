@@ -20,7 +20,6 @@ def parse_args
         .new do
           _1.on('--listen LISTEN', Array)
           _1.on('--upstream UPSTREAM', Array)
-          _1.on('--pid PIDFILE', String)
         end
           .parse(ARGV, into:)
       [into, parsed]
@@ -153,8 +152,7 @@ def main
   Thread.tap { _1.abort_on_exception = true }
   logger = Logger.new($stderr)
 
-  parse_args => { pid:, listen:, upstream: }
-  Pathname(pid).write(Process.pid.to_s)
+  parse_args => { listen:, upstream: }
 
   recv = listen.flat_map(&method(:parse_addrs))
   snd = upstream.lazy.flat_map(&method(:parse_addrs)).group_by(&:socktype)
