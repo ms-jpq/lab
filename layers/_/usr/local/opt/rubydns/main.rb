@@ -117,9 +117,10 @@ def send_udp(logger:, addr:)
   tap do
     sock = addr.conn
     sock.write(req)
-    sock.read(Resolv::DNS::UDPSize) => String => rsp
+    sock.recvfrom(Resolv::DNS::UDPSize) => [String => rsp, Addrinfo]
   ensure
     Ractor.yield(rsp&.freeze)
+    sock&.close
   end
 rescue IOError => e
   logger.error(e)
@@ -138,33 +139,36 @@ def do_send(addr:)
   end
 end
 
-def srv_fail(query:)
-  Resolv::DNS::Message
-    .new(query&.id.to_i)
-    .tap do
-      _1.qr = 1
-      _1.aa = 1
-      _1.opcode = query&.opcode || Resolv::DNS::OpCode::Query
-      _1.rcode = Resolv::DNS::RCode::ServFail
+def xform(msg:)
+  dns = Resolv::DNS::Message.decode(msg)
+  home = Resolv::DNS::Name.create('home.arpa.')
+  dns.answer.reject! do
+    [_1, _2, _3] => [Resolv::DNS::Name, Integer, Resolv::DNS::Resource]
+    unless _1.subdomain_of?(home) &&
+           _3.instance_of?(Resolv::DNS::Resource::IN::AAAA)
+      next
     end
+
+    !IPAddr.new(_3.address.to_s).private?
+  end
+  dns.encode
+rescue StandardError => e
+  p e
+  msg
 end
 
-# def query(dns:, msg:)
-#   query = Resolv::DNS::Message.decode(msg)
-#   resolve(dns:, query:) do
-#     _1 => Resolv::DNS::Name
-#     home = Resolv::DNS::Name.create('home.arpa.')
-#     unless _1.subdomain_of?(home) &&
-#            _2.instance_of?(Resolv::DNS::Resource::IN::AAAA)
-#       next
-#     end
-#
-#     !IPAddr.new(_2.address.to_s).private?
-#   end
-# rescue StandardError => e
-#   logger.error(e)
-#   srv_fail(query:)
-# end
+def do_fwd(rs:, ch:)
+  [rs, ch] => [Array, Ractor]
+  Thread.new do
+    loop do
+      Ractor.select(*rs) => [Ractor => r, String => req]
+      ch.send(req)
+      ch.take => String => msg
+      xform(msg:) => String => rsp
+      r.send(rsp)
+    end
+  end
+end
 
 def main
   Thread.tap { _1.abort_on_exception = true }
@@ -179,17 +183,9 @@ def main
 
   %i[tcp udp].flat_map do |proto|
     rs = rx.fetch(proto, []).map(&:last)
-    tx.fetch(proto, []).lazy.map(&:last).map do |ch|
-      Ractor.new(rs, ch) do |rs, ch|
-        Ractor.select(*rs) => [Ractor => r, String => req]
-        ch.send(req)
-        ch.take => String => rsp
-        r.send(rsp)
-      end
-    end
-    .to_a
+    tx.fetch(proto, []).lazy.map(&:last).map { do_fwd(rs:, ch: _1) }.to_a
   end
-  .each(&:take)
+  .each(&:join)
 end
 
 main
