@@ -50,12 +50,12 @@ end
 
 def recv_tcp(logger:, sock:)
   [logger, sock] => [Logger, Socket]
-  conn = nil
   rsp = ''
-  tap do
+  conn = self.then do
     sock.accept => [Socket => conn, Addrinfo]
     conn.read(2).unpack1('n') => Integer => len
     conn.read(len) => String => req
+    conn
   ensure
     Ractor.yield(req&.freeze)
     Ractor.receive => String => rsp
@@ -102,14 +102,15 @@ def send_tcp(logger:, addr:)
   [logger, addr] => [Logger, AI]
   Ractor.receive => String => req
   tap do
-    sock = addr.conn
+    conn = addr.conn
     [req.bytesize].pack('n') => String => len
-    sock.write(len)
-    sock.write(req)
-    sock.read(2).unpack1('n') => Integer => len
-    sock.read(len) => String => rsp
+    conn.write(len)
+    conn.write(req)
+    conn.read(2).unpack1('n') => Integer => len
+    conn.read(len) => String => rsp
   ensure
     Ractor.yield(rsp&.freeze)
+    conn&.close
   end
 rescue IOError => e
   logger.error(e)
