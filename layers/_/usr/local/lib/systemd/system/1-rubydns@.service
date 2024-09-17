@@ -1,0 +1,24 @@
+[Unit]
+Description      = RubyDNS -- %I
+StopWhenUnneeded = yes
+
+BindsTo          = dnsmasq@%i.service
+After            = dnsmasq@%i.service
+
+BindsTo          = %p-dns-tcp@%i.service
+After            = %p-dns-tcp@%i.service
+
+BindsTo          = %p-dns-udp@%i.service
+After            = %p-dns-udp@%i.service
+
+[Service]
+Restart          = on-failure
+
+ProtectSystem    = strict
+ProtectHome      = yes
+PrivateTmp       = yes
+
+EnvironmentFile  = %t/local/ip/%I.env
+EnvironmentFile  = -/usr/local/lib/etc/default/%I.%J.env
+
+ExecStart        = /usr/local/opt/rubydns/main.rb --upstream ${IPV4_ADDR}:53,${IPV6_ADDR}:53 --listen ${IPV4_ADDR}:3535,${IPV6_ADDR}:3535
