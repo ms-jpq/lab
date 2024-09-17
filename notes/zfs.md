@@ -13,7 +13,7 @@ zpool upgrade
 Ensure uniqueness
 
 ```bash
-zpool import -d /dev/disk/by-id/ <pool>
+zpool import -d /dev/disk/by-id/ '<pool>'
 zpool import -d /dev/disk/by-id/ -a -f
 ```
 
@@ -103,7 +103,7 @@ Recursive
 
 ### `-R`
 
-**Regarded** -> will kill related linked datasets, (NOT just snapshots), even datasets not under `./dataset`
+**Regarded** → will kill related linked datasets, (NOT just snapshots), even datasets not under `./dataset`
 
 ### Async Destroy
 
