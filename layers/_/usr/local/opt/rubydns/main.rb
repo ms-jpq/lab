@@ -10,28 +10,31 @@ require('pathname')
 require('resolv')
 require('socket')
 
-AI = Data.define(:proto, :ip, :port) do
-  def addr = Addrinfo.public_send(proto, ip, port).freeze
+AI =
+  Data.define(:proto, :ip, :port) do
+    def addr = Addrinfo.public_send(proto, ip, port).freeze
 
-  def bind
-    loop do
-      return addr.bind.tap do
-        _1.listen(Socket::SOMAXCONN) if _1.local_address.socktype == Socket::SOCK_STREAM
+    def bind
+      loop do
+        return(
+          addr.bind.tap do
+            _1.listen(Socket::SOMAXCONN) if _1.local_address.socktype == Socket::SOCK_STREAM
+          end
+        )
+      rescue Errno::EADDRNOTAVAIL
+        sleep(1)
       end
-    rescue Errno::EADDRNOTAVAIL
-      sleep(1)
+    end
+
+    def conn = addr.connect
+
+    def self.parse(addr:)
+      addr => String
+      addr.reverse.split(':', 2).map(&:reverse) => [p, ip]
+      port = Integer(p)
+      %i[tcp udp].map { AI.new(proto: _1, ip:, port:) }
     end
   end
-
-  def conn = addr.connect
-
-  def self.parse(addr:)
-    addr => String
-    addr.reverse.split(':', 2).map(&:reverse) => [p, ip]
-    port = Integer(p)
-    %i[tcp udp].map { AI.new(proto: _1, ip:, port:) }
-  end
-end
 
 def parse_args
   options, =
@@ -128,10 +131,7 @@ def xform(logger:, msg:)
 
   dns.answer.reject! do
     [_1, _2, _3] => [Resolv::DNS::Name, Integer, Resolv::DNS::Resource]
-    unless _1.subdomain_of?(home) &&
-           (_3.is_a?(Resolv::DNS::Resource::IN::A) || _3.is_a?(Resolv::DNS::Resource::IN::AAAA))
-      next
-    end
+    next unless _1.subdomain_of?(home)
 
     !IPAddr.new(_3.address.to_s).private?
   end
