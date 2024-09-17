@@ -141,7 +141,7 @@ def xform(logger:, msg:)
 
   dns.answer.reject! do
     [_1, _2, _3] => [Resolv::DNS::Name, Integer, Resolv::DNS::Resource]
-    next unless _1.subdomain_of?(home)
+    next unless _1.subdomain_of?(home) && _3.respond_to?(:address)
 
     !IPAddr.new(_3.address.to_s).private?
   end
