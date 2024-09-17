@@ -56,7 +56,9 @@ end
 def recv_tcp(sock:, &blk)
   [sock, blk] => [Socket, Proc]
   sock.accept => [Socket => conn, Addrinfo]
-  conn.read(2).unpack1('n') => Integer => len
+  conn.read(2)&.unpack1('n') => Integer | nil => len
+  return if len.nil?
+
   conn.read(len) => String => req
   blk.call(req&.freeze) => String => rsp
   [rsp.bytesize].pack('n') => String => len
@@ -95,8 +97,10 @@ def send_tcp(addr:, req:)
   [req.bytesize].pack('n') => String => len
   conn.write(len)
   conn.write(req)
-  conn.read(2).unpack1('n') => Integer => len
-  conn.read(len) => String => rsp
+  conn.read(2)&.unpack1('n') => Integer | nil => len
+  return '' if len.nil?
+
+  conn.read(len) => String | nil => rsp
   rsp
 ensure
   conn&.close
