@@ -12,6 +12,9 @@ After                = systemd-networkd.service
 Before               = dnsmasq@%i.service
 Wants                = dnsmasq@%i.service
 
+Before               = 1-rubydns@%i.service
+Wants                = 1-rubydns@%i.service
+
 BindsTo              = nftables.service
 ReloadPropagatedFrom = nftables.service
 After                = nftables.service

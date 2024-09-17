@@ -14,8 +14,12 @@ AI = Data.define(:proto, :ip, :port) do
   def addr = Addrinfo.public_send(proto, ip, port).freeze
 
   def bind
-    addr.bind.tap do
-      _1.listen(Socket::SOMAXCONN) if _1.local_address.socktype == Socket::SOCK_STREAM
+    loop do
+      return addr.bind.tap do
+        _1.listen(Socket::SOMAXCONN) if _1.local_address.socktype == Socket::SOCK_STREAM
+      end
+    rescue Errno::EADDRNOTAVAIL
+      sleep(1)
     end
   end
 
