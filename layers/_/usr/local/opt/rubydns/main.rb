@@ -58,24 +58,28 @@ end
 def recv_tcp(sock:, &blk)
   [sock, blk] => [Socket, Proc]
   sock.accept => [Socket => conn, Addrinfo]
-  conn.read(2)&.unpack1('n') => Integer | nil => len
-  return if len.nil?
+  Thread.new do
+    conn.read(2)&.unpack1('n') => Integer | nil => len
+    return if len.nil?
 
-  conn.read(len) => String => req
-  blk.call(req&.freeze) => String => rsp
-  [rsp.bytesize].pack('n') => String => len
-  conn&.write(len)
-  conn&.write(rsp)
-ensure
-  conn&.close
+    conn.read(len) => String => req
+    blk.call(req&.freeze) => String => rsp
+    [rsp.bytesize].pack('n') => String => len
+    conn&.write(len)
+    conn&.write(rsp)
+  ensure
+    conn&.close
+  end
 end
 
 def recv_udp(sock:, &blk)
   [sock, blk] => [Socket, Proc]
   sock.recvfrom(UDP_SIZE) => [String => req, Addrinfo => addr]
-  ai = Socket.sockaddr_in(addr.ip_port, addr.ip_address)
-  blk.call(req&.freeze) => String => rsp
-  sock.send(rsp, 0, ai)
+  Thread.new do
+    ai = Socket.sockaddr_in(addr.ip_port, addr.ip_address)
+    blk.call(req&.freeze) => String => rsp
+    sock.send(rsp, 0, ai)
+  end
 end
 
 def do_recv(logger:, rx:, &blk)
