@@ -1,0 +1,10 @@
+server {
+  server_name cups.*;
+  include     /usr/local/opt/nginx/conf/listen.nginx;
+  set         $x_cups pfsense.w-0.pfsense.home.arpa:8080;
+
+  location / {
+    include    /usr/local/opt/nginx/conf/auth2.nginx;
+    proxy_pass http://$x_cups;
+  }
+}
