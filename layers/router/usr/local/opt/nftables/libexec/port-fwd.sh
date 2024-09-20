@@ -18,6 +18,9 @@ declare -A -- SEEN=()
 for LINE in "${LINES[@]}"; do
   DOMAIN="${LINE%% *}"
   IP="${LINE##* }"
+  if [[ $DOMAIN =~ \* ]]; then
+    continue
+  fi
 
   TR="$DOMAIN"
   TR="${TR//'.'/'\.'}"
