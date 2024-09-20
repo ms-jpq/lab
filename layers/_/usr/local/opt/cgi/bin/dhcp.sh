@@ -13,13 +13,6 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-read -r -d '' -- AWK <<- 'AWK' || true
-$4 { printf("%s.%s.%s.home.arpa %s\n-\n", $4, BASE, HOSTNAME, $3) }
-AWK
-
-for LEASE in /run/local/dnsmasq/*/leases; do
-  DIR="${LEASE%/*}"
-  BASE="${DIR##*/}"
-  /usr/local/libexec/hr.sh
-  sort --key 4 -- "$LEASE" | awk -v "BASE=$BASE" -v "HOSTNAME=$HOSTNAME" -- "$AWK" | column --table | sed -E -e 's/[[:space:]]+$//'
-done
+/usr/local/libexec/hr.sh
+/usr/local/opt/nftables/libexec/resolv-ip.sh
+/usr/local/libexec/hr.sh
