@@ -13,7 +13,7 @@ SED=()
 for FILE in /run/local/dnsmasq/*/leases; do
   DOMAIN="${FILE%/*}"
   DOMAIN="${DOMAIN##*/}.$HOSTNAME.home.arpa"
-  LS="$(awk '{ print($1, $3, $4) }' "$FILE")"
+  LS="$(awk -- '{ print($1, $3, $4) }' "$FILE")"
   readarray -t -- LSS <<< "$LS"
 
   for LINE in "${LSS[@]}"; do
@@ -35,11 +35,11 @@ for FILE in /run/local/dnsmasq/*/leases; do
       if [[ $IP =~ ^fd ]]; then
         STAT='i'
       else
-        STAT='e'
+        STAT='e1'
       fi
-      SED+=("s/'$TR\.6$STAT'/$IP/p")
+      SED+=("s/'$TR:6$STAT'/$IP/p")
     else
-      SED+=("s/'$TR\.4'/$IP/p")
+      SED+=("s/'$TR:4'/$IP/p")
     fi
   done
 done
