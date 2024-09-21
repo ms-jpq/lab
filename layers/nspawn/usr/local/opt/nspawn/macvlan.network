@@ -7,6 +7,7 @@ RequiredForOnline   = no
 
 [Network]
 DHCP                = yes
+IPv6AcceptRA        = yes
 LinkLocalAddressing = yes
 LLDP                = yes
 EmitLLDP            = customer-bridge
@@ -21,4 +22,4 @@ UseDNS              = no
 
 [IPv6AcceptRA]
 UseDNS              = no
-Token               = static:::${LO64}
+# Token               = static:::${LO64}
