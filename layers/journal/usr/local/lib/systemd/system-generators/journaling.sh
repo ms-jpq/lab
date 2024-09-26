@@ -15,5 +15,5 @@ readarray -t -d ',' -- HOSTS <<< "$JOURNAL_HOSTS"
 mkdir -v -p -- "$WANTS"
 for NAME in "${HOSTS[@]}"; do
   NAME="$(systemd-escape -- "${NAME//[[:space:]]/''}")"
-  ln -v -sf -- /usr/local/lib/systemd/system/1-journal@.service "$WANTS/1-journal@$NAME.service"
+  ln -v -snf -- /usr/local/lib/systemd/system/1-journal@.service "$WANTS/1-journal@$NAME.service"
 done

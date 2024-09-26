@@ -40,7 +40,7 @@ zfs)
   ZVOL="$SOURCE/$NAME"
   zfs create -s -V 10G -- "$ZVOL"
   mkdir -v -p -- "$DIR"
-  ln -v -sf -- "/dev/zvol/$ZVOL" "$DST"
+  ln -v -snf -- "/dev/zvol/$ZVOL" "$DST"
   udevadm trigger
   ;;
 btrfs)

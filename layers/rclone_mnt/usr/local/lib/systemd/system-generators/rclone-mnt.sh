@@ -10,5 +10,5 @@ for ENV in /usr/local/etc/default/*.rmount.env; do
   BASE="${ENV##*/}"
   STEM="${BASE%".rmount.env"}"
   NAME=$(systemd-escape -- "$STEM")
-  ln -sf -- /usr/local/lib/systemd/system/1-rclone-mnt@.service "$WANTS/1-rclone-mnt@$NAME.service"
+  ln -snf -- /usr/local/lib/systemd/system/1-rclone-mnt@.service "$WANTS/1-rclone-mnt@$NAME.service"
 done

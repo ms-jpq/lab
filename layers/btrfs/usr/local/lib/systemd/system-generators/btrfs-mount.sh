@@ -22,5 +22,5 @@ for MOUNT in "${MOUNTS[@]}"; do
   LABEL="$LABEL" envsubst < /usr/local/opt/mount/btrfs@.mount > "$MNT"
   cp -v -f -- /usr/local/opt/mount/@.automount "$RUN/$AUTO"
   chmod g+r,o+r -- "$MNT" "$RUN/$AUTO"
-  ln -v -sf -- "../$AUTO" "$WANTS/$AUTO"
+  ln -v -snf -- "../$AUTO" "$WANTS/$AUTO"
 done

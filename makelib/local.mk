@@ -48,7 +48,7 @@ LOCAL.$1.L := $(TMP)/$1/links/$(patsubst $1/%,layers/__/%,$2)
 LOCALS.$1 += $$(LOCAL.$1.L)
 
 $$(LOCAL.$1.L): | $(dir $(TMP)/$1/layers/_$2)
-	ln -sf -- '$3' '$(TMP)/$1/layers/_$(patsubst $1/%,layers/__/%,$2)'
+	ln -snf -- '$3' '$(TMP)/$1/layers/_$(patsubst $1/%,layers/__/%,$2)'
 	mkdir -p -- '$$(@D)'
 	printf -- '%s' '$3' >'$$@'
 endef

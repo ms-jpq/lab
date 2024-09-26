@@ -21,5 +21,5 @@ for MOUNT in /usr/local/lib/systemd/system/*.mount; do
     WANTS="$LOCAL"
   fi
 
-  ln -v -sf -- "../$AUTO" "$WANTS/$AUTO"
+  ln -v -snf -- "../$AUTO" "$WANTS/$AUTO"
 done

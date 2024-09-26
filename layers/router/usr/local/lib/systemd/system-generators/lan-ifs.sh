@@ -26,6 +26,6 @@ for NAME in "${INTERFACES[@]}"; do
   OVERRIDE="$ALLOCD/0-override.conf"
   /usr/local/libexec/m4.sh -D"$PREV" -- /usr/local/opt/network/1-ip-alloc.m4@.service > "$OVERRIDE"
   chmod g+r,o+r -- "$OVERRIDE"
-  ln -v -sf -- /usr/local/lib/systemd/system/1-lan@.service "$WANTS/1-lan@$NAME.service"
+  ln -v -snf -- /usr/local/lib/systemd/system/1-lan@.service "$WANTS/1-lan@$NAME.service"
   SEEN+=("$NAME")
 done

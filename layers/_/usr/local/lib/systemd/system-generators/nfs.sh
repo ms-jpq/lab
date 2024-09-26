@@ -22,5 +22,5 @@ for MOUNT in "${MOUNTS[@]}"; do
   NFS_SERVER="$NFS_SERVER" envsubst < /usr/local/opt/mount/nfs@.mount > "$MNT"
   cp -v -f -- /usr/local/opt/mount/@.automount "$RUN/$AUTO"
   chmod g+r,o+r -- "$MNT" "$RUN/$AUTO"
-  ln -v -sf -- "../$AUTO" "$WANTS/$AUTO"
+  ln -v -snf -- "../$AUTO" "$WANTS/$AUTO"
 done

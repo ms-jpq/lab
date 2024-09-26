@@ -16,6 +16,6 @@ for BIN in /usr/local/opt/cgi/bin/*; do
     cp -v -f -- /usr/local/opt/cgi/6-cgi-@.service "$SVC"
     cp -v -f -- /usr/local/opt/cgi/6-cgi-.socket "$SOCK"
     chmod g+r,o+r -- "$SVC" "$SOCK"
-    ln -v -sf -- "$SOCK" "$WANTS/$NAME.socket"
+    ln -v -snf -- "$SOCK" "$WANTS/$NAME.socket"
   fi
 done

@@ -14,5 +14,5 @@ readarray -t -- NETDEVS <<< "$ROWS"
 mkdir -p -- "$WANTS"
 for NETDEV in "${NETDEVS[@]}"; do
   NAME=$(systemd-escape -- "$NETDEV")
-  ln -sf -- /usr/local/lib/systemd/system/1-wg-ddns@.timer "$WANTS/1-wg-ddns@$NAME.timer"
+  ln -snf -- /usr/local/lib/systemd/system/1-wg-ddns@.timer "$WANTS/1-wg-ddns@$NAME.timer"
 done

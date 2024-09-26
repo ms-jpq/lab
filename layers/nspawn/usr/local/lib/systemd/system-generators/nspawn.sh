@@ -25,5 +25,5 @@ for TAG in "/var/cache/local/$BASE/services"/*/.#*.{service,socket}; do
     DIR="$WANTS"
     ;;
   esac
-  ln -v -sf -- "/usr/local/lib/systemd/system/$SVC" "$DIR/${SVC//'@'/"@$MACH"}"
+  ln -v -snf -- "/usr/local/lib/systemd/system/$SVC" "$DIR/${SVC//'@'/"@$MACH"}"
 done
