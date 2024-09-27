@@ -1,4 +1,5 @@
-xclient off;
+xclient          off;
+auth_http_header X-Tls-Sni "$ssl_server_name";
 
 server {
   listen    [[::]]:25 ipv6only=off;
