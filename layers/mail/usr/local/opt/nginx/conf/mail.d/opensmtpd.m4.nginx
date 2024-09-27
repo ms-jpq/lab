@@ -7,6 +7,7 @@ server {
   protocol  smtp;
   smtp_auth none plain login cram-md5;
   # ])
+  starttls  on;
   SMTP_CONF
 }
 
@@ -29,6 +30,7 @@ server {
   proxy_protocol on;
   imap_auth      plain login;
   # ])
+  starttls       on;
   IMAP_CONF
 }
 
