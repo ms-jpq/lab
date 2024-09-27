@@ -1,41 +1,45 @@
-xclient          off;
-auth_http_header X-Tls-Sni "$ssl_server_name";
+xclient off;
 
 server {
-  listen    [[::]]:25 ipv6only=off;
+  listen           [[::]]:25 ipv6only=off;
+  auth_http_header X-Server-Port "25";
   # m4_define([SMTP_CONF], [
-  auth_http http://unix:/run/local/nginx/cgi.sock:/sieve.sh/;
-  protocol  smtp;
-  smtp_auth none plain login cram-md5;
+  auth_http        http://unix:/run/local/nginx/cgi.sock:/sieve.sh/;
+  protocol         smtp;
+  smtp_auth        none plain login cram-md5;
   # ])
-  starttls  on;
+  starttls         on;
   SMTP_CONF
 }
 
 server {
-  listen    [[::]]:465 ipv6only=off ssl;
+  listen           [[::]]:465 ipv6only=off ssl;
+  auth_http_header X-Server-Port "465";
   SMTP_CONF
 }
 
 server {
-  listen    [[::]]:587 ipv6only=off;
-  starttls  only;
+  listen           [[::]]:587 ipv6only=off;
+  auth_http_header X-Server-Port "587";
+  starttls         only;
   SMTP_CONF
 }
 
 server {
-  listen         [[::]]:143 ipv6only=off;
+  listen           [[::]]:143 ipv6only=off;
+  auth_http_header X-Server-Port "143";
   # m4_define([IMAP_CONF], [
-  auth_http      http://unix:/run/local/nginx/cgi.sock:/sieve.sh/;
-  protocol       imap;
-  proxy_protocol on;
-  imap_auth      plain login;
+  auth_http        http://unix:/run/local/nginx/cgi.sock:/sieve.sh/;
+  protocol         imap;
+  proxy_protocol   on;
+  imap_auth        plain login;
   # ])
   # starttls       on;
   IMAP_CONF
 }
 
 server {
-  listen    [[::]]:993 ipv6only=off ssl;
+  listen           [[::]]:993 ipv6only=off ssl;
+  auth_http_header X-Server-Port "993";
   IMAP_CONF
 }
