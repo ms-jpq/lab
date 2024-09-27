@@ -6,6 +6,8 @@ if [[ ! -t 1 ]]; then
   exec <&3 >&3
 fi
 
+HOST="$HOSTNAME"
+
 while read -r LINE; do
   LINE="${LINE%%$'\r'}"
   if [[ -z $LINE ]]; then
@@ -17,6 +19,9 @@ while read -r LINE; do
   LHS="${LINE%%:*}"
   KEY="${LHS,,}"
   case "$KEY" in
+  host)
+    HOST="${LINE##*: }"
+    ;;
   auth-protocol)
     AUTH_PROTOCOL="${LINE##*: }"
     ;;
@@ -44,11 +49,23 @@ Auth-Port: 2525
 EOF
   ;;
 imap)
+  case "$AUTH_USER" in
+  *@)
+    USERNAME="$AUTH_USER$HOST"
+    ;;
+  *@*)
+    USERNAME="$AUTH_USER"
+    ;;
+  *)
+    USERNAME="$AUTH_USER@$HOST"
+    ;;
+  esac
+
   CURL=(
     curl
     --fail
     --no-progress-meter
-    --user "$AUTH_USER:$AUTH_PASS"
+    --user "$USERNAME:$AUTH_PASS"
     --header "X-Real-IP: $CLIENT_IP"
     --unix-socket /run/local/nginx/direct_auth.sock
     -- localhost
