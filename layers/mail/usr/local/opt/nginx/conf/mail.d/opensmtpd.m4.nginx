@@ -30,7 +30,7 @@ server {
   proxy_protocol on;
   imap_auth      plain login;
   # ])
-  starttls       on;
+  # starttls       on;
   IMAP_CONF
 }
 
