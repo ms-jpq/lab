@@ -1,5 +1,0 @@
-server {
-  listen         [::]:1443 ipv6only=off;
-  proxy_protocol on;
-  proxy_pass     127.0.0.53:2443;
-}
