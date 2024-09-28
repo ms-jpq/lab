@@ -6,8 +6,6 @@ if [[ ! -t 1 ]]; then
   exec <&3 >&3
 fi
 
-HOST="$HOSTNAME"
-
 while read -r LINE; do
   LINE="${LINE%%$'\r'}"
   if [[ -z $LINE ]]; then
@@ -19,9 +17,6 @@ while read -r LINE; do
   LHS="${LINE%%:*}"
   KEY="${LHS,,}"
   case "$KEY" in
-  host)
-    HOST="${LINE##*: }"
-    ;;
   auth-protocol)
     AUTH_PROTOCOL="${LINE##*: }"
     ;;
@@ -51,13 +46,14 @@ EOF
 imap)
   case "$AUTH_USER" in
   *@)
-    USERNAME="$AUTH_USER$HOST"
+    # shellcheck disable=SC2154
+    USERNAME="$AUTH_USER$DOMAIN_NAME"
     ;;
   *@*)
     USERNAME="$AUTH_USER"
     ;;
   *)
-    USERNAME="$AUTH_USER@$HOST"
+    USERNAME="$AUTH_USER@$DOMAIN_NAME"
     ;;
   esac
 
