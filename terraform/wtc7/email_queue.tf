@@ -8,8 +8,9 @@ resource "aws_s3_bucket" "maildir" {
 
 locals {
   timeouts = {
-    queue  = 60,
-    lambda = 30
+    s3_days = 9,
+    queue   = 60,
+    lambda  = 30
   }
 }
 
@@ -21,6 +22,19 @@ resource "aws_sqs_queue" "mbox" {
 resource "aws_sqs_queue" "sink" {
   provider                   = aws.us_e1
   visibility_timeout_seconds = local.timeouts.queue
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "maildir" {
+  provider = aws.us_e1
+  bucket   = aws_s3_bucket.maildir.id
+
+  rule {
+    id     = "diediedie"
+    status = "Enabled"
+    expiration {
+      days = local.timeouts.s3_days
+    }
+  }
 }
 
 resource "aws_sqs_queue_redrive_allow_policy" "sink" {

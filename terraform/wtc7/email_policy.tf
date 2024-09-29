@@ -45,9 +45,9 @@ data "aws_iam_policy_document" "mta" {
 
 data "aws_iam_policy_document" "port_auth" {
   statement {
-    actions   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+    actions   = ["logs:CreateLogStream", "logs:PutLogEvents"]
     effect    = "Allow"
-    resources = ["arn:aws:logs:::"]
+    resources = ["${aws_cloudwatch_log_group.mta.arn}:*"]
   }
   statement {
     actions   = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes"]

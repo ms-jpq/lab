@@ -13,11 +13,11 @@ from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client
 
 log, metrics, trace = Logger(), Metrics(), Tracer()
+ses, s3 = client(service_name="sesv2"), client(service_name="s3")
 
 
 @trace.capture_method
 async def _run(record: SQSRecord) -> None:
-    ses = client(service_name="sesv2")
     data = b""
     # ses.send_email(
     #     FromEmailAddress="",
