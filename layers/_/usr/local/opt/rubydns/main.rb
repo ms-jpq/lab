@@ -172,16 +172,18 @@ def main
 
   parse_args => { listen:, upstream: }
 
-  recv = listen.flat_map(&method(:parse_addrs))
-  snd = upstream.lazy.flat_map(&method(:parse_addrs)).group_by(&:socktype)
+  listen.flat_map(&method(:parse_addrs)) => Array => recv
+  upstream.lazy.flat_map(&method(:parse_addrs)).group_by(&:socktype) => Hash => snd
 
   threads =
     recv.map do |rx|
       Thread.new do
+        rx => Addrinfo
         do_recv(logger:, rx:) do |req|
+          req => String | nil
           next '' if req.nil?
 
-          tx = snd.fetch(rx.socktype).sample
+          snd.fetch(rx.socktype).sample => Addrinfo => tx
           do_send(logger:, tx:, req:) => String | nil => msg
           next '' if msg.nil?
 
