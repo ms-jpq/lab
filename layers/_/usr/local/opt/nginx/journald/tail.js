@@ -10,7 +10,6 @@ const COUNT = 9999;
 /**
  * @param {string} uri
  * @param {string | undefined}  cursor
- * @returns {AsyncIterableIterator<string>}
  */
 const raw_stream = async function* (uri, cursor) {
   const abortion = new AbortController();
