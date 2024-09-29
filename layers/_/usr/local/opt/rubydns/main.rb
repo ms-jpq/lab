@@ -114,10 +114,9 @@ def send_tcp(tx:, req:)
   conn.write(len)
   conn.write(req)
   conn.read(2)&.unpack1('n') => Integer | nil => len
-  return '' if len.nil?
+  return if len.nil?
 
-  conn.read(len) => String | nil => rsp
-  rsp
+  conn.read(len) => String | nil
 ensure
   conn&.close
 end
@@ -125,6 +124,7 @@ end
 def send_udp(tx:, req:)
   [tx, req] => [Addrinfo, String]
   conn = tx.connect
+  set_timeout(sock: conn)
   conn.write(req)
   conn.recvfrom(UDP_SIZE) => [String => rsp, Addrinfo]
   rsp
