@@ -10,7 +10,7 @@ require('pathname')
 require('resolv')
 require('socket')
 
-UDP_SIZE = Resolv::DNS::UDPSize * 8
+UDP_SIZE = Resolv::DNS::UDPSize * 32
 
 def parse_args
   options, =
@@ -49,7 +49,10 @@ def bind(rx:)
     return(
       rx.bind.tap do
         set_timeout(sock: _1)
-        _1.listen(Socket::SOMAXCONN) if _1.local_address.socktype == Socket::SOCK_STREAM
+        if _1.local_address.socktype == Socket::SOCK_STREAM
+          _1.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
+          _1.listen(Socket::SOMAXCONN)
+        end
       end
     )
   rescue Errno::EADDRNOTAVAIL
