@@ -23,17 +23,17 @@ resource "aws_lambda_function" "mta" {
   timeout          = 60
 }
 
-resource "aws_lambda_function_event_invoke_config" "mta" {
-  provider      = aws.us_e1
-  depends_on    = [aws_sqs_queue_policy.dns]
-  function_name = aws_lambda_function.mta.function_name
-
-  destination_config {
-    on_failure {
-      destination = aws_sqs_queue.dns.arn
-    }
-  }
-}
+# resource "aws_lambda_function_event_invoke_config" "mta" {
+#   provider      = aws.us_e1
+#   depends_on    = [aws_sqs_queue_policy.sink]
+#   function_name = aws_lambda_function.mta.function_name
+#
+#   destination_config {
+#     on_failure {
+#       destination = aws_sqs_queue.sink.arn
+#     }
+#   }
+# }
 
 resource "aws_cloudwatch_event_rule" "cron" {
   provider            = aws.us_e1
@@ -46,6 +46,6 @@ resource "aws_cloudwatch_event_target" "cron" {
   rule     = aws_cloudwatch_event_rule.cron.name
 
   dead_letter_config {
-    arn = aws_sqs_queue.dns.arn
+    arn = aws_sqs_queue.sink.arn
   }
 }

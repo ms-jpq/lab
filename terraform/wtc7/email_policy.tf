@@ -28,19 +28,8 @@ data "aws_iam_policy_document" "mbox" {
   }
 }
 
-data "aws_iam_policy_document" "dns" {
-  statement {
-    actions   = ["sqs:SendMessage"]
-    effect    = "Allow"
-    resources = [aws_sqs_queue.dns.arn]
-
-    condition {
-      test     = "ArnEquals"
-      variable = "aws:SourceArn"
-      values   = [aws_lambda_function.mta.arn]
-    }
-  }
-}
+# data "aws_iam_policy_document" "sink" {
+# }
 
 data "aws_iam_policy_document" "mta" {
   statement {
@@ -63,7 +52,7 @@ data "aws_iam_policy_document" "port_auth" {
   statement {
     actions   = ["sqs:SendMessage"]
     effect    = "Allow"
-    resources = [aws_sqs_queue.dns.arn]
+    resources = [aws_sqs_queue.sink.arn]
   }
   statement {
     actions   = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes"]
@@ -94,11 +83,11 @@ resource "aws_sqs_queue_policy" "mbox" {
   policy    = data.aws_iam_policy_document.mbox.json
 }
 
-resource "aws_sqs_queue_policy" "dns" {
-  provider  = aws.us_e1
-  queue_url = aws_sqs_queue.dns.id
-  policy    = data.aws_iam_policy_document.dns.json
-}
+# resource "aws_sqs_queue_policy" "sink" {
+#   provider  = aws.us_e1
+#   queue_url = aws_sqs_queue.sink.id
+#   policy    = data.aws_iam_policy_document.sink.json
+# }
 
 resource "aws_iam_role" "mta" {
   provider           = aws.us_e1
