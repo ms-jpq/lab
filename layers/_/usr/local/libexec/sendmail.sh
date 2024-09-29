@@ -2,8 +2,8 @@
 
 set -o pipefail
 
-OPTS='f:,r:,s:,h:,b:,a:'
-LONG_OPTS='from:,rcpt:,subject:,header:,body:,attachment:'
+OPTS='x:,f:,r:,s:,h:,b:,a:'
+LONG_OPTS='mx:,from:,rcpt:,subject:,header:,body:,attachment:'
 GO="$(getopt --options="$OPTS" --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
@@ -23,6 +23,10 @@ while (($#)); do
   --)
     shift -- 1
     break
+    ;;
+  -x | --mx)
+    MX="$2"
+    shift -- 2
     ;;
   -f | --from)
     FROM="$2"
@@ -57,6 +61,10 @@ while (($#)); do
   esac
 done
 
+if ! [[ -v MX ]]; then
+  MX="$(dig "$DOMAIN" MX +short | sed -E -n -e 's/\.$//g' -e '1s/^[0-9]+[[:space:]]+//gp')"
+fi
+
 CURL=(
   curl
   --fail-with-body
@@ -70,7 +78,7 @@ CURL=(
   "${ATTACHMENTS[@]}"
   --no-progress-meter
   "$@"
-  -- "smtps://$DOMAIN"
+  -- "smtps://$MX"
 )
 
 exec -- "${CURL[@]}"
