@@ -1,46 +1,65 @@
 resource "aws_s3_bucket" "maildir" {
-  bucket = "kfc-maildir"
+  provider = aws.us_e1
+  bucket   = "kfc-maildir"
 }
 
-resource "aws_sns_topic" "maildir" {
+resource "aws_sqs_queue" "maildir" {
 }
-
 resource "aws_sqs_queue" "dns" {
 }
 
 data "aws_iam_policy_document" "mta" {
   statement {
-    actions = ["sts:AssumeRole"]
-    effect  = "Allow"
-    principals {
-      type        = "Service"
-      identifiers = ["lambda.amazonaws.com"]
-    }
+    actions   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+    effect    = "Allow"
+    resources = ["arn:aws:logs:*:*:*"]
+  }
+  statement {
+    actions   = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes"]
+    effect    = "Allow"
+    resources = ["arn:aws:sqs:*:*:${aws_sqs_queue.maildir.name}"]
+  }
+  statement {
+    actions   = ["s3:GetObject", "s3:PutObject"]
+    effect    = "Allow"
+    resources = ["arn:aws:s3:*:*:${aws_s3_bucket.maildir.bucket}/*"]
+  }
+  statement {
+    actions   = ["ses:SendRawEmail"]
+    effect    = "Allow"
+    resources = ["/*"]
+  }
+}
+
+data "aws_iam_policy_document" "maildir" {
+  statement {
+    actions   = ["s3:GetObject", "s3:PutObject"]
+    effect    = "Allow"
+    resources = ["arn:aws:s3:*:*:${aws_s3_bucket.maildir.bucket}/*"]
   }
 
-  # statement {
-  #   actions = ["s3:*"]
-  #   effect  = "Allow"
-  #   resources = flatten([
-  #     for bucket in [aws_s3_bucket.maildir.bucket] : [
-  #       "arn:aws:s3:::${bucket}/*"
-  #   ]])
-  # }
+  statement {
+    effect = "Allow"
+
+    actions   = ["sqs:SendMessage"]
+    resources = ["arn:aws:sqs:*:*:${aws_sqs_queue.maildir.name}"]
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:SourceArn"
+      values   = [aws_s3_bucket.maildir.arn]
+    }
+  }
 }
 
-resource "aws_iam_role" "mta" {
-  name               = "mta"
-  assume_role_policy = data.aws_iam_policy_document.mta.json
-}
-
-# data "aws_iam_role" "cloud_watch" {
-#   name = "AWSLambdaBasicExecutionRole"
-# }
-
-resource "aws_iam_role_policy_attachment" "mta" {
-  for_each   = toset(["arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole", "arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole"])
-  policy_arn = each.key
-  role       = aws_iam_role.mta.name
+resource "aws_sqs_queue_policy" "qq" {
+  queue_url = aws_sqs_queue.maildir.arn
+  policy    = data.aws_iam_policy_document.maildir.json
 }
 
 data "aws_route53_zone" "limited_void" {
@@ -52,12 +71,11 @@ locals {
 }
 
 resource "aws_route53_record" "limited_mx" {
-  provider = aws.us_e1
-  name     = data.aws_route53_zone.limited_void.name
-  records  = ["1 ${data.aws_route53_zone.limited_void.name}"]
-  ttl      = local.dns_ttl
-  type     = "MX"
-  zone_id  = data.aws_route53_zone.limited_void.zone_id
+  name    = data.aws_route53_zone.limited_void.name
+  records = ["1 ${data.aws_route53_zone.limited_void.name}"]
+  ttl     = local.dns_ttl
+  type    = "MX"
+  zone_id = data.aws_route53_zone.limited_void.zone_id
 }
 
 resource "aws_ses_domain_identity" "limited_txt" {
@@ -66,12 +84,11 @@ resource "aws_ses_domain_identity" "limited_txt" {
 }
 
 resource "aws_route53_record" "limited_txt" {
-  provider = aws.us_e1
-  name     = aws_ses_domain_identity.limited_txt.domain
-  records  = [aws_ses_domain_identity.limited_txt.verification_token]
-  ttl      = local.dns_ttl
-  type     = "TXT"
-  zone_id  = data.aws_route53_zone.limited_void.zone_id
+  name    = aws_ses_domain_identity.limited_txt.domain
+  records = [aws_ses_domain_identity.limited_txt.verification_token]
+  ttl     = local.dns_ttl
+  type    = "TXT"
+  zone_id = data.aws_route53_zone.limited_void.zone_id
 }
 
 resource "aws_ses_domain_identity_verification" "limited_txt" {
@@ -80,10 +97,12 @@ resource "aws_ses_domain_identity_verification" "limited_txt" {
 }
 
 resource "aws_ses_receipt_rule_set" "router1" {
+  provider      = aws.us_e1
   rule_set_name = "router1"
 }
 
 resource "aws_ses_receipt_rule" "s3" {
+  provider      = aws.us_e1
   name          = "s3"
   rule_set_name = aws_ses_receipt_rule_set.router1.rule_set_name
 
@@ -102,10 +121,14 @@ resource "aws_ses_receipt_rule" "s3" {
 resource "aws_s3_bucket_notification" "maildir" {
   bucket = aws_s3_bucket.maildir.id
 
-  topic {
+  queue {
     events    = ["s3:ObjectCreated:*"]
-    topic_arn = aws_sns_topic.maildir.arn
+    queue_arn = aws_sqs_queue.maildir.arn
   }
+}
+
+resource "aws_iam_role" "mta" {
+  assume_role_policy = data.aws_iam_policy_document.mta.json
 }
 
 data "archive_file" "mta" {
@@ -124,26 +147,12 @@ resource "aws_lambda_function" "mta" {
   source_code_hash = data.archive_file.mta.output_base64sha256
 }
 
-resource "aws_lambda_permission" "mta" {
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.mta.function_name
-  principal     = "sns.amazonaws.com"
-  source_arn    = aws_sns_topic.maildir.arn
-}
-
 resource "aws_lambda_function_event_invoke_config" "dns" {
   function_name = aws_lambda_function.mta.function_name
 
-  depends_on = [aws_iam_role_policy_attachment.mta]
   destination_config {
     on_failure {
       destination = aws_sqs_queue.dns.arn
     }
   }
-}
-
-resource "aws_sns_topic_subscription" "maildir" {
-  endpoint  = aws_lambda_function.mta.arn
-  protocol  = "lambda"
-  topic_arn = aws_sns_topic.maildir.arn
 }
