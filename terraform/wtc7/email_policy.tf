@@ -12,11 +12,6 @@ data "aws_iam_policy_document" "maildir" {
 
 data "aws_iam_policy_document" "mbox" {
   statement {
-    actions   = ["s3:PutObject"]
-    effect    = "Allow"
-    resources = ["${aws_s3_bucket.maildir.arn}/*"]
-  }
-  statement {
     actions   = ["sqs:SendMessage"]
     effect    = "Allow"
     resources = [aws_sqs_queue.mbox.arn]
@@ -26,6 +21,11 @@ data "aws_iam_policy_document" "mbox" {
       variable = "aws:SourceArn"
       values   = [aws_s3_bucket.maildir.arn]
     }
+  }
+  statement {
+    actions   = ["s3:PutObject"]
+    effect    = "Allow"
+    resources = ["${aws_s3_bucket.maildir.arn}/*"]
   }
 }
 
@@ -91,13 +91,13 @@ resource "aws_s3_bucket_policy" "maildir" {
 
 
 resource "aws_sqs_queue_policy" "mbox" {
-  provider = aws.us_e1
+  provider  = aws.us_e1
   queue_url = aws_sqs_queue.mbox.id
   policy    = data.aws_iam_policy_document.mbox.json
 }
 
 resource "aws_sqs_queue_policy" "dns" {
-  provider = aws.us_e1
+  provider  = aws.us_e1
   queue_url = aws_sqs_queue.dns.id
   policy    = data.aws_iam_policy_document.dns.json
 }
