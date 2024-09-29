@@ -31,3 +31,17 @@ resource "aws_ses_domain_identity_verification" "limited_txt" {
   provider = aws.us_e1
   domain   = aws_route53_record.limited_txt.name
 }
+
+resource "aws_ses_domain_dkim" "limited_txt" {
+  provider = aws.us_e1
+  domain   = data.aws_route53_zone.limited_void.name
+}
+
+resource "aws_route53_record" "limited_cname" {
+  count   = length(aws_ses_domain_dkim.limited_txt.dkim_tokens)
+  name    = "${aws_ses_domain_dkim.limited_txt.dkim_tokens[count.index]}._domainkey"
+  records = ["${aws_ses_domain_dkim.limited_txt.dkim_tokens[count.index]}.dkim.amazonses.com"]
+  ttl     = local.dns_ttl
+  type    = "CNAME"
+  zone_id = data.aws_route53_zone.limited_void.zone_id
+}
