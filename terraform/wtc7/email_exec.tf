@@ -15,7 +15,7 @@ resource "aws_lambda_function" "mta" {
   architectures    = [local.lambda_arch]
   filename         = data.archive_file.mta.output_path
   function_name    = basename(data.archive_file.mta.source_dir)
-  handler          = "main"
+  handler          = "mta.main"
   layers           = [local.lambda_layer]
   role             = aws_iam_role.mta.arn
   runtime          = local.lambda_rt
