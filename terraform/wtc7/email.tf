@@ -33,7 +33,7 @@ resource "aws_lambda_function" "mta" {
 
 resource "aws_lambda_function_event_invoke_config" "mta" {
   provider      = aws.us_e1
-  depends_on    = [aws_sqs_queue_policy.qq]
+  depends_on    = [aws_sqs_queue_policy.dns]
   function_name = aws_lambda_function.mta.function_name
 
   destination_config {

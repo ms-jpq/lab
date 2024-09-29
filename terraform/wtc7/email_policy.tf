@@ -89,14 +89,17 @@ resource "aws_s3_bucket_policy" "maildir" {
   policy   = data.aws_iam_policy_document.maildir.json
 }
 
-resource "aws_sqs_queue_policy" "qq" {
+
+resource "aws_sqs_queue_policy" "mbox" {
   provider = aws.us_e1
-  for_each = {
-    mbox = [aws_sqs_queue.mbox.id, data.aws_iam_policy_document.mbox],
-    dns  = [aws_sqs_queue.dns.id, data.aws_iam_policy_document.dns],
-  }
-  queue_url = each.value[0]
-  policy    = each.value[1].json
+  queue_url = aws_sqs_queue.mbox.id
+  policy    = data.aws_iam_policy_document.mbox.json
+}
+
+resource "aws_sqs_queue_policy" "dns" {
+  provider = aws.us_e1
+  queue_url = aws_sqs_queue.dns.id
+  policy    = data.aws_iam_policy_document.dns.json
 }
 
 resource "aws_iam_role" "mta" {

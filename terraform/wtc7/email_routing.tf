@@ -5,7 +5,7 @@ resource "aws_ses_receipt_rule_set" "maildir" {
 
 resource "aws_ses_receipt_rule" "maildir" {
   provider      = aws.us_e1
-  depends_on    = [aws_sqs_queue_policy.qq]
+  depends_on    = [aws_sqs_queue_policy.mbox]
   name          = "maildir"
   rule_set_name = aws_ses_receipt_rule_set.maildir.rule_set_name
 
@@ -22,7 +22,7 @@ resource "aws_ses_receipt_rule" "maildir" {
 
 resource "aws_s3_bucket_notification" "maildir" {
   provider   = aws.us_e1
-  depends_on = [aws_s3_bucket_policy.maildir, aws_sqs_queue_policy.qq]
+  depends_on = [aws_sqs_queue_policy.mbox]
   bucket     = aws_s3_bucket.maildir.id
 
   queue {
