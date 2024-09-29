@@ -110,6 +110,7 @@ end
 def send_tcp(tx:, req:)
   [tx, req] => [Addrinfo, String]
   conn = tx.connect
+  set_timeout(sock: conn)
   [req.bytesize].pack('n') => String => len
   conn.write(len)
   conn.write(req)
