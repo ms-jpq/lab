@@ -1,6 +1,6 @@
 locals {
   s2_users   = ["i6", "dev", "work"]
-  smtp_users = ["1"]
+  smtp_users = ["t2"]
 }
 
 data "aws_iam_policy_document" "s2" {
@@ -65,6 +65,7 @@ resource "aws_iam_user_policy_attachment" "iam" {
 }
 
 resource "aws_iam_access_key" "iam" {
+  provider   = aws.us_e1
   for_each   = toset(local.iam_users)
   depends_on = [aws_iam_user.iam]
   user       = each.key

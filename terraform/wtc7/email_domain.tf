@@ -48,3 +48,16 @@ resource "aws_route53_record" "limited_cname" {
   type     = "CNAME"
   zone_id  = data.aws_route53_zone.limited_void.zone_id
 }
+
+resource "aws_sesv2_email_identity" "mta" {
+  provider       = aws.us_e1
+  for_each       = toset([var.mail_from, var.mail_to])
+  email_identity = each.key
+}
+
+output "email" {
+  value = {
+    domain = data.aws_route53_zone.limited_void.name,
+    email  = [for id in aws_sesv2_email_identity.mta : id.email_identity],
+  }
+}
