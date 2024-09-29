@@ -5,7 +5,6 @@ resource "aws_ses_receipt_rule_set" "maildir" {
 
 resource "aws_ses_receipt_rule" "maildir" {
   provider      = aws.us_e1
-  depends_on    = [aws_sqs_queue_policy.mbox]
   name          = "maildir"
   rule_set_name = aws_ses_receipt_rule_set.maildir.rule_set_name
 

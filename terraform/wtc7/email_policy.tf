@@ -16,17 +16,21 @@ data "aws_iam_policy_document" "mbox" {
     effect    = "Allow"
     resources = [aws_sqs_queue.mbox.arn]
 
+    principals {
+      type        = "Service"
+      identifiers = ["s3.amazonaws.com"]
+    }
     condition {
       test     = "ArnEquals"
       variable = "aws:SourceArn"
       values   = [aws_s3_bucket.maildir.arn]
     }
   }
-  statement {
-    actions   = ["s3:PutObject"]
-    effect    = "Allow"
-    resources = ["${aws_s3_bucket.maildir.arn}/*"]
-  }
+  # statement {
+  #   actions   = ["s3:PutObject"]
+  #   effect    = "Allow"
+  #   resources = [aws_s3_bucket.maildir.arn, "${aws_s3_bucket.maildir.arn}/*"]
+  # }
 }
 
 data "aws_iam_policy_document" "dns" {
@@ -88,7 +92,6 @@ resource "aws_s3_bucket_policy" "maildir" {
   bucket   = aws_s3_bucket.maildir.id
   policy   = data.aws_iam_policy_document.maildir.json
 }
-
 
 resource "aws_sqs_queue_policy" "mbox" {
   provider  = aws.us_e1
