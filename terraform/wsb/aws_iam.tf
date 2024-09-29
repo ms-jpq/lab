@@ -22,7 +22,7 @@ data "aws_iam_policy_document" "s2" {
 
 data "aws_iam_policy_document" "smtp" {
   statement {
-    actions   = ["ses:SendEmail", "ses:SendRawEmail"]
+    actions   = ["ses:SendRawEmail"]
     effect    = "Allow"
     resources = ["*"]
   }

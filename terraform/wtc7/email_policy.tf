@@ -60,7 +60,7 @@ data "aws_iam_policy_document" "port_auth" {
     resources = ["${aws_s3_bucket.maildir.arn}/*"]
   }
   statement {
-    actions   = ["ses:SendRawEmail"]
+    actions   = ["ses:SendEmail"]
     effect    = "Allow"
     resources = ["*"]
   }
