@@ -116,7 +116,8 @@ def send_tcp(tx:, req:)
   conn.read(2)&.unpack1('n') => Integer | nil => len
   return if len.nil?
 
-  conn.read(len) => String | nil
+  conn.read(len) => String | nil => rsp
+  rsp
 ensure
   conn&.close
 end
@@ -142,6 +143,10 @@ def do_send(logger:, tx:, req:)
   end
 rescue IOError => e
   logger.error(e)
+end
+
+def failed(req:)
+  req => String
 end
 
 def xform(logger:, msg:)
@@ -174,8 +179,12 @@ def main
     recv.map do |rx|
       Thread.new do
         do_recv(logger:, rx:) do |req|
+          next '' if req.nil?
+
           tx = snd.fetch(rx.socktype).sample
-          do_send(logger:, tx:, req:) => String => msg
+          do_send(logger:, tx:, req:) => String | nil => msg
+          next '' if msg.nil?
+
           xform(logger:, msg:) => String => rsp
           rsp
         end
