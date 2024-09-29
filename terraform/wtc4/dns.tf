@@ -1,6 +1,6 @@
 data "google_dns_managed_zone" "sea_to_sky" {
   provider = google.kalimdor
-  name     = replace(var.le_domain, ".", "-")
+  name     = replace(var.vps_domain, ".", "-")
 }
 
 resource "google_dns_record_set" "sea_to_sky_mx" {

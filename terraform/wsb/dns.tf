@@ -1,4 +1,4 @@
-variable "le_domain" {
+variable "vps_domain" {
   type = string
 }
 

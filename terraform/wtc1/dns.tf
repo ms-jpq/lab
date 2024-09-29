@@ -1,5 +1,5 @@
 data "aws_route53_zone" "sea_to_sky" {
-  name = var.le_domain
+  name = var.vps_domain
 }
 
 resource "aws_route53_record" "sea_to_sky_mx" {
