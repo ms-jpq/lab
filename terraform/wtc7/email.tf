@@ -4,37 +4,16 @@ resource "aws_s3_bucket" "maildir" {
 }
 
 resource "aws_sqs_queue" "mbox" {
+  provider = aws.us_e1
 }
 
 resource "aws_sqs_queue" "dns" {
-}
-
-data "aws_iam_policy_document" "mta" {
-  statement {
-    actions   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
-    effect    = "Allow"
-    resources = ["arn:aws:logs:::"]
-  }
-  statement {
-    actions   = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes"]
-    effect    = "Allow"
-    resources = [aws_sqs_queue.mbox.arn]
-  }
-  statement {
-    actions   = ["s3:GetObject", "s3:PutObject"]
-    effect    = "Allow"
-    resources = ["${aws_s3_bucket.maildir.arn}/*"]
-  }
-  statement {
-    actions   = ["ses:SendRawEmail"]
-    effect    = "Allow"
-    resources = ["*"]
-  }
+  provider = aws.us_e1
 }
 
 data "aws_iam_policy_document" "mbox" {
   statement {
-    actions   = ["s3:GetObject", "s3:PutObject"]
+    actions   = ["s3:PutObject"]
     effect    = "Allow"
     resources = ["${aws_s3_bucket.maildir.arn}/*"]
   }
@@ -55,7 +34,8 @@ data "aws_iam_policy_document" "mbox" {
   }
 }
 
-resource "aws_sqs_queue_policy" "qq" {
+resource "aws_sqs_queue_policy" "mbox" {
+  provider  = aws.us_e1
   queue_url = aws_sqs_queue.mbox.id
   policy    = data.aws_iam_policy_document.mbox.json
 }
@@ -149,8 +129,52 @@ resource "aws_s3_bucket_notification" "maildir" {
   }
 }
 
+data "aws_iam_policy_document" "mta" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    effect  = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "port_auth" {
+  statement {
+    actions   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+    effect    = "Allow"
+    resources = ["arn:aws:logs:::"]
+  }
+  statement {
+    actions   = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes"]
+    effect    = "Allow"
+    resources = [aws_sqs_queue.mbox.arn]
+  }
+  statement {
+    actions   = ["s3:GetObject", "s3:PutObject"]
+    effect    = "Allow"
+    resources = ["${aws_s3_bucket.maildir.arn}/*"]
+  }
+  statement {
+    actions   = ["ses:SendRawEmail"]
+    effect    = "Allow"
+    resources = ["*"]
+  }
+}
+
 resource "aws_iam_role" "mta" {
   assume_role_policy = data.aws_iam_policy_document.mta.json
+}
+
+resource "aws_iam_policy" "port_auth" {
+  policy = data.aws_iam_policy_document.port_auth.json
+}
+
+resource "aws_iam_role_policy_attachment" "port_auth" {
+  role       = aws_iam_role.mta.name
+  policy_arn = aws_iam_policy.port_auth.arn
 }
 
 data "archive_file" "mta" {
@@ -160,6 +184,7 @@ data "archive_file" "mta" {
 }
 
 resource "aws_lambda_function" "mta" {
+  provider         = aws.us_e1
   architectures    = ["arm64"]
   filename         = data.archive_file.mta.output_path
   function_name    = basename(data.archive_file.mta.source_dir)
@@ -169,8 +194,33 @@ resource "aws_lambda_function" "mta" {
   source_code_hash = data.archive_file.mta.output_base64sha256
 }
 
-resource "aws_lambda_function_event_invoke_config" "dns" {
-  depends_on    = [aws_sqs_queue_policy.qq]
+data "aws_iam_policy_document" "dns" {
+  statement {
+    actions   = ["sqs:SendMessage"]
+    effect    = "Allow"
+    resources = [aws_sqs_queue.dns.arn]
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:SourceArn"
+      values   = [aws_lambda_function.mta.arn]
+    }
+  }
+}
+
+resource "aws_sqs_queue_policy" "dns" {
+  provider  = aws.us_e1
+  queue_url = aws_sqs_queue.dns.id
+  policy    = data.aws_iam_policy_document.dns.json
+}
+
+resource "aws_lambda_function_event_invoke_config" "mta" {
+  provider      = aws.us_e1
+  depends_on    = [aws_sqs_queue_policy.dns]
   function_name = aws_lambda_function.mta.function_name
 
   destination_config {
