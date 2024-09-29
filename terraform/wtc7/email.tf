@@ -10,23 +10,22 @@ resource "aws_sqs_queue" "dns" {
 
 data "aws_iam_policy_document" "mta" {
   statement {
-    actions = [
-      "logs:CreateLogGroup",
-      "logs:CreateLogStream",
-      "logs:PutLogEvents",
-    ]
-    effect    = "Allow"
-    resources = ["arn:aws:logs:*:*:*"]
+    actions = ["sts:AssumeRole"]
+    effect  = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
   }
 
-  statement {
-    actions = ["s3:*"]
-    effect  = "Allow"
-    resources = flatten([
-      for bucket in [aws_s3_bucket.maildir.bucket] : [
-        "arn:aws:s3:::${bucket}/*"
-    ]])
-  }
+  # statement {
+  #   actions = ["s3:*"]
+  #   effect  = "Allow"
+  #   resources = flatten([
+  #     for bucket in [aws_s3_bucket.maildir.bucket] : [
+  #       "arn:aws:s3:::${bucket}/*"
+  #   ]])
+  # }
 }
 
 resource "aws_iam_role" "mta" {
@@ -34,25 +33,50 @@ resource "aws_iam_role" "mta" {
   assume_role_policy = data.aws_iam_policy_document.mta.json
 }
 
+# data "aws_iam_role" "cloud_watch" {
+#   name = "AWSLambdaBasicExecutionRole"
+# }
+
+resource "aws_iam_role_policy_attachment" "mta" {
+  for_each   = toset(["arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole", "arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole"])
+  policy_arn = each.key
+  role       = aws_iam_role.mta.name
+}
+
 data "aws_route53_zone" "limited_void" {
-  name = var.mail_from
+  name = replace(regex("@.+$", var.mail_from), "@", "")
 }
 
-resource "aws_ses_domain_identity" "limited_void" {
-  domain = data.aws_route53_zone.limited_void.name
+locals {
+  dns_ttl = 60
 }
 
-resource "aws_route53_record" "limited_void" {
-  name    = "_amazonses.${aws_ses_domain_identity.limited_void.domain}"
-  records = [aws_ses_domain_identity.limited_void.verification_token]
-  ttl     = 600
-  type    = "TXT"
-  zone_id = data.aws_route53_zone.limited_void.zone_id
+resource "aws_route53_record" "limited_mx" {
+  provider = aws.us_e1
+  name     = data.aws_route53_zone.limited_void.name
+  records  = ["1 ${data.aws_route53_zone.limited_void.name}"]
+  ttl      = local.dns_ttl
+  type     = "MX"
+  zone_id  = data.aws_route53_zone.limited_void.zone_id
 }
 
-resource "aws_ses_domain_identity_verification" "limited_void" {
-  depends_on = [aws_route53_record.limited_void]
-  domain     = aws_ses_domain_identity.limited_void.domain
+resource "aws_ses_domain_identity" "limited_txt" {
+  provider = aws.us_e1
+  domain   = aws_route53_record.limited_mx.name
+}
+
+resource "aws_route53_record" "limited_txt" {
+  provider = aws.us_e1
+  name     = aws_ses_domain_identity.limited_txt.domain
+  records  = [aws_ses_domain_identity.limited_txt.verification_token]
+  ttl      = local.dns_ttl
+  type     = "TXT"
+  zone_id  = data.aws_route53_zone.limited_void.zone_id
+}
+
+resource "aws_ses_domain_identity_verification" "limited_txt" {
+  provider = aws.us_e1
+  domain   = aws_route53_record.limited_txt.name
 }
 
 resource "aws_ses_receipt_rule_set" "router1" {
@@ -100,9 +124,17 @@ resource "aws_lambda_function" "mta" {
   source_code_hash = data.archive_file.mta.output_base64sha256
 }
 
+resource "aws_lambda_permission" "mta" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.mta.function_name
+  principal     = "sns.amazonaws.com"
+  source_arn    = aws_sns_topic.maildir.arn
+}
+
 resource "aws_lambda_function_event_invoke_config" "dns" {
   function_name = aws_lambda_function.mta.function_name
 
+  depends_on = [aws_iam_role_policy_attachment.mta]
   destination_config {
     on_failure {
       destination = aws_sqs_queue.dns.arn
