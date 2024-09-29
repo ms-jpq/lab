@@ -1,6 +1,5 @@
 locals {
   bastion_buckets = ["kfc-tfstate"]
-  s2_users        = ["i6", "dev", "work"]
 }
 
 resource "aws_s3_bucket" "kfc" {
@@ -29,9 +28,5 @@ output "aws_s3" {
       for bucket in aws_s3_bucket.kfc :
       bucket.id
     ]
-    s2_accounts = {
-      for key, access_key in aws_iam_access_key.s2 :
-      key => access_key.id
-    }
   }
 }
