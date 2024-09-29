@@ -18,7 +18,9 @@ log, trace = Logger(), Tracer()
 
 @trace.capture_method
 async def _run(record: SQSRecord) -> None:
-    c = client(service_name="ses")
+    ses = client(service_name="sesv2")
+    data = b""
+    # ses.send_email(FromEmailAddress="", Content={"Raw": {"Data": data}})
     log.info(record.body)
 
 
