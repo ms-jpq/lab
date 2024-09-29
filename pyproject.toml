@@ -1,5 +1,5 @@
 [project]
-dependencies = ["elasticsearch"]
+dependencies = ["elasticsearch", "aws-lambda-powertools"]
 name         = "lab"
 version      = "0"
 
