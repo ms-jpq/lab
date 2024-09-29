@@ -62,7 +62,7 @@ while (($#)); do
 done
 
 if ! [[ -v MX ]]; then
-  MX="$(dig "$DOMAIN" MX +short | sed -E -n -e 's/\.$//g' -e '1s/^[0-9]+[[:space:]]+//gp')"
+  MX="$(dig "$DOMAIN" MX +short | sort --numeric-sort --key 1 | sed -E -n -e 's/\.$//g' -e '1s/^[0-9]+[[:space:]]+//gp')"
 fi
 
 CURL=(
