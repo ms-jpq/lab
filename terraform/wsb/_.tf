@@ -5,10 +5,6 @@ terraform {
       source  = "hashicorp/aws"
       version = ">= 0"
     }
-    cloudflare = {
-      source  = "cloudflare/cloudflare"
-      version = ">= 0"
-    }
     google = {
       source  = "hashicorp/google"
       version = ">= 0"
