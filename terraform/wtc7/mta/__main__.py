@@ -1,7 +1,7 @@
 from collections.abc import Mapping
 from typing import Any, cast
 
-from aws_lambda_powertools import Logger, Tracer
+from aws_lambda_powertools import Logger, Metrics, Tracer
 from aws_lambda_powertools.utilities.batch import (
     AsyncBatchProcessor,
     EventType,
@@ -13,7 +13,7 @@ from aws_lambda_powertools.utilities.parser.models import SqsRecordModel
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client
 
-log, trace = Logger(), Tracer()
+log, metrics, trace = Logger(), Metrics(), Tracer()
 
 
 @trace.capture_method
@@ -28,6 +28,7 @@ async def _run(record: SQSRecord) -> None:
     log.info(record.body)
 
 
+@metrics.log_metrics
 @log.inject_lambda_context
 @trace.capture_lambda_handler
 @event_source(data_class=SQSEvent)
