@@ -2,7 +2,23 @@ resource "aws_s3_bucket" "maildir" {
   bucket = "kfc-maildir"
 }
 
-data "aws_iam_policy_document" "lamb" {
+resource "aws_sns_topic" "maildir" {
+}
+
+resource "aws_sqs_queue" "dns" {
+}
+
+data "aws_iam_policy_document" "mta" {
+  statement {
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+    effect    = "Allow"
+    resources = ["arn:aws:logs:*:*:*"]
+  }
+
   statement {
     actions = ["s3:*"]
     effect  = "Allow"
@@ -13,26 +29,30 @@ data "aws_iam_policy_document" "lamb" {
   }
 }
 
-resource "aws_iam_role" "lamb" {
+resource "aws_iam_role" "mta" {
   name               = "mta"
-  assume_role_policy = data.aws_iam_policy_document.lamb.json
+  assume_role_policy = data.aws_iam_policy_document.mta.json
+}
+
+data "aws_route53_zone" "limited_void" {
+  name = var.mail_from
 }
 
 resource "aws_ses_domain_identity" "limited_void" {
-  domain = var.email_domain
+  domain = data.aws_route53_zone.limited_void.name
 }
 
 resource "aws_route53_record" "limited_void" {
-  name    = "_amazonses.${aws_ses_domain_identity.limited_void.id}"
+  name    = "_amazonses.${aws_ses_domain_identity.limited_void.domain}"
   records = [aws_ses_domain_identity.limited_void.verification_token]
   ttl     = 600
   type    = "TXT"
-  zone_id = aws_route53_zone.limited_void.zone_id
+  zone_id = data.aws_route53_zone.limited_void.zone_id
 }
 
 resource "aws_ses_domain_identity_verification" "limited_void" {
   depends_on = [aws_route53_record.limited_void]
-  domain     = aws_ses_domain_identity.limited_void.id
+  domain     = aws_ses_domain_identity.limited_void.domain
 }
 
 resource "aws_ses_receipt_rule_set" "router1" {
@@ -43,77 +63,55 @@ resource "aws_ses_receipt_rule" "s3" {
   name          = "s3"
   rule_set_name = aws_ses_receipt_rule_set.router1.rule_set_name
 
+  add_header_action {
+    header_name  = "X-Mail-To"
+    header_value = urlencode(var.mail_to)
+    position     = 0
+  }
+
   s3_action {
     bucket_name = aws_s3_bucket.maildir.id
-    position    = 0
+    position    = 1
   }
 }
 
-# resource "aws_lambda_function" "process_email" {
-#   filename      = "process_email.zip"
-#   function_name = "process-email"
-#   handler       = "index.handler"
-#   role          = aws_iam_role.lamb.arn
-#   runtime       = "python3.12"
-#
-#   environment {
-#     variables = {
-#       S3_BUCKET = aws_s3_bucket.maildir.id
-#     }
-#   }
-# }
-#
-#
-# # S3 event notification to trigger Lambda
-# resource "aws_s3_bucket_notification" "bucket_notification" {
-#   bucket = aws_s3_bucket.maildir.id
-#
-#   lambda_function {
-#     lambda_function_arn = aws_lambda_function.process_email.arn
-#     events              = ["s3:ObjectCreated:*"]
-#   }
-# }
-#
-# resource "aws_cloudtrail" "main" {
-#   name                          = "main-trail"
-#   s3_bucket_name                = aws_s3_bucket.cloudtrail_bucket.id
-#   include_global_service_events = true
-#
-#   event_selector {
-#     read_write_type           = "All"
-#     include_management_events = true
-#
-#     data_resource {
-#       type   = "AWS::S3::Object"
-#       values = ["${aws_s3_bucket.maildir.arn}/"]
-#     }
-#
-#     data_resource {
-#       type   = "AWS::Lambda::Function"
-#       values = [aws_lambda_function.process_email.arn]
-#     }
-#   }
-# }
-#
-# resource "aws_s3_bucket" "cloudtrail_bucket" {
-#   bucket = "my-cloudtrail-bucket"
-# }
-#
-# resource "aws_cloudwatch_event_rule" "cleanup_failed_invocations" {
-#   name                = "cleanup-failed-invocations"
-#   description         = "Clean up failed Lambda invocations"
-#   schedule_expression = "rate(1 day)"
-# }
-#
-# resource "aws_cloudwatch_event_target" "cleanup_target" {
-#   rule = aws_cloudwatch_event_rule.cleanup_failed_invocations.name
-#   arn  = aws_lambda_function.cleanup_function.arn
-# }
-#
-# resource "aws_lambda_function" "cleanup_function" {
-#   filename      = "cleanup_function.zip"
-#   function_name = "cleanup-failed-invocations"
-#   role          = aws_iam_role.lamb.arn
-#   handler       = "index.handler"
-#   runtime       = "nodejs14.x"
-# }
+resource "aws_s3_bucket_notification" "maildir" {
+  bucket = aws_s3_bucket.maildir.id
+
+  topic {
+    events    = ["s3:ObjectCreated:*"]
+    topic_arn = aws_sns_topic.maildir.arn
+  }
+}
+
+data "archive_file" "mta" {
+  output_path = "${path.module}/../../var/mta.zip"
+  source_dir  = "${path.module}/mta"
+  type        = "zip"
+}
+
+resource "aws_lambda_function" "mta" {
+  architectures    = ["arm64"]
+  filename         = data.archive_file.mta.output_path
+  function_name    = basename(data.archive_file.mta.source_dir)
+  handler          = "handler"
+  role             = aws_iam_role.mta.arn
+  runtime          = "python3.12"
+  source_code_hash = data.archive_file.mta.output_base64sha256
+}
+
+resource "aws_lambda_function_event_invoke_config" "dns" {
+  function_name = aws_lambda_function.mta.function_name
+
+  destination_config {
+    on_failure {
+      destination = aws_sqs_queue.dns.arn
+    }
+  }
+}
+
+resource "aws_sns_topic_subscription" "maildir" {
+  endpoint  = aws_lambda_function.mta.arn
+  protocol  = "lambda"
+  topic_arn = aws_sns_topic.maildir.arn
+}
