@@ -1,6 +1,9 @@
 resource "aws_s3_bucket" "maildir" {
   provider = aws.us_e1
   bucket   = "kfc-maildir"
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_sqs_queue" "mbox" {

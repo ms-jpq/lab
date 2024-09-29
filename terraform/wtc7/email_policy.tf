@@ -100,14 +100,17 @@ resource "aws_sqs_queue_policy" "qq" {
 }
 
 resource "aws_iam_role" "mta" {
+  provider           = aws.us_e1
   assume_role_policy = data.aws_iam_policy_document.mta.json
 }
 
 resource "aws_iam_policy" "port_auth" {
-  policy = data.aws_iam_policy_document.port_auth.json
+  provider = aws.us_e1
+  policy   = data.aws_iam_policy_document.port_auth.json
 }
 
 resource "aws_iam_role_policy_attachment" "port_auth" {
+  provider   = aws.us_e1
   role       = aws_iam_role.mta.name
   policy_arn = aws_iam_policy.port_auth.arn
 }
