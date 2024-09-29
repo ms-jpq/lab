@@ -35,11 +35,20 @@ def parse_addrs(addr)
   [Addrinfo.tcp(ip, port), Addrinfo.udp(ip, port)]
 end
 
+def set_timeout(sock:)
+  sock => Socket
+  timeout = [60, 0].pack('l_2')
+  [Socket::SO_RCVTIMEO, Socket::SO_SNDTIMEO].each do
+    sock.setsockopt(Socket::SOL_SOCKET, _1, timeout)
+  end
+end
+
 def bind(rx:)
   rx => Addrinfo
   loop do
     return(
       rx.bind.tap do
+        set_timeout(sock: _1)
         _1.listen(Socket::SOMAXCONN) if _1.local_address.socktype == Socket::SOCK_STREAM
       end
     )
@@ -52,6 +61,7 @@ def recv_tcp(sock:, &blk)
   [sock, blk] => [Socket, Proc]
   sock.accept => [Socket => conn, Addrinfo]
   Thread.new do
+    set_timeout(sock: conn)
     conn.read(2)&.unpack1('n') => Integer | nil => len
     return if len.nil?
 
