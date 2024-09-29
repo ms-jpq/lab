@@ -26,11 +26,6 @@ data "aws_iam_policy_document" "mbox" {
       values   = [aws_s3_bucket.maildir.arn]
     }
   }
-  # statement {
-  #   actions   = ["s3:PutObject"]
-  #   effect    = "Allow"
-  #   resources = [aws_s3_bucket.maildir.arn, "${aws_s3_bucket.maildir.arn}/*"]
-  # }
 }
 
 data "aws_iam_policy_document" "dns" {
