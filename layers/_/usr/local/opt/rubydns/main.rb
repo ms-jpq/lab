@@ -160,7 +160,8 @@ def xform(logger:, msg:)
 
     !IPAddr.new(_3.address.to_s).private?
   end
-  dns.encode
+  dns.encode => String => rsp
+  rsp
 rescue Resolv::DNS::DecodeError => e
   logger.error(e)
   msg
