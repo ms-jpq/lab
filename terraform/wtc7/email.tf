@@ -3,8 +3,9 @@ resource "aws_s3_bucket" "maildir" {
   bucket   = "kfc-maildir"
 }
 
-resource "aws_sqs_queue" "maildir" {
+resource "aws_sqs_queue" "mbox" {
 }
+
 resource "aws_sqs_queue" "dns" {
 }
 
@@ -12,43 +13,40 @@ data "aws_iam_policy_document" "mta" {
   statement {
     actions   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
     effect    = "Allow"
-    resources = ["arn:aws:logs:*:*:*"]
+    resources = ["arn:aws:logs:::"]
   }
   statement {
     actions   = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes"]
     effect    = "Allow"
-    resources = ["arn:aws:sqs:*:*:${aws_sqs_queue.maildir.name}"]
+    resources = [aws_sqs_queue.mbox.arn]
   }
   statement {
     actions   = ["s3:GetObject", "s3:PutObject"]
     effect    = "Allow"
-    resources = ["arn:aws:s3:*:*:${aws_s3_bucket.maildir.bucket}/*"]
+    resources = ["${aws_s3_bucket.maildir.arn}/*"]
   }
   statement {
     actions   = ["ses:SendRawEmail"]
     effect    = "Allow"
-    resources = ["/*"]
+    resources = ["*"]
   }
 }
 
-data "aws_iam_policy_document" "maildir" {
+data "aws_iam_policy_document" "mbox" {
   statement {
     actions   = ["s3:GetObject", "s3:PutObject"]
     effect    = "Allow"
-    resources = ["arn:aws:s3:*:*:${aws_s3_bucket.maildir.bucket}/*"]
+    resources = ["${aws_s3_bucket.maildir.arn}/*"]
   }
-
   statement {
-    effect = "Allow"
-
     actions   = ["sqs:SendMessage"]
-    resources = ["arn:aws:sqs:*:*:${aws_sqs_queue.maildir.name}"]
+    effect    = "Allow"
+    resources = [aws_sqs_queue.mbox.arn]
 
     principals {
       type        = "*"
       identifiers = ["*"]
     }
-
     condition {
       test     = "ArnEquals"
       variable = "aws:SourceArn"
@@ -58,8 +56,8 @@ data "aws_iam_policy_document" "maildir" {
 }
 
 resource "aws_sqs_queue_policy" "qq" {
-  queue_url = aws_sqs_queue.maildir.arn
-  policy    = data.aws_iam_policy_document.maildir.json
+  queue_url = aws_sqs_queue.mbox.id
+  policy    = data.aws_iam_policy_document.mbox.json
 }
 
 data "aws_route53_zone" "limited_void" {
@@ -96,22 +94,45 @@ resource "aws_ses_domain_identity_verification" "limited_txt" {
   domain   = aws_route53_record.limited_txt.name
 }
 
-resource "aws_ses_receipt_rule_set" "router1" {
+resource "aws_ses_receipt_rule_set" "maildir" {
   provider      = aws.us_e1
-  rule_set_name = "router1"
+  rule_set_name = "maildir"
 }
 
-resource "aws_ses_receipt_rule" "s3" {
+data "aws_iam_policy_document" "maildir" {
+  statement {
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.maildir.arn}/*"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["ses.amazonaws.com"]
+    }
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:SourceArn"
+      values   = [aws_ses_receipt_rule_set.maildir.arn]
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "maildir" {
+  provider = aws.us_e1
+  bucket   = aws_s3_bucket.maildir.id
+  policy   = data.aws_iam_policy_document.maildir.json
+}
+
+resource "aws_ses_receipt_rule" "maildir" {
   provider      = aws.us_e1
-  name          = "s3"
-  rule_set_name = aws_ses_receipt_rule_set.router1.rule_set_name
+  depends_on    = [aws_s3_bucket_policy.maildir]
+  name          = "maildir"
+  rule_set_name = aws_ses_receipt_rule_set.maildir.rule_set_name
 
   add_header_action {
     header_name  = "X-Mail-To"
     header_value = urlencode(var.mail_to)
     position     = 0
   }
-
   s3_action {
     bucket_name = aws_s3_bucket.maildir.id
     position    = 1
@@ -119,11 +140,12 @@ resource "aws_ses_receipt_rule" "s3" {
 }
 
 resource "aws_s3_bucket_notification" "maildir" {
-  bucket = aws_s3_bucket.maildir.id
+  provider = aws.us_e1
+  bucket   = aws_s3_bucket.maildir.id
 
   queue {
     events    = ["s3:ObjectCreated:*"]
-    queue_arn = aws_sqs_queue.maildir.arn
+    queue_arn = aws_sqs_queue.mbox.arn
   }
 }
 
@@ -148,6 +170,7 @@ resource "aws_lambda_function" "mta" {
 }
 
 resource "aws_lambda_function_event_invoke_config" "dns" {
+  depends_on    = [aws_sqs_queue_policy.qq]
   function_name = aws_lambda_function.mta.function_name
 
   destination_config {
