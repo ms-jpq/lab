@@ -1,16 +1,11 @@
 data "aws_iam_policy_document" "maildir" {
   statement {
     actions   = ["s3:PutObject"]
-    resources = ["${aws_s3_bucket.maildir.arn}/*"]
+    resources = [aws_s3_bucket.maildir.arn, "${aws_s3_bucket.maildir.arn}/*"]
 
     principals {
       type        = "Service"
       identifiers = ["ses.amazonaws.com"]
-    }
-    condition {
-      test     = "ArnEquals"
-      variable = "aws:SourceArn"
-      values   = [aws_ses_receipt_rule_set.maildir.arn]
     }
   }
 }
@@ -26,10 +21,6 @@ data "aws_iam_policy_document" "mbox" {
     effect    = "Allow"
     resources = [aws_sqs_queue.mbox.arn]
 
-    principals {
-      type        = "*"
-      identifiers = ["*"]
-    }
     condition {
       test     = "ArnEquals"
       variable = "aws:SourceArn"
@@ -44,10 +35,6 @@ data "aws_iam_policy_document" "dns" {
     effect    = "Allow"
     resources = [aws_sqs_queue.dns.arn]
 
-    principals {
-      type        = "*"
-      identifiers = ["*"]
-    }
     condition {
       test     = "ArnEquals"
       variable = "aws:SourceArn"
@@ -73,6 +60,11 @@ data "aws_iam_policy_document" "port_auth" {
     actions   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
     effect    = "Allow"
     resources = ["arn:aws:logs:::"]
+  }
+  statement {
+    actions   = ["sqs:SendMessage"]
+    effect    = "Allow"
+    resources = [aws_sqs_queue.dns.arn]
   }
   statement {
     actions   = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes"]
