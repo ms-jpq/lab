@@ -52,7 +52,7 @@ data "aws_iam_policy_document" "port_auth" {
   statement {
     actions   = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes"]
     effect    = "Allow"
-    resources = [aws_sqs_queue.mbox.arn]
+    resources = [aws_sqs_queue.mbox.arn, aws_sqs_queue.sink.arn]
   }
   statement {
     actions   = ["s3:GetObject", "s3:DeleteObject"]

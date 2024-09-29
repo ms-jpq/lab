@@ -39,6 +39,6 @@ resource "aws_sqs_queue_redrive_policy" "mbox" {
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.sink.arn
-    maxReceiveCount     = 4
+    maxReceiveCount     = 2
   })
 }

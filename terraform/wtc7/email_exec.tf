@@ -30,19 +30,11 @@ resource "aws_lambda_event_source_mapping" "mta" {
   function_name    = aws_lambda_function.mta.arn
 }
 
-resource "aws_cloudwatch_event_rule" "cron" {
-  provider            = aws.us_e1
-  schedule_expression = "rate(60 minutes)"
-}
-
-resource "aws_cloudwatch_event_target" "cron" {
-  provider = aws.us_e1
-  arn      = aws_lambda_function.mta.arn
-  rule     = aws_cloudwatch_event_rule.cron.name
-
-  dead_letter_config {
-    arn = aws_sqs_queue.sink.arn
-  }
+resource "aws_lambda_event_source_mapping" "sink" {
+  provider                           = aws.us_e1
+  event_source_arn                   = aws_sqs_queue.sink.arn
+  function_name                      = aws_lambda_function.mta.arn
+  maximum_batching_window_in_seconds = 300
 }
 
 resource "aws_cloudwatch_log_group" "mta" {
