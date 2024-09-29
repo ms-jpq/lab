@@ -1,3 +1,9 @@
+locals {
+  lambda = {
+    runtime = "python3.12"
+  }
+}
+
 data "archive_file" "mta" {
   output_path = "${path.module}/../../var/mta.zip"
   source_dir  = "${path.module}/mta"
@@ -10,8 +16,9 @@ resource "aws_lambda_function" "mta" {
   filename         = data.archive_file.mta.output_path
   function_name    = basename(data.archive_file.mta.source_dir)
   handler          = "main"
+  layers           = []
   role             = aws_iam_role.mta.arn
-  runtime          = "python3.12"
+  runtime          = local.lambda.runtime
   source_code_hash = data.archive_file.mta.output_base64sha256
 }
 

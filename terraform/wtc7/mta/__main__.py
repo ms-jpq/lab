@@ -20,7 +20,11 @@ log, trace = Logger(), Tracer()
 async def _run(record: SQSRecord) -> None:
     ses = client(service_name="sesv2")
     data = b""
-    # ses.send_email(FromEmailAddress="", Content={"Raw": {"Data": data}})
+    # ses.send_email(
+    #     FromEmailAddress="",
+    #     Destination={"CcAddresses": [""]},
+    #     Content={"Raw": {"Data": data}},
+    # )
     log.info(record.body)
 
 
