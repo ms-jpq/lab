@@ -90,9 +90,9 @@ resource "local_sensitive_file" "smtp" {
   }
   filename = "${path.module}/../../facts/smtp.${each.key}.env.netrc"
   content  = <<-NETRC
-  machine
-    login = ${each.value.id}
-    password = ${each.value.ses_smtp_password_v4}
+  machine {}.amazonaws.com
+    login ${each.value.id}
+    password ${each.value.ses_smtp_password_v4}
   NETRC
 }
 
