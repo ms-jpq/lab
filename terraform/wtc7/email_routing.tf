@@ -46,17 +46,17 @@ resource "aws_ses_receipt_rule" "maildir" {
   add_header_action {
     header_name  = "X-Mail-To"
     header_value = urlencode(var.mail_to)
-    position     = 0
+    position     = 1
   }
   s3_action {
     bucket_name = aws_s3_bucket.maildir.id
-    position    = 1
+    position    = 2
   }
 }
 
 resource "aws_s3_bucket_notification" "maildir" {
   provider   = aws.us_e1
-  depends_on = [aws_sqs_queue_policy.qq]
+  depends_on = [aws_s3_bucket_policy.maildir, aws_sqs_queue_policy.qq]
   bucket     = aws_s3_bucket.maildir.id
 
   queue {
