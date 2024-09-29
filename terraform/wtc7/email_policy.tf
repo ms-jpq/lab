@@ -50,17 +50,12 @@ data "aws_iam_policy_document" "port_auth" {
     resources = ["arn:aws:logs:::"]
   }
   statement {
-    actions   = ["sqs:SendMessage"]
-    effect    = "Allow"
-    resources = [aws_sqs_queue.sink.arn]
-  }
-  statement {
     actions   = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes"]
     effect    = "Allow"
     resources = [aws_sqs_queue.mbox.arn]
   }
   statement {
-    actions   = ["s3:GetObject", "s3:PutObject"]
+    actions   = ["s3:GetObject", "s3:DeleteObject"]
     effect    = "Allow"
     resources = ["${aws_s3_bucket.maildir.arn}/*"]
   }

@@ -6,12 +6,21 @@ resource "aws_s3_bucket" "maildir" {
   }
 }
 
+locals {
+  timeouts = {
+    queue  = 60,
+    lambda = 30
+  }
+}
+
 resource "aws_sqs_queue" "mbox" {
-  provider = aws.us_e1
+  provider                   = aws.us_e1
+  visibility_timeout_seconds = local.timeouts.queue
 }
 
 resource "aws_sqs_queue" "sink" {
-  provider = aws.us_e1
+  provider                   = aws.us_e1
+  visibility_timeout_seconds = local.timeouts.queue
 }
 
 resource "aws_sqs_queue_redrive_allow_policy" "sink" {

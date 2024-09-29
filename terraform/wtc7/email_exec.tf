@@ -20,20 +20,14 @@ resource "aws_lambda_function" "mta" {
   role             = aws_iam_role.mta.arn
   runtime          = local.lambda_rt
   source_code_hash = data.archive_file.mta.output_base64sha256
-  timeout          = 60
+  timeout          = local.timeouts.lambda
 }
 
-# resource "aws_lambda_function_event_invoke_config" "mta" {
-#   provider      = aws.us_e1
-#   depends_on    = [aws_sqs_queue_policy.sink]
-#   function_name = aws_lambda_function.mta.function_name
-#
-#   destination_config {
-#     on_failure {
-#       destination = aws_sqs_queue.sink.arn
-#     }
-#   }
-# }
+resource "aws_lambda_event_source_mapping" "mta" {
+  provider         = aws.us_e1
+  event_source_arn = aws_sqs_queue.mbox.arn
+  function_name    = aws_lambda_function.mta.arn
+}
 
 resource "aws_cloudwatch_event_rule" "cron" {
   provider            = aws.us_e1
