@@ -5,8 +5,7 @@ data "aws_route53_zone" "limited_void" {
 locals {
   dns_ttl = 60
   smtp_servers = [
-    "email-smtp.us-east-2.amazonaws.com",
-    "email-smtp-fips.us-east-2.amazonaws.com"
+    "email-smtp.us-east-1.amazonaws.com",
   ]
 }
 
