@@ -43,3 +43,9 @@ resource "aws_cloudwatch_event_target" "cron" {
     arn = aws_sqs_queue.sink.arn
   }
 }
+
+resource "aws_cloudwatch_log_group" "mta" {
+  provider          = aws.us_e1
+  name              = "/aws/lambda/${aws_lambda_function.mta.function_name}"
+  retention_in_days = 1
+}
