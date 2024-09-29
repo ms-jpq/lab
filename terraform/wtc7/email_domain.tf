@@ -4,11 +4,15 @@ data "aws_route53_zone" "limited_void" {
 
 locals {
   dns_ttl = 60
+  smtp_servers = [
+    "email-smtp.us-east-2.amazonaws.com",
+    "email-smtp-fips.us-east-2.amazonaws.com"
+  ]
 }
 
 resource "aws_route53_record" "limited_mx" {
   name    = data.aws_route53_zone.limited_void.name
-  records = ["1 ${data.aws_route53_zone.limited_void.name}"]
+  records = [for srv in local.smtp_servers : "1 ${srv}"]
   ttl     = local.dns_ttl
   type    = "MX"
   zone_id = data.aws_route53_zone.limited_void.zone_id
@@ -38,10 +42,10 @@ resource "aws_ses_domain_dkim" "limited_txt" {
 }
 
 resource "aws_route53_record" "limited_cname" {
-  count   = length(aws_ses_domain_dkim.limited_txt.dkim_tokens)
-  name    = "${aws_ses_domain_dkim.limited_txt.dkim_tokens[count.index]}._domainkey"
-  records = ["${aws_ses_domain_dkim.limited_txt.dkim_tokens[count.index]}.dkim.amazonses.com"]
-  ttl     = local.dns_ttl
-  type    = "CNAME"
-  zone_id = data.aws_route53_zone.limited_void.zone_id
+  for_each = toset(aws_ses_domain_dkim.limited_txt.dkim_tokens)
+  name     = "${each.key}._domainkey.${data.aws_route53_zone.limited_void.name}"
+  records  = ["${each.key}.dkim.amazonses.com"]
+  ttl      = local.dns_ttl
+  type     = "CNAME"
+  zone_id  = data.aws_route53_zone.limited_void.zone_id
 }
