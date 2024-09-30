@@ -17,7 +17,7 @@ from aws_lambda_powertools.utilities.parser.models import SqsRecordModel
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client
 
-from .__main__ import redirect
+from fax import redirect
 
 TIMEOUT = 6.9
 
