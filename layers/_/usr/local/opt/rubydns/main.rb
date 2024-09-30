@@ -232,7 +232,7 @@ end
 
 def main
   Thread.tap { _1.abort_on_exception = true }
-  log = Logger.new($stderr)
+  log = Logger.new($stderr, level: Logger::WARN)
 
   parse_args => { listen:, upstream: }
 
