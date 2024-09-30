@@ -2,7 +2,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from os import environ
 from sys import stderr
-from typing import Any, BinaryIO, cast
+from typing import TYPE_CHECKING, Any, BinaryIO, cast
 
 from aws_lambda_powertools import Logger, Metrics, Tracer
 from aws_lambda_powertools.utilities.batch import (
@@ -13,11 +13,13 @@ from aws_lambda_powertools.utilities.batch import (
 from aws_lambda_powertools.utilities.batch.types import PartialItemFailureResponse
 from aws_lambda_powertools.utilities.data_classes import SQSEvent, event_source
 from aws_lambda_powertools.utilities.data_classes.sqs_event import SQSRecord
-from aws_lambda_powertools.utilities.parser.models import SqsRecordModel
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client
 
-from fax import redirect
+if TYPE_CHECKING:
+    from .fax import redirect
+else:
+    from fax import redirect
 
 TIMEOUT = 6.9
 
@@ -45,7 +47,9 @@ def fetching(bucket: str, key: str) -> Iterator[BinaryIO]:
 @trace.capture_lambda_handler
 @event_source(data_class=SQSEvent)
 def main(event: SQSEvent, ctx: LambdaContext) -> PartialItemFailureResponse:
-    processor = BatchProcessor(event_type=EventType.SQS, model=SqsRecordModel)
+    processor = BatchProcessor(
+        event_type=EventType.SQS,
+    )
 
     mail_srv, mail_from, mail_to = (
         environ["MAIL_SRV"],

@@ -6,14 +6,6 @@ resource "aws_s3_bucket" "maildir" {
   }
 }
 
-locals {
-  timeouts = {
-    s3_days = 2,
-    queue   = 60,
-    lambda  = 30
-  }
-}
-
 resource "aws_sqs_queue" "mbox" {
   provider                   = aws.us_e1
   visibility_timeout_seconds = local.timeouts.queue
@@ -22,6 +14,21 @@ resource "aws_sqs_queue" "mbox" {
 resource "aws_sqs_queue" "sink" {
   provider                   = aws.us_e1
   visibility_timeout_seconds = local.timeouts.queue
+}
+
+resource "aws_sns_topic" "sink" {
+  provider = aws.us_e1
+}
+
+resource "aws_s3_bucket_notification" "maildir" {
+  provider   = aws.us_e1
+  depends_on = [aws_sqs_queue_policy.mbox]
+  bucket     = aws_s3_bucket.maildir.id
+
+  queue {
+    events    = ["s3:ObjectCreated:*"]
+    queue_arn = aws_sqs_queue.mbox.arn
+  }
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "maildir" {
@@ -55,4 +62,11 @@ resource "aws_sqs_queue_redrive_policy" "mbox" {
     deadLetterTargetArn = aws_sqs_queue.sink.arn
     maxReceiveCount     = 2
   })
+}
+
+resource "aws_sns_topic_subscription" "sink" {
+  provider  = aws.us_e1
+  endpoint  = var.mail_to
+  protocol  = "email"
+  topic_arn = aws_sns_topic.sink.arn
 }

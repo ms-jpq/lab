@@ -3,7 +3,6 @@ data "aws_route53_zone" "limited_void" {
 }
 
 locals {
-  dns_ttl  = 60
   mail_srv = "inbound-smtp.${local.aws_regions.us_e1}.amazonaws.com"
 }
 

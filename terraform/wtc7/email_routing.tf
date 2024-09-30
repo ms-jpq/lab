@@ -19,14 +19,3 @@ resource "aws_ses_receipt_rule" "maildir" {
     position    = 2
   }
 }
-
-resource "aws_s3_bucket_notification" "maildir" {
-  provider   = aws.us_e1
-  depends_on = [aws_sqs_queue_policy.mbox]
-  bucket     = aws_s3_bucket.maildir.id
-
-  queue {
-    events    = ["s3:ObjectCreated:*"]
-    queue_arn = aws_sqs_queue.mbox.arn
-  }
-}
