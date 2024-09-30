@@ -8,7 +8,7 @@ resource "aws_s3_bucket" "maildir" {
 
 locals {
   timeouts = {
-    s3_days = 9,
+    s3_days = 2,
     queue   = 60,
     lambda  = 30
   }

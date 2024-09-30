@@ -3,13 +3,14 @@ data "aws_route53_zone" "limited_void" {
 }
 
 locals {
-  dns_ttl = 60
+  dns_ttl  = 60
+  mail_srv = "inbound-smtp.${local.aws_regions.us_e1}.amazonaws.com"
 }
 
 # https://docs.aws.amazon.com/general/latest/gr/ses.html
 resource "aws_route53_record" "limited_mx" {
   name    = data.aws_route53_zone.limited_void.name
-  records = ["10 inbound-smtp.${local.aws_regions.us_e1}.amazonaws.com"]
+  records = ["10 ${local.mail_srv}"]
   ttl     = local.dns_ttl
   type    = "MX"
   zone_id = data.aws_route53_zone.limited_void.zone_id

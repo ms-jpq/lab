@@ -21,6 +21,14 @@ resource "aws_lambda_function" "mta" {
   runtime          = local.lambda_rt
   source_code_hash = data.archive_file.mta.output_base64sha256
   timeout          = local.timeouts.lambda
+
+  environment {
+    variables = {
+      MAIL_FROM = var.mail_from
+      MAIL_TO   = var.mail_to
+      MAIL_SRV  = local.mail_srv
+    }
+  }
 }
 
 resource "aws_lambda_event_source_mapping" "mta" {
@@ -41,4 +49,8 @@ resource "aws_cloudwatch_log_group" "mta" {
   provider          = aws.us_e1
   name              = "/aws/lambda/${aws_lambda_function.mta.function_name}"
   retention_in_days = 1
+}
+
+output "logging" {
+  value = "aws --region ${local.aws_regions.us_e1} logs tail ${aws_cloudwatch_log_group.mta.name} --follow"
 }

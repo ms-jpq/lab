@@ -14,11 +14,6 @@ resource "aws_ses_receipt_rule" "maildir" {
   name          = "maildir"
   rule_set_name = aws_ses_receipt_rule_set.maildir.rule_set_name
 
-  add_header_action {
-    header_name  = "X-Mail-To"
-    header_value = urlencode(var.mail_to)
-    position     = 1
-  }
   s3_action {
     bucket_name = aws_s3_bucket.maildir.id
     position    = 2
