@@ -68,14 +68,16 @@ def bind(rx:)
 end
 
 def io_wait(read: nil, write: nil, timeout: TIMEOUT)
+  ios = [read, write]
   unblocked =
-    case [read, write]
+    case ios
     in [Socket, nil]
       read.wait_readable(timeout)
     in [nil, Socket]
       write.wait_writable(timeout)
     end
-  raise(Timeout.Error) unless unblocked
+
+  raise(Timeout::Error) unless unblocked
 end
 
 def io_read(conn:, len:)
@@ -122,7 +124,7 @@ def recv_tcp(sock:, &blk)
 
     io_write(conn:, buf: len)
     io_write(conn:, buf: rsp)
-  rescue IOError, Timeout.Error => e
+  rescue IOError, Timeout::Error => e
     logger.error(e)
   ensure
     conn&.close
@@ -133,12 +135,13 @@ def recv_udp(sock:, &blk)
   [sock, blk] => [Socket, Proc]
   io_wait(read: sock)
   sock.recvfrom(UDP_SIZE) => [String => req, Addrinfo => addr]
+
   Thread.new do
     ai = Socket.sockaddr_in(addr.ip_port, addr.ip_address)
     blk.call(req&.freeze) => String => rsp
     io_wait(write: sock)
     sock.send(rsp, 0, ai)
-  rescue IOError, Timeout.Error => e
+  rescue IOError, Timeout::Error => e
     logger.error(e)
   end
 end
@@ -146,6 +149,7 @@ end
 def do_recv(logger:, rx:, &blk)
   [logger, rx, blk] => [Logger, Addrinfo, Proc]
   sock = bind(rx:)
+
   loop do
     case sock.local_address.socktype
     in Socket::SOCK_STREAM
@@ -153,7 +157,7 @@ def do_recv(logger:, rx:, &blk)
     in Socket::SOCK_DGRAM
       recv_udp(sock:, &blk)
     end
-  rescue IOError => e
+  rescue IOError, Timeout::Error => e
     logger.error(e)
   end
 end
