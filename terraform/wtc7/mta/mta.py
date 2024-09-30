@@ -1,4 +1,7 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from sys import stderr
+from typing import cast
 
 from aws_lambda_powertools import Logger, Metrics, Tracer
 from aws_lambda_powertools.utilities.batch import (
@@ -17,15 +20,29 @@ log, metrics, trace = Logger(stream=stderr), Metrics(), Tracer()
 ses, s3 = client(service_name="sesv2"), client(service_name="s3")
 
 
+@asynccontextmanager
+async def fetching(bucket: str, key: str) -> AsyncIterator[bytes]:
+    kw = dict(Bucket=bucket, Key=key)
+    try:
+        rsp = s3.get_object(**kw)
+        yield rsp["Body"].read()
+    except Exception:
+        raise
+    else:
+        s3.delete_object(**kw)
+
+
 @trace.capture_method
 async def _run(record: SQSRecord) -> None:
-    data = b""
-    # ses.send_email(
-    #     FromEmailAddress="",
-    #     Destination={"CcAddresses": [""]},
-    #     Content={"Raw": {"Data": data}},
-    # )
-    log.info(record)
+    ev = record.decoded_nested_s3_event
+    bucket, key = ev.bucket_name, ev.object_key
+    async with fetching(bucket, key=key) as raw:
+        # ses.send_email(
+        #     FromEmailAddress="",
+        #     Destination={"CcAddresses": [""]},
+        #     Content={"Raw": {"Data": data}},
+        # )
+        log.info(record)
 
 
 @metrics.log_metrics
@@ -34,9 +51,8 @@ async def _run(record: SQSRecord) -> None:
 @event_source(data_class=SQSEvent)
 def main(event: SQSEvent, ctx: LambdaContext) -> PartialItemFailureResponse:
     processor = AsyncBatchProcessor(event_type=EventType.SQS, model=SqsRecordModel)
-    ev = {**event, "Records": [*event.records]}
     return async_process_partial_response(
-        ev,
+        cast(dict, event),
         context=ctx,
         processor=processor,
         record_handler=_run,
