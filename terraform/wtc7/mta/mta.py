@@ -1,5 +1,9 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from email import message_from_string
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from sys import stderr
 from typing import Any, cast
 
@@ -20,12 +24,22 @@ log, metrics, trace = Logger(stream=stderr), Metrics(), Tracer()
 ses, s3 = client(service_name="sesv2"), client(service_name="s3")
 
 
+def mail() -> None:
+    body_text = ""
+    # Create a MIME container.
+    msg = MIMEMultipart()
+    # Create a MIME text part.
+    text_part = MIMEText(body_text, _subtype="html")
+    # Attach the text part to the MIME message.
+    msg.attach(text_part)
+
+
 @asynccontextmanager
 async def fetching(bucket: str, key: str) -> AsyncIterator[bytes]:
     kw = dict(Bucket=bucket, Key=key)
     try:
         rsp = s3.get_object(**kw)
-        yield rsp["Body"].read()
+        yield rsp["Body"]
     except Exception:
         raise
     else:
