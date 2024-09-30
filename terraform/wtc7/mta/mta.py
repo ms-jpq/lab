@@ -1,7 +1,7 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from sys import stderr
-from typing import cast
+from typing import Any, cast
 
 from aws_lambda_powertools import Logger, Metrics, Tracer
 from aws_lambda_powertools.utilities.batch import (
@@ -52,7 +52,7 @@ async def _run(record: SQSRecord) -> None:
 def main(event: SQSEvent, ctx: LambdaContext) -> PartialItemFailureResponse:
     processor = AsyncBatchProcessor(event_type=EventType.SQS, model=SqsRecordModel)
     return async_process_partial_response(
-        cast(dict, event),
+        cast(dict[Any, Any], event),
         context=ctx,
         processor=processor,
         record_handler=_run,
