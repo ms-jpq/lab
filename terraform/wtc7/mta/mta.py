@@ -1,4 +1,4 @@
-from typing import Any
+from sys import stderr
 
 from aws_lambda_powertools import Logger, Metrics, Tracer
 from aws_lambda_powertools.utilities.batch import (
@@ -7,12 +7,13 @@ from aws_lambda_powertools.utilities.batch import (
     async_process_partial_response,
 )
 from aws_lambda_powertools.utilities.batch.types import PartialItemFailureResponse
+from aws_lambda_powertools.utilities.data_classes import SQSEvent, event_source
 from aws_lambda_powertools.utilities.data_classes.sqs_event import SQSRecord
 from aws_lambda_powertools.utilities.parser.models import SqsRecordModel
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client
 
-log, metrics, trace = Logger(), Metrics(), Tracer()
+log, metrics, trace = Logger(stream=stderr), Metrics(), Tracer()
 ses, s3 = client(service_name="sesv2"), client(service_name="s3")
 
 
@@ -24,16 +25,18 @@ async def _run(record: SQSRecord) -> None:
     #     Destination={"CcAddresses": [""]},
     #     Content={"Raw": {"Data": data}},
     # )
-    log.error(record)
+    log.info(record)
 
 
 @metrics.log_metrics
 @log.inject_lambda_context
 @trace.capture_lambda_handler
-def main(event: dict[Any, Any], ctx: LambdaContext) -> PartialItemFailureResponse:
+@event_source(data_class=SQSEvent)
+def main(event: SQSEvent, ctx: LambdaContext) -> PartialItemFailureResponse:
     processor = AsyncBatchProcessor(event_type=EventType.SQS, model=SqsRecordModel)
+    ev = {**event, "Records": [*event.records]}
     return async_process_partial_response(
-        event,
+        ev,
         context=ctx,
         processor=processor,
         record_handler=_run,
