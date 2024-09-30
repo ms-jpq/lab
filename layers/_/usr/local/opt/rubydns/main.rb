@@ -110,8 +110,8 @@ def io_write(conn:, buf:)
   end
 end
 
-def recv_tcp(sock:, &blk)
-  [sock, blk] => [Socket, Proc]
+def recv_tcp(log:, sock:, &blk)
+  [log, sock, blk] => [Logger, Socket, Proc]
   sock.accept => [Socket => conn, Addrinfo]
 
   Thread.new do
@@ -124,15 +124,17 @@ def recv_tcp(sock:, &blk)
 
     io_write(conn:, buf: len)
     io_write(conn:, buf: rsp)
-  rescue IOError, Timeout::Error => e
-    logger.error(e)
+  rescue Timeout::Error => e
+    log.debug(e)
+  rescue IOError => e
+    log.error(e)
   ensure
     conn&.close
   end
 end
 
-def recv_udp(sock:, &blk)
-  [sock, blk] => [Socket, Proc]
+def recv_udp(log:, sock:, &blk)
+  [log, sock, blk] => [Logger, Socket, Proc]
   io_wait(read: sock)
   sock.recvfrom(UDP_SIZE) => [String => req, Addrinfo => addr]
 
@@ -141,24 +143,28 @@ def recv_udp(sock:, &blk)
     blk.call(req&.freeze) => String => rsp
     io_wait(write: sock)
     sock.send(rsp, 0, ai)
-  rescue IOError, Timeout::Error => e
-    logger.error(e)
+  rescue Timeout::Error => e
+    log.debug(e)
+  rescue IOError => e
+    log.error(e)
   end
 end
 
-def do_recv(logger:, rx:, &blk)
-  [logger, rx, blk] => [Logger, Addrinfo, Proc]
+def do_recv(log:, rx:, &blk)
+  [log, rx, blk] => [Logger, Addrinfo, Proc]
   sock = bind(rx:)
 
   loop do
     case sock.local_address.socktype
     in Socket::SOCK_STREAM
-      recv_tcp(sock:, &blk)
+      recv_tcp(log:, sock:, &blk)
     in Socket::SOCK_DGRAM
-      recv_udp(sock:, &blk)
+      recv_udp(log:, sock:, &blk)
     end
-  rescue IOError, Timeout::Error => e
-    logger.error(e)
+  rescue Timeout::Error => e
+    log.debug(e)
+  rescue IOError => e
+    log.error(e)
   end
 end
 
@@ -191,24 +197,23 @@ ensure
   conn&.close
 end
 
-def do_send(logger:, tx:, req:)
-  [logger, tx, req] => [Logger, Addrinfo, String]
+def do_send(log:, tx:, req:)
+  [log, tx, req] => [Logger, Addrinfo, String]
+
   case tx.socktype
   in Socket::SOCK_STREAM
     send_tcp(tx:, req:)
   in Socket::SOCK_DGRAM
     send_udp(tx:, req:)
   end
-rescue IOError => e
-  logger.error(e)
 end
 
 def failed(req:)
   req => String
 end
 
-def xform(logger:, msg:)
-  [logger, msg] => [Logger, String]
+def xform(log:, msg:)
+  [log, msg] => [Logger, String]
   dns = Resolv::DNS::Message.decode(msg)
   home = Resolv::DNS::Name.create('home.arpa.')
 
@@ -221,13 +226,13 @@ def xform(logger:, msg:)
   dns.encode => String => rsp
   rsp
 rescue Resolv::DNS::DecodeError => e
-  logger.error(e)
+  log.error(e)
   msg
 end
 
 def main
   Thread.tap { _1.abort_on_exception = true }
-  logger = Logger.new($stderr)
+  log = Logger.new($stderr)
 
   parse_args => { listen:, upstream: }
 
@@ -238,15 +243,15 @@ def main
     recv.map do |rx|
       Thread.new do
         rx => Addrinfo
-        do_recv(logger:, rx:) do |req|
+        do_recv(log:, rx:) do |req|
           req => String | nil
           next '' if req.nil?
 
           snd.fetch(rx.socktype).sample => Addrinfo => tx
-          do_send(logger:, tx:, req:) => String | nil => msg
+          do_send(log:, tx:, req:) => String | nil => msg
           next '' if msg.nil?
 
-          xform(logger:, msg:) => String => rsp
+          xform(log:, msg:) => String => rsp
           rsp
         end
       end
