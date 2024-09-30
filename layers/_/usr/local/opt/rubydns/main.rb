@@ -3,14 +3,17 @@
 
 require('abbrev')
 require('etc')
+require('io/wait')
 require('ipaddr')
 require('logger')
 require('optparse')
 require('pathname')
 require('resolv')
 require('socket')
+require('timeout')
 
 UDP_SIZE = Resolv::DNS::UDPSize * 32
+TIMEOUT = 6
 
 def parse_args
   options, =
@@ -35,23 +38,27 @@ def parse_addrs(addr)
   [Addrinfo.tcp(ip, port), Addrinfo.udp(ip, port)]
 end
 
-def set_timeout(sock:)
+def set_timeout(sock:, timeout: TIMEOUT)
   sock => Socket
-  timeout = [60, 0].pack('l_2')
+
+  packed = [timeout, 0].pack('l_2')
   [Socket::SO_RCVTIMEO, Socket::SO_SNDTIMEO].each do
-    sock.setsockopt(Socket::SOL_SOCKET, _1, timeout)
+    sock.setsockopt(Socket::SOL_SOCKET, _1, packed)
   end
 end
 
 def bind(rx:)
   rx => Addrinfo
+
   loop do
     return(
-      rx.bind.tap do
-        set_timeout(sock: _1)
-        if _1.local_address.socktype == Socket::SOCK_STREAM
-          _1.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
-          _1.listen(Socket::SOMAXCONN)
+      rx.bind.tap do |sock|
+        case sock.local_address.socktype
+        in Socket::SOCK_STREAM
+          sock.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
+          sock.listen(Socket::SOMAXCONN)
+        in Socket::SOCK_DGRAM
+          set_timeout(sock:)
         end
       end
     )
@@ -60,19 +67,60 @@ def bind(rx:)
   end
 end
 
+def io_wait(read: nil, write: nil, timeout: TIMEOUT)
+  unblocked =
+    case [read, write]
+    in [Socket, nil]
+      read.wait_readable(timeout)
+    in [nil, Socket]
+      write.wait_writable(timeout)
+    end
+  raise(Timeout.timeout) unless unblocked
+end
+
+def io_read(conn:, len:)
+  [conn, len] => [Socket | nil, Integer | nil]
+  return if conn.nil? || len.nil?
+
+  io_wait(read: conn)
+  acc = []
+  size = 0
+  while size < len
+    conn.read(len - size) => String => buf
+    break if buf.empty?
+
+    size += buf.bytesize
+    acc << buf
+  end
+
+  acc.join('').freeze
+end
+
+def io_write(conn:, buf:)
+  [conn, buf] => [Socket | nil, String | nil]
+  return if conn.nil? || buf.nil?
+
+  io_wait(write: conn)
+  size = 0
+  while size < buf.bytesize
+    conn.write(buf[size..]) => Integer => n
+    size += n
+  end
+end
+
 def recv_tcp(sock:, &blk)
   [sock, blk] => [Socket, Proc]
   sock.accept => [Socket => conn, Addrinfo]
   Thread.new do
-    set_timeout(sock: conn)
-    conn.read(2)&.unpack1('n') => Integer | nil => len
+    io_read(conn:, len: 2)&.unpack1('n') => Integer | nil => len
     return if len.nil?
 
-    conn.read(len) => String => req
+    io_read(conn:, len:) => String | nil => req
     blk.call(req&.freeze) => String => rsp
     [rsp.bytesize].pack('n') => String => len
-    conn&.write(len)
-    conn&.write(rsp)
+
+    io_write(conn:, buf: len)
+    io_write(conn:, buf: rsp)
   rescue IOError => e
     logger.error(e)
   ensure
@@ -82,10 +130,12 @@ end
 
 def recv_udp(sock:, &blk)
   [sock, blk] => [Socket, Proc]
+  io_wait(read: sock)
   sock.recvfrom(UDP_SIZE) => [String => req, Addrinfo => addr]
   Thread.new do
     ai = Socket.sockaddr_in(addr.ip_port, addr.ip_address)
     blk.call(req&.freeze) => String => rsp
+    io_wait(write: sock)
     sock.send(rsp, 0, ai)
   rescue IOError => e
     logger.error(e)
@@ -109,15 +159,15 @@ end
 
 def send_tcp(tx:, req:)
   [tx, req] => [Addrinfo, String]
-  conn = tx.connect
-  set_timeout(sock: conn)
   [req.bytesize].pack('n') => String => len
-  conn.write(len)
-  conn.write(req)
-  conn.read(2)&.unpack1('n') => Integer | nil => len
+
+  conn = tx.connect
+  io_write(conn:, buf: len)
+  io_write(conn:, buf: req)
+  io_read(conn:, len: 2)&.unpack1('n') => Integer | nil => len
   return if len.nil?
 
-  conn.read(len) => String | nil => rsp
+  io_read(conn:, len:) => String | nil => rsp
   rsp
 ensure
   conn&.close
@@ -126,8 +176,10 @@ end
 def send_udp(tx:, req:)
   [tx, req] => [Addrinfo, String]
   conn = tx.connect
+
   set_timeout(sock: conn)
-  conn.write(req)
+  io_write(conn:, buf: req)
+  io_wait(read: conn)
   conn.recvfrom(UDP_SIZE) => [String => rsp, Addrinfo]
   rsp
 ensure
