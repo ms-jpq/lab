@@ -75,7 +75,7 @@ def io_wait(read: nil, write: nil, timeout: TIMEOUT)
     in [nil, Socket]
       write.wait_writable(timeout)
     end
-  raise(Timeout.timeout) unless unblocked
+  raise(Timeout.Error) unless unblocked
 end
 
 def io_read(conn:, len:)
@@ -111,6 +111,7 @@ end
 def recv_tcp(sock:, &blk)
   [sock, blk] => [Socket, Proc]
   sock.accept => [Socket => conn, Addrinfo]
+
   Thread.new do
     io_read(conn:, len: 2)&.unpack1('n') => Integer | nil => len
     return if len.nil?
@@ -121,7 +122,7 @@ def recv_tcp(sock:, &blk)
 
     io_write(conn:, buf: len)
     io_write(conn:, buf: rsp)
-  rescue IOError => e
+  rescue IOError, Timeout.Error => e
     logger.error(e)
   ensure
     conn&.close
@@ -137,7 +138,7 @@ def recv_udp(sock:, &blk)
     blk.call(req&.freeze) => String => rsp
     io_wait(write: sock)
     sock.send(rsp, 0, ai)
-  rescue IOError => e
+  rescue IOError, Timeout.Error => e
     logger.error(e)
   end
 end
