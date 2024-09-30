@@ -27,6 +27,8 @@ resource "aws_lambda_function" "mta" {
       MAIL_FROM = var.mail_from
       MAIL_TO   = var.mail_to
       MAIL_SRV  = local.mail_srv
+      MAIL_USER = var.mail_user
+      MAIL_PASS = var.mail_pass
     }
   }
 }
@@ -42,7 +44,7 @@ resource "aws_lambda_event_source_mapping" "sink" {
   provider                           = aws.us_e1
   event_source_arn                   = aws_sqs_queue.sink.arn
   function_name                      = aws_lambda_function.mta.arn
-  maximum_batching_window_in_seconds = 300
+  maximum_batching_window_in_seconds = local.timeouts.batching
 }
 
 resource "aws_cloudwatch_log_group" "mta" {

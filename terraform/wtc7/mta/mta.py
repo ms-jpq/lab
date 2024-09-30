@@ -47,14 +47,12 @@ def fetching(bucket: str, key: str) -> Iterator[BinaryIO]:
 @trace.capture_lambda_handler
 @event_source(data_class=SQSEvent)
 def main(event: SQSEvent, ctx: LambdaContext) -> PartialItemFailureResponse:
-    processor = BatchProcessor(
-        event_type=EventType.SQS,
-    )
-
-    mail_srv, mail_from, mail_to = (
+    mail_srv, mail_from, mail_to, mail_user, mail_pass = (
         environ["MAIL_SRV"],
         environ["MAIL_FROM"],
         environ["MAIL_TO"],
+        environ["MAIL_USER"],
+        environ["MAIL_PASS"],
     )
 
     @trace.capture_method
@@ -62,17 +60,21 @@ def main(event: SQSEvent, ctx: LambdaContext) -> PartialItemFailureResponse:
         ev = record.decoded_nested_s3_event
         bucket, key = ev.bucket_name, ev.object_key
         with fetching(bucket, key=key) as fp:
-            redirect(
+            errs = redirect(
                 mail_from=mail_from,
                 mail_to=mail_to,
                 mail_srv=mail_srv,
+                mail_user=mail_user,
+                mail_pass=mail_pass,
                 timeout=TIMEOUT,
                 fp=fp,
             )
+            for err in errs:
+                log.error(err)
 
     return process_partial_response(
         cast(dict[Any, Any], event),
         context=ctx,
-        processor=processor,
+        processor=BatchProcessor(event_type=EventType.SQS),
         record_handler=_run,
     )

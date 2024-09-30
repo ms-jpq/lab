@@ -16,6 +16,6 @@ resource "aws_ses_receipt_rule" "maildir" {
 
   s3_action {
     bucket_name = aws_s3_bucket.maildir.id
-    position    = 2
+    position    = 1
   }
 }

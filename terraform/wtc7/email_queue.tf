@@ -7,13 +7,13 @@ resource "aws_s3_bucket" "maildir" {
 }
 
 resource "aws_sqs_queue" "mbox" {
-  provider                   = aws.us_e1
-  visibility_timeout_seconds = local.timeouts.queue
+  provider                  = aws.us_e1
+  message_retention_seconds = local.timeouts.mbox
 }
 
 resource "aws_sqs_queue" "sink" {
-  provider                   = aws.us_e1
-  visibility_timeout_seconds = local.timeouts.queue
+  provider                  = aws.us_e1
+  message_retention_seconds = local.timeouts.sink
 }
 
 resource "aws_sns_topic" "sink" {
@@ -60,7 +60,7 @@ resource "aws_sqs_queue_redrive_policy" "mbox" {
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.sink.arn
-    maxReceiveCount     = 2
+    maxReceiveCount     = local.retries.mbox
   })
 }
 

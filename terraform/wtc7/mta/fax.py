@@ -36,6 +36,8 @@ def redirect(
     mail_from: str,
     mail_to: str,
     mail_srv: str,
+    mail_user: str,
+    mail_pass: str,
     timeout: float,
     fp: BinaryIO,
 ) -> Sequence[MessageDefect]:
@@ -44,6 +46,7 @@ def redirect(
     mail = _unparse(msg, body)
 
     with SMTP_SSL(host=mail_srv, timeout=timeout) as client:
+        client.login(mail_user, mail_pass)
         client.sendmail(
             from_addr=mail_from,
             to_addrs=mail_to,
