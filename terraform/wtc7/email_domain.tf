@@ -56,7 +56,10 @@ resource "aws_sesv2_email_identity" "mta" {
 
 output "email" {
   value = {
-    domain = data.aws_route53_zone.limited_void.name,
-    email  = [for id in aws_sesv2_email_identity.mta : id.email_identity],
+    accounts  = [for id in aws_sesv2_email_identity.mta : id.email_identity],
+    domain    = data.aws_route53_zone.limited_void.name,
+    mail_from = var.mail_from
+    mail_srv  = local.mail_srv
+    mail_to   = var.mail_to,
   }
 }
