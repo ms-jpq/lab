@@ -1,9 +1,10 @@
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from email.message import Message
 from email.parser import BytesParser
 from email.policy import SMTP, SMTPUTF8
 from itertools import takewhile
 from logging import getLogger
+from re import compile
 from smtplib import SMTP_SSL
 from sys import stdin
 from typing import BinaryIO
@@ -21,13 +22,23 @@ def _unparse(msg: Message, body: bytes) -> bytes:
     return msg.as_bytes(policy=SMTP) + body
 
 
-def _rewrite(msg: Message, redirect: str) -> None:
+def _redirect(msg: Message, location: str) -> Iterator[tuple[str, tuple[bool, str]]]:
+    re = compile(r"<([^>]+)>")
+    quoted = f"<{location}>"
     mod = {
-        "from": (True, redirect),
-        "return-path": (False, redirect),
-        "sender": (False, redirect),
+        "from": True,
+        "return-path": False,
+        "sender": False,
     }
-    for key, (required, val) in mod.items():
+    for name, required in mod.items():
+        if val := msg.get(name, ""):
+            stripped = re.sub(lambda x: f"({x.group(1)})", val)
+            val = f"[{stripped}] {quoted}"
+        yield name, (required, val)
+
+
+def _rewrite(msg: Message, headers: Mapping[str, tuple[bool, str]]) -> None:
+    for key, (required, val) in headers.items():
         if msg.get(key, "") != "":
             msg.replace_header(key, val)
         elif required:
@@ -44,7 +55,8 @@ def redirect(
     fp: BinaryIO,
 ) -> Iterator[tuple[Message, bytes]]:
     msg, body = _parse(fp)
-    _rewrite(msg, redirect=mail_from)
+    headers = {k: v for k, v in _redirect(msg, location=mail_to)}
+    _rewrite(msg, headers=headers)
     mail = _unparse(msg, body)
 
     for err in msg.defects:
