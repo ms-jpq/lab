@@ -5,8 +5,7 @@ from email.message import Message
 from email.parser import BytesParser
 from email.policy import SMTP, SMTPUTF8
 from itertools import chain, takewhile
-from logging import DEBUG, INFO, getLogger
-from os import linesep
+from logging import DEBUG, getLogger
 from re import match
 from smtplib import SMTP_SSL
 from string import ascii_letters, digits, whitespace
@@ -22,8 +21,6 @@ class _Rewrite:
 
 _LEGAL = frozenset(chain(ascii_letters, digits, whitespace, "@"))
 _MISSING_BODY_DEFECTS = (MultipartInvariantViolationDefect, StartBoundaryNotFoundDefect)
-
-getLogger().setLevel(INFO)
 
 
 def _parse(fp: BinaryIO) -> tuple[Message, bytes]:
@@ -62,7 +59,7 @@ def _redirect(msg: Message, location: str) -> Iterator[tuple[str, _Rewrite]]:
     mod = {
         "from": _Rewrite(act="ensure", val=mail_from),
         "reply-to": (
-            _Rewrite(act="append", val=reply_to)
+            _Rewrite(act="add", val=reply_to)
             if reply_to
             else _Rewrite(act="noop", val="")
         ),
@@ -80,10 +77,8 @@ def _rewrite(msg: Message, headers: Mapping[str, _Rewrite]) -> None:
                 pass
             case "delete":
                 del msg[key]
-            case "add":
-                msg.add_header(key, rewrite.val)
-            case "append":
-                if not msg.get(key, ""):
+            case "add" | "append":
+                if not msg.get(key, "") or rewrite.act == "append":
                     msg.add_header(key, rewrite.val)
             case "replace" | "ensure":
                 if msg.get(key, "") != "":

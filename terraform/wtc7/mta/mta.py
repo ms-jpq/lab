@@ -1,7 +1,7 @@
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
-from logging import getLogger
+from logging import INFO, getLogger
 from os import environ
 from typing import TYPE_CHECKING, BinaryIO
 
@@ -28,17 +28,15 @@ s3 = client(service_name="s3")
 @contextmanager
 def fetching(msg: S3Message) -> Iterator[BinaryIO]:
     kw = dict(Bucket=msg.bucket.name, Key=msg.get_object.key)
-    try:
-        rsp = s3.get_object(**kw)
-        yield rsp["Body"]
-    except Exception:
-        raise
-    else:
-        s3.delete_object(**kw)
+    rsp = s3.get_object(**kw)
+    yield rsp["Body"]
+    s3.delete_object(**kw)
 
 
 @event_source(data_class=S3Event)
 def main(event: S3Event, _: LambdaContext) -> None:
+    getLogger().setLevel(INFO)
+
     mail_srv, mail_from, mail_to, mail_user, mail_pass = (
         environ["MAIL_SRV"],
         environ["MAIL_FROM"],
@@ -61,10 +59,14 @@ def main(event: S3Event, _: LambdaContext) -> None:
                 if not sieve(msg):
                     break
 
-    with ThreadPoolExecutor() as pool:
-        futs = map(lambda x: pool.submit(step, x), event.records)
-        for fut in as_completed(futs):
-            try:
-                fut.result()
-            except Exception as err:
-                getLogger().error("%s", err)
+    def cont() -> Iterator[Exception]:
+        with ThreadPoolExecutor() as pool:
+            futs = map(lambda x: pool.submit(step, x), event.records)
+            for fut in as_completed(futs):
+                try:
+                    fut.result()
+                except Exception as err:
+                    yield err
+
+    if errs := tuple(cont()):
+        raise ExceptionGroup("croak", errs)

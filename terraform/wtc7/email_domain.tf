@@ -35,7 +35,7 @@ resource "aws_ses_domain_dkim" "limited_txt" {
 
 resource "aws_route53_record" "limited_cname" {
   for_each = toset(aws_ses_domain_dkim.limited_txt.dkim_tokens)
-  name     = "${each.key}._domainkey.${data.aws_route53_zone.limited_void.name}"
+  name     = "${each.key}._domainkey"
   records  = ["${each.key}.dkim.amazonses.com"]
   ttl      = local.dns_ttl
   type     = "CNAME"
