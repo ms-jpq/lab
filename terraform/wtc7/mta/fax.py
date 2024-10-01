@@ -31,7 +31,9 @@ def _parse(fp: BinaryIO) -> tuple[EmailMessage, bytes]:
 
 
 def _unparse(msg: EmailMessage, body: bytes) -> bytes:
-    return msg.as_bytes(policy=SMTP) + body
+    head = msg.as_bytes(policy=SMTP)
+    assert head.endswith(b"\r\n\r\n")
+    return head + body
 
 
 def _redirect(msg: EmailMessage, src: str) -> Iterator[tuple[str, _Rewrite]]:

@@ -2,9 +2,10 @@ from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
 from logging import INFO, getLogger
-from os import environ
+from os import environ, linesep
 from typing import TYPE_CHECKING, BinaryIO
 
+from aws_lambda_powertools.event_handler.exceptions import InternalServerError
 from aws_lambda_powertools.utilities.data_classes import S3Event, event_source
 from aws_lambda_powertools.utilities.data_classes.s3_event import (
     S3EventRecord,
@@ -47,7 +48,7 @@ def main(event: S3Event, _: LambdaContext) -> None:
 
     def step(record: S3EventRecord) -> None:
         with fetching(msg=record.s3) as fp:
-            for msg, body in redirect(
+            for msg, _ in redirect(
                 mail_from=mail_from,
                 mail_to=mail_to,
                 mail_srv=mail_srv,
@@ -56,7 +57,6 @@ def main(event: S3Event, _: LambdaContext) -> None:
                 timeout=TIMEOUT,
                 fp=fp,
             ):
-                getLogger().info("%s%s", msg, body.decode())
                 if not sieve(msg):
                     break
 
@@ -69,7 +69,5 @@ def main(event: S3Event, _: LambdaContext) -> None:
                 except Exception as err:
                     yield err
 
-    if errs := tuple(cont()):
-        for exn in errs:
-            getLogger().error("%s", exn)
-        raise ExceptionGroup("croak", errs)
+    if errs := linesep.join(map(str, cont())):
+        raise InternalServerError(errs)
