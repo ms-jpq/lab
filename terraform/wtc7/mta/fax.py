@@ -1,14 +1,12 @@
+from argparse import ArgumentParser, Namespace
 from collections.abc import Sequence
 from email.errors import MessageDefect
 from email.message import Message
 from email.parser import BytesParser
 from email.policy import SMTP, SMTPUTF8
 from itertools import takewhile
-from os import getuid, linesep
-from pwd import getpwuid
 from smtplib import SMTP_SSL
-from socket import getfqdn
-from sys import stderr, stdin, stdout
+from sys import stdin
 from typing import BinaryIO
 
 
@@ -25,11 +23,16 @@ def _unparse(msg: Message, body: bytes) -> bytes:
 
 
 def _rewrite(msg: Message, redirect: str) -> None:
-    header = "from"
-    if msg.get(header, "") != "":
-        msg.replace_header(header, redirect)
-    else:
-        msg.add_header(header, redirect)
+    mod = {
+        "from": (True, redirect),
+        "return-path": (False, redirect),
+        "sender": (False, redirect),
+    }
+    for key, (required, val) in mod.items():
+        if msg.get(key, "") != "":
+            msg.replace_header(key, val)
+        elif required:
+            msg.add_header(key, val)
 
 
 def redirect(
@@ -46,6 +49,7 @@ def redirect(
     mail = _unparse(msg, body)
 
     with SMTP_SSL(host=mail_srv, timeout=timeout) as client:
+        client.set_debuglevel(1)
         client.login(mail_user, mail_pass)
         client.sendmail(
             from_addr=mail_from,
@@ -56,13 +60,29 @@ def redirect(
     return msg.defects
 
 
+def _parse_args() -> Namespace:
+    parser = ArgumentParser()
+    parser.add_argument("--mail-from", required=True)
+    parser.add_argument("--mail-to", required=True)
+    parser.add_argument("--mail-srv", required=True)
+    parser.add_argument("--mail-user", required=True)
+    parser.add_argument("--mail-pass", required=True)
+    parser.add_argument("--timeout", type=float, default=5)
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    user = getpwuid(getuid()).pw_name
-    localhost = getfqdn()
-
+    args = _parse_args()
     msg, _ = _parse(stdin.buffer)
-    _rewrite(msg, redirect=f"{user}@{localhost}")
 
-    stdout.writelines((str(msg), linesep))
-    stdout.flush()
-    stderr.writelines(map(str, msg.defects))
+    errs = redirect(
+        mail_from=args.mail_from,
+        mail_to=args.mail_to,
+        mail_srv=args.mail_srv,
+        mail_user=args.mail_user,
+        mail_pass=args.mail_pass,
+        timeout=args.timeout,
+        fp=stdin.buffer,
+    )
+    for err in errs:
+        print(err)
