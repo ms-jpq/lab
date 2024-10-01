@@ -56,7 +56,7 @@ def main(event: S3Event, _: LambdaContext) -> None:
                 timeout=TIMEOUT,
                 fp=fp,
             ):
-                getLogger().info("%s", msg, body.decode())
+                getLogger().info("%s%s", msg, body.decode())
                 if not sieve(msg):
                     break
 
