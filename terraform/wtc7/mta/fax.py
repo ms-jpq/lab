@@ -14,7 +14,7 @@ from typing import BinaryIO, Literal
 
 @dataclass(frozen=True)
 class _Rewrite:
-    act: Literal["delete", "add", "replace", "ensure"]
+    act: Literal["noop", "delete", "add", "replace", "ensure"]
     val: str
 
 
@@ -36,15 +36,15 @@ def _unparse(msg: Message, body: bytes) -> bytes:
 
 def _redirect(msg: Message, location: str) -> Iterator[tuple[str, _Rewrite]]:
     quoted = f"<{location}>"
+    msg_from = msg.get("from", "")
     mail_from = (
-        "".join(ch for ch in mf if ch in _LEGAL) + f" {quoted}"
-        if (mf := msg.get("from", ""))
+        "".join(ch for ch in msg_from if ch in _LEGAL) + f" {quoted}"
+        if msg_from
         else quoted
     )
     mod = {
         "from": _Rewrite(act="ensure", val=mail_from),
-        "return-path": _Rewrite(act="delete", val=""),
-        "sender": _Rewrite(act="replace", val=quoted),
+        "reply-to": _Rewrite(act="ensure" if msg_from else "noop", val=msg_from),
     }
     for name, spec in mod.items():
         yield name, spec
@@ -53,6 +53,8 @@ def _redirect(msg: Message, location: str) -> Iterator[tuple[str, _Rewrite]]:
 def _rewrite(msg: Message, headers: Mapping[str, _Rewrite]) -> None:
     for key, rewrite in headers.items():
         match rewrite.act:
+            case "noop":
+                pass
             case "delete":
                 del msg[key]
             case "add":
