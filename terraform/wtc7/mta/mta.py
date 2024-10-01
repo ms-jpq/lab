@@ -1,11 +1,10 @@
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
+from logging import getLogger
 from os import environ
-from sys import stderr
 from typing import TYPE_CHECKING, BinaryIO
 
-from aws_lambda_powertools import Logger, Metrics, Tracer
 from aws_lambda_powertools.utilities.data_classes import S3Event, event_source
 from aws_lambda_powertools.utilities.data_classes.s3_event import (
     S3EventRecord,
@@ -20,10 +19,6 @@ else:
     from fax import redirect
 
 TIMEOUT = 6.9
-
-log = Logger(stream=stderr)
-metrics = Metrics()
-trace = Tracer()
 
 s3 = client(service_name="s3")
 
@@ -40,9 +35,6 @@ def fetching(msg: S3Message) -> Iterator[BinaryIO]:
         s3.delete_object(**kw)
 
 
-@metrics.log_metrics
-@log.inject_lambda_context
-@trace.capture_lambda_handler
 @event_source(data_class=S3Event)
 def main(event: S3Event, _: LambdaContext) -> None:
     mail_srv, mail_from, mail_to, mail_user, mail_pass = (
@@ -65,7 +57,7 @@ def main(event: S3Event, _: LambdaContext) -> None:
                 fp=fp,
             )
             for err in errs:
-                log.error(err)
+                getLogger().error("%s", err)
 
     with ThreadPoolExecutor() as pool:
         tuple(pool.map(step, event.records))

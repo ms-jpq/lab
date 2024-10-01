@@ -1,4 +1,3 @@
-from argparse import ArgumentParser, Namespace
 from collections.abc import Sequence
 from email.errors import MessageDefect
 from email.message import Message
@@ -59,20 +58,20 @@ def redirect(
     return msg.defects
 
 
-def _parse_args() -> Namespace:
-    parser = ArgumentParser()
-    parser.add_argument("--mail-from", required=True)
-    parser.add_argument("--mail-to", required=True)
-    parser.add_argument("--mail-srv", required=True)
-    parser.add_argument("--mail-user", required=True)
-    parser.add_argument("--mail-pass", required=True)
-    parser.add_argument("--timeout", type=float, default=5)
-    return parser.parse_args()
-
-
 if __name__ == "__main__":
+    from argparse import ArgumentParser, Namespace
+
+    def _parse_args() -> Namespace:
+        parser = ArgumentParser()
+        parser.add_argument("--mail-from", required=True)
+        parser.add_argument("--mail-to", required=True)
+        parser.add_argument("--mail-srv", required=True)
+        parser.add_argument("--mail-user", required=True)
+        parser.add_argument("--mail-pass", required=True)
+        parser.add_argument("--timeout", type=float, default=5)
+        return parser.parse_args()
+
     args = _parse_args()
-    msg, _ = _parse(stdin.buffer)
 
     errs = redirect(
         mail_from=args.mail_from,
