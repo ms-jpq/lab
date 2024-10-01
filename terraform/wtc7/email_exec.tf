@@ -33,18 +33,16 @@ resource "aws_lambda_function" "mta" {
   }
 }
 
-resource "aws_lambda_event_source_mapping" "mta" {
-  provider                           = aws.us_e1
-  event_source_arn                   = aws_sqs_queue.mbox.arn
-  function_name                      = aws_lambda_function.mta.arn
-  maximum_batching_window_in_seconds = 3
-}
+resource "aws_lambda_function_event_invoke_config" "mta" {
+  provider               = aws.us_e1
+  function_name          = aws_lambda_function.mta.function_name
+  maximum_retry_attempts = local.retries.lambda
 
-resource "aws_lambda_event_source_mapping" "sink" {
-  provider                           = aws.us_e1
-  event_source_arn                   = aws_sqs_queue.sink.arn
-  function_name                      = aws_lambda_function.mta.arn
-  maximum_batching_window_in_seconds = local.timeouts.batching
+  destination_config {
+    on_failure {
+      destination = aws_sns_topic.sink.arn
+    }
+  }
 }
 
 resource "aws_cloudwatch_log_group" "mta" {

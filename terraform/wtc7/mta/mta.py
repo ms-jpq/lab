@@ -11,8 +11,11 @@ from aws_lambda_powertools.utilities.batch import (
     process_partial_response,
 )
 from aws_lambda_powertools.utilities.batch.types import PartialItemFailureResponse
-from aws_lambda_powertools.utilities.data_classes import SQSEvent, event_source
-from aws_lambda_powertools.utilities.data_classes.sqs_event import SQSRecord
+from aws_lambda_powertools.utilities.data_classes import S3Event, event_source
+from aws_lambda_powertools.utilities.data_classes.s3_event import (
+    S3EventRecord,
+    S3Message,
+)
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client
 
@@ -31,8 +34,8 @@ s3 = client(service_name="s3")
 
 
 @contextmanager
-def fetching(bucket: str, key: str) -> Iterator[BinaryIO]:
-    kw = dict(Bucket=bucket, Key=key)
+def fetching(msg: S3Message) -> Iterator[BinaryIO]:
+    kw = dict(Bucket=msg.bucket.name, Key=msg.get_object.key)
     try:
         rsp = s3.get_object(**kw)
         yield rsp["Body"]
@@ -45,8 +48,8 @@ def fetching(bucket: str, key: str) -> Iterator[BinaryIO]:
 @metrics.log_metrics
 @log.inject_lambda_context
 @trace.capture_lambda_handler
-@event_source(data_class=SQSEvent)
-def main(event: SQSEvent, ctx: LambdaContext) -> PartialItemFailureResponse:
+@event_source(data_class=S3Event)
+def main(event: S3Event, ctx: LambdaContext) -> PartialItemFailureResponse:
     mail_srv, mail_from, mail_to, mail_user, mail_pass = (
         environ["MAIL_SRV"],
         environ["MAIL_FROM"],
@@ -56,10 +59,8 @@ def main(event: SQSEvent, ctx: LambdaContext) -> PartialItemFailureResponse:
     )
 
     @trace.capture_method
-    def _run(record: SQSRecord) -> None:
-        ev = record.decoded_nested_s3_event
-        bucket, key = ev.bucket_name, ev.object_key
-        with fetching(bucket, key=key) as fp:
+    def _run(record: S3EventRecord) -> None:
+        with fetching(msg=record.s3) as fp:
             errs = redirect(
                 mail_from=mail_from,
                 mail_to=mail_to,
