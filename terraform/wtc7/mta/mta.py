@@ -1,7 +1,6 @@
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
-from logging import getLogger
 from os import environ
 from typing import TYPE_CHECKING, BinaryIO
 
@@ -22,7 +21,6 @@ else:
 
 TIMEOUT = 6.9
 
-log = getLogger()
 s3 = client(service_name="s3")
 
 
@@ -50,7 +48,7 @@ def main(event: S3Event, _: LambdaContext) -> None:
 
     def step(record: S3EventRecord) -> None:
         with fetching(msg=record.s3) as fp:
-            for msg in redirect(
+            for msg, _ in redirect(
                 mail_from=mail_from,
                 mail_to=mail_to,
                 mail_srv=mail_srv,
@@ -59,9 +57,6 @@ def main(event: S3Event, _: LambdaContext) -> None:
                 timeout=TIMEOUT,
                 fp=fp,
             ):
-                for err in msg.defects:
-                    log.error("%s", err)
-
                 if not sieve(msg):
                     break
 
