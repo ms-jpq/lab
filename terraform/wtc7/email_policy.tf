@@ -59,7 +59,7 @@ resource "aws_iam_role" "mta" {
 resource "aws_lambda_permission" "mta" {
   provider      = aws.us_e1
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.mta.function_name
+  function_name = aws_lambda_function.mta.arn
   principal     = "s3.amazonaws.com"
   source_arn    = aws_s3_bucket.maildir.arn
   statement_id  = "AllowExecutionFromS3Bucket"

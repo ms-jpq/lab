@@ -11,8 +11,8 @@ resource "aws_sns_topic" "sink" {
 }
 
 resource "aws_s3_bucket_notification" "maildir" {
-  provider   = aws.us_e1
-  bucket     = aws_s3_bucket.maildir.id
+  provider = aws.us_e1
+  bucket   = aws_s3_bucket.maildir.id
 
   lambda_function {
     events              = ["s3:ObjectCreated:*"]
