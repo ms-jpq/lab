@@ -1,6 +1,7 @@
 from collections.abc import Iterator
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
+from logging import getLogger
 from os import environ
 from typing import TYPE_CHECKING, BinaryIO
 
@@ -61,4 +62,9 @@ def main(event: S3Event, _: LambdaContext) -> None:
                     break
 
     with ThreadPoolExecutor() as pool:
-        tuple(pool.map(step, event.records))
+        futs = map(lambda x: pool.submit(step, x), event.records)
+        for fut in as_completed(futs):
+            try:
+                fut.result()
+            except Exception as err:
+                getLogger().error("%s", err)

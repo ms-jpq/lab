@@ -26,15 +26,18 @@ def _redirect(msg: Message, location: str) -> Iterator[tuple[str, tuple[bool, st
     re = compile(r"<([^>]+)>")
     quoted = f"<{location}>"
     mod = {
-        "from": True,
-        "return-path": False,
-        "sender": False,
+        "from": (True, True),
+        "return-path": (False, True),
+        "sender": (False, False),
     }
-    for name, required in mod.items():
-        if val := msg.get(name, ""):
-            stripped = re.sub(lambda x: f"({x.group(1)})", val)
-            val = f"[{stripped}] {quoted}"
-        yield name, (required, val)
+    for name, (required, x_fwd) in mod.items():
+        if (val := msg.get(name, "")) and x_fwd:
+            stripped = re.sub(lambda x: x.group(1), val)
+            val = f"{stripped} VIA {quoted}"
+        elif required:
+            val = quoted
+        if val:
+            yield name, (required, val)
 
 
 def _rewrite(msg: Message, headers: Mapping[str, tuple[bool, str]]) -> None:
