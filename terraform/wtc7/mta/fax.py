@@ -3,18 +3,21 @@ from dataclasses import dataclass
 from email.message import Message
 from email.parser import BytesParser
 from email.policy import SMTP, SMTPUTF8
-from itertools import takewhile
+from itertools import chain, takewhile
 from logging import getLogger
-from re import compile
 from smtplib import SMTP_SSL
+from string import ascii_letters, digits, whitespace
 from sys import stdin
 from typing import BinaryIO, Literal
 
 
 @dataclass(frozen=True)
 class _Rewrite:
-    act: Literal["add", "replace", "delete"]
+    act: Literal["delete", "add", "replace", "ensure"]
     val: str
+
+
+_LEGAL = frozenset(chain(ascii_letters, digits, whitespace, "@"))
 
 
 def _parse(fp: BinaryIO) -> tuple[Message, bytes]:
@@ -30,11 +33,15 @@ def _unparse(msg: Message, body: bytes) -> bytes:
 
 
 def _redirect(msg: Message, location: str) -> Iterator[tuple[str, _Rewrite]]:
-    re = compile(r"<([^>]+)>")
     quoted = f"<{location}>"
+    mail_from = (
+        "".join(ch for ch in mf if ch in _LEGAL) + f" {quoted}"
+        if (mf := msg.get("from", ""))
+        else quoted
+    )
     mod = {
-        "from": _Rewrite(act="replace", val=quoted),
-        "return-path": _Rewrite(act="replace", val=quoted),
+        "from": _Rewrite(act="ensure", val=mail_from),
+        "return-path": _Rewrite(act="delete", val=""),
         "sender": _Rewrite(act="replace", val=quoted),
     }
     for name, spec in mod.items():
@@ -44,14 +51,14 @@ def _redirect(msg: Message, location: str) -> Iterator[tuple[str, _Rewrite]]:
 def _rewrite(msg: Message, headers: Mapping[str, _Rewrite]) -> None:
     for key, rewrite in headers.items():
         match rewrite.act:
-            case "add":
-                msg.add_header(key, rewrite.val)
             case "delete":
                 del msg[key]
-            case "replace":
+            case "add":
+                msg.add_header(key, rewrite.val)
+            case "replace" | "ensure":
                 if msg.get(key, "") != "":
                     msg.replace_header(key, rewrite.val)
-                else:
+                elif rewrite.act == "ensure":
                     msg.add_header(key, rewrite.val)
             case _:
                 assert False
