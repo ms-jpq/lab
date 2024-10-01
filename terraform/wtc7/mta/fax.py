@@ -1,5 +1,4 @@
-from collections.abc import Sequence
-from email.errors import MessageDefect
+from collections.abc import Iterator
 from email.message import Message
 from email.parser import BytesParser
 from email.policy import SMTP, SMTPUTF8
@@ -42,10 +41,12 @@ def redirect(
     mail_pass: str,
     timeout: float,
     fp: BinaryIO,
-) -> Sequence[MessageDefect]:
+) -> Iterator[Message]:
     msg, body = _parse(fp)
     _rewrite(msg, redirect=mail_from)
     mail = _unparse(msg, body)
+
+    yield msg
 
     with SMTP_SSL(host=mail_srv, timeout=timeout) as client:
         client.login(mail_user, mail_pass)
@@ -54,8 +55,6 @@ def redirect(
             to_addrs=mail_to,
             msg=mail,
         )
-
-    return msg.defects
 
 
 if __name__ == "__main__":
@@ -73,7 +72,7 @@ if __name__ == "__main__":
 
     args = _parse_args()
 
-    errs = redirect(
+    for msg in redirect(
         mail_from=args.mail_from,
         mail_to=args.mail_to,
         mail_srv=args.mail_srv,
@@ -81,6 +80,6 @@ if __name__ == "__main__":
         mail_pass=args.mail_pass,
         timeout=args.timeout,
         fp=stdin.buffer,
-    )
-    for err in errs:
-        print(err)
+    ):
+        for err in msg.defects:
+            print(err)
