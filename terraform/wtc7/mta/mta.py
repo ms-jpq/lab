@@ -1,16 +1,11 @@
 from collections.abc import Iterator
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from os import environ
 from sys import stderr
-from typing import TYPE_CHECKING, Any, BinaryIO, cast
+from typing import TYPE_CHECKING, BinaryIO
 
 from aws_lambda_powertools import Logger, Metrics, Tracer
-from aws_lambda_powertools.utilities.batch import (
-    BatchProcessor,
-    EventType,
-    process_partial_response,
-)
-from aws_lambda_powertools.utilities.batch.types import PartialItemFailureResponse
 from aws_lambda_powertools.utilities.data_classes import S3Event, event_source
 from aws_lambda_powertools.utilities.data_classes.s3_event import (
     S3EventRecord,
@@ -49,7 +44,7 @@ def fetching(msg: S3Message) -> Iterator[BinaryIO]:
 @log.inject_lambda_context
 @trace.capture_lambda_handler
 @event_source(data_class=S3Event)
-def main(event: S3Event, ctx: LambdaContext) -> PartialItemFailureResponse:
+def main(event: S3Event, _: LambdaContext) -> None:
     mail_srv, mail_from, mail_to, mail_user, mail_pass = (
         environ["MAIL_SRV"],
         environ["MAIL_FROM"],
@@ -58,8 +53,7 @@ def main(event: S3Event, ctx: LambdaContext) -> PartialItemFailureResponse:
         environ["MAIL_PASS"],
     )
 
-    @trace.capture_method
-    def _run(record: S3EventRecord) -> None:
+    def step(record: S3EventRecord) -> None:
         with fetching(msg=record.s3) as fp:
             errs = redirect(
                 mail_from=mail_from,
@@ -73,9 +67,5 @@ def main(event: S3Event, ctx: LambdaContext) -> PartialItemFailureResponse:
             for err in errs:
                 log.error(err)
 
-    return process_partial_response(
-        cast(dict[Any, Any], event),
-        context=ctx,
-        processor=BatchProcessor(event_type=EventType.SQS),
-        record_handler=_run,
-    )
+    with ThreadPoolExecutor() as pool:
+        tuple(pool.map(step, event.records))
