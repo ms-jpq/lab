@@ -47,7 +47,7 @@ def main(event: S3Event, _: LambdaContext) -> None:
 
     def step(record: S3EventRecord) -> None:
         with fetching(msg=record.s3) as fp:
-            for msg, _ in redirect(
+            for msg, body in redirect(
                 mail_from=mail_from,
                 mail_to=mail_to,
                 mail_srv=mail_srv,
@@ -56,6 +56,7 @@ def main(event: S3Event, _: LambdaContext) -> None:
                 timeout=TIMEOUT,
                 fp=fp,
             ):
+                getLogger().info("%s", msg, body.decode())
                 if not sieve(msg):
                     break
 

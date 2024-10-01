@@ -100,8 +100,6 @@ def redirect(
             msg=mail,
         )
 
-        getLogger().info("%s", f"->->-> {mail_to} <-<-<-")
-
 
 if __name__ == "__main__":
     from argparse import ArgumentParser, Namespace
