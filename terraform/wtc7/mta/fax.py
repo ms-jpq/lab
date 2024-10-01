@@ -39,9 +39,10 @@ def _unparse(msg: EmailMessage, body: bytes) -> bytes:
 def _redirect(msg: EmailMessage, src: str) -> Iterator[tuple[str, _Rewrite]]:
     quoted = f"<{src}>"
     name, x_from = parseaddr(msg.get("from", ""))
-
     n_from = (
-        "".join(ch for ch in name if ch in _LEGAL) + f" {quoted}" if x_from else quoted
+        "".join(ch for ch in n_name if ch in _LEGAL) + f" {quoted}"
+        if (n_name := f"{name} {x_from}")
+        else quoted
     )
 
     mod = {
@@ -54,6 +55,7 @@ def _redirect(msg: EmailMessage, src: str) -> Iterator[tuple[str, _Rewrite]]:
         "sender": _Rewrite(act="replace", val=quoted),
         "return-path": _Rewrite(act="delete", val=""),
     }
+
     for name, spec in mod.items():
         yield name, spec
 
