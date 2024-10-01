@@ -1,5 +1,5 @@
-from email.message import Message
+from email.message import EmailMessage
 
 
-def sieve(msg: Message) -> bool:
+def sieve(msg: EmailMessage) -> bool:
     return True

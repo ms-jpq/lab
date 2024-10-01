@@ -4,9 +4,9 @@ from email.errors import MultipartInvariantViolationDefect, StartBoundaryNotFoun
 from email.message import EmailMessage
 from email.parser import BytesParser
 from email.policy import SMTP, SMTPUTF8
+from email.utils import parseaddr
 from itertools import chain, takewhile
 from logging import DEBUG, getLogger
-from re import match
 from smtplib import SMTP_SSL
 from string import ascii_letters, digits, whitespace
 from sys import stdin
@@ -36,32 +36,19 @@ def _unparse(msg: EmailMessage, body: bytes) -> bytes:
     return msg.as_bytes(policy=SMTP) + body
 
 
-def _parse_from(msg_from: str | None) -> str | None:
-    if not msg_from:
-        return None
-    if m := match(r"(<[^>]+>)$", msg_from):
-        return m.group(1)
-    elif m := match(r"^[^@]+@[^@]+$", msg_from):
-        return m.group(0)
-    else:
-        getLogger().warning("%s", f"??? -> Reply-To: {msg_from}")
-        return None
-
-
 def _redirect(msg: EmailMessage, src: str) -> Iterator[tuple[str, _Rewrite]]:
     quoted = f"<{src}>"
-    msg_from = msg.get("from")
-    mail_from = (
-        "".join(ch for ch in msg_from if ch in _LEGAL) + f" {quoted}"
-        if msg_from
-        else quoted
+    name, x_from = parseaddr(msg.get("from", ""))
+
+    n_from = (
+        "".join(ch for ch in name if ch in _LEGAL) + f" {quoted}" if x_from else quoted
     )
-    reply_to = _parse_from(msg_from)
+
     mod = {
-        "from": _Rewrite(act="ensure", val=mail_from),
+        "from": _Rewrite(act="ensure", val=n_from),
         "reply-to": (
-            _Rewrite(act="set-default", val=reply_to)
-            if reply_to
+            _Rewrite(act="set-default", val=x_from)
+            if x_from
             else _Rewrite(act="noop", val="")
         ),
         "sender": _Rewrite(act="replace", val=quoted),

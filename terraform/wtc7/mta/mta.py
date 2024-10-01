@@ -69,4 +69,6 @@ def main(event: S3Event, _: LambdaContext) -> None:
                     yield err
 
     if errs := tuple(cont()):
+        for exn in errs:
+            getLogger().error("%s", exn)
         raise ExceptionGroup("croak", errs)
