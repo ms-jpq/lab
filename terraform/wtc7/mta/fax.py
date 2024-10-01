@@ -1,5 +1,6 @@
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
+from email.errors import MultipartInvariantViolationDefect, StartBoundaryNotFoundDefect
 from email.message import Message
 from email.parser import BytesParser
 from email.policy import SMTP, SMTPUTF8
@@ -18,6 +19,7 @@ class _Rewrite:
 
 
 _LEGAL = frozenset(chain(ascii_letters, digits, whitespace, "@"))
+_MISSING_BODY_DEFECTS = (MultipartInvariantViolationDefect, StartBoundaryNotFoundDefect)
 
 
 def _parse(fp: BinaryIO) -> tuple[Message, bytes]:
@@ -79,7 +81,8 @@ def redirect(
     mail = _unparse(msg, body)
 
     for err in msg.defects:
-        getLogger().warning("%s: %s", type(err).__name__, err)
+        if not isinstance(err, _MISSING_BODY_DEFECTS):
+            getLogger().warning("%s: %s", type(err).__name__, err)
     yield msg, body
 
     with SMTP_SSL(host=mail_srv, timeout=timeout) as client:
