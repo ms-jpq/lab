@@ -4,11 +4,10 @@ from email.errors import MultipartInvariantViolationDefect, StartBoundaryNotFoun
 from email.message import EmailMessage
 from email.parser import BytesParser
 from email.policy import SMTP, SMTPUTF8
-from email.utils import parseaddr
-from itertools import chain, takewhile
+from email.utils import formataddr, parseaddr
+from itertools import takewhile
 from logging import DEBUG, getLogger
 from smtplib import SMTP_SSL
-from string import ascii_letters, digits, whitespace
 from sys import stdin
 from typing import BinaryIO, Literal
 
@@ -19,7 +18,6 @@ class _Rewrite:
     val: str
 
 
-_LEGAL = frozenset(chain(ascii_letters, digits, whitespace, "@"))
 _MISSING_BODY_DEFECTS = (MultipartInvariantViolationDefect, StartBoundaryNotFoundDefect)
 
 
@@ -37,22 +35,18 @@ def _unparse(msg: EmailMessage, body: bytes) -> bytes:
 
 
 def _redirect(msg: EmailMessage, src: str) -> Iterator[tuple[str, _Rewrite]]:
-    quoted = f"<{src}>"
-    name, x_from = parseaddr(msg.get("from", ""))
-    n_from = (
-        "".join(ch for ch in n_name if ch in _LEGAL) + f" {quoted}"
-        if (n_name := f"{name} {x_from}")
-        else quoted
-    )
+    msg_from = msg.get("from", "")
+    _, x_from = parseaddr(msg_from)
+    nxt_from = formataddr((msg_from, src))
 
     mod = {
-        "from": _Rewrite(act="ensure", val=n_from),
+        "from": _Rewrite(act="ensure", val=nxt_from),
         "reply-to": (
             _Rewrite(act="set-default", val=x_from)
             if x_from
             else _Rewrite(act="noop", val="")
         ),
-        "sender": _Rewrite(act="replace", val=quoted),
+        "sender": _Rewrite(act="replace", val=src),
         "return-path": _Rewrite(act="delete", val=""),
     }
 
