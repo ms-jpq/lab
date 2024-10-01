@@ -47,9 +47,9 @@ def _parse_from(msg_from: str | None) -> str | None:
         return None
 
 
-def _redirect(msg: Message, location: str) -> Iterator[tuple[str, _Rewrite]]:
-    quoted = f"<{location}>"
-    msg_from = msg.get("from", "")
+def _redirect(msg: Message, src: str) -> Iterator[tuple[str, _Rewrite]]:
+    quoted = f"<{src}>"
+    msg_from = msg.get("from")
     mail_from = (
         "".join(ch for ch in msg_from if ch in _LEGAL) + f" {quoted}"
         if msg_from
@@ -99,7 +99,7 @@ def redirect(
     fp: BinaryIO,
 ) -> Iterator[tuple[Message, bytes]]:
     msg, body = _parse(fp)
-    headers = {k: v for k, v in _redirect(msg, location=mail_to)}
+    headers = {k: v for k, v in _redirect(msg, src=mail_from)}
     getLogger().info("%s", headers)
     _rewrite(msg, headers=headers)
     mail = _unparse(msg, body)

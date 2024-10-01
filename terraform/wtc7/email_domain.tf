@@ -23,6 +23,14 @@ resource "aws_route53_record" "limited_txt" {
   zone_id = data.aws_route53_zone.limited_void.zone_id
 }
 
+resource "aws_route53_record" "_dmarc" {
+  name    = "_dmarc.${data.aws_route53_zone.limited_void.name}"
+  records = ["v=DMARC1;p=quarantine;rua=mailto:${var.mail_to}"]
+  ttl     = local.dns_ttl
+  type    = "TXT"
+  zone_id = data.aws_route53_zone.limited_void.zone_id
+}
+
 resource "aws_ses_domain_identity_verification" "limited_txt" {
   provider = aws.us_e1
   domain   = aws_route53_record.limited_txt.name
