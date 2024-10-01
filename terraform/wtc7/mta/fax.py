@@ -1,7 +1,7 @@
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from email.errors import MultipartInvariantViolationDefect, StartBoundaryNotFoundDefect
-from email.message import Message
+from email.message import EmailMessage
 from email.parser import BytesParser
 from email.policy import SMTP, SMTPUTF8
 from itertools import chain, takewhile
@@ -15,7 +15,7 @@ from typing import BinaryIO, Literal
 
 @dataclass(frozen=True)
 class _Rewrite:
-    act: Literal["noop", "delete", "add", "append", "replace", "ensure"]
+    act: Literal["noop", "delete", "set-default", "append", "replace", "ensure"]
     val: str
 
 
@@ -23,15 +23,16 @@ _LEGAL = frozenset(chain(ascii_letters, digits, whitespace, "@"))
 _MISSING_BODY_DEFECTS = (MultipartInvariantViolationDefect, StartBoundaryNotFoundDefect)
 
 
-def _parse(fp: BinaryIO) -> tuple[Message, bytes]:
+def _parse(fp: BinaryIO) -> tuple[EmailMessage, bytes]:
     lines = takewhile(lambda x: x != b"\r\n" and x != b"\n", iter(fp.readline, b""))
     headers = b"".join(lines)
     msg = BytesParser(policy=SMTPUTF8).parsebytes(headers)
+    assert isinstance(msg, EmailMessage)
     body = fp.read()
     return msg, body
 
 
-def _unparse(msg: Message, body: bytes) -> bytes:
+def _unparse(msg: EmailMessage, body: bytes) -> bytes:
     return msg.as_bytes(policy=SMTP) + body
 
 
@@ -47,7 +48,7 @@ def _parse_from(msg_from: str | None) -> str | None:
         return None
 
 
-def _redirect(msg: Message, src: str) -> Iterator[tuple[str, _Rewrite]]:
+def _redirect(msg: EmailMessage, src: str) -> Iterator[tuple[str, _Rewrite]]:
     quoted = f"<{src}>"
     msg_from = msg.get("from")
     mail_from = (
@@ -59,7 +60,7 @@ def _redirect(msg: Message, src: str) -> Iterator[tuple[str, _Rewrite]]:
     mod = {
         "from": _Rewrite(act="ensure", val=mail_from),
         "reply-to": (
-            _Rewrite(act="add", val=reply_to)
+            _Rewrite(act="set-default", val=reply_to)
             if reply_to
             else _Rewrite(act="noop", val="")
         ),
@@ -70,14 +71,14 @@ def _redirect(msg: Message, src: str) -> Iterator[tuple[str, _Rewrite]]:
         yield name, spec
 
 
-def _rewrite(msg: Message, headers: Mapping[str, _Rewrite]) -> None:
+def _rewrite(msg: EmailMessage, headers: Mapping[str, _Rewrite]) -> None:
     for key, rewrite in headers.items():
         match rewrite.act:
             case "noop":
                 pass
             case "delete":
                 del msg[key]
-            case "add" | "append":
+            case "set-default" | "append":
                 if not msg.get(key, "") or rewrite.act == "append":
                     msg.add_header(key, rewrite.val)
             case "replace" | "ensure":
@@ -97,15 +98,11 @@ def redirect(
     mail_pass: str,
     timeout: float,
     fp: BinaryIO,
-) -> Iterator[tuple[Message, bytes]]:
+) -> Iterator[tuple[EmailMessage, bytes]]:
     msg, body = _parse(fp)
     headers = {k: v for k, v in _redirect(msg, src=mail_from)}
-    getLogger().info("%s", headers)
     _rewrite(msg, headers=headers)
     mail = _unparse(msg, body)
-
-    # for key, val in msg.items():
-    #     getLogger().debug("%s", f"{key}: {linesep.join(val.splitlines())}")
 
     for err in msg.defects:
         if not isinstance(err, _MISSING_BODY_DEFECTS):
