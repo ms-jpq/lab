@@ -1,4 +1,5 @@
 from collections.abc import Iterator, Mapping
+from dataclasses import dataclass
 from email.message import Message
 from email.parser import BytesParser
 from email.policy import SMTP, SMTPUTF8
@@ -7,7 +8,13 @@ from logging import getLogger
 from re import compile
 from smtplib import SMTP_SSL
 from sys import stdin
-from typing import BinaryIO
+from typing import BinaryIO, Literal
+
+
+@dataclass(frozen=True)
+class _Rewrite:
+    act: Literal["add", "replace", "delete"]
+    val: str
 
 
 def _parse(fp: BinaryIO) -> tuple[Message, bytes]:
@@ -22,30 +29,32 @@ def _unparse(msg: Message, body: bytes) -> bytes:
     return msg.as_bytes(policy=SMTP) + body
 
 
-def _redirect(msg: Message, location: str) -> Iterator[tuple[str, tuple[bool, str]]]:
+def _redirect(msg: Message, location: str) -> Iterator[tuple[str, _Rewrite]]:
     re = compile(r"<([^>]+)>")
     quoted = f"<{location}>"
     mod = {
-        "from": (True, True),
-        "return-path": (False, True),
-        "sender": (False, False),
+        "from": _Rewrite(act="replace", val=quoted),
+        "return-path": _Rewrite(act="replace", val=quoted),
+        "sender": _Rewrite(act="replace", val=quoted),
     }
-    for name, (required, x_fwd) in mod.items():
-        if (val := msg.get(name, "")) and x_fwd:
-            stripped = re.sub(lambda x: x.group(1), val)
-            val = f"{stripped} VIA {quoted}"
-        elif required:
-            val = quoted
-        if val:
-            yield name, (required, val)
+    for name, spec in mod.items():
+        yield name, spec
 
 
-def _rewrite(msg: Message, headers: Mapping[str, tuple[bool, str]]) -> None:
-    for key, (required, val) in headers.items():
-        if msg.get(key, "") != "":
-            msg.replace_header(key, val)
-        elif required:
-            msg.add_header(key, val)
+def _rewrite(msg: Message, headers: Mapping[str, _Rewrite]) -> None:
+    for key, rewrite in headers.items():
+        match rewrite.act:
+            case "add":
+                msg.add_header(key, rewrite.val)
+            case "delete":
+                del msg[key]
+            case "replace":
+                if msg.get(key, "") != "":
+                    msg.replace_header(key, rewrite.val)
+                else:
+                    msg.add_header(key, rewrite.val)
+            case _:
+                assert False
 
 
 def redirect(
@@ -73,6 +82,8 @@ def redirect(
             to_addrs=mail_to,
             msg=mail,
         )
+
+        getLogger().info("%s", f" -> {mail_to}")
 
 
 if __name__ == "__main__":
