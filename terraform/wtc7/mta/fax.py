@@ -49,7 +49,6 @@ def redirect(
     mail = _unparse(msg, body)
 
     with SMTP_SSL(host=mail_srv, timeout=timeout) as client:
-        client.set_debuglevel(1)
         client.login(mail_user, mail_pass)
         client.sendmail(
             from_addr=mail_from,
