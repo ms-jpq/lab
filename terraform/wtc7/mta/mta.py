@@ -1,6 +1,7 @@
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
+from functools import cache
 from logging import INFO, getLogger
 from os import environ, linesep
 from typing import TYPE_CHECKING, BinaryIO
@@ -20,15 +21,18 @@ else:
 
 TIMEOUT = 6.9
 
-s3 = client(service_name="s3")
+
+@cache
+def _s3() -> client:
+    return client(service_name="s3")
 
 
 @contextmanager
 def fetching(msg: S3Message) -> Iterator[BinaryIO]:
     kw = dict(Bucket=msg.bucket.name, Key=msg.get_object.key)
-    rsp = s3.get_object(**kw)
+    rsp = _s3().get_object(**kw)
     yield rsp["Body"]
-    s3.delete_object(**kw)
+    _s3().delete_object(**kw)
 
 
 @event_source(data_class=S3Event)
