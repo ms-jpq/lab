@@ -34,7 +34,7 @@ data "aws_iam_policy_document" "port_auth" {
     resources = ["${aws_cloudwatch_log_group.mta.arn}:*"]
   }
   statement {
-    actions   = ["s3:GetObject", "s3:DeleteObject"]
+    actions   = ["s3:GetObject", "s3:DeleteObject", "s3:ListBucket"]
     effect    = "Allow"
     resources = ["${aws_s3_bucket.maildir.arn}/*"]
   }

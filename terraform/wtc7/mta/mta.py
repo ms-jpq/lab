@@ -5,7 +5,6 @@ from logging import INFO, getLogger
 from os import environ, linesep
 from typing import TYPE_CHECKING, BinaryIO
 
-from aws_lambda_powertools.event_handler.exceptions import InternalServerError
 from aws_lambda_powertools.utilities.data_classes import S3Event, event_source
 from aws_lambda_powertools.utilities.data_classes.s3_event import (
     S3EventRecord,
@@ -69,5 +68,5 @@ def main(event: S3Event, _: LambdaContext) -> None:
                 except Exception as err:
                     yield err
 
-    if errs := linesep.join(map(str, cont())):
-        raise InternalServerError(errs)
+    if errs := tuple(cont()):
+        raise ExceptionGroup(linesep.join(map(str, errs)), errs)
