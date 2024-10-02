@@ -25,7 +25,7 @@ resource "aws_route53_record" "limited_txt" {
 
 resource "aws_route53_record" "_dmarc" {
   name    = "_dmarc.${data.aws_route53_zone.limited_void.name}"
-  records = ["v=DMARC1;p=quarantine;rua=mailto:${var.mail_to}"]
+  records = ["v=DMARC1;p=quarantine;rua=mailto:${local.mail_alert}"]
   ttl     = local.dns_ttl
   type    = "TXT"
   zone_id = data.aws_route53_zone.limited_void.zone_id
@@ -52,7 +52,7 @@ resource "aws_route53_record" "limited_cname" {
 
 resource "aws_sesv2_email_identity" "mta" {
   provider       = aws.us_e1
-  for_each       = toset([var.mail_from, var.mail_to])
+  for_each       = toset(concat([var.mail_from], var.mail_to))
   email_identity = each.key
 }
 

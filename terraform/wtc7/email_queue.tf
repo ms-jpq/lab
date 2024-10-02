@@ -35,7 +35,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "maildir" {
 
 resource "aws_sns_topic_subscription" "sink" {
   provider  = aws.us_e1
-  endpoint  = var.mail_to
+  endpoint  = local.mail_alert
   protocol  = "email"
   topic_arn = aws_sns_topic.sink.arn
 }

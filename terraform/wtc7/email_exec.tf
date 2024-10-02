@@ -25,7 +25,7 @@ resource "aws_lambda_function" "mta" {
   environment {
     variables = {
       MAIL_FROM = var.mail_from
-      MAIL_TO   = var.mail_to
+      MAIL_TO   = join(", ", var.mail_to)
       MAIL_SRV  = local.mail_srv
       MAIL_USER = var.mail_user
       MAIL_PASS = var.mail_pass

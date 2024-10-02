@@ -3,7 +3,7 @@ variable "mail_from" {
 }
 
 variable "mail_to" {
-  type = string
+  type = list(string)
 }
 
 variable "mail_user" {
@@ -17,7 +17,8 @@ variable "mail_pass" {
 }
 
 locals {
-  dns_ttl = 60
+  dns_ttl    = 60
+  mail_alert = var.mail_to[0]
   timeouts = {
     s3_days = 1,
     lambda  = 6
