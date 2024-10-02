@@ -13,6 +13,9 @@ locals {
   })
 }
 
-output "dns_ttl" {
-  value = local.dns_ttl
+output "dns" {
+  value = {
+    ttl  = local.dns_ttl
+    ptrs = local.dns_ptrs
+  }
 }
