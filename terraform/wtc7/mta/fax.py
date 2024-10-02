@@ -1,10 +1,10 @@
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, Set
 from dataclasses import dataclass
 from email.errors import MultipartInvariantViolationDefect, StartBoundaryNotFoundDefect
 from email.message import EmailMessage
 from email.parser import BytesParser
 from email.policy import SMTP, SMTPUTF8
-from email.utils import formataddr, parseaddr
+from email.utils import formataddr, getaddresses, parseaddr
 from itertools import takewhile
 from logging import DEBUG, getLogger
 from os import linesep
@@ -17,6 +17,16 @@ from typing import BinaryIO, Literal
 class _Rewrite:
     act: Literal["noop", "delete", "set-default", "append", "replace", "ensure"]
     val: str
+
+
+@dataclass(frozen=True)
+class _Sieve:
+    from_name: str
+    m_from: str
+    rcpt: str
+    cc: Set[str]
+    cc_names: Set[str]
+    msg: EmailMessage
 
 
 _NL = SMTP.linesep.encode()
@@ -78,6 +88,20 @@ def _rewrite(msg: EmailMessage, headers: Mapping[str, _Rewrite]) -> None:
                 assert False
 
 
+def _sieve(msg: EmailMessage) -> _Sieve:
+    from_name, m_from = parseaddr(msg.get("from", ""))
+    _, rcpt = parseaddr(msg.get("to", ""))
+    cc_names, cc = tuple(zip(*getaddresses([msg.get("cc", "")]))) or ((), ())
+    return _Sieve(
+        from_name=from_name,
+        m_from=m_from,
+        rcpt=rcpt,
+        cc=frozenset(cc),
+        cc_names=frozenset(cc_names),
+        msg=msg,
+    )
+
+
 def redirect(
     mail_from: str,
     mail_to: str,
@@ -86,16 +110,17 @@ def redirect(
     mail_pass: str,
     timeout: float,
     fp: BinaryIO,
-) -> Iterator[tuple[EmailMessage, bytes]]:
+) -> Iterator[tuple[_Sieve, bytes]]:
     msg, body = _parse(fp)
     headers = {k: v for k, v in _redirect(msg, src=mail_from)}
     _rewrite(msg, headers=headers)
+    sieve = _sieve(msg)
     mail = _unparse(msg, body)
 
     for err in msg.defects:
         if not isinstance(err, _MISSING_BODY_DEFECTS):
             getLogger().warning("%s: %s", type(err).__name__, err)
-    yield msg, body
+    yield sieve, body
 
     with SMTP_SSL(host=mail_srv, timeout=timeout) as client:
         client.login(mail_user, mail_pass)

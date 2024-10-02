@@ -15,10 +15,8 @@ from boto3 import client
 
 if TYPE_CHECKING:
     from .fax import redirect
-    from .sieve import sieve
 else:
     from fax import redirect
-    from sieve import sieve
 
 TIMEOUT = 6.9
 
@@ -47,7 +45,7 @@ def main(event: S3Event, _: LambdaContext) -> None:
 
     def step(record: S3EventRecord) -> None:
         with fetching(msg=record.s3) as fp:
-            for msg, _ in redirect(
+            for sieve, _ in redirect(
                 mail_from=mail_from,
                 mail_to=mail_to,
                 mail_srv=mail_srv,
@@ -56,8 +54,7 @@ def main(event: S3Event, _: LambdaContext) -> None:
                 timeout=TIMEOUT,
                 fp=fp,
             ):
-                if not sieve(msg):
-                    break
+                assert sieve
 
     def cont() -> Iterator[Exception]:
         with ThreadPoolExecutor() as pool:
