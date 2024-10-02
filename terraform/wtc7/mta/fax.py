@@ -27,6 +27,7 @@ class _Sieve:
     cc: Set[str]
     cc_names: Set[str]
     msg: EmailMessage
+    body: bytes
 
 
 _NL = SMTP.linesep.encode()
@@ -88,7 +89,7 @@ def _rewrite(msg: EmailMessage, headers: Mapping[str, _Rewrite]) -> None:
                 assert False
 
 
-def _sieve(msg: EmailMessage) -> _Sieve:
+def _sieve(msg: EmailMessage, body: bytes) -> _Sieve:
     from_name, m_from = parseaddr(msg.get("from", ""))
     _, rcpt = parseaddr(msg.get("to", ""))
     cc_names, cc = tuple(zip(*getaddresses([msg.get("cc", "")]))) or ((), ())
@@ -99,6 +100,7 @@ def _sieve(msg: EmailMessage) -> _Sieve:
         cc=frozenset(cc),
         cc_names=frozenset(cc_names),
         msg=msg,
+        body=body,
     )
 
 
@@ -110,17 +112,17 @@ def redirect(
     mail_pass: str,
     timeout: float,
     fp: BinaryIO,
-) -> Iterator[tuple[_Sieve, bytes]]:
+) -> Iterator[_Sieve]:
     msg, body = _parse(fp)
     headers = {k: v for k, v in _redirect(msg, src=mail_from)}
     _rewrite(msg, headers=headers)
-    sieve = _sieve(msg)
-    mail = _unparse(msg, body)
+    sieve = _sieve(msg, body=body)
+    mail = _unparse(msg, body=body)
 
     for err in msg.defects:
         if not isinstance(err, _MISSING_BODY_DEFECTS):
             getLogger().warning("%s: %s", type(err).__name__, err)
-    yield sieve, body
+    yield sieve
 
     with SMTP_SSL(host=mail_srv, timeout=timeout) as client:
         client.login(mail_user, mail_pass)

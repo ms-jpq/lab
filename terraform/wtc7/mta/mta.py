@@ -49,7 +49,7 @@ def main(event: S3Event, _: LambdaContext) -> None:
 
     def step(record: S3EventRecord) -> None:
         with fetching(msg=record.s3) as fp:
-            for sieve, _ in redirect(
+            for sieve in redirect(
                 mail_from=mail_from,
                 mail_to=mail_to,
                 mail_srv=mail_srv,
