@@ -69,4 +69,6 @@ def main(event: S3Event, _: LambdaContext) -> None:
                     yield err
 
     if errs := tuple(cont()):
-        raise ExceptionGroup(linesep.join(map(str, errs)), errs)
+        name = linesep.join(map(str, errs))
+        getLogger().error("%s", name)
+        raise ExceptionGroup(name, errs) from errs[0]

@@ -7,6 +7,7 @@ from email.policy import SMTP, SMTPUTF8
 from email.utils import formataddr, parseaddr
 from itertools import takewhile
 from logging import DEBUG, getLogger
+from os import linesep
 from smtplib import SMTP_SSL
 from sys import stdin
 from typing import BinaryIO, Literal
@@ -18,11 +19,13 @@ class _Rewrite:
     val: str
 
 
+_NL = SMTP.linesep.encode()
+_LS = linesep.encode()
 _MISSING_BODY_DEFECTS = (MultipartInvariantViolationDefect, StartBoundaryNotFoundDefect)
 
 
 def _parse(fp: BinaryIO) -> tuple[EmailMessage, bytes]:
-    lines = takewhile(lambda x: x != b"\r\n" and x != b"\n", iter(fp.readline, b""))
+    lines = takewhile(lambda x: x != _NL and x != _LS, iter(fp.readline, b""))
     headers = b"".join(lines)
     msg = BytesParser(policy=SMTPUTF8).parsebytes(headers)
     assert isinstance(msg, EmailMessage)
@@ -32,7 +35,7 @@ def _parse(fp: BinaryIO) -> tuple[EmailMessage, bytes]:
 
 def _unparse(msg: EmailMessage, body: bytes) -> bytes:
     head = msg.as_bytes(policy=SMTP)
-    assert head.endswith(b"\r\n\r\n")
+    assert head.endswith(_NL * 2)
     return head + body
 
 
