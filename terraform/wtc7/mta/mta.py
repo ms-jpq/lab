@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from functools import cache
 from logging import INFO, getLogger
 from os import environ, linesep
-from typing import TYPE_CHECKING, BinaryIO
+from typing import TYPE_CHECKING, Any, BinaryIO
 
 from aws_lambda_powertools.utilities.data_classes import S3Event, event_source
 from aws_lambda_powertools.utilities.data_classes.s3_event import (
@@ -23,7 +23,7 @@ TIMEOUT = 6.9
 
 
 @cache
-def _s3() -> client:
+def _s3() -> Any:
     return client(service_name="s3")
 
 

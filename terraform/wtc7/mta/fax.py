@@ -113,6 +113,7 @@ def redirect(
     timeout: float,
     fp: BinaryIO,
 ) -> Iterator[_Sieve]:
+    _, to_addrs = tuple(zip(*getaddresses([mail_to]))) or ((), ())
     msg, body = _parse(fp)
     headers = {k: v for k, v in _redirect(msg, src=mail_from)}
     _rewrite(msg, headers=headers)
@@ -128,7 +129,7 @@ def redirect(
         client.login(mail_user, mail_pass)
         client.sendmail(
             from_addr=mail_from,
-            to_addrs=mail_to,
+            to_addrs=to_addrs,
             msg=mail,
         )
 
