@@ -29,6 +29,7 @@ resource "aws_lambda_function" "mta" {
       MAIL_SRV  = local.mail_srv
       MAIL_USER = var.mail_user
       MAIL_PASS = var.mail_pass
+      MAIL_FILT = var.mail_filter
     }
   }
 }

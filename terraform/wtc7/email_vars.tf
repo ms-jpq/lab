@@ -16,6 +16,11 @@ variable "mail_pass" {
   type      = string
 }
 
+variable "mail_filter" {
+  sensitive = true
+  type      = string
+}
+
 locals {
   dns_ttl    = 60
   mail_alert = var.mail_to[0]

@@ -39,12 +39,13 @@ def fetching(msg: S3Message) -> Iterator[BinaryIO]:
 def main(event: S3Event, _: LambdaContext) -> None:
     getLogger().setLevel(INFO)
 
-    mail_srv, mail_from, mail_to, mail_user, mail_pass = (
+    mail_srv, mail_from, mail_to, mail_user, mail_pass, mail_filter = (
         environ["MAIL_SRV"],
         environ["MAIL_FROM"],
         environ["MAIL_TO"],
         environ["MAIL_USER"],
         environ["MAIL_PASS"],
+        environ["MAIL_FILT"],
     )
 
     def step(record: S3EventRecord) -> None:
