@@ -64,10 +64,11 @@ def main(event: S3Event, _: LambdaContext) -> None:
         with ThreadPoolExecutor() as pool:
             futs = map(lambda x: pool.submit(step, x), event.records)
             for fut in as_completed(futs):
-                try:
-                    fut.result()
-                except Exception as err:
-                    yield err
+                if exn := fut.exception():
+                    if isinstance(exn, Exception):
+                        yield exn
+                    else:
+                        raise exn
 
     if errs := tuple(cont()):
         name = linesep.join(map(str, errs))

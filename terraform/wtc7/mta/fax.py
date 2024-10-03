@@ -62,8 +62,10 @@ def _redirect(msg: EmailMessage, src: str) -> Iterator[tuple[str, _Rewrite]]:
             if x_from
             else _Rewrite(act="noop", val="")
         ),
-        "sender": _Rewrite(act="replace", val=src),
+        "sender": _Rewrite(act="delete", val=src),
         "return-path": _Rewrite(act="delete", val=""),
+        "dkim-signature": _Rewrite(act="delete", val=""),
+        "message-id": _Rewrite(act="delete", val=""),
     }
 
     for name, spec in mod.items():
