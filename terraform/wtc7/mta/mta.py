@@ -7,10 +7,9 @@ getLogger().info("%s", ">>> >>> >>>")
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
-from functools import cache
 from importlib import reload
 from os import environ, linesep
-from typing import TYPE_CHECKING, Any, BinaryIO
+from typing import TYPE_CHECKING, BinaryIO
 
 from aws_lambda_powertools.utilities.data_classes import S3Event, event_source
 from aws_lambda_powertools.utilities.data_classes.s3_event import (
@@ -22,10 +21,10 @@ from boto3 import client
 
 if TYPE_CHECKING:
     from .fax import parse, send
-    from .gist import register
+    from .gist import benchmark, register
 else:
     from fax import parse, send
-    from gist import register
+    from gist import benchmark, register
 
 TIMEOUT = 6.9
 _POOL = ThreadPoolExecutor()
@@ -64,21 +63,23 @@ def main(event: S3Event, _: LambdaContext) -> None:
 
     def step(record: S3EventRecord) -> None:
         with fetching(msg=record.s3) as fp:
-            msg = parse(mail_from=_M_FROM, fp=fp)
+            with benchmark(name="parse"):
+                msg = parse(mail_from=_M_FROM, fp=fp)
             go = True
             try:
                 go = s.sieve(msg)
             finally:
                 if go:
-                    send(
-                        sieve=msg,
-                        mail_from=_M_FROM,
-                        mail_to=_M_TO,
-                        mail_srv=_M_SRV,
-                        mail_user=_M_USER,
-                        mail_pass=_M_PASS,
-                        timeout=TIMEOUT,
-                    )
+                    with benchmark(name="send"):
+                        send(
+                            sieve=msg,
+                            mail_from=_M_FROM,
+                            mail_to=_M_TO,
+                            mail_srv=_M_SRV,
+                            mail_user=_M_USER,
+                            mail_pass=_M_PASS,
+                            timeout=TIMEOUT,
+                        )
 
     def cont() -> Iterator[Exception]:
         futs = map(lambda x: _POOL.submit(step, x), event.records)

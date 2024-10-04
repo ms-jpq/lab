@@ -1,10 +1,12 @@
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 from http.client import HTTPResponse
 from importlib.abc import Loader, MetaPathFinder
 from importlib.machinery import ModuleSpec
 from importlib.util import LazyLoader, spec_from_loader
 from logging import getLogger
 from sys import meta_path
+from time import monotonic
 from types import ModuleType
 from typing import cast
 from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
@@ -12,6 +14,15 @@ from urllib.request import build_opener
 from uuid import uuid4
 
 _OPENER = build_opener()
+
+
+@contextmanager
+def benchmark(name: str) -> Iterator[None]:
+    t0 = monotonic()
+    try:
+        yield
+    finally:
+        getLogger().info("%s", f"((({name:}{monotonic()-t0:.3f})))")
 
 
 def register(name: str, uri: str, timeout: float) -> None:
@@ -43,10 +54,11 @@ def register(name: str, uri: str, timeout: float) -> None:
                     return target
 
                 def exec_module(self, module: ModuleType) -> None:
-                    src = get()
-                    code = compile(src, fullname, "exec")
-                    exec(code, module.__dict__)
-                    getLogger().info("%s", f"***{name}***")
+                    with benchmark("get"):
+                        src = get()
+                    with benchmark("compile"):
+                        code = compile(src, fullname, "exec")
+                        exec(code, module.__dict__)
 
             loader = LazyLoader.factory(cast(Loader, _Loader))
             spec = spec_from_loader(fullname, loader())
