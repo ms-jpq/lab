@@ -61,16 +61,20 @@ def main(event: S3Event, _: LambdaContext) -> None:
 
         with fetching(msg=record.s3) as fp:
             msg = parse(mail_from=mail_from, fp=fp)
-            if sieve.sieve(msg):
-                send(
-                    sieve=msg,
-                    mail_from=mail_from,
-                    mail_to=mail_to,
-                    mail_srv=mail_srv,
-                    mail_user=mail_user,
-                    mail_pass=mail_pass,
-                    timeout=TIMEOUT,
-                )
+            go = True
+            try:
+                go = sieve.sieve(msg)
+            finally:
+                if go:
+                    send(
+                        sieve=msg,
+                        mail_from=mail_from,
+                        mail_to=mail_to,
+                        mail_srv=mail_srv,
+                        mail_user=mail_user,
+                        mail_pass=mail_pass,
+                        timeout=TIMEOUT,
+                    )
 
     def cont() -> Iterator[Exception]:
         with ThreadPoolExecutor() as pool:
