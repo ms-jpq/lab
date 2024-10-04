@@ -59,7 +59,7 @@ def _parse(fp: BinaryIO) -> _Sieve:
     return _sieve(msg, body=body)
 
 
-def unparse(sieve: _Sieve) -> bytes:
+def _unparse(sieve: _Sieve) -> bytes:
     head = sieve.headers.as_bytes(policy=SMTP)
     assert head.endswith(_NL * 2)
     return head + sieve.body
@@ -117,12 +117,12 @@ def parse(mail_from: str, fp: BinaryIO) -> _Sieve:
     return sieve
 
 
-def parse_addrs(addrs: str) -> Sequence[str]:
+def _parse_addrs(addrs: str) -> Sequence[str]:
     _, to_addrs = tuple(zip(*getaddresses([addrs]))) or ((), ())
     return to_addrs
 
 
-def _send(
+def send(
     sieve: _Sieve,
     mail_from: str,
     mail_to: str,
@@ -131,8 +131,8 @@ def _send(
     mail_pass: str,
     timeout: float,
 ) -> None:
-    to_addrs = parse_addrs(mail_to)
-    msg = unparse(sieve)
+    to_addrs = _parse_addrs(mail_to)
+    msg = _unparse(sieve)
     with SMTP_SSL(host=mail_srv, timeout=timeout) as client:
         client.login(mail_user, mail_pass)
         client.sendmail(
@@ -160,7 +160,7 @@ if __name__ == "__main__":
     getLogger().setLevel(DEBUG)
 
     sieve = parse(mail_from=args.mail_from, fp=stdin.buffer)
-    _send(
+    send(
         sieve=sieve,
         mail_from=args.mail_from,
         mail_to=args.mail_to,

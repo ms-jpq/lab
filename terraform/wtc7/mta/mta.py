@@ -1,11 +1,10 @@
-from collections.abc import Callable, Iterator
-from concurrent.futures import Future, ThreadPoolExecutor, as_completed
+from collections.abc import Iterator
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
-from datetime import datetime
 from functools import cache
 from logging import INFO, getLogger
 from os import environ, linesep
-from typing import TYPE_CHECKING, Any, BinaryIO, cast
+from typing import TYPE_CHECKING, Any, BinaryIO
 from uuid import uuid4
 
 from aws_lambda_powertools.utilities.data_classes import S3Event, event_source
@@ -17,14 +16,12 @@ from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client
 
 if TYPE_CHECKING:
-    from .fax import parse, parse_addrs, unparse
+    from .fax import parse, send
     from .gist import register
 else:
-    from fax import parse, parse_addrs, unparse
+    from fax import parse, send
     from gist import register
 
-
-_Sieve = Callable[[Any], bool]
 
 TIMEOUT = 6.9
 
@@ -32,11 +29,6 @@ TIMEOUT = 6.9
 @cache
 def _s3() -> Any:
     return client(service_name="s3")
-
-
-@cache
-def _ses() -> Any:
-    return client(service_name="sesv2")
 
 
 @contextmanager
@@ -62,28 +54,27 @@ def main(event: S3Event, _: LambdaContext) -> None:
     uri = f"{mail_filter}?{uuid4()}={uuid4()}"
     register(name="sieve", uri=uri, retries=3, timeout=TIMEOUT)
 
-    def _sieve() -> _Sieve:
-        from sieve import sieve
+    def step(
+        record: S3EventRecord,
+    ) -> None:
+        import sieve
 
-        return cast(_Sieve, sieve)
-
-    def step(record: S3EventRecord, fut: Future[_Sieve]) -> None:
         with fetching(msg=record.s3) as fp:
-            sieve = parse(mail_from=mail_from, fp=fp)
-            flt = fut.result()
-            if flt(sieve):
-                to_addrs = parse_addrs(mail_to)
-                raw = unparse(sieve)
-                _ses().send_email(
-                    FromEmailAddress=mail_from,
-                    Destination={"ToAddresses": to_addrs},
-                    Content={"Raw": {"Data": raw}},
+            msg = parse(mail_from=mail_from, fp=fp)
+            if sieve.sieve(msg):
+                send(
+                    sieve=msg,
+                    mail_from=mail_from,
+                    mail_to=mail_to,
+                    mail_srv=mail_srv,
+                    mail_user=mail_user,
+                    mail_pass=mail_pass,
+                    timeout=TIMEOUT,
                 )
 
     def cont() -> Iterator[Exception]:
         with ThreadPoolExecutor() as pool:
-            f = pool.submit(_sieve)
-            futs = map(lambda x: pool.submit(step, x, f), event.records)
+            futs = map(lambda x: pool.submit(step, x), event.records)
             for fut in as_completed(futs):
                 if exn := fut.exception():
                     if isinstance(exn, Exception):
