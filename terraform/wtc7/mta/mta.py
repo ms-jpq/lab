@@ -1,9 +1,14 @@
+from logging import INFO, getLogger
+
+getLogger().setLevel(INFO)
+getLogger().info("%s", ">>> >>> >>>")
+
+
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
 from functools import cache
 from importlib import reload
-from logging import INFO, getLogger
 from os import environ, linesep
 from typing import TYPE_CHECKING, Any, BinaryIO
 
@@ -22,6 +27,8 @@ else:
     from fax import parse, send
     from gist import register
 
+TIMEOUT = 6.9
+_POOL = ThreadPoolExecutor()
 _M_SRV, _M_FROM, _M_TO, _M_USER, _M_PASS, _M_FILT = (
     environ["MAIL_SRV"],
     environ["MAIL_FROM"],
@@ -30,12 +37,11 @@ _M_SRV, _M_FROM, _M_TO, _M_USER, _M_PASS, _M_FILT = (
     environ["MAIL_PASS"],
     environ["MAIL_FILT"],
 )
-TIMEOUT = 6.9
-getLogger().setLevel(INFO)
-register(name="sieve", uri=_M_FILT, timeout=TIMEOUT)
-import sieve
 
-_POOL = ThreadPoolExecutor()
+register(name="sieve", uri=_M_FILT, timeout=TIMEOUT)
+getLogger().info("%s", "=== === ===")
+
+import sieve
 
 
 @cache
@@ -95,4 +101,4 @@ def main(event: S3Event, _: LambdaContext) -> None:
             getLogger().exception("%s", e)
             raise
 
-    getLogger().info("%s", ">>> >>> >>>")
+    getLogger().info("%s", "<<< <<< <<<")
