@@ -22,7 +22,7 @@ def benchmark(name: str) -> Iterator[None]:
     try:
         yield
     finally:
-        getLogger().info("%s", f"((({name:}{monotonic()-t0:.3f})))")
+        getLogger().info("%s", f"((({name}::{monotonic()-t0:.3f})))")
 
 
 def register(name: str, uri: str, timeout: float) -> None:

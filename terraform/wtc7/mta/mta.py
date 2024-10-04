@@ -1,13 +1,8 @@
-from logging import INFO, getLogger
-
-getLogger().setLevel(INFO)
-getLogger().info("%s", ">>> >>> >>>")
-
-
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
 from importlib import reload
+from logging import INFO, getLogger
 from os import environ, linesep
 from typing import TYPE_CHECKING, BinaryIO
 
@@ -18,6 +13,8 @@ from aws_lambda_powertools.utilities.data_classes.s3_event import (
 )
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client
+
+getLogger().setLevel(INFO)
 
 if TYPE_CHECKING:
     from .fax import parse, send
@@ -39,7 +36,6 @@ _M_SRV, _M_FROM, _M_TO, _M_USER, _M_PASS, _M_FILT = (
 _S3 = client(service_name="s3")
 
 register(name="sieve", uri=_M_FILT, timeout=TIMEOUT)
-getLogger().info("%s", "=== === ===")
 
 import sieve
 
@@ -47,9 +43,9 @@ import sieve
 @contextmanager
 def fetching(msg: S3Message) -> Iterator[BinaryIO]:
     kw = dict(Bucket=msg.bucket.name, Key=msg.get_object.key)
-    rsp = _S3().get_object(**kw)
+    rsp = _S3.get_object(**kw)
     yield rsp["Body"]
-    _S3().delete_object(**kw)
+    _S3.delete_object(**kw)
 
 
 cold_start = True
@@ -57,6 +53,8 @@ cold_start = True
 
 @event_source(data_class=S3Event)
 def main(event: S3Event, _: LambdaContext) -> None:
+    getLogger().info("%s", ">>> >>> >>>")
+
     global cold_start
     s = sieve if cold_start else reload(sieve)
     cold_start = False
