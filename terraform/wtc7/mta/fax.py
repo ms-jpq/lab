@@ -20,7 +20,7 @@ class _Rewrite:
 
 
 @dataclass(frozen=True)
-class _Sieve:
+class _Mail:
     headers: EmailMessage
     body: bytes
 
@@ -30,23 +30,19 @@ _LS = linesep.encode()
 _MISSING_BODY_DEFECTS = (MultipartInvariantViolationDefect, StartBoundaryNotFoundDefect)
 
 
-def _sieve(msg: EmailMessage, body: bytes) -> _Sieve:
-    return _Sieve(headers=msg, body=body)
-
-
-def _parse(fp: BinaryIO) -> _Sieve:
+def _parse(fp: BinaryIO) -> _Mail:
     lines = takewhile(lambda x: x != _NL and x != _LS, iter(fp.readline, b""))
     headers = b"".join(lines)
-    msg = BytesParser(policy=SMTPUTF8).parsebytes(headers)
-    assert isinstance(msg, EmailMessage)
+    parsed = BytesParser(policy=SMTPUTF8).parsebytes(headers)
+    assert isinstance(parsed, EmailMessage)
     body = fp.read()
-    return _sieve(msg, body=body)
+    return _Mail(headers=parsed, body=body)
 
 
-def _unparse(sieve: _Sieve) -> bytes:
-    head = sieve.headers.as_bytes(policy=SMTP)
+def _unparse(mail: _Mail) -> bytes:
+    head = mail.headers.as_bytes(policy=SMTP)
     assert head.endswith(_NL * 2)
-    return head + sieve.body
+    return head + mail.body
 
 
 def _redirect(msg: EmailMessage, src: str) -> Iterator[tuple[str, _Rewrite]]:
@@ -90,15 +86,15 @@ def _rewrite(msg: EmailMessage, headers: Mapping[str, _Rewrite]) -> None:
                 assert False
 
 
-def parse(mail_from: str, fp: BinaryIO) -> _Sieve:
-    sieve = _parse(fp)
-    headers = {k: v for k, v in _redirect(sieve.headers, src=mail_from)}
-    _rewrite(sieve.headers, headers=headers)
+def parse(mail_from: str, fp: BinaryIO) -> _Mail:
+    mail = _parse(fp)
+    headers = {k: v for k, v in _redirect(mail.headers, src=mail_from)}
+    _rewrite(mail.headers, headers=headers)
 
-    for err in sieve.headers.defects:
+    for err in mail.headers.defects:
         if not isinstance(err, _MISSING_BODY_DEFECTS):
             getLogger().warning("%s: %s", type(err).__name__, err)
-    return sieve
+    return mail
 
 
 def _parse_addrs(addrs: str) -> Sequence[str]:
@@ -107,7 +103,7 @@ def _parse_addrs(addrs: str) -> Sequence[str]:
 
 
 def send(
-    sieve: _Sieve,
+    mail: _Mail,
     mail_from: str,
     mail_to: str,
     mail_srv: str,
@@ -116,7 +112,7 @@ def send(
     timeout: float,
 ) -> None:
     to_addrs = _parse_addrs(mail_to)
-    msg = _unparse(sieve)
+    msg = _unparse(mail)
     with SMTP_SSL(host=mail_srv, timeout=timeout) as client:
         client.login(mail_user, mail_pass)
         client.sendmail(
@@ -143,9 +139,9 @@ if __name__ == "__main__":
     args = _parse_args()
     getLogger().setLevel(DEBUG)
 
-    sieve = parse(mail_from=args.mail_from, fp=stdin.buffer)
+    mail = parse(mail_from=args.mail_from, fp=stdin.buffer)
     send(
-        sieve=sieve,
+        mail,
         mail_from=args.mail_from,
         mail_to=args.mail_to,
         mail_srv=args.mail_srv,

@@ -63,16 +63,16 @@ def main(event: S3Event, _: LambdaContext) -> None:
         def step(record: S3EventRecord) -> None:
             with fetching(msg=record.s3) as fp:
                 with benchmark(name="parse"):
-                    msg = parse(mail_from=_M_FROM, fp=fp)
+                    mail = parse(mail_from=_M_FROM, fp=fp)
                 go = True
                 try:
                     with benchmark(name="sieve"):
-                        go = s.sieve(msg)
+                        go = s.sieve(mail)
                 finally:
                     if go:
                         with benchmark(name="send"):
                             send(
-                                sieve=msg,
+                                mail,
                                 mail_from=_M_FROM,
                                 mail_to=_M_TO,
                                 mail_srv=_M_SRV,
