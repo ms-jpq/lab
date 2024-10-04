@@ -1,6 +1,7 @@
 from collections.abc import Callable, Iterator
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
+from datetime import datetime
 from functools import cache
 from logging import INFO, getLogger
 from os import environ, linesep
@@ -16,12 +17,11 @@ from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client
 
 if TYPE_CHECKING:
-    from .fax import parse, send
-    from .imp import register
+    from .fax import parse, parse_addrs, unparse
+    from .gist import register
 else:
-    from imp import register
-
-    from fax import parse, send
+    from fax import parse, parse_addrs, unparse
+    from gist import register
 
 
 _Sieve = Callable[[Any], bool]
@@ -32,6 +32,11 @@ TIMEOUT = 6.9
 @cache
 def _s3() -> Any:
     return client(service_name="s3")
+
+
+@cache
+def _ses() -> Any:
+    return client(service_name="sesv2")
 
 
 @contextmanager
@@ -67,14 +72,12 @@ def main(event: S3Event, _: LambdaContext) -> None:
             sieve = parse(mail_from=mail_from, fp=fp)
             flt = fut.result()
             if flt(sieve):
-                send(
-                    sieve=sieve,
-                    mail_from=mail_from,
-                    mail_to=mail_to,
-                    mail_srv=mail_srv,
-                    mail_user=mail_user,
-                    mail_pass=mail_pass,
-                    timeout=TIMEOUT,
+                to_addrs = parse_addrs(mail_to)
+                raw = unparse(sieve)
+                _ses().send_email(
+                    FromEmailAddress=mail_from,
+                    Destination={"ToAddresses": to_addrs},
+                    Content={"Raw": {"Data": raw}},
                 )
 
     def cont() -> Iterator[Exception]:
@@ -82,15 +85,11 @@ def main(event: S3Event, _: LambdaContext) -> None:
             f = pool.submit(_sieve)
             futs = map(lambda x: pool.submit(step, x, f), event.records)
             for fut in as_completed(futs):
-                getLogger().info("%s", "fut 0")
-
                 if exn := fut.exception():
                     if isinstance(exn, Exception):
                         yield exn
                     else:
                         raise exn
-
-                getLogger().info("%s", "fut 1")
 
         getLogger().info("%s", ">>> >>> >>>")
 

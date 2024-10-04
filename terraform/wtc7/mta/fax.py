@@ -1,4 +1,4 @@
-from collections.abc import Iterator, Mapping, Set
+from collections.abc import Iterator, Mapping, Sequence, Set
 from dataclasses import dataclass
 from email.errors import MultipartInvariantViolationDefect, StartBoundaryNotFoundDefect
 from email.message import EmailMessage
@@ -59,7 +59,7 @@ def _parse(fp: BinaryIO) -> _Sieve:
     return _sieve(msg, body=body)
 
 
-def _unparse(sieve: _Sieve) -> bytes:
+def unparse(sieve: _Sieve) -> bytes:
     head = sieve.headers.as_bytes(policy=SMTP)
     assert head.endswith(_NL * 2)
     return head + sieve.body
@@ -117,7 +117,12 @@ def parse(mail_from: str, fp: BinaryIO) -> _Sieve:
     return sieve
 
 
-def send(
+def parse_addrs(addrs: str) -> Sequence[str]:
+    _, to_addrs = tuple(zip(*getaddresses([addrs]))) or ((), ())
+    return to_addrs
+
+
+def _send(
     sieve: _Sieve,
     mail_from: str,
     mail_to: str,
@@ -126,8 +131,8 @@ def send(
     mail_pass: str,
     timeout: float,
 ) -> None:
-    _, to_addrs = tuple(zip(*getaddresses([mail_to]))) or ((), ())
-    msg = _unparse(sieve)
+    to_addrs = parse_addrs(mail_to)
+    msg = unparse(sieve)
     with SMTP_SSL(host=mail_srv, timeout=timeout) as client:
         client.login(mail_user, mail_pass)
         client.sendmail(
@@ -135,7 +140,7 @@ def send(
             to_addrs=to_addrs,
             msg=msg,
         )
-    getLogger().info("%s", f"-->> {mail_to}")
+    getLogger().info("%s", f"-->> {to_addrs}")
 
 
 if __name__ == "__main__":
@@ -155,7 +160,7 @@ if __name__ == "__main__":
     getLogger().setLevel(DEBUG)
 
     sieve = parse(mail_from=args.mail_from, fp=stdin.buffer)
-    send(
+    _send(
         sieve=sieve,
         mail_from=args.mail_from,
         mail_to=args.mail_to,

@@ -26,9 +26,9 @@ locals {
   mail_alert = var.mail_to[0]
   timeouts = {
     s3_days = 1,
-    lambda  = 6
+    lambda  = 11
   }
   retries = {
-    lambda = 2
+    lambda = 1
   }
 }
