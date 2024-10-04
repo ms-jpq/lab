@@ -2,6 +2,7 @@ from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
 from functools import cache
+from importlib import reload
 from logging import INFO, getLogger
 from os import environ, linesep
 from typing import TYPE_CHECKING, Any, BinaryIO
@@ -52,12 +53,13 @@ def main(event: S3Event, _: LambdaContext) -> None:
         environ["MAIL_FILT"],
     )
     uri = f"{mail_filter}?{uuid4()}={uuid4()}"
-    register(name="sieve", uri=uri, retries=3, timeout=TIMEOUT)
+    register(name="sieve", uri=uri, timeout=TIMEOUT)
+    import sieve
 
     def step(
         record: S3EventRecord,
     ) -> None:
-        import sieve
+        reload(sieve)
 
         with fetching(msg=record.s3) as fp:
             msg = parse(mail_from=mail_from, fp=fp)
@@ -82,8 +84,6 @@ def main(event: S3Event, _: LambdaContext) -> None:
                     else:
                         raise exn
 
-        getLogger().info("%s", ">>> >>> >>>")
-
     if errs := tuple(cont()):
         name = linesep.join(map(str, errs))
         try:
@@ -91,3 +91,5 @@ def main(event: S3Event, _: LambdaContext) -> None:
         except Exception as e:
             getLogger().exception("%s", e)
             raise
+
+    getLogger().info("%s", ">>> >>> >>>")

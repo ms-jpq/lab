@@ -1,31 +1,20 @@
-from collections.abc import MutableSequence, Sequence
+from collections.abc import Sequence
 from http.client import HTTPResponse
 from importlib.abc import Loader, MetaPathFinder
 from importlib.machinery import ModuleSpec
 from importlib.util import LazyLoader, spec_from_loader
-from os import linesep
 from sys import meta_path
 from types import ModuleType
 from typing import cast
-from urllib.error import URLError
 from urllib.request import build_opener
 
 
-def register(name: str, uri: str, retries: int, timeout: float) -> None:
+def register(name: str, uri: str, timeout: float) -> None:
     def get() -> bytes:
         opener = build_opener()
-        errs: MutableSequence[Exception] = []
-        for _ in range(retries):
-            try:
-                with opener.open(uri, timeout=timeout) as req:
-                    assert isinstance(req, HTTPResponse)
-                    return req.read()
-            except URLError as exn:
-                errs.append(exn)
-        else:
-            msg = linesep.join(map(str, errs))
-            *_, e = errs
-            raise ExceptionGroup(msg, errs) from e
+        with opener.open(uri, timeout=timeout) as req:
+            assert isinstance(req, HTTPResponse)
+            return req.read()
 
     class _Finder(MetaPathFinder):
         def find_spec(
