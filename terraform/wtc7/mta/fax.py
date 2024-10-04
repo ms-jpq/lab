@@ -26,7 +26,7 @@ class _Sieve:
     rcpt: str
     cc: Set[str]
     cc_names: Set[str]
-    msg: EmailMessage
+    headers: EmailMessage
     body: bytes
 
 
@@ -101,7 +101,7 @@ def _sieve(msg: EmailMessage, body: bytes) -> _Sieve:
         rcpt=rcpt,
         cc=frozenset(cc),
         cc_names=frozenset(cc_names),
-        msg=msg,
+        headers=msg,
         body=body,
     )
 

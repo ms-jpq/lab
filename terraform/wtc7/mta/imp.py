@@ -37,9 +37,12 @@ def register(name: str, uri: str, retries: int, timeout: float) -> None:
             if fullname != name:
                 return None
 
+            if target:
+                target.__dict__.clear()
+
             class _Loader(Loader):
                 def create_module(self, spec: ModuleSpec) -> ModuleType | None:
-                    return None
+                    return target
 
                 def exec_module(self, module: ModuleType) -> None:
                     src = get()
