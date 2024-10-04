@@ -53,48 +53,49 @@ cold_start = True
 
 @event_source(data_class=S3Event)
 def main(event: S3Event, _: LambdaContext) -> None:
-    getLogger().info("%s", ">>> >>> >>>")
+    with benchmark(name="main"):
+        getLogger().info("%s", ">>> >>> >>>")
 
-    global cold_start
-    s = sieve if cold_start else reload(sieve)
-    cold_start = False
+        global cold_start
+        s = sieve if cold_start else reload(sieve)
+        cold_start = False
 
-    def step(record: S3EventRecord) -> None:
-        with fetching(msg=record.s3) as fp:
-            with benchmark(name="parse"):
-                msg = parse(mail_from=_M_FROM, fp=fp)
-            go = True
+        def step(record: S3EventRecord) -> None:
+            with fetching(msg=record.s3) as fp:
+                with benchmark(name="parse"):
+                    msg = parse(mail_from=_M_FROM, fp=fp)
+                go = True
+                try:
+                    with benchmark(name="sieve"):
+                        go = s.sieve(msg)
+                finally:
+                    if go:
+                        with benchmark(name="send"):
+                            send(
+                                sieve=msg,
+                                mail_from=_M_FROM,
+                                mail_to=_M_TO,
+                                mail_srv=_M_SRV,
+                                mail_user=_M_USER,
+                                mail_pass=_M_PASS,
+                                timeout=TIMEOUT,
+                            )
+
+        def cont() -> Iterator[Exception]:
+            futs = map(lambda x: _POOL.submit(step, x), event.records)
+            for fut in as_completed(futs):
+                if exn := fut.exception():
+                    if isinstance(exn, Exception):
+                        yield exn
+                    else:
+                        raise exn
+
+        if errs := tuple(cont()):
+            name = linesep.join(map(str, errs))
             try:
-                with benchmark(name="sieve"):
-                    go = s.sieve(msg)
-            finally:
-                if go:
-                    with benchmark(name="send"):
-                        send(
-                            sieve=msg,
-                            mail_from=_M_FROM,
-                            mail_to=_M_TO,
-                            mail_srv=_M_SRV,
-                            mail_user=_M_USER,
-                            mail_pass=_M_PASS,
-                            timeout=TIMEOUT,
-                        )
+                raise ExceptionGroup(name, errs) from errs[0]
+            except Exception as e:
+                getLogger().exception("%s", e)
+                raise
 
-    def cont() -> Iterator[Exception]:
-        futs = map(lambda x: _POOL.submit(step, x), event.records)
-        for fut in as_completed(futs):
-            if exn := fut.exception():
-                if isinstance(exn, Exception):
-                    yield exn
-                else:
-                    raise exn
-
-    if errs := tuple(cont()):
-        name = linesep.join(map(str, errs))
-        try:
-            raise ExceptionGroup(name, errs) from errs[0]
-        except Exception as e:
-            getLogger().exception("%s", e)
-            raise
-
-    getLogger().info("%s", "<<< <<< <<<")
+        getLogger().info("%s", "<<< <<< <<<")
