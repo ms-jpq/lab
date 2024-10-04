@@ -16,12 +16,12 @@ from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client
 
 if TYPE_CHECKING:
-    from .fax import redirect
+    from .fax import parse, send
     from .imp import register
 else:
     from imp import register
 
-    from fax import redirect
+    from fax import parse, send
 
 
 _Sieve = Callable[[Any], bool]
@@ -64,36 +64,33 @@ def main(event: S3Event, _: LambdaContext) -> None:
 
     def step(record: S3EventRecord, fut: Future[_Sieve]) -> None:
         with fetching(msg=record.s3) as fp:
-            exn: Exception | None = None
-            for sieve in redirect(
-                mail_from=mail_from,
-                mail_to=mail_to,
-                mail_srv=mail_srv,
-                mail_user=mail_user,
-                mail_pass=mail_pass,
-                timeout=TIMEOUT,
-                fp=fp,
-            ):
-                try:
-                    flt = fut.result()
-                    if not flt(sieve):
-                        break
-                except Exception as e:
-                    exn = e
-
-            if exn:
-                raise exn from exn
+            sieve = parse(mail_from=mail_from, fp=fp)
+            flt = fut.result()
+            if flt(sieve):
+                send(
+                    sieve=sieve,
+                    mail_from=mail_from,
+                    mail_to=mail_to,
+                    mail_srv=mail_srv,
+                    mail_user=mail_user,
+                    mail_pass=mail_pass,
+                    timeout=TIMEOUT,
+                )
 
     def cont() -> Iterator[Exception]:
         with ThreadPoolExecutor() as pool:
             f = pool.submit(_sieve)
             futs = map(lambda x: pool.submit(step, x, f), event.records)
             for fut in as_completed(futs):
+                getLogger().info("%s", "fut 0")
+
                 if exn := fut.exception():
                     if isinstance(exn, Exception):
                         yield exn
                     else:
                         raise exn
+
+                getLogger().info("%s", "fut 1")
 
         getLogger().info("%s", ">>> >>> >>>")
 

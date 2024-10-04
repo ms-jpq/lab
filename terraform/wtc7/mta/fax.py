@@ -35,19 +35,34 @@ _LS = linesep.encode()
 _MISSING_BODY_DEFECTS = (MultipartInvariantViolationDefect, StartBoundaryNotFoundDefect)
 
 
-def _parse(fp: BinaryIO) -> tuple[EmailMessage, bytes]:
+def _sieve(msg: EmailMessage, body: bytes) -> _Sieve:
+    from_name, m_from = parseaddr(msg.get("from", ""))
+    _, rcpt = parseaddr(msg.get("to", ""))
+    cc_names, cc = tuple(zip(*getaddresses([msg.get("cc", "")]))) or ((), ())
+    return _Sieve(
+        from_name=from_name,
+        m_from=m_from,
+        rcpt=rcpt,
+        cc=frozenset(cc),
+        cc_names=frozenset(cc_names),
+        headers=msg,
+        body=body,
+    )
+
+
+def _parse(fp: BinaryIO) -> _Sieve:
     lines = takewhile(lambda x: x != _NL and x != _LS, iter(fp.readline, b""))
     headers = b"".join(lines)
     msg = BytesParser(policy=SMTPUTF8).parsebytes(headers)
     assert isinstance(msg, EmailMessage)
     body = fp.read()
-    return msg, body
+    return _sieve(msg, body=body)
 
 
-def _unparse(msg: EmailMessage, body: bytes) -> bytes:
-    head = msg.as_bytes(policy=SMTP)
+def _unparse(sieve: _Sieve) -> bytes:
+    head = sieve.headers.as_bytes(policy=SMTP)
     assert head.endswith(_NL * 2)
-    return head + body
+    return head + sieve.body
 
 
 def _redirect(msg: EmailMessage, src: str) -> Iterator[tuple[str, _Rewrite]]:
@@ -91,49 +106,36 @@ def _rewrite(msg: EmailMessage, headers: Mapping[str, _Rewrite]) -> None:
                 assert False
 
 
-def _sieve(msg: EmailMessage, body: bytes) -> _Sieve:
-    from_name, m_from = parseaddr(msg.get("from", ""))
-    _, rcpt = parseaddr(msg.get("to", ""))
-    cc_names, cc = tuple(zip(*getaddresses([msg.get("cc", "")]))) or ((), ())
-    return _Sieve(
-        from_name=from_name,
-        m_from=m_from,
-        rcpt=rcpt,
-        cc=frozenset(cc),
-        cc_names=frozenset(cc_names),
-        headers=msg,
-        body=body,
-    )
+def parse(mail_from: str, fp: BinaryIO) -> _Sieve:
+    sieve = _parse(fp)
+    headers = {k: v for k, v in _redirect(sieve.headers, src=mail_from)}
+    _rewrite(sieve.headers, headers=headers)
+
+    for err in sieve.headers.defects:
+        if not isinstance(err, _MISSING_BODY_DEFECTS):
+            getLogger().warning("%s: %s", type(err).__name__, err)
+    return sieve
 
 
-def redirect(
+def send(
+    sieve: _Sieve,
     mail_from: str,
     mail_to: str,
     mail_srv: str,
     mail_user: str,
     mail_pass: str,
     timeout: float,
-    fp: BinaryIO,
-) -> Iterator[_Sieve]:
+) -> None:
     _, to_addrs = tuple(zip(*getaddresses([mail_to]))) or ((), ())
-    msg, body = _parse(fp)
-    headers = {k: v for k, v in _redirect(msg, src=mail_from)}
-    _rewrite(msg, headers=headers)
-    sieve = _sieve(msg, body=body)
-    mail = _unparse(msg, body=body)
-
-    for err in msg.defects:
-        if not isinstance(err, _MISSING_BODY_DEFECTS):
-            getLogger().warning("%s: %s", type(err).__name__, err)
-    yield sieve
-
+    msg = _unparse(sieve)
     with SMTP_SSL(host=mail_srv, timeout=timeout) as client:
         client.login(mail_user, mail_pass)
         client.sendmail(
             from_addr=mail_from,
             to_addrs=to_addrs,
-            msg=mail,
+            msg=msg,
         )
+    getLogger().info("%s", f"-->> {mail_to}")
 
 
 if __name__ == "__main__":
@@ -152,13 +154,13 @@ if __name__ == "__main__":
     args = _parse_args()
     getLogger().setLevel(DEBUG)
 
-    for _ in redirect(
+    sieve = parse(mail_from=args.mail_from, fp=stdin.buffer)
+    send(
+        sieve=sieve,
         mail_from=args.mail_from,
         mail_to=args.mail_to,
         mail_srv=args.mail_srv,
         mail_user=args.mail_user,
         mail_pass=args.mail_pass,
         timeout=args.timeout,
-        fp=stdin.buffer,
-    ):
-        pass
+    )
