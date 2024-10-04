@@ -22,8 +22,20 @@ else:
     from fax import parse, send
     from gist import register
 
-
+_M_SRV, _M_FROM, _M_TO, _M_USER, _M_PASS, _M_FILT = (
+    environ["MAIL_SRV"],
+    environ["MAIL_FROM"],
+    environ["MAIL_TO"],
+    environ["MAIL_USER"],
+    environ["MAIL_PASS"],
+    environ["MAIL_FILT"],
+)
 TIMEOUT = 6.9
+getLogger().setLevel(INFO)
+register(name="sieve", uri=_M_FILT, timeout=TIMEOUT)
+import sieve
+
+_POOL = ThreadPoolExecutor()
 
 
 @cache
@@ -41,50 +53,34 @@ def fetching(msg: S3Message) -> Iterator[BinaryIO]:
 
 @event_source(data_class=S3Event)
 def main(event: S3Event, _: LambdaContext) -> None:
-    getLogger().setLevel(INFO)
+    s = reload(sieve)
 
-    mail_srv, mail_from, mail_to, mail_user, mail_pass, mail_filter = (
-        environ["MAIL_SRV"],
-        environ["MAIL_FROM"],
-        environ["MAIL_TO"],
-        environ["MAIL_USER"],
-        environ["MAIL_PASS"],
-        environ["MAIL_FILT"],
-    )
-    register(name="sieve", uri=mail_filter, timeout=TIMEOUT)
-    import sieve
-
-    def step(
-        record: S3EventRecord,
-    ) -> None:
-        reload(sieve)
-
+    def step(record: S3EventRecord) -> None:
         with fetching(msg=record.s3) as fp:
-            msg = parse(mail_from=mail_from, fp=fp)
+            msg = parse(mail_from=_M_FROM, fp=fp)
             go = True
             try:
-                go = sieve.sieve(msg)
+                go = s.sieve(msg)
             finally:
                 if go:
                     send(
                         sieve=msg,
-                        mail_from=mail_from,
-                        mail_to=mail_to,
-                        mail_srv=mail_srv,
-                        mail_user=mail_user,
-                        mail_pass=mail_pass,
+                        mail_from=_M_FROM,
+                        mail_to=_M_TO,
+                        mail_srv=_M_SRV,
+                        mail_user=_M_USER,
+                        mail_pass=_M_PASS,
                         timeout=TIMEOUT,
                     )
 
     def cont() -> Iterator[Exception]:
-        with ThreadPoolExecutor() as pool:
-            futs = map(lambda x: pool.submit(step, x), event.records)
-            for fut in as_completed(futs):
-                if exn := fut.exception():
-                    if isinstance(exn, Exception):
-                        yield exn
-                    else:
-                        raise exn
+        futs = map(lambda x: _POOL.submit(step, x), event.records)
+        for fut in as_completed(futs):
+            if exn := fut.exception():
+                if isinstance(exn, Exception):
+                    yield exn
+                else:
+                    raise exn
 
     if errs := tuple(cont()):
         name = linesep.join(map(str, errs))
