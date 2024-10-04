@@ -37,6 +37,7 @@ _M_SRV, _M_FROM, _M_TO, _M_USER, _M_PASS, _M_FILT = (
     environ["MAIL_PASS"],
     environ["MAIL_FILT"],
 )
+_S3 = client(service_name="s3")
 
 register(name="sieve", uri=_M_FILT, timeout=TIMEOUT)
 getLogger().info("%s", "=== === ===")
@@ -44,17 +45,12 @@ getLogger().info("%s", "=== === ===")
 import sieve
 
 
-@cache
-def _s3() -> Any:
-    return client(service_name="s3")
-
-
 @contextmanager
 def fetching(msg: S3Message) -> Iterator[BinaryIO]:
     kw = dict(Bucket=msg.bucket.name, Key=msg.get_object.key)
-    rsp = _s3().get_object(**kw)
+    rsp = _S3().get_object(**kw)
     yield rsp["Body"]
-    _s3().delete_object(**kw)
+    _S3().delete_object(**kw)
 
 
 cold_start = True

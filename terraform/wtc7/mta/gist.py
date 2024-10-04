@@ -11,17 +11,18 @@ from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 from urllib.request import build_opener
 from uuid import uuid4
 
+_OPENER = build_opener()
+
 
 def register(name: str, uri: str, timeout: float) -> None:
     scheme, netloc, path, query, frag = urlsplit(uri)
     qs = parse_qs(query)
 
     def get() -> bytes:
-        opener = build_opener()
         nxt_qs = urlencode({**qs, uuid4().hex: (uuid4().hex,)})
         nxt_uri = urlunsplit((scheme, netloc, path, nxt_qs, frag))
 
-        with opener.open(nxt_uri, timeout=timeout) as req:
+        with _OPENER.open(nxt_uri, timeout=timeout) as req:
             assert isinstance(req, HTTPResponse)
             return req.read()
 
