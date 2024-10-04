@@ -1,4 +1,4 @@
-from collections.abc import Iterator, Mapping, Sequence, Set
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from email.errors import MultipartInvariantViolationDefect, StartBoundaryNotFoundDefect
 from email.message import EmailMessage
@@ -21,11 +21,6 @@ class _Rewrite:
 
 @dataclass(frozen=True)
 class _Sieve:
-    from_name: str
-    m_from: str
-    rcpt: str
-    cc: Set[str]
-    cc_names: Set[str]
     headers: EmailMessage
     body: bytes
 
@@ -36,18 +31,7 @@ _MISSING_BODY_DEFECTS = (MultipartInvariantViolationDefect, StartBoundaryNotFoun
 
 
 def _sieve(msg: EmailMessage, body: bytes) -> _Sieve:
-    from_name, m_from = parseaddr(msg.get("from", ""))
-    _, rcpt = parseaddr(msg.get("to", ""))
-    cc_names, cc = tuple(zip(*getaddresses([msg.get("cc", "")]))) or ((), ())
-    return _Sieve(
-        from_name=from_name,
-        m_from=m_from,
-        rcpt=rcpt,
-        cc=frozenset(cc),
-        cc_names=frozenset(cc_names),
-        headers=msg,
-        body=body,
-    )
+    return _Sieve(headers=msg, body=body)
 
 
 def _parse(fp: BinaryIO) -> _Sieve:
