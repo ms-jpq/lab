@@ -65,7 +65,8 @@ def main(event: S3Event, _: LambdaContext) -> None:
                 msg = parse(mail_from=_M_FROM, fp=fp)
             go = True
             try:
-                go = s.sieve(msg)
+                with benchmark(name="sieve"):
+                    go = s.sieve(msg)
             finally:
                 if go:
                     with benchmark(name="send"):
