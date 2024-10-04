@@ -6,7 +6,6 @@ from importlib import reload
 from logging import INFO, getLogger
 from os import environ, linesep
 from typing import TYPE_CHECKING, Any, BinaryIO
-from uuid import uuid4
 
 from aws_lambda_powertools.utilities.data_classes import S3Event, event_source
 from aws_lambda_powertools.utilities.data_classes.s3_event import (
@@ -52,8 +51,7 @@ def main(event: S3Event, _: LambdaContext) -> None:
         environ["MAIL_PASS"],
         environ["MAIL_FILT"],
     )
-    uri = f"{mail_filter}?{uuid4()}={uuid4()}"
-    register(name="sieve", uri=uri, timeout=TIMEOUT)
+    register(name="sieve", uri=mail_filter, timeout=TIMEOUT)
     import sieve
 
     def step(
