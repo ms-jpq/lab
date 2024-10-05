@@ -1,8 +1,6 @@
 .PHONY: qemu qemu.pull clobber.qemu
 
 CLOUD_IMG_AT := https://cloud-images.ubuntu.com/releases/$(VERSION_ID)/release
-KERNEL := $(CLOUD_IMG_AT)/unpacked/ubuntu-$(VERSION_ID)-server-cloudimg-$(GOARCH)-vmlinuz-generic
-INITRD := $(CLOUD_IMG_AT)/unpacked/ubuntu-$(VERSION_ID)-server-cloudimg-$(GOARCH)-initrd-generic
 KVMBUNTU := $(CLOUD_IMG_AT)/ubuntu-$(VERSION_ID)-server-cloudimg-$(GOARCH).img
 QEMU_IMG := $(CACHE)/qemu/cloud.img/raw
 
@@ -23,14 +21,6 @@ clobber.qemu:
 # pkg._: /etc/apt/sources.list.d/ppa_canonical-server_server-backports.list
 /etc/apt/sources.list.d/ppa_canonical-server_server-backports.list:
 	sudo -- ./libexec/add-ppa.sh canonical-server/server-backports
-
-qemu.pull: $(CACHE)/qemu/vmlinuz
-$(CACHE)/qemu/vmlinuz:
-	sudo -- $(CURL) --output '$@' -- '$(KERNEL)'
-
-qemu.pull: $(CACHE)/qemu/initrd
-$(CACHE)/qemu/initrd:
-	sudo -- $(CURL) --output '$@' -- '$(INITRD)'
 
 $(CACHE)/qemu/cloudimg.qcow2:
 	sudo -- $(CURL) --output '$@' -- '$(KVMBUNTU)'
