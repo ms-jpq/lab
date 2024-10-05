@@ -2,7 +2,6 @@ gateway
 gh_mirror
 intel_gvt
 journal
-postgres
 qemu
 share
 zfs
