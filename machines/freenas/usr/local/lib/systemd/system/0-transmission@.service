@@ -33,6 +33,7 @@ ExecStart            = transmission-daemon \
                          --no-portmap \
                          --encryption-preferred \
                          --no-watch-dir \
+                         --log-level info \
                          --config-dir ${CONFIG_DIR} \
                          --incomplete-dir ${INCOMPLETE_DIR} \
                          --download-dir ${DOWNLOAD_DIR}
