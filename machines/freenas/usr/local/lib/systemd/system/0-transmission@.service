@@ -1,0 +1,38 @@
+[Unit]
+BindsTo              = 1-wg-netns@qbt.service
+After                = 1-wg-netns@qbt.service
+
+Wants                = 1-netns-proxy-9091@qbt.socket
+
+RequiresMountsFor    = %S/local/%J
+
+[Service]
+Restart              = on-failure
+RestartSec           = 9
+ProtectSystem        = strict
+ProtectHome          = yes
+BindReadOnlyPaths    = %E/netns/qbt/resolv.conf:%E/resolv.conf
+ReadWritePaths       = %T %V %S/local/%J /media/downloads
+
+NetworkNamespacePath = %t/netns/qbt
+TimeoutStopSec       = 6s
+
+StateDirectory       = local/$J
+
+User                 = %I
+Group                = %I
+
+Environment          = CONFIG_DIR=%S/local/%J
+Environment          = DOWNLOAD_DIR=/media/downloads/done
+Environment          = INCOMPLETE_DIR=/media/downloads/pending
+
+ExecStartPre         = mkdir -v -p -- ${DOWNLOAD_DIR} ${INCOMPLETE_DIR}
+ExecStart            = transmission-daemon \
+                         --foreground \
+                         --no-auth \
+                         --no-portmap \
+                         --encryption-preferred \
+                         --no-watch-dir \
+                         --config-dir ${CONFIG_DIR} \
+                         --incomplete-dir ${INCOMPLETE_DIR} \
+                         --download-dir ${DOWNLOAD_DIR}

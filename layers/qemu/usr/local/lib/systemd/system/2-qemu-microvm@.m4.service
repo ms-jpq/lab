@@ -48,8 +48,8 @@ Environment         = QMP=%t/local/qemu/%I/qmp.sock
 Environment         = MONITOR=%t/local/qemu/%I/mon.sock
 Environment         = CONSOLE=%t/local/qemu/%I/con.sock
 Environment         = BRIDGE=v-%I
-Environment         = KERNEL=/opt/img/vmlinuz
-Environment         = INITRD=/opt/img/initrd
+Environment         = KERNEL=/opt/img/vmlinuz-%w
+Environment         = INITRD=/opt/img/initrd-%w
 
 Environment         = MACVTAP=m4_ifelse(m5_argn(1, m5_assert([ENV_MACVLAN_IFS])), [], [], [m-%I])
 
