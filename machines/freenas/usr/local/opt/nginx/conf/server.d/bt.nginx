@@ -14,5 +14,7 @@ location /bt/ {
 }
 
 location /transmission/ {
-  proxy_pass http://unix:/run/local/ns-proxy/qbt-9091.sock;
+  include          /usr/local/opt/nginx/conf/http.d/proxy_params.nginx;
+  proxy_set_header Host "localhost";
+  proxy_pass       http://unix:/run/local/ns-proxy/qbt-9091.sock;
 }
