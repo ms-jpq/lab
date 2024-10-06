@@ -7,6 +7,8 @@
 + rlwrap
 + swtpm-tools
 + systemd-container
++ ubuntu-m5_assert([ENV_VERSION_ID])-server-cloudimg-m4_ifelse(ENV_HOSTTYPE, [x86_64], [amd], [arm])64-initrd-generic
++ ubuntu-m5_assert([ENV_VERSION_ID])-server-cloudimg-m4_ifelse(ENV_HOSTTYPE, [x86_64], [amd], [arm])64-vmlinuz-generic
 + websockify
 # m4_ifelse(ENV_HOSTTYPE, [x86_64], [
 + qemu-system-x86
