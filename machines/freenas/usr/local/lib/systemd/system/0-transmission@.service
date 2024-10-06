@@ -17,7 +17,7 @@ ReadWritePaths       = %T %V %S/local/%J /media/downloads
 NetworkNamespacePath = %t/netns/qbt
 TimeoutStopSec       = 6s
 
-StateDirectory       = local/$J
+StateDirectory       = local/%J
 
 User                 = %I
 Group                = %I
