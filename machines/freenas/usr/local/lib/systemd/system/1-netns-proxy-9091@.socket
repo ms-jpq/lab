@@ -1,6 +1,6 @@
 [Unit]
-Description  = NetNS Proxy -- %t/local/ns-proxy/%I.sock
+Description  = NetNS Proxy -- %t/local/ns-proxy/%I-%J.sock
 
 [Socket]
 RemoveOnStop = yes
-ListenStream = %t/local/ns-proxy/%I.sock
+ListenStream = %t/local/ns-proxy/%I-%J.sock
