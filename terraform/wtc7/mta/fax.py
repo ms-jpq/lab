@@ -1,4 +1,4 @@
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from email.errors import MultipartInvariantViolationDefect, StartBoundaryNotFoundDefect
 from email.message import EmailMessage
@@ -67,8 +67,8 @@ def _redirect(msg: EmailMessage, src: str) -> Iterator[tuple[str, _Rewrite]]:
         yield name, spec
 
 
-def _rewrite(msg: EmailMessage, headers: Mapping[str, _Rewrite]) -> None:
-    for key, rewrite in headers.items():
+def _rewrite(msg: EmailMessage, headers: Iterator[tuple[str, _Rewrite]]) -> None:
+    for key, rewrite in headers:
         match rewrite.act:
             case "noop":
                 pass
@@ -88,7 +88,7 @@ def _rewrite(msg: EmailMessage, headers: Mapping[str, _Rewrite]) -> None:
 
 def parse(mail_from: str, fp: BinaryIO) -> _Mail:
     mail = _parse(fp)
-    headers = {k: v for k, v in _redirect(mail.headers, src=mail_from)}
+    headers = _redirect(mail.headers, src=mail_from)
     _rewrite(mail.headers, headers=headers)
 
     for err in mail.headers.defects:
