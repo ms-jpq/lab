@@ -39,6 +39,15 @@ def _parse(fp: BinaryIO) -> _Mail:
     return _Mail(headers=parsed, body=body)
 
 
+def parse(fp: BinaryIO) -> _Mail:
+    mail = _parse(fp)
+
+    for err in mail.headers.defects:
+        if not isinstance(err, _MISSING_BODY_DEFECTS):
+            getLogger().warning("%s: %s", type(err).__name__, err)
+    return mail
+
+
 def _unparse(mail: _Mail) -> bytes:
     head = mail.headers.as_bytes(policy=SMTP)
     assert head.endswith(_NL * 2)
@@ -86,17 +95,6 @@ def _rewrite(msg: EmailMessage, headers: Iterator[tuple[str, _Rewrite]]) -> None
                 assert False
 
 
-def parse(mail_from: str, fp: BinaryIO) -> _Mail:
-    mail = _parse(fp)
-    headers = _redirect(mail.headers, src=mail_from)
-    _rewrite(mail.headers, headers=headers)
-
-    for err in mail.headers.defects:
-        if not isinstance(err, _MISSING_BODY_DEFECTS):
-            getLogger().warning("%s: %s", type(err).__name__, err)
-    return mail
-
-
 def _parse_addrs(addrs: str) -> Sequence[str]:
     _, to_addrs = tuple(zip(*getaddresses([addrs]))) or ((), ())
     return to_addrs
@@ -111,6 +109,8 @@ def send(
     mail_pass: str,
     timeout: float,
 ) -> None:
+    headers = _redirect(mail.headers, src=mail_from)
+    _rewrite(mail.headers, headers=headers)
     to_addrs = _parse_addrs(mail_to)
     msg = _unparse(mail)
     with SMTP_SSL(host=mail_srv, timeout=timeout) as client:
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     args = _parse_args()
     getLogger().setLevel(DEBUG)
 
-    mail = parse(mail_from=args.mail_from, fp=stdin.buffer)
+    mail = parse(stdin.buffer)
     send(
         mail,
         mail_from=args.mail_from,
