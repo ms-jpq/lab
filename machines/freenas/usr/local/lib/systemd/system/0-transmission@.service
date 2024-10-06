@@ -22,7 +22,7 @@ StateDirectory       = local/%J
 User                 = %I
 Group                = %I
 
-Environment          = CONFIG_DIR=%S/local/%J
+Environment          = TRANSMISSION_HOME=%S/local/%J
 Environment          = DOWNLOAD_DIR=/media/downloads/done
 Environment          = INCOMPLETE_DIR=/media/downloads/pending
 
@@ -34,6 +34,5 @@ ExecStart            = transmission-daemon \
                          --encryption-preferred \
                          --no-watch-dir \
                          --log-level info \
-                         --config-dir ${CONFIG_DIR} \
                          --incomplete-dir ${INCOMPLETE_DIR} \
                          --download-dir ${DOWNLOAD_DIR}
