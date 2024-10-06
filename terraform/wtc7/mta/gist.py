@@ -3,12 +3,11 @@ from contextlib import contextmanager
 from http.client import HTTPResponse
 from importlib.abc import Loader, MetaPathFinder
 from importlib.machinery import ModuleSpec
-from importlib.util import LazyLoader, spec_from_loader
+from importlib.util import spec_from_loader
 from logging import getLogger
 from sys import meta_path
 from time import monotonic
 from types import ModuleType
-from typing import cast
 from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 from urllib.request import build_opener
 from uuid import uuid4
@@ -60,8 +59,7 @@ def register(name: str, uri: str, timeout: float) -> None:
                         code = compile(src, fullname, "exec")
                         exec(code, module.__dict__)
 
-            loader = LazyLoader.factory(cast(Loader, _Loader))
-            spec = spec_from_loader(fullname, loader())
+            spec = spec_from_loader(fullname, _Loader())
             return spec
 
     meta_path.append(_Finder())
