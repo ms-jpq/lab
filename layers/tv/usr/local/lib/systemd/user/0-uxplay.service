@@ -13,4 +13,4 @@ Environment    = WAYLAND_DISPLAY=wayland-0
 ExecStart      = uxplay -p -nh -n %H -fs -nohold
 
 [Install]
-WantedBy       = default.target
+WantedBy       = multi-user.target

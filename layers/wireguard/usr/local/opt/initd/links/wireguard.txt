@@ -1,1 +1,1 @@
-/usr/local/lib/systemd/system/default.target.wants/1-wg@w\x2d0.service ../1-wg@.service
+/usr/local/lib/systemd/system/multi-user.target.wants/1-wg@w\x2d0.service ../1-wg@.service
