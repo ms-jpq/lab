@@ -33,6 +33,8 @@ services:
       REDLIB_DEFAULT_HIDE_HLS_NOTIFICATION: on
       REDLIB_DEFAULT_SUBSCRIPTIONS:
       REDLIB_DEFAULT_USE_HLS: on
+      REDLIB_ENABLE_RSS: on
+      REDLIB_FULL_URL: https://reddit.${DOMAIN}
     # network_mode: container:warp-srv-1
     networks:
       - default
