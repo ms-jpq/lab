@@ -2,6 +2,7 @@ from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
 from importlib import reload
+from io import BytesIO
 from logging import INFO, getLogger
 from os import environ, linesep
 from typing import TYPE_CHECKING, BinaryIO
@@ -63,7 +64,8 @@ def main(event: S3Event, _: LambdaContext) -> None:
         def step(record: S3EventRecord) -> None:
             with fetching(msg=record.s3) as fp:
                 with benchmark(name="parse"):
-                    mail = parse(fp)
+                    io = BytesIO(fp.read())
+                    mail = parse(io)
                 go = True
                 try:
                     with benchmark(name="sieve"):
