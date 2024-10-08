@@ -1,5 +1,5 @@
 [project]
-dependencies = ["elasticsearch", "aws-lambda-powertools"]
+dependencies = ["elasticsearch", "aws-lambda-powertools", "miniflux"]
 name         = "lab"
 version      = "0"
 
