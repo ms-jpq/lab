@@ -49,7 +49,8 @@ category_id = categories[category]
 
 for feed_url in subs:
     if feed_id := uris.get(feed_url):
-        client.delete_feed(feed_id)
+        # client.delete_feed(feed_id)
+        continue
 
     client.create_feed(
         feed_url,
