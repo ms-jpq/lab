@@ -790,3 +790,22 @@ sequenceDiagram
     end
   end
 ```
+
+---
+
+# AWS Serverless Email Filter
+
+```mermaid
+flowchart LR
+  src["Email (src)"] --> |AWS Route 53 MX Records| ses["AWS SES"]
+  ses --> |Routing Rule| s3["AWS S3"]
+  s3 --> |Object Notifications| lambda["AWS Lambda"]
+  lambda --> |Fetch| gist["Github Gist"]
+  lambda --> |Log| cw["AWS Cloudwatch"]
+  gist --> |Compile| exec{"Execute"}
+  exec --> |error| sns["AWS SNS"]
+  sns --> |error data| dst["Email"]
+  exec --> |ok| ses2["AWS SES"]
+  exec --> |drop| die(("Dropped"))
+  ses2 --> |SMTP| dst["Email (dst)"]
+```
