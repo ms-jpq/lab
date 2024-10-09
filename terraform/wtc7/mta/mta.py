@@ -94,10 +94,6 @@ def main(event: S3Event, _: LambdaContext) -> None:
 
         if errs := tuple(cont()):
             name = linesep.join(map(str, errs))
-            try:
-                raise ExceptionGroup(name, errs) from errs[0]
-            except Exception as e:
-                getLogger().exception("%s", e)
-                raise
+            raise ExceptionGroup(name, errs) from errs[0]
 
         getLogger().info("%s", "<<< <<< <<<")
