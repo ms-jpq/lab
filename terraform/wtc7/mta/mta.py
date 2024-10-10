@@ -25,7 +25,6 @@ else:
     from gist import benchmark, register
 
 TIMEOUT = 6.9
-_POOL = ThreadPoolExecutor()
 _M_SRV, _M_FROM, _M_TO, _M_USER, _M_PASS, _M_FILT = (
     environ["MAIL_SRV"],
     environ["MAIL_FROM"],
@@ -84,13 +83,14 @@ def main(event: S3Event, _: LambdaContext) -> None:
                             )
 
         def cont() -> Iterator[Exception]:
-            futs = map(lambda x: _POOL.submit(step, x), event.records)
-            for fut in as_completed(futs):
-                if exn := fut.exception():
-                    if isinstance(exn, Exception):
-                        yield exn
-                    else:
-                        raise exn
+            with ThreadPoolExecutor() as pool:
+                futs = map(lambda x: pool.submit(step, x), event.records)
+                for fut in as_completed(futs):
+                    if exn := fut.exception():
+                        if isinstance(exn, Exception):
+                            yield exn
+                        else:
+                            raise exn
 
         if errs := tuple(cont()):
             name = linesep.join(map(str, errs))
