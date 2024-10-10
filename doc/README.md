@@ -805,7 +805,7 @@ flowchart LR
   gist --> |Compile| exec{"Execute"}
   exec --> |error| sns["AWS SNS"]
   sns --> |error data| dst["Email"]
-  exec --> |ok| ses2["AWS SES"]
-  exec --> |drop| die(("Dropped"))
+  exec --> |SMTP| ses2["AWS SES"]
+  exec --> |die| die(("Terminate"))
   ses2 --> |SMTP| dst["Email (dst)"]
 ```
