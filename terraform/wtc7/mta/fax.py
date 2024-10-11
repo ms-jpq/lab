@@ -15,7 +15,7 @@ from typing import BinaryIO, Literal
 
 @dataclass(frozen=True)
 class _Rewrite:
-    act: Literal["noop", "delete", "set-default", "append", "replace", "ensure"]
+    act: Literal["noop", "delete", "replace", "append", "set-default"]
     val: str
 
 
@@ -60,7 +60,7 @@ def _redirect(msg: EmailMessage, src: str) -> Iterator[tuple[str, _Rewrite]]:
     nxt_from = formataddr((msg_from, src))
 
     mod = {
-        "from": _Rewrite(act="ensure", val=nxt_from),
+        "from": _Rewrite(act="set-default", val=nxt_from),
         "reply-to": (
             _Rewrite(act="set-default", val=x_from)
             if x_from
@@ -83,13 +83,13 @@ def _rewrite(msg: EmailMessage, headers: Iterator[tuple[str, _Rewrite]]) -> None
                 pass
             case "delete":
                 del msg[key]
-            case "set-default" | "append":
-                if not msg.get(key, "") or rewrite.act == "append":
-                    msg.add_header(key, rewrite.val)
-            case "replace" | "ensure":
-                if msg.get(key, "") != "":
-                    msg.replace_header(key, rewrite.val)
-                elif rewrite.act == "ensure":
+            case "replace":
+                del msg[key]
+                msg.replace_header(key, rewrite.val)
+            case "append":
+                msg.add_header(key, rewrite.val)
+            case "set-default":
+                if key not in msg:
                     msg.add_header(key, rewrite.val)
             case _:
                 assert False
