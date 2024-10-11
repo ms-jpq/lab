@@ -83,7 +83,8 @@ def main(event: S3Event, _: LambdaContext) -> None:
                             )
 
         def cont() -> Iterator[Exception]:
-            with ThreadPoolExecutor() as pool:
+            pool = ThreadPoolExecutor()
+            try:
                 futs = map(lambda x: pool.submit(step, x), event.records)
                 for fut in as_completed(futs):
                     if exn := fut.exception():
@@ -91,6 +92,8 @@ def main(event: S3Event, _: LambdaContext) -> None:
                             yield exn
                         else:
                             raise exn
+            finally:
+                pool.shutdown(wait=False, cancel_futures=True)
 
         if errs := tuple(cont()):
             name = linesep.join(map(str, errs))
