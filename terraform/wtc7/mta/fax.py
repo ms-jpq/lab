@@ -60,7 +60,7 @@ def _redirect(msg: EmailMessage, src: str) -> Iterator[tuple[str, _Rewrite]]:
     nxt_from = formataddr((msg_from, src))
 
     mod = {
-        "from": _Rewrite(act="set-default", val=nxt_from),
+        "from": _Rewrite(act="replace", val=nxt_from),
         "reply-to": (
             _Rewrite(act="set-default", val=x_from)
             if x_from
@@ -85,7 +85,7 @@ def _rewrite(msg: EmailMessage, headers: Iterator[tuple[str, _Rewrite]]) -> None
                 del msg[key]
             case "replace":
                 del msg[key]
-                msg.replace_header(key, rewrite.val)
+                msg.add_header(key, rewrite.val)
             case "append":
                 msg.add_header(key, rewrite.val)
             case "set-default":

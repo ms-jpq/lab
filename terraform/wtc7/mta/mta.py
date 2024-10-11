@@ -93,10 +93,15 @@ def main(event: S3Event, _: LambdaContext) -> None:
                         else:
                             raise exn
             finally:
-                pool.shutdown(wait=False, cancel_futures=True)
+                with benchmark(name="shutdown"):
+                    pool.shutdown(wait=True, cancel_futures=True)
 
         if errs := tuple(cont()):
             name = linesep.join(map(str, errs))
-            raise ExceptionGroup(name, errs) from errs[0]
+            try:
+                raise ExceptionGroup(name, errs) from errs[0]
+            except Exception as e:
+                getLogger().exception("%s", e)
+                raise e
 
         getLogger().info("%s", "<<< <<< <<<")
