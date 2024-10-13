@@ -15,7 +15,7 @@ from typing import BinaryIO, Literal
 
 @dataclass(frozen=True)
 class _Rewrite:
-    act: Literal["noop", "delete", "replace", "append", "set-default"]
+    act: Literal["noop", "delete", "replace", "append", "set-default", "uniq"]
     val: str
 
 
@@ -68,8 +68,8 @@ def _redirect(msg: EmailMessage, src: str) -> Iterator[tuple[str, _Rewrite]]:
         ),
         "sender": _Rewrite(act="delete", val=src),
         "return-path": _Rewrite(act="delete", val=""),
-        "dkim-signature": _Rewrite(act="delete", val=""),
-        "message-id": _Rewrite(act="delete", val=""),
+        "dkim-signature": _Rewrite(act="uniq", val=""),
+        "message-id": _Rewrite(act="uniq", val=""),
     }
 
     for name, spec in mod.items():
@@ -91,6 +91,11 @@ def _rewrite(msg: EmailMessage, headers: Iterator[tuple[str, _Rewrite]]) -> None
             case "set-default":
                 if key not in msg:
                     msg.add_header(key, rewrite.val)
+            case "uniq":
+                if hdrs := msg.get_all(key):
+                    *_, hdr = hdrs
+                    del msg[key]
+                    msg.add_header(key, hdr)
             case _:
                 assert False
 
