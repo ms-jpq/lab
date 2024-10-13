@@ -126,7 +126,7 @@ def recv_tcp(log:, sock:, &blk)
     io_write(conn:, buf: rsp)
   rescue Timeout::Error => e
     log.debug(e)
-  rescue IOError => e
+  rescue IOError, Errno::ECONNREFUSED => e
     log.error(e)
   ensure
     conn&.close
@@ -145,7 +145,7 @@ def recv_udp(log:, sock:, &blk)
     sock.send(rsp, 0, ai)
   rescue Timeout::Error => e
     log.debug(e)
-  rescue IOError => e
+  rescue IOError, Errno::ECONNREFUSED => e
     log.error(e)
   end
 end
@@ -163,7 +163,7 @@ def do_recv(log:, rx:, &blk)
     end
   rescue Timeout::Error => e
     log.debug(e)
-  rescue IOError => e
+  rescue IOError, Errno::ECONNREFUSED => e
     log.error(e)
   end
 end
