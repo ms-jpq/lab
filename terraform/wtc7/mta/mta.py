@@ -1,5 +1,5 @@
 from collections.abc import Iterator
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import Executor, ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
 from importlib import reload
 from io import BytesIO
@@ -41,11 +41,21 @@ import sieve
 
 
 @contextmanager
-def fetching(msg: S3Message) -> Iterator[BinaryIO]:
+def _fetching(msg: S3Message) -> Iterator[BinaryIO]:
     kw = dict(Bucket=msg.bucket.name, Key=msg.get_object.key)
     rsp = _S3.get_object(**kw)
     yield rsp["Body"]
     _S3.delete_object(**kw)
+
+
+@contextmanager
+def _pool() -> Iterator[Executor]:
+    pool = ThreadPoolExecutor()
+    try:
+        yield pool
+    finally:
+        with benchmark(name="shutdown"):
+            pool.shutdown(wait=True, cancel_futures=True)
 
 
 cold_start = True
@@ -61,14 +71,15 @@ def main(event: S3Event, _: LambdaContext) -> None:
         cold_start = False
 
         def step(record: S3EventRecord) -> None:
-            with fetching(msg=record.s3) as fp:
+            with _fetching(msg=record.s3) as fp:
                 with benchmark(name="parse"):
                     io = BytesIO(fp.read())
                     mail = parse(io)
                 go = True
                 try:
+                    ss = s.sieve
                     with benchmark(name="sieve"):
-                        go = s.sieve(mail)
+                        go = ss(mail)
                 finally:
                     if go:
                         with benchmark(name="send"):
@@ -83,8 +94,7 @@ def main(event: S3Event, _: LambdaContext) -> None:
                             )
 
         def cont() -> Iterator[Exception]:
-            pool = ThreadPoolExecutor()
-            try:
+            with _pool() as pool:
                 futs = map(lambda x: pool.submit(step, x), event.records)
                 for fut in as_completed(futs):
                     if exn := fut.exception():
@@ -92,9 +102,6 @@ def main(event: S3Event, _: LambdaContext) -> None:
                             yield exn
                         else:
                             raise exn
-            finally:
-                with benchmark(name="shutdown"):
-                    pool.shutdown(wait=True, cancel_futures=True)
 
         if errs := tuple(cont()):
             name = linesep.join(map(str, errs))
