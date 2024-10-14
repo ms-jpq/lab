@@ -5,7 +5,7 @@ from importlib import reload
 from io import BytesIO
 from logging import INFO, getLogger
 from os import environ, linesep
-from typing import TYPE_CHECKING, BinaryIO
+from typing import BinaryIO
 
 from aws_lambda_powertools.utilities.data_classes import S3Event, event_source
 from aws_lambda_powertools.utilities.data_classes.s3_event import (
@@ -15,14 +15,11 @@ from aws_lambda_powertools.utilities.data_classes.s3_event import (
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client
 
+from .fax import parse, send
+from .gist import benchmark, register
+
 getLogger().setLevel(INFO)
 
-if TYPE_CHECKING:
-    from .fax import parse, send
-    from .gist import benchmark, register
-else:
-    from fax import parse, send
-    from gist import benchmark, register
 
 TIMEOUT = 6.9
 _M_SRV, _M_FROM, _M_TO, _M_USER, _M_PASS, _M_FILT = (
