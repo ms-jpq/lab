@@ -1,8 +1,8 @@
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
+from email import message_from_bytes
 from email.errors import MultipartInvariantViolationDefect, StartBoundaryNotFoundDefect
 from email.message import EmailMessage
-from email.parser import BytesParser
 from email.policy import SMTP, SMTPUTF8
 from email.utils import formataddr, getaddresses, parseaddr
 from itertools import takewhile
@@ -33,7 +33,7 @@ _MISSING_BODY_DEFECTS = (MultipartInvariantViolationDefect, StartBoundaryNotFoun
 def _parse(fp: BinaryIO) -> _Mail:
     lines = takewhile(lambda x: x != _NL and x != _LS, iter(fp.readline, b""))
     headers = b"".join(lines)
-    parsed = BytesParser(policy=SMTPUTF8).parsebytes(headers)
+    parsed = message_from_bytes(headers, policy=SMTPUTF8)
     assert isinstance(parsed, EmailMessage)
     body = fp.read()
     return _Mail(headers=parsed, body=body)
