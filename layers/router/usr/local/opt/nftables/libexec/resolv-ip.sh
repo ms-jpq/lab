@@ -30,7 +30,7 @@ for FILE in /run/local/dnsmasq/*/leases; do
       printf -- '%s\0' "@$IPV6_ADDR" +short "$LINE.$DOMAIN" AAAA
     fi
   done
-done | RECURSION=1 parallel -0 --max-replace-args 4 --tag dig | awk -- '{ print $3 " " $5 }' >> "$TMP"
+done | RECURSION=1 HOME=/tmp parallel -0 --max-replace-args 4 --tag dig | awk -- '{ print $3 " " $5 }' >> "$TMP"
 
 awk -- "$A2" "$TMP" | sort --key 1,3 | cut --delimiter ' ' --fields 2- | column --table
 rm -fr -- "$TMP"

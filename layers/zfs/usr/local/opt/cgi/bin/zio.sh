@@ -16,4 +16,4 @@ EOF
   printf -- '%s ' -v -l -L -- 1 1
   printf -- '\n'
   printf -- '%s ' -w -L -- 1 1
-} | sed -E -e 's/ $//' | parallel --quote --colsep ' ' --keep-order -- /usr/local/libexec/hr-run.sh zpool iostat -y
+} | sed -E -e 's/ $//' | HOME=/tmp parallel --quote --colsep ' ' --keep-order -- /usr/local/libexec/hr-run.sh zpool iostat -y
