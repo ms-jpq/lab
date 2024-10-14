@@ -47,7 +47,7 @@ if ! [[ -v UNDER ]]; then
     --line-buffer
     -- "${CURL[@]}"
   )
-  "${FIND[@]}" | UNDER=1 "${P1[@]}" | "${P2[@]}"
+  "${FIND[@]}" | UNDER=1 HOME=/tmp "${P1[@]}" | HOME=/tmp "${P2[@]}"
 else
   DIR="$1"
   FILE="$2"
