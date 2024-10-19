@@ -26,8 +26,8 @@ ARGV=(
   initdb
   --pgdata "$PGDATA"
   --locale-provider icu
-  --icu-locale zh_Hans_CN
-  --locale zh_CN.UTF-8
+  # --icu-locale zh_Hans_CN
+  # --locale zh_CN.UTF-8
 )
 
 # https://www.postgresql.org/docs/current/config-setting.html
