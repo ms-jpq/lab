@@ -9,7 +9,7 @@ USER=postgres
 
 mkdir -v -p -- "$PGDATA"
 chown -v -- "$USER:$USER" "$PGDATA"
-if find "$PGDATA" -type d -not -empty | grep -F -- "$PGDATA"; then
+if [[ -d $PGDATA ]] && find "$PGDATA" -type d -not -empty | grep -F -- "$PGDATA"; then
   exit 0
 fi
 
