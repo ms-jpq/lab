@@ -2,6 +2,7 @@ from collections.abc import Iterator
 from concurrent.futures import Executor, ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
 from importlib import reload
+from inspect import getsourcelines
 from io import BytesIO
 from logging import INFO, getLogger
 from os import environ, linesep
@@ -36,6 +37,8 @@ register(name="sieve", uri=_M_FILT, timeout=TIMEOUT)
 
 import sieve
 
+_CTX = 6
+
 
 @contextmanager
 def _fetching(msg: S3Message) -> Iterator[BinaryIO]:
@@ -53,6 +56,23 @@ def _pool() -> Iterator[Executor]:
     finally:
         with benchmark(name="shutdown"):
             pool.shutdown(wait=True, cancel_futures=True)
+
+
+def _log(exn: Exception) -> None:
+    if tb := exn.__traceback__:
+        while tb.tb_next:
+            tb = tb.tb_next
+
+        lines, start = getsourcelines(tb)
+        lineno = tb.tb_lineno - start + 1
+        lo = max(lineno - _CTX - 1, 0)
+        hi = min(len(lines), lineno + _CTX)
+        width = len(str(hi))
+        py = "".join(
+            f"{'*' if idx == lineno else ' '}{str(idx).rjust(width, '0')} {line}"
+            for idx, line in enumerate(lines[lo:hi], start=lo + 1)
+        )
+        getLogger().warning("%s", py)
 
 
 cold_start = True
@@ -76,7 +96,10 @@ def main(event: S3Event, _: LambdaContext) -> None:
                 try:
                     ss = s.sieve
                     with benchmark(name="sieve"):
-                        go = ss(mail)
+                        ss(mail)
+                except StopIteration as exn:
+                    go = False
+                    _log(exn)
                 finally:
                     if go:
                         with benchmark(name="send"):

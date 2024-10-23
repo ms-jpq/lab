@@ -67,6 +67,7 @@ def _redirect(msg: EmailMessage, src: str) -> Iterator[tuple[str, _Rewrite]]:
         ),
         "sender": _Rewrite(act="delete", val=src),
         "return-path": _Rewrite(act="delete", val=""),
+        "delivered-to": _Rewrite(act="uniq", val=""),
         "dkim-signature": _Rewrite(act="uniq", val=""),
         "message-id": _Rewrite(act="uniq", val=""),
     }
