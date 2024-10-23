@@ -1,7 +1,7 @@
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from http.client import HTTPResponse
-from importlib.abc import Loader, MetaPathFinder
+from importlib.abc import InspectLoader, Loader, MetaPathFinder
 from importlib.machinery import ModuleSpec
 from importlib.util import LazyLoader, spec_from_loader
 from logging import getLogger
@@ -47,17 +47,21 @@ def register(name: str, uri: str, timeout: float) -> None:
             if fullname != name:
                 return None
 
-            class _Loader(Loader):
+            class _Loader(InspectLoader):
                 def create_module(self, spec: ModuleSpec) -> ModuleType | None:
                     if target:
                         target.__dict__.clear()
                     return target
 
-                def exec_module(self, module: ModuleType) -> None:
+                def get_source(self, fullname: str) -> str:
                     with benchmark("get"):
                         src = get()
+                    return src.decode()
+
+                def exec_module(self, module: ModuleType) -> None:
                     with benchmark("compile"):
-                        code = compile(src, fullname, "exec")
+                        code = self.get_code(fullname)
+                        assert code
                         exec(code, module.__dict__)
 
             loader = LazyLoader.factory(cast(Loader, _Loader))
