@@ -17,8 +17,6 @@ from uuid import uuid4
 
 _OPENER = build_opener()
 
-_CTX = 6
-
 
 @contextmanager
 def benchmark(name: str) -> Iterator[None]:
@@ -85,7 +83,7 @@ def register(name: str, uri: str, timeout: float) -> None:
     meta_path.append(_Finder())
 
 
-def log(mod: ModuleType, exn: Exception) -> None:
+def log(mod: ModuleType, exn: Exception, ctx: int = 6) -> None:
     if isinstance(loader := mod.__loader__, InspectLoader) and (
         tb := exn.__traceback__
     ):
@@ -94,8 +92,8 @@ def log(mod: ModuleType, exn: Exception) -> None:
         lineno = tb.tb_lineno
 
         if lines := (loader.get_source(mod.__name__) or "").splitlines():
-            lo = max(lineno - _CTX - 2, 0)
-            hi = min(len(lines), lineno + _CTX)
+            lo = max(lineno - ctx - 2, 0)
+            hi = min(len(lines), lineno + ctx)
             width = len(str(hi))
             py = linesep.join(
                 f"{'*' if idx == lineno else ' '}{str(idx).rjust(width, '0')} {line}"
