@@ -17,7 +17,7 @@ from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client
 
 from .fax import parse, send
-from .gist import benchmark, register
+from .gist import benchmark, log, register
 
 getLogger().setLevel(INFO)
 
@@ -37,8 +37,6 @@ register(name="sieve", uri=_M_FILT, timeout=TIMEOUT)
 
 import sieve
 
-_CTX = 6
-
 
 @contextmanager
 def _fetching(msg: S3Message) -> Iterator[BinaryIO]:
@@ -56,24 +54,6 @@ def _pool() -> Iterator[Executor]:
     finally:
         with benchmark(name="shutdown"):
             pool.shutdown(wait=True, cancel_futures=True)
-
-
-def _log(exn: Exception) -> None:
-    with suppress(OSError):
-        if tb := exn.__traceback__:
-            while tb.tb_next:
-                tb = tb.tb_next
-
-            lines, start = getsourcelines(tb)
-            lineno = tb.tb_lineno - start + 1
-            lo = max(lineno - _CTX - 1, 0)
-            hi = min(len(lines), lineno + _CTX)
-            width = len(str(hi))
-            py = "".join(
-                f"{'*' if idx == lineno else ' '}{str(idx).rjust(width, '0')} {line}"
-                for idx, line in enumerate(lines[lo:hi], start=lo + 1)
-            )
-            getLogger().warning("%s", py)
 
 
 cold_start = True
@@ -100,7 +80,7 @@ def main(event: S3Event, _: LambdaContext) -> None:
                         ss(mail)
                 except StopIteration as exn:
                     go = False
-                    _log(exn)
+                    log(mod=sieve, exn=exn)
                 finally:
                     if go:
                         with benchmark(name="send"):
