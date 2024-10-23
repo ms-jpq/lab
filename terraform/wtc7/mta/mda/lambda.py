@@ -1,6 +1,6 @@
 from collections.abc import Iterator
 from concurrent.futures import Executor, ThreadPoolExecutor, as_completed
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from importlib import reload
 from inspect import getsourcelines
 from io import BytesIO
@@ -59,20 +59,21 @@ def _pool() -> Iterator[Executor]:
 
 
 def _log(exn: Exception) -> None:
-    if tb := exn.__traceback__:
-        while tb.tb_next:
-            tb = tb.tb_next
+    with suppress(OSError):
+        if tb := exn.__traceback__:
+            while tb.tb_next:
+                tb = tb.tb_next
 
-        lines, start = getsourcelines(tb)
-        lineno = tb.tb_lineno - start + 1
-        lo = max(lineno - _CTX - 1, 0)
-        hi = min(len(lines), lineno + _CTX)
-        width = len(str(hi))
-        py = "".join(
-            f"{'*' if idx == lineno else ' '}{str(idx).rjust(width, '0')} {line}"
-            for idx, line in enumerate(lines[lo:hi], start=lo + 1)
-        )
-        getLogger().warning("%s", py)
+            lines, start = getsourcelines(tb)
+            lineno = tb.tb_lineno - start + 1
+            lo = max(lineno - _CTX - 1, 0)
+            hi = min(len(lines), lineno + _CTX)
+            width = len(str(hi))
+            py = "".join(
+                f"{'*' if idx == lineno else ' '}{str(idx).rjust(width, '0')} {line}"
+                for idx, line in enumerate(lines[lo:hi], start=lo + 1)
+            )
+            getLogger().warning("%s", py)
 
 
 cold_start = True
@@ -125,7 +126,7 @@ def main(event: S3Event, _: LambdaContext) -> None:
 
         if errs := tuple(cont()):
             err, *__ = errs
-            name = linesep.join(map(str, errs))
+            name = linesep.join(f"{type(err)!r} :: {err!r}" for err in errs)
             exn = ExceptionGroup(name, errs)
             getLogger().exception("%s", exn)
             raise exn from err
