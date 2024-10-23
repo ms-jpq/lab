@@ -94,7 +94,7 @@ def log(mod: ModuleType, exn: Exception) -> None:
         lineno = tb.tb_lineno
 
         if lines := (loader.get_source(mod.__name__) or "").splitlines():
-            lo = max(lineno - _CTX - 1, 0)
+            lo = max(lineno - _CTX - 2, 0)
             hi = min(len(lines), lineno + _CTX)
             width = len(str(hi))
             py = linesep.join(
