@@ -19,7 +19,7 @@ class _Rewrite:
     val: str
 
 
-@dataclass(frozen=True)
+@dataclass
 class _Mail:
     headers: EmailMessage
     body: bytes
@@ -76,8 +76,8 @@ def _redirect(msg: EmailMessage, src: str) -> Iterator[tuple[str, _Rewrite]]:
         yield name, spec
 
 
-def _rewrite(msg: EmailMessage, headers: Iterator[tuple[str, _Rewrite]]) -> None:
-    for key, rewrite in headers:
+def _rewrite(msg: EmailMessage, rewrites: Iterator[tuple[str, _Rewrite]]) -> None:
+    for key, rewrite in rewrites:
         match rewrite.act:
             case "noop":
                 pass
@@ -114,8 +114,8 @@ def send(
     mail_pass: str,
     timeout: float,
 ) -> None:
-    headers = _redirect(mail.headers, src=mail_from)
-    _rewrite(mail.headers, headers=headers)
+    rewrites = _redirect(mail.headers, src=mail_from)
+    _rewrite(mail.headers, rewrites=rewrites)
     to_addrs = _parse_addrs(mail_to)
     msg = _unparse(mail)
     with SMTP_SSL(host=mail_srv, timeout=timeout) as client:
