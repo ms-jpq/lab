@@ -50,7 +50,6 @@ def parse(fp: BinaryIO) -> _Mail:
 
 def _unparse(mail: _Mail) -> bytes:
     head = mail.headers.as_bytes(policy=SMTP)
-    assert head.endswith(_NL * 2)
     return head + mail.body
 
 
