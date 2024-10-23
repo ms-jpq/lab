@@ -5,6 +5,7 @@ from importlib.abc import InspectLoader, Loader, MetaPathFinder
 from importlib.machinery import ModuleSpec
 from importlib.util import LazyLoader, spec_from_loader
 from logging import getLogger
+from os import linesep
 from sys import meta_path
 from threading import Lock
 from time import monotonic
@@ -96,7 +97,7 @@ def log(mod: ModuleType, exn: Exception) -> None:
             lo = max(lineno - _CTX - 1, 0)
             hi = min(len(lines), lineno + _CTX)
             width = len(str(hi))
-            py = "".join(
+            py = linesep.join(
                 f"{'*' if idx == lineno else ' '}{str(idx).rjust(width, '0')} {line}"
                 for idx, line in enumerate(lines[lo:hi], start=lo + 1)
             )
