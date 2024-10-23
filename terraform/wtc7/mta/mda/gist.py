@@ -6,6 +6,7 @@ from importlib.machinery import ModuleSpec
 from importlib.util import LazyLoader, spec_from_loader
 from logging import getLogger
 from sys import meta_path
+from threading import Lock
 from time import monotonic
 from types import ModuleType
 from typing import cast
@@ -49,16 +50,26 @@ def register(name: str, uri: str, timeout: float) -> None:
             if fullname != name:
                 return None
 
+            code, lock = "", Lock()
+
             class _Loader(InspectLoader):
+
                 def create_module(self, spec: ModuleSpec) -> ModuleType | None:
+                    nonlocal code
+                    with lock:
+                        code = ""
                     if target:
                         target.__dict__.clear()
                     return target
 
                 def get_source(self, fullname: str) -> str:
-                    with benchmark("get"):
-                        src = get()
-                    return src.decode()
+                    nonlocal code
+                    with lock:
+                        if not code:
+                            with benchmark("get"):
+                                src = get()
+                            code = src.decode()
+                        return code
 
                 def exec_module(self, module: ModuleType) -> None:
                     with benchmark("compile"):
