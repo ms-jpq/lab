@@ -5,7 +5,7 @@ from email.errors import MultipartInvariantViolationDefect, StartBoundaryNotFoun
 from email.message import EmailMessage
 from email.policy import SMTP, SMTPUTF8
 from email.utils import formataddr, getaddresses, parseaddr
-from itertools import chain, takewhile
+from itertools import takewhile
 from logging import DEBUG, getLogger
 from os import linesep
 from smtplib import SMTP_SSL
@@ -54,9 +54,7 @@ def _unparse(mail: _Mail) -> bytes:
 
 
 def _redirect(msg: EmailMessage, src: str) -> Iterator[tuple[str, _Rewrite]]:
-    msg_from = " ".join(
-        chain.from_iterable(line.split() for line in msg.get("from", "").splitlines())
-    )
+    msg_from = " ".join(msg.get("from", "").split())
     _, x_from = parseaddr(msg_from)
     nxt_from = formataddr((msg_from, src))
 
