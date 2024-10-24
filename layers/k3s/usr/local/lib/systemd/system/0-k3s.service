@@ -29,6 +29,8 @@ StateDirectory  = local/%J
 
 Environment     = K3S_CONFIG_FILE=%S/local/%J/k3s.yml
 Environment     = K3S_DATA_DIR=%S/local/%J/data
+Environment     = K3S_NODE_NAME=%H
+
 Environment     = K3S_DATASTORE_ENDPOINT=
 
 Environment     = KS_WRITE_KUBECONFIG_PATH=%S/local/%J/kubeconfig.yml
@@ -38,6 +40,8 @@ EnvironmentFile = -/usr/local/etc/default/k3s.env
 
 ExecStart       = k3s server \
                     --bind-address [::] \
+                    --node-name ${K3S_NODE_NAME} \
+                    --flannel-ipv6-masq \
                     --config ${K3S_CONFIG_FILE} \
                     --write-kubeconfig ${KS_WRITE_KUBECONFIG_PATH} \
                     --data-dir ${K3S_DATA_DIR} \

@@ -1,3 +1,0 @@
-[Unit]
-Description = %P Slice
-Before      = slices.target
