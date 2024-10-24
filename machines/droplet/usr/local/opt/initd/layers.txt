@@ -1,5 +1,6 @@
 docker
 gateway
+k3s
 mail
 v2fly
 wireguard
