@@ -92,11 +92,11 @@ def log(mod: ModuleType, exn: Exception, ctx: int = 6) -> None:
         lineno = tb.tb_lineno
 
         if lines := (loader.get_source(mod.__name__) or "").splitlines():
-            lo = max(lineno - ctx - 2, 0)
+            lo = max(lineno - ctx - 1, 0)
             hi = min(len(lines), lineno + ctx)
             width = len(str(hi))
             py = linesep.join(
                 f"{'*' if idx == lineno else ' '}{str(idx).rjust(width, '0')} {line}"
                 for idx, line in enumerate(lines[lo:hi], start=lo + 1)
             )
-            getLogger().warning("%s", py)
+            getLogger().warning("%s", linesep + py)
