@@ -27,7 +27,7 @@ TasksMax        = infinity
 
 StateDirectory  = local/%J
 
-Environment     = K3S_CONFIG_FILE=%S/local/%J/conf
+Environment     = K3S_CONFIG_FILE=%S/local/%J/k3s.yml
 Environment     = K3S_DATA_DIR=%S/local/%J/data
 Environment     = K3S_DATASTORE_ENDPOINT=
 
