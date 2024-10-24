@@ -1,0 +1,40 @@
+[Unit]
+Description     = k3s
+
+Wants           = network-online.target
+After           = network-online.target
+
+After           = modprobe@br_netfilter.service
+Requires        = modprobe@br_netfilter.service
+
+After           = modprobe@overlay.service
+Requires        = modprobe@overlay.service
+
+[Service]
+Slice           = k3s.slice
+
+Type            = notify
+Delegate        = yes
+KillMode        = process
+Restart         = always
+RestartSec      = 5s
+TimeoutStartSec = 0s
+
+LimitNOFILE     = 1048576
+LimitNPROC      = infinity
+LimitCORE       = infinity
+TasksMax        = infinity
+
+StateDirectory  = local/%J
+
+Environment     = K3S_CONFIG_FILE=%S/local/%J/conf
+Environment     = K3S_DATA_DIR=%S/local/%J/data
+Environment     = K3S_DATASTORE_ENDPOINT=
+
+Environment     = KS_LOCAL_STORE_PATH=%S/local/%J/volumes
+
+ExecStart       = k3s server \
+                    --config ${K3S_CONFIG_FILE} \
+                    --data-dir ${K3S_DATA_DIR} \
+                    --datastore-endpoint ${K3S_DATASTORE_ENDPOINT} \
+                    --default-local-storage-path ${KS_LOCAL_STORE_PATH}

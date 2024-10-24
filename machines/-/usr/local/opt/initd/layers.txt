@@ -9,6 +9,7 @@ gh_mirror
 intel_gvt
 irc
 journal
+k3s
 mail
 media
 nspawn
