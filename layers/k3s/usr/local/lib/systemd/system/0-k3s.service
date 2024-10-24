@@ -1,5 +1,5 @@
 [Unit]
-Description     = k3s
+Description     = %J
 
 Wants           = network-online.target
 After           = network-online.target
@@ -31,10 +31,12 @@ Environment     = K3S_CONFIG_FILE=%S/local/%J/conf
 Environment     = K3S_DATA_DIR=%S/local/%J/data
 Environment     = K3S_DATASTORE_ENDPOINT=
 
+Environment     = KS_WRITE_KUBECONFIG_PATH=%S/local/%J/kubeconfig.yml
 Environment     = KS_LOCAL_STORE_PATH=%S/local/%J/volumes
 
 ExecStart       = k3s server \
                     --config ${K3S_CONFIG_FILE} \
+                    --write-kubeconfig ${KS_WRITE_KUBECONFIG_PATH} \
                     --data-dir ${K3S_DATA_DIR} \
                     --datastore-endpoint ${K3S_DATASTORE_ENDPOINT} \
                     --default-local-storage-path ${KS_LOCAL_STORE_PATH}
