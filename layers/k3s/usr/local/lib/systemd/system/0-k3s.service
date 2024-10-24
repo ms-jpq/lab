@@ -42,9 +42,10 @@ Environment      = KS_LOCAL_STORE_PATH=%S/local/%J/volumes
 EnvironmentFile  = -/usr/local/etc/default/k3s.env
 
 ExecStart        = k3s server \
+                    --prefer-bundled-bin \
+                    --flannel-ipv6-masq \
                     --bind-address [::] \
                     --node-name ${K3S_NODE_NAME} \
-                    --flannel-ipv6-masq \
                     --config ${K3S_CONFIG_FILE} \
                     --write-kubeconfig ${KS_WRITE_KUBECONFIG_PATH} \
                     --data-dir ${K3S_DATA_DIR} \
