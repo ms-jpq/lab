@@ -148,6 +148,7 @@ hostnames:
     - ^([^.]+\.)*pinterest(\.[^.]+){1,2}$
     - ^([^.]+\.)*programiz\.com$
     - ^([^.]+\.)*quora\.com$
+    - ^([^.]+\.)*stackshare\.io$
     - ^([^.]+\.)*thehackernews\.com$
     - ^([^.]+\.)*towardsdatascience\.com$
     - ^([^.]+\.)*tutorialspoint\.com$
