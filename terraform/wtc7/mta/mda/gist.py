@@ -55,6 +55,12 @@ def register(name: str, uri: str, timeout: float) -> None:
             code, lock = "", Lock()
 
             class _Loader(SourceLoader, InspectLoader):
+                def get_filename(self, fullname: str) -> str:
+                    src = self.get_source(fullname)
+                    return _NS.joinpath(str(hash(src))).as_posix()
+
+                def get_data(self, path: str) -> bytes:
+                    raise NotImplementedError()
 
                 def create_module(self, spec: ModuleSpec) -> ModuleType | None:
                     nonlocal code
@@ -64,17 +70,6 @@ def register(name: str, uri: str, timeout: float) -> None:
                         target.__dict__.clear()
                     return target
 
-                def get_filename(self, fullname: str) -> str:
-                    src = self.get_source(fullname)
-                    return _NS.joinpath(str(hash(src))).as_posix()
-
-                def get_data(self, path: str) -> bytes:
-                    raise NotImplementedError()
-
-                def get_code(self, fullname: str) -> CodeType | None:
-                    source = self.get_source(fullname)
-                    return InspectLoader.source_to_code(source)
-
                 def get_source(self, fullname: str) -> str:
                     nonlocal code
                     with lock:
@@ -83,6 +78,10 @@ def register(name: str, uri: str, timeout: float) -> None:
                                 src = get()
                             code = src.decode()
                         return code
+
+                def get_code(self, fullname: str) -> CodeType | None:
+                    source = self.get_source(fullname)
+                    return InspectLoader.source_to_code(source)
 
                 def exec_module(self, module: ModuleType) -> None:
                     with benchmark("compile"):
