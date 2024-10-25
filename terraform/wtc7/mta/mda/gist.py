@@ -97,7 +97,7 @@ def register(name: str, uri: str, timeout: float) -> None:
     meta_path.append(_Finder())
 
 
-def log(mod, exn: Exception, ctx: int = 6) -> None:
+def log(mod: ModuleType, exn: Exception, ctx: int = 6) -> None:
     if tb := exn.__traceback__:
         while tb.tb_next:
             tb = tb.tb_next
