@@ -49,7 +49,7 @@ enabled_plugins:
 # https://kagi.com/stats?stat=leaderboard
 hostnames:
   replace:
-    '^([^.]+\.)*youtube\.com$': &youtube youtube.m5_assert([ENV_DOMAIN])
+    # '^([^.]+\.)*youtube\.com$': &youtube youtube.m5_assert([ENV_DOMAIN])
     '^([^.]+\.)*youtu\.be$': *youtube
     '^([^.]+\.)*reddit\.com$': &reddit reddit.m5_assert([ENV_DOMAIN])
     '^([^.]+\.)*redd\.it$': *reddit
