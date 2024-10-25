@@ -1,8 +1,7 @@
 from collections.abc import Iterator
 from concurrent.futures import Executor, ThreadPoolExecutor, as_completed
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager
 from importlib import reload
-from inspect import getsourcelines
 from io import BytesIO
 from logging import INFO, getLogger
 from os import environ, linesep

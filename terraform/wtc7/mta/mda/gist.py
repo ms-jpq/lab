@@ -1,20 +1,23 @@
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from http.client import HTTPResponse
-from importlib.abc import InspectLoader, Loader, MetaPathFinder
+from importlib.abc import InspectLoader, Loader, MetaPathFinder, SourceLoader
 from importlib.machinery import ModuleSpec
 from importlib.util import LazyLoader, spec_from_loader
+from inspect import getsourcelines
 from logging import getLogger
 from os import linesep
+from pathlib import PurePath
 from sys import meta_path
 from threading import Lock
 from time import monotonic
-from types import ModuleType
+from types import CodeType, ModuleType
 from typing import cast
 from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 from urllib.request import build_opener
 from uuid import uuid4
 
+_NS = PurePath(uuid4().hex)
 _OPENER = build_opener()
 
 
@@ -51,7 +54,7 @@ def register(name: str, uri: str, timeout: float) -> None:
 
             code, lock = "", Lock()
 
-            class _Loader(InspectLoader):
+            class _Loader(SourceLoader, InspectLoader):
 
                 def create_module(self, spec: ModuleSpec) -> ModuleType | None:
                     nonlocal code
@@ -60,6 +63,17 @@ def register(name: str, uri: str, timeout: float) -> None:
                     if target:
                         target.__dict__.clear()
                     return target
+
+                def get_filename(self, fullname: str) -> str:
+                    src = self.get_source(fullname)
+                    return _NS.joinpath(str(hash(src))).as_posix()
+
+                def get_data(self, path: str) -> bytes:
+                    raise NotImplementedError()
+
+                def get_code(self, fullname: str) -> CodeType | None:
+                    source = self.get_source(fullname)
+                    return InspectLoader.source_to_code(source)
 
                 def get_source(self, fullname: str) -> str:
                     nonlocal code
@@ -74,6 +88,7 @@ def register(name: str, uri: str, timeout: float) -> None:
                     with benchmark("compile"):
                         code = self.get_code(fullname)
                         assert code
+                        module.__file__ = self.get_filename(fullname)
                         exec(code, module.__dict__)
 
             loader = LazyLoader.factory(cast(Loader, _Loader))
@@ -83,20 +98,18 @@ def register(name: str, uri: str, timeout: float) -> None:
     meta_path.append(_Finder())
 
 
-def log(mod: ModuleType, exn: Exception, ctx: int = 6) -> None:
-    if isinstance(loader := mod.__loader__, InspectLoader) and (
-        tb := exn.__traceback__
-    ):
+def log(mod, exn: Exception, ctx: int = 6) -> None:
+    if tb := exn.__traceback__:
         while tb.tb_next:
             tb = tb.tb_next
-        lineno = tb.tb_lineno
 
-        if lines := (loader.get_source(mod.__name__) or "").splitlines():
-            lo = max(lineno - ctx - 1, 0)
-            hi = min(len(lines), lineno + ctx)
-            width = len(str(hi))
-            py = linesep.join(
-                f"{'*' if idx == lineno else ' '}{str(idx).rjust(width, '0')} {line}"
-                for idx, line in enumerate(lines[lo:hi], start=lo + 1)
-            )
-            getLogger().warning("%s", linesep + py)
+        lines, offset = getsourcelines(mod)
+        lineno = tb.tb_lineno - offset
+        lo = max(lineno - ctx - 1, 0)
+        hi = min(len(lines), lineno + ctx)
+        width = len(str(hi))
+        py = "".join(
+            f"{'*' if idx == lineno else ' '}{str(idx).rjust(width, '0')} {line}"
+            for idx, line in enumerate(lines[lo:hi], start=lo + 1)
+        )
+        getLogger().warning("%s", linesep + py)
