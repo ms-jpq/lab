@@ -50,7 +50,7 @@ enabled_plugins:
 hostnames:
   replace:
     # '^([^.]+\.)*youtube\.com$': &youtube youtube.m5_assert([ENV_DOMAIN])
-    '^([^.]+\.)*youtu\.be$': *youtube
+    # '^([^.]+\.)*youtu\.be$': *youtube
     '^([^.]+\.)*reddit\.com$': &reddit reddit.m5_assert([ENV_DOMAIN])
     '^([^.]+\.)*redd\.it$': *reddit
   high_priority:
