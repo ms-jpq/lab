@@ -37,6 +37,7 @@ else
 S5_TYPE := 64bit
 endif
 
+V_KUSTOMIZE  = $(subst /,_,$(shell ./libexec/gh-latest.sh $(VAR) kubernetes-sigs/kustomize))
 V_S5CMD      = $(patsubst v%,%,$(shell ./libexec/gh-latest.sh $(VAR) peak/s5cmd))
 V_SHELLCHECK = $(shell ./libexec/gh-latest.sh $(VAR) koalaman/shellcheck)
 V_SHFMT      = $(shell ./libexec/gh-latest.sh $(VAR) mvdan/sh)
@@ -82,3 +83,7 @@ $(VAR)/bin/terraform: | $(VAR)/bin
 
 $(VAR)/tflint.d: $(VAR)/bin/tflint terraform/bootstrap/.tflint.hcl
 	printf -- '%s\0' ./terraform/* | xargs -r -0 -n 1 -- '$<' --init --chdir
+
+$(VAR)/bin/kustomize: | $(VAR)/bin
+	URI='https://github.com/kubernetes-sigs/kustomize/releases/latest/download/$(V_KUSTOMIZE)_$(OS)_$(GOARCH).tar.gz'
+	$(CURL) -- "$$URI" | tar --extract --gz --file - --directory '$(VAR)/bin'
