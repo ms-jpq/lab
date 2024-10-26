@@ -9,8 +9,5 @@ spec:
     ports:
        web:
          exposedPort: 8088
-
        websecure:
-         port: 8443
-         expose: true
          exposedPort: 8443
