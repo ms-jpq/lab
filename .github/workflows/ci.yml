@@ -26,6 +26,9 @@ jobs:
           python-version: ">= 0"
 
       - run: |-
+          sudo -- rm -v -fr -- /usr/bin/kubectl
+
+      - run: |-
           sudo -- touch -- /.dockerenv
 
       - run: |-
