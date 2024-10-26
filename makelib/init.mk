@@ -87,3 +87,8 @@ $(VAR)/tflint.d: $(VAR)/bin/tflint terraform/bootstrap/.tflint.hcl
 $(VAR)/bin/kustomize: | $(VAR)/bin
 	URI='https://github.com/kubernetes-sigs/kustomize/releases/latest/download/$(V_KUSTOMIZE)_$(OS)_$(GOARCH).tar.gz'
 	$(CURL) -- "$$URI" | tar --extract --gz --file - --directory '$(VAR)/bin'
+
+$(VAR)/bin/kompose: | $(VAR)/bin
+	URI='https://github.com/kubernetes/kompose/releases/latest/download/kompose-$(OS)-$(GOARCH).tar.gz'
+	$(CURL) -- "$$URI" | tar --extract --gz --file - --directory '$(VAR)/bin'
+	mv -v -f -- '$(VAR)/bin/kompose-$(OS)-$(GOARCH)' '$@'
