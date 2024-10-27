@@ -6,8 +6,10 @@ cd -- "${0%/*}/.."
 
 SRC="$1"
 DST="./var/tmp/k8s/$SRC"
-mkdir -v -p -- "$DST"
+COMPOSE="var/tmp/machines/$SRC/fs/usr/local/k8s"
+
 gmake MACHINE="$SRC" local
+mkdir -v -p -- "$DST"
 
 # Y2J=(yq --output-format json)
 # J2Y=(yq --input-format json)
@@ -15,7 +17,8 @@ gmake MACHINE="$SRC" local
 # read -r -d '' -- JQ <<- 'JQ' || true
 # JQ
 
-for FILE in "var/tmp/machines/$SRC/fs/usr/local/k8s"/*/docker-compose.yml; do
+printf -- '%s\n' ">>> $COMPOSE" >&2
+for FILE in "$COMPOSE"/*/docker-compose.yml; do
   NAME="${FILE%/*}"
   NAME="${NAME##*/}"
   printf -- '%s\n' "@ $NAME" >&2
@@ -24,4 +27,4 @@ for FILE in "var/tmp/machines/$SRC/fs/usr/local/k8s"/*/docker-compose.yml; do
     ./var/bin/kompose convert --stdout --namespace "$NAME" --file "$FILE"
   } > "$DST/$NAME.yml"
 done
-printf -- '%s\n' ">>> $DST" >&2
+printf -- '%s\n' "<<< $DST" >&2
