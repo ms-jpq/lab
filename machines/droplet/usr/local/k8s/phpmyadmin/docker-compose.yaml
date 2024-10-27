@@ -36,6 +36,8 @@ services:
         - mysqladmin
         - --password=${COMPOSE_PROJECT_NAME}
         - ping
+    labels:
+      - kompose.controller.type=statefulset
     environment:
       MYSQL_DATABASE: ${COMPOSE_PROJECT_NAME}
       MYSQL_PASSWORD: ${COMPOSE_PROJECT_NAME}

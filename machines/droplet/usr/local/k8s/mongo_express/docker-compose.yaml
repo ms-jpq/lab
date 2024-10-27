@@ -40,6 +40,8 @@ services:
         - mongosh
         - --eval
         - db.version()
+    labels:
+      - kompose.controller.type=statefulset
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${COMPOSE_PROJECT_NAME}
       MONGO_INITDB_ROOT_PASSWORD: ${COMPOSE_PROJECT_NAME}
