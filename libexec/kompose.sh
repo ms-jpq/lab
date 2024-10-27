@@ -16,7 +16,7 @@ mkdir -p -- "$DST"
 rm -fr -- "${DST:?}"/*
 
 Y2J=(yq --output-format json)
-J2Y=(yq --input-format json)
+J2Y=(yq --input-format json '(.. | select(tag == "!!str")) style="single"')
 
 read -r -d '' -- JQ <<- 'JQ' || true
 sort_by(.kind != "Namespace")[]
