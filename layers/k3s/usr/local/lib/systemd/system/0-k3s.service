@@ -45,6 +45,7 @@ ExecStart       = k3s server \
                     --bind-address :: \
                     --node-name ${K3S_NODE_NAME} \
                     --config ${K3S_CONFIG_FILE} \
+                    --disable metrics-server \
                     --write-kubeconfig ${KS_WRITE_KUBECONFIG_PATH} \
                     --data-dir ${K3S_DATA_DIR} \
                     --datastore-endpoint ${K3S_DATASTORE_ENDPOINT} \
