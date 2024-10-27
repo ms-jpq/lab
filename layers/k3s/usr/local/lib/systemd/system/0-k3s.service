@@ -11,10 +11,10 @@ After            = modprobe@overlay.service
 Requires         = modprobe@overlay.service
 
 PartOf           = %J.slice
+PropagatesStopTo = %J.slice
 
 [Service]
 Slice            = %J.slice
-PropagatesStopTo = %J.slice
 
 Type             = notify
 Delegate         = yes
@@ -44,7 +44,7 @@ EnvironmentFile  = -/usr/local/etc/default/k3s.env
 ExecStart        = k3s server \
                     --prefer-bundled-bin \
                     --flannel-ipv6-masq \
-                    --bind-address [::] \
+                    --bind-address :: \
                     --node-name ${K3S_NODE_NAME} \
                     --config ${K3S_CONFIG_FILE} \
                     --write-kubeconfig ${KS_WRITE_KUBECONFIG_PATH} \
