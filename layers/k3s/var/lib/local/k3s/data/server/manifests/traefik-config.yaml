@@ -6,6 +6,9 @@ metadata:
   namespace: kube-system
 spec:
   valuesContent: |-
+    ingressRoute:
+      dashboard:
+        enabled: true
     ports:
       web:
         exposedPort: 8008
