@@ -31,4 +31,7 @@ services:
     ports:
       - 5000
     volumes:
-      - /config
+      - conf:/config
+
+volumes:
+  conf:
