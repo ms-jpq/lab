@@ -1,12 +1,10 @@
 ---
 services:
   wallabag:
-    image: &img docker.io/wallabag/wallabag:latest
+    image: docker.io/wallabag/wallabag:latest
     userns_mode: auto
     restart: always
-    depends_on: &deps
-      migrate:
-        condition: service_started
+    depends_on:
       redis:
         condition: service_healthy
     healthcheck:
@@ -20,6 +18,8 @@ services:
         - --
         - 127.0.0.1:80
     labels:
+      - kompose.init.containers.image=docker.io/wallabag/wallabag:latest
+      - kompose.init.containers.command=["sh", "-c", "/entrypoint.sh migrate || :"]
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^pocket\.`)
@@ -40,27 +40,6 @@ services:
       - 80
     extra_hosts:
       - host.home.arpa:host-gateway
-
-  # import:
-  #   image: *img
-  #   userns_mode: auto
-  #   restart: always
-  #   depends_on: *deps
-  #   environment: *env
-  #   command:
-  #     - import
-  #     - pocket
-
-  migrate:
-    image: *img
-    userns_mode: auto
-    environment: *env
-    entrypoint:
-      - sh
-      - -c
-    command:
-      - |-
-        /entrypoint.sh migrate || :
 
   redis:
     image: docker.io/library/redis:latest
