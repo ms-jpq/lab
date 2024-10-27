@@ -7,13 +7,13 @@ cd -- "${0%/*}/.."
 SRC="$1"
 DST="./var/tmp/k8s/$SRC"
 COMPOSE="var/tmp/machines/$SRC/fs/usr/local/k8s"
+KOMPOSE='var/bin/kompose'
+DENV='var/sh/zsh/dev/bin/denv.py'
 
+gmake "$KOMPOSE"
 gmake MACHINE="$SRC" local
 rm -fr -- "$DST"
 mkdir -p -- "$DST"
-
-DENV='./var/sh/zsh/dev/bin/denv.py'
-KOMPOSE='./var/bin/kompose'
 
 # Y2J=(yq --output-format json)
 # J2Y=(yq --input-format json)
