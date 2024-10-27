@@ -8,7 +8,7 @@ spec:
   valuesContent: |-
     ports:
        web:
-         exposedPort: 8088
+         exposedPort: 8008
 
        websecure:
           expose: false
