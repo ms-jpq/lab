@@ -7,8 +7,7 @@ metadata:
 spec:
   valuesContent: |-
     ports:
-       web:
-         exposedPort: 8008
-
-       websecure:
-          expose: false
+      web:
+        exposedPort: 8008
+      websecure:
+        expose: false
