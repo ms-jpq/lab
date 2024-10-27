@@ -45,3 +45,5 @@ services:
         - ping
     tmpfs:
       - /data
+    ports:
+      - 6379

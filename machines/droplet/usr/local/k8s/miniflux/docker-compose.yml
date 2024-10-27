@@ -42,3 +42,5 @@ services:
       RUN_MIGRATIONS: 1
       WORKER_POOL_SIZE:
       YOUTUBE_EMBED_URL_OVERRIDE: https://youtube.${DOMAIN}/embed/
+    ports:
+      - 8080

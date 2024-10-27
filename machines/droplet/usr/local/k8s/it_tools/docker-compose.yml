@@ -22,3 +22,5 @@ services:
       - flame.name=ItTools
       - flame.url=https://tools.${DOMAIN}
       - flame.icon=tools
+    ports:
+      - 80

@@ -27,6 +27,8 @@ services:
       - flame.icon=database-clock
     environment:
       REDIS_HOSTS: lo:redis:6379:0:${COMPOSE_PROJECT_NAME}
+    ports:
+      - 8081
 
   redis:
     image: docker.io/library/redis:latest
@@ -45,4 +47,4 @@ services:
       # - --requirepass
       # - ${COMPOSE_PROJECT_NAME}
     ports:
-      - 127.0.0.53:63379:6379
+      - 6379

@@ -12,3 +12,5 @@ services:
       - flame.name=HTTPbin
       - flame.url=https://http.${DOMAIN}
       - flame.icon=test-tube
+    ports:
+      - 80

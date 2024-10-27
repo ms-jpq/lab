@@ -25,7 +25,6 @@ services:
       - flame.name=Invidious
       - flame.url=https://youtube.${DOMAIN}
       - flame.icon=youtube-tv
-    # network_mode: container:warp-srv-1
     volumes:
       - ./conf.yml:/invidious/config/config.yml:ro
 
@@ -45,6 +44,7 @@ services:
       POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
       POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
-    # network_mode: container:warp-srv-1
+    ports:
+      - 5432
     tmpfs:
       - /var/lib/postgresql/data
