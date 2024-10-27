@@ -26,9 +26,6 @@ services:
       - flame.name=Searx
       - flame.url=https://ask.${DOMAIN}
       - flame.icon=search-web
-    networks:
-      - default
-      - traefik
     volumes:
       - ./limiter.toml:/etc/searxng/limiter.toml
       - ./settings.yml:/etc/searxng/settings.yml
@@ -46,8 +43,3 @@ services:
         - ping
     tmpfs:
       - /data
-
-networks:
-  traefik:
-    external: true
-    name: traefik

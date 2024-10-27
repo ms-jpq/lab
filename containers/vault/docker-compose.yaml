@@ -22,11 +22,6 @@ services:
       - data:/vault/file
       - log:/vault/logs
 
-networks:
-  default:
-    external: true
-    name: traefik
-
 volumes:
   data:
   log:

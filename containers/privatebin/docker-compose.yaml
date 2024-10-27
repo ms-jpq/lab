@@ -25,11 +25,6 @@ services:
       - tmp2:/var/lib/nginx/tmp
       - data:/srv/data
 
-networks:
-  default:
-    external: true
-    name: traefik
-
 volumes:
   data:
   run:

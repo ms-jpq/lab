@@ -14,19 +14,11 @@ services:
       WARP_SLEEP: 2
     tmpfs:
       - /run
-    networks:
-      - default
-      - traefik
     ports:
       - 127.0.0.53:9050:1080 # znc
       # - 1090:8191 # flaresolverr
     volumes:
       - warp:/var/lib/cloudflare-warp
-
-networks:
-  traefik:
-    external: true
-    name: traefik
 
 volumes:
   warp:

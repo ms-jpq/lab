@@ -18,9 +18,6 @@ services:
     environment:
       ENV_CORS_DOMAIN:
       IPFS_PROFILE: lowpower
-    networks:
-      - default
-      - traefik
     ports:
       - 4001:4001
       - 4001:4001/udp
@@ -28,11 +25,6 @@ services:
       - ./init:/container-init.d:ro
       - export:/export
       - data:/data/ipfs
-
-networks:
-  traefik:
-    external: true
-    name: traefik
 
 volumes:
   export:

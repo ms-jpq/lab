@@ -18,16 +18,8 @@ services:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8978
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^sql\.`)
-    networks:
-      - default
-      - traefik
     volumes:
       - data:/opt/cloudbeaver/workspace
-
-networks:
-  traefik:
-    external: true
-    name: traefik
 
 volumes:
   data:

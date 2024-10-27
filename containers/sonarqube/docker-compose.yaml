@@ -12,10 +12,5 @@ services:
       - /var/lib/local/${COMPOSE_PROJECT_NAME}/extensions:/opt/sonarqube/extensions
       - logs:/opt/sonarqube/logs
 
-networks:
-  default:
-    external: true
-    name: traefik
-
 volumes:
   logs:

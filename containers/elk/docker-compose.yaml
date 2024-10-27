@@ -24,9 +24,6 @@ services:
     environment:
       SERVER_NAME:
       ELASTICSEARCH_SSL_VERIFICATIONMODE: none
-    networks:
-      - default
-      - traefik
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:${VERSION}
@@ -50,9 +47,6 @@ services:
     environment:
       discovery.type: single-node
       xpack.security.enabled: false
-    networks:
-      - default
-      - traefik
     volumes:
       - data:/usr/share/elasticsearch/data
 
@@ -78,14 +72,6 @@ services:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}-l.loadbalancer.server.port=9600
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}-l.rule=HostRegexp(`^log\.`)
-    networks:
-      - default
-      - traefik
-
-networks:
-  traefik:
-    external: true
-    name: traefik
 
 volumes:
   data:

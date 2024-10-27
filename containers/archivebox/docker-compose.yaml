@@ -35,13 +35,5 @@ services:
       - server
       - --quick-init
       - 0.0.0.0:8000
-    networks:
-      - default
-      - traefik
     volumes:
       - /var/lib/local/${COMPOSE_PROJECT_NAME}:/data
-
-networks:
-  traefik:
-    external: true
-    name: traefik

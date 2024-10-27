@@ -11,9 +11,6 @@ services:
     environment:
       PGRST_DB_URI:
       PGRST_OPENAPI_SERVER_PROXY_URI: http://[::]:3000
-    networks:
-      - default
-      - traefik
 
   swagger:
     image: docker.io/swaggerapi/swagger-ui:latest
@@ -39,11 +36,3 @@ services:
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.rule=HostRegexp(`^postgreswagger\.`)
     environment:
       API_URL: http://srv:3000/
-    networks:
-      - default
-      - traefik
-
-networks:
-  traefik:
-    external: true
-    name: traefik

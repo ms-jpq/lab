@@ -14,8 +14,3 @@ services:
       - flame.icon=archive-refresh
     volumes:
       - /run/docker.sock:/var/run/docker.sock:ro
-
-networks:
-  default:
-    external: true
-    name: traefik

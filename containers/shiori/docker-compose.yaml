@@ -22,11 +22,3 @@ services:
       SHIORI_DATABASE_URL:
       SHIORI_HTTP_ACCESS_LOG: false
       SHIORI_HTTP_SECRET_KEY:
-    networks:
-      - default
-      - traefik
-
-networks:
-  traefik:
-    external: true
-    name: traefik

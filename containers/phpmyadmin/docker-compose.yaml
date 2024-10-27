@@ -25,9 +25,6 @@ services:
       PMA_HOST: mysql
       PMA_PASSWORD: ${COMPOSE_PROJECT_NAME}
       PMA_USER: root
-    networks:
-      - default
-      - traefik
 
   mysql:
     image: docker.io/library/mysql:latest
@@ -48,11 +45,6 @@ services:
       - 127.0.0.53:33306:3306
     volumes:
       - data:/var/lib/mysql
-
-networks:
-  traefik:
-    external: true
-    name: traefik
 
 volumes:
   data:

@@ -14,8 +14,3 @@ services:
     # docker exec -- superset-srv-1 superset db upgrade
     # docker exec -- superset-srv-1 superset init
     # docker exec -- superset-srv-1 superset load_examples
-
-networks:
-  default:
-    external: true
-    name: traefik

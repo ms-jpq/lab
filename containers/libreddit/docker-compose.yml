@@ -36,11 +36,3 @@ services:
       REDLIB_ENABLE_RSS: on
       REDLIB_FULL_URL: https://reddit.${DOMAIN}
     # network_mode: container:warp-srv-1
-    networks:
-      - default
-      - traefik
-
-networks:
-  traefik:
-    external: true
-    name: traefik

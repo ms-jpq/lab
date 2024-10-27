@@ -36,9 +36,6 @@ services:
       SYMFONY__ENV__DATABASE_USER:
       SYMFONY__ENV__DOMAIN_NAME: https://pocket.${DOMAIN}
       SYMFONY__ENV__MAILER_DSN: smtp://host.home.arpa:25
-    networks:
-      - default
-      - traefik
     extra_hosts:
       - host.home.arpa:host-gateway
 
@@ -75,8 +72,3 @@ services:
         - ping
     tmpfs:
       - /data
-
-networks:
-  traefik:
-    external: true
-    name: traefik

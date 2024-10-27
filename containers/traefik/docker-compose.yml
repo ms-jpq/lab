@@ -23,16 +23,8 @@ services:
       - flame.name=Traefik
       - flame.url=https://traefik.${DOMAIN}
       - flame.icon=traffic-light
-    networks:
-      - default
-      - traefik
     ports:
       - 127.0.0.53:10080:8888
     volumes:
       - /run/docker.sock:/run/docker.sock:ro
       - ./:/etc/traefik:ro
-
-networks:
-  traefik:
-    external: true
-    name: ${COMPOSE_PROJECT_NAME}

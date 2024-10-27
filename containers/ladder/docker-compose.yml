@@ -14,11 +14,3 @@ services:
       - flame.icon=ladder
     environment:
       RULESET: https://t.ly/14PSf
-    networks:
-      - default
-      - traefik
-
-networks:
-  traefik:
-    external: true
-    name: traefik

@@ -24,10 +24,5 @@ services:
     volumes:
       - data:/data
 
-networks:
-  default:
-    external: true
-    name: traefik
-
 volumes:
   data:

@@ -28,9 +28,6 @@ services:
       TRUST_PROXY: true
       USE_HELMET: true
       USE_HELMET_HSTS: true
-    networks:
-      - default
-      - traefik
 
   redis:
     image: docker.io/library/redis:latest
@@ -44,8 +41,3 @@ services:
         - ping
     tmpfs:
       - /data
-
-networks:
-  traefik:
-    external: true
-    name: traefik

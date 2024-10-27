@@ -23,10 +23,5 @@ services:
     volumes:
       - data:/var/lib/rabbitmq
 
-networks:
-  default:
-    external: true
-    name: traefik
-
 volumes:
   data:

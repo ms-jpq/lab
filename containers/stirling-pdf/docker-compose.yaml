@@ -12,18 +12,10 @@ services:
       DOCKER_ENABLE_SECURITY: false
       INSTALL_BOOK_AND_ADVANCED_HTML_OPS: false
       LANGS: en_GB
-    networks:
-      - default
-      - traefik
     volumes:
       - /var/lib/local/pdf:/configs
       - data:/usr/share/tessdata
       - logs:/logs
-
-networks:
-  traefik:
-    external: true
-    name: traefik
 
 volumes:
   data:

@@ -16,9 +16,6 @@ services:
       NEXTAUTH_URL:
       NEXT_PUBLIC_VIEWER_URL:
       DATABASE_URL: &db postgresql://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg:5432/${COMPOSE_PROJECT_NAME}
-    networks:
-      - default
-      - traefik
 
   srv2:
     image: docker.io/baptistearno/typebot-viewer:latest
@@ -36,9 +33,6 @@ services:
       NEXTAUTH_URL:
       NEXT_PUBLIC_VIEWER_URL:
       DATABASE_URL: *db
-    networks:
-      - default
-      - traefik
 
   pg:
     image: docker.io/library/postgres:latest
@@ -58,11 +52,6 @@ services:
       POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
     volumes:
       - data:/var/lib/postgresql/data
-
-networks:
-  traefik:
-    external: true
-    name: traefik
 
 volumes:
   data:

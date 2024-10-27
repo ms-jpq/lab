@@ -18,16 +18,8 @@ services:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=5000
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^dockerhub\.`)
-    networks:
-      - default
-      - traefik
     volumes:
       - data:/var/lib/registry
-
-networks:
-  traefik:
-    external: true
-    name: traefik
 
 volumes:
   data:

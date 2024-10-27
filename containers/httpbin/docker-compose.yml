@@ -12,8 +12,3 @@ services:
       - flame.name=HTTPbin
       - flame.url=https://http.${DOMAIN}
       - flame.icon=test-tube
-
-networks:
-  default:
-    external: true
-    name: traefik

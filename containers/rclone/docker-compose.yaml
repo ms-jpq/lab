@@ -45,8 +45,3 @@ services:
       - /data
     volumes:
       - /var/lib/local/rclone:/data
-
-networks:
-  default:
-    external: true
-    name: traefik

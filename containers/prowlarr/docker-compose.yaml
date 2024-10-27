@@ -19,13 +19,5 @@ services:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=9696
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^bt\.`)
-    networks:
-      - default
-      - traefik
     volumes:
       - /var/lib/local/${COMPOSE_PROJECT_NAME}:/config
-
-networks:
-  traefik:
-    external: true
-    name: traefik

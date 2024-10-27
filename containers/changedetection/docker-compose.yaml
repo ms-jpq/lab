@@ -15,8 +15,3 @@ services:
       USE_X_SETTINGS: 1
     volumes:
       - /var/lib/local/${COMPOSE_PROJECT_NAME}:/datastore
-
-networks:
-  default:
-    external: true
-    name: traefik

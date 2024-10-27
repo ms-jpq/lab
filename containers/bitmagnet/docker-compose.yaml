@@ -33,11 +33,3 @@ services:
     ports:
       - "3334:3334/tcp"
       - "3334:3334/udp"
-    networks:
-      - default
-      - traefik
-
-networks:
-  traefik:
-    external: true
-    name: traefik

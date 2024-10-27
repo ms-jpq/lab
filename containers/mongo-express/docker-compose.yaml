@@ -27,9 +27,6 @@ services:
       - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}.headers.customRequestHeaders.Authorization=Basic YWRtaW46cGFzcw==
     environment:
       ME_CONFIG_MONGODB_URL: mongodb://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@mongo:27017/
-    networks:
-      - default
-      - traefik
     volumes:
       - /usr/local/opt/${COMPOSE_PROJECT_NAME}/conf.yml:/invidious/config/config.yml:ro
 
@@ -50,11 +47,6 @@ services:
       - 127.0.0.53:27017:27017
     volumes:
       - data:/data/db
-
-networks:
-  traefik:
-    external: true
-    name: traefik
 
 volumes:
   data:

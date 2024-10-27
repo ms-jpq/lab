@@ -26,9 +26,6 @@ services:
       - flame.url=https://youtube.${DOMAIN}
       - flame.icon=youtube-tv
     # network_mode: container:warp-srv-1
-    networks:
-      - default
-      - traefik
     volumes:
       - ./conf.yml:/invidious/config/config.yml:ro
 
@@ -51,8 +48,3 @@ services:
     # network_mode: container:warp-srv-1
     tmpfs:
       - /var/lib/postgresql/data
-
-networks:
-  traefik:
-    external: true
-    name: traefik

@@ -28,16 +28,8 @@ services:
       WHOOGLE_CONFIG_URL:
       WHOOGLE_CONFIG_VIEW_IMAGE: true
       WHOOGLE_PROXY_TYPE: socks5
-    networks:
-      - default
-      - traefik
     volumes:
       - conf:/config
-
-networks:
-  traefik:
-    external: true
-    name: traefik
 
 volumes:
   conf:

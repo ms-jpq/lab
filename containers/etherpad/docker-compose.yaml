@@ -33,9 +33,6 @@ services:
       PAD_OPTIONS_USE_MONOSPACE_FONT: true
       TITLE: 📝
       TRUST_PROXY: true
-    networks:
-      - default
-      - traefik
 
   pg:
     image: docker.io/library/postgres:latest
@@ -55,11 +52,6 @@ services:
       POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
     volumes:
       - data:/var/lib/postgresql/data
-
-networks:
-  traefik:
-    external: true
-    name: traefik
 
 volumes:
   data:

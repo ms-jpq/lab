@@ -15,14 +15,6 @@ services:
       - flame.icon=lan
     environment:
       PASSWORD:
-    networks:
-      - default
-      - traefik
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /var/lib/local/flame:/app/data
-
-networks:
-  traefik:
-    external: true
-    name: traefik

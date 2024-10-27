@@ -29,9 +29,6 @@ services:
       SECRET_KEY_BASE:
       URL_HOST:
       URL_SCHEME: https
-    networks:
-      - default
-      - traefik
     volumes:
       - ascii:/var/opt/asciinema
 
@@ -49,13 +46,6 @@ services:
       POSTGRES_HOST_AUTH_METHOD: trust
     volumes:
       - data:/var/lib/postgresql/data
-
-networks:
-  default:
-    internal: true
-  traefik:
-    external: true
-    name: traefik
 
 volumes:
   ascii:
