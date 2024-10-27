@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-cd -- "${0%/*}/.."
+cd -- "${0%/*}"
 
 SRC="$1"
 DST="./var/tmp/k8s/$SRC"
