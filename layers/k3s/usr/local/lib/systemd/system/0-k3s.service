@@ -1,47 +1,42 @@
 [Unit]
-Description      = %J
+Description     = %J
 
-Wants            = network-online.target
-After            = network-online.target
+Wants           = network-online.target
+After           = network-online.target
 
-After            = modprobe@br_netfilter.service
-Requires         = modprobe@br_netfilter.service
+After           = modprobe@br_netfilter.service
+Requires        = modprobe@br_netfilter.service
 
-After            = modprobe@overlay.service
-Requires         = modprobe@overlay.service
-
-PartOf           = %J.slice
-PropagatesStopTo = %J.slice
+After           = modprobe@overlay.service
+Requires        = modprobe@overlay.service
 
 [Service]
-Slice            = %J.slice
+Type            = notify
+Delegate        = yes
+# KillMode         = process
+Restart         = on-failure
+RestartSec      = 5s
+TimeoutStartSec = 0s
 
-Type             = notify
-Delegate         = yes
-KillMode         = process
-Restart          = always
-RestartSec       = 5s
-TimeoutStartSec  = 0s
+LimitNOFILE     = 1048576
+LimitNPROC      = infinity
+LimitCORE       = infinity
+TasksMax        = infinity
 
-LimitNOFILE      = 1048576
-LimitNPROC       = infinity
-LimitCORE        = infinity
-TasksMax         = infinity
+StateDirectory  = local/%J
 
-StateDirectory   = local/%J
+Environment     = K3S_CONFIG_FILE=%S/local/%J/k3s.yml
+Environment     = K3S_DATA_DIR=%S/local/%J/data
+Environment     = K3S_NODE_NAME=%H
 
-Environment      = K3S_CONFIG_FILE=%S/local/%J/k3s.yml
-Environment      = K3S_DATA_DIR=%S/local/%J/data
-Environment      = K3S_NODE_NAME=%H
+Environment     = K3S_DATASTORE_ENDPOINT=
 
-Environment      = K3S_DATASTORE_ENDPOINT=
+Environment     = KS_WRITE_KUBECONFIG_PATH=%S/local/%J/kubeconfig.yml
+Environment     = KS_LOCAL_STORE_PATH=%S/local/%J/volumes
 
-Environment      = KS_WRITE_KUBECONFIG_PATH=%S/local/%J/kubeconfig.yml
-Environment      = KS_LOCAL_STORE_PATH=%S/local/%J/volumes
+EnvironmentFile = -/usr/local/etc/default/k3s.env
 
-EnvironmentFile  = -/usr/local/etc/default/k3s.env
-
-ExecStart        = k3s server \
+ExecStart       = k3s server \
                     --prefer-bundled-bin \
                     --flannel-ipv6-masq \
                     --bind-address :: \
