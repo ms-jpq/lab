@@ -3,7 +3,7 @@ services:
   srv:
     image: docker.io/postgrest/postgrest:latest
     userns_mode: auto
-    restart: unless-stopped
+    restart: always
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=3000
@@ -18,7 +18,7 @@ services:
       srv:
         condition: service_started
     userns_mode: auto
-    restart: unless-stopped
+    restart: always
     healthcheck:
       test:
         - CMD

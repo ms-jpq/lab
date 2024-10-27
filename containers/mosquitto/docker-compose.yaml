@@ -3,7 +3,7 @@ services:
   srv:
     image: docker.io/library/eclipse-mosquitto:latest
     userns_mode: auto
-    restart: unless-stopped
+    restart: always
     ports:
       - 127.0.0.53:11883:1883
     volumes:

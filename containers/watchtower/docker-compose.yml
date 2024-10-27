@@ -3,7 +3,7 @@ services:
   srv:
     image: docker.io/containrrr/watchtower:latest
     userns_mode: auto
-    restart: unless-stopped
+    restart: always
     environment:
       WATCHTOWER_CLEANUP: true
     volumes:

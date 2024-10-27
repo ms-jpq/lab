@@ -2,7 +2,7 @@
 services:
   srv:
     image: docker.io/library/sonarqube:latest
-    restart: unless-stopped
+    restart: always
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=9000

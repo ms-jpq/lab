@@ -3,7 +3,7 @@ services:
   srv:
     image: ghcr.io/ghcr.io/hotio/prowlarr:latest
     userns_mode: auto
-    restart: unless-stopped
+    restart: always
     healthcheck:
       test:
         - CMD

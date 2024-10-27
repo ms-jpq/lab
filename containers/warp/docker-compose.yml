@@ -3,7 +3,7 @@ services:
   srv:
     image: docker.io/caomingjun/warp:latest
     userns_mode: auto
-    restart: unless-stopped
+    restart: always
     cap_add:
       - NET_ADMIN
     sysctls:

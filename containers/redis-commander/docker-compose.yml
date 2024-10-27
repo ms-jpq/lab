@@ -3,7 +3,7 @@ services:
   srv:
     image: ghcr.io/joeferner/redis-commander:latest
     userns_mode: auto
-    restart: unless-stopped
+    restart: always
     depends_on:
       redis:
         condition: service_healthy
@@ -31,7 +31,7 @@ services:
   redis:
     image: docker.io/library/redis:latest
     userns_mode: auto
-    restart: unless-stopped
+    restart: always
     healthcheck:
       test:
         - CMD

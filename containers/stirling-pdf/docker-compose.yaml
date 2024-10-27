@@ -3,7 +3,7 @@ services:
   srv:
     image: frooodle/s-pdf:latest
     userns_mode: auto
-    restart: unless-stopped
+    restart: always
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080

@@ -3,7 +3,7 @@ services:
   srv:
     image: docker.io/library/traefik:latest
     userns_mode: auto
-    restart: unless-stopped
+    restart: always
     mem_swappiness: 0
     healthcheck:
       test:

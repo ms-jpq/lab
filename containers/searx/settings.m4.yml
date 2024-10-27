@@ -57,6 +57,7 @@ hostnames:
     - ^([^.]+\.)*(ask)?ubuntu\.com$
     - ^([^.]+\.)*(meta)?cpan\.org$
     - ^([^.]+\.)*archlinux\.org$
+    - ^([^.]+\.)*baeldung\.com$
     - ^([^.]+\.)*blogspot\.com$
     - ^([^.]+\.)*cbc\.ca$
     - ^([^.]+\.)*clojure\.org$

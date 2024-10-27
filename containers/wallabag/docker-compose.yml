@@ -3,7 +3,7 @@ services:
   srv:
     image: &img docker.io/wallabag/wallabag:latest
     userns_mode: auto
-    restart: unless-stopped
+    restart: always
     depends_on: &deps
       migrate:
         condition: service_started
@@ -42,7 +42,7 @@ services:
   # import:
   #   image: *img
   #   userns_mode: auto
-  #   restart: unless-stopped
+  #   restart: always
   #   depends_on: *deps
   #   environment: *env
   #   command:
@@ -63,7 +63,7 @@ services:
   redis:
     image: docker.io/library/redis:latest
     userns_mode: auto
-    restart: unless-stopped
+    restart: always
     healthcheck:
       test:
         - CMD
