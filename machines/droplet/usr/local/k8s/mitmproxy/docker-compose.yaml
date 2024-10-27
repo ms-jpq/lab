@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  mitmproxy:
     image: docker.io/mitmproxy/mitmproxy:latest
     userns_mode: auto
     restart: always

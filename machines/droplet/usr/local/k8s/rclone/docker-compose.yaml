@@ -1,6 +1,6 @@
 ---
 services:
-  s3:
+  rclone:
     image: docker.io/andrewgaul/s3proxy:latest
     userns_mode: auto
     restart: always

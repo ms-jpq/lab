@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  warp:
     image: docker.io/caomingjun/warp:latest
     userns_mode: auto
     restart: always

@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  minio:
     image: quay.io/minio/minio:latest
     userns_mode: auto
     restart: always

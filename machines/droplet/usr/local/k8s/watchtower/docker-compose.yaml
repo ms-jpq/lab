@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  watchtower:
     image: docker.io/containrrr/watchtower:latest
     userns_mode: auto
     restart: always

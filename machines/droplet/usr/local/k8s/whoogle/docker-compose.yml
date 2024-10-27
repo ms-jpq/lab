@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  whoogle:
     image: docker.io/benbusby/whoogle-search:latest
     userns_mode: auto
     restart: always
@@ -31,7 +31,4 @@ services:
     ports:
       - 5000
     volumes:
-      - conf:/config
-
-volumes:
-  conf:
+      - /config

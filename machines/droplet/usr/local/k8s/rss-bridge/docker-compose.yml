@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  rss_bridge:
     image: ghcr.io/rss-bridge/rss-bridge:latest
     userns_mode: auto
     restart: always

@@ -30,7 +30,7 @@ for FILE in "$COMPOSE"/*/docker-compose.yml; do
   touch -- "$ENV"
   {
     printf -- '%s\n' "# $FILE"
-    "$DENV" -- "$ENV" "$KOMPOSE" convert --stdout --namespace "$STACK" --file "$FILE"
+    "$DENV" -- "$ENV" "$KOMPOSE" convert --stdout --namespace "$STACK" --file "$FILE" -v
   } > "$DST/$STACK.yml"
 done
 printf -- '%s\n' "<<< $DST" >&2

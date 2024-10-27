@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  invidious:
     image: quay.io/invidious/invidious:${TAG}
     userns_mode: auto
     restart: always

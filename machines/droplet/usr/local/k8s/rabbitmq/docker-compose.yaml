@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  rabbitmq:
     image: docker.io/library/rabbitmq:management
     userns_mode: auto
     restart: always

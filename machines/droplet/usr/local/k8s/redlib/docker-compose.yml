@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  redlib:
     image: quay.io/redlib/redlib:${TAG}
     userns_mode: auto
     restart: always

@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  kibana:
     image: docker.elastic.co/kibana/kibana:${VERSION}
     userns_mode: auto
     restart: always

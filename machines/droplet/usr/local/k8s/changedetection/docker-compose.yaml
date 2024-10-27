@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  changedetection:
     image: ghcr.io/dgtlmoon/changedetection.io:latest
     userns_mode: auto
     restart: always

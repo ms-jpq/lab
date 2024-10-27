@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  postgrest:
     image: docker.io/postgrest/postgrest:latest
     userns_mode: auto
     restart: always
@@ -15,7 +15,7 @@ services:
   swagger:
     image: docker.io/swaggerapi/swagger-ui:latest
     depends_on:
-      srv:
+      postgrest:
         condition: service_started
     userns_mode: auto
     restart: always
@@ -35,4 +35,4 @@ services:
       - traefik.http.services.${COMPOSE_PROJECT_NAME}2.loadbalancer.server.port=8080
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.rule=HostRegexp(`^postgreswagger\.`)
     environment:
-      API_URL: http://srv:3000/
+      API_URL: http://postgrest:3000/

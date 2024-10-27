@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  searxng:
     image: docker.io/searxng/searxng:latest
     userns_mode: auto
     restart: always

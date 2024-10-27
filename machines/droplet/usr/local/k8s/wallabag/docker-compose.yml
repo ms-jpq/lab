@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  wallabag:
     image: &img docker.io/wallabag/wallabag:latest
     userns_mode: auto
     restart: always

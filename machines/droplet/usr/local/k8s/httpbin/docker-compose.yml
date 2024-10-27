@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  httpbin:
     image: docker.io/kennethreitz/httpbin:latest
     userns_mode: auto
     restart: always

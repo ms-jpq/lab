@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  excalidraw:
     image: docker.io/excalidraw/excalidraw:latest
     userns_mode: auto
     restart: always
@@ -18,3 +18,5 @@ services:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^draw\.`)
+    ports:
+      - 80

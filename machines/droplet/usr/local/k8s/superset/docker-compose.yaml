@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  superset:
     image: docker.io/apache/superset:latest
     userns_mode: auto
     restart: always

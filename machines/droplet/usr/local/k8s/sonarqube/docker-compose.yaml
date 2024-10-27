@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  sonarqube:
     image: docker.io/library/sonarqube:latest
     restart: always
     labels:

@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  miniflux:
     image: ghcr.io/miniflux/miniflux:latest
     userns_mode: auto
     restart: always

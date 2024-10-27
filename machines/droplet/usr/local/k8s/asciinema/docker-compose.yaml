@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  asciinema:
     image: ghcr.io/asciinema/asciinema-server:latest
     userns_mode: auto
     restart: always

@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  cloudbeaver:
     image: docker.io/dbeaver/cloudbeaver:latest
     userns_mode: auto
     restart: always

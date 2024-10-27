@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  bitmagnet:
     image: ghcr.io/bitmagnet-io/bitmagnet:latest
     userns_mode: auto
     restart: always

@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  mongo_express:
     image: docker.io/library/mongo-express:latest
     userns_mode: auto
     restart: always

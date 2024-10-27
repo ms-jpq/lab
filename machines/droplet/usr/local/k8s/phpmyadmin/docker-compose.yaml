@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  phpmyadmin:
     image: docker.io/library/phpmyadmin:latest
     userns_mode: auto
     restart: always

@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  stirling_pdf:
     image: frooodle/s-pdf:latest
     userns_mode: auto
     restart: always

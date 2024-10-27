@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  privatebin:
     image: ghcr.io/privatebin/fs:latest
     userns_mode: auto
     restart: always

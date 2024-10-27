@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  etherpad:
     image: docker.io/etherpad/etherpad:latest
     userns_mode: auto
     restart: always
@@ -33,6 +33,8 @@ services:
       PAD_OPTIONS_USE_MONOSPACE_FONT: true
       TITLE: 📝
       TRUST_PROXY: true
+    ports:
+      - 9001
 
   pg:
     image: docker.io/library/postgres:latest

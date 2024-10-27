@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  traefik:
     image: docker.io/library/traefik:latest
     userns_mode: auto
     restart: always

@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  ladder:
     image: ghcr.io/everywall/ladder:latest
     userns_mode: auto
     restart: always

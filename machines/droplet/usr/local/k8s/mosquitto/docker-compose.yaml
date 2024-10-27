@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  mosquitto:
     image: docker.io/library/eclipse-mosquitto:latest
     userns_mode: auto
     restart: always

@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  emulatorjs:
     image: ghcr.io/linuxserver/emulatorjs:latest
     userns_mode: auto
     restart: always

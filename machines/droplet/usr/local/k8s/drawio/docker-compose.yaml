@@ -1,6 +1,6 @@
 ---
 services:
-  srv:
+  drawio:
     image: docker.io/jgraph/drawio:latest
     userns_mode: auto
     restart: always
