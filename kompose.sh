@@ -30,7 +30,7 @@ for FILE in "$COMPOSE"/*/docker-compose.yml; do
 
   printf -- '%s\n' "@ $STACK" >&2
   touch -- "$ENV"
-  CONV=("$DENV" -- "$ENV" "$KOMPOSE" convert --stdout --namespace "$STACK" --file "$FILE")
+  CONV=("$DENV" -- "$ENV" "$KOMPOSE" convert --stdout --generate-network-policies --namespace "$STACK" --file "$FILE")
   "${CONV[@]}" | "${Y2J[@]}" | jq --slurp "$JQ" | "${J2Y[@]}" > "$DST/$STACK.yml"
 done
 printf -- '%s\n' "<<< $DST" >&2
