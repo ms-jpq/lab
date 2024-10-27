@@ -1,4 +1,3 @@
-docker
 gateway
 k3s
 mail

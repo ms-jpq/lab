@@ -19,12 +19,17 @@ mkdir -v -p -- "$DST"
 
 printf -- '%s\n' ">>> $COMPOSE" >&2
 for FILE in "$COMPOSE"/*/docker-compose.yml; do
-  NAME="${FILE%/*}"
-  NAME="${NAME##*/}"
-  printf -- '%s\n' "@ $NAME" >&2
+  DIR="${FILE%/*}"
+  STACK="${DIR##*/}"
+  ENV="$DIR/.env"
+  touch -- "$ENV"
+
+  printf -- '%s\n' "@ $STACK" >&2
+
   {
-    K8S_NAMESPACE="$NAME" envsubst < ./layers/k3s/usr/local/k8s/namespace.k8s.yml
-    ./var/bin/kompose convert --stdout --namespace "$NAME" --file "$FILE"
-  } > "$DST/$NAME.yml"
+    printf -- '%s\n' "# $FILE"
+    K8S_NAMESPACE="$STACK" envsubst < ./layers/k3s/usr/local/k8s/namespace.k8s.yml
+    env -i -- ./var/bin/kompose convert --stdout --namespace "$STACK" --file "$FILE"
+  } > "$DST/$STACK.yml"
 done
 printf -- '%s\n' "<<< $DST" >&2
