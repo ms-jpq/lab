@@ -18,11 +18,9 @@ services:
         - --
         - 127.0.0.1:80
     labels:
+      - kompose.service.expose=pocket.${DOMAIN}
       - kompose.init.containers.image=docker.io/wallabag/wallabag:latest
       - kompose.init.containers.command=["sh", "-c", "/entrypoint.sh migrate || :"]
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^pocket\.`)
       - flame.type=app
       - flame.name=Wallabag
       - flame.url=https://pocket.${DOMAIN}

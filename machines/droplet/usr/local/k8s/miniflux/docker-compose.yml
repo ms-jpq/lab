@@ -16,9 +16,7 @@ services:
         - --
         - localhost:8080/about
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^rss\.`)
+      - kompose.service.expose=rss.${DOMAIN}
       - flame.type=app
       - flame.name=Miniflux
       - flame.url=https://rss.${DOMAIN}

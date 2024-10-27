@@ -15,10 +15,10 @@ services:
         - --
         - localhost:8080
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^pocket\.`)
+      - kompose.service.expose=pocket.${DOMAIN}
     environment:
       SHIORI_DATABASE_URL:
       SHIORI_HTTP_ACCESS_LOG: false
       SHIORI_HTTP_SECRET_KEY:
+    ports:
+      - 8080

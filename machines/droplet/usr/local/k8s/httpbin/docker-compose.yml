@@ -5,9 +5,7 @@ services:
     userns_mode: auto
     restart: always
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^http\.`)
+      - kompose.service.expose=http.${DOMAIN}
       - flame.type=app
       - flame.name=HTTPbin
       - flame.url=https://http.${DOMAIN}

@@ -4,4 +4,3 @@ services:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     userns_mode: auto
     restart: always
-    network_mode: container:warp-srv-1

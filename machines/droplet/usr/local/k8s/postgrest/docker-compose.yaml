@@ -5,12 +5,12 @@ services:
     userns_mode: auto
     restart: always
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=3000
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^postgrest\.`)
+      - kompose.service.expose=postgrest.${DOMAIN}
     environment:
       PGRST_DB_URI:
       PGRST_OPENAPI_SERVER_PROXY_URI: http://[::]:3000
+    ports:
+      - 3000
 
   swagger:
     image: docker.io/swaggerapi/swagger-ui:latest
@@ -31,8 +31,8 @@ services:
         - --
         - 127.0.0.1:8080
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}2.loadbalancer.server.port=8080
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.rule=HostRegexp(`^postgreswagger\.`)
+      - kompose.service.expose=postgreswagger.${DOMAIN}
     environment:
       API_URL: http://postgrest:3000/
+    ports:
+      - 8080

@@ -19,9 +19,7 @@ services:
     #     - --
     #     - 127.0.0.1:8080
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^ask\.`)
+      - kompose.service.expose=ask.${DOMAIN}
       - flame.type=app
       - flame.name=Searx
       - flame.url=https://ask.${DOMAIN}

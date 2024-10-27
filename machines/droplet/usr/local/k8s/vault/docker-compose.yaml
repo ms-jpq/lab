@@ -15,9 +15,9 @@ services:
         - --
         - 127.0.0.1:8200
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8200
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^${COMPOSE_PROJECT_NAME}\.`)
+      - kompose.service.expose=vault.${DOMAIN}
+    ports:
+      - 8200
     volumes:
       - data:/vault/file
       - log:/vault/logs

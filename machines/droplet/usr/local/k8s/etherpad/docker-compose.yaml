@@ -18,9 +18,7 @@ services:
         - --
         - localhost:9001
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=9001
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^docs\.`)
+      - kompose.service.expose=docs.${DOMAIN}
     environment:
       DB_HOST: pg
       DB_NAME: ${COMPOSE_PROJECT_NAME}
@@ -52,6 +50,8 @@ services:
       POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
       POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
+    ports:
+      - 5432
     volumes:
       - data:/var/lib/postgresql/data
 

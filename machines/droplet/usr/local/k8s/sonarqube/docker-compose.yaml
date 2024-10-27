@@ -4,9 +4,9 @@ services:
     image: docker.io/library/sonarqube:latest
     restart: always
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=9000
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^sonar\.`)
+      - kompose.service.expose=sonar.${DOMAIN}
+    ports:
+      - 9000
     volumes:
       - /var/lib/local/${COMPOSE_PROJECT_NAME}/data:/opt/sonarqube/data
       - /var/lib/local/${COMPOSE_PROJECT_NAME}/extensions:/opt/sonarqube/extensions

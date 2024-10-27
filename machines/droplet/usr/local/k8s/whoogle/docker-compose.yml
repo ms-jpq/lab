@@ -15,9 +15,7 @@ services:
         - --
         - localhost:5000
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=5000
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^bing\.`)
+      - kompose.service.expose=bing.${DOMAIN}
       - flame.type=app
       - flame.name=Whoogle
       - flame.url=https://bing.${DOMAIN}

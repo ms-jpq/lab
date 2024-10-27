@@ -5,9 +5,7 @@ services:
     userns_mode: auto
     restart: always
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^bridge\.`)
+      - kompose.service.expose=bridge.${DOMAIN}
       - flame.type=app
       - flame.name=RSSbr
       - flame.url=https://bridge.${DOMAIN}

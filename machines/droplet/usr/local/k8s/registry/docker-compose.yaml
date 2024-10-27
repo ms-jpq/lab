@@ -15,9 +15,9 @@ services:
         - --
         - localhost:5000
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=5000
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^dockerhub\.`)
+      - kompose.service.expose=dockerhub.${DOMAIN}
+    ports:
+      - 5000
     volumes:
       - data:/var/lib/registry
 

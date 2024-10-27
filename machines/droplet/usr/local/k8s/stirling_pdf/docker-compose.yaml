@@ -5,13 +5,13 @@ services:
     userns_mode: auto
     restart: always
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^pdf\.`)
+      - kompose.service.expose=pdf.${DOMAIN}
     environment:
       DOCKER_ENABLE_SECURITY: false
       INSTALL_BOOK_AND_ADVANCED_HTML_OPS: false
       LANGS: en_GB
+    ports:
+      - 8080
     volumes:
       - /var/lib/local/pdf:/configs
       - data:/usr/share/tessdata

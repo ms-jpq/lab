@@ -18,12 +18,12 @@ services:
         - --
         - 127.0.0.1:5601
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}-k.loadbalancer.server.port=5601
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-k.rule=HostRegexp(`^elastic\.`)
+      - kompose.service.expose=kibana.${DOMAIN}
     environment:
       SERVER_NAME:
       ELASTICSEARCH_SSL_VERIFICATIONMODE: none
+    ports:
+      - 5601
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:${VERSION}
@@ -41,12 +41,12 @@ services:
         - --
         - 127.0.0.1:9200/_cluster/health
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}-e.loadbalancer.server.port=9200
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-e.rule=HostRegexp(`^es\.`)
+      - kompose.service.expose=elastic.${DOMAIN}
     environment:
       discovery.type: single-node
       xpack.security.enabled: false
+    ports:
+      - 9200
     volumes:
       - data:/usr/share/elasticsearch/data
 
@@ -69,9 +69,9 @@ services:
         - --
         - 127.0.0.1:9600/_node/jvm
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}-l.loadbalancer.server.port=9600
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-l.rule=HostRegexp(`^log\.`)
+      - kompose.service.expose=logstash.${DOMAIN}
+    ports:
+      - 9600
 
 volumes:
   data:

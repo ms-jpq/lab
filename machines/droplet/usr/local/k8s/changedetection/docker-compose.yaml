@@ -5,9 +5,7 @@ services:
     userns_mode: auto
     restart: always
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=5000
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^changes\.`)
+      - kompose.service.expose=changes.${DOMAIN}
     environment:
       # HTTPS_PROXY: socks5h://warp-srv-1:1080
       # HTTP_PROXY: socks5h://warp-srv-1:1080

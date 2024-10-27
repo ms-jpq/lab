@@ -15,9 +15,7 @@ services:
         - --
         - 127.0.0.1:8978
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8978
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^sql\.`)
+      - kompose.service.expose=sql.${DOMAIN}
     volumes:
       - data:/opt/cloudbeaver/workspace
 

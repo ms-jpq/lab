@@ -18,9 +18,9 @@ services:
         - --
         - localhost:80
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^mysql\.`)
+      - kompose.service.expose=mysql.${DOMAIN}
+    ports:
+      - 80
     environment:
       PMA_HOST: mysql
       PMA_PASSWORD: ${COMPOSE_PROJECT_NAME}
@@ -42,7 +42,7 @@ services:
       MYSQL_ROOT_PASSWORD: ${COMPOSE_PROJECT_NAME}
       MYSQL_USER: ${COMPOSE_PROJECT_NAME}
     ports:
-      - 127.0.0.53:33306:3306
+      - 3306
     volumes:
       - data:/var/lib/mysql
 

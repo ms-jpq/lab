@@ -18,9 +18,7 @@ services:
         - --
         - 127.0.0.1:8081
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8081
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^redis\.`)
+      - kompose.service.expose=redis.${DOMAIN}
       - flame.type=app
       - flame.name=Redis
       - flame.url=https://redis.${DOMAIN}

@@ -16,8 +16,8 @@ services:
         - --
         - localhost:9696
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=9696
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^bt\.`)
+      - kompose.service.expose=bt.${DOMAIN}
+    ports:
+      - 9696
     volumes:
       - /var/lib/local/${COMPOSE_PROJECT_NAME}:/config

@@ -5,9 +5,7 @@ services:
     userns_mode: auto
     restart: always
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=3000
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^dns\.`)
+      - kompose.service.expose=dns.${DOMAIN}
     ports:
       - 3000
     volumes:

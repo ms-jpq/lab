@@ -15,9 +15,9 @@ services:
         - --
         - localhost:8080
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^pastebin\.`)
+      - kompose.service.expose=pastebin.${DOMAIN}
+    ports:
+      - 8080
     volumes:
       - ./conf.php:/srv/cfg/conf.php:ro
       - run:/run

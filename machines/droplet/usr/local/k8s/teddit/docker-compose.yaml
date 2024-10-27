@@ -18,9 +18,7 @@ services:
         - --
         - localhost:8080/about
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^teddit\.`)
+      - kompose.service.expose=teddit.${DOMAIN}
     environment:
       # HTTP_PROXY: http://warp-srv-1:1080
       DOMAIN:
@@ -28,6 +26,8 @@ services:
       TRUST_PROXY: true
       USE_HELMET: true
       USE_HELMET_HSTS: true
+    ports:
+      - 8080
 
   redis:
     image: docker.io/library/redis:latest

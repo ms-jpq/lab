@@ -18,13 +18,14 @@ services:
         - --
         - 127.0.0.1:3000/preferences
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=3000
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^(www\.)?youtube\.`)
+      - kompose.service.expose=youtube.${DOMAIN}
+      # - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^(www\.)?youtube\.`)
       - flame.type=app
       - flame.name=Invidious
       - flame.url=https://youtube.${DOMAIN}
       - flame.icon=youtube-tv
+    ports:
+      - 3000
     volumes:
       - ./conf.yml:/invidious/config/config.yml:ro
 

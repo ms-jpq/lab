@@ -20,13 +20,13 @@ services:
         - --
         - 127.0.0.1:8081
     labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8081
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^mongo\.`)
+      - kompose.service.expose=mongo.${DOMAIN}
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.middlewares=${COMPOSE_PROJECT_NAME}
       - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}.headers.customRequestHeaders.Authorization=Basic YWRtaW46cGFzcw==
     environment:
       ME_CONFIG_MONGODB_URL: mongodb://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@mongo:27017/
+    ports:
+      - 8081
     volumes:
       - /usr/local/opt/${COMPOSE_PROJECT_NAME}/conf.yml:/invidious/config/config.yml:ro
 
