@@ -6,5 +6,6 @@
       "size": 24
     }
   ],
+  "hosts": ["unix:///run/docker.sock", "tcp://[::]:2375"],
   "log-driver": "journald"
 }

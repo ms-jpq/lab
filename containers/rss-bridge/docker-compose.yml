@@ -14,4 +14,3 @@ services:
       - flame.icon=bridge
     volumes:
       - ./config.ini.php:/config/config.ini.php:ro
-
