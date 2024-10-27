@@ -1,6 +1,6 @@
 ---
 services:
-  rss_bridge:
+  rss-bridge:
     image: ghcr.io/rss-bridge/rss-bridge:latest
     userns_mode: auto
     restart: always
@@ -12,5 +12,7 @@ services:
       - flame.name=RSSbr
       - flame.url=https://bridge.${DOMAIN}
       - flame.icon=bridge
+    ports:
+      - 80
     volumes:
       - ./config.ini.php:/config/config.ini.php:ro

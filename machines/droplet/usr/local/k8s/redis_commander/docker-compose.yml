@@ -1,6 +1,6 @@
 ---
 services:
-  redis_commander:
+  redis-commander:
     image: ghcr.io/joeferner/redis-commander:latest
     userns_mode: auto
     restart: always

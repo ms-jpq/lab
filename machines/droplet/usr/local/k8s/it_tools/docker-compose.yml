@@ -1,6 +1,6 @@
 ---
 services:
-  it_tools:
+  it-tools:
     image: ghcr.io/corentinth/it-tools:latest
     userns_mode: auto
     restart: always

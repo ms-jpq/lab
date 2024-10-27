@@ -35,4 +35,5 @@ services:
       REDLIB_DEFAULT_USE_HLS: on
       REDLIB_ENABLE_RSS: on
       REDLIB_FULL_URL: https://reddit.${DOMAIN}
-    # network_mode: container:warp-srv-1
+    ports:
+      - 8080
