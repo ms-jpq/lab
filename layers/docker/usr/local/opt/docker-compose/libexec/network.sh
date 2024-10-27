@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-NET=traefik
+NET=composed
 
 NS="$(docker network ls --format 'json' | jq --raw-output '.Name')"
 readarray -t -- NETWORKS <<< "$NS"

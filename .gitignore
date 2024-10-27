@@ -2,6 +2,7 @@
 *.isorted
 *.plan
 *.tfstate.backup
+.git/
 .terraform.lock.hcl
 .terraform.tfstate.lock.info
 .terraform/
