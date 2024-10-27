@@ -12,14 +12,15 @@ DENV='var/sh/zsh/dev/bin/denv.py'
 
 gmake "$KOMPOSE"
 gmake MACHINE="$SRC" local
-rm -fr -- "$DST"
 mkdir -p -- "$DST"
+rm -fr -- "${DST:?}"/*
 
-# Y2J=(yq --output-format json)
-# J2Y=(yq --input-format json)
+Y2J=(yq --output-format json)
+J2Y=(yq --input-format json)
 
-# read -r -d '' -- JQ <<- 'JQ' || true
-# JQ
+read -r -d '' -- JQ <<- 'JQ' || true
+sort_by(.kind != "Namespace")[]
+JQ
 
 printf -- '%s\n' ">>> $COMPOSE" >&2
 for FILE in "$COMPOSE"/*/docker-compose.yml; do
@@ -29,6 +30,7 @@ for FILE in "$COMPOSE"/*/docker-compose.yml; do
 
   printf -- '%s\n' "@ $STACK" >&2
   touch -- "$ENV"
-  "$DENV" -- "$ENV" "$KOMPOSE" convert --stdout --namespace "$STACK" --file "$FILE" > "$DST/$STACK.yml"
+  CONV=("$DENV" -- "$ENV" "$KOMPOSE" convert --stdout --namespace "$STACK" --file "$FILE")
+  "${CONV[@]}" | "${Y2J[@]}" | jq --slurp "$JQ" | "${J2Y[@]}" > "$DST/$STACK.yml"
 done
 printf -- '%s\n' "<<< $DST" >&2
