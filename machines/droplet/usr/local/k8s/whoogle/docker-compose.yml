@@ -28,6 +28,8 @@ services:
       WHOOGLE_CONFIG_URL:
       WHOOGLE_CONFIG_VIEW_IMAGE: true
       WHOOGLE_PROXY_TYPE: socks5
+    ports:
+      - 5000
     volumes:
       - conf:/config
 

@@ -11,6 +11,9 @@ COMPOSE="var/tmp/machines/$SRC/fs/usr/local/k8s"
 gmake MACHINE="$SRC" local
 mkdir -v -p -- "$DST"
 
+DENV='./var/sh/zsh/dev/bin/denv.py'
+KOMPOSE='./var/bin/kompose'
+
 # Y2J=(yq --output-format json)
 # J2Y=(yq --input-format json)
 
@@ -22,14 +25,12 @@ for FILE in "$COMPOSE"/*/docker-compose.yml; do
   DIR="${FILE%/*}"
   STACK="${DIR##*/}"
   ENV="$DIR/.env"
-  touch -- "$ENV"
 
   printf -- '%s\n' "@ $STACK" >&2
-
+  touch -- "$ENV"
   {
     printf -- '%s\n' "# $FILE"
-    K8S_NAMESPACE="$STACK" envsubst < ./layers/k3s/usr/local/k8s/namespace.k8s.yml
-    env -i -- ./var/bin/kompose convert --stdout --namespace "$STACK" --file "$FILE"
+    "$DENV" -- "$ENV" "$KOMPOSE" convert --stdout --namespace "$STACK" --file "$FILE"
   } > "$DST/$STACK.yml"
 done
 printf -- '%s\n' "<<< $DST" >&2

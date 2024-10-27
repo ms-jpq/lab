@@ -22,6 +22,8 @@ services:
       - flame.name=SpeedTest
       - flame.url=https://speedtest.${DOMAIN}
       - flame.icon=car-speed-limiter
+    ports:
+      - 80
     volumes:
       - data:/database
 

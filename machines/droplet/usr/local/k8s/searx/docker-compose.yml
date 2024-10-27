@@ -26,6 +26,8 @@ services:
       - flame.name=Searx
       - flame.url=https://ask.${DOMAIN}
       - flame.icon=search-web
+    ports:
+      - 8080
     volumes:
       - ./limiter.toml:/etc/searxng/limiter.toml
       - ./settings.yml:/etc/searxng/settings.yml

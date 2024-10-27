@@ -8,6 +8,8 @@ services:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=3000
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^dns\.`)
+    ports:
+      - 3000
     volumes:
       - /var/lib/local/${COMPOSE_PROJECT_NAME}:/opt/adguardhome/conf
       - data:/opt/adguardhome/work
