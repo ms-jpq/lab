@@ -1,5 +1,5 @@
 {
-  "keel.sh/policy": "all",
+  "keel.sh/policy": "force",
   "keel.sh/pollSchedule": "@daily",
   "keel.sh/trigger": "poll"
 }
