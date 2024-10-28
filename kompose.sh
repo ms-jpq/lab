@@ -18,7 +18,13 @@ mkdir -p -- "$DST"
 
 read -r -d '' -- JQ <<- 'JQ' || true
 sort_by(.kind != "Namespace")[]
-| if (.kind | IN(["Deployment", "StatefulSet"][])) then .metadata.annotations += $keel else . end
+| if (.kind | IN(["Deployment", "StatefulSet"][])) then
+    .metadata.annotations += $keel
+    | .spec.template.metadata.annotations += $keel
+    | .spec.template.spec.containers[].imagePullPolicy = "Always"
+  else
+    .
+  end
 JQ
 KEEL="$(< "$POLICIES/keel.json")"
 
