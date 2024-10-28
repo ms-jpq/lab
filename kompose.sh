@@ -15,9 +15,6 @@ gmake MACHINE="$SRC" local
 rm -fr -- "$DST"
 mkdir -p -- "$DST"
 
-Y2J=(yq --output-format json)
-J2Y=(yq --input-format json '(.. | select(tag == "!!str")) style="single"')
-
 read -r -d '' -- JQ <<- 'JQ' || true
 sort_by(.kind != "Namespace")[]
 JQ
@@ -32,7 +29,7 @@ for FILE in "$COMPOSE"/*/docker-compose.yml; do
   touch -- "$ENV"
   CONV=("$DENV" -- "$ENV" "$KOMPOSE" convert --stdout --generate-network-policies --namespace "$NAMESPACE" --file "$FILE")
   {
-    "${CONV[@]}" | "${Y2J[@]}" | jq --slurp "$JQ" | "${J2Y[@]}"
+    "${CONV[@]}" | ./libexec/yq.sh --slurp "$JQ"
     K8S_NAMESPACE="$NAMESPACE" envsubst < './layers/k3s/usr/local/k8s/networkpolicy.k8s.yml'
   } > "$DST/$NAMESPACE.yml"
 done
