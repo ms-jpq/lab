@@ -6,10 +6,9 @@ metadata:
   namespace: kube-system
 spec:
   valuesContent: |-
-    ingressRoute:
-      dashboard:
-        enabled: true
     ports:
+      traefik:
+        expose: true
       web:
         exposedPort: 8008
       websecure:
