@@ -33,7 +33,7 @@ for FILE in "$COMPOSE"/*/docker-compose.yml; do
   CONV=("$DENV" -- "$ENV" "$KOMPOSE" convert --stdout --generate-network-policies --namespace "$NAMESPACE" --file "$FILE")
   {
     "${CONV[@]}" | "${Y2J[@]}" | jq --slurp "$JQ" | "${J2Y[@]}"
-    NAMESPACE="$NAMESPACE" envsubst < './layers/k3s/usr/local/k8s/networkpolicy.k8s.yml'
+    K8S_NAMESPACE="$NAMESPACE" envsubst < './layers/k3s/usr/local/k8s/networkpolicy.k8s.yml'
   } > "$DST/$NAMESPACE.yml"
 done
 printf -- '%s\n' "<<< $DST" >&2
