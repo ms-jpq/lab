@@ -2,4 +2,4 @@
 
 set -o pipefail
 
-KUBECONFIG="${0%/*}/facts/kubeconfig.yml.env" exec -- kubectl --insecure-skip-tls-verify "$@"
+KUBECONFIG="${0%/*}/../facts/kubeconfig.yml.env" exec -- kubectl --insecure-skip-tls-verify "$@"
