@@ -34,6 +34,7 @@ sort_by(.kind != "Namespace")[]
     | .spec.template.metadata.annotations += $keel
     | .spec.template.spec.containers[].imagePullPolicy = "Always"
     | .spec.template.spec.initContainers?.[]?.imagePullPolicy ?= "Always"
+    | .spec.template.spec.initContainers?.[]?.env ?= (.spec.template.spec.containers[].env // [])
   else
     .
   end
