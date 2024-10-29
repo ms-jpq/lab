@@ -39,25 +39,24 @@ sort_by(.kind != "Namespace")[]
 JQ
 KEEL="$(< "$POLICIES/keel.json")"
 
-NAMESPACES=()
+YAMLS=()
 printf -- '%s\n' ">>> $COMPOSE" >&2
 for FILE in "${FILES[@]}"; do
   DIR="${FILE%/*}"
   NAMESPACE="${DIR##*/}"
   ENV="$DIR/.env"
-  NAMESPACES+=("$NAMESPACE")
+  YAML="$DST/$NAMESPACE.yml"
+  YAMLS+=("$YAML")
 
   printf -- '%s\n' "@ $NAMESPACE" >&2
   touch -- "$ENV"
   CONV=("$DENV" -- "$ENV" "$KOMPOSE" convert --stdout --generate-network-policies --namespace "$NAMESPACE" --file "$FILE")
   {
+    printf -- '%s\n' '---'
     "${CONV[@]}" | ./libexec/yq.sh --sort-keys --slurp "$JQ" --argjson keel "$KEEL"
     K8S_NAMESPACE="$NAMESPACE" envsubst < "$POLICIES/networkpolicy.k8s.yml"
-  } > "$DST/$NAMESPACE.yml"
+  } > "$YAML"
 done
 printf -- '%s\n' "<<< $DST" >&2
 
-for NAMESPACE in "${NAMESPACES[@]}"; do
-  printf -- '%s\n' "@ $NAMESPACE" >&2
-  ./libexec/kubectl.sh apply --namespace "$NAMESPACE" --filename "$DST/$NAMESPACE.yml"
-done
+cat -- "${YAMLS[@]}" | ./libexec/kubectl.sh apply --prune --all --filename -
