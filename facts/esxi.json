@@ -3,7 +3,7 @@
   "ENV_NFS_EXPORTS": [],
   "ENV_NFS_MNTS": ["freenas.enp2s0.pfsense.home.arpa:/media/downloads"],
   "ENV_NVIDIA_VERSION": "550",
-  "ENV_PG_CLUSTERS": ["16/miniflux", "16/wallabag"],
+  "ENV_PG_CLUSTERS": ["16/k3s", "16/miniflux", "16/wallabag"],
   "ENV_SMB_EXPORTS": ["freenas", "time-machine-hao", "time-machine-gray"],
   "ENV_VFIO_PCI_DEVICE_IDS": ["01:00.0[,]multifunction=on", "01:00.1"],
   "ENV_WEB_RO_EXPORTS": "ENV_NFS_EXPORTS",
