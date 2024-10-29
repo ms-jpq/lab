@@ -1,5 +1,5 @@
 location /traefik {
-  return 307 /traefik/;
+  return 307 /dashboard/;
 }
 
 location /traefik/ {
