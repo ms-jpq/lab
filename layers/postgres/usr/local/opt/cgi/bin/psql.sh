@@ -35,7 +35,7 @@ for F in /var/lib/local/postgresql/*/init.user; do
   NAME="${NAME##*/}"
   printf -- '%s\n' "$NAME"
   LINE="$(< "$F")"
-  NAME="${LINE%%' '*}"
+  NAME="${LINE%%' :'*}"
   PASSWD="$(cut --delimiter ' ' --fields 3- <<< "$LINE")"
   PASS="$(jq --exit-status --raw-input --raw-output '@uri' <<< "$PASSWD")"
   printf -v PSQL -- '%q ' psql -- "postgres://$NAME:$PASS@$HOST/$NAME"

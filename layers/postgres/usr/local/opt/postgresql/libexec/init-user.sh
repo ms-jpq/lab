@@ -46,4 +46,4 @@ WITH
   SUPERUSER PASSWORD '$PASSWORD';
 SQL
 
-printf -- '%s\n' "$ROLE -> $PASSWORD" | runuser --user postgres -- sponge -- "$SHADOW"
+printf -- '%s\n' "$ROLE : $PASSWORD" | runuser --user postgres -- sponge -- "$SHADOW"
