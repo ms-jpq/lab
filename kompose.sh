@@ -1,6 +1,7 @@
 #!/usr/bin/env -S -- bash -Eeu -o pipefail -O dotglob -O nullglob -O extglob -O failglob -O globstar
 
 set -o pipefail
+shopt -u failglob
 
 cd -- "${0%/*}"
 
@@ -13,8 +14,8 @@ DENV='./var/sh/zsh/dev/bin/denv.py'
 
 gmake "$KOMPOSE"
 gmake MACHINE="$SRC" local
-rm -fr -- "$DST"
 mkdir -p -- "$DST"
+rm -fr -- "${DST:?}"/*
 
 read -r -d '' -- JQ <<- 'JQ' || true
 sort_by(.kind != "Namespace")[]
@@ -22,6 +23,7 @@ sort_by(.kind != "Namespace")[]
     .metadata.annotations += $keel
     | .spec.template.metadata.annotations += $keel
     | .spec.template.spec.containers[].imagePullPolicy = "Always"
+    | .spec.template.spec.initContainers?.[]?.imagePullPolicy ?= "Always"
   else
     .
   end
@@ -38,7 +40,7 @@ for FILE in "$COMPOSE"/*/docker-compose.yml; do
   touch -- "$ENV"
   CONV=("$DENV" -- "$ENV" "$KOMPOSE" convert --stdout --generate-network-policies --namespace "$NAMESPACE" --file "$FILE")
   {
-    "${CONV[@]}" | ./libexec/yq.sh --slurp "$JQ" --argjson keel "$KEEL"
+    "${CONV[@]}" | ./libexec/yq.sh --sort-keys --slurp "$JQ" --argjson keel "$KEEL"
     K8S_NAMESPACE="$NAMESPACE" envsubst < "$POLICIES/networkpolicy.k8s.yml"
   } > "$DST/$NAMESPACE.yml"
 done
