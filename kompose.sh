@@ -39,14 +39,13 @@ sort_by(.kind != "Namespace")[]
 JQ
 KEEL="$(< "$POLICIES/keel.json")"
 
-YAMLS=()
+NAMESPACES=()
 printf -- '%s\n' ">>> $COMPOSE" >&2
 for FILE in "${FILES[@]}"; do
   DIR="${FILE%/*}"
   NAMESPACE="${DIR##*/}"
   ENV="$DIR/.env"
-  YAML="$DST/$NAMESPACE.yml"
-  YAMLS+=("$YAML")
+  NAMESPACES+=("$NAMESPACE")
 
   printf -- '%s\n' "@ $NAMESPACE" >&2
   touch -- "$ENV"
@@ -54,11 +53,11 @@ for FILE in "${FILES[@]}"; do
   {
     "${CONV[@]}" | ./libexec/yq.sh --sort-keys --slurp "$JQ" --argjson keel "$KEEL"
     K8S_NAMESPACE="$NAMESPACE" envsubst < "$POLICIES/networkpolicy.k8s.yml"
-  } > "$YAML"
+  } > "$DST/$NAMESPACE.yml"
 done
 printf -- '%s\n' "<<< $DST" >&2
 
-for YAML in "${YAMLS[@]}"; do
-  printf -- '%s\n' "@ $YAML" >&2
-  ./libexec/kubectl.sh apply --filename "$YAML"
+for NAMESPACE in "${NAMESPACES[@]}"; do
+  printf -- '%s\n' "@ $NAMESPACE" >&2
+  ./libexec/kubectl.sh apply --namespace "$NAMESPACE" --filename "$DST/$NAMESPACE.yml"
 done
