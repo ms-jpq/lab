@@ -2,7 +2,6 @@
 services:
   registry:
     image: docker.io/library/registry:latest
-    userns_mode: auto
     restart: always
     healthcheck:
       test:

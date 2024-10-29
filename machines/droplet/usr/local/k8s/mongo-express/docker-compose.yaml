@@ -2,7 +2,6 @@
 services:
   mongo_express:
     image: docker.io/library/mongo-express:latest
-    userns_mode: auto
     restart: always
     depends_on:
       mongo:
@@ -32,7 +31,6 @@ services:
 
   mongo:
     image: docker.io/library/mongo:latest
-    userns_mode: auto
     restart: always
     healthcheck:
       test:

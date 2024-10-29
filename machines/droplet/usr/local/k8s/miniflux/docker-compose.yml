@@ -2,7 +2,6 @@
 services:
   miniflux:
     image: ghcr.io/miniflux/miniflux:latest
-    userns_mode: auto
     restart: always
     mem_swappiness: 0
     healthcheck:

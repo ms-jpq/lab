@@ -2,7 +2,6 @@
 services:
   typebot-builder:
     image: docker.io/baptistearno/typebot-builder:latest
-    userns_mode: auto
     restart: always
     depends_on:
       pg:
@@ -19,7 +18,6 @@ services:
 
   typebot-viewer:
     image: docker.io/baptistearno/typebot-viewer:latest
-    userns_mode: auto
     restart: always
     depends_on:
       pg:
@@ -36,7 +34,6 @@ services:
 
   pg:
     image: docker.io/library/postgres:latest
-    userns_mode: auto
     restart: always
     healthcheck:
       test:

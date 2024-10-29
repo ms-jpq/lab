@@ -2,7 +2,6 @@
 services:
   searxng:
     image: docker.io/searxng/searxng:latest
-    userns_mode: auto
     restart: always
     depends_on:
       redis:
@@ -32,7 +31,6 @@ services:
 
   redis:
     image: docker.io/library/redis:latest
-    userns_mode: auto
     restart: always
     mem_swappiness: 0
     healthcheck:

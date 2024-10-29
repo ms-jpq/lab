@@ -2,7 +2,6 @@
 services:
   invidious:
     image: quay.io/invidious/invidious:${TAG}
-    userns_mode: auto
     restart: always
     depends_on:
       pg:
@@ -32,7 +31,6 @@ services:
 
   pg:
     image: docker.io/library/postgres:latest
-    userns_mode: auto
     restart: always
     healthcheck:
       test:

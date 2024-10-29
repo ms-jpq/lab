@@ -2,7 +2,6 @@
 services:
   rclone:
     image: docker.io/andrewgaul/s3proxy:latest
-    userns_mode: auto
     restart: always
     labels:
       - traefik.enable=true
@@ -17,7 +16,6 @@ services:
 
   dav:
     image: docker.io/rclone/rclone:latest
-    userns_mode: auto
     restart: always
     healthcheck:
       test:

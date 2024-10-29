@@ -2,7 +2,6 @@
 services:
   httpbin:
     image: docker.io/kennethreitz/httpbin:latest
-    userns_mode: auto
     restart: always
     labels:
       - kompose.service.expose=http.${DOMAIN}

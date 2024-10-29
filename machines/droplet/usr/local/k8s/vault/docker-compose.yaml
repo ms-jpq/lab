@@ -2,7 +2,6 @@
 services:
   vault:
     image: docker.io/hashicorp/vault:latest
-    userns_mode: auto
     restart: always
     healthcheck:
       test:

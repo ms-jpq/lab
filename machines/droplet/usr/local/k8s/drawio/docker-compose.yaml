@@ -2,7 +2,6 @@
 services:
   drawio:
     image: docker.io/jgraph/drawio:latest
-    userns_mode: auto
     restart: always
     healthcheck:
       test:

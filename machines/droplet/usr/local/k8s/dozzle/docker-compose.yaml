@@ -2,7 +2,6 @@
 services:
   dozzle:
     image: docker.io/amir20/dozzle:latest
-    userns_mode: auto
     restart: always
     labels:
       - traefik.enable=true

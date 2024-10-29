@@ -2,7 +2,6 @@
 services:
   postgrest:
     image: docker.io/postgrest/postgrest:latest
-    userns_mode: auto
     restart: always
     labels:
       - kompose.service.expose=postgrest.${DOMAIN}
@@ -17,7 +16,6 @@ services:
     depends_on:
       postgrest:
         condition: service_started
-    userns_mode: auto
     restart: always
     healthcheck:
       test:

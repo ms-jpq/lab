@@ -2,7 +2,6 @@
 services:
   adguard:
     image: docker.io/adguard/adguardhome:latest
-    userns_mode: auto
     restart: always
     labels:
       - kompose.controller.type=statefulset

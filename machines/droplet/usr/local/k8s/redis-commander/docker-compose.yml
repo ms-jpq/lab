@@ -2,7 +2,6 @@
 services:
   redis-commander:
     image: ghcr.io/joeferner/redis-commander:latest
-    userns_mode: auto
     restart: always
     depends_on:
       redis:
@@ -30,7 +29,6 @@ services:
 
   redis:
     image: docker.io/library/redis:latest
-    userns_mode: auto
     restart: always
     healthcheck:
       test:

@@ -2,7 +2,6 @@
 services:
   flame:
     image: docker.io/pawelmalak/flame:latest
-    userns_mode: auto
     restart: always
     labels:
       - kompose.controller.type=statefulset

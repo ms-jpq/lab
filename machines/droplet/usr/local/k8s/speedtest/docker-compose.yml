@@ -2,7 +2,6 @@
 services:
   speedtest:
     image: ghcr.io/librespeed/speedtest:latest
-    userns_mode: auto
     restart: always
     healthcheck:
       test:

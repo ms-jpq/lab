@@ -2,7 +2,6 @@
 services:
   emulatorjs:
     image: ghcr.io/linuxserver/emulatorjs:latest
-    userns_mode: auto
     restart: always
     healthcheck:
       test:

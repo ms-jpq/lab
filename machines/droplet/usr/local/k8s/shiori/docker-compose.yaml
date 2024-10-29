@@ -2,7 +2,6 @@
 services:
   shiori:
     image: ghcr.io/go-shiori/shiori:v1.6.0-rc.7-4-g595cb45
-    userns_mode: auto
     restart: always
     healthcheck:
       test:

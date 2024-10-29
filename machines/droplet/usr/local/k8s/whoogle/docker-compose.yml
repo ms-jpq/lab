@@ -2,7 +2,6 @@
 services:
   whoogle:
     image: docker.io/benbusby/whoogle-search:latest
-    userns_mode: auto
     restart: always
     healthcheck:
       test:

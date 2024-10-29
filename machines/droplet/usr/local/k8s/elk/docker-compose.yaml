@@ -2,7 +2,6 @@
 services:
   kibana:
     image: docker.elastic.co/kibana/kibana:${VERSION}
-    userns_mode: auto
     restart: always
     depends_on:
       elasticsearch:
@@ -28,7 +27,6 @@ services:
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:${VERSION}
-    userns_mode: auto
     restart: always
     mem_limit: 512M
     healthcheck:
@@ -54,7 +52,6 @@ services:
 
   log:
     image: docker.elastic.co/logstash/logstash:${VERSION}
-    userns_mode: auto
     restart: always
     depends_on:
       elasticsearch:

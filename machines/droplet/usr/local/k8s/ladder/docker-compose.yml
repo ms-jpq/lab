@@ -2,7 +2,6 @@
 services:
   ladder:
     image: ghcr.io/everywall/ladder:latest
-    userns_mode: auto
     restart: always
     labels:
       - kompose.service.expose=12ft.${DOMAIN}

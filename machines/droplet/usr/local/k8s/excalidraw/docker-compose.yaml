@@ -2,7 +2,6 @@
 services:
   excalidraw:
     image: docker.io/excalidraw/excalidraw:latest
-    userns_mode: auto
     restart: always
     healthcheck:
       test:

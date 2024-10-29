@@ -2,7 +2,6 @@
 services:
   mosquitto:
     image: docker.io/library/eclipse-mosquitto:latest
-    userns_mode: auto
     restart: always
     ports:
       - 1883

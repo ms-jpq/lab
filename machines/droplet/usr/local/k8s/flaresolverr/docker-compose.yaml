@@ -2,5 +2,4 @@
 services:
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
-    userns_mode: auto
     restart: always

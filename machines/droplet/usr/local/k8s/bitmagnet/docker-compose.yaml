@@ -2,7 +2,6 @@
 services:
   bitmagnet:
     image: ghcr.io/bitmagnet-io/bitmagnet:latest
-    userns_mode: auto
     restart: always
     cpu_shares: 128
     healthcheck:

@@ -2,7 +2,6 @@
 services:
   ipfs:
     image: docker.io/ipfs/kubo:latest
-    userns_mode: auto
     restart: always
     labels:
       - traefik.enable=true

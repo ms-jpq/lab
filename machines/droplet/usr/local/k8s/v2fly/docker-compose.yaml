@@ -3,7 +3,6 @@ services:
   # TODO: linked DNS container + cloudflare
   v2fly:
     image: docker.io/v2fly/v2fly-core:latest
-    userns_mode: auto
     restart: always
     command:
       - run

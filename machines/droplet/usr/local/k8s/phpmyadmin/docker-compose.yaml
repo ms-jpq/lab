@@ -2,7 +2,6 @@
 services:
   phpmyadmin:
     image: docker.io/library/phpmyadmin:latest
-    userns_mode: auto
     restart: always
     depends_on:
       mysql:
@@ -28,7 +27,6 @@ services:
 
   mysql:
     image: docker.io/library/mysql:latest
-    userns_mode: auto
     restart: always
     healthcheck:
       test:
