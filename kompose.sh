@@ -52,10 +52,10 @@ for FILE in "${FILES[@]}"; do
 
   printf -- '%s\n' "@ $NAMESPACE" >&2
   touch -- "$ENV"
-  CONV=("$DENV" -- "$ENV" "$KOMPOSE" convert --stdout --generate-network-policies --namespace "$NAMESPACE" --file -)
+  CONV=("$DENV" -- "$ENV" "$KOMPOSE" convert --stdout --generate-network-policies --namespace "$NAMESPACE" --file "$FILE")
   {
     printf -- '%s\n' '---'
-    "${CONV[@]}" < "$FILE" | ./libexec/yq.sh --sort-keys --slurp "$JQ" --argjson keel "$KEEL"
+    "${CONV[@]}" | ./libexec/yq.sh --sort-keys --slurp "$JQ" --argjson keel "$KEEL"
     K8S_NAMESPACE="$NAMESPACE" envsubst < "$POLICIES/networkpolicy.k8s.yml"
   } > "$YAML"
 done
