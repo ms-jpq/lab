@@ -65,9 +65,11 @@ KEEP_NS=(
   client
 )
 
-{
-  for NS in "${KEEP_NS[@]}"; do
-    ./libexec/kubectl.sh create namespace --dry-run client --output yaml -- "$NS"
-  done
-  cat -- "${YAMLS[@]}"
-} | ./libexec/kubectl.sh apply "${PRUNE[@]}" --filename -
+if ! [[ -v DRY ]]; then
+  {
+    for NS in "${KEEP_NS[@]}"; do
+      ./libexec/kubectl.sh create namespace --dry-run client --output yaml -- "$NS"
+    done
+    cat -- "${YAMLS[@]}"
+  } | ./libexec/kubectl.sh apply "${PRUNE[@]}" --filename -
+fi
