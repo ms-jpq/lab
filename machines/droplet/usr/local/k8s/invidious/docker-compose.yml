@@ -23,8 +23,10 @@ services:
       - flame.pawelmalak/name=Invidious
       - flame.pawelmalak/url=https://youtube.${DOMAIN}
       - flame.pawelmalak/icon=youtube-tv
+    environment:
+      INVIDIOUS_PORT: &port 3000
     ports:
-      - 3000
+      - *port
     volumes:
       - ./conf.yml:/invidious/config/config.yml:ro
 

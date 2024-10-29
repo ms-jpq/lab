@@ -12,6 +12,7 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-/usr/local/libexec/hr-run.sh cat -- /var/lib/local/k3s/kubeconfig.yml
+/usr/local/libexec/hr-run.sh kubectl get --all-namespaces all
 /usr/local/libexec/hr-run.sh systemctl --no-pager --full --lines 0 status -- 0-k3s.service
 /usr/local/libexec/hr-run.sh systemctl --no-pager --full --lines 0 status -- kubepods.slice
+/usr/local/libexec/hr-run.sh cat -- /var/lib/local/k3s/kubeconfig.yml
