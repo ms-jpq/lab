@@ -33,23 +33,23 @@ TEMPLATE=(./libexec/helm.sh template --create-namespace --generate-name --depend
   "${TEMPLATE[@]}" "${ARGS[@]}"
 }
 
-{
-  NAMESPACE='kubernetes-dashboard'
-  DOMAIN="$(sed -E -n -e 's/^ENV_DOMAIN=(.*)$/k8s.\1/p' -- ./facts/droplet.env)"
-  ARGS=(
-    "$NAMESPACE"
-    --set app.ingress.enabled=true
-    --set app.ingress.useDefaultIngressClass=true
-    --set app.ingress.tls.enabled=false
-    --set "app.ingress.hosts[0]=$DOMAIN"
-    -- kubernetes-dashboard/kubernetes-dashboard
-  )
-  K8S_NAMESPACE="$NAMESPACE" envsubst < "$POLICIES/networkpolicy.k8s.yml"
-  "${TEMPLATE[@]}" "${ARGS[@]}"
-  cat -- "$POLICIES/cluster-admin.k8s.yml"
-
-  # TOKEN='./facts/cluster-admin.k8s.token.env'
-  # if ! [[ -s $TOKEN ]]; then
-  #   ./libexec/kubectl.sh --namespace "$NAMESPACE" get secret admin-user --output jsonpath='{.data.token}' | base64 -d > "$TOKEN"
-  # fi
-}
+# {
+#   NAMESPACE='kubernetes-dashboard'
+#   DOMAIN="$(sed -E -n -e 's/^ENV_DOMAIN=(.*)$/k8s.\1/p' -- ./facts/droplet.env)"
+#   ARGS=(
+#     "$NAMESPACE"
+#     --set app.ingress.enabled=true
+#     --set app.ingress.useDefaultIngressClass=true
+#     --set app.ingress.tls.enabled=false
+#     --set "app.ingress.hosts[0]=$DOMAIN"
+#     -- kubernetes-dashboard/kubernetes-dashboard
+#   )
+#   K8S_NAMESPACE="$NAMESPACE" envsubst < "$POLICIES/networkpolicy.k8s.yml"
+#   "${TEMPLATE[@]}" "${ARGS[@]}"
+#   cat -- "$POLICIES/cluster-admin.k8s.yml"
+#
+#   TOKEN='./facts/cluster-admin.k8s.token.env'
+#   if ! [[ -s $TOKEN ]]; then
+#     ./libexec/kubectl.sh --namespace "$NAMESPACE" get secret admin-user --output jsonpath='{.data.token}' | base64 -d > "$TOKEN"
+#   fi
+# }
