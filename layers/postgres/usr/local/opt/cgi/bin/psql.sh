@@ -30,6 +30,8 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
+FQDN="$(hostname --all-fqdns | cut --delimiter ' ' --fields -1)"
+
 for F in /var/lib/local/postgresql/*/init.user; do
   NAME="${F%/*}"
   NAME="${NAME##*/}"
@@ -38,8 +40,9 @@ for F in /var/lib/local/postgresql/*/init.user; do
   NAME="${LINE%%' : '*}"
   PASSWD="${LINE#*' : '}"
   PASS="$(jq --exit-status --raw-input --raw-output '@uri' <<< "$PASSWD")"
-  printf -v PSQL -- '%q ' psql -- "postgres://$NAME:$PASS@$HOST/$NAME"
-  printf -- '%s\n' "postgres://$NAME:$PASSWD@$HOST/$NAME" "$PSQL"
+  printf -v PSQL1 -- '%q ' psql -- "postgres://$NAME:$PASS@$HOST/$NAME"
+  printf -v PSQL2 -- '%q ' psql -- "postgres://$NAME:$PASS@$FQDN/$NAME"
+  printf -- '%s\n' "postgres://$NAME:$PASSWD@$HOST/$NAME" "${PSQL1%' '*}" "${PSQL2%' '*}"
   /usr/local/libexec/hr.sh
   printf -- '\n'
 done
