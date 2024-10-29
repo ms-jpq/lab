@@ -12,3 +12,5 @@ INSTALL=(./libexec/helm.sh upgrade --cleanup-on-fail --atomic --create-namespace
 "${INSTALL[@]}" keel --set helmProvider.version='v3' -- "$RELEASE" keel/keel
 
 "${INSTALL[@]}" reloader --set reloader.autoReloadAll=true --set reloader.reloadOnCreate=true --set reloader.reloadOnDelete=true -- "$RELEASE" stakater/reloader
+
+"${INSTALL[@]}" kubernetes-dashboard -- "$RELEASE" kubernetes-dashboard/kubernetes-dashboard
