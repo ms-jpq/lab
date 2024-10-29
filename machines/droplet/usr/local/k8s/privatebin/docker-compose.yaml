@@ -2,7 +2,6 @@
 services:
   privatebin:
     image: ghcr.io/privatebin/fs:latest
-    restart: always
     healthcheck:
       test:
         - CMD

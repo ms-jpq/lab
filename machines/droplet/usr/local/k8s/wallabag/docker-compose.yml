@@ -2,7 +2,6 @@
 services:
   wallabag:
     image: docker.io/wallabag/wallabag:latest
-    restart: always
     depends_on:
       redis:
         condition: service_healthy
@@ -40,7 +39,6 @@ services:
 
   redis:
     image: docker.io/library/redis:latest
-    restart: always
     healthcheck:
       test:
         - CMD

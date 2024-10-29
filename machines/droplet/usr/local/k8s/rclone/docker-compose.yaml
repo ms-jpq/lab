@@ -2,7 +2,6 @@
 services:
   rclone:
     image: docker.io/andrewgaul/s3proxy:latest
-    restart: always
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
@@ -16,7 +15,6 @@ services:
 
   dav:
     image: docker.io/rclone/rclone:latest
-    restart: always
     healthcheck:
       test:
         - CMD

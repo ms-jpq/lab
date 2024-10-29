@@ -2,7 +2,6 @@
 services:
   etherpad:
     image: docker.io/etherpad/etherpad:latest
-    restart: always
     depends_on:
       pg:
         condition: service_healthy
@@ -35,7 +34,6 @@ services:
 
   pg:
     image: docker.io/library/postgres:latest
-    restart: always
     healthcheck:
       test:
         - CMD

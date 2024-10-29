@@ -2,7 +2,6 @@
 services:
   phpmyadmin:
     image: docker.io/library/phpmyadmin:latest
-    restart: always
     depends_on:
       mysql:
         condition: service_healthy
@@ -27,7 +26,6 @@ services:
 
   mysql:
     image: docker.io/library/mysql:latest
-    restart: always
     healthcheck:
       test:
         - CMD

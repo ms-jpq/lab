@@ -2,7 +2,6 @@
 services:
   ipfs:
     image: docker.io/ipfs/kubo:latest
-    restart: always
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080

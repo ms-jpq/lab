@@ -2,7 +2,6 @@
 services:
   cloudbeaver:
     image: docker.io/dbeaver/cloudbeaver:latest
-    restart: always
     healthcheck:
       test:
         - CMD

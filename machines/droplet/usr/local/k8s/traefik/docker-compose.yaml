@@ -2,7 +2,6 @@
 services:
   traefik:
     image: docker.io/library/traefik:latest
-    restart: always
     mem_swappiness: 0
     healthcheck:
       test:

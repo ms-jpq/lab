@@ -2,7 +2,6 @@
 services:
   asciinema:
     image: ghcr.io/asciinema/asciinema-server:latest
-    restart: always
     depends_on:
       pg:
         condition: service_healthy
@@ -33,7 +32,6 @@ services:
 
   pg:
     image: docker.io/library/postgres:latest
-    restart: always
     healthcheck:
       test:
         - CMD

@@ -2,7 +2,6 @@
 services:
   flame:
     image: docker.io/pawelmalak/flame:latest
-    restart: always
     labels:
       - kompose.controller.type=statefulset
       - kompose.service.expose=true

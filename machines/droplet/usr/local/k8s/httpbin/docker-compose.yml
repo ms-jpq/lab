@@ -2,7 +2,6 @@
 services:
   httpbin:
     image: docker.io/kennethreitz/httpbin:latest
-    restart: always
     labels:
       - kompose.service.expose=http.${DOMAIN}
       - flame.pawelmalak/type=app

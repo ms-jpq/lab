@@ -2,7 +2,6 @@
 services:
   warp:
     image: docker.io/caomingjun/warp:latest
-    restart: always
     cap_add:
       - NET_ADMIN
     sysctls:

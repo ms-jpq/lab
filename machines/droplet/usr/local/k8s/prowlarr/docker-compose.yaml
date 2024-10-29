@@ -2,7 +2,6 @@
 services:
   prowlarr:
     image: ghcr.io/ghcr.io/hotio/prowlarr:latest
-    restart: always
     healthcheck:
       test:
         - CMD

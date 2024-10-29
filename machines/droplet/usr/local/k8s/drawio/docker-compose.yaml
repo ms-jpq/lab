@@ -2,7 +2,6 @@
 services:
   drawio:
     image: docker.io/jgraph/drawio:latest
-    restart: always
     healthcheck:
       test:
         - CMD

@@ -2,7 +2,6 @@
 services:
   vault:
     image: docker.io/hashicorp/vault:latest
-    restart: always
     healthcheck:
       test:
         - CMD

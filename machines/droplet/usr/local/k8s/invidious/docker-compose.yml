@@ -2,7 +2,6 @@
 services:
   invidious:
     image: quay.io/invidious/invidious:${TAG}
-    restart: always
     depends_on:
       pg:
         condition: service_healthy
@@ -31,7 +30,6 @@ services:
 
   pg:
     image: docker.io/library/postgres:latest
-    restart: always
     healthcheck:
       test:
         - CMD

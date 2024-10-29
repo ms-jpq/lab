@@ -2,7 +2,6 @@
 services:
   kibana:
     image: docker.elastic.co/kibana/kibana:${VERSION}
-    restart: always
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -27,7 +26,6 @@ services:
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:${VERSION}
-    restart: always
     mem_limit: 512M
     healthcheck:
       test:
@@ -52,7 +50,6 @@ services:
 
   log:
     image: docker.elastic.co/logstash/logstash:${VERSION}
-    restart: always
     depends_on:
       elasticsearch:
         condition: service_healthy

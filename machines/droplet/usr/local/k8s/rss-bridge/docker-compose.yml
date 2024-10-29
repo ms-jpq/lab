@@ -2,7 +2,6 @@
 services:
   rss-bridge:
     image: ghcr.io/rss-bridge/rss-bridge:latest
-    restart: always
     labels:
       - kompose.service.expose=bridge.${DOMAIN}
       - flame.pawelmalak/type=app

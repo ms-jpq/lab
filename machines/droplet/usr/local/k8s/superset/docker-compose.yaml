@@ -2,7 +2,6 @@
 services:
   superset:
     image: docker.io/apache/superset:latest
-    restart: always
     labels:
       - kompose.service.expose=superset.${DOMAIN}
     environment:

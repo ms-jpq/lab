@@ -2,7 +2,6 @@
 services:
   adguard:
     image: docker.io/adguard/adguardhome:latest
-    restart: always
     labels:
       - kompose.controller.type=statefulset
       - kompose.service.expose=dns.${DOMAIN}

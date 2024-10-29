@@ -2,7 +2,6 @@
 services:
   minio:
     image: quay.io/minio/minio:latest
-    restart: always
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=9001

@@ -2,7 +2,6 @@
 services:
   archivebox:
     image: docker.io/archivebox/archivebox:latest
-    restart: always
     healthcheck:
       test:
         - CMD

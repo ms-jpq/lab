@@ -2,7 +2,6 @@
 services:
   searxng:
     image: docker.io/searxng/searxng:latest
-    restart: always
     depends_on:
       redis:
         condition: service_healthy
@@ -31,7 +30,6 @@ services:
 
   redis:
     image: docker.io/library/redis:latest
-    restart: always
     mem_swappiness: 0
     healthcheck:
       test:

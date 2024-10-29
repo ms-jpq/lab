@@ -2,7 +2,6 @@
 services:
   redis-commander:
     image: ghcr.io/joeferner/redis-commander:latest
-    restart: always
     depends_on:
       redis:
         condition: service_healthy
@@ -29,7 +28,6 @@ services:
 
   redis:
     image: docker.io/library/redis:latest
-    restart: always
     healthcheck:
       test:
         - CMD

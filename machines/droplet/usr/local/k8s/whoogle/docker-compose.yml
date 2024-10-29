@@ -2,7 +2,6 @@
 services:
   whoogle:
     image: docker.io/benbusby/whoogle-search:latest
-    restart: always
     healthcheck:
       test:
         - CMD

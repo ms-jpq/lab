@@ -2,7 +2,6 @@
 services:
   changedetection:
     image: ghcr.io/dgtlmoon/changedetection.io:latest
-    restart: always
     labels:
       - kompose.service.expose=changes.${DOMAIN}
     environment:

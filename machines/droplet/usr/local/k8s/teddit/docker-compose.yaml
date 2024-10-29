@@ -2,7 +2,6 @@
 services:
   teddit:
     image: docker.io/teddit/teddit:latest
-    restart: always
     depends_on:
       redis:
         condition: service_healthy
@@ -30,7 +29,6 @@ services:
 
   redis:
     image: docker.io/library/redis:latest
-    restart: always
     healthcheck:
       test:
         - CMD

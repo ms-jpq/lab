@@ -2,7 +2,6 @@
 services:
   ladder:
     image: ghcr.io/everywall/ladder:latest
-    restart: always
     labels:
       - kompose.service.expose=12ft.${DOMAIN}
       - flame.pawelmalak/type=app

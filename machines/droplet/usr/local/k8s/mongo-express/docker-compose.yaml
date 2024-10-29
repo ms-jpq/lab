@@ -2,7 +2,6 @@
 services:
   mongo_express:
     image: docker.io/library/mongo-express:latest
-    restart: always
     depends_on:
       mongo:
         condition: service_healthy
@@ -31,7 +30,6 @@ services:
 
   mongo:
     image: docker.io/library/mongo:latest
-    restart: always
     healthcheck:
       test:
         - CMD

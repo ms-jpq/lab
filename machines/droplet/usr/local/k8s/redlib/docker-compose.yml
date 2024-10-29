@@ -2,7 +2,6 @@
 services:
   redlib:
     image: quay.io/redlib/redlib:${TAG}
-    restart: always
     mem_swappiness: 0
     # healthcheck:
     #   test:

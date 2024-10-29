@@ -2,7 +2,6 @@
 services:
   it-tools:
     image: ghcr.io/corentinth/it-tools:latest
-    restart: always
     healthcheck:
       test:
         - CMD

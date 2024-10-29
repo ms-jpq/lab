@@ -2,7 +2,6 @@
 services:
   excalidraw:
     image: docker.io/excalidraw/excalidraw:latest
-    restart: always
     healthcheck:
       test:
         - CMD
