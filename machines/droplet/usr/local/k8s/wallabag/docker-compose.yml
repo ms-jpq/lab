@@ -21,10 +21,10 @@ services:
       - kompose.service.expose=pocket.${DOMAIN}
       - kompose.init.containers.image=docker.io/wallabag/wallabag:latest
       - kompose.init.containers.command=["sh", "-c", "/entrypoint.sh migrate || :"]
-      - flame.type=app
-      - flame.name=Wallabag
-      - flame.url=https://pocket.${DOMAIN}
-      - flame.icon=bookmark-multiple
+      - flame.pawelmalak/type=app
+      - flame.pawelmalak/name=Wallabag
+      - flame.pawelmalak/url=https://pocket.${DOMAIN}
+      - flame.pawelmalak/icon=bookmark-multiple
     environment: &env # HTTP_PROXY: http://warp-srv-1:1080
       SYMFONY__ENV__DATABASE_DRIVER: pdo_pgsql
       SYMFONY__ENV__DATABASE_HOST:

@@ -18,10 +18,10 @@ services:
     labels:
       - kompose.service.expose=reddit.${DOMAIN}
       # - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^(www\.)?reddit\.`)
-      - flame.type=app
-      - flame.name=redlib
-      - flame.url=https://reddit.${DOMAIN}
-      - flame.icon=reddit
+      - flame.pawelmalak/type=app
+      - flame.pawelmalak/name=redlib
+      - flame.pawelmalak/url=https://reddit.${DOMAIN}
+      - flame.pawelmalak/icon=reddit
     environment:
       REDLIB_AUTOPLAY_VIDEOS: on
       REDLIB_DEFAULT_AUTOPLAY_VIDEOS: on

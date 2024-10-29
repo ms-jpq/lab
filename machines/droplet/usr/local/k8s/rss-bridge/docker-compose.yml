@@ -6,10 +6,10 @@ services:
     restart: always
     labels:
       - kompose.service.expose=bridge.${DOMAIN}
-      - flame.type=app
-      - flame.name=RSSbr
-      - flame.url=https://bridge.${DOMAIN}
-      - flame.icon=bridge
+      - flame.pawelmalak/type=app
+      - flame.pawelmalak/name=RSSbr
+      - flame.pawelmalak/url=https://bridge.${DOMAIN}
+      - flame.pawelmalak/icon=bridge
     ports:
       - 80
     volumes:

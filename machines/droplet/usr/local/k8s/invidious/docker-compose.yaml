@@ -20,10 +20,10 @@ services:
     labels:
       - kompose.service.expose=youtube.${DOMAIN}
       # - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^(www\.)?youtube\.`)
-      - flame.type=app
-      - flame.name=Invidious
-      - flame.url=https://youtube.${DOMAIN}
-      - flame.icon=youtube-tv
+      - flame.pawelmalak/type=app
+      - flame.pawelmalak/name=Invidious
+      - flame.pawelmalak/url=https://youtube.${DOMAIN}
+      - flame.pawelmalak/icon=youtube-tv
     ports:
       - 3000
     volumes:

@@ -16,9 +16,9 @@ services:
         - 127.0.0.1:80
     labels:
       - kompose.service.expose=tools.${DOMAIN}
-      - flame.type=app
-      - flame.name=ItTools
-      - flame.url=https://tools.${DOMAIN}
-      - flame.icon=tools
+      - flame.pawelmalak/type=app
+      - flame.pawelmalak/name=ItTools
+      - flame.pawelmalak/url=https://tools.${DOMAIN}
+      - flame.pawelmalak/icon=tools
     ports:
       - 80

@@ -6,9 +6,9 @@ services:
     restart: always
     labels:
       - kompose.service.expose=http.${DOMAIN}
-      - flame.type=app
-      - flame.name=HTTPbin
-      - flame.url=https://http.${DOMAIN}
-      - flame.icon=test-tube
+      - flame.pawelmalak/type=app
+      - flame.pawelmalak/name=HTTPbin
+      - flame.pawelmalak/url=https://http.${DOMAIN}
+      - flame.pawelmalak/icon=test-tube
     ports:
       - 80

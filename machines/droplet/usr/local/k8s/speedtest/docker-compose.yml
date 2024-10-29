@@ -16,10 +16,10 @@ services:
         - localhost:80
     labels:
       - kompose.service.expose=speedtest.${DOMAIN}
-      - flame.type=app
-      - flame.name=SpeedTest
-      - flame.url=https://speedtest.${DOMAIN}
-      - flame.icon=car-speed-limiter
+      - flame.pawelmalak/type=app
+      - flame.pawelmalak/name=SpeedTest
+      - flame.pawelmalak/url=https://speedtest.${DOMAIN}
+      - flame.pawelmalak/icon=car-speed-limiter
     ports:
       - 80
     volumes:

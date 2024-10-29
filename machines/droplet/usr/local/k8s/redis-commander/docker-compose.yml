@@ -19,10 +19,10 @@ services:
         - 127.0.0.1:8081
     labels:
       - kompose.service.expose=redis.${DOMAIN}
-      - flame.type=app
-      - flame.name=Redis
-      - flame.url=https://redis.${DOMAIN}
-      - flame.icon=database-clock
+      - flame.pawelmalak/type=app
+      - flame.pawelmalak/name=Redis
+      - flame.pawelmalak/url=https://redis.${DOMAIN}
+      - flame.pawelmalak/icon=database-clock
     environment:
       REDIS_HOSTS: lo:redis:6379:0:${COMPOSE_PROJECT_NAME}
     ports:
