@@ -1,19 +1,27 @@
----
-apiVersion: v1
-kind: ServiceAccount
+apiVersion: "v1"
+kind: "ServiceAccount"
 metadata:
-  name: admin-user
-  namespace: kubernetes-dashboard
+  name: "admin-user"
+  namespace: "kubernetes-dashboard"
 ---
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: "ClusterRoleBinding"
 metadata:
-  name: admin-user
+  name: "admin-user"
 roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
+  apiGroup: "rbac.authorization.k8s.io"
+  kind: "ClusterRole"
+  name: "cluster-admin"
 subjects:
-  - kind: ServiceAccount
-    name: admin-user
-    namespace: kubernetes-dashboard
+  - kind: "ServiceAccount"
+    name: "admin-user"
+    namespace: "kubernetes-dashboard"
+---
+apiVersion: "v1"
+kind: "Secret"
+metadata:
+  annotations:
+    kubernetes.io/service-account.name: "admin-user"
+  name: "admin-user"
+  namespace: "kubernetes-dashboard"
+type: "kubernetes.io/service-account-token"

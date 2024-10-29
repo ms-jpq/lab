@@ -22,7 +22,7 @@ INSTALL=(./libexec/helm.sh upgrade --cleanup-on-fail --atomic --create-namespace
   ./libexec/kubectl.sh apply -f ./layers/k3s/usr/local/k8s/cluster-admin.k8s.yml
 
   TOKEN='./facts/cluster-admin.k8s.token.env'
-  if ! [[ -f $TOKEN ]]; then
-    ./libexec/kubectl.sh --namespace kubernetes-dashboard create token admin-user > "$TOKEN"
+  if ! [[ -s $TOKEN ]]; then
+    ./libexec/kubectl.sh --namespace kubernetes-dashboard get secret admin-user --output jsonpath='{.data.token}' | base64 -d > "$TOKEN"
   fi
 }
