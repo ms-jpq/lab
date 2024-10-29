@@ -11,10 +11,11 @@ shift -- 1
 DST="./var/tmp/k8s/$SRC"
 COMPOSE="./var/tmp/machines/$SRC/fs/usr/local/k8s"
 KOMPOSE='var/bin/kompose'
+HELM='var/bin/helm'
 POLICIES='./layers/k3s/usr/local/k8s'
 DENV='./var/sh/zsh/dev/bin/denv.py'
 
-gmake "$KOMPOSE"
+gmake "$KOMPOSE" "$HELM"
 gmake MACHINE="$SRC" local
 mkdir -p -- "$DST"
 rm -fr -- "${DST:?}"/*

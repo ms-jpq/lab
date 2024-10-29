@@ -50,5 +50,8 @@ jobs:
           LOCAL=1 ./main.sh --machine - -- nginx
 
       - run: |-
+          gmake var/bin/kompose var/bin/helm var/bin/kustomize
+
+      - run: |-
           gmake fmt
           git diff --exit-code

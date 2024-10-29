@@ -37,6 +37,7 @@ else
 S5_TYPE := 64bit
 endif
 
+V_HELM       = $(shell ./libexec/gh-latest.sh $(VAR) helm/helm)
 V_KUSTOMIZE  = $(subst /,_,$(shell ./libexec/gh-latest.sh $(VAR) kubernetes-sigs/kustomize))
 V_S5CMD      = $(patsubst v%,%,$(shell ./libexec/gh-latest.sh $(VAR) peak/s5cmd))
 V_SHELLCHECK = $(shell ./libexec/gh-latest.sh $(VAR) koalaman/shellcheck)
@@ -84,11 +85,15 @@ $(VAR)/bin/terraform: | $(VAR)/bin
 $(VAR)/tflint.d: $(VAR)/bin/tflint terraform/bootstrap/.tflint.hcl
 	printf -- '%s\0' ./terraform/* | xargs -r -0 -n 1 -- '$<' --init --chdir
 
-$(VAR)/bin/kustomize: | $(VAR)/bin
-	URI='https://github.com/kubernetes-sigs/kustomize/releases/latest/download/$(V_KUSTOMIZE)_$(OS)_$(GOARCH).tar.gz'
-	$(CURL) -- "$$URI" | tar --extract --gz --file - --directory '$(VAR)/bin'
-
 $(VAR)/bin/kompose: | $(VAR)/bin
 	URI='https://github.com/kubernetes/kompose/releases/latest/download/kompose-$(OS)-$(GOARCH).tar.gz'
 	$(CURL) -- "$$URI" | tar --extract --gz --file - --directory '$(VAR)/bin'
 	mv -v -f -- '$(VAR)/bin/kompose-$(OS)-$(GOARCH)' '$@'
+
+$(VAR)/bin/helm: | $(VAR)/bin
+	URI='https://get.helm.sh/helm-$(V_HELM)-$(OS)-$(GOARCH).tar.gz'
+	$(CURL) -- "$$URI" | tar --extract --gz --file - --directory '$(VAR)/bin' --strip-components 1
+
+$(VAR)/bin/kustomize: | $(VAR)/bin
+	URI='https://github.com/kubernetes-sigs/kustomize/releases/latest/download/$(V_KUSTOMIZE)_$(OS)_$(GOARCH).tar.gz'
+	$(CURL) -- "$$URI" | tar --extract --gz --file - --directory '$(VAR)/bin'
