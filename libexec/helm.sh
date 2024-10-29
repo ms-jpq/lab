@@ -9,4 +9,4 @@ export -- HELM_CONFIG_HOME=./var/helm/config
 export -- HELM_DATA_HOME=./var/helm/data
 export -- KUBECONFIG=./facts/kubeconfig.yml.env
 
-exec -- ./var/bin/helm "$@"
+exec -- ./var/bin/helm --kube-insecure-skip-tls-verify "$@"
