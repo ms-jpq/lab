@@ -7,7 +7,7 @@ cd -- "${0%/*}"
 gmake helm >&2
 
 POLICIES='./layers/k3s/usr/local/k8s'
-TEMPLATE=(./libexec/helm.sh template --create-namespace --generate-name --namespace)
+TEMPLATE=(./libexec/helm.sh template --create-namespace --generate-name --dependency-update --namespace)
 
 {
   NAMESPACE='keel'
