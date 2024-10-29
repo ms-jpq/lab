@@ -35,7 +35,7 @@ jobs:
           gmake lint
 
       - run: |-
-          LOCAL=1 gmake example
+          LOCAL=1 gmake example k8s
 
       - run: |-
           LOCAL=1 gmake --debug
@@ -48,9 +48,6 @@ jobs:
 
       - run: |-
           LOCAL=1 ./main.sh --machine - -- nginx
-
-      - run: |-
-          gmake var/bin/kompose var/bin/helm var/bin/kustomize
 
       - run: |-
           gmake fmt
