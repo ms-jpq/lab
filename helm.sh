@@ -45,11 +45,11 @@ TEMPLATE=(./libexec/helm.sh template --create-namespace --generate-name --depend
 #     -- kubernetes-dashboard/kubernetes-dashboard
 #   )
 #   K8S_NAMESPACE="$NAMESPACE" envsubst < "$POLICIES/networkpolicy.k8s.yml"
-#   "${TEMPLATE[@]}" "${ARGS[@]}"
 #   cat -- "$POLICIES/cluster-admin.k8s.yml"
-#
-#   TOKEN='./facts/cluster-admin.k8s.token.env'
-#   if ! [[ -s $TOKEN ]]; then
-#     ./libexec/kubectl.sh --namespace "$NAMESPACE" get secret admin-user --output jsonpath='{.data.token}' | base64 -d > "$TOKEN"
-#   fi
+#   "${TEMPLATE[@]}" "${ARGS[@]}"
 # }
+
+# TOKEN='./facts/cluster-admin.k8s.token.env'
+# if ! [[ -s $TOKEN ]]; then
+#   ./libexec/kubectl.sh --namespace "$NAMESPACE" get secret admin-user --output jsonpath='{.data.token}' | base64 -d > "$TOKEN"
+# fi >&2
