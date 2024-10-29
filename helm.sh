@@ -6,6 +6,8 @@ cd -- "${0%/*}"
 
 gmake helm
 
+RELEASE='latest'
+
 INSTALL=(./libexec/helm.sh upgrade --cleanup-on-fail --atomic --create-namespace --install --namespace)
-"${INSTALL[@]}" keel --set helmProvider.version='v3' -- keel keel/keel
-"${INSTALL[@]}" reloader -- reloader stakater/reloader
+"${INSTALL[@]}" keel --set helmProvider.version='v3' -- "$RELEASE" keel/keel
+"${INSTALL[@]}" reloader --set reloader.autoReloadAll=true -- "$RELEASE" stakater/reloader
