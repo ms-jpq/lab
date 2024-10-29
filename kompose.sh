@@ -20,9 +20,11 @@ gmake MACHINE="$SRC" local
 mkdir -p -- "$DST"
 rm -fr -- "${DST:?}"/*
 
+PRUNE=()
 if (($#)); then
   FILES=("$COMPOSE/$*"/docker-compose.yml)
 else
+  PRUNE=(--prune --all)
   FILES=("$COMPOSE"/*/docker-compose.yml)
 fi
 
@@ -59,4 +61,13 @@ for FILE in "${FILES[@]}"; do
 done
 printf -- '%s\n' "<<< $DST" >&2
 
-cat -- "${YAMLS[@]}" | ./libexec/kubectl.sh apply --prune --all --filename -
+KEEP_NS=(
+  client
+)
+
+{
+  for NS in "${KEEP_NS[@]}"; do
+    ./libexec/kubectl.sh create namespace --dry-run client --output yaml -- "$NS"
+  done
+  cat -- "${YAMLS[@]}"
+} | ./libexec/kubectl.sh apply "${PRUNE[@]}" --filename -
