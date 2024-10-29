@@ -19,7 +19,6 @@ services:
         - 127.0.0.1:3000/preferences
     labels:
       - kompose.service.expose=youtube.${DOMAIN}
-      # - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^(www\.)?youtube\.`)
       - flame.pawelmalak/type=app
       - flame.pawelmalak/name=Invidious
       - flame.pawelmalak/url=https://youtube.${DOMAIN}

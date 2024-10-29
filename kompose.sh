@@ -45,7 +45,7 @@ YAMLS=()
 printf -- '%s\n' ">>> $COMPOSE" >&2
 for FILE in "${FILES[@]}"; do
   DIR="${FILE%/*}"
-  NAMESPACE="${DIR##*/}"
+  NAMESPACE="kompsed-${DIR##*/}"
   ENV="$DIR/.env"
   YAML="$DST/$NAMESPACE.yml"
   YAMLS+=("$YAML")
