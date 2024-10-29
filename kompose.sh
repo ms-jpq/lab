@@ -6,6 +6,8 @@ shopt -u failglob
 cd -- "${0%/*}"
 
 SRC="$1"
+shift -- 1
+
 DST="./var/tmp/k8s/$SRC"
 COMPOSE="./var/tmp/machines/$SRC/fs/usr/local/k8s"
 KOMPOSE='var/bin/kompose'
@@ -16,6 +18,12 @@ gmake "$KOMPOSE"
 gmake MACHINE="$SRC" local
 mkdir -p -- "$DST"
 rm -fr -- "${DST:?}"/*
+
+if (($#)); then
+  FILES=("$COMPOSE/$*"/docker-compose.yml)
+else
+  FILES=("$COMPOSE"/*/docker-compose.yml)
+fi
 
 read -r -d '' -- JQ <<- 'JQ' || true
 sort_by(.kind != "Namespace")[]
@@ -31,7 +39,7 @@ JQ
 KEEL="$(< "$POLICIES/keel.json")"
 
 printf -- '%s\n' ">>> $COMPOSE" >&2
-for FILE in "$COMPOSE"/*/docker-compose.yml; do
+for FILE in "${FILES[@]}"; do
   DIR="${FILE%/*}"
   NAMESPACE="${DIR##*/}"
   ENV="$DIR/.env"
