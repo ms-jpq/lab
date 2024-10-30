@@ -2,16 +2,18 @@
 
 set -o pipefail
 
+DST="$1"
+
 cd -- "${0%/*}/.."
 
-gmake helm >&2
+gmake helm
 
 # POLICIES='./layers/k3s/usr/local/k8s'
 MK_NS=(./libexec/kubectl.sh create namespace --dry-run=client --output=yaml)
 TEMPLATE=(./libexec/helm.sh template --create-namespace --generate-name --dependency-update --namespace)
 
+NAMESPACE='keel'
 {
-  NAMESPACE='keel'
   ARGS=(
     "$NAMESPACE"
     --set helmProvider.version='v3'
@@ -20,10 +22,10 @@ TEMPLATE=(./libexec/helm.sh template --create-namespace --generate-name --depend
   printf -- '%s\n' ---
   "${MK_NS[@]}" "$NAMESPACE"
   "${TEMPLATE[@]}" "${ARGS[@]}"
-}
+} > "$DST/$NAMESPACE.yml"
 
+NAMESPACE='reloader'
 {
-  NAMESPACE='reloader'
   ARGS=(
     "$NAMESPACE"
     --set reloader.autoReloadAll=true
@@ -33,7 +35,7 @@ TEMPLATE=(./libexec/helm.sh template --create-namespace --generate-name --depend
   )
   "${MK_NS[@]}" "$NAMESPACE"
   "${TEMPLATE[@]}" "${ARGS[@]}"
-}
+} > "$DST/$NAMESPACE.yml"
 
 # {
 #   NAMESPACE='kubernetes-dashboard'

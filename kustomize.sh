@@ -12,7 +12,7 @@ mkdir -p -- "$DST"
 rm -fr -- "${DST:?}"/*
 
 ./libexec/kompose.sh "$SRC" "$DST" "$@"
-./libexec/charts.sh
+./libexec/helm-charts.sh "$DST"
 
 if (($#)); then
   PRUNE=()
@@ -20,6 +20,6 @@ else
   PRUNE=(--prune --all)
 fi
 
-# if ! [[ -v DRY ]]; then
-#   cat -- "$DST"/*.yaml | ./libexec/kubectl.sh apply "${PRUNE[@]}" --filename -
-# fi
+if ! [[ -v DRY ]]; then
+  cat -- "$DST"/*.yml | ./libexec/kubectl.sh apply "${PRUNE[@]}" --filename -
+fi
