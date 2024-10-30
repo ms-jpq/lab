@@ -9,8 +9,21 @@ cd -- "${0%/*}/.."
 gmake helm
 
 # POLICIES='./layers/k3s/usr/local/k8s'
-MK_NS=(./libexec/kubectl.sh create namespace --dry-run=client --output=yaml)
-TEMPLATE=(./libexec/helm.sh template --create-namespace --generate-name --dependency-update --namespace)
+MK_NS=(
+  ./libexec/kubectl.sh
+  create namespace
+  --dry-run=client
+  --output=yaml
+)
+TEMPLATE=(
+  ./libexec/helm.sh
+  template
+  --create-namespace
+  --include-crds
+  --generate-name
+  --dependency-update
+  --namespace
+)
 
 NAMESPACE='keel'
 {
