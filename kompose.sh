@@ -61,15 +61,6 @@ for FILE in "${FILES[@]}"; do
 done
 printf -- '%s\n' "<<< $DST" >&2
 
-KEEP_NS=(
-  client
-)
-
 if ! [[ -v DRY ]]; then
-  {
-    for NS in "${KEEP_NS[@]}"; do
-      ./libexec/kubectl.sh create namespace --dry-run client --output yaml -- "$NS"
-    done
-    cat -- "${YAMLS[@]}"
-  } | ./libexec/kubectl.sh apply "${PRUNE[@]}" --filename -
+  cat -- "${YAMLS[@]}" | ./libexec/kubectl.sh apply "${PRUNE[@]}" --filename -
 fi

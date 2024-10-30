@@ -7,6 +7,7 @@ cd -- "${0%/*}"
 gmake helm >&2
 
 # POLICIES='./layers/k3s/usr/local/k8s'
+MK_NS=(./libexec/kubectl.sh create namespace --dry-run=client --output=yaml)
 TEMPLATE=(./libexec/helm.sh template --create-namespace --generate-name --dependency-update --namespace)
 
 {
@@ -16,6 +17,8 @@ TEMPLATE=(./libexec/helm.sh template --create-namespace --generate-name --depend
     --set helmProvider.version='v3'
     -- keel/keel
   )
+  printf -- '%s\n' ---
+  "${MK_NS[@]}" "$NAMESPACE"
   "${TEMPLATE[@]}" "${ARGS[@]}"
 }
 
@@ -28,6 +31,7 @@ TEMPLATE=(./libexec/helm.sh template --create-namespace --generate-name --depend
     --set reloader.reloadOnDelete=true
     -- stakater/reloader
   )
+  "${MK_NS[@]}" "$NAMESPACE"
   "${TEMPLATE[@]}" "${ARGS[@]}"
 }
 
