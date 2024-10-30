@@ -1,3 +1,4 @@
+# TODO: replace this with kubectl --dry-run=client
 ---
 apiVersion: "v1"
 kind: "ServiceAccount"
