@@ -41,10 +41,8 @@ fi
 ./libexec/kompose.sh "$SRC" "$DST" "$@"
 ./libexec/helm-charts.sh "$DST"
 
-if ((DIFF)); then
-  for YML in "${DST}"/*.yml; do
-    ./libexec/kubectl.sh diff --filename "$YML"
-  done | delta
+cat -- "$DST"/*.yml | if ((DIFF)); then
+  ./libexec/kubectl.sh diff --filename - | delta
 else
-  cat -- "$DST"/*.yml | ./libexec/kubectl.sh apply "${PRUNE[@]}" --filename -
+  ./libexec/kubectl.sh apply "${PRUNE[@]}" --filename -
 fi
