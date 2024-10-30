@@ -25,6 +25,7 @@ services:
       DB_USER: ${COMPOSE_PROJECT_NAME}
       DEFAULT_PAD_TEXT: ...
       LOGLEVEL: ERROR
+      NODE_ENV: production
       PAD_OPTIONS_NO_COLORS: true
       PAD_OPTIONS_USE_MONOSPACE_FONT: true
       TITLE: 📝
