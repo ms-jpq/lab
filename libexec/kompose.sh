@@ -3,12 +3,12 @@
 set -o pipefail
 shopt -u failglob
 
-cd -- "${0%/*}"
+cd -- "${0%/*}/.."
 
 SRC="$1"
-shift -- 1
+DST="$2"
+shift -- 2
 
-DST="./var/tmp/k8s/$SRC"
 COMPOSE="./var/tmp/machines/$SRC/fs/usr/local/k8s"
 KOMPOSE='var/bin/kompose'
 POLICIES='./layers/k3s/usr/local/k8s'
@@ -16,14 +16,10 @@ DENV='./var/sh/zsh/dev/bin/denv.py'
 
 gmake "$KOMPOSE"
 gmake MACHINE="$SRC" local
-mkdir -p -- "$DST"
-rm -fr -- "${DST:?}"/*
 
-PRUNE=()
 if (($#)); then
   FILES=("$COMPOSE/$*"/docker-compose.yml)
 else
-  PRUNE=(--prune --all)
   FILES=("$COMPOSE"/*/docker-compose.yml)
 fi
 
@@ -41,14 +37,12 @@ sort_by(.kind != "Namespace")[]
 JQ
 KEEL="$(< "$POLICIES/keel.json")"
 
-YAMLS=()
 printf -- '%s\n' ">>> $COMPOSE" >&2
 for FILE in "${FILES[@]}"; do
   DIR="${FILE%/*}"
   NAMESPACE="kompsed-${DIR##*/}"
   ENV="$DIR/.env"
   YAML="$DST/$NAMESPACE.yml"
-  YAMLS+=("$YAML")
 
   printf -- '%s\n' "@ $NAMESPACE" >&2
   touch -- "$ENV"
@@ -60,7 +54,3 @@ for FILE in "${FILES[@]}"; do
   } > "$YAML"
 done
 printf -- '%s\n' "<<< $DST" >&2
-
-if ! [[ -v DRY ]]; then
-  cat -- "${YAMLS[@]}" | ./libexec/kubectl.sh apply "${PRUNE[@]}" --filename -
-fi
