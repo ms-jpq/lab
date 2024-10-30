@@ -20,8 +20,8 @@ TEMPLATE=(
   template
   --create-namespace
   --include-crds
-  --generate-name
   --dependency-update
+  --release-name 'kkkkkkkk'
   --namespace
 )
 
