@@ -6,7 +6,7 @@ cd -- "${0%/*}"
 
 gmake helm >&2
 
-POLICIES='./layers/k3s/usr/local/k8s'
+# POLICIES='./layers/k3s/usr/local/k8s'
 TEMPLATE=(./libexec/helm.sh template --create-namespace --generate-name --dependency-update --namespace)
 
 {
@@ -16,7 +16,6 @@ TEMPLATE=(./libexec/helm.sh template --create-namespace --generate-name --depend
     --set helmProvider.version='v3'
     -- keel/keel
   )
-  K8S_NAMESPACE="$NAMESPACE" envsubst < "$POLICIES/networkpolicy.k8s.yml"
   "${TEMPLATE[@]}" "${ARGS[@]}"
 }
 
@@ -29,7 +28,6 @@ TEMPLATE=(./libexec/helm.sh template --create-namespace --generate-name --depend
     --set reloader.reloadOnDelete=true
     -- stakater/reloader
   )
-  K8S_NAMESPACE="$NAMESPACE" envsubst < "$POLICIES/networkpolicy.k8s.yml"
   "${TEMPLATE[@]}" "${ARGS[@]}"
 }
 
