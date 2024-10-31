@@ -6,4 +6,4 @@ Y2J=(yq --output-format json)
 J2Y=(yq --input-format json '(.. | select(tag == "!!str")) style="single" | (.. | select(tag == "!!str" and test("\n"))) style="literal"')
 
 printf -- '%s\n' '---'
-"${Y2J[@]}" | jq --slurp "$@" | "${J2Y[@]}"
+"${Y2J[@]}" | jq "$@" | "${J2Y[@]}"
