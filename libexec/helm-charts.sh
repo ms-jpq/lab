@@ -95,7 +95,7 @@ SERVICE_ACC='kkkkkkkk-admin'
   read -r -d '' -- JQ <<- 'JQ' || true
 .[]
 | . // empty
-| if (.kind | IN(["Deployment", "StatefulSet", "Service", "Ingress"][])) then
+| if (.kind | IN(["Deployment", "StatefulSet", "NetworkPolicy", "Service", "Ingress"][])) then
     .metadata.namespace = $ns
   else
     .
