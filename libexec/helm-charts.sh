@@ -8,6 +8,7 @@ cd -- "${0%/*}/.."
 
 gmake helm >&2
 
+K8S='kkkkkkkk'
 MK_NS=(
   ./libexec/kubectl.sh
   create namespace
@@ -20,7 +21,7 @@ TEMPLATE=(
   --create-namespace
   --include-crds
   --dependency-update
-  --release-name 'kkkkkkkk'
+  --release-name "$K8S"
   --namespace
 )
 APPLY=(
@@ -69,7 +70,7 @@ NAMESPACE='reloader'
 } > "$DST/$NAMESPACE.yml"
 
 NAMESPACE='kubernetes-dashboard'
-SERVICE_ACC='kkkkkkkk-admin'
+SERVICE_ACC="$K8S-admin"
 {
   DOMAIN="$(sed -E -n -e 's/^ENV_DOMAIN=(.*)$/k8s.\1/p' -- ./facts/droplet.env)"
   ARGS=(
@@ -77,7 +78,6 @@ SERVICE_ACC='kkkkkkkk-admin'
     --set app.security.networkPolicy.enabled=true
     --set app.ingress.enabled=true
     --set app.ingress.useDefaultIngressClass=true
-    --set app.ingress.tls.enabled=false
     --set "app.ingress.hosts[0]=$DOMAIN"
     -- kubernetes-dashboard/kubernetes-dashboard
   )
