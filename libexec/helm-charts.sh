@@ -29,6 +29,13 @@ APPLY=(
   --output=yaml
 )
 
+declare -A -- NAMESPACES=()
+NS="$(./libexec/kubectl.sh get namespaces --output name | cut --delimiter '/' --fields 2-)"
+readarray -t -- NSS <<< "$NS"
+for N in "${NSS[@]}"; do
+  NAMESPACES["$N"]=1
+done
+
 NAMESPACE='keel'
 {
   ARGS=(
@@ -38,7 +45,10 @@ NAMESPACE='keel'
   )
   printf -- '%s\n' ---
   "${MK_NS[@]}" "$NAMESPACE"
-  "${TEMPLATE[@]}" "${ARGS[@]}"
+
+  if [[ -n ${NAMESPACES["$NAMESPACE"]} ]]; then
+    "${TEMPLATE[@]}" "${ARGS[@]}"
+  fi
 } > "$DST/$NAMESPACE.yml"
 
 NAMESPACE='reloader'
@@ -52,7 +62,10 @@ NAMESPACE='reloader'
   )
   printf -- '%s\n' ---
   "${MK_NS[@]}" "$NAMESPACE"
-  "${TEMPLATE[@]}" "${ARGS[@]}"
+
+  if [[ -n ${NAMESPACES["$NAMESPACE"]} ]]; then
+    "${TEMPLATE[@]}" "${ARGS[@]}"
+  fi
 } > "$DST/$NAMESPACE.yml"
 
 NAMESPACE='kubernetes-dashboard'
@@ -76,10 +89,13 @@ SERVICE_ACC='kkkkkkkk-admin'
   printf -- '%s\n' ---
   "${APPLY[@]}" create clusterrolebinding --clusterrole=cluster-admin --serviceaccount="$NAMESPACE:$SERVICE_ACC" "$SERVICE_ACC"
   # shellcheck disable=SC2016
-  "${APPLY[@]}" --namespace "$NAMESPACE" create secret generic --type='kubernetes.io/service-account-token' "$SERVICE_ACC" | ./libexec/yq.sh '.metadata.annotations={"kubernetes.io/service-account.name": $a}' --arg a "$SERVICE_ACC"
-  "${TEMPLATE[@]}" "${ARGS[@]}"
+  "${APPLY[@]}" --namespace "$NAMESPACE" create secret generic --type='kubernetes.io/service-account-token' "$SERVICE_ACC" | ./libexec/yq.sh --arg a "$SERVICE_ACC" '.metadata.annotations={"kubernetes.io/service-account.name": $a}'
+
+  if [[ -n ${NAMESPACES["$NAMESPACE"]} ]]; then
+    "${TEMPLATE[@]}" "${ARGS[@]}"
+  fi
 } > "$DST/$NAMESPACE.yml"
 
-TOKEN='./facts/cluster-admin.k8s.token.env'
-./libexec/kubectl.sh --namespace "$NAMESPACE" get secret "$SERVICE_ACC" --output jsonpath='{.data.token}' | base64 -d > "$TOKEN"
-printf -- '%s\n' ">>> $TOKEN" >&2
+# TOKEN='./facts/cluster-admin.k8s.token.env'
+# ./libexec/kubectl.sh --namespace "$NAMESPACE" get secret "$SERVICE_ACC" --output jsonpath='{.data.token}' | base64 -d > "$TOKEN"
+# printf -- '%s\n' ">>> $TOKEN" >&2

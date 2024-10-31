@@ -2,15 +2,20 @@
 
 set -o pipefail
 
-OPTS='d,p'
-LONG_OPTS='diff,prune'
+OPTS='n,d,p'
+LONG_OPTS='noop,diff,prune'
 GO="$(getopt --options="$OPTS" --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
+NOOP=0
 DIFF=0
 PRUNE=()
 while (($#)); do
   case "$1" in
+  -n | --noop)
+    NOOP=1
+    shift -- 1
+    ;;
   -d | --diff)
     DIFF=1
     shift -- 1
@@ -40,6 +45,10 @@ fi
 
 ./libexec/kompose.sh "$SRC" "$DST" "$@"
 ./libexec/helm-charts.sh "$DST"
+
+if ((NOOP)); then
+  exit
+fi
 
 cat -- "$DST"/*.yml | if ((DIFF)); then
   ./libexec/kubectl.sh diff --filename - | delta
