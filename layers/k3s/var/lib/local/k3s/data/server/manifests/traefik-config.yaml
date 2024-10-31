@@ -6,9 +6,8 @@ metadata:
   namespace: kube-system
 spec:
   valuesContent: |-
-    providers:
-      additionalArguments:
-        - --serverstransport.insecureskipverify=true
+    additionalArguments:
+      - --serverstransport.insecureskipverify=true
     ports:
       traefik:
         expose: true
