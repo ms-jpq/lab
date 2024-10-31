@@ -74,6 +74,7 @@ SERVICE_ACC='kkkkkkkk-admin'
   DOMAIN="$(sed -E -n -e 's/^ENV_DOMAIN=(.*)$/k8s.\1/p' -- ./facts/droplet.env)"
   ARGS=(
     "$NAMESPACE"
+    --set app.security.networkPolicy.enabled=true
     --set app.ingress.enabled=true
     --set app.ingress.useDefaultIngressClass=true
     --set app.ingress.tls.enabled=false
