@@ -92,8 +92,17 @@ SERVICE_ACC='kkkkkkkk-admin'
   # shellcheck disable=SC2016
   "${APPLY[@]}" --namespace "$NAMESPACE" create secret generic --type='kubernetes.io/service-account-token' "$SERVICE_ACC" | ./libexec/yq.sh --arg a "$SERVICE_ACC" '.metadata.annotations={"kubernetes.io/service-account.name": $a}'
 
+  read -r -d '' -- JQ <<- 'JQ' || true
+.[]
+| . // empty
+| if (.kind | IN(["Deployment", "StatefulSet", "Service", "Ingress"][])) then
+    .metadata.namespace = $ns
+  else
+    .
+  end
+JQ
   if [[ -n ${NAMESPACES["$NAMESPACE"]} ]]; then
-    "${TEMPLATE[@]}" "${ARGS[@]}"
+    "${TEMPLATE[@]}" "${ARGS[@]}" | ./libexec/yq.sh --slurp --arg ns "$NAMESPACE" "$JQ"
   fi
 } > "$DST/$NAMESPACE.yml"
 
