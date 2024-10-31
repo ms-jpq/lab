@@ -56,8 +56,8 @@ NAMESPACE='reloader'
 } > "$DST/$NAMESPACE.yml"
 
 NAMESPACE='kubernetes-dashboard'
+SERVICE_ACC='kkkkkkkk-admin'
 {
-  SERVICE_ACC='kkkkkkkk-admin'
   DOMAIN="$(sed -E -n -e 's/^ENV_DOMAIN=(.*)$/k8s.\1/p' -- ./facts/droplet.env)"
   ARGS=(
     "$NAMESPACE"
@@ -80,7 +80,6 @@ NAMESPACE='kubernetes-dashboard'
   "${TEMPLATE[@]}" "${ARGS[@]}"
 } > "$DST/$NAMESPACE.yml"
 
-# TOKEN='./facts/cluster-admin.k8s.token.env'
-# if ! [[ -s $TOKEN ]]; then
-#   ./libexec/kubectl.sh --namespace "$NAMESPACE" get secret admin-user --output jsonpath='{.data.token}' | base64 -d > "$TOKEN"
-# fi >&2
+TOKEN='./facts/cluster-admin.k8s.token.env'
+./libexec/kubectl.sh --namespace "$NAMESPACE" get secret "$SERVICE_ACC" --output jsonpath='{.data.token}' | base64 -d > "$TOKEN"
+printf -- '%s\n' ">>> $TOKEN" >&2
