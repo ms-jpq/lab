@@ -50,6 +50,7 @@ NAMESPACE='reloader'
     --set reloader.reloadOnDelete=true
     -- stakater/reloader
   )
+  printf -- '%s\n' ---
   "${MK_NS[@]}" "$NAMESPACE"
   "${TEMPLATE[@]}" "${ARGS[@]}"
 } > "$DST/$NAMESPACE.yml"
