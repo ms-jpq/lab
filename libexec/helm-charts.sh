@@ -80,6 +80,8 @@ SERVICE_ACC="$K8S-admin"
     --set app.ingress.useDefaultIngressClass=true
     --set app.settings.global.defaultNamespace=_all
     --set "app.ingress.hosts[0]=$DOMAIN"
+    --set kong.proxy.type=NodePort
+    --set kong.proxy.http.enabled=true
     -- kubernetes-dashboard/kubernetes-dashboard
   )
 
