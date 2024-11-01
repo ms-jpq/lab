@@ -13,5 +13,9 @@ spec:
         expose: true
       web:
         exposedPort: 8008
+        forwardedHeaders:
+          insecure: true
+        proxyProtocol:
+          insecure: true
       websecure:
         expose: false
