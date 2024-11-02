@@ -24,11 +24,6 @@ TEMPLATE=(
   --release-name "$K8S"
   --namespace
 )
-APPLY=(
-  ./libexec/kubectl.sh
-  --dry-run=client
-  --output=yaml
-)
 
 declare -A -- NAMESPACES=()
 NS="$(./libexec/kubectl.sh get namespaces --output name | cut --delimiter '/' --fields 2-)"
@@ -68,49 +63,3 @@ NAMESPACE='reloader'
     "${TEMPLATE[@]}" "${ARGS[@]}"
   fi
 } > "$DST/$NAMESPACE.yml"
-
-NAMESPACE='kubernetes-dashboard'
-SERVICE_ACC="$K8S-admin"
-{
-  DOMAIN="$(sed -E -n -e 's/^ENV_DOMAIN=(.*)$/k8s.\1/p' -- ./facts/droplet.env)"
-  ARGS=(
-    "$NAMESPACE"
-    --set app.security.networkPolicy.enabled=true
-    --set app.ingress.enabled=true
-    --set app.ingress.useDefaultIngressClass=true
-    --set app.settings.global.defaultNamespace=_all
-    --set "app.ingress.hosts[0]=$DOMAIN"
-    # --set kong.proxy.type=NodePort
-    --set kong.proxy.http.enabled=true
-    -- kubernetes-dashboard/kubernetes-dashboard
-  )
-
-  printf -- '%s\n' ---
-  "${APPLY[@]}" create namespace "$NAMESPACE"
-  K8S_NAMESPACE="$NAMESPACE" envsubst < ./layers/k3s/usr/local/k8s/networkpolicy.k8s.yml
-  printf -- '%s\n' ---
-  "${APPLY[@]}" --namespace "$NAMESPACE" create serviceaccount "$SERVICE_ACC"
-  printf -- '%s\n' ---
-  "${APPLY[@]}" create clusterrolebinding --clusterrole=cluster-admin --serviceaccount="$NAMESPACE:$SERVICE_ACC" "$SERVICE_ACC"
-  read -r -d '' -- JQ <<- 'JQ' || true
-.[]
-| . // empty
-| if (.kind | IN(["ServiceAccount", "Role", "RoleBinding", "Deployment", "StatefulSet", "ConfigMap", "Secret", "NetworkPolicy", "Service", "Ingress"][])) then
-    .metadata.namespace = $ns
-  else
-    .
-  end
-JQ
-  if [[ -n ${NAMESPACES["$NAMESPACE"]:-""} ]]; then
-    "${TEMPLATE[@]}" "${ARGS[@]}" | ./libexec/yq.sh --slurp --arg ns "$NAMESPACE" "$JQ"
-    # printf -- '%s\n' ---
-    # # shellcheck disable=SC2016
-    # "${APPLY[@]}" --namespace "$NAMESPACE" create secret generic --type='kubernetes.io/service-account-token' "$SERVICE_ACC"
-    # printf -- '%s\n' ---
-    # "${APPLY[@]}" --namespace "$NAMESPACE" annotate secret "$SERVICE_ACC" "kubernetes.io/service-account.name=$SERVICE_ACC"
-  fi
-} > "$DST/$NAMESPACE.yml"
-
-# TOKEN='./facts/cluster-admin.k8s.token.env'
-# ./libexec/kubectl.sh --namespace "$NAMESPACE" get secret "$SERVICE_ACC" --output jsonpath='{.data.token}' | base64 -d > "$TOKEN"
-# printf -- '%s\n' ">>> $TOKEN" >&2
