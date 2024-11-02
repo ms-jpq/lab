@@ -47,7 +47,7 @@ NAMESPACE='keel'
   printf -- '%s\n' ---
   "${MK_NS[@]}" "$NAMESPACE"
 
-  if [[ -n ${NAMESPACES["$NAMESPACE"]} ]]; then
+  if [[ -n ${NAMESPACES["$NAMESPACE"]:-""} ]]; then
     "${TEMPLATE[@]}" "${ARGS[@]}"
   fi
 } > "$DST/$NAMESPACE.yml"
@@ -64,7 +64,7 @@ NAMESPACE='reloader'
   printf -- '%s\n' ---
   "${MK_NS[@]}" "$NAMESPACE"
 
-  if [[ -n ${NAMESPACES["$NAMESPACE"]} ]]; then
+  if [[ -n ${NAMESPACES["$NAMESPACE"]:-""} ]]; then
     "${TEMPLATE[@]}" "${ARGS[@]}"
   fi
 } > "$DST/$NAMESPACE.yml"
@@ -92,9 +92,6 @@ SERVICE_ACC="$K8S-admin"
   "${APPLY[@]}" --namespace "$NAMESPACE" create serviceaccount "$SERVICE_ACC"
   printf -- '%s\n' ---
   "${APPLY[@]}" create clusterrolebinding --clusterrole=cluster-admin --serviceaccount="$NAMESPACE:$SERVICE_ACC" "$SERVICE_ACC"
-  # shellcheck disable=SC2016
-  "${APPLY[@]}" --namespace "$NAMESPACE" create secret generic --type='kubernetes.io/service-account-token' "$SERVICE_ACC" | ./libexec/yq.sh --arg a "$SERVICE_ACC" '.metadata.annotations={"kubernetes.io/service-account.name": $a}'
-
   read -r -d '' -- JQ <<- 'JQ' || true
 .[]
 | . // empty
@@ -104,8 +101,13 @@ SERVICE_ACC="$K8S-admin"
     .
   end
 JQ
-  if [[ -n ${NAMESPACES["$NAMESPACE"]} ]]; then
+  if [[ -n ${NAMESPACES["$NAMESPACE"]:-""} ]]; then
     "${TEMPLATE[@]}" "${ARGS[@]}" | ./libexec/yq.sh --slurp --arg ns "$NAMESPACE" "$JQ"
+    # printf -- '%s\n' ---
+    # # shellcheck disable=SC2016
+    # "${APPLY[@]}" --namespace "$NAMESPACE" create secret generic --type='kubernetes.io/service-account-token' "$SERVICE_ACC"
+    # printf -- '%s\n' ---
+    # "${APPLY[@]}" --namespace "$NAMESPACE" annotate secret "$SERVICE_ACC" "kubernetes.io/service-account.name=$SERVICE_ACC"
   fi
 } > "$DST/$NAMESPACE.yml"
 
