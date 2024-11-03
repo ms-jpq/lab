@@ -11,7 +11,8 @@ Restart             = on-failure
 ProtectSystem       = strict
 ProtectHome         = yes
 PrivateTmp          = yes
-ReadWritePaths      = %S/local/openvpn %T
+StateDirectory      = local/openvpn
+ReadWritePaths      = %T
 
 Environment         = KEY=%S/local/openvpn/tls-crypt-v2-server.key
 
