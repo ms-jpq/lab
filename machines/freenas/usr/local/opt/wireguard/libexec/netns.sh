@@ -69,6 +69,9 @@ reload() {
       readarray -t -d ',' -- ADDR <<< "$ADDRS"
       for A in "${ADDR[@]}"; do
         A="${A//[[:space:]]/''}"
+        if [[ -z $A ]]; then
+          continue
+        fi
         ACC["$A"]=1
       done
     done
