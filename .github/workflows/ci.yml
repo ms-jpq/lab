@@ -26,9 +26,6 @@ jobs:
           python-version: ">= 0"
 
       - run: |-
-          sudo -- apt purge --yes -- kubectl
-
-      - run: |-
           sudo -- touch -- /.dockerenv
 
       - run: |-
