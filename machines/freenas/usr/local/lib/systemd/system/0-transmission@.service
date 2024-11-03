@@ -18,8 +18,6 @@ StateDirectory       = local/%J
 NetworkNamespacePath = %t/netns/qbt
 TimeoutStopSec       = 6s
 
-StateDirectory       = local/%J
-
 User                 = %I
 Group                = %I
 
@@ -28,6 +26,7 @@ Environment          = DOWNLOAD_DIR=/media/downloads/done
 Environment          = INCOMPLETE_DIR=/media/downloads/pending
 
 ExecStartPre         = mkdir -v -p -- ${DOWNLOAD_DIR} ${INCOMPLETE_DIR}
+ExecStartPre         = /usr/local/opt/transmission/libexec/rpc-white-list.sh ${TRANSMISSION_HOME}/settings.json
 ExecStart            = transmission-daemon \
                          --foreground \
                          --no-auth \
@@ -35,5 +34,6 @@ ExecStart            = transmission-daemon \
                          --encryption-preferred \
                          --no-watch-dir \
                          --log-level info \
+                         --config-dir ${TRANSMISSION_HOME} \
                          --incomplete-dir ${INCOMPLETE_DIR} \
                          --download-dir ${DOWNLOAD_DIR}
