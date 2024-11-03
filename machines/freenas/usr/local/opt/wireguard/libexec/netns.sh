@@ -53,7 +53,7 @@ reload() {
       done
     done
 
-    sed -E -e '/^(Address|DNS).*$/d' -- "$CONF" > "$WGC"
+    sed -E -e '/^(Address|DNS|MTU).*$/d' -- "$CONF" > "$WGC"
     ip link set dev "$WG" up
     wg syncconf "$WG" "$WGC"
     wg set "$WG" fwmark "$FWMARK"
