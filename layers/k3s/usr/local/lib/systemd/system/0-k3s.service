@@ -25,11 +25,18 @@ Restart          = on-failure
 RestartSec       = 5s
 TimeoutStartSec  = 0s
 
+ProtectSystem    = yes
+ProtectHome      = yes
+PrivateTmp       = yes
+
+ReadWritePaths   = %t/%J %T %V %S/local %L
+
 LimitNOFILE      = 1048576
 LimitNPROC       = infinity
 LimitCORE        = infinity
 TasksMax         = infinity
 
+RuntimeDirectory = %J
 StateDirectory   = local/%J
 
 Environment      = K3S_CONFIG_FILE=%S/local/%J/k3s.yml
