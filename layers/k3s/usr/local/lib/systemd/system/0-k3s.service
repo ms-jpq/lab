@@ -29,7 +29,7 @@ ProtectSystem    = strict
 ProtectHome      = yes
 PrivateTmp       = yes
 
-ReadWritePaths   = %t/%J %t/containerd %T %V %S/local %L
+ReadWritePaths   = %t/%J %t/containerd %T %V %L
 
 LimitNOFILE      = 1048576
 LimitNPROC       = infinity

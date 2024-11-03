@@ -28,7 +28,9 @@ ProtectSystem       = strict
 ProtectHome         = tmpfs
 PrivateTmp          = yes
 RuntimeDirectory    = local/qemu/%I local/dnsmasq/v-%I/conf.d local/dnsmasq/v-%I/hosts.d
-ReadWritePaths      = %t %T %S/local %C/local
+CacheDirectory      = local
+StateDirectory      = local
+ReadWritePaths      = %t %T
 BindReadOnlyPaths   = -%h/.ssh:%h/.ssh
 BindReadOnlyPaths   = /usr/local/opt/qemu/etc:%E/qemu
 

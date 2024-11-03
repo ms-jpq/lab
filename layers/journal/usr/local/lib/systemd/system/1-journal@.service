@@ -12,7 +12,8 @@ ProtectHome    = yes
 PrivateTmp     = yes
 Group          = systemd-journal
 
-ReadWritePaths = %T %V %S/local/%J
+ReadWritePaths = %T %V
+StateDirectory = local/%J
 
 Environment    = TIMEOUT=60
 ExecStart      = /usr/local/opt/journal/libexec/rtail.sh %I %S/local/%J/%I.journal ${TIMEOUT}

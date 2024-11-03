@@ -13,9 +13,8 @@ Restart             = on-failure
 
 ProtectSystem       = strict
 ProtectHome         = yes
-ReadWritePaths      = %C/local
 
-CacheDirectory      = local/self-signed/%I
+CacheDirectory      = local local/self-signed/%I
 
 Environment         = DIR=%C/local/self-signed/%I
 Environment         = PEM=%C/local/self-signed/%I/ssl.pem

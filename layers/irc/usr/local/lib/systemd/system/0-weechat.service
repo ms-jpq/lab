@@ -11,7 +11,8 @@ ProtectSystem     = strict
 ProtectHome       = yes
 PrivateTmp        = yes
 RuntimeDirectory  = local/%J
-ReadWritePaths    = %t/local/%J %T %V %S/local/%J
+ReadWritePaths    = %t/local/%J %T %V
+StateDirectory    = local/%J
 
 ExecStart         = /usr/local/opt/weechat/libexec/wee.sh
 TimeoutStopSec    = 1s

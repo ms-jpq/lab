@@ -12,7 +12,8 @@ RestartSec           = 9
 ProtectSystem        = strict
 ProtectHome          = yes
 BindReadOnlyPaths    = %E/netns/qbt/resolv.conf:%E/resolv.conf
-ReadWritePaths       = %T %V %S/local/%J /media/downloads
+ReadWritePaths       = %T %V /media/downloads
+StateDirectory       = local/%J
 
 NetworkNamespacePath = %t/netns/qbt
 TimeoutStopSec       = 6s

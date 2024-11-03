@@ -11,8 +11,9 @@ Restart          = on-failure
 ProtectSystem    = strict
 ProtectHome      = yes
 PrivateTmp       = yes
-ReadWritePaths   = %t %T %V %C/local/self-signed/%J
+ReadWritePaths   = %t %T %V
 RuntimeDirectory = postgresql
+CacheDirectory   = local/self-signed/%J
 
 User             = postgres
 Group            = postgres

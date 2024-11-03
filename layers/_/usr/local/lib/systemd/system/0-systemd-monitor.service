@@ -8,7 +8,7 @@ LogLevelMax         = notice
 SyslogLevel         = notice
 ProtectSystem       = strict
 ProtectHome         = yes
-ReadWritePaths      = %C/local
+CacheDirectory      = local
 PrivateTmp          = yes
 
 CacheDirectory      = local/%J

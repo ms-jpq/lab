@@ -8,7 +8,9 @@ Type              = oneshot
 ProtectSystem     = strict
 ProtectHome       = yes
 PrivateTmp        = yes
-ReadWritePaths    = %t/local/nginx %T %S/local %C/local
+StateDirectory    = local
+CacheDirectory    = local
+ReadWritePaths    = %t/local/nginx %T
 
 User              = www-data
 StateDirectory    = local/%J
