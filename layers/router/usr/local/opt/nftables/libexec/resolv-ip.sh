@@ -1,6 +1,7 @@
 #!/usr/bin/env -S -- bash -Eeu -O dotglob -O nullglob -O extglob -O failglob -O globstar
 
 set -o pipefail
+shopt -u failglob
 
 read -r -d '' -- A1 <<- 'AWK' || true
 $4 { printf("%s.%s.%s.home.arpa %s\n", $4, ETH, HOSTNAME, $3) }
