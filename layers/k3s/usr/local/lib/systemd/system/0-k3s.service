@@ -32,7 +32,7 @@ PrivateTmp       = yes
 RuntimeDirectory = %J containerd
 StateDirectory   = local/%J kubelet
 
-ReadWritePaths   = %t/%J %t/containerd %T %V %S/local %L
+ReadWritePaths   = %t %T %V %S/local %L
 
 LimitNOFILE      = 1048576
 LimitNPROC       = infinity
