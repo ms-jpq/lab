@@ -28,11 +28,7 @@ TimeoutStartSec  = 0s
 ProtectSystem    = strict
 ProtectHome      = yes
 PrivateTmp       = yes
-
-RuntimeDirectory = %J containerd
-StateDirectory   = local/%J kubelet
-
-ReadWritePaths   = %t %T %V %S/local %L
+ReadWritePaths   = %t %T %V %S %L
 
 LimitNOFILE      = 1048576
 LimitNPROC       = infinity
