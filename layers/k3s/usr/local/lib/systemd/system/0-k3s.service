@@ -29,15 +29,16 @@ ProtectSystem    = strict
 ProtectHome      = yes
 PrivateTmp       = yes
 
-ReadWritePaths   = %t/%J %t/containerd %T %V %L
+RuntimeDirectory = %J containerd
+StateDirectory   = local/%J kubelet
+
+ReadWritePaths   = %t/%J %t/containerd %T %V %S/local %L
 
 LimitNOFILE      = 1048576
 LimitNPROC       = infinity
 LimitCORE        = infinity
 TasksMax         = infinity
 
-RuntimeDirectory = %J containerd
-StateDirectory   = local/%J kubelet
 
 Environment      = K3S_CONFIG_FILE=%S/local/%J/k3s.yml
 Environment      = K3S_DATA_DIR=%S/local/%J/data
