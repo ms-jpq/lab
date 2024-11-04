@@ -8,8 +8,6 @@ Type              = oneshot
 ProtectSystem     = strict
 ProtectHome       = yes
 PrivateTmp        = yes
-StateDirectory    = local
-CacheDirectory    = local
 ReadWritePaths    = %t/local/nginx %T
 
 User              = www-data
@@ -18,5 +16,5 @@ CacheDirectory    = local/%J
 
 Environment       = HOSTNAME=%H.home.arpa
 
-ExecStartPre      = !chown www-data:www-data %t/local/nginx/acme
+ExecStartPre      = !chown www-data:www-data -- %t/local/nginx/acme
 ExecStart         = /usr/local/opt/certbot/libexec/certonly.sh
