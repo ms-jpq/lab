@@ -13,7 +13,6 @@ ProtectHome      = yes
 PrivateTmp       = yes
 
 User             = www-data
-Group            = www-data
 
 EnvironmentFile  = %t/local/ip/%I.env
 EnvironmentFile  = -/usr/local/lib/etc/default/%I.%J.env
