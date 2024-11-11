@@ -10,7 +10,8 @@ spec:
       - --serverstransport.insecureskipverify=true
     ports:
       traefik:
-        expose: true
+        expose:
+          default: true
       web:
         exposedPort: 8008
         forwardedHeaders:
@@ -18,4 +19,4 @@ spec:
         proxyProtocol:
           insecure: true
       websecure:
-        expose: false
+        default: false
