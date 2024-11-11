@@ -2,9 +2,6 @@
 services:
   teddit:
     image: docker.io/teddit/teddit:latest
-    depends_on:
-      redis:
-        condition: service_healthy
     healthcheck:
       test:
         - CMD

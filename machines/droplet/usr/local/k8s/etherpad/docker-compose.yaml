@@ -2,9 +2,6 @@
 services:
   etherpad:
     image: docker.io/etherpad/etherpad:latest
-    depends_on:
-      pg:
-        condition: service_healthy
     healthcheck:
       test:
         - CMD

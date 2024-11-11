@@ -2,9 +2,6 @@
 services:
   invidious:
     image: quay.io/invidious/invidious:${TAG}
-    depends_on:
-      pg:
-        condition: service_healthy
     healthcheck:
       test:
         - CMD

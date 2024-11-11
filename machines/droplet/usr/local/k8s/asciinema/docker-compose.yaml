@@ -2,9 +2,6 @@
 services:
   asciinema:
     image: ghcr.io/asciinema/asciinema-server:latest
-    depends_on:
-      pg:
-        condition: service_healthy
     healthcheck:
       test:
         - CMD

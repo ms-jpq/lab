@@ -2,9 +2,6 @@
 services:
   redis-commander:
     image: ghcr.io/joeferner/redis-commander:latest
-    depends_on:
-      redis:
-        condition: service_healthy
     healthcheck:
       test:
         - CMD

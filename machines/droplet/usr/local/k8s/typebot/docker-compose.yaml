@@ -2,9 +2,6 @@
 services:
   typebot-builder:
     image: docker.io/baptistearno/typebot-builder:latest
-    depends_on:
-      pg:
-        condition: service_healthy
     labels:
       - kompose.service.expose=typebot.${DOMAIN}
     environment:
@@ -17,9 +14,6 @@ services:
 
   typebot-viewer:
     image: docker.io/baptistearno/typebot-viewer:latest
-    depends_on:
-      pg:
-        condition: service_healthy
     labels:
       - kompose.service.expose=bot.${DOMAIN}
     environment:

@@ -12,9 +12,6 @@ services:
 
   swagger:
     image: docker.io/swaggerapi/swagger-ui:latest
-    depends_on:
-      postgrest:
-        condition: service_started
     healthcheck:
       test:
         - CMD

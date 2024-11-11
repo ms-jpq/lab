@@ -2,9 +2,6 @@
 services:
   kibana:
     image: docker.elastic.co/kibana/kibana:${VERSION}
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
     healthcheck:
       test:
         - CMD
@@ -50,9 +47,6 @@ services:
 
   log:
     image: docker.elastic.co/logstash/logstash:${VERSION}
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
     mem_limit: 512M
     healthcheck:
       test:
