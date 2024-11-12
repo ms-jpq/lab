@@ -3,7 +3,6 @@ services:
   adminer:
     image: docker.io/library/adminer:latest
     labels:
-      - kompose.controller.type=statefulset
-      - kompose.service.expose=postgres.${DOMAIN}
+      - kompose.service.expose=psql.${DOMAIN}
     ports:
       - 8080
