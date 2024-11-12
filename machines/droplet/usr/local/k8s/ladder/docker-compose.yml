@@ -4,10 +4,6 @@ services:
     image: ghcr.io/everywall/ladder:latest
     labels:
       - kompose.service.expose=12ft.${DOMAIN}
-      - flame.pawelmalak/type=app
-      - flame.pawelmalak/name=12ft
-      - flame.pawelmalak/url=https://12ft.${DOMAIN}
-      - flame.pawelmalak/icon=ladder
     environment:
       RULESET: https://t.ly/14PSf
     ports:

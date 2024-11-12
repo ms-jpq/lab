@@ -15,10 +15,6 @@ services:
     #     - 127.0.0.1:8080
     labels:
       - kompose.service.expose=ask.${DOMAIN}
-      - flame.pawelmalak/type=app
-      - flame.pawelmalak/name=Searx
-      - flame.pawelmalak/url=https://ask.${DOMAIN}
-      - flame.pawelmalak/icon=search-web
     ports:
       - 8080
     volumes:

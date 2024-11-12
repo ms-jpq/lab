@@ -14,10 +14,6 @@ services:
         - 127.0.0.1:3000/preferences
     labels:
       - kompose.service.expose=youtube.${DOMAIN}
-      - flame.pawelmalak/type=app
-      - flame.pawelmalak/name=Invidious
-      - flame.pawelmalak/url=https://youtube.${DOMAIN}
-      - flame.pawelmalak/icon=youtube-tv
     environment:
       INVIDIOUS_PORT: &port 3000
     ports:

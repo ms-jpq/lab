@@ -14,10 +14,6 @@ services:
         - localhost:5000
     labels:
       - kompose.service.expose=bing.${DOMAIN}
-      - flame.pawelmalak/type=app
-      - flame.pawelmalak/name=Whoogle
-      - flame.pawelmalak/url=https://bing.${DOMAIN}
-      - flame.pawelmalak/icon=magnify
     environment:
       # WHOOGLE_PROXY_LOC: warp-srv-1:1080
       WHOOGLE_CONFIG_NEW_TAB: true

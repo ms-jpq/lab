@@ -4,9 +4,5 @@ services:
     image: docker.io/kennethreitz/httpbin:latest
     labels:
       - kompose.service.expose=http.${DOMAIN}
-      - flame.pawelmalak/type=app
-      - flame.pawelmalak/name=HTTPbin
-      - flame.pawelmalak/url=https://http.${DOMAIN}
-      - flame.pawelmalak/icon=test-tube
     ports:
       - 80

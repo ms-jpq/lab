@@ -15,10 +15,6 @@ services:
         - localhost:8080/about
     labels:
       - kompose.service.expose=rss.${DOMAIN}
-      - flame.pawelmalak/type=app
-      - flame.pawelmalak/name=Miniflux
-      - flame.pawelmalak/url=https://rss.${DOMAIN}
-      - flame.pawelmalak/icon=rss-box
     environment:
       # HTTPS_PROXY: http://warp-srv-1:1080
       # HTTP_PROXY: *proxy

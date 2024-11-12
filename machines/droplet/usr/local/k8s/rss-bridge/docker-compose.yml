@@ -4,10 +4,6 @@ services:
     image: ghcr.io/rss-bridge/rss-bridge:latest
     labels:
       - kompose.service.expose=bridge.${DOMAIN}
-      - flame.pawelmalak/type=app
-      - flame.pawelmalak/name=RSSbr
-      - flame.pawelmalak/url=https://bridge.${DOMAIN}
-      - flame.pawelmalak/icon=bridge
     ports:
       - 80
     volumes:

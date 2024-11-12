@@ -6,10 +6,6 @@ services:
       - kompose.controller.type=statefulset
       - kompose.service.expose=true
       - kompose.volume.type=hostPath
-      - flame.pawelmalak/type=app
-      - flame.pawelmalak/name=/
-      - flame.pawelmalak/url=https://${MAIN_DOMAIN}
-      - flame.pawelmalak/icon=lan
     environment:
       PASSWORD:
     ports:
