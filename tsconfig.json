@@ -5,7 +5,7 @@
     "allowImportingTsExtensions": true,
     "checkJs": true,
     "composite": true,
-    "isolatedDeclarations": true,
+    //"isolatedDeclarations": true,
     "module": "nodenext",
     "noEmit": true,
     "noErrorTruncation": true,
