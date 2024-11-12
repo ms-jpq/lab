@@ -13,7 +13,6 @@ services:
     #     - --
     #     - localhost:9001
     labels:
-      - kompose.controller.type=statefulset
       - kompose.service.expose=docs.${DOMAIN}
     environment:
       # LOGLEVEL: debug
