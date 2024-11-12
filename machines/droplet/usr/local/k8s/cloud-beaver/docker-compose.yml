@@ -15,10 +15,8 @@ services:
     labels:
       - kompose.controller.type=statefulset
       - kompose.service.expose=sql.${DOMAIN}
+      - kompose.volume.type=hostPath
     ports:
       - 8978
     volumes:
-      - data:/opt/cloudbeaver/workspace
-
-volumes:
-  data:
+      - /var/lib/local/cloudbeaver:/opt/cloudbeaver/workspace
