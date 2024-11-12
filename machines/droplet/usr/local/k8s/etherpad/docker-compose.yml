@@ -13,22 +13,24 @@ services:
         - --
         - localhost:9001
     labels:
+      - kompose.controller.type=statefulset
       - kompose.service.expose=docs.${DOMAIN}
     environment:
+      DB_CHARSET: utf8mb4
       DB_HOST: pg
       DB_NAME: ${COMPOSE_PROJECT_NAME}
       DB_PASS: ${COMPOSE_PROJECT_NAME}
       DB_TYPE: postgres
       DB_USER: ${COMPOSE_PROJECT_NAME}
-      DEFAULT_PAD_TEXT: ...
-      LOGLEVEL: ERROR
-      NODE_ENV: production
       PAD_OPTIONS_NO_COLORS: true
       PAD_OPTIONS_USE_MONOSPACE_FONT: true
       TITLE: 📝
       TRUST_PROXY: true
     ports:
       - 9001
+    volumes:
+      - plugins:/opt/etherpad-lite/src/plugin_packages
+      - var:/opt/etherpad-lite/var
 
   pg:
     image: docker.io/library/postgres:latest
@@ -53,3 +55,5 @@ services:
 
 volumes:
   data:
+  plugins:
+  var:
