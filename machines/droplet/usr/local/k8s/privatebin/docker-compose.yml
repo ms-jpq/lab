@@ -17,15 +17,15 @@ services:
       - kompose.service.expose=pastebin.${DOMAIN}
     ports:
       - 8080
+    tmpfs:
+      - /run
     volumes:
       - ./conf.php:/srv/cfg/conf.php:ro
-      - run:/run
       - tmp:/tmp
       - tmp2:/var/lib/nginx/tmp
       - data:/srv/data
 
 volumes:
   data:
-  run:
   tmp:
   tmp2:
