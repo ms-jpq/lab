@@ -14,7 +14,7 @@ services:
         - --
         - localhost:3333
     labels:
-      - kompose.service.expose=dht.${DOMAIN}
+      kompose.service.expose: dht.${DOMAIN}
     environment:
       POSTGRES_DB: bitmagnet
       POSTGRES_USER:

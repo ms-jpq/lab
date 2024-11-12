@@ -13,7 +13,7 @@ services:
         - --
         - localhost:8080/about
     labels:
-      - kompose.service.expose=teddit.${DOMAIN}
+      kompose.service.expose: teddit.${DOMAIN}
     environment:
       # HTTP_PROXY: http://warp-srv-1:1080
       DOMAIN:

@@ -14,7 +14,7 @@ services:
     #     - --
     #     - 127.0.0.1:8080
     labels:
-      - kompose.service.expose=ask.${DOMAIN}
+      kompose.service.expose: ask.${DOMAIN}
     ports:
       - 8080
     volumes:

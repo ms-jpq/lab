@@ -13,9 +13,9 @@ services:
         - --
         - 127.0.0.1:80
     labels:
-      - kompose.service.expose=pocket.${DOMAIN}
-      - kompose.init.containers.image=docker.io/wallabag/wallabag:latest
-      - kompose.init.containers.command=["sh", "-c", "/entrypoint.sh migrate || :"]
+      kompose.service.expose: pocket.${DOMAIN}
+      kompose.init.containers.image: docker.io/wallabag/wallabag:latest
+      kompose.init.containers.command: '["sh", "-c", "/entrypoint.sh migrate || :"]'
     environment:
       SYMFONY__ENV__DATABASE_DRIVER: pdo_pgsql
       SYMFONY__ENV__DATABASE_HOST:

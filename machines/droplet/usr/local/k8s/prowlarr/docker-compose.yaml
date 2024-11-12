@@ -14,8 +14,8 @@ services:
         - --
         - localhost:9696
     labels:
-      - kompose.controller.type=statefulset
-      - kompose.service.expose=bt.${DOMAIN}
+      kompose.controller.type: statefulset
+      kompose.service.expose: bt.${DOMAIN}
     ports:
       - 9696
     volumes:

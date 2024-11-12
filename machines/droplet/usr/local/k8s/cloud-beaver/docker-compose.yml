@@ -13,9 +13,9 @@ services:
         - --
         - 127.0.0.1:8978
     labels:
-      - kompose.controller.type=statefulset
-      - kompose.service.expose=sql.${DOMAIN}
-      - kompose.volume.type=hostPath
+      kompose.controller.type: statefulset
+      kompose.service.expose: sql.${DOMAIN}
+      kompose.volume.type: hostPath
     ports:
       - 8978
     volumes:

@@ -3,7 +3,7 @@ services:
   sonarqube:
     image: docker.io/library/sonarqube:latest
     labels:
-      - kompose.service.expose=sonar.${DOMAIN}
+      kompose.service.expose: sonar.${DOMAIN}
     ports:
       - 9000
     volumes:

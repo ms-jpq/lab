@@ -13,7 +13,7 @@ services:
         - --
         - localhost:80
     labels:
-      - kompose.service.expose=speedtest.${DOMAIN}
+      kompose.service.expose: speedtest.${DOMAIN}
     ports:
       - 80
     volumes:

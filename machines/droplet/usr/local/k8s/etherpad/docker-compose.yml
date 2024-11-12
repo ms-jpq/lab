@@ -13,7 +13,7 @@ services:
     #     - --
     #     - localhost:9001
     labels:
-      - kompose.service.expose=docs.${DOMAIN}
+      kompose.service.expose: docs.${DOMAIN}
     environment:
       # LOGLEVEL: debug
       DB_CHARSET: utf8mb4
@@ -44,7 +44,7 @@ services:
         - --dbname
         - ${COMPOSE_PROJECT_NAME}
     labels:
-      - kompose.controller.type=statefulset
+      kompose.controller.type: statefulset
     environment:
       POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}

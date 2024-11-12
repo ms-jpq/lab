@@ -3,7 +3,7 @@ services:
   rss-bridge:
     image: ghcr.io/rss-bridge/rss-bridge:latest
     labels:
-      - kompose.service.expose=bridge.${DOMAIN}
+      kompose.service.expose: bridge.${DOMAIN}
     ports:
       - 80
     volumes:

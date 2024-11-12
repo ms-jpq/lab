@@ -15,9 +15,9 @@ services:
         - --
         - 127.0.0.1:8081
     labels:
-      - kompose.service.expose=mongo.${DOMAIN}
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.middlewares=${COMPOSE_PROJECT_NAME}
-      - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}.headers.customRequestHeaders.Authorization=Basic YWRtaW46cGFzcw==
+      kompose.service.expose: mongo.${DOMAIN}
+      # - traefik.http.routers.${COMPOSE_PROJECT_NAME}.middlewares=${COMPOSE_PROJECT_NAME}
+      # - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}.headers.customRequestHeaders.Authorization=Basic YWRtaW46cGFzcw==
     environment:
       ME_CONFIG_MONGODB_URL: mongodb://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@mongo:27017/
     ports:
@@ -34,7 +34,7 @@ services:
         - --eval
         - db.version()
     labels:
-      - kompose.controller.type=statefulset
+      kompose.controller.type: statefulset
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${COMPOSE_PROJECT_NAME}
       MONGO_INITDB_ROOT_PASSWORD: ${COMPOSE_PROJECT_NAME}

@@ -13,7 +13,7 @@ services:
         - --
         - 127.0.0.1:8200
     labels:
-      - kompose.service.expose=vault.${DOMAIN}
+      kompose.service.expose: vault.${DOMAIN}
     ports:
       - 8200
     volumes:

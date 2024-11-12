@@ -13,8 +13,8 @@ services:
         - --
         - 127.0.0.1:5601
     labels:
-      - kompose.controller.type=statefulset
-      - kompose.service.expose=kibana.${DOMAIN}
+      kompose.controller.type: statefulset
+      kompose.service.expose: kibana.${DOMAIN}
     environment:
       SERVER_NAME:
       ELASTICSEARCH_SSL_VERIFICATIONMODE: none
@@ -35,8 +35,8 @@ services:
         - --
         - 127.0.0.1:9200/_cluster/health
     labels:
-      - kompose.controller.type=statefulset
-      - kompose.service.expose=elastic.${DOMAIN}
+      kompose.controller.type: statefulset
+      kompose.service.expose: elastic.${DOMAIN}
     environment:
       discovery.type: single-node
       xpack.security.enabled: false
@@ -59,7 +59,7 @@ services:
         - --
         - 127.0.0.1:9600/_node/jvm
     labels:
-      - kompose.service.expose=logstash.${DOMAIN}
+      kompose.service.expose: logstash.${DOMAIN}
     ports:
       - 9600
 

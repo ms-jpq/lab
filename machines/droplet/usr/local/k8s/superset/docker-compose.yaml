@@ -3,7 +3,7 @@ services:
   superset:
     image: docker.io/apache/superset:latest
     labels:
-      - kompose.service.expose=superset.${DOMAIN}
+      kompose.service.expose: superset.${DOMAIN}
     environment:
       SUPERSET_SECRET_KEY:
     ports:

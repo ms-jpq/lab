@@ -3,7 +3,7 @@ services:
   postgrest:
     image: docker.io/postgrest/postgrest:latest
     labels:
-      - kompose.service.expose=postgrest.${DOMAIN}
+      kompose.service.expose: postgrest.${DOMAIN}
     environment:
       PGRST_DB_URI:
       PGRST_OPENAPI_SERVER_PROXY_URI: http://[::]:3000
@@ -24,7 +24,7 @@ services:
         - --
         - 127.0.0.1:8080
     labels:
-      - kompose.service.expose=postgreswagger.${DOMAIN}
+      kompose.service.expose: postgreswagger.${DOMAIN}
     environment:
       API_URL: http://postgrest:3000/
     ports:

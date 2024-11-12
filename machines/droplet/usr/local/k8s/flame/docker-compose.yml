@@ -3,9 +3,9 @@ services:
   flame:
     image: docker.io/pawelmalak/flame:latest
     labels:
-      - kompose.controller.type=statefulset
-      - kompose.service.expose=true
-      - kompose.volume.type=hostPath
+      kompose.controller.type: statefulset
+      kompose.service.expose: true
+      kompose.volume.type: hostPath
     environment:
       PASSWORD:
     ports:

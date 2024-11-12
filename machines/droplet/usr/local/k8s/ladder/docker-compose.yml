@@ -3,7 +3,7 @@ services:
   ladder:
     image: ghcr.io/everywall/ladder:latest
     labels:
-      - kompose.service.expose=12ft.${DOMAIN}
+      kompose.service.expose: 12ft.${DOMAIN}
     environment:
       RULESET: https://t.ly/14PSf
     ports:

@@ -14,8 +14,8 @@ services:
         - --
         - 127.0.0.1:8000
     labels:
-      - kompose.controller.type=statefulset
-      - kompose.service.expose=archive.${DOMAIN}
+      kompose.controller.type: statefulset
+      kompose.service.expose: archive.${DOMAIN}
     environment:
       # HTTP_PROXY: http://warp-srv-1:1080
       ADMIN_PASSWORD: None

@@ -13,7 +13,7 @@ services:
         - --
         - localhost:5000
     labels:
-      - kompose.service.expose=dockerhub.${DOMAIN}
+      kompose.service.expose: dockerhub.${DOMAIN}
     ports:
       - 5000
     volumes:

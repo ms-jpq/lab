@@ -3,8 +3,8 @@ services:
   adguard:
     image: docker.io/adguard/adguardhome:latest
     labels:
-      - kompose.controller.type=statefulset
-      - kompose.service.expose=dns.${DOMAIN}
+      kompose.controller.type: statefulset
+      kompose.service.expose: dns.${DOMAIN}
     ports:
       - 3000
     volumes:

@@ -14,7 +14,7 @@ services:
     #     - --
     #     - 127.0.0.1:8080/settings
     labels:
-      - kompose.service.expose=reddit.${DOMAIN}
+      kompose.service.expose: reddit.${DOMAIN}
     environment:
       REDLIB_AUTOPLAY_VIDEOS: on
       REDLIB_DEFAULT_AUTOPLAY_VIDEOS: on

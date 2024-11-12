@@ -13,8 +13,8 @@ services:
         - --
         - localhost:8080
     labels:
-      - kompose.controller.type=statefulset
-      - kompose.service.expose=pastebin.${DOMAIN}
+      kompose.controller.type: statefulset
+      kompose.service.expose: pastebin.${DOMAIN}
     ports:
       - 8080
     tmpfs:

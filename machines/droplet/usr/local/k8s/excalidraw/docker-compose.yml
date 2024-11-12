@@ -13,6 +13,6 @@ services:
         - --
         - 127.0.0.1:80
     labels:
-      - kompose.service.expose=draw.${DOMAIN}
+      kompose.service.expose: draw.${DOMAIN}
     ports:
       - 80
