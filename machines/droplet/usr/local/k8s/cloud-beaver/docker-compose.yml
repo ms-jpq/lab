@@ -13,7 +13,10 @@ services:
         - --
         - 127.0.0.1:8978
     labels:
+      - kompose.controller.type=statefulset
       - kompose.service.expose=sql.${DOMAIN}
+    ports:
+      - 8978
     volumes:
       - data:/opt/cloudbeaver/workspace
 

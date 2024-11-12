@@ -1,8 +1,0 @@
----
-services:
-  adminer:
-    image: docker.io/library/adminer:latest
-    labels:
-      - kompose.service.expose=psql.${DOMAIN}
-    ports:
-      - 8080
