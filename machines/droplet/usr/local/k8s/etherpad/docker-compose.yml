@@ -2,26 +2,28 @@
 services:
   etherpad:
     image: docker.io/etherpad/etherpad:latest
-    healthcheck:
-      test:
-        - CMD
-        - wget
-        - --quiet
-        - --spider
-        - --timeout
-        - "1"
-        - --
-        - localhost:9001
+    # healthcheck:
+    #   test:
+    #     - CMD
+    #     - wget
+    #     - --quiet
+    #     - --spider
+    #     - --timeout
+    #     - "1"
+    #     - --
+    #     - localhost:9001
     labels:
       - kompose.controller.type=statefulset
       - kompose.service.expose=docs.${DOMAIN}
     environment:
+      # LOGLEVEL: debug
       DB_CHARSET: utf8mb4
       DB_HOST: pg
       DB_NAME: ${COMPOSE_PROJECT_NAME}
       DB_PASS: ${COMPOSE_PROJECT_NAME}
       DB_TYPE: postgres
       DB_USER: ${COMPOSE_PROJECT_NAME}
+      DEFAULT_PAD_TEXT: ...
       PAD_OPTIONS_NO_COLORS: true
       PAD_OPTIONS_USE_MONOSPACE_FONT: true
       TITLE: 📝
