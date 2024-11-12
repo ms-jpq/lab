@@ -12,10 +12,11 @@ ProtectSystem       = strict
 ProtectHome         = yes
 PrivateTmp          = yes
 ReadWritePaths      = %T
-StateDirectory      = local
+StateDirectory      = local/wireguard
+
+User                = systemd-network
 
 Environment         = KEY=%S/local/wireguard/self.key
 
 ExecStart           = /usr/local/libexec/sponge2.sh ${KEY} wg genkey
 ExecStart           = chmod 660 -- ${KEY}
-ExecStart           = chown -v -- systemd-network:systemd-network ${KEY}

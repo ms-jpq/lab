@@ -28,6 +28,8 @@ ProtectHome          = yes
 PrivateTmp           = yes
 ReadWritePaths       = %t/systemd %T
 
+User                 = systemd-network
+
 EnvironmentFile      = %t/local/ip/%I.env
 EnvironmentFile      = -/usr/local/etc/default/%I.%J.env
 
@@ -43,14 +45,13 @@ Environment          = NETWORK_TEMPLATE=/usr/local/opt/network/@.network
 
 ExecStartPre         = /usr/local/libexec/envsubst2.sh ${NETDEV_TEMPLATE} ${NETDEV}
 ExecStartPre         = /usr/local/libexec/envsubst2.sh ${NETWORK_TEMPLATE} ${NETWORK}
-ExecStartPre         = chown -v -- systemd-network:systemd-network ${NETDEV} ${NETWORK}
 
 ExecStart            = networkctl reload
 ExecReload           = networkctl reconfigure -- ${IFACE}
 
-ExecStart            = nft -- 'add element inet user internal_ifs     { ${IFACE} }; add element inet user masq_v4    { ${IPV4_NET} }; add element inet user masq_v6    { ${IPV6_NET} }'
-ExecReload           = nft -- 'add element inet user internal_ifs     { ${IFACE} }; add element inet user masq_v4    { ${IPV4_NET} }; add element inet user masq_v6    { ${IPV6_NET} }'
-ExecStop             = -nft -- 'delete element inet user internal_ifs { ${IFACE} }; delete element inet user masq_v4 { ${IPV4_NET} }; delete element inet user masq_v6 { ${IPV6_NET} };'
+ExecStart            = !nft -- 'add element inet user internal_ifs     { ${IFACE} }; add element inet user masq_v4    { ${IPV4_NET} }; add element inet user masq_v6    { ${IPV6_NET} }'
+ExecReload           = !nft -- 'add element inet user internal_ifs     { ${IFACE} }; add element inet user masq_v4    { ${IPV4_NET} }; add element inet user masq_v6    { ${IPV6_NET} }'
+ExecStop             = !-nft -- 'delete element inet user internal_ifs { ${IFACE} }; delete element inet user masq_v4 { ${IPV4_NET} }; delete element inet user masq_v6 { ${IPV6_NET} };'
 
 ExecStop             = -networkctl delete -- ${IFACE}
 ExecStopPost         = rm -v --recursive --force -- ${NETDEV} ${NETWORK}

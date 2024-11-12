@@ -97,7 +97,7 @@ local: $(TMP)/$1/fs
 
 $(TMP)/$1/fs: $(VAR)/sh/libexec/lsync.sh $$(LOCALS.$1) | $(VAR)/sh
 	'$$<' '$$@' '$(TMP)/$1/layers'/*/
-	find '$$@/usr/local/lib/systemd' -type f -exec chmod g+r,o+r '{}' +
+	find '$$@/usr/local/lib/systemd' '$$@/usr/local/opt' -type f -exec chmod -v g+r,o+r '{}' +
 endef
 
 
