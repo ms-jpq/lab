@@ -1,8 +1,0 @@
----
-services:
-  watchtower:
-    image: docker.io/containrrr/watchtower:latest
-    environment:
-      WATCHTOWER_CLEANUP: true
-    volumes:
-      - /run/docker.sock:/var/run/docker.sock:ro
