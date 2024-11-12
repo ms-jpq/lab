@@ -3,7 +3,9 @@ services:
   stirling-pdf:
     image: frooodle/s-pdf:latest
     labels:
+      kompose.controller.type: statefulset
       kompose.service.expose: pdf.${DOMAIN}
+      kompose.volume.type: hostPath
     environment:
       DOCKER_ENABLE_SECURITY: false
       INSTALL_BOOK_AND_ADVANCED_HTML_OPS: false
