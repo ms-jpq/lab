@@ -19,4 +19,5 @@ spec:
         proxyProtocol:
           insecure: true
       websecure:
-        default: false
+        expose:
+          default: false
