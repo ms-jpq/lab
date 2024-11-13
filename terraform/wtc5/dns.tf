@@ -1,1 +1,1 @@
-../wtc4/dns.tf
+../wtc1/dns.tf
