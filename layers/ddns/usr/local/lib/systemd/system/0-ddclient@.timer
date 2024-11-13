@@ -1,6 +1,8 @@
 [Unit]
 Description        = DDNS Timer - %I
 
+After              = network-online.target
+
 [Timer]
 OnStartupSec       = 6seconds
 OnUnitInactiveSec  = 10minutes
