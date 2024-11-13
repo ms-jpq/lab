@@ -1,6 +1,6 @@
 [Unit]
-Description  = Mount -- %f
+Description = Mount -- %f
 
 [Mount]
-Where        = %f
-What         = /dev/sda
+Where       = %f
+What        = /dev/sda
