@@ -1,0 +1,6 @@
+[Unit]
+Description  = Mount -- %f
+
+[Mount]
+Where        = %f
+What         = /dev/sda
