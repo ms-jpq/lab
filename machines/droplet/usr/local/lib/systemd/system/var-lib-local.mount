@@ -2,5 +2,6 @@
 Description = Mount -- %f
 
 [Mount]
+Options     = noatime
 Where       = %f
 What        = /dev/sda
