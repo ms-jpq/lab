@@ -1,4 +1,4 @@
-data "digitalocean_regions" "abbottabad" {
+data "digitalocean_regions" "nyc" {
   filter {
     key    = "available"
     values = ["true"]
@@ -11,8 +11,10 @@ data "digitalocean_regions" "abbottabad" {
 }
 
 locals {
-  do_regions = toset([
-    for region in data.digitalocean_regions.abbottabad.regions :
-    region.slug
-  ])
+  do_regions = {
+    nyc = sort([
+      for region in data.digitalocean_regions.nyc.regions :
+      region.slug
+    ])
+  }
 }
