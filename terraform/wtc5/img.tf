@@ -6,7 +6,7 @@ data "digitalocean_images" "ubuntu_lts" {
   filter {
     all    = true
     key    = "regions"
-    values = local.do_regions
+    values = local.do_regions.nyc
   }
   filter {
     key    = "type"

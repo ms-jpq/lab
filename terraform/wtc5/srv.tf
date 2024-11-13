@@ -5,7 +5,7 @@ data "digitalocean_sizes" "super" {
   }
   filter {
     key    = "regions"
-    values = local.do_regions
+    values = local.do_regions.nyc
   }
   sort {
     direction = "asc"
@@ -17,16 +17,17 @@ data "digitalocean_sizes" "super" {
   }
 }
 
+data "digitalocean_volume" "droplet" {
+  name   = "iscsi-drop"
+  region = local.do_regions.nyc[0]
+}
+
 locals {
   do_sizes = [
     for size in data.digitalocean_sizes.super.sizes :
     size if size.memory >= 4096
   ]
   do_size = local.do_sizes[0]
-  do_region = sort([
-    for region in local.do_size.regions :
-    region if contains(local.do_regions, region)
-  ])[0]
 }
 
 output "supersize" {
@@ -50,9 +51,14 @@ resource "digitalocean_droplet" "droplet" {
   image         = local.do_image.id
   ipv6          = true
   name          = "droplet"
-  region        = local.do_region
+  region        = data.digitalocean_volume.droplet.region
   size          = local.do_size.slug
   ssh_keys      = [for key in digitalocean_ssh_key.kms : key.id]
+}
+
+resource "digitalocean_volume_attachment" "droplet" {
+  droplet_id = digitalocean_droplet.droplet.id
+  volume_id  = data.digitalocean_volume.droplet.id
 }
 
 locals {

@@ -1,8 +1,12 @@
 resource "digitalocean_volume" "iscsi" {
-  for_each = local.do_vols
-  region   = local.do_regions.nyc[0]
-  name     = "iscsi-${each.key}"
-  size     = each.value.size
+  for_each                = local.do_vols
+  initial_filesystem_type = "xfs"
+  name                    = "iscsi-${each.key}"
+  region                  = local.do_regions.nyc[0]
+  size                    = each.value.size
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 output "do_volume" {
