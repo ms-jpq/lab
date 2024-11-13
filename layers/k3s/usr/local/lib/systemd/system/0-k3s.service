@@ -1,53 +1,55 @@
 [Unit]
-Description      = %J
+Description       = %J
 
-Wants            = network-online.target
-After            = network-online.target
+RequiresMountsFor = %S/local/%J
 
-After            = nftables.service
+Wants             = network-online.target
+After             = network-online.target
 
-BindsTo          = 1-ip-alloc@%j.service
-After            = 1-ip-alloc@%j.service
+After             = nftables.service
 
-After            = modprobe@br_netfilter.service
-Requires         = modprobe@br_netfilter.service
+BindsTo           = 1-ip-alloc@%j.service
+After             = 1-ip-alloc@%j.service
 
-After            = modprobe@overlay.service
-Requires         = modprobe@overlay.service
+After             = modprobe@br_netfilter.service
+Requires          = modprobe@br_netfilter.service
 
-PropagatesStopTo = kubepods.slice
+After             = modprobe@overlay.service
+Requires          = modprobe@overlay.service
+
+PropagatesStopTo  = kubepods.slice
 
 [Service]
-Type             = notify
-Delegate         = yes
+Type              = notify
+Delegate          = yes
 # KillMode         = process
-Restart          = on-failure
-RestartSec       = 5s
-TimeoutStartSec  = 0s
+Restart           = on-failure
+RestartSec        = 5s
+TimeoutStartSec   = 0s
 
-ProtectSystem    = strict
-ProtectHome      = yes
-PrivateTmp       = yes
-ReadWritePaths   = %t %T %V %S %L
+ProtectSystem     = strict
+ProtectHome       = yes
+PrivateTmp        = yes
+ReadWritePaths    = %t %T %V %S %L
 
-LimitNOFILE      = 1048576
-LimitNPROC       = infinity
-LimitCORE        = infinity
-TasksMax         = infinity
+LimitNOFILE       = 1048576
+LimitNPROC        = infinity
+LimitCORE         = infinity
+TasksMax          = infinity
 
 
-Environment      = K3S_CONFIG_FILE=%S/local/%J/k3s.yml
-Environment      = K3S_DATA_DIR=%S/local/%J/data
-Environment      = K3S_NODE_NAME=%H
+Environment       = K3S_CONFIG_FILE=%S/local/%J/k3s.yml
+Environment       = K3S_DATA_DIR=%S/local/%J/data
+Environment       = K3S_NODE_NAME=%H
 
-Environment      = K3S_DATASTORE_ENDPOINT=
+Environment       = K3S_DATASTORE_ENDPOINT=
 
-Environment      = KS_WRITE_KUBECONFIG_PATH=%S/local/%J/kubeconfig.yml
-Environment      = KS_LOCAL_STORE_PATH=%S/local/%J/volumes
+Environment       = KS_WRITE_KUBECONFIG_PATH=%S/local/%J/kubeconfig.yml
+Environment       = KS_LOCAL_STORE_PATH=%S/local/%J/volumes
 
-EnvironmentFile  = /usr/local/etc/default/k3s.env
+EnvironmentFile   = /usr/local/etc/default/k3s.env
 
-ExecStart        = k3s server \
+ExecStart         = k3s server \
                     --prefer-bundled-bin \
                     --flannel-ipv6-masq \
                     --bind-address :: \
