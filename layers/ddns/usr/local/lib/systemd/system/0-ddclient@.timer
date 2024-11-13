@@ -4,6 +4,6 @@ Description        = DDNS Timer - %I
 After              = network-online.target
 
 [Timer]
-OnStartupSec       = 6seconds
+OnStartupSec       = 90seconds
 OnUnitInactiveSec  = 10minutes
 RandomizedDelaySec = 2minutes
