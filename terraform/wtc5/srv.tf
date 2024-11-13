@@ -54,6 +54,7 @@ resource "digitalocean_droplet" "droplet" {
   region        = data.digitalocean_volume.droplet.region
   size          = local.do_size.slug
   ssh_keys      = [for key in digitalocean_ssh_key.kms : key.id]
+  # user_data     = ""
 }
 
 resource "digitalocean_volume_attachment" "droplet" {
