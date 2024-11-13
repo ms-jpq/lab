@@ -5,6 +5,6 @@ Description  = Mount -- ${NFS_SERVER}/%J:%f
 Type         = nfs4
 ForceUnmount = yes
 TimeoutSec   = 2seconds
-Options      = vers=4.2,noresvport,soft
+Options      = noresvport,soft,vers=4.2
 Where        = %f
 What         = ${NFS_SERVER}:/%J
