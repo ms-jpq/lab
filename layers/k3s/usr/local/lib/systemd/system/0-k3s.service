@@ -1,7 +1,7 @@
 [Unit]
 Description       = %J
 
-RequiresMountsFor = %S/local/%J
+RequiresMountsFor = %S/local
 
 Wants             = network-online.target
 After             = network-online.target
@@ -38,13 +38,13 @@ LimitCORE         = infinity
 TasksMax          = infinity
 
 
-Environment       = K3S_CONFIG_FILE=%S/local/%J/k3s.yml
-Environment       = K3S_DATA_DIR=%S/local/%J/data
+Environment       = K3S_CONFIG_FILE=%S/%J/k3s.yml
+Environment       = K3S_DATA_DIR=%S/%J/data
 Environment       = K3S_NODE_NAME=%H
 
 Environment       = K3S_DATASTORE_ENDPOINT=
 
-Environment       = KS_WRITE_KUBECONFIG_PATH=%S/local/%J/kubeconfig.yml
+Environment       = KS_WRITE_KUBECONFIG_PATH=%S/%J/kubeconfig.yml
 Environment       = KS_LOCAL_STORE_PATH=%S/local/%J/volumes
 
 EnvironmentFile   = /usr/local/etc/default/k3s.env
