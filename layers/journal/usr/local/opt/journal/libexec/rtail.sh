@@ -39,6 +39,8 @@ fi
 CAT+=(-- "http://$REMOTE:8080/entries?follow")
 
 TAIL=(
+  chronic
+  --
   /usr/lib/systemd/systemd-journal-remote
   --output "$JOURNAL"
   -- -
