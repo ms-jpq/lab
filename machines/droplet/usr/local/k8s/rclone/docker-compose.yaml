@@ -20,7 +20,7 @@ services:
         - CMD
         - wget
         - --quiet
-        - --spider
+        - -O/dev/null
         - --timeout
         - "1"
         - --

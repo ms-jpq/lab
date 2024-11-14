@@ -7,7 +7,7 @@ services:
         - CMD
         - wget
         - --quiet
-        - --spider
+        - -O/dev/null
         - --header
         - "Authorization: Basic YWRtaW46cGFzcw=="
         - --timeout
