@@ -30,7 +30,7 @@ TimeoutStartSec   = 0s
 ProtectSystem     = strict
 ProtectHome       = yes
 PrivateTmp        = yes
-ReadWritePaths    = %t %T %V %S %L
+ReadWritePaths    = %t %T %V %S %E %L
 
 LimitNOFILE       = 1048576
 LimitNPROC        = infinity
