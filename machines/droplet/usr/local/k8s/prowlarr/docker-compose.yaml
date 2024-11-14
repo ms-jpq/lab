@@ -9,6 +9,8 @@ services:
         - --fail
         - --location
         - --no-progress-meter
+        - --output
+        - /dev/null
         - --max-time
         - "1"
         - --
