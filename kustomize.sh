@@ -43,7 +43,9 @@ mkdir -p -- "$DST"
 find "$DST" -mindepth 1 -delete
 
 ./libexec/kompose.sh "$SRC" "$DST" "$@"
-./k8s/helm-charts.sh "$DST"
+if ! (($#)); then
+  ./k8s/helm-charts.sh "$DST"
+fi
 
 if ((NOOP)); then
   exit
