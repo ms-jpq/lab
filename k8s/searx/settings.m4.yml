@@ -158,6 +158,9 @@ hostnames:
     - ^([^.]+\.)*webmd\.com$
 
 engines:
+  - name: pinterest
+    disabled: true
+
   - name: bing
     disabled: false
 
