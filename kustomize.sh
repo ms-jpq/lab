@@ -40,9 +40,7 @@ done
 cd -- "${0%/*}"
 
 mkdir -p -- "$DST"
-if ! (($#)); then
-  rm -fr -- "${DST:?}"/*
-fi
+find "$DST" -mindepth 1 -delete
 
 ./libexec/kompose.sh "$SRC" "$DST" "$@"
 ./k8s/helm-charts.sh "$DST"
