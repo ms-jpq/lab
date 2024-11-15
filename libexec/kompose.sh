@@ -10,11 +10,11 @@ DST="$2"
 shift -- 2
 
 COMPOSE='./k8s'
+SH='var/sh'
 KOMPOSE='var/bin/kompose'
-POLICIES='./layers/k3s/usr/local/k8s'
-DENV='./var/sh/zsh/dev/bin/denv.py'
+DENV="$SH/zsh/dev/bin/denv.py"
 
-gmake "$KOMPOSE"
+gmake "$SH" "$KOMPOSE"
 
 if (($#)); then
   FILES=("$COMPOSE/$*"/docker-compose.yml)
@@ -34,7 +34,10 @@ sort_by(.kind != "Namespace")[]
     .
   end
 JQ
-KEEL="$(< "$POLICIES/keel.json")"
+KEEL="$(< "$COMPOSE/keel.json")"
+
+DEFS="$DST/.env"
+./libexec/facts.sh "./facts/$SRC.k8s".{env,json} > "$DEFS"
 
 printf -- '%s\n' ">>> $COMPOSE" >&2
 for FILE in "${FILES[@]}"; do
@@ -44,11 +47,11 @@ for FILE in "${FILES[@]}"; do
   YAML="$DST/$NAMESPACE.yml"
 
   printf -- '%s\n' "@ $NAMESPACE" >&2
-  touch -- "$ENV"
+  ./libexec/m4.sh "$DIR/.m4.env" "$DIR/.env" "$DEFS"
   CONV=("$DENV" -- "$ENV" "$KOMPOSE" convert --stdout --generate-network-policies --namespace "$NAMESPACE" --file "$FILE")
   {
     "${CONV[@]}" | ./libexec/yq.sh --sort-keys --slurp "$JQ" --argjson keel "$KEEL"
-    K8S_NAMESPACE="$NAMESPACE" envsubst < "$POLICIES/networkpolicy.k8s.yml"
+    K8S_NAMESPACE="$NAMESPACE" envsubst < "$KOMPOSE/networkpolicy.k8s.yml"
   } > "$YAML"
 done
 printf -- '%s\n' "<<< $DST" >&2
