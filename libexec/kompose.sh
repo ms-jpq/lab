@@ -9,7 +9,8 @@ SRC="$1"
 DST="$2"
 shift -- 2
 
-COMPOSE='./k8s'
+MACHINE='k8s'
+COMPOSE="./$MACHINE"
 SH='var/sh'
 KOMPOSE='var/bin/kompose'
 DENV="$SH/zsh/dev/bin/denv.py"
@@ -37,7 +38,7 @@ JQ
 KEEL="$(< "$COMPOSE/keel.json")"
 
 DEFS="$DST/.env"
-./libexec/facts.sh "./facts/$SRC.k8s".{env,json} > "$DEFS"
+./libexec/facts.sh "$MACHINE" "./facts/$SRC.k8s".{env,json} > "$DEFS"
 
 printf -- '%s\n' ">>> $COMPOSE" >&2
 for FILE in "${FILES[@]}"; do
@@ -51,7 +52,7 @@ for FILE in "${FILES[@]}"; do
   CONV=("$DENV" -- "$ENV" "$KOMPOSE" convert --stdout --generate-network-policies --namespace "$NAMESPACE" --file "$FILE")
   {
     "${CONV[@]}" | ./libexec/yq.sh --sort-keys --slurp "$JQ" --argjson keel "$KEEL"
-    K8S_NAMESPACE="$NAMESPACE" envsubst < "$KOMPOSE/networkpolicy.k8s.yml"
+    K8S_NAMESPACE="$NAMESPACE" envsubst < "$COMPOSE/networkpolicy.k8s.yml"
   } > "$YAML"
 done
 printf -- '%s\n' "<<< $DST" >&2

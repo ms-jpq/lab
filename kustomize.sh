@@ -45,7 +45,7 @@ if ! (($#)); then
 fi
 
 ./libexec/kompose.sh "$SRC" "$DST" "$@"
-./libexec/helm-charts.sh "$DST"
+./k8s/helm-charts.sh "$DST"
 
 if ((NOOP)); then
   exit
