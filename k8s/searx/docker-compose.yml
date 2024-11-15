@@ -2,7 +2,6 @@
 services:
   searxng:
     image: docker.io/searxng/searxng:latest
-    mem_swappiness: 0
     # healthcheck:
     #   test:
     #     - CMD
@@ -26,7 +25,6 @@ services:
 
   redis:
     image: docker.io/library/redis:latest
-    mem_swappiness: 0
     healthcheck:
       test:
         - CMD

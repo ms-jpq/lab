@@ -2,7 +2,6 @@
 services:
   miniflux:
     image: ghcr.io/miniflux/miniflux:latest
-    mem_swappiness: 0
     healthcheck:
       test:
         - CMD
