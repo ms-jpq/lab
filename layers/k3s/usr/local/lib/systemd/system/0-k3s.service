@@ -45,7 +45,7 @@ Environment       = K3S_NODE_NAME=%H
 Environment       = K3S_DATASTORE_ENDPOINT=
 
 Environment       = KS_WRITE_KUBECONFIG_PATH=%S/%J/kubeconfig.yml
-Environment       = KS_LOCAL_STORE_PATH=%S/local/%J/volumes
+Environment       = KS_LOCAL_STORE_PATH=%S/%J/volumes
 
 EnvironmentFile   = /usr/local/etc/default/k3s.env
 
