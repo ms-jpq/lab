@@ -1,0 +1,7 @@
+# https://github.com/searxng/searxng/blob/master/searx/favicons/favicons.toml
+[favicons]
+cfg_schema = 1
+
+[favicons.cache]
+LIMIT_TOTAL_BYTES = 2147483648
+db_url            = "/var/cache/searxng/faviconcache.db"

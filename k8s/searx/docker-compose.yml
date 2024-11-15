@@ -14,12 +14,15 @@ services:
     #     - --
     #     - 127.0.0.1:8080
     labels:
+      kompose.controller.type: statefulset
       kompose.service.expose: ask.${DOMAIN}
     ports:
       - 8080
     volumes:
+      - ./favicons.toml:/etc/searxng/favicons.toml
       - ./limiter.toml:/etc/searxng/limiter.toml
       - ./settings.yml:/etc/searxng/settings.yml
+      - cache:/var/cache/searxng
 
   redis:
     image: docker.io/library/redis:latest
@@ -34,3 +37,6 @@ services:
       - /data
     ports:
       - 6379
+
+volumes:
+  cache:
