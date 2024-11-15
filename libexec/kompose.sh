@@ -9,13 +9,12 @@ SRC="$1"
 DST="$2"
 shift -- 2
 
-COMPOSE="./var/tmp/machines/$SRC/fs/usr/local/k8s"
+COMPOSE='./k8s'
 KOMPOSE='var/bin/kompose'
 POLICIES='./layers/k3s/usr/local/k8s'
 DENV='./var/sh/zsh/dev/bin/denv.py'
 
 gmake "$KOMPOSE"
-gmake MACHINE="$SRC" local
 
 if (($#)); then
   FILES=("$COMPOSE/$*"/docker-compose.yml)
