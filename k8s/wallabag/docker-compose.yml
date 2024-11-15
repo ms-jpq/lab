@@ -2,19 +2,19 @@
 services:
   wallabag:
     image: docker.io/wallabag/wallabag:latest
-    healthcheck:
-      test:
-        - CMD
-        - curl
-        - --fail
-        - --location
-        - --no-progress-meter
-        - --output
-        - /dev/null
-        - --max-time
-        - "30"
-        - --
-        - 127.0.0.1:80
+    # healthcheck:
+    #   test:
+    #     - CMD
+    #     - curl
+    #     - --fail
+    #     - --location
+    #     - --no-progress-meter
+    #     - --output
+    #     - /dev/null
+    #     - --max-time
+    #     - "30"
+    #     - --
+    #     - 127.0.0.1:80
     labels:
       kompose.service.expose: pocket.${DOMAIN}
       kompose.init.containers.image: docker.io/wallabag/wallabag:latest
