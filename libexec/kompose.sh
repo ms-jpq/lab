@@ -17,10 +17,11 @@ DENV="$SH/zsh/dev/bin/denv.py"
 
 gmake "$SH" "$KOMPOSE"
 
+YML='docker-compose.yml'
 if (($#)); then
-  FILES=("$COMPOSE/$*"/docker-compose.yml)
+  FILES=("$COMPOSE/$*"/"$YML")
 else
-  FILES=("$COMPOSE"/*/docker-compose.yml)
+  FILES=("$COMPOSE"/*/"$YML")
 fi
 
 read -r -d '' -- JQ <<- 'JQ' || true
@@ -43,13 +44,26 @@ DEFS="$DST/.env"
 printf -- '%s\n' ">>> $COMPOSE" >&2
 for FILE in "${FILES[@]}"; do
   DIR="${FILE%/*}"
-  NAMESPACE="kompsed-${DIR##*/}"
-  ENV="$DIR/.env"
-  YAML="$DST/$NAMESPACE.yml"
+  DIRBASE="${DIR##*/}"
+  NAMESPACE="kompsed-$DIRBASE"
+  TMP="$DST/$NAMESPACE"
+  YAML="$TMP.yml"
+
+  mkdir -p -- "$TMP"
+  for F in "$DIR"/*; do
+    B="$TMP/${F##*/}"
+    case "$F" in
+    *.m4*)
+      ./libexec/m4.sh "$F" "${B//'.m4'/''}" "$DEFS"
+      ;;
+    *)
+      cp -fr -- "$F" "$B"
+      ;;
+    esac
+  done
 
   printf -- '%s\n' "@ $NAMESPACE" >&2
-  ./libexec/m4.sh "$DIR/.m4.env" "$DIR/.env" "$DEFS"
-  CONV=("$DENV" -- "$ENV" "$KOMPOSE" convert --stdout --generate-network-policies --namespace "$NAMESPACE" --file "$FILE")
+  CONV=("$DENV" -- "$TMP/.env" "$KOMPOSE" convert --stdout --generate-network-policies --namespace "$NAMESPACE" --file "$TMP/$YML")
   {
     "${CONV[@]}" | ./libexec/yq.sh --sort-keys --slurp "$JQ" --argjson keel "$KEEL"
     K8S_NAMESPACE="$NAMESPACE" envsubst < "$COMPOSE/networkpolicy.k8s.yml"

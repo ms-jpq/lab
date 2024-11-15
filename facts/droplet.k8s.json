@@ -1,4 +1,5 @@
 {
+  "ENV_NPROC": "2",
   "ENV_REDLIB_DEFAULT_FILTERS": [
     "2007scape",
     "2philippines4u",
