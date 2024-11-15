@@ -32,6 +32,10 @@ for N in "${NSS[@]}"; do
   NAMESPACES["$N"]=1
 done
 
+read -r -d '' -- JQ <<- 'JQ' || true
+del(.metadata.creationTimestamp)
+JQ
+
 NAMESPACE='keel'
 {
   ARGS=(
@@ -39,8 +43,7 @@ NAMESPACE='keel'
     --set helmProvider.version='v3'
     -- keel/keel
   )
-  printf -- '%s\n' ---
-  "${MK_NS[@]}" "$NAMESPACE"
+  "${MK_NS[@]}" "$NAMESPACE" | ./libexec/yq.sh "$JQ"
 
   if [[ -n ${NAMESPACES["$NAMESPACE"]:-""} ]]; then
     "${TEMPLATE[@]}" "${ARGS[@]}"
@@ -56,8 +59,7 @@ NAMESPACE='reloader'
     --set reloader.reloadOnDelete=true
     -- stakater/reloader
   )
-  printf -- '%s\n' ---
-  "${MK_NS[@]}" "$NAMESPACE"
+  "${MK_NS[@]}" "$NAMESPACE" | ./libexec/yq.sh "$JQ"
 
   if [[ -n ${NAMESPACES["$NAMESPACE"]:-""} ]]; then
     "${TEMPLATE[@]}" "${ARGS[@]}"
