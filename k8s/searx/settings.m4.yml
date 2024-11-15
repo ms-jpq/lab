@@ -156,3 +156,13 @@ hostnames:
     - ^([^.]+\.)*tutorialspoint\.com$
     - ^([^.]+\.)*w3schools\.com$
     - ^([^.]+\.)*webmd\.com$
+
+engines:
+  - name: bing
+    disabled: false
+
+  - name: bilibili
+    disabled: false
+
+  - name: yandex
+    disabled: false
