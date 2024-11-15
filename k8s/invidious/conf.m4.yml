@@ -3,9 +3,9 @@ check_tables: true
 db:
   host: pg
   port: 5432
-  dbname: invidious
-  user: invidious
-  password: invidious
+  dbname: &stack kompsed-invidious
+  user: *stack
+  password: *stack
 
 domain: youtube.m5_assert([ENV_DOMAIN])
 external_port: 443
