@@ -29,8 +29,6 @@ sort_by(.kind != "Namespace")[]
 | if (.kind | IN(["Deployment", "StatefulSet"][])) then
     .metadata.annotations += $keel
     | .spec.template.metadata.annotations += $keel
-    | .spec.template.spec.containers[].imagePullPolicy ?= "Always"
-    | .spec.template.spec.initContainers?.[]?.imagePullPolicy ?= "Always"
     | .spec.template.spec.initContainers?.[]?.env ?= (.spec.template.spec.containers[].env // [])
   else
     .
