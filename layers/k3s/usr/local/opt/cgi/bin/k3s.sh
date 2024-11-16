@@ -12,7 +12,6 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-export -- K3S_DATA_DIR=/var/lib/k3s/data
 /usr/local/libexec/hr-run.sh k3s kubectl get --all-namespaces all
 /usr/local/libexec/hr-run.sh systemctl --no-pager --full --lines 0 status -- 0-k3s.service
 /usr/local/libexec/hr-run.sh systemctl --no-pager --full --lines 0 status -- kubepods.slice

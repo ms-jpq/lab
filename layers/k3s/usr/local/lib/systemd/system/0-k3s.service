@@ -39,7 +39,6 @@ TasksMax          = infinity
 
 
 Environment       = K3S_CONFIG_FILE=%S/%J/k3s.yml
-Environment       = K3S_DATA_DIR=%S/%J/data
 Environment       = K3S_NODE_NAME=%H
 
 Environment       = K3S_DATASTORE_ENDPOINT=
@@ -57,6 +56,5 @@ ExecStart         = k3s server \
                     --config ${K3S_CONFIG_FILE} \
                     --disable metrics-server \
                     --write-kubeconfig ${KS_WRITE_KUBECONFIG_PATH} \
-                    --data-dir ${K3S_DATA_DIR} \
                     --datastore-endpoint ${K3S_DATASTORE_ENDPOINT} \
                     --default-local-storage-path ${KS_LOCAL_STORE_PATH}
