@@ -2,16 +2,16 @@
 services:
   searxng:
     image: docker.io/searxng/searxng:latest
-    # healthcheck:
-    #   test:
-    #     - CMD
-    #     - wget
-    #     - --quiet
-    #     - -O/dev/null
-    #     - --timeout
-    #     - "1"
-    #     - --
-    #     - 127.0.0.1:8080
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - -O/dev/null
+        - --timeout
+        - "1"
+        - --
+        - 127.0.0.1:8080
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: ask.${DOMAIN}
