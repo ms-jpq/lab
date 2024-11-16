@@ -4,10 +4,6 @@ services:
     image: docker.io/ubuntu/squid:latest
     labels:
       kompose.controller.type: statefulset
-    environment:
-      DOCKER_ENABLE_SECURITY: false
-      INSTALL_BOOK_AND_ADVANCED_HTML_OPS: false
-      LANGS: en_GB
     ports:
       - 3128
     volumes:
