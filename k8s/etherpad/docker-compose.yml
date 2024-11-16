@@ -2,16 +2,6 @@
 services:
   etherpad:
     image: docker.io/etherpad/etherpad:latest
-    # healthcheck:
-    #   test:
-    #     - CMD
-    #     - wget
-    #     - --quiet
-    #     - -O/dev/null
-    #     - --timeout
-    #     - "1"
-    #     - --
-    #     - localhost:9001
     labels:
       kompose.service.expose: docs.${DOMAIN}
     environment:
