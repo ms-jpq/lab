@@ -2,16 +2,6 @@
 services:
   redis-commander:
     image: ghcr.io/joeferner/redis-commander:latest
-    healthcheck:
-      test:
-        - CMD
-        - wget
-        - --quiet
-        - -O/dev/null
-        - --timeout
-        - "1"
-        - --
-        - 127.0.0.1:8081
     labels:
       kompose.service.expose: redis.${DOMAIN}
     environment:

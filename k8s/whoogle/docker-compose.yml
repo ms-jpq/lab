@@ -2,19 +2,6 @@
 services:
   whoogle:
     image: docker.io/benbusby/whoogle-search:latest
-    healthcheck:
-      test:
-        - CMD
-        - curl
-        - --fail
-        - --location
-        - --no-progress-meter
-        - --output
-        - /dev/null
-        - --max-time
-        - "1"
-        - --
-        - localhost:5000
     labels:
       kompose.service.expose: bing.${DOMAIN}
     environment:
