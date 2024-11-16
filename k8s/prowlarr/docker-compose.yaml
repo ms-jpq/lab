@@ -1,7 +1,7 @@
 ---
 services:
   prowlarr:
-    image: ghcr.io/ghcr.io/hotio/prowlarr:latest
+    image: ghcr.io/hotio/prowlarr:latest
     healthcheck:
       test:
         - CMD
