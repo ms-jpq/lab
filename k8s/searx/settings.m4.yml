@@ -56,7 +56,6 @@ hostnames:
     '^([^.]+\.)*redd\.it$': *reddit
   high_priority:
     - ^([^.]+\.)*(ask)?ubuntu\.com$
-    - ^([^.]+\.)*(docs|learn)\.microsoft\.com$
     - ^([^.]+\.)*(meta)?cpan\.org$
     - ^([^.]+\.)*archive\.(org|ph)$
     - ^([^.]+\.)*archlinux\.org$
@@ -70,13 +69,8 @@ hostnames:
     - ^([^.]+\.)*crates\.io$
     - ^([^.]+\.)*css-tricks\.com$
     - ^([^.]+\.)*debian\.org$
-    - ^([^.]+\.)*developer\.apple\.com$
-    - ^([^.]+\.)*developer\.chrome\.com$
-    - ^([^.]+\.)*developer\.mozilla\.org$
     - ^([^.]+\.)*dictionary\.com$
     - ^([^.]+\.)*discourse\.group$
-    - ^([^.]+\.)*docs\.aws\.amazon\.com$
-    - ^([^.]+\.)*docs\.oracle\.com$
     - ^([^.]+\.)*edu$
     - ^([^.]+\.)*gc\.ca$
     - ^([^.]+\.)*genius\.com$
@@ -93,6 +87,7 @@ hostnames:
     - ^([^.]+\.)*kernel\.org$
     - ^([^.]+\.)*kotlinlang\.org$
     - ^([^.]+\.)*kubernetes\.io$
+    - ^([^.]+\.)*learn\.microsoft\.com$
     - ^([^.]+\.)*linux\.org$
     - ^([^.]+\.)*lobste\.rs$
     - ^([^.]+\.)*lua\.org$
@@ -133,6 +128,8 @@ hostnames:
     - ^([^.]+\.)*ycombinator\.com$
     - ^bbs(\.[^.]+){1,}
     - ^community(\.[^.]+){1,}
+    - ^developer(\.[^.]+){1,}
+    - ^docs?(\.[^.]+){1,}
     - ^forums?(\.[^.]+){1,}
     - ^reddit\.m5_assert([ENV_DOMAIN])$
   low_priority:
@@ -142,8 +139,7 @@ hostnames:
     - ^([^.]+\.)*medium\.com$
     - ^([^.]+\.)*ruby-doc\.org$
     - ^([^.]+\.)*sourceforge\.net$
-    - ^([^.]+\.)*twitter\.com$
-    - ^([^.]+\.)*x\.com$
+    - ^([^.]+\.)*(twitter|x)\.com$
   remove:
     - ^([^.]+\.)*chegg\.com$
     - ^([^.]+\.)*codecademy\.com$
