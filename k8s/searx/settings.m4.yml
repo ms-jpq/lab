@@ -57,6 +57,7 @@ hostnames:
   high_priority:
     - ^([^.]+\.)*(ask)?ubuntu\.com$
     - ^([^.]+\.)*(meta)?cpan\.org$
+    - ^([^.]+\.)*(stackoverflow|stackexchange)\.com$
     - ^([^.]+\.)*archive\.(org|ph)$
     - ^([^.]+\.)*archlinux\.org$
     - ^([^.]+\.)*arxiv\.org$
@@ -72,8 +73,8 @@ hostnames:
     - ^([^.]+\.)*dictionary\.com$
     - ^([^.]+\.)*discourse\.group$
     - ^([^.]+\.)*edu$
+    - ^([^.]+\.)*fandom\.com$
     - ^([^.]+\.)*gc\.ca$
-    - ^([^.]+\.)*genius\.com$
     - ^([^.]+\.)*genius\.com$
     - ^([^.]+\.)*gitbook\.io$
     - ^([^.]+\.)*github\.(com|io)$
@@ -116,8 +117,6 @@ hostnames:
     - ^([^.]+\.)*spiceworks\.com$
     - ^([^.]+\.)*sqlite\.org$
     - ^([^.]+\.)*ss64\.com$
-    - ^([^.]+\.)*stackexchange\.com$
-    - ^([^.]+\.)*stackoverflow\.com$
     - ^([^.]+\.)*superuser\.com$
     - ^([^.]+\.)*swi-prolog\.org$
     - ^([^.]+\.)*terraform\.io$
