@@ -17,9 +17,31 @@ services:
     environment:
       ANTHROPIC_API_KEY:
       APP_URL: https://chat.${DOMAIN}
-      DATABASE_URL: ${LOBE_CHAT_DATABASE_URL}
+      DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg/${COMPOSE_PROJECT_NAME}
       KEY_VAULTS_SECRET:
       NEXT_PUBLIC_SERVICE_MODE: server
       OPENAI_API_KEY:
     ports:
       - 3210
+
+  pg:
+    image: docker.io/library/postgres:latest
+    healthcheck:
+      test:
+        - CMD
+        - pg_isready
+        - --username
+        - ${COMPOSE_PROJECT_NAME}
+        - --dbname
+        - ${COMPOSE_PROJECT_NAME}
+    labels:
+      kompose.controller.type: statefulset
+      kompose.volume.type: hostPath
+    environment:
+      POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
+    ports:
+      - 5432
+    volumes:
+      - /var/lib/local/lobe-chat:/var/lib/postgresql/data

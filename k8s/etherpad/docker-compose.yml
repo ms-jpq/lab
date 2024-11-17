@@ -33,6 +33,8 @@ services:
         - ${COMPOSE_PROJECT_NAME}
         - --dbname
         - ${COMPOSE_PROJECT_NAME}
+    labels:
+      kompose.controller.type: statefulset
     environment:
       POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
