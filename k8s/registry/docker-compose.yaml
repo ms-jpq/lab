@@ -2,6 +2,8 @@
 services:
   registry:
     image: docker.io/library/registry:latest
+    labels:
+      kompose.service.expose: dockerhub.${DOMAIN}
     healthcheck:
       test:
         - CMD
@@ -12,8 +14,6 @@ services:
         - "1"
         - --
         - localhost:5000
-    labels:
-      kompose.service.expose: dockerhub.${DOMAIN}
     ports:
       - 5000
     volumes:

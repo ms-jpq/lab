@@ -3,6 +3,8 @@ services:
   bitmagnet:
     image: ghcr.io/bitmagnet-io/bitmagnet:latest
     cpu_shares: 128
+    labels:
+      kompose.service.expose: dht.${DOMAIN}
     healthcheck:
       test:
         - CMD
@@ -13,8 +15,6 @@ services:
         - "1"
         - --
         - localhost:3333
-    labels:
-      kompose.service.expose: dht.${DOMAIN}
     environment:
       POSTGRES_DB: bitmagnet
       POSTGRES_USER:

@@ -2,6 +2,8 @@
 services:
   shiori:
     image: ghcr.io/go-shiori/shiori:latest
+    labels:
+      kompose.service.expose: pocket.${DOMAIN}
     healthcheck:
       test:
         - CMD
@@ -12,8 +14,6 @@ services:
         - "1"
         - --
         - localhost:8080
-    labels:
-      kompose.service.expose: pocket.${DOMAIN}
     environment:
       SHIORI_DATABASE_URL:
       SHIORI_HTTP_ACCESS_LOG: false

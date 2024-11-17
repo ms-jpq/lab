@@ -15,6 +15,11 @@ services:
 
   dav:
     image: docker.io/rclone/rclone:latest
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}2.loadbalancer.server.port=8080
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.rule=HostRegexp(`^minio\.`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.service=${COMPOSE_PROJECT_NAME}2
     healthcheck:
       test:
         - CMD
@@ -25,11 +30,6 @@ services:
         - "1"
         - --
         - localhost:8080
-    labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}2.loadbalancer.server.port=8080
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.rule=HostRegexp(`^minio\.`)
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.service=${COMPOSE_PROJECT_NAME}2
     command:
       - serve
       - webdav

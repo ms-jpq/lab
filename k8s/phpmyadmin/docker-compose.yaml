@@ -2,6 +2,8 @@
 services:
   phpmyadmin:
     image: docker.io/library/phpmyadmin:latest
+    labels:
+      kompose.service.expose: mysql.${DOMAIN}
     healthcheck:
       test:
         - CMD
@@ -15,8 +17,6 @@ services:
         - "1"
         - --
         - localhost:80
-    labels:
-      kompose.service.expose: mysql.${DOMAIN}
     ports:
       - 80
     environment:
@@ -26,14 +26,14 @@ services:
 
   mysql:
     image: docker.io/library/mysql:latest
+    labels:
+      kompose.controller.type: statefulset
     healthcheck:
       test:
         - CMD
         - mysqladmin
         - --password=${COMPOSE_PROJECT_NAME}
         - ping
-    labels:
-      kompose.controller.type: statefulset
     environment:
       MYSQL_DATABASE: ${COMPOSE_PROJECT_NAME}
       MYSQL_PASSWORD: ${COMPOSE_PROJECT_NAME}

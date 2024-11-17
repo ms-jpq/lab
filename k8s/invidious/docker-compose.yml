@@ -2,6 +2,8 @@
 services:
   invidious:
     image: quay.io/invidious/invidious:${TAG}
+    labels:
+      kompose.service.expose: youtube.${DOMAIN}
     healthcheck:
       test:
         - CMD
@@ -12,8 +14,6 @@ services:
         - "1"
         - --
         - 127.0.0.1:3000/preferences
-    labels:
-      kompose.service.expose: youtube.${DOMAIN}
     environment:
       INVIDIOUS_PORT: &port 3000
     ports:
@@ -23,6 +23,10 @@ services:
 
   pg:
     image: docker.io/library/postgres:latest
+    environment:
+      POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
     healthcheck:
       test:
         - CMD
@@ -31,10 +35,6 @@ services:
         - ${COMPOSE_PROJECT_NAME}
         - --dbname
         - ${COMPOSE_PROJECT_NAME}
-    environment:
-      POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
-      POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
-      POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
     ports:
       - 5432
     tmpfs:

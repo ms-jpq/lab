@@ -2,6 +2,9 @@
 services:
   yacy:
     image: docker.io/yacy/yacy_search_server:latest
+    labels:
+      kompose.controller.type: statefulset
+      kompose.service.expose: yacy.${DOMAIN}
     # healthcheck:
     #   test:
     #     - CMD
@@ -12,9 +15,6 @@ services:
     #     - "1"
     #     - --
     #     - 127.0.0.1:8080
-    labels:
-      kompose.controller.type: statefulset
-      kompose.service.expose: yacy.${DOMAIN}
     ports:
       - 8090
     volumes:

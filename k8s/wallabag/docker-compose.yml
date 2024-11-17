@@ -2,6 +2,10 @@
 services:
   wallabag:
     image: docker.io/wallabag/wallabag:latest
+    labels:
+      kompose.service.expose: pocket.${DOMAIN}
+      kompose.init.containers.image: docker.io/wallabag/wallabag:latest
+      kompose.init.containers.command: '["sh", "-c", "/entrypoint.sh migrate || :"]'
     # healthcheck:
     #   test:
     #     - CMD
@@ -15,10 +19,6 @@ services:
     #     - "30"
     #     - --
     #     - 127.0.0.1:80
-    labels:
-      kompose.service.expose: pocket.${DOMAIN}
-      kompose.init.containers.image: docker.io/wallabag/wallabag:latest
-      kompose.init.containers.command: '["sh", "-c", "/entrypoint.sh migrate || :"]'
     environment:
       SYMFONY__ENV__DATABASE_DRIVER: pdo_pgsql
       SYMFONY__ENV__DATABASE_HOST:

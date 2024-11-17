@@ -12,6 +12,8 @@ services:
 
   swagger:
     image: docker.io/swaggerapi/swagger-ui:latest
+    labels:
+      kompose.service.expose: postgreswagger.${DOMAIN}
     healthcheck:
       test:
         - CMD
@@ -25,8 +27,6 @@ services:
         - "1"
         - --
         - 127.0.0.1:8080
-    labels:
-      kompose.service.expose: postgreswagger.${DOMAIN}
     environment:
       API_URL: http://postgrest:3000/
     ports:

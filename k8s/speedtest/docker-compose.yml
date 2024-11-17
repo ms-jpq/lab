@@ -2,6 +2,8 @@
 services:
   speedtest:
     image: ghcr.io/librespeed/speedtest:latest
+    labels:
+      kompose.service.expose: speedtest.${DOMAIN}
     healthcheck:
       test:
         - CMD
@@ -15,8 +17,6 @@ services:
         - "1"
         - --
         - localhost:80
-    labels:
-      kompose.service.expose: speedtest.${DOMAIN}
     ports:
       - 80
     volumes:

@@ -2,6 +2,8 @@
 services:
   miniflux:
     image: ghcr.io/miniflux/miniflux:latest
+    labels:
+      kompose.service.expose: rss.${DOMAIN}
     healthcheck:
       test:
         - CMD
@@ -12,8 +14,6 @@ services:
         - "1"
         - --
         - localhost:8080/about
-    labels:
-      kompose.service.expose: rss.${DOMAIN}
     environment:
       # HTTPS_PROXY: http://warp-srv-1:1080
       # HTTP_PROXY: *proxy

@@ -1,7 +1,11 @@
 ---
 services:
+  # wget searxng-0.searxng.kompsed-searx.svc.cluster.local:8080 -O/dev/stdout
   searxng:
     image: docker.io/searxng/searxng:latest
+    labels:
+      kompose.controller.type: statefulset
+      kompose.service.expose: ask.${DOMAIN}
     healthcheck:
       test:
         - CMD
@@ -12,9 +16,6 @@ services:
         - "1"
         - --
         - 127.0.0.1:8080
-    labels:
-      kompose.controller.type: statefulset
-      kompose.service.expose: ask.${DOMAIN}
     ports:
       - 8080
     volumes:

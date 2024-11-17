@@ -4,6 +4,16 @@ services:
     image: docker.io/lobehub/lobe-chat:latest
     labels:
       kompose.service.expose: chat.${DOMAIN}
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - -O/dev/null
+        - --timeout
+        - "1"
+        - --
+        - 127.0.0.1:3210
     environment:
       ANTHROPIC_API_KEY:
       APP_URL: https://chat.${DOMAIN}

@@ -2,6 +2,10 @@
 services:
   mongo_express:
     image: docker.io/library/mongo-express:latest
+    labels:
+      kompose.service.expose: mongo.${DOMAIN}
+      # - traefik.http.routers.${COMPOSE_PROJECT_NAME}.middlewares=${COMPOSE_PROJECT_NAME}
+      # - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}.headers.customRequestHeaders.Authorization=Basic YWRtaW46cGFzcw==
     healthcheck:
       test:
         - CMD
@@ -14,10 +18,6 @@ services:
         - "1"
         - --
         - 127.0.0.1:8081
-    labels:
-      kompose.service.expose: mongo.${DOMAIN}
-      # - traefik.http.routers.${COMPOSE_PROJECT_NAME}.middlewares=${COMPOSE_PROJECT_NAME}
-      # - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}.headers.customRequestHeaders.Authorization=Basic YWRtaW46cGFzcw==
     environment:
       ME_CONFIG_MONGODB_URL: mongodb://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@mongo:27017/
     ports:
@@ -27,14 +27,14 @@ services:
 
   mongo:
     image: docker.io/library/mongo:latest
+    labels:
+      kompose.controller.type: statefulset
     healthcheck:
       test:
         - CMD
         - mongosh
         - --eval
         - db.version()
-    labels:
-      kompose.controller.type: statefulset
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${COMPOSE_PROJECT_NAME}
       MONGO_INITDB_ROOT_PASSWORD: ${COMPOSE_PROJECT_NAME}

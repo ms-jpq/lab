@@ -2,6 +2,8 @@
 services:
   it-tools:
     image: ghcr.io/corentinth/it-tools:latest
+    labels:
+      kompose.service.expose: tools.${DOMAIN}
     healthcheck:
       test:
         - CMD
@@ -15,7 +17,5 @@ services:
         - "1"
         - --
         - 127.0.0.1:80
-    labels:
-      kompose.service.expose: tools.${DOMAIN}
     ports:
       - 80
