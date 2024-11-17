@@ -62,6 +62,7 @@ hostnames:
     - ^([^.]+\.)*arxiv\.org$
     - ^([^.]+\.)*baeldung\.com$
     - ^([^.]+\.)*blogspot\.com$
+    - ^([^.]+\.)*burnaby\.ca$
     - ^([^.]+\.)*cbc\.ca$
     - ^([^.]+\.)*clojure\.org$
     - ^([^.]+\.)*costco\.(ca|com)$
@@ -81,6 +82,8 @@ hostnames:
     - ^([^.]+\.)*gnu\.org$
     - ^([^.]+\.)*go\.dev$
     - ^([^.]+\.)*goodreads\.com$
+    - ^([^.]+\.)*gov\.cn$
+    - ^([^.]+\.)*halifax\.ca$
     - ^([^.]+\.)*haskell\.org$
     - ^([^.]+\.)*imdb\.com$
     - ^([^.]+\.)*investopedia\.com$
@@ -124,6 +127,8 @@ hostnames:
     - ^([^.]+\.)*terraform\.io$
     - ^([^.]+\.)*themoviedb\.com$
     - ^([^.]+\.)*thesaurus\.com$
+    - ^([^.]+\.)*ubc\.ca$
+    - ^([^.]+\.)*vancouver\.ca$
     - ^([^.]+\.)*wikipedia\.org$
     - ^([^.]+\.)*wiktionary\.org$
     - ^([^.]+\.)*ycombinator\.com$
