@@ -1,0 +1,13 @@
+---
+services:
+  lobe-chat:
+    image: docker.io/lobehub/lobe-chat:latest
+    labels:
+      kompose.service.expose: chat.${DOMAIN}
+    environment:
+      ANTHROPIC_API_KEY:
+      DATABASE_URL: ${LOBE_CHAT_DATABASE_URL}
+      NEXT_PUBLIC_SERVICE_MODE: server
+      OPENAI_API_KEY:
+    ports:
+      - 3210
