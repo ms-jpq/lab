@@ -133,34 +133,42 @@ hostnames:
     - ^forums?(\.[^.]+){1,}
     - ^reddit\.m5_assert([ENV_DOMAIN])$
   low_priority:
+    - ^([^.]+\.)*(twitter|x)\.com$
     - ^([^.]+\.)*\.(au|in|uk|eu)$
+    - ^([^.]+\.)*answers\.microsoft\.com$
     - ^([^.]+\.)*apidock\.com$
     - ^([^.]+\.)*docs\.ruby-lang\.org$
+    - ^([^.]+\.)*etsy\.com$
     - ^([^.]+\.)*medium\.com$
     - ^([^.]+\.)*ruby-doc\.org$
     - ^([^.]+\.)*sourceforge\.net$
-    - ^([^.]+\.)*(twitter|x)\.com$
   remove:
     - ^([^.]+\.)*chegg\.com$
     - ^([^.]+\.)*codecademy\.com$
+    - ^([^.]+\.)*coder\.social$
     - ^([^.]+\.)*codersrank\.io$
     - ^([^.]+\.)*dev\.to$
     - ^([^.]+\.)*facebook\.com$
     - ^([^.]+\.)*freecodecamp\.org$
     - ^([^.]+\.)*geeksforgeeks\.org$
+    - ^([^.]+\.)*giters\.com$
     - ^([^.]+\.)*hackernoon\.com$
+    - ^([^.]+\.)*healthline\.com$
     - ^([^.]+\.)*howtogeek\.com$
+    - ^([^.]+\.)*libhunt\.com$
     - ^([^.]+\.)*macworld\.com$
     - ^([^.]+\.)*msn\.com$
     - ^([^.]+\.)*pinterest(\.[^.]+){1,2}$
     - ^([^.]+\.)*programiz\.com$
     - ^([^.]+\.)*quora\.com$
+    - ^([^.]+\.)*solveforum\.com$
     - ^([^.]+\.)*stackshare\.io$
     - ^([^.]+\.)*thehackernews\.com$
     - ^([^.]+\.)*towardsdatascience\.com$
     - ^([^.]+\.)*tutorialspoint\.com$
     - ^([^.]+\.)*w3schools\.com$
     - ^([^.]+\.)*webmd\.com$
+    - ^([^.]+\.)*wikihow\.com$
 
 engines:
   - name: wolframalpha
