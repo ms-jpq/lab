@@ -56,8 +56,11 @@ hostnames:
     '^([^.]+\.)*redd\.it$': *reddit
   high_priority:
     - ^([^.]+\.)*(ask)?ubuntu\.com$
+    - ^([^.]+\.)*(docs|learn)\.microsoft\.com$
     - ^([^.]+\.)*(meta)?cpan\.org$
+    - ^([^.]+\.)*archive\.(org|ph)$
     - ^([^.]+\.)*archlinux\.org$
+    - ^([^.]+\.)*arxiv\.org$
     - ^([^.]+\.)*baeldung\.com$
     - ^([^.]+\.)*blogspot\.com$
     - ^([^.]+\.)*cbc\.ca$
@@ -72,28 +75,32 @@ hostnames:
     - ^([^.]+\.)*developer\.mozilla\.org$
     - ^([^.]+\.)*dictionary\.com$
     - ^([^.]+\.)*discourse\.group$
+    - ^([^.]+\.)*docs\.aws\.amazon\.com$
     - ^([^.]+\.)*docs\.oracle\.com$
     - ^([^.]+\.)*edu$
     - ^([^.]+\.)*gc\.ca$
+    - ^([^.]+\.)*genius\.com$
     - ^([^.]+\.)*genius\.com$
     - ^([^.]+\.)*gitbook\.io$
     - ^([^.]+\.)*github\.(com|io)$
     - ^([^.]+\.)*gitlab\.com$
     - ^([^.]+\.)*gnu\.org$
     - ^([^.]+\.)*go\.dev$
+    - ^([^.]+\.)*goodreads\.com$
     - ^([^.]+\.)*haskell\.org$
     - ^([^.]+\.)*imdb\.com$
     - ^([^.]+\.)*investopedia\.com$
     - ^([^.]+\.)*kernel\.org$
     - ^([^.]+\.)*kotlinlang\.org$
     - ^([^.]+\.)*kubernetes\.io$
-    - ^([^.]+\.)*learn\.microsoft\.com$
     - ^([^.]+\.)*linux\.org$
     - ^([^.]+\.)*lobste\.rs$
     - ^([^.]+\.)*lua\.org$
     - ^([^.]+\.)*mayoclinic\.org$
+    - ^([^.]+\.)*metacritic\.com$
     - ^([^.]+\.)*neovim\.io$
     - ^([^.]+\.)*nginx\.org$
+    - ^([^.]+\.)*nhs\.uk$
     - ^([^.]+\.)*nih\.gov$
     - ^([^.]+\.)*nodejs\.org$
     - ^([^.]+\.)*npmjs\.org$
@@ -105,6 +112,7 @@ hostnames:
     - ^([^.]+\.)*python\.org$
     - ^([^.]+\.)*r-project\.org$
     - ^([^.]+\.)*rottentomatoes\.com$
+    - ^([^.]+\.)*rtings\.com$
     - ^([^.]+\.)*rubyapi\.org$
     - ^([^.]+\.)*rubygems\.org$
     - ^([^.]+\.)*rust-lang\.org$
@@ -118,6 +126,7 @@ hostnames:
     - ^([^.]+\.)*superuser\.com$
     - ^([^.]+\.)*swi-prolog\.org$
     - ^([^.]+\.)*terraform\.io$
+    - ^([^.]+\.)*themoviedb\.com$
     - ^([^.]+\.)*thesaurus\.com$
     - ^([^.]+\.)*wikipedia\.org$
     - ^([^.]+\.)*wiktionary\.org$
