@@ -1,6 +1,19 @@
 ---
+x-k8s:
+  - apiVersion: "networking.k8s.io/v1"
+    kind: "NetworkPolicy"
+    metadata:
+      name: "addn-policy"
+      namespace: "${COMPOSE_PROJECT_NAME}"
+    spec:
+      ingress:
+        - from:
+            - namespaceSelector:
+                matchLabels:
+                  kubernetes.io/metadata.name: "kompsed-perplexica"
+
 services:
-  # wget searxng-0.searxng.kompsed-searx.svc.cluster.local:8080 -O/dev/stdout
+  # wget searxng.kompsed-searx.svc.cluster.local:8080 -O/dev/stdout
   searxng:
     image: docker.io/searxng/searxng:latest
     labels:

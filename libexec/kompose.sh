@@ -59,10 +59,12 @@ for FILE in "${FILES[@]}"; do
   done
 
   printf -- '%s\n' "@ $NAMESPACE" >&2
-  CONV=("$DENV" -- "$TMP/.env" ./var/bin/kompose convert --stdout --generate-network-policies --namespace "$NAMESPACE" --file "$TMP/$YML")
+  FILE_IN="$TMP/$YML"
+  CONV=("$DENV" -- "$TMP/.env" ./var/bin/kompose convert --stdout --generate-network-policies --namespace "$NAMESPACE" --file "$FILE_IN")
   {
     "${CONV[@]}" | ./libexec/yq.sh --sort-keys --slurp "$JQ" --argjson keel "$KEEL"
     K8S_NAMESPACE="$NAMESPACE" envsubst < "$COMPOSE/networkpolicy.k8s.yml"
+    ./libexec/yq.sh --sort-keys '(.["x-k8s"] // [])[]' < "$FILE_IN" | COMPOSE_PROJECT_NAME="$NAMESPACE" envsubst
   } > "$YAML"
 done
 printf -- '%s\n' "<<< $DST" >&2
