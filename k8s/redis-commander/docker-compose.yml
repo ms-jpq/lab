@@ -11,8 +11,6 @@ services:
 
   redis:
     image: docker.io/library/redis:latest
-    tmpfs:
-      - /data
     healthcheck:
       test:
         - CMD
@@ -25,3 +23,9 @@ services:
       # - ${COMPOSE_PROJECT_NAME}
     ports:
       - 6379
+    volumes:
+      - data:/data
+
+volumes:
+  data:
+

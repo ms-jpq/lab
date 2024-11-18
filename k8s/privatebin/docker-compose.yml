@@ -17,8 +17,6 @@ services:
         - localhost:8080
     ports:
       - 8080
-    tmpfs:
-      - /run
     volumes:
       - ./conf.php:/srv/cfg/conf.php:ro
       - tmp:/tmp

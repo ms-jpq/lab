@@ -37,5 +37,8 @@ services:
         - ${COMPOSE_PROJECT_NAME}
     ports:
       - 5432
-    tmpfs:
-      - /var/lib/postgresql/data
+    volumes:
+      - data:/var/lib/postgresql/data
+
+volumes:
+  data:

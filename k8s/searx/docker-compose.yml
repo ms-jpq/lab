@@ -45,10 +45,11 @@ services:
         - redis-cli
         - incr
         - ping
-    tmpfs:
-      - /data
     ports:
       - 6379
+    volumes:
+      - data:/data
 
 volumes:
   cache:
+  data:

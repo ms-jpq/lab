@@ -9,8 +9,6 @@ services:
       - net.ipv4.conf.all.src_valid_mark=1
     environment:
       WARP_SLEEP: 2
-    tmpfs:
-      - /run
     ports:
       - 127.0.0.53:9050:1080 # znc
       # - 1090:8191 # flaresolverr
