@@ -4,7 +4,7 @@ services:
     image: docker.io/itzcrazykns1337/perplexica-backend:main
     labels:
       kompose.controller.type: statefulset
-      kompose.service.expose: api.perp.${DOMAIN}
+      kompose.service.expose: perp-api.${DOMAIN}
       kompose.volume.type: hostPath
     environment:
       SEARXNG_API_URL: http://searxng.kompsed-searx.svc.cluster.local:8080
