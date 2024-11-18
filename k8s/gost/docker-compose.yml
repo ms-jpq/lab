@@ -1,0 +1,10 @@
+---
+services:
+  gost:
+    image: docker.io/gogost/gost:latest
+    labels:
+      kompose.service.expose: go.${DOMAIN}
+    ports:
+      - 8080
+    volumes:
+      - ./gost.yml:/etc/gost/gost.yml
