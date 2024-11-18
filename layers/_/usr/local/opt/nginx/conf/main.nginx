@@ -29,7 +29,7 @@ http {
   proxy_buffers             8 256k;
   proxy_busy_buffers_size   256k;
   proxy_http_version        1.1;
-  proxy_read_timeout        7d;
+  proxy_read_timeout        28d;
   resolver                  127.0.0.53;
   sendfile                  on;
   ssl_prefer_server_ciphers on;
