@@ -9,7 +9,7 @@ services:
     ports:
       - 3001
     volumes:
-      - perplexica:/home/perplexica/data
+      - data:/home/perplexica/data
       - ./config.toml:/home/perplexica/config.toml
 
   perplexica-web:
@@ -18,3 +18,6 @@ services:
       kompose.service.expose: perp.${DOMAIN}
     ports:
       - 3000
+
+volumes:
+  data:
