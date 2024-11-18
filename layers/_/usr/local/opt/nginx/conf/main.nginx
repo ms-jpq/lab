@@ -51,6 +51,7 @@ stream {
   resolver               127.0.0.53;
   proxy_half_close       on;
   proxy_socket_keepalive on;
+  proxy_timeout          28d;
   include                /usr/local/opt/nginx/conf/ssl.nginx;
   include                /usr/local/opt/nginx/conf/stream.d/*.nginx;
   include                /run/local/nginx/conf/stream.d/*.nginx;
