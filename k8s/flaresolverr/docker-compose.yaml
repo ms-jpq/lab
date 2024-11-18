@@ -2,3 +2,5 @@
 services:
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
+    ports:
+      - 8191
