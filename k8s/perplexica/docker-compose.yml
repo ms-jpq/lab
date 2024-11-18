@@ -3,14 +3,18 @@ services:
   perplexica-api:
     image: docker.io/itzcrazykns1337/perplexica-backend:main
     labels:
+      kompose.controller.type: statefulset
       kompose.service.expose: api.perp.${DOMAIN}
+      kompose.volume.type: hostPath
     environment:
       SEARXNG_API_URL: http://searxng.kompsed-searx.svc.cluster.local:8080
     ports:
       - 3001
+    configs:
+      - source: conf
+        target: /home/perplexica/config.toml
     volumes:
-      - data:/home/perplexica/data
-      - ./config.toml:/home/perplexica/config.toml
+      - /var/lib/local/perplexica:/home/perplexica/data
 
   perplexica-web:
     image: itzcrazykns1337/perplexica-frontend:main
@@ -19,5 +23,6 @@ services:
     ports:
       - 3000
 
-volumes:
-  data:
+configs:
+  conf:
+    file: ./config.toml
