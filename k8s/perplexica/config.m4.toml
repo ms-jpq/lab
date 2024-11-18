@@ -6,7 +6,8 @@ SIMILARITY_MEASURE = "cosine" # "cosine" or "dot"
 [[API_KEYS]]
 ANTHROPIC = "m5_assert([ENV_ANTHROPIC_API_KEY])"
 GROQ      = ""
-OPENAI    = "m5_assert([ENV_OPENAI_API_KEY])"
+OPENAI    = ""
+# OPENAI    = "m5_assert([ENV_OPENAI_API_KEY])"
 
 [[API_ENDPOINTS]]
 OLLAMA = ""
