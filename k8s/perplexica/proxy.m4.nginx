@@ -1,13 +1,11 @@
-map $host $api_host {
-  default               $host;
-  ~perp\.(?<api_host>)$ $api_host;
-}
+gzip off;
 
 server {
   listen 80;
 
   location / {
-    sub_filter       "://127.0.0.1:3001" "://perp-api.$api_host";
+    sub_filter       "http://127.0.0.1:3001" "https://perp-api.m5_assert([ENV_DOMAIN])";
+    sub_filter       "ws://127.0.0.1:3001" "wss://perp-api.m5_assert([ENV_DOMAIN])";
     sub_filter_once  off;
     sub_filter_types application/javascript;
     proxy_set_header Accept-Encoding "";
