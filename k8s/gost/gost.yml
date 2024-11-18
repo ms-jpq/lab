@@ -6,3 +6,10 @@ services:
       type: http
     listener:
       type: tcp
+
+  - name: service-1
+    addr: :1080
+    handler:
+      type: socks5
+    listener:
+      type: tcp
