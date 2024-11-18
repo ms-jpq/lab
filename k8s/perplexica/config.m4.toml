@@ -1,12 +1,12 @@
 # https://github.com/ItzCrazyKns/Perplexica/blob/master/sample.config.toml
-[GENERAL]
+[[GENERAL]]
 PORT               = 3001
 SIMILARITY_MEASURE = "cosine" # "cosine" or "dot"
 
-[API_KEYS]
+[[API_KEYS]]
 ANTHROPIC = "m5_assert([ENV_ANTHROPIC_API_KEY])"
 GROQ      = ""
 OPENAI    = "m5_assert([ENV_OPENAI_API_KEY])"
 
-[API_ENDPOINTS]
+[[API_ENDPOINTS]]
 OLLAMA = ""

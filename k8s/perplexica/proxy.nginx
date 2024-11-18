@@ -7,9 +7,10 @@ server {
   listen 80;
 
   location / {
-    sub_filter       "127.0.0.1" "perp-api.$api_host";
+    sub_filter       "://127.0.0.1:3001" "://perp-api.$api_host";
     sub_filter_once  off;
     sub_filter_types application/javascript;
+    proxy_set_header Accept-Encoding "";
     proxy_pass       http://perplexica-web:3000;
   }
 }
