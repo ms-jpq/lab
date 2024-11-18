@@ -18,10 +18,17 @@ services:
 
   perplexica-web:
     image: itzcrazykns1337/perplexica-frontend:main
+    ports:
+      - 3000
+
+  perplexica-proxy:
+    image: docker.io/nginx:latest
     labels:
       kompose.service.expose: perp.${DOMAIN}
     ports:
-      - 3000
+      - 80
+    volumes:
+      - ./proxy.nginx:/etc/nginx/conf.d/default.conf
 
 configs:
   conf:

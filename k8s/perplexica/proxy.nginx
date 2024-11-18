@@ -1,0 +1,15 @@
+map $host $api_host {
+  default               $host;
+  ~perp\.(?<api_host>)$ $api_host;
+}
+
+server {
+  listen 80;
+
+  location / {
+    sub_filter       "127.0.0.1" "perp-api.$api_host";
+    sub_filter_once  off;
+    sub_filter_types application/javascript;
+    proxy_pass       http://perplexica-web:3000;
+  }
+}
