@@ -13,7 +13,6 @@ x-k8s:
                   kubernetes.io/metadata.name: "kompsed-perplexica"
 
 services:
-  # wget searxng.kompsed-searx.svc.cluster.local:8080 -O/dev/stdout
   searxng:
     image: docker.io/searxng/searxng:latest
     labels:

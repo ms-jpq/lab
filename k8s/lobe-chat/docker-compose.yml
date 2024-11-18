@@ -1,7 +1,7 @@
 ---
 services:
   lobe-chat:
-    image: docker.io/lobehub/lobe-chat:latest
+    image: docker.io/lobehub/lobe-chat-database:latest
     labels:
       kompose.service.expose: chat.${DOMAIN}
     healthcheck:
@@ -21,11 +21,13 @@ services:
       KEY_VAULTS_SECRET:
       NEXT_PUBLIC_SERVICE_MODE: server
       OPENAI_API_KEY:
+      S3_ENDPOINT:
+      S3_PUBLIC_DOMAIN:
     ports:
       - 3210
 
   pg:
-    image: docker.io/library/postgres:latest
+    image: docker.io/pgvector/pgvector:pg17
     healthcheck:
       test:
         - CMD
