@@ -673,6 +673,7 @@
     "wisconsin",
     "wnba",
     "woahthatsinteresting",
+    "yesyesyesyesno",
     "youtubedrama"
   ],
   "ENV_REDLIB_DEFAULT_SUBSCRIPTIONS": [
@@ -723,6 +724,7 @@
     "git",
     "googlecloud",
     "hackernews",
+    "halifax",
     "halo",
     "haproxy",
     "homeassistant",
@@ -753,7 +755,7 @@
     "vancouver",
     "vim",
     "windows",
-    "yesyesyesyesno",
+    "xbox",
     "zfs"
   ]
 }
