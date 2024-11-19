@@ -21,8 +21,9 @@ services:
       KEY_VAULTS_SECRET:
       NEXT_PUBLIC_SERVICE_MODE: server
       OPENAI_API_KEY:
-      S3_ENDPOINT:
-      S3_PUBLIC_DOMAIN:
+      S3_ENABLE_PATH_STYLE: 1
+      S3_ENDPOINT: http://minio.kompsed-minio.svc.cluster.local:9000
+      S3_PUBLIC_DOMAIN: https://s3.${DOMAIN}
     ports:
       - 3210
 

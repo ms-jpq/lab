@@ -1,0 +1,45 @@
+---
+x-k8s:
+  - apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      labels:
+        io.kompose.service: minio
+      name: minio-admin
+      namespace: ${COMPOSE_PROJECT_NAME}
+    spec:
+      rules:
+        - host: s3.m5_assert([ENV_DOMAIN])
+          http:
+            paths:
+              - backend:
+                  service:
+                    name: minio
+                    port:
+                      number: 9001
+                path: /
+                pathType: Prefix
+
+services:
+  minio:
+    image: quay.io/minio/minio:latest
+    labels:
+      kompose.controller.type: statefulset
+      kompose.service.expose: s3.${DOMAIN}
+    environment:
+      MINIO_BROWSER_REDIRECT_URL:
+      MINIO_ROOT_PASSWORD:
+      MINIO_ROOT_USER:
+    command:
+      - server
+      - /data
+      - --console-address
+      - :9001
+    ports:
+      - 9000
+      - 9001
+    volumes:
+      - data:/data
+
+volumes:
+  data:
