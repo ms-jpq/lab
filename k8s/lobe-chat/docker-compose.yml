@@ -19,6 +19,9 @@ services:
       APP_URL: https://chat.${DOMAIN}
       DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg/${COMPOSE_PROJECT_NAME}
       KEY_VAULTS_SECRET:
+      NEXTAUTH_URL: https://chat.${DOMAIN}/api/auth
+      NEXT_AUTH_SECRET:
+      NEXT_AUTH_SSO_PROVIDERS:
       NEXT_PUBLIC_SERVICE_MODE: server
       OPENAI_API_KEY:
       S3_ACCESS_KEY_ID:
