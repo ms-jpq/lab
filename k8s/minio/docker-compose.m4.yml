@@ -9,7 +9,7 @@ x-k8s:
       namespace: ${COMPOSE_PROJECT_NAME}
     spec:
       rules:
-        - host: s3.m5_assert([ENV_DOMAIN])
+        - host: minio.m5_assert([ENV_DOMAIN])
           http:
             paths:
               - backend:

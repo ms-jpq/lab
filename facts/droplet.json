@@ -4,7 +4,8 @@
     "ENV_DOMAIN",
     "autodiscover.ENV_DOMAIN",
     "ipfs.ENV_DOMAIN",
-    "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN,], ENV_INDEX)"
+    "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN,], ENV_INDEX)",
+    "s3"
   ],
   "ENV_INDEX": [
     "12ft",
@@ -16,6 +17,7 @@
     "draw",
     "http",
     "local",
+    "minio",
     "mitm",
     "pastebin",
     "pdf",
