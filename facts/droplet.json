@@ -44,10 +44,12 @@
     "docs.*",
     "draw.*",
     "http.*",
+    "minio.*",
     "pastebin.*",
     "pocket.*",
     "reddit.*",
     "rss.*",
+    "s3.*",
     "tools.*",
     "youtube.*"
   ],
