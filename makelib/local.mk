@@ -103,6 +103,7 @@ endef
 
 define REF_LINKS
 
+layers/posix/home/.config/bat/config                                                           root/.config/.config/bat/config
 layers/posix/home/.config/bottom/bottom.toml                                                   root/.config/bottom/bottom.toml
 layers/posix/home/.config/lf/lfrc                                                              root/.config/lf/lfrc
 layers/posix/home/.config/lf/preview.sh                                                        root/.config/lf/preview.sh
