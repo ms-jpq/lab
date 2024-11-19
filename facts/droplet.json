@@ -5,7 +5,7 @@
     "autodiscover.ENV_DOMAIN",
     "ipfs.ENV_DOMAIN",
     "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN,], ENV_INDEX)",
-    "s3"
+    "s3.ENV_DOMAIN"
   ],
   "ENV_INDEX": [
     "12ft",
