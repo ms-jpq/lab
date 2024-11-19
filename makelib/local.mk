@@ -105,6 +105,7 @@ define REF_LINKS
 
 layers/posix/home/.config/bottom/bottom.toml                                                   root/.config/bottom/bottom.toml
 layers/posix/home/.config/lf/lfrc                                                              root/.config/lf/lfrc
+layers/posix/home/.config/lf/preview.sh                                                        root/.config/lf/preview.sh
 layers/posix/home/.local/opt/initd/libexec/curl-unpack.sh                                      usr/local/opt/initd/libexec/curl-unpack.sh
 layers/posix/home/.local/opt/initd/libexec/pkg.sh                                              usr/local/opt/initd/libexec/pkg.sh
 layers/posix/home/.local/opt/qemu/cloud-init                                                   usr/local/opt/qemu/cloud-init
