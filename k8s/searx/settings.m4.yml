@@ -12,7 +12,7 @@ server:
   method: GET
   public_instance: true
   secret_key: |-
-    m4_esyscmd([uuidgen])
+    m4_esyscmd([printenv -- RAND_HEX])
 
 outgoing:
   request_timeout: &timeout 2.0

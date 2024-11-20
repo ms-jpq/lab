@@ -37,4 +37,4 @@ default_user_preferences:
 #   port: 1080
 
 hmac_key: |-
-  m4_esyscmd([uuidgen])
+  m4_esyscmd([printenv -- RAND_HEX])
