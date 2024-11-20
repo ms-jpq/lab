@@ -3,19 +3,19 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = ">= 0"
+      version = "~> 5"
     }
     digitalocean = {
       source  = "digitalocean/digitalocean"
-      version = ">= 0"
+      version = "~> 2"
     }
     google = {
       source  = "hashicorp/google"
-      version = ">= 0"
+      version = "~> 5"
     }
     local = {
       source  = "hashicorp/local"
-      version = ">= 0"
+      version = "~> 2"
     }
   }
 }

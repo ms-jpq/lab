@@ -3,11 +3,11 @@ terraform {
   required_providers {
     http = {
       source  = "hashicorp/http"
-      version = ">= 0"
+      version = "~> 3"
     }
     google = {
       source  = "hashicorp/google"
-      version = ">= 0"
+      version = "~> 5"
     }
   }
 }

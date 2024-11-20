@@ -7,15 +7,15 @@ terraform {
     }
     aws = {
       source  = "hashicorp/aws"
-      version = ">= 0"
+      version = "~> 5"
     }
     cloudinit = {
       source  = "hashicorp/cloudinit"
-      version = ">= 0"
+      version = "~> 5"
     }
     http = {
       source  = "hashicorp/http"
-      version = ">= 0"
+      version = "~> 3"
     }
   }
 }

@@ -7,15 +7,15 @@ terraform {
     }
     http = {
       source  = "hashicorp/http"
-      version = ">= 0"
+      version = "~> 3"
     }
     aws = {
       source  = "hashicorp/aws"
-      version = ">= 0"
+      version = "~> 5"
     }
     digitalocean = {
       source  = "digitalocean/digitalocean"
-      version = ">= 0"
+      version = "~> 2"
     }
   }
 }
