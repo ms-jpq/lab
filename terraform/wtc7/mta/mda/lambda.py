@@ -13,7 +13,7 @@ from aws_lambda_powertools.utilities.data_classes.s3_event import (
     S3Message,
 )
 from aws_lambda_powertools.utilities.typing import LambdaContext
-from boto3 import client  # type:ignore
+from boto3 import client  # pyright:ignore
 
 from .fax import parse, send
 from .gist import benchmark, log, register
@@ -34,7 +34,7 @@ _S3 = client(service_name="s3")
 
 register(name="sieve", uri=_M_FILT, timeout=TIMEOUT)
 
-import sieve  # type:ignore
+import sieve  # pyright:ignore
 
 
 @contextmanager
