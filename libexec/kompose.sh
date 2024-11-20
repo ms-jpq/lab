@@ -50,7 +50,8 @@ for FILE in "${FILES[@]}"; do
     B="$TMP/${F##*/}"
     case "$F" in
     *.m4*)
-      ./libexec/m4.sh "$F" "${B//'.m4'/''}" "$DEFS"
+      RAND_HEX="$(cat -- "$DEFS" "$F" | b3sum --length 64 -- | cut -d ' ' -f 1)"
+      RAND_HEX="$RAND_HEX" ./libexec/m4.sh "$F" "${B//'.m4'/''}" "$DEFS"
       ;;
     *)
       cp -fr -- "$F" "$B"
