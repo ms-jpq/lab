@@ -26,6 +26,7 @@ services:
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: s3.${DOMAIN}
+      kompose.volume.type: hostPath
     environment:
       MINIO_BROWSER_REDIRECT_URL:
       MINIO_ROOT_PASSWORD:
@@ -39,7 +40,4 @@ services:
       - 9000
       - 9001
     volumes:
-      - data:/data
-
-volumes:
-  data:
+      - /var/lib/local/minio:/data
