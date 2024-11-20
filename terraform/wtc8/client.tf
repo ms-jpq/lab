@@ -21,10 +21,10 @@ resource "auth0_user" "lobee" {
 }
 
 resource "local_sensitive_file" "lobe" {
-  filename = "${path.module}/../../facts/lobechat.env"
+  filename = "${path.module}/../../facts/lobechat.auth0.env"
   content  = <<-INI
-  ENV_AUTH_AUTH0_ID="${data.auth0_client.lobe.client_id}"
-  ENV_AUTH_AUTH0_ISSUER="https://${var.auth0_domain}"
-  ENV_AUTH_AUTH0_SECRET="${data.auth0_client.lobe.client_secret}"
+  ENV_AUTH_AUTH0_ID='${data.auth0_client.lobe.client_id}'
+  ENV_AUTH_AUTH0_ISSUER='https://${var.auth0_domain}'
+  ENV_AUTH_AUTH0_SECRET='${data.auth0_client.lobe.client_secret}'
   INI
 }
