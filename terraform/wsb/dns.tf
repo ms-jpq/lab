@@ -1,7 +1,3 @@
-variable "vps_domain" {
-  type = string
-}
-
 locals {
   dns_ttl = 60
   dns_ptrs = transpose({

@@ -1,9 +1,9 @@
 variable "github_users" {
-  type = list(string)
+  type = set(string)
 }
 
 data "http" "gh_keys" {
-  for_each = toset(var.github_users)
+  for_each = var.github_users
   url      = "https://github.com/${each.key}.keys"
 }
 

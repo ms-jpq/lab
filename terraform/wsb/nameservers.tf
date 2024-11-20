@@ -1,3 +1,3 @@
 variable "managed_domains" {
-  type = list(string)
+  type = set(string)
 }

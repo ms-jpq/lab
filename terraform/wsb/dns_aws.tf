@@ -1,5 +1,5 @@
 resource "aws_route53_zone" "sea_to_sky" {
-  for_each = toset(concat(var.managed_domains, [var.vps_domain]))
+  for_each = toset(concat(tolist(var.managed_domains), [var.vps_domain]))
   name     = each.key
 }
 

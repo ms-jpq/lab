@@ -1,0 +1,1 @@
+../wsb/domain_vars.tf
