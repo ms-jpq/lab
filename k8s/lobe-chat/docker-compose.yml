@@ -17,8 +17,10 @@ services:
     environment:
       ANTHROPIC_API_KEY:
       APP_URL: https://chat.${DOMAIN}
+      AUTH_AUTH0_ID:
+      AUTH_AUTH0_ISSUER:
+      AUTH_AUTH0_SECRET:
       DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg/${COMPOSE_PROJECT_NAME}
-      KEY_VAULTS_SECRET:
       NEXT_AUTH_SECRET:
       NEXT_AUTH_SSO_PROVIDERS: auth0
       NEXT_PUBLIC_SERVICE_MODE: server
