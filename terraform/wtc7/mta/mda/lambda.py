@@ -77,7 +77,7 @@ def main(event: S3Event, _: LambdaContext) -> None:
                     ss = s.sieve
                     with benchmark(name="sieve"):
                         ss(mail)
-                except StopIteration as exn:
+                except StopAsyncIteration as exn:
                     go = False
                     log(mod=sieve, exn=exn)
                 finally:
