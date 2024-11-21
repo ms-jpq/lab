@@ -1,6 +1,6 @@
 gateway
-gh_mirror
-intel_gvt
+gh-mirror
+intel-gvt
 journal
 qemu
 share

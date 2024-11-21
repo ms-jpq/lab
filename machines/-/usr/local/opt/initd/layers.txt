@@ -5,8 +5,8 @@ btrfs
 ddns
 docker
 gateway
-gh_mirror
-intel_gvt
+gh-mirror
+intel-gvt
 irc
 journal
 k3s
@@ -17,7 +17,7 @@ openvpn
 postgres
 printer
 qemu
-rclone_mnt
+rclone-mnt
 router
 share
 tv
