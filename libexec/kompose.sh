@@ -13,11 +13,10 @@ MACHINE='k8s'
 COMPOSE="./$MACHINE"
 DENV='./var/sh/zsh/dev/bin/denv.py'
 
-YML='docker-compose.yml'
 if (($#)); then
-  FILES=("$COMPOSE/$*"/"$YML")
+  FILES=("$COMPOSE/$*"/docker-compose.{yml,.m4.yml})
 else
-  FILES=("$COMPOSE"/*/"$YML")
+  FILES=("$COMPOSE"/*/docker-compose.{yml,.m4.yml})
 fi
 
 read -r -d '' -- JQ <<- 'JQ' || true
@@ -60,7 +59,7 @@ for FILE in "${FILES[@]}"; do
   done
 
   printf -- '%s\n' "@ $NAMESPACE" >&2
-  FILE_IN="$TMP/$YML"
+  FILE_IN="$TMP/docker-compose.yml"
   CONV=("$DENV" -- "$TMP/.env" ./var/bin/kompose convert --stdout --generate-network-policies --namespace "$NAMESPACE" --file "$FILE_IN")
   {
     "${CONV[@]}" | ./libexec/yq.sh --sort-keys --slurp "$JQ" --argjson keel "$KEEL"
