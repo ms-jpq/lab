@@ -2,6 +2,7 @@
 -
 avahi
 btrfs
+cloudflare-warp
 ddns
 docker
 gateway
