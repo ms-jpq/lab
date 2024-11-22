@@ -4,4 +4,6 @@ reload: | all
 	shopt -u failglob
 	sudo -- systemctl daemon-reload --no-pager --show-transaction
 	sudo -- systemctl --no-pager --show-transaction --failed --no-block -- restart '*'
-	sudo -- systemctl --no-pager --show-transaction --failed --no-block -- start /run/systemd/generator/multi-user.target.wants/*
+
+reload-new: | reload
+	find /run/systemd/generator/multi-user.target.wants -mindepth 1 -xtype f -printf '%f\0' | sudo -- xargs -0 -- echo systemctl --no-pager --show-transaction --failed --no-block -- start
