@@ -7,4 +7,5 @@ ProtectHome    = yes
 PrivateTmp     = yes
 ReadWritePaths = %T %V
 
-ExecStart      = microsocks -i 127.0.0.53 -p 40000 -q
+# TODO: ubuntu 26 use `-q` for no logging
+ExecStart      = microsocks -i 127.0.0.53 -p 40000
