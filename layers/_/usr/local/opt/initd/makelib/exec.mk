@@ -6,4 +6,4 @@ reload: | all
 	sudo -- systemctl --no-pager --show-transaction --failed --no-block -- restart '*'
 
 reload-new: | reload
-	find /run/systemd/generator/multi-user.target.wants -mindepth 1 -xtype f -printf '%f\0' | sudo -- xargs -0 -- systemctl --no-pager --show-transaction --failed --no-block -- start
+	find /run/systemd/generator/multi-user.target.wants -mindepth 1 -xtype f -printf '%f\0' | sudo -- xargs -0 --no-run-if-empty -- systemctl --no-pager --show-transaction --failed --no-block -- start
