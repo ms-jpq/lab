@@ -2,5 +2,6 @@ avahi
 ddns
 openvpn
 printer
+privoxy
 router
 wireguard

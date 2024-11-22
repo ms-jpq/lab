@@ -17,6 +17,7 @@ nspawn
 openvpn
 postgres
 printer
+privoxy
 qemu
 rclone-mnt
 router
