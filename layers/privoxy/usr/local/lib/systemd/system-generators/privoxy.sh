@@ -11,6 +11,7 @@ cp -f -- /usr/lib/systemd/system/privoxy.service "$TPL"
 mkdir -v -p -- "$WANTS"
 
 for CONF in /usr/local/opt/privoxy/conf.d/*.conf; do
+  CONF="${CONF##*/}"
   CONF="${CONF%'.conf'}"
   CONF="$(systemd-escape -- "${CONF//[[:space:]]/''}")"
   ln -v -snf -- "$TPL" "$WANTS/0-privoxy@$CONF.service"
