@@ -14,9 +14,9 @@ COMPOSE="./$MACHINE"
 DENV='./var/sh/zsh/dev/bin/denv.py'
 
 if (($#)); then
-  FILES=("$COMPOSE/$*"/docker-compose.{yml,.m4.yml})
+  FILES=("$COMPOSE/$*"/docker-compose.{yml,m4.yml})
 else
-  FILES=("$COMPOSE"/*/docker-compose.{yml,.m4.yml})
+  FILES=("$COMPOSE"/*/docker-compose.{yml,m4.yml})
 fi
 
 read -r -d '' -- JQ <<- 'JQ' || true
