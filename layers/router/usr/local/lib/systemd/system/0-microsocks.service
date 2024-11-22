@@ -1,8 +1,6 @@
 [Unit]
 Description    = Microsocks
 
-After          = network-online.target
-
 [Service]
 ProtectSystem  = strict
 ProtectHome    = yes
