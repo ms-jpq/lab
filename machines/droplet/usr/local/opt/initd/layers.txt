@@ -2,6 +2,5 @@ cloudflare-warp
 gateway
 k3s
 mail
-privoxy
 v2fly
 wireguard
