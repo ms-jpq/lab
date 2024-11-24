@@ -72,7 +72,6 @@ hostnames:
     - ^([^.]+\.)*debian\.org$
     - ^([^.]+\.)*dictionary\.com$
     - ^([^.]+\.)*discourse\.group$
-    - ^([^.]+\.)*edu$
     - ^([^.]+\.)*fandom\.com$
     - ^([^.]+\.)*gc\.ca$
     - ^([^.]+\.)*genius\.com$
@@ -156,6 +155,7 @@ hostnames:
     - ^([^.]+\.)*codersrank\.io$
     - ^([^.]+\.)*dev\.to$
     - ^([^.]+\.)*facebook\.com$
+    - ^([^.]+\.)*fortune\.com$
     - ^([^.]+\.)*freecodecamp\.org$
     - ^([^.]+\.)*geeksforgeeks\.org$
     - ^([^.]+\.)*giters\.com$
