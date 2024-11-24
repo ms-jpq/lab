@@ -34,7 +34,7 @@ default_user_preferences:
     - reddit
 
 http_proxy:
-  host: proxy.kompsed-hostproxy.svc.cluster.local
+  host: proxy-0.proxy.kompsed-hostproxy.svc.cluster.local
   password:
   port: 1080
   user:
