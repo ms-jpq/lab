@@ -1,2 +1,2 @@
 [proxy]
-url = "http://proxy.kompsed-hostproxy.svc.cluster.local:1080"
+url = "socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080"
