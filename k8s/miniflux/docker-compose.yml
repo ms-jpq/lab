@@ -15,7 +15,7 @@ services:
         - --
         - localhost:8080/about
     environment:
-      # HTTPS_PROXY: http://warp-srv-1:1080
+      # HTTPS_PROXY: http://proxy.kompsed-hostproxy.svc.cluster.local:1080
       # HTTP_PROXY: *proxy
       ADMIN_PASSWORD:
       ADMIN_USERNAME:
@@ -24,7 +24,7 @@ services:
       CLEANUP_ARCHIVE_UNREAD_DAYS: -1
       CREATE_ADMIN: 1
       DATABASE_URL:
-      HTTP_CLIENT_PROXY: http://warp-srv-1:1080
+      HTTP_CLIENT_PROXY: http://proxy.kompsed-hostproxy.svc.cluster.local:1080
       HTTP_CLIENT_TIMEOUT: &timeout 600
       INVIDIOUS_INSTANCE: youtube.${DOMAIN}
       MEDIA_PROXY_HTTP_CLIENT_TIMEOUT: *timeout

@@ -5,10 +5,10 @@ services:
     labels:
       kompose.service.expose: bing.${DOMAIN}
     environment:
-      # WHOOGLE_PROXY_LOC: warp-srv-1:1080
       WHOOGLE_CONFIG_NEW_TAB: true
       WHOOGLE_CONFIG_URL:
       WHOOGLE_CONFIG_VIEW_IMAGE: true
+      WHOOGLE_PROXY_LOC: proxy.kompsed-hostproxy.svc.cluster.local:1080
       WHOOGLE_PROXY_TYPE: socks5
     ports:
       - 5000

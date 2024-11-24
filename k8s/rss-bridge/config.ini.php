@@ -1,2 +1,2 @@
 [proxy]
-url = "http://warp-srv-1:1080"
+url = "http://proxy.kompsed-hostproxy.svc.cluster.local:1080"

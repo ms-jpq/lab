@@ -5,9 +5,9 @@ services:
     labels:
       kompose.service.expose: changes.${DOMAIN}
     environment:
-      # HTTPS_PROXY: socks5h://warp-srv-1:1080
-      # HTTP_PROXY: socks5h://warp-srv-1:1080
       BASE_URL:
+      HTTPS_PROXY: http://proxy.kompsed-hostproxy.svc.cluster.local:1080
+      HTTP_PROXY: http://proxy.kompsed-hostproxy.svc.cluster.local:1080
       USE_X_SETTINGS: 1
     volumes:
       - /var/lib/local/${COMPOSE_PROJECT_NAME}:/datastore
