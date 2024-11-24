@@ -1,0 +1,18 @@
+---
+services:
+  proxy:
+    image: docker.io/nginx:latest
+    labels:
+      kompose.controller.type: statefulset
+      kompose.volume.type: hostPath
+    ports:
+      - 1080
+    configs:
+      - source: conf
+        target: /etc/nginx/nginx.conf
+    volumes:
+      - /run/haproxy:/run/haproxy:ro
+
+configs:
+  conf:
+    file: ./proxy.nginx
