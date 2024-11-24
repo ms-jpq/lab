@@ -1,3 +1,6 @@
+user      root;
+error_log stderr;
+
 events {
 }
 

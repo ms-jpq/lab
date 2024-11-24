@@ -21,10 +21,10 @@ feed_threads: m5_assert([ENV_NPROC])
 
 default_user_preferences:
   # local: true
+  # quality: dash
   autoplay: true
   continue: true
   default_home: Trending
-  quality: dash
   region: CA
   related_videos: true
   save_player_pos: true
@@ -34,7 +34,7 @@ default_user_preferences:
     - reddit
 
 http_proxy:
-  host: proxy-0.proxy.kompsed-hostproxy.svc.cluster.local
+  host: proxy.kompsed-hostproxy.svc.cluster.local
   password:
   port: 1080
   user:
