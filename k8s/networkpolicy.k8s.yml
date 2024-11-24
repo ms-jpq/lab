@@ -1,15 +1,15 @@
 ---
-apiVersion: "networking.k8s.io/v1"
-kind: "NetworkPolicy"
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
 metadata:
-  name: "treafik-policy"
+  name: treafik-policy
   namespace: "${K8S_NAMESPACE}"
 spec:
   ingress:
     - from:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: "kube-system"
+              kubernetes.io/metadata.name: kube-system
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: "treafik"
+              app.kubernetes.io/name: treafik

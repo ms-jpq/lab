@@ -32,9 +32,9 @@ default_user_preferences:
     - youtube
     - reddit
 
-# http_proxy:
-#   host: warp-srv-1
-#   port: 1080
+http_proxy:
+  host: proxy.kompsed-hostproxy.svc.cluster.local
+  port: 1080
 
 hmac_key: |-
   m4_esyscmd([printenv -- RAND_HEX])
