@@ -148,6 +148,7 @@ hostnames:
     - ^([^.]+\.)*medium\.com$
     - ^([^.]+\.)*ruby-doc\.org$
     - ^([^.]+\.)*sourceforge\.net$
+    - ^([^.]+\.)*vice\.com$
   remove:
     - ^([^.]+\.)*chegg\.com$
     - ^([^.]+\.)*codecademy\.com$
