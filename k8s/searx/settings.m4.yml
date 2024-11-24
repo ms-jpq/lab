@@ -145,6 +145,7 @@ hostnames:
     - ^([^.]+\.)*apidock\.com$
     - ^([^.]+\.)*docs\.ruby-lang\.org$
     - ^([^.]+\.)*etsy\.com$
+    - ^([^.]+\.)*forbes\.com$
     - ^([^.]+\.)*medium\.com$
     - ^([^.]+\.)*ruby-doc\.org$
     - ^([^.]+\.)*sourceforge\.net$
@@ -163,6 +164,7 @@ hostnames:
     - ^([^.]+\.)*howtogeek\.com$
     - ^([^.]+\.)*libhunt\.com$
     - ^([^.]+\.)*macworld\.com$
+    - ^([^.]+\.)*medicalnewstoday\.com$
     - ^([^.]+\.)*msn\.com$
     - ^([^.]+\.)*pinterest(\.[^.]+){1,2}$
     - ^([^.]+\.)*programiz\.com$
