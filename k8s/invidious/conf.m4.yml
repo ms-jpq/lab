@@ -1,4 +1,5 @@
 ---
+# https://github.com/iv-org/invidious/blob/master/config/config.example.yml
 check_tables: true
 db:
   host: pg
@@ -19,11 +20,11 @@ channel_threads: m5_assert([ENV_NPROC])
 feed_threads: m5_assert([ENV_NPROC])
 
 default_user_preferences:
+  # local: true
   autoplay: true
   continue: true
   default_home: Trending
-  # local: true
-  # quality: dash
+  quality: dash
   region: CA
   related_videos: true
   save_player_pos: true
@@ -34,7 +35,9 @@ default_user_preferences:
 
 http_proxy:
   host: proxy.kompsed-hostproxy.svc.cluster.local
+  password:
   port: 1080
+  user:
 
 hmac_key: |-
   m4_esyscmd([printenv -- RAND_HEX])
