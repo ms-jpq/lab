@@ -16,7 +16,7 @@ services:
         - localhost:8080/about
     environment:
       DOMAIN:
-      HTTP_PROXY: http://proxy.kompsed-hostproxy.svc.cluster.local:1080
+      HTTP_PROXY: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
       REDIS_HOST: redis
       TRUST_PROXY: true
       USE_HELMET: true

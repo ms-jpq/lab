@@ -6,8 +6,8 @@ services:
       kompose.service.expose: changes.${DOMAIN}
     environment:
       BASE_URL:
-      HTTPS_PROXY: http://proxy.kompsed-hostproxy.svc.cluster.local:1080
-      HTTP_PROXY: http://proxy.kompsed-hostproxy.svc.cluster.local:1080
+      HTTPS_PROXY: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
+      HTTP_PROXY: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
       USE_X_SETTINGS: 1
     volumes:
       - /var/lib/local/${COMPOSE_PROJECT_NAME}:/datastore
