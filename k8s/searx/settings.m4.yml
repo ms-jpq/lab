@@ -150,6 +150,8 @@ hostnames:
     - ^([^.]+\.)*ruby-doc\.org$
     - ^([^.]+\.)*sourceforge\.net$
     - ^([^.]+\.)*vice\.com$
+    - ^([^.]+\.)*youtu\.be$
+    - ^([^.]+\.)*youtube\.com$
   remove:
     - ^([^.]+\.)*chegg\.com$
     - ^([^.]+\.)*codecademy\.com$
