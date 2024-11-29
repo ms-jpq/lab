@@ -1,3 +1,5 @@
+listen     0.0.0.0:m5_or([ENV_HTTPS_PORT], 443) quic;
+listen     [[::]]:m5_or([ENV_HTTPS_PORT], 443) quic;
 listen     0.0.0.0:m5_or([ENV_HTTPS_PORT], 443) ssl;
 listen     [[::]]:m5_or([ENV_HTTPS_PORT], 443) ssl;
 add_header Alt-Svc 'h3=":$server_port"';

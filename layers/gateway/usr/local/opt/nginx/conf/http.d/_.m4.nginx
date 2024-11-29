@@ -2,7 +2,10 @@ server {
   server_name "";
   listen      0.0.0.0:m5_or([ENV_HTTPS_PORT], 443) quic reuseport;
   listen      [[::]]:m5_or([ENV_HTTPS_PORT], 443) quic reuseport;
-  include     /usr/local/opt/nginx/conf/listen.nginx;
+  listen      0.0.0.0:m5_or([ENV_HTTPS_PORT], 443) ssl reuseport;
+  listen      [[::]]:m5_or([ENV_HTTPS_PORT], 443) ssl reuseport;
+  add_header  Alt-Svc 'h3=":$server_port"';
+  include     /usr/local/opt/nginx/conf/auth.nginx;
 
   location / {
     include         /usr/local/opt/nginx/conf/auth2.nginx;

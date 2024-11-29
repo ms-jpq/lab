@@ -1,8 +1,6 @@
 # m5_for([MACH], [
 server {
   server_name MACH.*;
-  listen      0.0.0.0:m5_or([ENV_HTTPS_PORT], 443) quic;
-  listen      [[::]]:m5_or([ENV_HTTPS_PORT], 443) quic;
   include     /usr/local/opt/nginx/conf/listen.nginx;
   set         $x_machine MACH.home.arpa:8080;
 
