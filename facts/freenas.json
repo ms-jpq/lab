@@ -1,36 +1,10 @@
 {
   "ENV_BLK_EXPORTS": [],
-  "ENV_CERTBOT_SITES": [
-    "ENV_DOMAIN",
-    "cups.pfsense.enp2s0.pfsense.ENV_DOMAIN",
-    "droplet.w-0.droplet.ENV_DOMAIN",
-    "esxi.enp1s0.opnsense.ENV_DOMAIN",
-    "freenas.enp2s0.pfsense.ENV_DOMAIN",
-    "opnsense.w-0.opnsense.ENV_DOMAIN",
-    "orthanc.enp1s0.opnsense.ENV_DOMAIN",
-    "pfsense.w-0.pfsense.ENV_DOMAIN",
-    "public.ENV_DOMAIN"
-  ],
   "ENV_FS_DOWNLOADS": "downloads",
   "ENV_FS_MOVIES": "media/Movies",
   "ENV_FS_NTFS": "ntfs",
   "ENV_FS_TV": "media/TV",
   "ENV_FS_WALLPAPER": "wallpapers",
-  "ENV_INDEX": [
-    "/die/die/die",
-    "cups.pfsense.enp2s0.pfsense",
-    "droplet.w-0.droplet/k3s.sh",
-    "droplet.w-0.droplet/mail.html",
-    "esxi.enp1s0.opnsense/vm.html",
-    "freenas.enp2s0.pfsense/bt",
-    "freenas.enp2s0.pfsense/journald/tail.html",
-    "freenas.enp2s0.pfsense/rclone",
-    "freenas.enp2s0.pfsense/transmission",
-    "freenas.enp2s0.pfsense/webdav/rw",
-    "freenas.enp2s0.pfsense/youtube-dl",
-    "freenas.enp2s0.pfsense/zfs.sh",
-    "orthanc.enp1s0.opnsense/vm.html"
-  ],
   "ENV_JOURNAL_HOSTS": [
     "droplet.w-0.droplet.home.arpa",
     "esxi.enp1s0.opnsense.home.arpa",
@@ -49,7 +23,6 @@
   "ENV_MACVLAN_IFS": ["enp109s0", "eno1"],
   "ENV_NFS_EXPORTS": ["downloads", "media", "wallpapers"],
   "ENV_PG_CLUSTERS": [],
-  "ENV_PUBLIC_SITES": ["public.*"],
   "ENV_RCLONE_LOCAL": [
     "gray",
     "hao",
