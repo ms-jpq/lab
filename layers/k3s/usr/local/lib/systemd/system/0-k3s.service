@@ -38,7 +38,6 @@ LimitCORE         = infinity
 TasksMax          = infinity
 
 
-Environment       = K3S_RESOLV_CONF=/usr/local/opt/%J/resolv.conf
 Environment       = K3S_CONFIG_FILE=%S/%J/k3s.yml
 Environment       = K3S_NODE_NAME=%H
 
@@ -53,7 +52,6 @@ ExecStart         = k3s server \
                     --prefer-bundled-bin \
                     --flannel-ipv6-masq \
                     --bind-address :: \
-                    --resolv-conf ${K3S_RESOLV_CONF} \
                     --node-name ${K3S_NODE_NAME} \
                     --config ${K3S_CONFIG_FILE} \
                     --disable metrics-server \
