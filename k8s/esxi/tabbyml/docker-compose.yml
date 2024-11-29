@@ -1,0 +1,26 @@
+---
+services:
+  tabby:
+    image: docker.io/tabbyml/tabby:latest
+    labels:
+      com.centurylinklabs.watchtower.enable: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities:
+                - gpu
+    environment:
+      TABBY_WEBSERVER_JWT_TOKEN_SECRET:
+    command:
+      - serve
+      - --device
+      - cuda
+      - --model
+      - StarCoder-3B
+    ports:
+      - 6060:8080
+    volumes:
+      - /media/shared/tabby:/data

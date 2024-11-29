@@ -1,0 +1,18 @@
+---
+services:
+  ollama:
+    image: docker.io/ollama/ollama:latest
+    labels:
+      com.centurylinklabs.watchtower.enable: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities:
+                - gpu
+    ports:
+      - 11434
+    volumes:
+      - /media/shared/ollama:/root/.ollama

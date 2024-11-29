@@ -10,7 +10,7 @@ DST="$2"
 shift -- 2
 
 MACHINE='k8s'
-COMPOSE="./$MACHINE"
+COMPOSE="./$SRC/k8s"
 DENV='./var/sh/zsh/dev/bin/denv.py'
 
 if (($#)); then
