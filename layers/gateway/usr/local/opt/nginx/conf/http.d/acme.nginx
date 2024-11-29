@@ -1,5 +1,5 @@
 server {
-  listen unix:/run/local/nginx/acme.sock;
+  listen unix:/run/local/nginx/gateway-http.sock;
   listen 127.0.0.53:8000 reuseport;
 
   location / {
