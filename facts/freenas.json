@@ -12,14 +12,6 @@
     "orthanc.enp1s0.opnsense.home.arpa",
     "pfsense.enp2s0.pfsense.home.arpa"
   ],
-  "ENV_MACHINES": [
-    "droplet.w-0.droplet",
-    "esxi.enp1s0.opnsense",
-    "freenas.enp2s0.pfsense",
-    "opnsense.w-0.opnsense",
-    "orthanc.enp1s0.opnsense",
-    "pfsense.w-0.pfsense"
-  ],
   "ENV_MACVLAN_IFS": ["enp109s0", "eno1"],
   "ENV_NFS_EXPORTS": ["downloads", "media", "wallpapers"],
   "ENV_PG_CLUSTERS": [],
