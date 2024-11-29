@@ -1,4 +1,3 @@
-gateway
 gh-mirror
 intel-gvt
 journal
