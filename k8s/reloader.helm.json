@@ -1,0 +1,7 @@
+{
+  "reloader": {
+    "autoReloadAll": true,
+    "reloadOnCreate": true,
+    "reloadOnDelete": true
+  }
+}

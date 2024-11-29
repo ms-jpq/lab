@@ -43,7 +43,7 @@ NAMESPACE='keel'
 {
   ARGS=(
     "$NAMESPACE"
-    --set helmProvider.version='v3'
+    --values "./k8s/$NAMESPACE.helm.json"
     -- keel/keel
   )
   "${MK_NS[@]}" "$NAMESPACE" | ./libexec/yq.sh "$JQ"
@@ -57,9 +57,7 @@ NAMESPACE='reloader'
 {
   ARGS=(
     "$NAMESPACE"
-    --set reloader.autoReloadAll=true
-    --set reloader.reloadOnCreate=true
-    --set reloader.reloadOnDelete=true
+    --values "./k8s/$NAMESPACE.helm.json"
     -- stakater/reloader
   )
   "${MK_NS[@]}" "$NAMESPACE" | ./libexec/yq.sh "$JQ"
