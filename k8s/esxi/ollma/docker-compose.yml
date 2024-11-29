@@ -4,7 +4,7 @@ services:
     image: docker.io/ollama/ollama:latest
     labels:
       kompose.controller.type: statefulset
-      kompose.service.expose: ollama.${DOMAIN}
+      kompose.service.expose: ollama
       kompose.volume.type: hostPath
     deploy:
       resources:
