@@ -67,11 +67,12 @@ NAMESPACE='reloader'
   fi
 } > "$DST/$NAMESPACE.yml"
 
-NAMESPACE='gpu-operator'
+NAMESPACE='nvidia-device-plugin'
 {
   ARGS=(
     "$NAMESPACE"
-    -- nvidia/gpu-operator
+    --values "./k8s/$NAMESPACE.helm.json"
+    -- nvdp/nvidia-device-plugin
   )
   "${MK_NS[@]}" "$NAMESPACE" | ./libexec/yq.sh "$JQ"
 
