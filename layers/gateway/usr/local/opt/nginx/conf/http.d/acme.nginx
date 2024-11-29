@@ -1,5 +1,6 @@
 server {
   listen unix:/run/local/nginx/acme.sock;
+  listen 127.0.0.53:8000;
 
   location / {
     return 307 https://$host$request_uri;
