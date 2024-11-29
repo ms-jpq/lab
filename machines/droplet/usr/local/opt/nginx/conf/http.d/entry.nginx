@@ -1,5 +1,5 @@
 server {
-  listen [::]:80 ipv6only=off;
+  listen [::]:80 ipv6only=off reuseport;
 
   location / {
     proxy_pass http://unix:/run/local/nginx/acme.sock;
@@ -7,7 +7,8 @@ server {
 }
 
 server {
-  listen         unix:/run/local/nginx/http.sock default_server proxy_protocol;
+  listen         unix:/run/local/nginx/http.sock default_server reuseport
+    proxy_protocol;
   listen         unix:/run/local/nginx/http3.sock quic;
   include        /usr/local/opt/nginx/conf/auth.nginx;
   real_ip_header proxy_protocol;
@@ -22,8 +23,8 @@ server {
 
 server {
   server_name    autodiscover.*;
-  listen         unix:/run/local/nginx/http.sock proxy_protocol;
-  listen         unix:/run/local/nginx/http3.sock quic;
+  listen         unix:/run/local/nginx/http.sock reuseport proxy_protocol;
+  listen         unix:/run/local/nginx/http3.sock reuseport quic;
   real_ip_header proxy_protocol;
   add_header     Alt-Svc 'h3=":443"' always;
 
@@ -34,8 +35,8 @@ server {
 
 server {
   server_name    local.*;
-  listen         unix:/run/local/nginx/http.sock proxy_protocol;
-  listen         unix:/run/local/nginx/http3.sock quic;
+  listen         unix:/run/local/nginx/http.sock reuseport proxy_protocol;
+  listen         unix:/run/local/nginx/http3.sock reuseport quic;
   include        /usr/local/opt/nginx/conf/auth.nginx;
   real_ip_header proxy_protocol;
   add_header     Alt-Svc 'h3=":443"' always;

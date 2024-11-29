@@ -22,7 +22,7 @@ upstream web {
 }
 
 server {
-  listen           [[::]]:80 ipv6only=off;
+  listen           [[::]]:80 ipv6only=off reuseport;
   proxy_set_header Accept-Encoding "";
   proxy_set_header Connection $connection_upgrade;
   proxy_set_header Host $host;

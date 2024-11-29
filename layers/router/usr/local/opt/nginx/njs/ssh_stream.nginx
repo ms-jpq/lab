@@ -8,7 +8,7 @@ stream {
   }
 
   server {
-    listen     80;
+    listen     [::]:80 reuseport;
     js_preread main.ssh_detect;
     proxy_pass $x_http_upstream;
   }

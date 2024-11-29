@@ -10,7 +10,7 @@ stream {
   proxy_timeout          28d;
 
   server {
-    listen     [::]:1080 ipv6only=off;
+    listen     [::]:1080 ipv6only=off reuseport;
     proxy_pass unix:/run/haproxy/httpsocks-1080.sock;
   }
 }
