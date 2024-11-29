@@ -1,5 +1,7 @@
 server {
   server_name "";
+  listen      0.0.0.0:m5_or([ENV_HTTPS_PORT], 443) quic reuseport;
+  listen      [[::]]:m5_or([ENV_HTTPS_PORT], 443) quic reuseport;
   include     /usr/local/opt/nginx/conf/listen.nginx;
 
   location / {
