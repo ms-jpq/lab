@@ -5,15 +5,14 @@ upstream tcp_upstream_fallback {
 upstream udp_upstream_fallback {
   server unix:/run/local/nginx/http3.sock;
 }
-
-server {
-  listen         [::]:443 ipv6only=off ssl reuseport;
-  ssl_alpn       h2 http/1.1;
-  proxy_protocol on;
-  proxy_pass     $tcp_upstream;
-}
-
-server {
-  listen     [::]:443 ipv6only=off udp reuseport;
-  proxy_pass $udp_upstream;
-}
+# server {
+#   listen         [::]:443 ipv6only=off ssl reuseport;
+#   ssl_alpn       h2 http/1.1;
+#   proxy_protocol on;
+#   proxy_pass     $tcp_upstream;
+# }
+#
+# server {
+#   listen     [::]:443 ipv6only=off udp reuseport;
+#   proxy_pass $udp_upstream;
+# }
