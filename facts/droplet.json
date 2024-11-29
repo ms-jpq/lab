@@ -7,6 +7,7 @@
     "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN,], ENV_INDEX)",
     "s3.ENV_DOMAIN"
   ],
+  "ENV_HTTPS_PORT": 4443,
   "ENV_INDEX": [
     "12ft",
     "ask",
