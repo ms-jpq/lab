@@ -69,6 +69,19 @@ NAMESPACE='reloader'
   fi
 } > "$DST/$NAMESPACE.yml"
 
+NAMESPACE='gpu-operator'
+{
+  ARGS=(
+    "$NAMESPACE"
+    -- nvidia/gpu-operator
+  )
+  "${MK_NS[@]}" "$NAMESPACE" | ./libexec/yq.sh "$JQ"
+
+  if [[ -n ${NAMESPACES["$NAMESPACE"]:-""} ]]; then
+    "${TEMPLATE[@]}" "${ARGS[@]}"
+  fi
+} > "$DST/$NAMESPACE.yml"
+
 NAMESPACE='nvidia-device-plugin'
 {
   ARGS=(
