@@ -1,2 +1,2 @@
-listen 8080 reuseport;
-listen [::]:8080 reuseport;
+listen 8080;
+listen [::]:8080;

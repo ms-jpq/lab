@@ -4,6 +4,7 @@ error_log               stderr;
 worker_processes        auto;
 worker_rlimit_nofile    65535;
 worker_shutdown_timeout 28d;
+quic_bpf                on;
 include                 /etc/nginx/modules-enabled/*.conf;
 
 events {
@@ -31,6 +32,8 @@ http {
   proxy_busy_buffers_size   256k;
   proxy_http_version        1.1;
   proxy_read_timeout        28d;
+  quic_gso                  on;
+  quic_retry                on;
   resolver                  127.0.0.53;
   sendfile                  on;
   ssl_prefer_server_ciphers on;
