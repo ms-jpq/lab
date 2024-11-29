@@ -6,14 +6,7 @@ services:
       kompose.controller.type: statefulset
       kompose.service.expose: ollama
       kompose.volume.type: hostPath
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities:
-                - gpu
+    runtime: nvidia
     ports:
       - 11434
     volumes:
