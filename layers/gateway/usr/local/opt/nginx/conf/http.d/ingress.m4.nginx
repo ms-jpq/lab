@@ -1,10 +1,9 @@
 server {
-  server_name "";
-  listen      0.0.0.0:m5_or([ENV_HTTPS_PORT], 443) quic reuseport;
-  listen      [[::]]:m5_or([ENV_HTTPS_PORT], 443) quic reuseport;
-  listen      0.0.0.0:m5_or([ENV_HTTPS_PORT], 443) ssl reuseport;
-  listen      [[::]]:m5_or([ENV_HTTPS_PORT], 443) ssl reuseport;
-  add_header  Alt-Svc 'h3=":$server_port"';
+  listen     [[::]]:m5_or([ENV_HTTPS_PORT], 443) default_server ipv6only=off
+    quic reuseport;
+  listen     [[::]]:m5_or([ENV_HTTPS_PORT], 443) default_server ipv6only=off
+    ssl reuseport;
+  add_header Alt-Svc 'h3=":$server_port"';
 
   location / {
     proxy_pass http://unix:/run/local/nginx/gateway-https.sock:/;

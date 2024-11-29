@@ -1,6 +1,6 @@
 server {
-  server_name "";
-  include     /usr/local/opt/nginx/conf/listen.nginx;
+  listen  unix:/run/local/nginx/gateway-https.sock default_server;
+  include /usr/local/opt/nginx/conf/auth.nginx;
 
   location / {
     include         /usr/local/opt/nginx/conf/auth2.nginx;
