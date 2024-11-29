@@ -332,7 +332,7 @@ def _parse_args() -> Namespace:
     parser.add_argument("--cookie-name", default="htpasswd")
     parser.add_argument("--cookie-ttl", type=float, required=True)
     parser.add_argument("--allow-list", type=Path, nargs="*")
-    parser.add_argument("--hmac-secret", type=Path, required=True)
+    parser.add_argument("--hmac-secret", required=True)
     parser.add_argument("--authn-path", type=PurePosixPath, required=True)
     parser.add_argument("--nprocs", type=int, default=cpu_count())
     parser.add_argument("--timeout", type=float, default=1.0)
@@ -343,7 +343,7 @@ def _parse_args() -> Namespace:
 def main() -> None:
     args = _parse_args()
 
-    hmac_secret = Path(args.hmac_secret).read_bytes()
+    hmac_secret = str(args.hmac_secret).encode()
     allow_list = frozenset(
         line
         for allow in args.allow_list
