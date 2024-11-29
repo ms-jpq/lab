@@ -15,6 +15,9 @@ readarray -t -d ',' -- MOUNTS <<< "$NFS_MNTS"
 mkdir -v -p -- "$WANTS"
 for MOUNT in "${MOUNTS[@]}"; do
   MOUNT="${MOUNT//[[:space:]]/''}"
+  if [[ -z $MOUNT ]]; then
+    continue
+  fi
   NFS_SERVER="${MOUNT%%':'*}"
   DIR="$(systemd-escape -- "${MOUNT#*':/'}")"
   MNT="$RUN/$DIR.mount"
