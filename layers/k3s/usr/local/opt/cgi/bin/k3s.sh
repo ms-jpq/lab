@@ -29,6 +29,6 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-/usr/local/libexec/hr-run.sh cat -- /var/lib/k3s/kubeconfig.yml | sed -E -e "s#https://\[::\]:6443#https://$HOST:6443#g"
+/usr/local/libexec/hr-run.sh cat -- /etc/rancher/k3s/k3s.yaml | sed -E -e "s#https://\[::\]:6443#https://$HOST:6443#g"
 /usr/local/libexec/hr-run.sh systemctl --no-pager --full --lines 0 status -- 0-k3s.service
 /usr/local/libexec/hr-run.sh systemctl --no-pager --full --lines 0 status -- kubepods.slice
