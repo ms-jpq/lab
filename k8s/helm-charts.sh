@@ -68,3 +68,16 @@ NAMESPACE='reloader'
     "${TEMPLATE[@]}" "${ARGS[@]}"
   fi
 } > "$DST/$NAMESPACE.yml"
+
+NAMESPACE='nvidia-device-plugin'
+{
+  ARGS=(
+    "$NAMESPACE"
+    -- nvdp/nvidia-device-plugin
+  )
+  "${MK_NS[@]}" "$NAMESPACE" | ./libexec/yq.sh "$JQ"
+
+  if [[ -n ${NAMESPACES["$NAMESPACE"]:-""} ]]; then
+    "${TEMPLATE[@]}" "${ARGS[@]}"
+  fi
+} > "$DST/$NAMESPACE.yml"
