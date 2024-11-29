@@ -11,5 +11,5 @@ server {
   }
 }
 
-# ], m5_or([ENV_MACHINES, []]))
+# ], m5_or([ENV_MACHINES], []))
 include /dev/null;
