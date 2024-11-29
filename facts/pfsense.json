@@ -1,10 +1,10 @@
 {
   "ENV_CERTBOT_SITES": [
-    "ENV_DOMAIN",
-    "cups.pfsense.enp2s0.pfsense.ENV_DOMAIN",
-    "freenas.enp2s0.pfsense.ENV_DOMAIN",
-    "pfsense.w-0.pfsense.ENV_DOMAIN",
-    "public.ENV_DOMAIN"
+    "ENV_TLD",
+    "cups.pfsense.enp2s0.pfsense.ENV_TLD",
+    "freenas.enp2s0.pfsense.ENV_TLD",
+    "pfsense.w-0.pfsense.ENV_TLD",
+    "public.ENV_TLD"
   ],
   "ENV_CNAMES": [],
   "ENV_HOST_ALLOW_LIST": [],

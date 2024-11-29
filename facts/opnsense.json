@@ -1,9 +1,9 @@
 {
   "ENV_CERTBOT_SITES": [
-    "droplet.w-0.droplet.ENV_DOMAIN",
-    "esxi.enp1s0.opnsense.ENV_DOMAIN",
-    "opnsense.w-0.opnsense.ENV_DOMAIN",
-    "orthanc.enp1s0.opnsense.ENV_DOMAIN"
+    "droplet.w-0.droplet.ENV_TLD",
+    "esxi.enp1s0.opnsense.ENV_TLD",
+    "opnsense.w-0.opnsense.ENV_TLD",
+    "orthanc.enp1s0.opnsense.ENV_TLD"
   ],
   "ENV_CNAMES": [],
   "ENV_HOST_ALLOW_LIST": [
