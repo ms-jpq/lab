@@ -1,5 +1,5 @@
 server {
-  listen unix:/run/local/nginx/acme.sock;
+  listen [::]:80 ipv6only=off;
 
   location / {
     return 307 https://$host$request_uri;

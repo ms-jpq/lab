@@ -1,8 +1,0 @@
-server {
-  listen unix:/run/local/nginx/80.sock;
-  set    $x_eighty "http://m5_assert([ENV_443_FWD])";
-
-  location / {
-    proxy_pass $x_eighty;
-  }
-}
