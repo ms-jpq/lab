@@ -2,7 +2,8 @@
 
 set -o pipefail
 
-DST="$1"
+SRC="$1"
+DST="$2"
 
 cd -- "${0%/*}/.."
 
@@ -11,12 +12,14 @@ gmake helm >&2
 K8S='kkkkkkkk'
 MK_NS=(
   ./libexec/kubectl.sh
+  "$SRC"
   create namespace
   --dry-run=client
   --output=yaml
 )
 TEMPLATE=(
   ./libexec/helm.sh
+  "$SRC"
   template
   --create-namespace
   --include-crds
@@ -26,7 +29,7 @@ TEMPLATE=(
 )
 
 declare -A -- NAMESPACES=()
-NS="$(./libexec/kubectl.sh get namespaces --output name | cut --delimiter '/' --fields 2-)"
+NS="$(./libexec/kubectl.sh "$SRC" get namespaces --output name | cut --delimiter '/' --fields 2-)"
 readarray -t -- NSS <<< "$NS"
 for N in "${NSS[@]}"; do
   NAMESPACES["$N"]=1

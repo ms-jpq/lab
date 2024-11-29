@@ -46,15 +46,16 @@ find "$DST" -mindepth 1 -delete
 if (($#)); then
   PRUNE=()
 else
-  ./k8s/helm-charts.sh "$DST"
+  ./k8s/helm-charts.sh "$SRC" "$DST"
 fi
 
 if ((NOOP)); then
   exit
 fi
 
+CTL=(./libexec/kubectl.sh "$SRC")
 cat -- "$DST"/*.yml | if ((DIFF)); then
-  ./libexec/kubectl.sh diff --filename - | delta
+  "${CTL[@]}" diff --filename - | delta
 else
-  ./libexec/kubectl.sh apply "${PRUNE[@]}" --filename -
+  "${CTL[@]}" apply "${PRUNE[@]}" --filename -
 fi

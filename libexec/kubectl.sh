@@ -2,4 +2,7 @@
 
 set -o pipefail
 
-KUBECONFIG="${0%/*}/../facts/kubeconfig.yml.env" exec -- kubectl --insecure-skip-tls-verify "$@"
+SRC="$1"
+shift -- 1
+
+KUBECONFIG="${0%/*}/../facts/$SRC.kubeconfig.yml.env" exec -- kubectl --insecure-skip-tls-verify "$@"
