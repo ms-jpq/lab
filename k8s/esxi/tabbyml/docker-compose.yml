@@ -14,7 +14,7 @@ services:
       - --device
       - cuda
       - --model
-      - StarCoder-3B
+      - DeepseekCoder-6.7B
     ports:
       - 8080
     volumes:
