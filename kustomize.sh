@@ -45,8 +45,6 @@ find "$DST" -mindepth 1 -delete
 ./libexec/kompose.sh "$SRC" "$DST" "$@"
 if (($#)); then
   PRUNE=()
-else
-  ./k8s/helm-charts.sh "$SRC" "$DST"
 fi
 
 if ((NOOP)); then

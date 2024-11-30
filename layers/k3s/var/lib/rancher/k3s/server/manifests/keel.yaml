@@ -1,0 +1,14 @@
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: &chart keel
+  namespace: kube-system
+spec:
+  chart: *chart
+  createNamespace: true
+  repo: https://charts.keel.sh
+  targetNamespace: *chart
+  valuesContent: |-
+    helmProvider:
+      version: v3
