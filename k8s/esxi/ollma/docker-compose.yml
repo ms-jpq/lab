@@ -3,10 +3,10 @@ services:
   ollama:
     image: docker.io/ollama/ollama:latest
     labels:
+      jq.runtime: nvidia
       kompose.controller.type: statefulset
       kompose.service.expose: ollama
       kompose.volume.type: hostPath
-    runtime: nvidia
     ports:
       - 11434
     volumes:

@@ -28,6 +28,11 @@ sort_by(.kind != "Namespace")[]
   else
     .
   end
+| if ((.kind | IN(["Deployment", "StatefulSet"][])) and .metadata.annotations["jq.runtime"]) then
+    .spec.template.spec.runtimeClassName = .metadata.annotations["jq.runtime"]
+  else
+    .
+  end
 JQ
 KEEL="$(< ./k8s/keel.json)"
 
