@@ -11,3 +11,5 @@ spec:
   targetNamespace: *chart
   valuesContent: |-
     runtimeClassName: nvidia
+    gfd:
+      enabled: true
