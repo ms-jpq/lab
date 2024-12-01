@@ -36,6 +36,7 @@ http {
   quic_retry                on;
   resolver                  127.0.0.53;
   sendfile                  on;
+  ssl_early_data            on;
   ssl_prefer_server_ciphers on;
   tcp_nopush                on;
   include                   /etc/nginx/mime.types;
