@@ -1,6 +1,6 @@
 server {
   listen         unix:/run/local/nginx/http.sock default_server proxy_protocol;
-  listen         unix:/run/local/nginx/http3.sock quic;
+  listen         unix:/run/local/nginx/http3.sock;
   include        /usr/local/opt/nginx/conf/auth.nginx;
   real_ip_header proxy_protocol;
   merge_slashes  off;
@@ -15,7 +15,7 @@ server {
 server {
   server_name    autodiscover.*;
   listen         unix:/run/local/nginx/http.sock proxy_protocol;
-  listen         unix:/run/local/nginx/http3.sock quic;
+  listen         unix:/run/local/nginx/http3.sock;
   real_ip_header proxy_protocol;
   add_header     Alt-Svc 'h3=":443"' always;
 
@@ -27,7 +27,7 @@ server {
 server {
   server_name    local.*;
   listen         unix:/run/local/nginx/http.sock proxy_protocol;
-  listen         unix:/run/local/nginx/http3.sock quic;
+  listen         unix:/run/local/nginx/http3.sock;
   include        /usr/local/opt/nginx/conf/auth.nginx;
   real_ip_header proxy_protocol;
   add_header     Alt-Svc 'h3=":443"' always;
