@@ -8,6 +8,10 @@ server {
 
   # m5_for([REGISTRY], [
   location /REGISTRY {
+    return 307 /REGISTRY/;
+  }
+
+  location /REGISTRY/ {
     proxy_pass http://unix:/run/local/oci-registry/proxy/REGISTRY.sock:;
   }
   # ], m5_or([ENV_REGISTRIES], []))
