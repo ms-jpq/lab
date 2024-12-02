@@ -20,15 +20,15 @@ else
 fi
 
 read -r -d '' -- JQ <<- 'JQ' || true
-sort_by(.kind != "Namespace")[]
-| if (.kind | IN(["Deployment", "StatefulSet"][])) then
+["DaemonSet", "Deployment", "StatefulSet"][] as $run
+| sort_by(.kind != "Namespace")[]
+| if (.kind | IN($run)) then
     .metadata.annotations += $keel
-    | .spec.template.metadata.annotations += $keel
     | .spec.template.spec.initContainers?.[]?.env ?= (.spec.template.spec.containers[].env // [])
   else
     .
   end
-| if ((.kind | IN(["Deployment", "StatefulSet"][])) and .metadata.annotations["jq.runtime"]) then
+| if ((.kind | IN($run)) and .metadata.annotations["jq.runtime"]) then
     .spec.template.spec.runtimeClassName = .metadata.annotations["jq.runtime"]
   else
     .
@@ -64,10 +64,11 @@ for FILE in "${FILES[@]}"; do
   done
 
   printf -- '%s\n' "@ $NAMESPACE" >&2
+  HASHED="$(cat -- "$TMP"/* | b3sum --length 32 -- | cut -d ' ' -f 1)"
   FILE_IN="$TMP/docker-compose.yml"
   CONV=("$DENV" -- "$TMP/.env" ./var/bin/kompose convert --stdout --generate-network-policies --namespace "$NAMESPACE" --file "$FILE_IN")
   {
-    "${CONV[@]}" | ./libexec/yq.sh --sort-keys --slurp "$JQ" --argjson keel "$KEEL"
+    "${CONV[@]}" | ./libexec/yq.sh --sort-keys --slurp --argjson keel "$KEEL" --arg hash "$HASHED" "$JQ"
     K8S_NAMESPACE="$NAMESPACE" envsubst < ./k8s/networkpolicy.k8s.yml
     ./libexec/yq.sh --sort-keys '(.["x-k8s"] // [])[]' < "$FILE_IN" | COMPOSE_PROJECT_NAME="$NAMESPACE" envsubst
   } > "$YAML"
