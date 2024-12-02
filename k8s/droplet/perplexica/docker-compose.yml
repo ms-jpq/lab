@@ -18,7 +18,7 @@ services:
       - 3000
 
   perplexica-proxy:
-    image: ${REGISTRY_MIRROR:-docker.io}/nginx:latest
+    image: ${REGISTRY_MIRROR:-docker.io}/library/nginx:latest
     labels:
       kompose.service.expose: perp.${DOMAIN}
     healthcheck:
