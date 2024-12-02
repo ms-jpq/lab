@@ -20,15 +20,15 @@ else
 fi
 
 read -r -d '' -- JQ <<- 'JQ' || true
-["DaemonSet", "Deployment", "StatefulSet"][] as $run
-| sort_by(.kind != "Namespace")[]
-| if (.kind | IN($run)) then
+sort_by(.kind != "Namespace")[]
+| if (.kind | IN(["DaemonSet", "Deployment", "StatefulSet"][])) then
     .metadata.annotations += $keel
+    | .spec.template.metadata.annotations.["jq.hash"] = $hash
     | .spec.template.spec.initContainers?.[]?.env ?= (.spec.template.spec.containers[].env // [])
   else
     .
   end
-| if ((.kind | IN($run)) and .metadata.annotations["jq.runtime"]) then
+| if ((.kind | IN(["DaemonSet", "Deployment", "StatefulSet"][])) and .metadata.annotations["jq.runtime"]) then
     .spec.template.spec.runtimeClassName = .metadata.annotations["jq.runtime"]
   else
     .
