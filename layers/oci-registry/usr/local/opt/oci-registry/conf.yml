@@ -8,4 +8,6 @@ proxy:
   ttl: 72h
 http:
   net: unix
+  relativeurls: true
   addr: ${RUNTIME_DIRECTORY}/${RT_ID}.sock
+  prefix: /${RT_ID}/
