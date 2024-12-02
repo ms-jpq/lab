@@ -1,7 +1,7 @@
 ---
 services:
   superset:
-    image: docker.io/apache/superset:latest
+    image: ${REGISTRY_MIRROR:-docker.io}/apache/superset:latest
     labels:
       kompose.service.expose: superset.${DOMAIN}
     environment:

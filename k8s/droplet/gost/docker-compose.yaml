@@ -3,7 +3,7 @@ x-k8s: []
 
 services:
   gost:
-    image: docker.io/gogost/gost:latest
+    image: ${REGISTRY_MIRROR:-docker.io}/gogost/gost:latest
     labels:
       kompose.service.expose: go.${DOMAIN}
     ports:

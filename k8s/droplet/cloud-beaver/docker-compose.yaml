@@ -1,7 +1,7 @@
 ---
 services:
   cloudbeaver:
-    image: docker.io/dbeaver/cloudbeaver:latest
+    image: ${REGISTRY_MIRROR:-docker.io}/dbeaver/cloudbeaver:latest
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: sql.${DOMAIN}

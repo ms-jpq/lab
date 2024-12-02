@@ -1,7 +1,7 @@
 ---
 services:
   flame:
-    image: docker.io/pawelmalak/flame:latest
+    image: ${REGISTRY_MIRROR:-docker.io}/pawelmalak/flame:latest
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: true

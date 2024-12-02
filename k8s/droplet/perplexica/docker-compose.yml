@@ -1,7 +1,7 @@
 ---
 services:
   perplexica-api:
-    image: docker.io/itzcrazykns1337/perplexica-backend:main
+    image: ${REGISTRY_MIRROR:-docker.io}/itzcrazykns1337/perplexica-backend:main
     labels:
       kompose.controller.type: statefulset
     environment:
@@ -18,7 +18,7 @@ services:
       - 3000
 
   perplexica-proxy:
-    image: docker.io/nginx:latest
+    image: ${REGISTRY_MIRROR:-docker.io}/nginx:latest
     labels:
       kompose.service.expose: perp.${DOMAIN}
     healthcheck:

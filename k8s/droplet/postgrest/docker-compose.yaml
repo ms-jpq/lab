@@ -1,7 +1,7 @@
 ---
 services:
   postgrest:
-    image: docker.io/postgrest/postgrest:latest
+    image: ${REGISTRY_MIRROR:-docker.io}/postgrest/postgrest:latest
     labels:
       kompose.service.expose: postgrest.${DOMAIN}
     environment:
@@ -11,7 +11,7 @@ services:
       - 3000
 
   swagger:
-    image: docker.io/swaggerapi/swagger-ui:latest
+    image: ${REGISTRY_MIRROR:-docker.io}/swaggerapi/swagger-ui:latest
     labels:
       kompose.service.expose: postgreswagger.${DOMAIN}
     healthcheck:

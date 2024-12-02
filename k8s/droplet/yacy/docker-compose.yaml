@@ -1,7 +1,7 @@
 ---
 services:
   yacy:
-    image: docker.io/yacy/yacy_search_server:latest
+    image: ${REGISTRY_MIRROR:-docker.io}/yacy/yacy_search_server:latest
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: yacy.${DOMAIN}

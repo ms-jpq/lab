@@ -1,7 +1,7 @@
 ---
 services:
   mosquitto:
-    image: docker.io/library/eclipse-mosquitto:latest
+    image: ${REGISTRY_MIRROR:-docker.io}/library/eclipse-mosquitto:latest
     ports:
       - 1883
     volumes:

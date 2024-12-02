@@ -1,7 +1,7 @@
 ---
 services:
   mongo_express:
-    image: docker.io/library/mongo-express:latest
+    image: ${REGISTRY_MIRROR:-docker.io}/library/mongo-express:latest
     labels:
       kompose.service.expose: mongo.${DOMAIN}
       # - traefik.http.routers.${COMPOSE_PROJECT_NAME}.middlewares=${COMPOSE_PROJECT_NAME}
@@ -26,7 +26,7 @@ services:
       - /usr/local/opt/${COMPOSE_PROJECT_NAME}/conf.yml:/invidious/config/config.yml:ro
 
   mongo:
-    image: docker.io/library/mongo:latest
+    image: ${REGISTRY_MIRROR:-docker.io}/library/mongo:latest
     labels:
       kompose.controller.type: statefulset
     healthcheck:

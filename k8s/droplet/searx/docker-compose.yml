@@ -14,7 +14,7 @@ x-k8s:
 
 services:
   searxng:
-    image: docker.io/searxng/searxng:latest
+    image: ${REGISTRY_MIRROR:-docker.io}/searxng/searxng:latest
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: ask.${DOMAIN}
@@ -37,7 +37,7 @@ services:
       - cache:/var/cache/searxng
 
   redis:
-    image: docker.io/library/redis:latest
+    image: ${REGISTRY_MIRROR:-docker.io}/library/redis:latest
     healthcheck:
       test:
         - CMD

@@ -16,7 +16,7 @@ x-k8s:
 
 services:
   proxy:
-    image: docker.io/nginx:latest
+    image: ${REGISTRY_MIRROR:-docker.io}/nginx:latest
     labels:
       kompose.controller.type: statefulset
       kompose.volume.type: hostPath

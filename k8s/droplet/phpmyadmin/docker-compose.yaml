@@ -1,7 +1,7 @@
 ---
 services:
   phpmyadmin:
-    image: docker.io/library/phpmyadmin:latest
+    image: ${REGISTRY_MIRROR:-docker.io}/library/phpmyadmin:latest
     labels:
       kompose.service.expose: mysql.${DOMAIN}
     healthcheck:
@@ -25,7 +25,7 @@ services:
       PMA_USER: root
 
   mysql:
-    image: docker.io/library/mysql:latest
+    image: ${REGISTRY_MIRROR:-docker.io}/library/mysql:latest
     labels:
       kompose.controller.type: statefulset
     healthcheck:

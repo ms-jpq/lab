@@ -1,7 +1,7 @@
 ---
 services:
   rabbitmq:
-    image: docker.io/library/rabbitmq:management
+    image: ${REGISTRY_MIRROR:-docker.io}/library/rabbitmq:management
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=15672

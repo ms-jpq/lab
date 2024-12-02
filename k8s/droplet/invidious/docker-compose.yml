@@ -22,7 +22,7 @@ services:
       - ./conf.yml:/invidious/config/config.yml:ro
 
   pg:
-    image: docker.io/library/postgres:latest
+    image: ${REGISTRY_MIRROR:-docker.io}/library/postgres:latest
     environment:
       POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
