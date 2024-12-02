@@ -1,0 +1,7 @@
+[Unit]
+Description        = OCI Registry GC Timer -- %I
+
+[Timer]
+Persistent         = yes
+OnCalendar         = daily
+RandomizedDelaySec = 12hours

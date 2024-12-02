@@ -1,0 +1,18 @@
+[Unit]
+Description    = OCI Registry GC Service -- %I
+
+BindsTo        = 1-registry-proxy@%i.service
+After          = 1-registry-proxy@%i.service
+
+[Service]
+Type           = oneshot
+ProtectSystem  = strict
+ProtectHome    = yes
+PrivateTmp     = yes
+ReadWritePaths = %T
+
+User           = 1000
+Group          = 1000
+CacheDirectory = local/oci-registry/%I
+
+ExecStart      = registry garbage-collect %t/local/oci-registry/%I.yml

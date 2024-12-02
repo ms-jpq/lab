@@ -1,0 +1,4 @@
+---
+proxy:
+  remoteurl: ${PROXY_REMOTEURL}
+  ttl: 72h

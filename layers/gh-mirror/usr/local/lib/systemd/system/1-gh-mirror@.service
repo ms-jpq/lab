@@ -6,7 +6,7 @@ Type            = oneshot
 ProtectSystem   = strict
 ProtectHome     = tmpfs
 PrivateTmp      = yes
-ReadWritePaths  = %T %S/local
+ReadWritePaths  = %T
 
 User            = 1000
 Group           = 1000
