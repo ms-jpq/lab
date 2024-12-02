@@ -1,6 +1,7 @@
 gh-mirror
 intel-gvt
 journal
+oci-registry
 qemu
 share
 zfs

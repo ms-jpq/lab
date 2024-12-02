@@ -1,4 +1,5 @@
 {
+  "ENV_OCI_REGISTRIES": [],
   "ENV_BLK_EXPORTS": [],
   "ENV_FS_DOWNLOADS": "downloads",
   "ENV_FS_MOVIES": "media/Movies",
