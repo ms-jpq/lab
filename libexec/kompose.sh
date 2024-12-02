@@ -23,8 +23,12 @@ read -r -d '' -- JQ <<- 'JQ' || true
 sort_by(.kind != "Namespace")[]
 | if (.kind | IN(["DaemonSet", "Deployment", "StatefulSet"][])) then
     .metadata.annotations += $keel
-    | .spec.template.metadata.annotations.["jq.hash"] = $hash
     | .spec.template.spec.initContainers?.[]?.env ?= (.spec.template.spec.containers[].env // [])
+  else
+    .
+  end
+| if ((.kind | IN(["DaemonSet", "Deployment", "StatefulSet"][])) and ([(.spec.template.spec.volumes // [])[].configMap] | select(.) | length) > 0) then
+    .spec.template.metadata.annotations.["jq.hash"] = $hash
   else
     .
   end
