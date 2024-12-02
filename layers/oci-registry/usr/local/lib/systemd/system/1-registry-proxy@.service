@@ -2,6 +2,7 @@
 Description      = OCI Registry Proxy Service -- %I
 
 [Service]
+Restart          = on-failure
 ProtectSystem    = strict
 ProtectHome      = yes
 PrivateTmp       = yes
