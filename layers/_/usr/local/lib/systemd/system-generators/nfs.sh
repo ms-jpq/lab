@@ -6,11 +6,8 @@ shopt -u failglob
 RUN="$1"
 WANTS="$RUN/remote-fs.target.wants"
 
-# shellcheck disable=SC1091
-source -- /usr/local/etc/default/nfs.env
-
-# shellcheck disable=SC2154
-readarray -t -d ',' -- MOUNTS <<< "$NFS_MNTS"
+NFS_MNTS="$(< /usr/local/etc/default/nfs.env)"
+readarray -t -- MOUNTS <<< "$NFS_MNTS"
 
 mkdir -v -p -- "$WANTS"
 for MOUNT in "${MOUNTS[@]}"; do
