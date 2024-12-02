@@ -4,5 +4,15 @@ services:
     image: ghcr.io/wasi-master/13ft:latest
     labels:
       kompose.service.expose: 12ft.${DOMAIN}
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - -O/dev/null
+        - --timeout
+        - "1"
+        - --
+        - 127.0.0.1:5000
     ports:
       - 5000
