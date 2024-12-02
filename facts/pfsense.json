@@ -4,7 +4,8 @@
     "cups.pfsense.enp2s0.pfsense.ENV_TLD",
     "freenas.enp2s0.pfsense.ENV_TLD",
     "pfsense.w-0.pfsense.ENV_TLD",
-    "public.ENV_TLD"
+    "public.ENV_TLD",
+    "registry.ENV_TLD"
   ],
   "ENV_CNAMES": [],
   "ENV_HOST_ALLOW_LIST": [],
@@ -32,7 +33,7 @@
   "ENV_LAN_IFS": ["enp2s0", "enp4s0", "eno1"],
   "ENV_MACHINES": ["freenas.enp2s0.pfsense", "pfsense.w-0.pfsense"],
   "ENV_OVPN_SERVER_NAME": "ENV_WG_SERVER_NAME",
-  "ENV_PUBLIC_SITES": ["public.*"],
+  "ENV_PUBLIC_SITES": ["public.*", "registry.*"],
   "ENV_WAN_IF": "enp1s0",
   "ENV_WG_PEERS": ["opnsense"],
   "ENV_WG_SERVER_NAME": "ENV_DOMAIN"
