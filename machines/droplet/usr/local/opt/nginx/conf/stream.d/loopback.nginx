@@ -1,0 +1,5 @@
+server {
+  listen     127.0.0.1:1194 reuseport;
+  listen     [::1]:1194 reuseport;
+  proxy_pass unix:/run/local/nginx/gateway-http.sock;
+}
