@@ -14,7 +14,7 @@
   ],
   "ENV_MACVLAN_IFS": ["enp109s0", "eno1"],
   "ENV_NFS_EXPORTS": ["downloads", "media", "wallpapers"],
-  "ENV_OCI_REGISTRIES": ["docker.io"],
+  "ENV_OCI_REGISTRIES": ["registry-1.docker.io"],
   "ENV_PG_CLUSTERS": [],
   "ENV_RCLONE_LOCAL": [
     "gray",
