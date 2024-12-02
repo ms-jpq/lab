@@ -13,6 +13,7 @@ RuntimeDirectory = local/oci-registry/proxy
 CacheDirectory   = local/oci-registry/%I
 
 Environment      = PROXY_REMOTEURL=https://%I
+Environment      = RT_ID=%I
 Environment      = CONF=%t/local/oci-registry/proxy/%I.yml
 
 ExecStartPre     = /usr/local/libexec/envsubst2.sh /usr/local/opt/oci-registry/conf.yml ${CONF}

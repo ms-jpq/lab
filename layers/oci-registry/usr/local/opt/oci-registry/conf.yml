@@ -6,3 +6,6 @@ storage:
 proxy:
   remoteurl: ${PROXY_REMOTEURL}
   ttl: 72h
+http:
+  net: unix
+  addr: ${RUNTIME_DIRECTORY}/${RT_ID}.sock
