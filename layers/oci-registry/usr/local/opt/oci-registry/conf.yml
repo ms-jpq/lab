@@ -1,8 +1,14 @@
 ---
 version: 0.1
+log:
+  accesslog:
+    disabled: true
+  level: warn
 storage:
   filesystem:
     rootdirectory: ${CACHE_DIRECTORY}
+delete:
+  enabled: true
 proxy:
   remoteurl: ${PROXY_REMOTEURL}
   ttl: 72h
