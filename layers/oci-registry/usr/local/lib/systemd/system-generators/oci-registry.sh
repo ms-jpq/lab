@@ -18,5 +18,5 @@ for REGISTRY in "${REGISTRIES[@]}"; do
   fi
   NAME="$(systemd-escape -- "$REGISTRY")"
   ln -v -snf -- /usr/local/lib/systemd/system/1-registry-proxy@.service "$WANTS/1-registry-proxy@$NAME.service"
-  ln -v -snf -- /usr/local/lib/systemd/system/1-registry-gc@.timer "$TIMERS/1-registry-gc@$NAME.service"
+  ln -v -snf -- /usr/local/lib/systemd/system/1-registry-gc@.timer "$TIMERS/1-registry-gc@$NAME.timer"
 done

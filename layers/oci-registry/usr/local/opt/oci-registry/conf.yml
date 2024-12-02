@@ -1,4 +1,8 @@
 ---
+version: 0.1
+storage:
+  filesystem:
+    rootdirectory: ${CACHE_DIRECTORY}
 proxy:
   remoteurl: ${PROXY_REMOTEURL}
   ttl: 72h
