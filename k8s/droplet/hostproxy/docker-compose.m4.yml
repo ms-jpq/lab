@@ -20,6 +20,21 @@ services:
     labels:
       kompose.controller.type: statefulset
       kompose.volume.type: hostPath
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --location
+        - --no-progress-meter
+        - --output
+        - /dev/null
+        - --max-time
+        - "1"
+        - --proxy
+        - socks5://localhost
+        - --
+        - http://${DOMAIN}/204
     ports:
       - 1080
     configs:
