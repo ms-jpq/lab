@@ -14,25 +14,31 @@ COMPOSE="./k8s/$SRC"
 DENV='./var/sh/zsh/dev/bin/denv.py'
 
 if (($#)); then
-  FILES=("$COMPOSE/$*"/docker-compose.{yml,m4.yml})
+  FILES=()
+  for F in "$COMPOSE/$*"/docker-compose.{yml,m4.yml}; do
+    if [[ -s $F ]]; then
+      FILES+=("$F")
+    fi
+  done
 else
   FILES=("$COMPOSE"/*/docker-compose.{yml,m4.yml})
 fi
 
 read -r -d '' -- JQ <<- 'JQ' || true
 sort_by(.kind != "Namespace")[]
-| if (.kind | IN(["DaemonSet", "Deployment", "StatefulSet"][])) then
+| (.kind | IN(["DaemonSet", "Deployment", "StatefulSet"][])) as $pods
+| if $pods then
     .metadata.annotations += $keel
     | .spec.template.spec.initContainers?.[]?.env ?= (.spec.template.spec.containers[].env // [])
   else
     .
   end
-| if ((.kind | IN(["DaemonSet", "Deployment", "StatefulSet"][])) and ([(.spec.template.spec.volumes // [])[].configMap] | select(.) | length) > 0) then
-    .spec.template.metadata.annotations.["jq.hash"] = $hash
+| if $pods and ([(.spec.template.spec.volumes // [])[].configMap // empty] | length) > 0 then
+  .spec.template.metadata.annotations.["jq.hash"] = $hash
   else
     .
   end
-| if ((.kind | IN(["DaemonSet", "Deployment", "StatefulSet"][])) and .metadata.annotations["jq.runtime"]) then
+| if $pods and .metadata.annotations["jq.runtime"] then
     .spec.template.spec.runtimeClassName = .metadata.annotations["jq.runtime"]
   else
     .
