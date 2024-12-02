@@ -1,0 +1,11 @@
+#
+server {
+  listen 5000;
+  listen [::]:5000;
+
+  location /${LOCATION} {
+    proxy_pass http://unix:/run/local/oci-registry/proxy/${LOCATION}.sock:;
+  }
+}
+
+include /dev/null;
