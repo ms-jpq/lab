@@ -1,0 +1,8 @@
+server {
+  server_name llama.* cat.*;
+  listen      unix:/run/local/nginx/gateway-https.sock;
+
+  location / {
+    proxy_pass http://esxi.enp1s0.opnsense.home.arpa;
+  }
+}

@@ -5,7 +5,7 @@ services:
     labels:
       jq.runtime: nvidia
       kompose.controller.type: statefulset
-      kompose.service.expose: tabby.${DOMAIN}
+      kompose.service.expose: cat.${DOMAIN}
       kompose.volume.type: hostPath
     environment:
       TABBY_WEBSERVER_JWT_TOKEN_SECRET:
