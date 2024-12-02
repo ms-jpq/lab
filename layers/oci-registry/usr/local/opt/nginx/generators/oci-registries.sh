@@ -5,8 +5,13 @@ shopt -u failglob
 
 RUN="$1"
 
+REGISTRIES=()
 for SOCK in /run/local/oci-registry/proxy/*.sock; do
   BASE="${SOCK##*/}"
   BASE="${BASE%'.sock'}"
-  LOCATION="${BASE%'.sock'}" envsubst < /usr/local/opt/oci-registry/server.nginx
-done > "$RUN/http.d/oci-registry.nginx"
+  REGISTRIES+=("${BASE%'.sock'}")
+done
+
+IFS=','
+/usr/local/libexec/m4.sh -D"ENV_REGISTRIES=${REGISTRIES[*]}" /usr/local/opt/oci-registry/server.nginx | sponge -- "$RUN/http.d/oci-registry.nginx"
+unset -- IFS

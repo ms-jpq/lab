@@ -7,8 +7,7 @@ ProtectHome      = yes
 PrivateTmp       = yes
 ReadWritePaths   = %T
 
-User             = 1000
-Group            = 1000
+User             = www-data
 RuntimeDirectory = local/oci-registry/proxy
 CacheDirectory   = local/oci-registry/%I
 

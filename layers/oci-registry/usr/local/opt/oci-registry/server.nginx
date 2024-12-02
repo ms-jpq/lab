@@ -1,11 +1,14 @@
 #
 server {
-  listen 5000;
-  listen [::]:5000;
+  listen [[::]]:5000 ipv6only=off;
 
-  location /${LOCATION} {
-    proxy_pass http://unix:/run/local/oci-registry/proxy/${LOCATION}.sock:;
+  location / {
+    try_files /dev/null =404;
   }
-}
 
-include /dev/null;
+  # m5_for([REGISTRY], [
+  location /REGISTRY {
+    proxy_pass http://unix:/run/local/oci-registry/proxy/REGISTRY.sock:;
+  }
+  # ], m5_or([ENV_REGISTRIES], []))
+}
