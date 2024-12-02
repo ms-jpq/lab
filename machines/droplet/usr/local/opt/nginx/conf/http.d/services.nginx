@@ -1,7 +1,6 @@
 server {
   server_name autodiscover.*;
   listen      unix:/run/local/nginx/gateway-https.sock;
-  add_header  Alt-Svc 'h3=":443"' always;
 
   location / {
     proxy_pass http://unix:/run/local/nginx/z-push.sock:/;
@@ -13,7 +12,6 @@ server {
   listen        unix:/run/local/nginx/gateway-https.sock;
   include       /usr/local/opt/nginx/conf/auth.nginx;
   merge_slashes off;
-  add_header    Alt-Svc 'h3=":443"' always;
 
   location / {
     include    /usr/local/opt/nginx/conf/auth2.nginx;

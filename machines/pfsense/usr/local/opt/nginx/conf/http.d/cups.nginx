@@ -1,9 +1,8 @@
 server {
   server_name cups.*;
-  include     /usr/local/opt/nginx/conf/listen.nginx;
+  listen      unix:/run/local/nginx/gateway-https.sock;
 
   location / {
-    include    /usr/local/opt/nginx/conf/auth2.nginx;
-    proxy_pass http://localhost:8080;
+    proxy_pass http://unix:/run/local/nginx/cgi.sock:;
   }
 }

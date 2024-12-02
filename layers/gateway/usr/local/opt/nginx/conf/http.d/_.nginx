@@ -1,9 +1,7 @@
 server {
-  listen  unix:/run/local/nginx/gateway-https.sock default_server;
-  include /usr/local/opt/nginx/conf/auth.nginx;
+  listen unix:/run/local/nginx/gateway-https.sock default_server;
 
   location / {
-    include         /usr/local/opt/nginx/conf/auth2.nginx;
     alias           /usr/local/opt/nginx/index/;
     sub_filter_once off;
     sub_filter      "@SCHEME" $scheme;

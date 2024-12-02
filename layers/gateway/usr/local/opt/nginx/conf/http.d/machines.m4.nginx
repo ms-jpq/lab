@@ -3,10 +3,8 @@ server {
   server_name MACH.*;
   set         $x_machine MACH.home.arpa:8080;
   listen      unix:/run/local/nginx/gateway-https.sock;
-  include     /usr/local/opt/nginx/conf/auth.nginx;
 
   location / {
-    include           /usr/local/opt/nginx/conf/auth2.nginx;
     proxy_pass_header Content-Security-Policy;
     proxy_pass        http://$x_machine;
   }
