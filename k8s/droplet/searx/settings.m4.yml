@@ -65,6 +65,7 @@ hostnames:
     - ^([^.]+\.)*baeldung\.com$
     - ^([^.]+\.)*blogspot\.com$
     - ^([^.]+\.)*burnaby\.ca$
+    - ^([^.]+\.)*canadiancontent\.net$
     - ^([^.]+\.)*cbc\.ca$
     - ^([^.]+\.)*clojure\.org$
     - ^([^.]+\.)*costco\.(ca|com)$
@@ -97,6 +98,7 @@ hostnames:
     - ^([^.]+\.)*linuxcontainers\.org$
     - ^([^.]+\.)*lobste\.rs$
     - ^([^.]+\.)*lua\.org$
+    - ^([^.]+\.)*mastodon\.social$
     - ^([^.]+\.)*mathoverflow\.com$
     - ^([^.]+\.)*mayoclinic\.org$
     - ^([^.]+\.)*metacritic\.com$
@@ -128,10 +130,12 @@ hostnames:
     - ^([^.]+\.)*stackexchange\.com$
     - ^([^.]+\.)*stackoverflow\.com$
     - ^([^.]+\.)*superuser\.com$
+    - ^([^.]+\.)*suse\.com$
     - ^([^.]+\.)*swi-prolog\.org$
     - ^([^.]+\.)*terraform\.io$
     - ^([^.]+\.)*themoviedb\.com$
     - ^([^.]+\.)*thesaurus\.com$
+    - ^([^.]+\.)*tomshardware\.com$
     - ^([^.]+\.)*ubc\.ca$
     - ^([^.]+\.)*vancouver\.ca$
     - ^([^.]+\.)*webmasterworld\.com$
