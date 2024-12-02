@@ -68,6 +68,7 @@ hostnames:
     - ^([^.]+\.)*canadiancontent\.net$
     - ^([^.]+\.)*cbc\.ca$
     - ^([^.]+\.)*clojure\.org$
+    - ^([^.]+\.)*computerforums\.net$
     - ^([^.]+\.)*costco\.(ca|com)$
     - ^([^.]+\.)*cppreference\.com$
     - ^([^.]+\.)*crates\.io$
@@ -116,6 +117,7 @@ hostnames:
     - ^([^.]+\.)*python\.org$
     - ^([^.]+\.)*qemu\.org$
     - ^([^.]+\.)*r-project\.org$
+    - ^([^.]+\.)*rancher\.com$
     - ^([^.]+\.)*rottentomatoes\.com$
     - ^([^.]+\.)*rtings\.com$
     - ^([^.]+\.)*rubyapi\.org$
