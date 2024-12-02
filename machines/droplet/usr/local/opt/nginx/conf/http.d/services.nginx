@@ -8,10 +8,9 @@ server {
 }
 
 server {
-  server_name   ~^(?!local\.).*$;
-  listen        unix:/run/local/nginx/gateway-https.sock;
-  include       /usr/local/opt/nginx/conf/auth.nginx;
-  merge_slashes off;
+  server_name ~^(?!local\.).*$;
+  listen      unix:/run/local/nginx/gateway-https.sock;
+  include     /usr/local/opt/nginx/conf/auth.nginx;
 
   location / {
     include    /usr/local/opt/nginx/conf/auth2.nginx;

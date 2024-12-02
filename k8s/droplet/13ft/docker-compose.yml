@@ -1,0 +1,8 @@
+---
+services:
+  thirteen-ft:
+    image: ghcr.io/wasi-master/13ft:latest
+    labels:
+      kompose.service.expose: 12ft.${DOMAIN}
+    ports:
+      - 5000
