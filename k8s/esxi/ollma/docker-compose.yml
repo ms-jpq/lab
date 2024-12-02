@@ -5,7 +5,7 @@ services:
     labels:
       jq.runtime: nvidia
       kompose.controller.type: statefulset
-      kompose.service.expose: ollama
+      kompose.service.expose: ollama.${DOMAIN}
       kompose.volume.type: hostPath
     ports:
       - 11434
