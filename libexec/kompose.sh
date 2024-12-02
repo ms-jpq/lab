@@ -34,7 +34,7 @@ sort_by(.kind != "Namespace")[]
     .
   end
 | if $pods and ([(.spec.template.spec.volumes // [])[].configMap // empty] | length) > 0 then
-  .spec.template.metadata.annotations.["jq.hash"] = $hash
+    .spec.template.metadata.annotations.["jq.hash"] = $hash
   else
     .
   end

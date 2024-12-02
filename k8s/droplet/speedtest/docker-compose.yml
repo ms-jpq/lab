@@ -16,9 +16,9 @@ services:
         - --max-time
         - "1"
         - --
-        - localhost:80
+        - localhost:8080
     ports:
-      - 80
+      - 8080
     volumes:
       - data:/database
 
