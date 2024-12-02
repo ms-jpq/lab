@@ -60,6 +60,7 @@ hostnames:
     - ^([^.]+\.)*(meta)?cpan\.org$
     - ^([^.]+\.)*archive\.(org|ph)$
     - ^([^.]+\.)*archlinux\.org$
+    - ^([^.]+\.)*arstechnica\.com$
     - ^([^.]+\.)*arxiv\.org$
     - ^([^.]+\.)*baeldung\.com$
     - ^([^.]+\.)*blogspot\.com$
@@ -74,6 +75,7 @@ hostnames:
     - ^([^.]+\.)*dictionary\.com$
     - ^([^.]+\.)*discourse\.group$
     - ^([^.]+\.)*fandom\.com$
+    - ^([^.]+\.)*freedesktop\.org$
     - ^([^.]+\.)*gc\.ca$
     - ^([^.]+\.)*genius\.com$
     - ^([^.]+\.)*gitbook\.io$
@@ -92,6 +94,7 @@ hostnames:
     - ^([^.]+\.)*kubernetes\.io$
     - ^([^.]+\.)*learn\.microsoft\.com$
     - ^([^.]+\.)*linux\.org$
+    - ^([^.]+\.)*linuxcontainers\.org$
     - ^([^.]+\.)*lobste\.rs$
     - ^([^.]+\.)*lua\.org$
     - ^([^.]+\.)*mathoverflow\.com$
@@ -109,6 +112,7 @@ hostnames:
     - ^([^.]+\.)*postgresql\.org$
     - ^([^.]+\.)*pypi\.org$
     - ^([^.]+\.)*python\.org$
+    - ^([^.]+\.)*qemu\.org$
     - ^([^.]+\.)*r-project\.org$
     - ^([^.]+\.)*rottentomatoes\.com$
     - ^([^.]+\.)*rtings\.com$
@@ -116,6 +120,7 @@ hostnames:
     - ^([^.]+\.)*rubygems\.org$
     - ^([^.]+\.)*rust-lang\.org$
     - ^([^.]+\.)*serverfault\.com$
+    - ^([^.]+\.)*slashdot\.org$
     - ^([^.]+\.)*sonatype\.com$
     - ^([^.]+\.)*spiceworks\.com$
     - ^([^.]+\.)*sqlite\.org$
@@ -129,6 +134,7 @@ hostnames:
     - ^([^.]+\.)*thesaurus\.com$
     - ^([^.]+\.)*ubc\.ca$
     - ^([^.]+\.)*vancouver\.ca$
+    - ^([^.]+\.)*webmasterworld\.com$
     - ^([^.]+\.)*wikipedia\.org$
     - ^([^.]+\.)*wiktionary\.org$
     - ^([^.]+\.)*ycombinator\.com$
