@@ -1,6 +1,6 @@
 ---
 services:
-  stirling-pdf:
+  squid:
     image: ${REGISTRY_MIRROR:-docker.io}/ubuntu/squid:latest
     labels:
       kompose.controller.type: statefulset
