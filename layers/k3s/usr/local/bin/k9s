@@ -2,4 +2,4 @@
 
 set -o pipefail
 
-exed -- /usr/bin/k9s --logoless --insecure-skip-tls-verify --kubeconfig /etc/rancher/k3s/k3s.yaml
+exec -- /usr/bin/k9s --logoless --insecure-skip-tls-verify --kubeconfig /etc/rancher/k3s/k3s.yaml
