@@ -12,7 +12,7 @@ server {
   }
 
   location /REGISTRY/ {
-    proxy_pass http://unix:/run/local/oci-registry/proxy-REGISTRY/listen.sock:;
+    proxy_pass http://unix:/run/local/oci-registry/proxy/REGISTRY/listen.sock:;
   }
   # ], m5_or([ENV_REGISTRIES], []))
 }
