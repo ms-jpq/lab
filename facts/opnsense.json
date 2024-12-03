@@ -18,11 +18,10 @@
     "XBOX.enp1s0.opnsense.home.arpa@tcp*3074:3074",
     "XBOX.enp1s0.opnsense.home.arpa@udp*3074:3074"
   ],
+  "ENV_INDEX": ["cat", "llama"],
   "ENV_IOT_IFS": [],
   "ENV_LAN_IFS": ["enp1s0"],
   "ENV_MACHINES": [
-    "cat",
-    "llama",
     "droplet.w-0.droplet",
     "esxi.enp1s0.opnsense",
     "opnsense.w-0.opnsense",
