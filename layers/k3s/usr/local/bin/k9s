@@ -1,0 +1,5 @@
+#!/usr/bin/env -S -- bash -Eeu -o pipefail -O dotglob -O nullglob -O extglob -O failglob -O globstar
+
+set -o pipefail
+
+exed -- /usr/bin/k9s --logoless --insecure-skip-tls-verify --kubeconfig /etc/rancher/k3s/k3s.yaml
