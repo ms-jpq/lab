@@ -158,6 +158,15 @@ const append = (sym, root, json) => {
     __REALTIME_TIMESTAMP,
   } = json;
 
+  if (
+    _SYSTEMD_UNIT === "ssh.service" &&
+    ["[preauth]", "Invalid user", "Connection closed by"].some((s) =>
+      MESSAGE?.includes(s),
+    )
+  ) {
+    return;
+  }
+
   const ts = __REALTIME_TIMESTAMP
     ? new Date(Number(__REALTIME_TIMESTAMP) / 1000)
     : new Date();
