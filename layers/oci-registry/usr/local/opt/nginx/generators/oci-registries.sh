@@ -6,10 +6,10 @@ shopt -u failglob
 RUN="$1"
 
 REGISTRIES=()
-for SOCK in /run/local/oci-registry/proxy/*.sock; do
-  BASE="${SOCK##*/}"
-  BASE="${BASE%'.sock'}"
-  REGISTRIES+=("${BASE%'.sock'}")
+for SOCK in /run/local/oci-registry/proxy*/listen.sock; do
+  DIR="${SOCK%/*}"
+  BASE="${DIR##*/}"
+  REGISTRIES+=("${BASE#'proxy-'}")
 done
 
 IFS=','

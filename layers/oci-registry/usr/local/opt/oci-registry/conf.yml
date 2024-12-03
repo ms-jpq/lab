@@ -15,5 +15,5 @@ proxy:
 http:
   net: unix
   relativeurls: true
-  addr: ${RUNTIME_DIRECTORY}/${RT_ID}.sock
+  addr: ${RUNTIME_DIRECTORY}/listen.sock
   prefix: /${RT_ID}/
