@@ -21,6 +21,8 @@
   "ENV_IOT_IFS": [],
   "ENV_LAN_IFS": ["enp1s0"],
   "ENV_MACHINES": [
+    "cat",
+    "llama",
     "droplet.w-0.droplet",
     "esxi.enp1s0.opnsense",
     "opnsense.w-0.opnsense",
