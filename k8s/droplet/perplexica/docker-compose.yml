@@ -2,8 +2,6 @@
 services:
   perplexica-api:
     image: ${REGISTRY_MIRROR:-docker.io}/itzcrazykns1337/perplexica-backend:main
-    labels:
-      kompose.controller.type: statefulset
     environment:
       SEARXNG_API_URL: http://searxng.kompsed-searx.svc.cluster.local:8080
     ports:
