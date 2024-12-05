@@ -1,11 +1,11 @@
 {
   "ENV_BTRFS_MNTS": [],
   "ENV_CERTBOT_SITES": [
+    "s3.ENV_DOMAIN",
     "ENV_DOMAIN",
     "autodiscover.ENV_DOMAIN",
     "ipfs.ENV_DOMAIN",
-    "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN,], ENV_INDEX)",
-    "s3.ENV_DOMAIN"
+    "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN,], ENV_INDEX)"
   ],
   "ENV_INDEX": [
     "12ft",
