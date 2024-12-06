@@ -14,7 +14,7 @@ services:
       - --device
       - cuda
       - --model
-      - Qwen2.5-Coder-7B
+      - Qwen2.5-Coder-3B
     ports:
       - 8080
     volumes:
