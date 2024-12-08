@@ -5,6 +5,7 @@ location /-_-auth-_- {
   proxy_set_header        Content-Length "";
   proxy_set_header        Host $host;
   proxy_set_header        X-Real-IP $remote_addr;
+  proxy_set_header        X-Real-Uri $request_uri;
   proxy_pass_request_body off;
   proxy_pass              http://unix:/run/local/nginx/auth/proxy.sock:/;
 

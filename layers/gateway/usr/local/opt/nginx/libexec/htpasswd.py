@@ -56,7 +56,7 @@ _IP = Union[IPv6Address, IPv4Address]
 @dataclass(frozen=True)
 class _Th:
     allow_list: frozenset[str]
-    authn_path: str
+    authn_path: bytes
     cookie_name: str
     cookie_ttl: float
     domain_parts: int
@@ -120,6 +120,14 @@ def _ip(headers: _Headers, max_ipv6_prefix: int) -> _IP:
             return iface.ip
     else:
         assert False
+
+
+def _path(headers: _Headers) -> str:
+    for path in headers.get(b"x-real-uri", ()):
+        with suppress(UnicodeError):
+            return path.decode()
+    else:
+        return sep
 
 
 def _auth_headers(headers: _Headers) -> Iterator[tuple[bytes, bytes]]:
@@ -228,14 +236,13 @@ async def _thread(th: _Th) -> None:
             _, path, parsed, query, headers = req
             assert parsed.hostname
             host = parsed.hostname.decode()
-            path_info = path.decode() or sep
 
             proto = b"".join(headers.get(b"x-forwarded-proto", ()))
             secure = proto != b"http"
             cname = "__Secure-" + th.cookie_name if secure else th.cookie_name
 
             user = None
-            if commonpath((th.authn_path, path_info)) == th.authn_path:
+            if commonpath((th.authn_path, path)) == th.authn_path:
                 location = b"".join(query.get(b"redirect", ()))
                 user = b"".join(query.get(b"username", ()))
                 passwd = b"".join(query.get(b"password", ()))
@@ -246,6 +253,7 @@ async def _thread(th: _Th) -> None:
                 )
             else:
                 location = None
+                path_info = _path(headers)
                 authorized = match(host + path_info)
                 if not authorized:
                     authorized = _read_auth_cookies(
@@ -366,7 +374,7 @@ def main() -> None:
 
     th = _Th(
         allow_list=allow_list,
-        authn_path=authn_path,
+        authn_path=authn_path.encode(),
         cookie_name=args.cookie_name,
         cookie_ttl=args.cookie_ttl,
         domain_parts=args.domain_parts,
