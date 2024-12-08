@@ -36,7 +36,7 @@ from itertools import repeat
 from logging import DEBUG, StreamHandler, captureWarnings, getLogger
 from multiprocessing import cpu_count
 from pathlib import Path, PurePosixPath
-from posixpath import commonpath, normpath
+from posixpath import commonpath, normpath, sep
 from re import compile
 from socket import SOMAXCONN, AddressFamily, SocketKind, fromfd, socket
 from stat import S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR
@@ -56,7 +56,7 @@ _IP = Union[IPv6Address, IPv4Address]
 @dataclass(frozen=True)
 class _Th:
     allow_list: frozenset[str]
-    authn_path: bytes
+    authn_path: str
     cookie_name: str
     cookie_ttl: float
     domain_parts: int
@@ -82,8 +82,8 @@ def _fnmatch(patterns: frozenset[str]) -> Callable[[str], bool]:
     re = {compile(translate(pat)) for pat in patterns}
 
     @lru_cache
-    def cont(host: str) -> bool:
-        return any(r.match(host) for r in re)
+    def cont(host_path: str) -> bool:
+        return any(r.match(host_path) for r in re)
 
     return cont
 
@@ -228,13 +228,14 @@ async def _thread(th: _Th) -> None:
             _, path, parsed, query, headers = req
             assert parsed.hostname
             host = parsed.hostname.decode()
+            path_info = path.decode() or sep
 
             proto = b"".join(headers.get(b"x-forwarded-proto", ()))
             secure = proto != b"http"
             cname = "__Secure-" + th.cookie_name if secure else th.cookie_name
 
             user = None
-            if commonpath((th.authn_path, path)) == th.authn_path:
+            if commonpath((th.authn_path, path_info)) == th.authn_path:
                 location = b"".join(query.get(b"redirect", ()))
                 user = b"".join(query.get(b"username", ()))
                 passwd = b"".join(query.get(b"password", ()))
@@ -245,7 +246,7 @@ async def _thread(th: _Th) -> None:
                 )
             else:
                 location = None
-                authorized = match(host)
+                authorized = match(host + path_info)
                 if not authorized:
                     authorized = _read_auth_cookies(
                         headers, name=cname, secret=th.hmac_secret
@@ -352,8 +353,8 @@ def main() -> None:
         if line
     )
     remote_sock = Path(args.htpasswd_socket)
-    authn_path = PurePosixPath(args.authn_path).as_posix().encode()
-    assert authn_path.startswith(b"/")
+    authn_path = PurePosixPath(args.authn_path).as_posix()
+    assert authn_path.startswith(sep)
 
     listening_socket = Path(args.listening_socket)
     listening_socket.unlink(missing_ok=True)
