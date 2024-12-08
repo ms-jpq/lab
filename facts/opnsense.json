@@ -29,7 +29,7 @@
   ],
   "ENV_OVPN_SERVER_NAME": "ENV_WG_SERVER_NAME",
   "ENV_OVPN_TCP_CLIENT_PORT": 80,
-  "ENV_PUBLIC_SITES": ["cat.*", "llama.*/api/show"],
+  "ENV_PUBLIC_SITES": ["cat.*"],
   "ENV_WAN_IF": "enp2s0",
   "ENV_WG_PEERS": ["pfsense"],
   "ENV_WG_SERVER_NAME": "ENV_DOMAIN"
