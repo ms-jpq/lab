@@ -3,28 +3,21 @@
 set -o pipefail
 shopt -u failglob
 
-cd -- "${0%/*}/.."
-
 SRC="$1"
 DST="$2"
+DEFS="$DST/.env"
 shift -- 2
 
-MACHINE='k8s'
-COMPOSE="./k8s/$SRC"
-DENV='./var/sh/zsh/dev/bin/denv.py'
+if [[ -v RECURSION ]]; then
+  FILE="$1"
+  DIR="${FILE%/*}"
+  DIRBASE="${DIR##*/}"
+  NAMESPACE="kompsed-$DIRBASE"
+  TMP="$DST/$NAMESPACE"
+  YAML="$TMP.yml"
+  KEEL="$(< ./k8s/keel.json)"
 
-if (($#)); then
-  FILES=()
-  for F in "$COMPOSE/$*"/docker-compose.{yml,m4.yml}; do
-    if [[ -s $F ]]; then
-      FILES+=("$F")
-    fi
-  done
-else
-  FILES=("$COMPOSE"/*/docker-compose.{yml,m4.yml})
-fi
-
-read -r -d '' -- JQ <<- 'JQ' || true
+  read -r -d '' -- JQ <<- 'JQ' || true
 sort_by(.kind != "Namespace")[]
 | (.kind | IN(["DaemonSet", "Deployment", "StatefulSet"][])) as $pods
 | if $pods then
@@ -44,20 +37,6 @@ sort_by(.kind != "Namespace")[]
     .
   end
 JQ
-KEEL="$(< ./k8s/keel.json)"
-
-gmake k8s
-
-DEFS="$DST/.env"
-./libexec/facts.sh "$MACHINE" "./facts/$SRC.k8s".{env,json} > "$DEFS"
-
-printf -- '%s\n' ">>> $COMPOSE" >&2
-for FILE in "${FILES[@]}"; do
-  DIR="${FILE%/*}"
-  DIRBASE="${DIR##*/}"
-  NAMESPACE="kompsed-$DIRBASE"
-  TMP="$DST/$NAMESPACE"
-  YAML="$TMP.yml"
 
   mkdir -p -- "$TMP"
   for F in "$DIR"/*; do
@@ -76,11 +55,33 @@ for FILE in "${FILES[@]}"; do
   printf -- '%s\n' "@ $NAMESPACE" >&2
   HASHED="$(cat -- "$TMP"/* | b3sum --length 32 -- | cut -d ' ' -f 1)"
   FILE_IN="$TMP/docker-compose.yml"
-  CONV=("$DENV" -- "$TMP/.env" ./var/bin/kompose convert --stdout --generate-network-policies --namespace "$NAMESPACE" --file "$FILE_IN")
+  CONV=(./var/sh/zsh/dev/bin/denv.py -- "$TMP/.env" ./var/bin/kompose convert --stdout --generate-network-policies --namespace "$NAMESPACE" --file "$FILE_IN")
   {
     "${CONV[@]}" | ./libexec/yq.sh --sort-keys --slurp --argjson keel "$KEEL" --arg hash "$HASHED" "$JQ"
     K8S_NAMESPACE="$NAMESPACE" envsubst < ./k8s/networkpolicy.k8s.yml
     ./libexec/yq.sh --sort-keys '(.["x-k8s"] // [])[]' < "$FILE_IN" | COMPOSE_PROJECT_NAME="$NAMESPACE" envsubst
   } > "$YAML"
-done
-printf -- '%s\n' "<<< $DST" >&2
+else
+
+  MACHINE='k8s'
+  COMPOSE="./k8s/$SRC"
+
+  if (($#)); then
+    FILES=()
+    for F in "$COMPOSE/$*"/docker-compose.{yml,m4.yml}; do
+      if [[ -s $F ]]; then
+        FILES+=("$F")
+      fi
+    done
+  else
+    FILES=("$COMPOSE"/*/docker-compose.{yml,m4.yml})
+  fi
+
+  gmake k8s
+
+  ./libexec/facts.sh "$MACHINE" "./facts/$SRC.k8s".{env,json} > "$DEFS"
+
+  printf -- '%s\n' ">>> $COMPOSE" >&2
+  printf -- '%s\0' "${FILES[@]}" | RECURSION=1 xargs -r -0 -I % -P 0 -- "$0" "$SRC" "$DST" %
+  printf -- '%s\n' "<<< $DST" >&2
+fi
