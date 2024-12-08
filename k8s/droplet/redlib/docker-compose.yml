@@ -1,7 +1,7 @@
 ---
 services:
   redlib:
-    image: quay.io/redlib/redlib:${TAG}
+    image: quay.io/redlib/redlib:latest
     labels:
       kompose.service.expose: reddit.${DOMAIN}
     environment:
