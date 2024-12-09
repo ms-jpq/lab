@@ -16,7 +16,10 @@ http {
     root   /run/local/webdav/${RW}/root;
 
     location / {
-      autoindex on;
+      autoindex            on;
+      create_full_put_path on;
+      dav_methods          PUT DELETE MKCOL COPY MOVE;
+      min_delete_depth     1;
     }
   }
 }
