@@ -19,6 +19,7 @@ http {
       autoindex            on;
       create_full_put_path on;
       dav_methods          PUT DELETE MKCOL COPY MOVE;
+      # dav_ext_methods      PROPFIND OPTIONS LOCK UNLOCK;
       min_delete_depth     1;
     }
   }
