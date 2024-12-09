@@ -8,7 +8,8 @@ server {
 }
 
 server {
-  llama.*              listen unix:/run/local/nginx/gateway-https.sock;
+  server_name          llama.*;
+  listen               unix:/run/local/nginx/gateway-https.sock;
   auth_basic           "-";
   auth_basic_user_file /var/lib/local/htpasswd/ollama;
 
