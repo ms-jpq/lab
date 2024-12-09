@@ -5,6 +5,7 @@ from importlib import reload
 from io import BytesIO
 from logging import INFO, getLogger
 from os import environ, linesep
+from smtplib import SMTPDataError
 from typing import BinaryIO
 
 from aws_lambda_powertools.utilities.data_classes import S3Event, event_source
@@ -83,15 +84,19 @@ def main(event: S3Event, _: LambdaContext) -> None:
                 finally:
                     if go:
                         with benchmark(name="send"):
-                            send(
-                                mail,
-                                mail_from=_M_FROM,
-                                mail_to=_M_TO,
-                                mail_srv=_M_SRV,
-                                mail_user=_M_USER,
-                                mail_pass=_M_PASS,
-                                timeout=TIMEOUT,
-                            )
+                            try:
+                                send(
+                                    mail,
+                                    mail_from=_M_FROM,
+                                    mail_to=_M_TO,
+                                    mail_srv=_M_SRV,
+                                    mail_user=_M_USER,
+                                    mail_pass=_M_PASS,
+                                    timeout=TIMEOUT,
+                                )
+                            except SMTPDataError as e:
+                                getLogger().exception("%s", record)
+                                raise e
 
         def cont() -> Iterator[Exception]:
             with _pool() as pool:
