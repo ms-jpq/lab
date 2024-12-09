@@ -11,9 +11,12 @@ http {
   tcp_nopush         on;
 
   server {
-    listen           [[::]]:80 ipv6only=off reuseport;
-    proxy_pass       m5_assert([ENV_OLLAMA_API_BASE]);
-    proxy_set_header Authorization "Basic m5_assert([ENV_OLLAMA_API_KEY])";
-    proxy_set_header Host $host;
+    listen [[::]]:80 ipv6only=off reuseport;
+
+    location / {
+      proxy_set_header Authorization "Basic m5_assert([ENV_OLLAMA_API_KEY])";
+      proxy_set_header Host $host;
+      proxy_pass       m5_assert([ENV_OLLAMA_API_BASE]);
+    }
   }
 }
