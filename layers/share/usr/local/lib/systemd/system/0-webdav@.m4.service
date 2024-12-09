@@ -1,22 +1,23 @@
 [[Unit]]
-Description       = Webdav Server - %J:%I
+Description         = Webdav Server - %J:%I
 
 [[Service]]
-Type              = forking
-PIDFile           = local/%J/%I/nginx.pid
-Restart           = on-failure
-ProtectSystem     = strict
-ProtectHome       = yes
-PrivateTmp        = yes
-ReadWritePaths    = %t/local/%J/%I
-RuntimeDirectory  = local/%J/%I
+Type                = forking
+PIDFile             = local/%J/%I/nginx.pid
+Restart             = on-failure
+ProtectSystem       = strict
+ProtectHome         = yes
+PrivateTmp          = yes
+ReadWritePaths      = %t/local/%J/%I
+RuntimeDirectory    = local/%J/%I
 
-Environment       = RW=%I
+TemporaryFileSystem = %S/nginx
+Environment         = RW=%I
 
-ExecStartPre      = /usr/local/libexec/envsubst2.sh /usr/local/opt/webdav/share.nginx ${RUNTIME_DIRECTORY}/main.nginx
-ExecStartPre      = mkdir -p -- ${RUNTIME_DIRECTORY}/root
-ExecStart         = nginx -c ${RUNTIME_DIRECTORY}/main.nginx
+ExecStartPre        = /usr/local/libexec/envsubst2.sh /usr/local/opt/webdav/share.nginx ${RUNTIME_DIRECTORY}/main.nginx
+ExecStartPre        = mkdir -p -- ${RUNTIME_DIRECTORY}/root
+ExecStart           = nginx -c ${RUNTIME_DIRECTORY}/main.nginx
 
 # m5_for([SHARE], [
-BindReadOnlyPaths = /media/SHARE:%t/local/%J/%I/root/SHARE
+BindReadOnlyPaths   = /media/SHARE:%t/local/%J/%I/root/SHARE
 # ], m5_assert([ENV_WEB_RO_EXPORTS]))
