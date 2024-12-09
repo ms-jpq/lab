@@ -1,3 +1,8 @@
+map $http_authorization $modified_auth {
+  "~^Bearer (.*)$" "Basic $1";
+  default          $http_authorization;
+}
+
 server {
   server_name cat.*;
   listen      unix:/run/local/nginx/gateway-https.sock;
@@ -8,12 +13,25 @@ server {
 }
 
 server {
-  server_name          llama.*;
-  listen               unix:/run/local/nginx/gateway-https.sock;
-  auth_basic           "-";
-  auth_basic_user_file /var/lib/local/htpasswd/ollama;
+  listen unix:/run/local/nginx/ollama.sock;
 
   location / {
+    auth_basic           "-";
+    auth_basic_user_file /var/lib/local/htpasswd/ollama;
+    proxy_pass           http://esxi.enp1s0.opnsense.home.arpa;
+  }
+}
+
+server {
+  server_name llama.*;
+  listen      unix:/run/local/nginx/gateway-https.sock;
+
+  location / {
+    proxy_set_header Authorization $modified_auth;
+    proxy_pass       http://unix:/run/local/nginx/ollama.sock:/;
+  }
+
+  location /api/show {
     proxy_pass http://esxi.enp1s0.opnsense.home.arpa;
   }
 }
