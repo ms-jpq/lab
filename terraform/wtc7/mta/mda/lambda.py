@@ -5,6 +5,7 @@ from importlib import reload
 from io import BytesIO
 from logging import INFO, getLogger
 from os import environ, linesep
+from pprint import pprint
 from smtplib import SMTPDataError
 from typing import BinaryIO
 
@@ -95,7 +96,7 @@ def main(event: S3Event, _: LambdaContext) -> None:
                                     timeout=TIMEOUT,
                                 )
                             except SMTPDataError as e:
-                                getLogger().exception("%s", record)
+                                pprint(record)
                                 raise e
 
         def cont() -> Iterator[Exception]:
