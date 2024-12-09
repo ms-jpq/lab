@@ -1,6 +1,16 @@
 server {
-  server_name llama.* cat.*;
+  server_name cat.*;
   listen      unix:/run/local/nginx/gateway-https.sock;
+
+  location / {
+    proxy_pass http://esxi.enp1s0.opnsense.home.arpa;
+  }
+}
+
+server {
+  llama.*              listen unix:/run/local/nginx/gateway-https.sock;
+  auth_basic           "-";
+  auth_basic_user_file /var/lib/local/htpasswd/ollama;
 
   location / {
     proxy_pass http://esxi.enp1s0.opnsense.home.arpa;
