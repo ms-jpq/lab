@@ -26,7 +26,7 @@ services:
       NEXT_AUTH_SECRET:
       NEXT_AUTH_SSO_PROVIDERS: auth0
       NEXT_PUBLIC_SERVICE_MODE: server
-      OLLAMA_MODEL_LIST: +qwen2.5:3b
+      OLLAMA_MODEL_LIST: +qwen2.5:3b,+qwen2.5-coder:3b
       OLLAMA_PROXY_URL: http://proxy
       OPENAI_API_KEY:
       S3_ACCESS_KEY_ID:
