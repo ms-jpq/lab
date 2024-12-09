@@ -17,14 +17,14 @@ http {
 
     location / {
       # fancyindex_case_sensitive off;
-      create_full_put_path     on;
-      fancyindex               on;
-      fancyindex_ignore        "\\." "\\.\\.";
-      fancyindex_show_dotfiles on;
-      fancyindex_time_format   "%Y-%m-%d %H:%M";
-      dav_methods              PUT DELETE MKCOL COPY MOVE;
-      dav_ext_methods          PROPFIND OPTIONS LOCK UNLOCK;
-      min_delete_depth         1;
+      create_full_put_path       on;
+      fancyindex                 on;
+      fancyindex_hide_parent_dir on;
+      fancyindex_show_dotfiles   on;
+      fancyindex_time_format     "%Y-%m-%d %H:%M";
+      dav_methods                PUT DELETE MKCOL COPY MOVE;
+      dav_ext_methods            PROPFIND OPTIONS LOCK UNLOCK;
+      min_delete_depth           1;
     }
   }
 }
