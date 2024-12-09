@@ -23,5 +23,5 @@ BindReadOnlyPaths        = /media/SHARE:/media/SHARE
 Environment              = SOCK=%t/local/webdav/%j.sock
 Environment              = READONLY=--read-only
 
-ExecStart                = rclone serve webdav --config=/dev/null --dir-cache-time=0 --poll-interval=0 --addr=${SOCK} --baseurl=/webdav/%j $READONLY -- /media
+ExecStart                = nginx -g 'daemon off;' -c /opt
 ExecStartPost            = /usr/local/libexec/retry.sh 0.1 chmod -- g+w ${SOCK}
