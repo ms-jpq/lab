@@ -3,6 +3,5 @@ k3s
 nspawn
 postgres
 qemu
-rclone-mnt
 share
 zfs
