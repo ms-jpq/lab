@@ -7,9 +7,9 @@ location /webdav/rw {
 }
 
 location /webdav/ro/ {
-  proxy_pass http://unix:/run/local/webdav/ro.sock;
+  proxy_pass http://unix:/run/local/webdav/ro/index.sock:/;
 }
 
 location /webdav/rw/ {
-  proxy_pass http://unix:/run/local/webdav/rw.sock;
+  proxy_pass http://unix:/run/local/webdav/rw/index.sock:/;
 }

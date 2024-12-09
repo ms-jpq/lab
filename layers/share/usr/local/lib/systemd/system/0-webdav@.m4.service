@@ -14,6 +14,7 @@ RuntimeDirectory  = local/%J/%I
 Environment       = RW=%I
 
 ExecStartPre      = /usr/local/libexec/envsubst2.sh /usr/local/opt/webdav/share.nginx ${RUNTIME_DIRECTORY}/main.nginx
+ExecStartPre      = mkdir -p -- ${RUNTIME_DIRECTORY}/root
 ExecStart         = nginx -c ${RUNTIME_DIRECTORY}/main.nginx
 
 # m5_for([SHARE], [

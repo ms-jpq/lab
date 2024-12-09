@@ -12,7 +12,7 @@ http {
   include /usr/local/opt/nginx/conf/http.nginx;
 
   server {
-    listen /run/local/webdav/${RW}.sock;
+    listen unix:/run/local/webdav/${RW}/index.sock;
     root   /run/local/webdav/${RW}/root;
 
     location / {
