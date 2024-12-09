@@ -1,4 +1,4 @@
-/usr/local/lib/systemd/system/multi-user.target.wants/0-webdav-ro.service   ../0-webdav-ro.service
-/usr/local/lib/systemd/system/multi-user.target.wants/0-webdav-rw.service   ../0-webdav-rw.service
+/usr/local/lib/systemd/system/multi-user.target.wants/0-webdav@ro.service   ../0-webdav@.service
+/usr/local/lib/systemd/system/multi-user.target.wants/0-webdav@rw.service   ../0-webdav@.service
 /usr/local/lib/systemd/system/multi-user.target.wants/elasticsearch.service /usr/lib/systemd/system/elasticsearch.service
 /usr/local/lib/systemd/system/multi-user.target.wants/kibana.service        /usr/lib/systemd/system/kibana.service
