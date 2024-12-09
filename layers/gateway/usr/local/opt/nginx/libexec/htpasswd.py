@@ -41,7 +41,7 @@ from re import compile
 from socket import SOMAXCONN, AddressFamily, SocketKind, fromfd, socket
 from stat import S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR
 from time import time
-from typing import NewType, Union
+from typing import NewType
 from urllib.parse import SplitResultBytes, parse_qs, urlsplit
 
 _Method = NewType("_Method", bytes)
@@ -50,7 +50,7 @@ _Query = NewType("_Query", Mapping[bytes, Sequence[bytes]])
 _Req = tuple[_Method, bytes, SplitResultBytes, _Query, _Headers]
 
 
-_IP = Union[IPv6Address, IPv4Address]
+_IP = IPv6Address | IPv4Address
 
 
 @dataclass(frozen=True)
@@ -69,13 +69,6 @@ class _Th:
 
 _ALGORITHM = "sha512"
 _RW_RW_RW_ = (S_IRUSR | S_IWUSR) | (S_IRGRP | S_IWGRP) | (S_IROTH | S_IWOTH)
-
-
-with nullcontext():
-    LOG = getLogger()
-    LOG.addHandler(StreamHandler())
-    LOG.setLevel(DEBUG)
-    captureWarnings(True)
 
 
 def _fnmatch(patterns: frozenset[str]) -> Callable[[str], bool]:
@@ -253,8 +246,8 @@ async def _thread(th: _Th) -> None:
                 )
             else:
                 location = None
-                path_info = _path(headers)
-                authorized = match(host + path_info)
+                path_info = host + _path(headers)
+                authorized = match(path_info)
                 if not authorized:
                     authorized = _read_auth_cookies(
                         headers, name=cname, secret=th.hmac_secret
@@ -390,4 +383,9 @@ def main() -> None:
             pass
 
 
-main()
+with nullcontext():
+    LOG = getLogger()
+    LOG.addHandler(StreamHandler())
+    LOG.setLevel(DEBUG)
+    captureWarnings(True)
+    main()
