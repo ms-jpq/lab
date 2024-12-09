@@ -8,6 +8,7 @@ services:
       kompose.service.expose: llama.${DOMAIN}
       kompose.volume.type: hostPath
     environment:
+      OLLAMA_FLASH_ATTENTION: 1
       OLLAMA_KEEP_ALIVE: 1m
     ports:
       - 11434
