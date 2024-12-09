@@ -1,1 +1,0 @@
-deb http://nginx.org/packages/ubuntu m5_assert([ENV_VERSION_CODENAME]) nginx
