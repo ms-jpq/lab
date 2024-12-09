@@ -2,7 +2,7 @@
 
 from configparser import RawConfigParser
 from itertools import chain
-from json import loads
+from json import load
 from os import linesep
 from pathlib import Path
 from uuid import uuid4
@@ -15,8 +15,8 @@ class _Parser(RawConfigParser):
         return optionstr
 
 
-facts = Path(__file__).parent.parent / "facts"
-text = facts.joinpath("droplet.env").read_text()
+root = Path(__file__).parent.parent
+text = root.joinpath("facts", "miniflux.env").read_text()
 lines = "".join(chain((f"[{uuid4()}]", linesep), text))
 parser = _Parser(
     allow_no_value=True,
@@ -31,7 +31,7 @@ env = {k: v for section in parser.values() for k, v in section.items()}
 domain, category, username, password = (
     env["ENV_DOMAIN"],
     env["ENV_LIBREDDIT_CATEGORY"],
-    env["ENV_MAIL"],
+    env["ENV_MINIFLUX_USERNAME"],
     env["ENV_MINIFLUX_PASSWORD"],
 )
 
@@ -39,7 +39,8 @@ client = Client(f"https://rss.{domain}", username=username, password=password)
 feeds = client.get_feeds()
 uris = {feed["feed_url"]: feed["id"] for feed in feeds}
 
-json = loads(facts.joinpath("droplet.json").read_text())
+with root.joinpath("k8s", "droplet", "redlib", "values.json").open() as fd:
+    json = load(fd)
 subs = {
     f"https://reddit.{domain}/r/{sub}.rss"
     for sub in json["ENV_REDLIB_DEFAULT_SUBSCRIPTIONS"]
