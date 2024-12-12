@@ -12,6 +12,7 @@ resource "google_project_service" "dalaran" {
 resource "google_project_service" "kalimdor" {
   provider = google.kalimdor
   for_each = toset([
+    "aiplatform.googleapis.com",
     "compute.googleapis.com",
     "dns.googleapis.com",
   ])

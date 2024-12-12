@@ -96,7 +96,7 @@ def main(event: S3Event, _: LambdaContext) -> None:
                                     timeout=TIMEOUT,
                                 )
                             except SMTPDataError as e:
-                                pprint(record)
+                                pprint(record._data)
                                 raise e
 
         def cont() -> Iterator[Exception]:
