@@ -201,14 +201,14 @@ engines:
     engine: command
     result_template: default.html
     delimiter:
-      chars: " "
+      chars: "^"
       keys:
-        - "content"
-        - "url"
+        - title
+        - url
     command:
       - /usr/bin/printf
       - --
-      - "PERPLEXICA https://perp.m5_assert([ENV_DOMAIN])?q=%s\n"
+      - "Perplexica^https://perp.m5_assert([ENV_DOMAIN])?q=%s\n"
       - "{{QUERY}}"
 
   - name: wolframalpha
