@@ -196,12 +196,17 @@ hostnames:
 
 engines:
   - name: perplexica
-    shortcut: pe
-    eengine: command
+    shortcut: p
+    engine: command
+    delimiter:
+      chars: " "
+      keys:
+        - "content"
+        - "url"
     command:
-      - printf
+      - /usr/bin/printf
       - --
-      - "https://perp.m5_assert([ENV_DOMAIN])/search?q=%s"
+      - "PERPLEXICA https://perp.m5_assert([ENV_DOMAIN])?q=%s\n"
       - "{{QUERY}}"
 
   - name: wolframalpha
