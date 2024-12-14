@@ -195,22 +195,6 @@ hostnames:
     - ^([^.]+\.)*wikihow\.com$
 
 engines:
-  - name: perplexica
-    disabled: false
-    shortcut: p
-    engine: command
-    result_template: default.html
-    delimiter:
-      chars: "^"
-      keys:
-        - title
-        - url
-    command:
-      - /usr/bin/printf
-      - --
-      - "Perplexica^https://perp.m5_assert([ENV_DOMAIN])?q=%s\n"
-      - "{{QUERY}}"
-
   - name: wolframalpha
     disabled: true
 
