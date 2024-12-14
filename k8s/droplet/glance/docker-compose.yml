@@ -3,7 +3,7 @@ services:
   glance:
     image: ${REGISTRY_MIRROR:-docker.io}/glanceapp/glance:latest
     labels:
-      kompose.service.expose: mitm.${DOMAIN}
+      kompose.service.expose: glance.${DOMAIN}
     # healthcheck:
     #   test:
     #     - CMD

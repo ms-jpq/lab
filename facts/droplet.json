@@ -45,6 +45,7 @@
     "dockerhub.*",
     "docs.*",
     "draw.*",
+    "glance.*",
     "http.*",
     "minio.*",
     "pastebin.*",

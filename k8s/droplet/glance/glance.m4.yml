@@ -22,7 +22,7 @@ pages:
       - size: full
         widgets:
           - type: search
-            search-engine: https://glance.m5_assert([ENV_DOMAIN])?q={QUERY}
+            search-engine: https://perp.m5_assert([ENV_DOMAIN])?q={QUERY}
 
           - type: lobsters
 
