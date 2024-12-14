@@ -198,6 +198,7 @@ engines:
   - name: perplexica
     shortcut: p
     engine: command
+    result_template: default.html
     delimiter:
       chars: " "
       keys:
