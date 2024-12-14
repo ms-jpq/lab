@@ -4,7 +4,7 @@ services:
     image: ghcr.io/hotio/prowlarr:latest
     labels:
       kompose.controller.type: statefulset
-      kompose.service.expose: bt.${DOMAIN}
+      kompose.service.expose: mitm.${DOMAIN}
     healthcheck:
       test:
         - CMD
@@ -21,4 +21,4 @@ services:
     ports:
       - 9696
     volumes:
-      - /var/lib/local/${COMPOSE_PROJECT_NAME}:/config
+      - /var/lib/local/prowlarr:/config
