@@ -196,6 +196,7 @@ hostnames:
 
 engines:
   - name: perplexica
+    disabled: false
     shortcut: p
     engine: command
     result_template: default.html
