@@ -36,7 +36,7 @@
   "ENV_OVPN_SERVER_NAME": "ENV_WG_SERVER_NAME",
   "ENV_PUBLIC_SITES": [
     "12ft.*",
-    "ENV_DOMAIN",
+    "ENV_DOMAIN/",
     "ask.*",
     "autodiscover.*",
     "bing.*",
