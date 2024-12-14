@@ -195,6 +195,15 @@ hostnames:
     - ^([^.]+\.)*wikihow\.com$
 
 engines:
+  - name: perplexica
+    shortcut: pe
+    eengine: command
+    command:
+      - printf
+      - --
+      - "https://perp.m5_assert([ENV_DOMAIN])/search?q=%s"
+      - "{{QUERY}}"
+
   - name: wolframalpha
     disabled: true
 
