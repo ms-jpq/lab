@@ -54,7 +54,7 @@ def register(name: str, uri: str, timeout: float) -> None:
 
             code, lock = "", Lock()
 
-            class _Loader(SourceLoader, InspectLoader):
+            class _Loader(SourceLoader, InspectLoader): # type: ignore
                 def get_filename(self, fullname: str) -> str:
                     src = self.get_source(fullname)
                     return _NS.joinpath(str(hash(src))).as_posix()
