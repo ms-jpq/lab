@@ -2,6 +2,7 @@ server {
   server_name plex.*;
   set         $x_plex freenas.enp2s0.pfsense.home.arpa:32400;
   listen      unix:/run/local/nginx/gateway-https.sock;
+  listen      [::]:32400 ipv6only=off ssl http2 reuseport;
 
   location / {
     proxy_pass http://$x_plex;
