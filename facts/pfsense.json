@@ -8,8 +8,8 @@
     "registry.ENV_TLD"
   ],
   "ENV_CNAMES": [],
-  "ENV_HOST_ALLOW_LIST": [],
-  "ENV_HOST_FORWARD_LIST": [],
+  "ENV_HOST_ALLOW_LIST": ["freenas.enp2s0.pfsense.home.arpa@tcp*32400"],
+  "ENV_HOST_FORWARD_LIST": ["freenas.enp2s0.pfsense.home.arpa@tcp*32400:32400"],
   "ENV_INDEX": [
     "/die/die/die",
     "cups.pfsense.enp2s0.pfsense",

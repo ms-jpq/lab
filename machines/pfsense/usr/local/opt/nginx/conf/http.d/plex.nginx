@@ -4,6 +4,6 @@ server {
   listen      unix:/run/local/nginx/gateway-https.sock;
 
   location / {
-    proxy_pass http://$x_plex;
+    proxy_pass https://$x_plex;
   }
 }
