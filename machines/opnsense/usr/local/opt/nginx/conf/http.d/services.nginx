@@ -6,25 +6,28 @@ map $http_authorization $modified_auth {
 server {
   server_name cat.*;
   listen      unix:/run/local/nginx/gateway-https.sock;
+  set         $x_k8s esxi.enp1s0.opnsense.home.arpa;
 
   location / {
-    proxy_pass http://esxi.enp1s0.opnsense.home.arpa;
+    proxy_pass http://$x_k8s;
   }
 }
 
 server {
   listen unix:/run/local/nginx/ollama.sock;
+  set    $x_k8s esxi.enp1s0.opnsense.home.arpa;
 
   location / {
     auth_basic           "-";
     auth_basic_user_file /var/lib/local/htpasswd/ollama;
-    proxy_pass           http://esxi.enp1s0.opnsense.home.arpa;
+    proxy_pass           http://$x_k8s;
   }
 }
 
 server {
   server_name llama.*;
   listen      unix:/run/local/nginx/gateway-https.sock;
+  set         $x_k8s esxi.enp1s0.opnsense.home.arpa;
 
   location / {
     proxy_set_header Authorization $modified_auth;
@@ -33,6 +36,6 @@ server {
   }
 
   location /api/show {
-    proxy_pass http://esxi.enp1s0.opnsense.home.arpa;
+    proxy_pass http://$x_k8s;
   }
 }
