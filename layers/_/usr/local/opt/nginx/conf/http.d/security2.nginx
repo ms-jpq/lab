@@ -1,0 +1,4 @@
+proxy_hide_header Content-Security-Policy;
+proxy_hide_header X-Content-Type-Options;
+add_header        Content-Security-Policy $x_content_security_policy always;
+add_header        X-Content-Type-Options "nosniff" always;

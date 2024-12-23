@@ -2,8 +2,3 @@ map $sent_http_content_security_policy $x_content_security_policy {
   ""      "default-src 'self' data: 'unsafe-inline' 'unsafe-eval' *.$optimistic_host; img-src * data:; media-src * data:;";
   default "";
 }
-
-proxy_hide_header Content-Security-Policy;
-proxy_hide_header X-Content-Type-Options;
-add_header        Content-Security-Policy $x_content_security_policy always;
-add_header        X-Content-Type-Options "nosniff" always;

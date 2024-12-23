@@ -1,3 +1,4 @@
+include      /usr/local/opt/nginx/conf/http.d/security2.nginx;
 auth_request /-_-auth-_-;
 
 location /-_-auth-_- {
