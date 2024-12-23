@@ -1,0 +1,5 @@
+server {
+  set        $x_plex freenas.enp2s0.pfsense.home.arpa:32400;
+  listen     [::]:32400 ipv6only=off ssl;
+  proxy_pass $x_plex;
+}
