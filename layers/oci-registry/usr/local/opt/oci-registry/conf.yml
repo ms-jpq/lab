@@ -16,4 +16,3 @@ http:
   net: unix
   relativeurls: true
   addr: ${RUNTIME_DIRECTORY}/listen.sock
-  prefix: /${RT_ID}/

@@ -4,6 +4,6 @@ server {
   set         $x_registry freenas.enp2s0.pfsense.home.arpa:5000;
 
   location / {
-    proxy_pass http://$x_registry/registry-1.docker.io;
+    proxy_pass http://$x_registry/registry-1.docker.io/;
   }
 }
