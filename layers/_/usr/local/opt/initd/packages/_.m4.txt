@@ -44,3 +44,4 @@
 + ttyd
 + unattended-upgrades
 + unzip
++ zram-config
