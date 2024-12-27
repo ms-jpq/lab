@@ -1,0 +1,19 @@
+---
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    labels:
+      kompose.service.expose: n8n.${DOMAIN}
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - -O/dev/null
+        - --timeout
+        - "1"
+        - --
+        - 127.0.0.1:5678
+    environment: {}
+    ports:
+      - 5678
