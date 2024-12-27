@@ -3,7 +3,7 @@ server {
   listen      unix:/run/local/nginx/gateway-https.sock;
   set         $x_registry freenas.enp2s0.pfsense.home.arpa:5000;
 
-  location / {
-    proxy_pass http://$x_registry/registry-1.docker.io/;
+  location ~ ^(.*)$ {
+    proxy_pass http://$x_registry/registry-1.docker.io$1;
   }
 }
