@@ -2,6 +2,7 @@ gh-mirror
 intel-gvt
 journal
 media
+nspawn
 oci-registry
 qemu
 share
