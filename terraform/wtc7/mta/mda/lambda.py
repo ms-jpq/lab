@@ -1,9 +1,9 @@
 from collections.abc import Iterator
 from concurrent.futures import Executor, ThreadPoolExecutor, as_completed
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from importlib import reload
 from io import BytesIO
-from logging import INFO, getLogger
+from logging import INFO, captureWarnings, getLogger
 from os import environ, linesep
 from pprint import pprint
 from smtplib import SMTPDataError
@@ -20,9 +20,6 @@ from boto3 import client  # pyright:ignore
 from .fax import parse, send
 from .gist import benchmark, log, register
 
-getLogger().setLevel(INFO)
-
-
 TIMEOUT = 6.9
 _M_SRV, _M_FROM, _M_TO, _M_USER, _M_PASS, _M_FILT = (
     environ["MAIL_SRV"],
@@ -32,11 +29,19 @@ _M_SRV, _M_FROM, _M_TO, _M_USER, _M_PASS, _M_FILT = (
     environ["MAIL_PASS"],
     environ["MAIL_FILT"],
 )
-_S3 = client(service_name="s3")
 
-register(name="sieve", uri=_M_FILT, timeout=TIMEOUT)
+with nullcontext():
+    _S3 = client(service_name="s3")
 
-import sieve  # pyright:ignore
+
+with nullcontext():
+    captureWarnings(True)
+    getLogger().setLevel(INFO)
+
+with nullcontext():
+    register(name="sieve", uri=_M_FILT, timeout=TIMEOUT)
+
+    import sieve  # pyright:ignore
 
 
 @contextmanager

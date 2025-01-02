@@ -1,10 +1,16 @@
 from collections.abc import Iterator, Sequence
+from contextlib import suppress
 from dataclasses import dataclass
 from email import message_from_bytes
-from email.errors import MultipartInvariantViolationDefect, StartBoundaryNotFoundDefect
+from email.errors import (
+    HeaderParseError,
+    MultipartInvariantViolationDefect,
+    StartBoundaryNotFoundDefect,
+)
+from email.header import decode_header
 from email.message import EmailMessage
 from email.policy import SMTP, SMTPUTF8
-from email.utils import formataddr, getaddresses, parseaddr
+from email.utils import formataddr, getaddresses, parseaddr, unquote
 from itertools import takewhile
 from logging import DEBUG, getLogger
 from os import linesep
@@ -45,6 +51,7 @@ def parse(fp: BinaryIO) -> _Mail:
     for err in mail.headers.defects:
         if not isinstance(err, _MISSING_BODY_DEFECTS):
             getLogger().warning("%s: %s", type(err).__name__, err)
+
     return mail
 
 
@@ -53,10 +60,25 @@ def _unparse(mail: _Mail) -> bytes:
     return head + mail.body
 
 
+def _decode(name: str) -> Iterator[str]:
+    with suppress(HeaderParseError):
+        for lhs, rhs in decode_header(name):
+            if isinstance(lhs, bytes) and isinstance(rhs, str):
+                with suppress(UnicodeDecodeError):
+                    yield lhs.decode(rhs)
+            elif isinstance(lhs, str):
+                yield lhs
+            else:
+                assert False, (lhs, rhs)
+
+
 def _redirect(msg: EmailMessage, src: str) -> Iterator[tuple[str, _Rewrite]]:
     msg_from = " ".join(msg.get("from", "").split())
-    _, x_from = parseaddr(msg_from)
-    nxt_from = formataddr((msg_from, src))
+
+    raw_name, x_from = parseaddr(msg_from)
+    name = " ".join(map(unquote, _decode(raw_name)))
+    new_name = name + f" <{x_from}>"
+    nxt_from = formataddr((new_name, src))
 
     mod = {
         "from": _Rewrite(act="replace", val=nxt_from),
@@ -72,8 +94,8 @@ def _redirect(msg: EmailMessage, src: str) -> Iterator[tuple[str, _Rewrite]]:
         "message-id": _Rewrite(act="uniq", val=""),
     }
 
-    for name, spec in mod.items():
-        yield name, spec
+    for hdr, spec in mod.items():
+        yield hdr, spec
 
 
 def _rewrite(msg: EmailMessage, rewrites: Iterator[tuple[str, _Rewrite]]) -> None:
