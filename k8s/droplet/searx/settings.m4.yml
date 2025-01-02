@@ -89,6 +89,7 @@ hostnames:
     - ^([^.]+\.)*gov\.cn$
     - ^([^.]+\.)*halifax\.ca$
     - ^([^.]+\.)*haskell\.org$
+    - ^([^.]+\.)*haxx\.se$
     - ^([^.]+\.)*imdb\.com$
     - ^([^.]+\.)*investopedia\.com$
     - ^([^.]+\.)*kernel\.org$
