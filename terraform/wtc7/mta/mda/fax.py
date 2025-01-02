@@ -76,7 +76,7 @@ def _redirect(msg: EmailMessage, src: str) -> Iterator[tuple[str, _Rewrite]]:
     msg_from = " ".join(msg.get("from", "").split())
 
     raw_name, x_from = parseaddr(msg_from)
-    name = " ".join(map(unquote, _decode(raw_name)))
+    name = " ".join(_decode(unquote(raw_name)))
     new_name = name + f" <{x_from}>"
     nxt_from = formataddr((new_name, src))
 
