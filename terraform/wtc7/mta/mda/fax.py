@@ -143,11 +143,7 @@ def send(
     msg = _unparse(mail)
     with SMTP_SSL(host=mail_srv, timeout=timeout) as client:
         client.login(mail_user, mail_pass)
-        client.sendmail(
-            from_addr=mail_from,
-            to_addrs=to_addrs,
-            msg=msg,
-        )
+        client.sendmail(from_addr=mail_from, to_addrs=to_addrs, msg=msg)
     getLogger().info("%s", f"-->> {to_addrs}")
 
 
