@@ -25,7 +25,7 @@
     "freenas.enp2s0.pfsense/zfs.sh",
     "opnsense.w-0.opnsense",
     "orthanc.enp1s0.opnsense",
-    "orthanc.enp1s0.opnsense/vm.html"
+    "plex"
   ],
   "ENV_IOT_IFS": ["enp4s0", "eno1"],
   "ENV_LAN_IFS": ["enp2s0", "enp4s0", "eno1"],
