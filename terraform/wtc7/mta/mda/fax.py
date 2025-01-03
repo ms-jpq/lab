@@ -1,3 +1,4 @@
+from argparse import ArgumentParser, Namespace
 from collections.abc import Iterator, Sequence
 from contextlib import suppress
 from dataclasses import dataclass
@@ -150,21 +151,19 @@ def send(
     getLogger().info("%s", f"-->> {to_addrs}")
 
 
-if __name__ == "__main__":
-    from argparse import ArgumentParser, Namespace
+def _parse_args() -> Namespace:
+    parser = ArgumentParser()
+    parser.add_argument("-f", "--mail-from", required=True)
+    parser.add_argument("-t", "--mail-to", required=True)
+    parser.add_argument("-s", "--mail-srv", required=True)
+    parser.add_argument("-u", "--mail-user", required=True)
+    parser.add_argument("-p", "--mail-pass", required=True)
+    parser.add_argument("--timeout", type=float, default=5)
+    return parser.parse_args()
 
-    def _parse_args() -> Namespace:
-        parser = ArgumentParser()
-        parser.add_argument("-f", "--mail-from", required=True)
-        parser.add_argument("-t", "--mail-to", required=True)
-        parser.add_argument("-s", "--mail-srv", required=True)
-        parser.add_argument("-u", "--mail-user", required=True)
-        parser.add_argument("-p", "--mail-pass", required=True)
-        parser.add_argument("--timeout", type=float, default=5)
-        return parser.parse_args()
 
+def main() -> None:
     args = _parse_args()
-    getLogger().setLevel(DEBUG)
 
     mail = parse(stdin.buffer)
     send(
@@ -176,3 +175,8 @@ if __name__ == "__main__":
         mail_pass=args.mail_pass,
         timeout=args.timeout,
     )
+
+
+if __name__ == "__main__":
+    getLogger().setLevel(DEBUG)
+    main()
