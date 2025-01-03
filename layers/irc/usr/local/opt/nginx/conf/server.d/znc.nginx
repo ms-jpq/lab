@@ -3,5 +3,5 @@ location /znc {
 }
 
 location /znc/ {
-  proxy_pass http://localhost:4200/;
+  proxy_pass http://localhost:4200;
 }
