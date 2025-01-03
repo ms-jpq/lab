@@ -1,3 +1,7 @@
 location /znc {
-  proxy_pass http://localhost:9999;
+  return 307 /znc/;
+}
+
+location /znc/ {
+  proxy_pass http://localhost:4200/;
 }
