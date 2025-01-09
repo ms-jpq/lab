@@ -1,4 +1,3 @@
-# + z-push-backend-imap
 + apache2
 + dovecot-imapd
 + dovecot-lmtpd
@@ -6,4 +5,3 @@
 + php
 + roundcube
 + roundcube-sqlite3
-+ z-push

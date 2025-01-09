@@ -1,13 +1,4 @@
 server {
-  server_name autodiscover.*;
-  listen      unix:/run/local/nginx/gateway-https.sock;
-
-  location / {
-    proxy_pass http://unix:/run/local/nginx/z-push.sock:/;
-  }
-}
-
-server {
   server_name ~^(?!local\.).*$;
   listen      unix:/run/local/nginx/gateway-https.sock;
   include     /usr/local/opt/nginx/conf/auth.nginx;
