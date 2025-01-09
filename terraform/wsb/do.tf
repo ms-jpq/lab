@@ -1,4 +1,5 @@
-data "digitalocean_regions" "nyc" {
+data "digitalocean_regions" "oceans" {
+  for_each = toset(["tor", "nyc"])
   filter {
     key    = "available"
     values = ["true"]
@@ -6,15 +7,13 @@ data "digitalocean_regions" "nyc" {
   filter {
     key      = "slug"
     match_by = "re"
-    values   = ["^nyc"]
+    values   = ["^${each.key}"]
   }
 }
 
 locals {
   do_regions = {
-    nyc = sort([
-      for region in data.digitalocean_regions.nyc.regions :
-      region.slug
-    ])
+    for key, val in data.digitalocean_regions.oceans :
+    key => [for region in val.regions : region.slug]
   }
 }
