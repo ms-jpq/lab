@@ -5,7 +5,7 @@ data "digitalocean_sizes" "super" {
   }
   filter {
     key    = "regions"
-    values = local.do_regions.nyc
+    values = local.do_regions.tor
   }
   sort {
     direction = "asc"
@@ -19,7 +19,7 @@ data "digitalocean_sizes" "super" {
 
 data "digitalocean_volume" "droplet" {
   name   = "iscsi-drop"
-  region = local.do_regions.nyc[0]
+  region = local.do_regions.tor[0]
 }
 
 locals {
