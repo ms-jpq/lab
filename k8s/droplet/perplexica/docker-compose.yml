@@ -11,7 +11,7 @@ services:
       - data:/home/perplexica/data
 
   perplexica-web:
-    image: itzcrazykns1337/perplexica-frontend:main
+    image: ${REGISTRY_MIRROR:-docker.io}/itzcrazykns1337/perplexica-frontend:main
     ports:
       - 3000
 
