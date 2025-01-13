@@ -2,7 +2,7 @@
   "ENV_MACVLAN_IFS": ["enp7s0"],
   "ENV_NFS_EXPORTS": [],
   "ENV_NFS_MNTS": [],
-  "ENV_NVIDIA_VERSION": "550",
+  "ENV_NVIDIA_VERSION": "565",
   "ENV_PG_CLUSTERS": ["16/miniflux", "16/wallabag", "16/lobechat"],
   "ENV_SMB_EXPORTS": ["freenas", "time-machine-hao", "time-machine-gray"],
   "ENV_VFIO_PCI_DEVICE_IDS": ["01:00.0[,]multifunction=on", "01:00.1"],
