@@ -10,7 +10,6 @@
   "ENV_INDEX": [
     "12ft",
     "ask",
-    "bing",
     "bridge",
     "chat",
     "docs",
@@ -39,7 +38,6 @@
     "ENV_DOMAIN/*",
     "ask.*",
     "autodiscover.*",
-    "bing.*",
     "bridge.*",
     "chat.*",
     "dockerhub.*",
