@@ -28,6 +28,14 @@ services:
         - "1"
         - --
         - 127.0.0.1:8080
+    # https://github.com/searxng/searxng/issues/4263
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |-
+        set -Eeu
+        sed -E -i -e 's/default_on = False/default_on = True/' -- /usr/local/searxng/searx/plugins/hostnames.py
+        exec tini -- /usr/local/searxng/dockerfiles/docker-entrypoint.sh
     ports:
       - 8080
     volumes:
