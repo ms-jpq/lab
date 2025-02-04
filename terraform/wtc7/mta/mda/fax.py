@@ -13,7 +13,7 @@ from email.message import EmailMessage
 from email.policy import SMTP, SMTPUTF8
 from email.utils import formataddr, getaddresses, parseaddr, unquote
 from itertools import takewhile
-from logging import DEBUG, getLogger
+from logging import DEBUG, StreamHandler, getLogger
 from os import linesep
 from smtplib import SMTP_SSL
 from sys import stdin
@@ -174,5 +174,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    getLogger().addHandler(StreamHandler())
     getLogger().setLevel(DEBUG)
     main()
