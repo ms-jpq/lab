@@ -6,4 +6,6 @@ reload: | all
 	sudo -- systemctl --no-pager --show-transaction --failed --no-block -- restart '*'
 
 reload-new: | reload
-	find /run/systemd/generator/*.target.wants /usr/local/lib/systemd/{system,user}/*.target.wants -mindepth 1 -xtype f -printf '%f\0' | sudo -- xargs -0 --no-run-if-empty -- systemctl --no-pager --show-transaction --failed --no-block -- start
+	shopt -u failglob
+	DIRS=(/run/systemd/generator/*.target.wants /usr/local/lib/systemd/{system,user}/*.target.wants)
+	find "$${DIRS[@]}" -mindepth 1 -xtype f -not -name '.gitignore' -printf '%f\0' | sudo -- xargs -0 --no-run-if-empty -- systemctl --no-pager --show-transaction --failed --no-block -- start
