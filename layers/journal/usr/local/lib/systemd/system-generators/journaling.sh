@@ -4,7 +4,7 @@ set -o pipefail
 shopt -u failglob
 
 RUN="$1"
-WANTS="$RUN/multi-user.target.wants"
+WANTS="$RUN/timers.target.wants"
 
 # shellcheck disable=SC1091
 source -- /usr/local/etc/default/journal.env
@@ -15,5 +15,5 @@ readarray -t -d ',' -- HOSTS <<< "$JOURNAL_HOSTS"
 mkdir -v -p -- "$WANTS"
 for NAME in "${HOSTS[@]}"; do
   NAME="$(systemd-escape -- "${NAME//[[:space:]]/''}")"
-  ln -v -snf -- /usr/local/lib/systemd/system/1-journal@.service "$WANTS/1-journal@$NAME.service"
+  ln -v -snf -- /usr/local/lib/systemd/system/1-journal@.timer "$WANTS/1-journal@$NAME.timer"
 done

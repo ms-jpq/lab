@@ -1,0 +1,8 @@
+[Unit]
+Description        = Tail Remote Journal -- %I
+After              = network-online.target
+
+[Timer]
+OnActiveSec        = 0
+OnUnitInactiveSec  = 2seconds
+RandomizedDelaySec = 1seconds
