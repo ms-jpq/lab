@@ -11,7 +11,7 @@ Group             = systemd-journal
 ReadWritePaths    = %T %V
 StateDirectory    = local/%J
 
-SuccessExitStatus = EXIT_FAILURE
+SuccessExitStatus = 1 6
 
 Environment       = TIMEOUT=60
 ExecStart         = /usr/local/opt/journal/libexec/remote-journal.sh %I %S/local/%J/%I.journal ${TIMEOUT}
