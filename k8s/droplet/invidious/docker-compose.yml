@@ -21,6 +21,30 @@ services:
     volumes:
       - ./conf.yml:/invidious/config/config.yml:ro
 
+  invidious-sig-helper:
+    image: quay.io/invidious/inv-sig-helper:latest
+    init: true
+    environment:
+      RUST_LOG: info
+    command:
+      - --tcp
+      - 0.0.0.0:12999
+    ports:
+      - 12999
+
+  invidious-companion:
+    image: quay.io/invidious/invidious-companion:latest
+    labels:
+      kompose.service.expose: youtube-dl.${DOMAIN}
+    environment:
+      SERVER_BASE_URL: https://youtube-dl.${DOMAIN}
+      SERVER_SECRET_KEY:
+    ports:
+      - 8282
+    volumes:
+      - ./local.toml:/app/config/local.toml:ro
+      - cache:/var/tmp/youtubei.js
+
   pg:
     image: ${REGISTRY_MIRROR:-docker.io}/library/postgres:latest
     environment:
@@ -41,4 +65,5 @@ services:
       - data:/var/lib/postgresql/data
 
 volumes:
+  cache:
   data:

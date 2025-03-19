@@ -5,6 +5,7 @@
     "autodiscover.ENV_DOMAIN",
     "ipfs.ENV_DOMAIN",
     "s3.ENV_DOMAIN",
+    "youtube-dl.ENV_DOMAIN",
     "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN,], ENV_INDEX)"
   ],
   "ENV_INDEX": [
@@ -52,6 +53,7 @@
     "rss.*",
     "s3.*",
     "tools.*",
+    "youtube-dl.*",
     "youtube.*"
   ],
   "ENV_V2R_CLIENT": 0,

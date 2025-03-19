@@ -1,0 +1,2 @@
+[networking]
+proxy = "http://proxy.kompsed-hostproxy.svc.cluster.local:1080"
