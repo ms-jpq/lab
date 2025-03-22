@@ -17,4 +17,4 @@ services:
     ports:
       - 8080
     volumes:
-      - ./glance.yml:/app/glance.yml:ro
+      - ./glance.yml:/app/config/glance.yml:ro
