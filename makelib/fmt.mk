@@ -21,7 +21,7 @@ nginx: ./node_modules/.bin
 	'$</prettier' --cache --write --tab-width 2 --plugin ./node_modules/prettier-plugin-nginx/dist/index.js -- '**/*.nginx'
 
 taplo: ./node_modules/.bin
-	git ls-files --deduplicate -z -- '*.toml' | xargs -r -0 -- '$</taplo' format --
+	git ls-files --deduplicate -z -- '*.toml' ':(exclude)*.m4.toml' | xargs -r -0 -- '$</taplo' format --
 
 terraform-fmt: $(VAR)/bin/terraform
 	git ls-files --deduplicate -z -- '*.tf' | xargs -r -0 -- '$<' fmt --write --
