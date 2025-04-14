@@ -14,6 +14,7 @@ services:
       REDLIB_DEFAULT_USE_HLS: on
       REDLIB_ENABLE_RSS: on
       REDLIB_FULL_URL: https://reddit.${DOMAIN}
+      REDLIB_REMOVE_DEFAULT_FEEDS: on
     ports:
       - 8080
     volumes:
