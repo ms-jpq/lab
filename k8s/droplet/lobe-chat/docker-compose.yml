@@ -25,10 +25,10 @@ services:
       FEATURE_FLAGS: -clerk_sign_up,-welcome_suggest,-market
       GOOGLE_API_KEY:
       KEY_VAULTS_SECRET:
-      NEXTAUTH_URL: https://chat.${DOMAIN}/api/auth
       NEXT_AUTH_SECRET:
       NEXT_AUTH_SSO_PROVIDERS: auth0
       NEXT_PUBLIC_SERVICE_MODE: server
+      NEXTAUTH_URL: https://chat.${DOMAIN}/api/auth
       OLLAMA_MODEL_LIST: +qwen2.5-coder:3b
       OLLAMA_PROXY_URL: http://proxy
       OPENAI_API_KEY:
@@ -39,6 +39,7 @@ services:
       S3_ENDPOINT: &s3 https://s3.${DOMAIN}
       S3_PUBLIC_DOMAIN: *s3
       S3_SECRET_ACCESS_KEY:
+      XAI_API_KEY:
     ports:
       - 3210
 
