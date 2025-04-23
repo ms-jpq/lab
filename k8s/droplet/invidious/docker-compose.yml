@@ -37,13 +37,13 @@ services:
     labels:
       kompose.service.expose: youtube-dl.${DOMAIN}
     environment:
-      PROXY: socks5://droplet.w-0.droplet.home.arpa:1080
+      PROXY: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
       SERVER_BASE_URL: https://youtube-dl.${DOMAIN}
       SERVER_SECRET_KEY:
     ports:
       - 8282
-    volumes:
-      - cache:/var/tmp/youtubei.js
+    # volumes:
+    #   - cache:/var/tmp/youtubei.js
 
   pg:
     image: ${REGISTRY_MIRROR:-docker.io}/library/postgres:latest
