@@ -1,0 +1,16 @@
+[Unit]
+Description      = %N
+
+StopWhenUnneeded = yes
+
+BindsTo          = 0-k3s.service
+After            = 0-k3s.service
+
+[Service]
+Restart          = on-failure
+
+ProtectSystem    = strict
+ProtectHome      = yes
+PrivateTmp       = yes
+
+ExecStart        = /usr/local/opt/k3s/libexec/xtail.sh

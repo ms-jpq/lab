@@ -38,7 +38,7 @@ if [[ -f $JOURNAL ]]; then
 fi
 CAT+=(-- "http://$REMOTE:8080/entries?follow")
 
-TAIL=(
+RTAIL=(
   chronic
   --
   /usr/lib/systemd/systemd-journal-remote
@@ -46,4 +46,4 @@ TAIL=(
   -- -
 )
 
-timeout --preserve-status "$TIMEOUT" "${CAT[@]}" | "${TAIL[@]}"
+timeout --preserve-status "$TIMEOUT" "${CAT[@]}" | "${RTAIL[@]}"
