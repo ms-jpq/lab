@@ -10,7 +10,7 @@ x-k8s:
         - from:
             - namespaceSelector:
                 matchLabels:
-                  kubernetes.io/metadata.name: kompsed-perplexica
+                  kubernetes.io/metadata.name: kompsed-morphic
 
 services:
   searxng:
