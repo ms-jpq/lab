@@ -6,6 +6,7 @@ services:
       kompose.service.expose: perp.${DOMAIN}
     environment:
       BASE_URL: https://perp.${DOMAIN}
+      ENABLE_SAVE_CHAT_HISTORY: "true"
       LOCAL_REDIS_URL: redis://redis:6379
       OPENAI_API_KEY:
       SEARCH_API: searxng
