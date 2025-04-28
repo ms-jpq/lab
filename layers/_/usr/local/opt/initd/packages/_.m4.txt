@@ -18,7 +18,6 @@
 + jq
 + language-pack-en
 + language-pack-zh-hans
-+ linux-generic-hwe-[]m5_assert([ENV_VERSION_ID])
 + m4
 + moreutils
 + mosh
@@ -44,3 +43,6 @@
 + ttyd
 + unattended-upgrades
 + unzip
+# m4_ifelse(ENV_NO_HWE, [true], [], [
++ linux-generic-hwe-[]m5_assert([ENV_VERSION_ID])
+# ])

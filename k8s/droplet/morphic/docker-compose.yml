@@ -5,13 +5,16 @@ services:
     labels:
       kompose.service.expose: perp.${DOMAIN}
     environment:
+      ANTHROPIC_API_KEY:
       BASE_URL: https://perp.${DOMAIN}
+      DEEPSEEK_API_KEY:
       ENABLE_SAVE_CHAT_HISTORY: "true"
       LOCAL_REDIS_URL: redis://redis:6379
       OPENAI_API_KEY:
       SEARCH_API: searxng
       SEARXNG_API_URL: http://searxng.kompsed-searx.svc.cluster.local:8080
       USE_LOCAL_REDIS: "true"
+      XAI_API_KEY:
     ports:
       - 3000
 

@@ -6,6 +6,8 @@ services:
       kompose.controller.type: statefulset
       kompose.service.expose: irc.${DOMAIN}
       kompose.volume.type: hostPath
+    environment:
+      CONVOS_REVERSE_PROXY: 1
     ports:
       - 3000
     volumes:
