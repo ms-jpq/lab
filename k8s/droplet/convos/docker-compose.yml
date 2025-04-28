@@ -1,0 +1,12 @@
+---
+services:
+  convos:
+    image: ghcr.io/convos-chat/convos:stable
+    labels:
+      kompose.controller.type: statefulset
+      kompose.service.expose: irc.${DOMAIN}
+      kompose.volume.type: hostPath
+    ports:
+      - 3000
+    volumes:
+      - /var/lib/local/convos:/data

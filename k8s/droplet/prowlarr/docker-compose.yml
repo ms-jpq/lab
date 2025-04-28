@@ -4,7 +4,7 @@ services:
     image: ghcr.io/hotio/prowlarr:latest
     labels:
       kompose.controller.type: statefulset
-      kompose.service.expose: mitm.${DOMAIN}
+      kompose.service.expose: bt.${DOMAIN}
     healthcheck:
       test:
         - CMD
