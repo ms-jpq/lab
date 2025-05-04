@@ -7,13 +7,11 @@ BindsTo           = 1-k8s-container-wait@%i.service
 After             = 1-k8s-container-wait@%i.service
 
 [Service]
-Type              = oneshot
 ProtectSystem     = strict
 ProtectHome       = yes
 PrivateTmp        = yes
 
 EnvironmentFile   = %t/local/k8s-xtail/%I
-LogExtraFields    = CONTAINER_NAME=%i
-ExecStart         = tail --lines +1 --follow -- ${LOGFILE}
+ExecStart         = /usr/local/opt/k3s/libexec/ctail.sh ${LOGFILE}
 
 SuccessExitStatus = 15
