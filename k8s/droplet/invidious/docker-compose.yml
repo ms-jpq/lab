@@ -42,8 +42,8 @@ services:
       SERVER_SECRET_KEY:
     ports:
       - 8282
-    # volumes:
-    #   - cache:/var/tmp/youtubei.js
+    volumes:
+      - cache:/var/tmp
 
   pg:
     image: docker.io/library/postgres:latest

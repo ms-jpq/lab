@@ -8,9 +8,9 @@ db:
   user: *stack
   password: *stack
 signature_server: invidious-sig-helper:12999
-invidious_companion:
-  - private_url: http://invidious-companion:8282
-    public_url: https://youtube-dl.m5_assert([ENV_DOMAIN])
+# invidious_companion:
+#   - private_url: http://invidious-companion:8282
+#     public_url: https://youtube-dl.m5_assert([ENV_DOMAIN])
 invidious_companion_key: |-
   m4_esyscmd([printenv -- RAND_HEX | head --bytes 16])
 
