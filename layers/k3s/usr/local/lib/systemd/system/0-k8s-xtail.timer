@@ -1,0 +1,12 @@
+[Unit]
+Description        = %N
+StopWhenUnneeded   = yes
+
+PartOf             = 0-k3s.service
+Requisite          = 0-k3s.service
+After              = 0-k3s.service
+
+[Timer]
+OnActiveSec        = 0
+OnUnitInactiveSec  = 6seconds
+RandomizedDelaySec = 3seconds

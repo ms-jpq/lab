@@ -17,7 +17,7 @@ Requires          = modprobe@br_netfilter.service
 After             = modprobe@overlay.service
 Requires          = modprobe@overlay.service
 
-Wants             = 0-k8s-xtail.service
+Upholds           = 0-k8s-xtail.timer
 
 PropagatesStopTo  = kubepods.slice
 

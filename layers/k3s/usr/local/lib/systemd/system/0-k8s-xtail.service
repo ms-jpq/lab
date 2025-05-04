@@ -3,7 +3,8 @@ Description      = %N
 
 StopWhenUnneeded = yes
 
-BindsTo          = 0-k3s.service
+PartOf           = 0-k3s.service
+Requisite        = 0-k3s.service
 After            = 0-k3s.service
 
 [Service]
