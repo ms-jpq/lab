@@ -11,6 +11,22 @@ spec:
   targetNamespace: *chart
   valuesContent: |-
     kubetail:
+      clusterAPI: &registry
+        image:
+          registry: m5_assert([ENV_REGISTRY_MIRROR])
+      clusterAgent: *registry
       dashboard:
+        <<: *registry
         ingress:
           enabled: true
+          rules:
+            - host: kubetail.m5_assert([ENV_DOMAIN])
+              http:
+                paths:
+                  - backend:
+                      service:
+                        name: kubetail-dashboard
+                        port:
+                          number: 8080
+                    path: /
+                    pathType: Prefix
