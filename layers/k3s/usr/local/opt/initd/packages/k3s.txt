@@ -1,2 +1,3 @@
++ inotify-tools
 + k3s
 + k9s

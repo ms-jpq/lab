@@ -1,0 +1,18 @@
+[Unit]
+Description      = tailing k8s logs
+
+StopWhenUnneeded = yes
+
+PartOf           = 0-k3s.service
+Requisite        = 0-k3s.service
+After            = 0-k3s.service
+
+[Service]
+Type             = oneshot
+ProtectSystem    = strict
+ProtectHome      = yes
+PrivateTmp       = yes
+
+EnvironmentFile  = %t/local/k8s-xtail/%I
+ExecStart        = inotifywait --no-dereference --event delete_self -- ${LOGFILE}
+ExecStopPost     = rm -v -fr -- ${LOGFILE}

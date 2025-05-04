@@ -1,5 +1,5 @@
 [Unit]
-Description        = %N
+Description        = xtailing k8s logs - timer
 StopWhenUnneeded   = yes
 
 PartOf             = 0-k3s.service

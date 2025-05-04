@@ -2,8 +2,12 @@
 
 set -o pipefail
 
-cd -- /var/log/containers
+RUN="$1"
+LOG="$2"
+NAME="$(b3sum --no-names --length 16 <<< "$LOG")"
 
-while true; do
-  sleep 1
-done
+tee -- /dev/null > "$RUN/$NAME" <<- EOF
+LOGFILE="$LOG"
+EOF
+
+exec -- systemctl start --runtime -- "1-k8s-container-log@$NAME.service"
