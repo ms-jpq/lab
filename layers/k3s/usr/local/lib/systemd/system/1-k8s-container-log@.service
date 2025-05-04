@@ -12,6 +12,6 @@ ProtectHome       = yes
 PrivateTmp        = yes
 
 EnvironmentFile   = %t/local/k8s-xtail/%I
-ExecStart         = /usr/local/opt/k3s/libexec/ctail.sh ${LOGFILE}
+ExecStart         = systemd-cat --identifier ${NAME} --priority info -- tail --lines +1 --follow -- ${LOGFILE}
 
 SuccessExitStatus = 15

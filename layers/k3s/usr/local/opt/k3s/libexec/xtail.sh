@@ -4,10 +4,13 @@ set -o pipefail
 
 RUN="$1"
 LOG="$2"
-NAME="$(b3sum --no-names --length 16 <<< "$LOG")"
+ID="$(b3sum --no-names --length 16 <<< "$LOG")"
+NAME="${LOG##*/}"
+NAME="${NAME%-*}"
 
-tee -- /dev/null > "$RUN/$NAME" <<- EOF
+tee -- /dev/null > "$RUN/$ID" <<- EOF
+NAME="$NAME"
 LOGFILE="$LOG"
 EOF
 
-exec -- systemctl start --no-block --runtime -- "1-k8s-container-wait@$NAME.service"
+exec -- systemctl start --no-block --runtime -- "1-k8s-container-wait@$ID.service"
