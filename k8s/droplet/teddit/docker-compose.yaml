@@ -1,7 +1,7 @@
 ---
 services:
   teddit:
-    image: ${REGISTRY_MIRROR:-docker.io}/teddit/teddit:latest
+    image: docker.io/teddit/teddit:latest
     labels:
       kompose.service.expose: teddit.${DOMAIN}
     healthcheck:
@@ -25,7 +25,7 @@ services:
       - 8080
 
   redis:
-    image: ${REGISTRY_MIRROR:-docker.io}/library/redis:latest
+    image: docker.io/library/redis:latest
     healthcheck:
       test:
         - CMD

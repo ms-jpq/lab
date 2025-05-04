@@ -1,7 +1,7 @@
 ---
 services:
   glance:
-    image: ${REGISTRY_MIRROR:-docker.io}/glanceapp/glance:latest
+    image: docker.io/glanceapp/glance:latest
     labels:
       kompose.service.expose: glance.${DOMAIN}
     # healthcheck:

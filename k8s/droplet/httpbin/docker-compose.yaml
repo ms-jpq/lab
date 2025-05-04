@@ -1,7 +1,7 @@
 ---
 services:
   httpbin:
-    image: ${REGISTRY_MIRROR:-docker.io}/kennethreitz/httpbin:latest
+    image: docker.io/kennethreitz/httpbin:latest
     labels:
       kompose.service.expose: http.${DOMAIN}
     ports:

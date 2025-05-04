@@ -1,7 +1,7 @@
 ---
 services:
   tabby:
-    image: ${REGISTRY_MIRROR:-docker.io}/tabbyml/tabby:latest
+    image: docker.io/tabbyml/tabby:latest
     labels:
       jq.runtime: nvidia
       kompose.controller.type: statefulset

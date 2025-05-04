@@ -1,7 +1,7 @@
 ---
 services:
   excalidraw:
-    image: ${REGISTRY_MIRROR:-docker.io}/excalidraw/excalidraw:latest
+    image: docker.io/excalidraw/excalidraw:latest
     labels:
       kompose.service.expose: draw.${DOMAIN}
     ports:

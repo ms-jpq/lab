@@ -46,7 +46,7 @@ services:
     #   - cache:/var/tmp/youtubei.js
 
   pg:
-    image: ${REGISTRY_MIRROR:-docker.io}/library/postgres:latest
+    image: docker.io/library/postgres:latest
     environment:
       POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}

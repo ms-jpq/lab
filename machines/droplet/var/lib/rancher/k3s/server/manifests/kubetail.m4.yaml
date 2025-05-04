@@ -11,12 +11,7 @@ spec:
   targetNamespace: *chart
   valuesContent: |-
     kubetail:
-      clusterAPI: &registry
-        image:
-          registry: m5_assert([ENV_REGISTRY_MIRROR])
-      clusterAgent: *registry
       dashboard:
-        <<: *registry
         ingress:
           enabled: true
           rules:

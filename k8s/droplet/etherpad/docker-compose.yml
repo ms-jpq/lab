@@ -1,7 +1,7 @@
 ---
 services:
   etherpad:
-    image: ${REGISTRY_MIRROR:-docker.io}/etherpad/etherpad:latest
+    image: docker.io/etherpad/etherpad:latest
     labels:
       kompose.service.expose: docs.${DOMAIN}
     environment:
@@ -24,7 +24,7 @@ services:
       - var:/opt/etherpad-lite/var
 
   pg:
-    image: ${REGISTRY_MIRROR:-docker.io}/library/postgres:latest
+    image: docker.io/library/postgres:latest
     healthcheck:
       test:
         - CMD

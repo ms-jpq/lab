@@ -10,7 +10,7 @@ services:
       - 8081
 
   redis:
-    image: ${REGISTRY_MIRROR:-docker.io}/library/redis:latest
+    image: docker.io/library/redis:latest
     healthcheck:
       test:
         - CMD

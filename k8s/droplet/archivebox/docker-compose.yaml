@@ -1,7 +1,7 @@
 ---
 services:
   archivebox:
-    image: ${REGISTRY_MIRROR:-docker.io}/archivebox/archivebox:latest
+    image: docker.io/archivebox/archivebox:latest
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: archive.${DOMAIN}

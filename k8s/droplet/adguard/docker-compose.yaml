@@ -1,7 +1,7 @@
 ---
 services:
   adguard:
-    image: ${REGISTRY_MIRROR:-docker.io}/adguard/adguardhome:latest
+    image: docker.io/adguard/adguardhome:latest
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: dns.${DOMAIN}

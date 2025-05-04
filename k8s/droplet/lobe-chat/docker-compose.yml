@@ -1,7 +1,7 @@
 ---
 services:
   lobe-chat:
-    image: ${REGISTRY_MIRROR:-docker.io}/lobehub/lobe-chat-database:latest
+    image: docker.io/lobehub/lobe-chat-database:latest
     labels:
       kompose.service.expose: chat.${DOMAIN}
     healthcheck:
@@ -44,14 +44,14 @@ services:
       - 3210
 
   proxy:
-    image: ${REGISTRY_MIRROR:-docker.io}/library/nginx:latest
+    image: docker.io/library/nginx:latest
     ports:
       - 80
     volumes:
       - ./proxy.nginx:/etc/nginx/nginx.conf:ro
 
   pg:
-    image: ${REGISTRY_MIRROR:-docker.io}/pgvector/pgvector:pg17
+    image: docker.io/pgvector/pgvector:pg17
     healthcheck:
       test:
         - CMD

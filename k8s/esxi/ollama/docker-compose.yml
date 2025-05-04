@@ -1,7 +1,7 @@
 ---
 services:
   ollama:
-    image: ${REGISTRY_MIRROR:-docker.io}/ollama/ollama:latest
+    image: docker.io/ollama/ollama:latest
     labels:
       jq.runtime: nvidia
       kompose.controller.type: statefulset

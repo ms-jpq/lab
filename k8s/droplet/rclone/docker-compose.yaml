@@ -1,7 +1,7 @@
 ---
 services:
   rclone:
-    image: ${REGISTRY_MIRROR:-docker.io}/andrewgaul/s3proxy:latest
+    image: docker.io/andrewgaul/s3proxy:latest
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
@@ -14,7 +14,7 @@ services:
       - /var/lib/local/rclone:/data
 
   dav:
-    image: ${REGISTRY_MIRROR:-docker.io}/rclone/rclone:latest
+    image: docker.io/rclone/rclone:latest
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}2.loadbalancer.server.port=8080
