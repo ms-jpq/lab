@@ -1,0 +1,16 @@
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: &chart kubetail
+  namespace: kube-system
+spec:
+  chart: *chart
+  createNamespace: true
+  repo: https://kubetail-org.github.io/helm-charts
+  targetNamespace: *chart
+  valuesContent: |-
+    kubetail:
+      dashboard:
+        ingress:
+          enabled: true
