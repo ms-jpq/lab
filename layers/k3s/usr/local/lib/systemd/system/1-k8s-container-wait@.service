@@ -1,0 +1,24 @@
+[Unit]
+Description       = waiting k8s logs
+
+StopWhenUnneeded  = yes
+
+PartOf            = 0-k3s.service
+Requisite         = 0-k3s.service
+After             = 0-k3s.service
+
+Upholds           = 1-k8s-container-log@%i.service
+
+[Service]
+Type              = oneshot
+ProtectSystem     = strict
+ProtectHome       = yes
+PrivateTmp        = yes
+
+ReadWritePaths    = %t/local/k8s-xtail
+
+EnvironmentFile   = %t/local/k8s-xtail/%I
+ExecStart         = inotifywait --no-dereference --event delete_self -- ${LOGFILE}
+ExecStopPost      = rm -v -fr -- %t/local/k8s-xtail/%I
+
+SuccessExitStatus = 1 15

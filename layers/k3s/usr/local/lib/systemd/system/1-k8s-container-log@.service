@@ -1,18 +1,19 @@
 [Unit]
-Description      = tailing k8s logs
+Description       = tailing k8s logs
 
-StopWhenUnneeded = yes
+StopWhenUnneeded  = yes
 
-PartOf           = 0-k3s.service
-Requisite        = 0-k3s.service
-After            = 0-k3s.service
+BindsTo           = 1-k8s-container-wait@%i.service
+After             = 1-k8s-container-wait@%i.service
 
 [Service]
-Type             = oneshot
-ProtectSystem    = strict
-ProtectHome      = yes
-PrivateTmp       = yes
+Type              = oneshot
+ProtectSystem     = strict
+ProtectHome       = yes
+PrivateTmp        = yes
 
-EnvironmentFile  = %t/local/k8s-xtail/%I
-ExecStart        = inotifywait --no-dereference --event delete_self -- ${LOGFILE}
-ExecStopPost     = rm -v -fr -- ${LOGFILE}
+EnvironmentFile   = %t/local/k8s-xtail/%I
+LogExtraFields    = CONTAINER_NAME=%i
+ExecStart         = tail --lines +1 --follow -- ${LOGFILE}
+
+SuccessExitStatus = 15

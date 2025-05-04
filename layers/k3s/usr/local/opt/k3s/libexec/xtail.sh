@@ -10,4 +10,4 @@ tee -- /dev/null > "$RUN/$NAME" <<- EOF
 LOGFILE="$LOG"
 EOF
 
-exec -- systemctl start --runtime -- "1-k8s-container-log@$NAME.service"
+exec -- systemctl start --no-block --runtime -- "1-k8s-container-wait@$NAME.service"
