@@ -3,4 +3,3 @@ mirrors:
   docker.io:
     endpoint:
       - "https://m5_assert([ENV_REGISTRY_MIRROR])"
-
