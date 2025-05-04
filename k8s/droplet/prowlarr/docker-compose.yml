@@ -5,19 +5,19 @@ services:
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: bt.${DOMAIN}
-    healthcheck:
-      test:
-        - CMD
-        - curl
-        - --fail
-        - --location
-        - --no-progress-meter
-        - --output
-        - /dev/null
-        - --max-time
-        - "1"
-        - --
-        - localhost:9696
+    # healthcheck:
+    #   test:
+    #     - CMD
+    #     - curl
+    #     - --fail
+    #     - --location
+    #     - --no-progress-meter
+    #     - --output
+    #     - /dev/null
+    #     - --max-time
+    #     - "1"
+    #     - --
+    #     - localhost:9696
     ports:
       - 9696
     volumes:
