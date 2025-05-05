@@ -18,24 +18,11 @@ services:
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: ask.${DOMAIN}
-    healthcheck:
-      test:
-        - CMD
-        - wget
-        - --quiet
-        - -O/dev/null
-        - --timeout
-        - "1"
-        - --
-        - 127.0.0.1:8080
-    # https://github.com/searxng/searxng/issues/4263
-    entrypoint:
-      - /bin/sh
-      - -c
-      - |-
-        set -Eeu
-        sed -E -i -e 's/default_on = False/default_on = True/' -- /usr/local/searxng/searx/plugins/hostnames.py
-        exec tini -- /usr/local/searxng/dockerfiles/docker-entrypoint.sh
+    environment:
+      # https://github.com/searxng/searxng/issues/4718
+      UWSGI_SETTINGS_PATH: /usr/local/searxng/dockerfiles/uwsgi.ini
+      UWSGI_THREADS: 4
+      UWSGI_WORKERS: 4
     ports:
       - 8080
     volumes:

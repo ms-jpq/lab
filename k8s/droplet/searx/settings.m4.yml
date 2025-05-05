@@ -40,13 +40,11 @@ ui:
   query_in_title: true
   results_on_new_tab: true
 
-enabled_plugins:
-  - Hash plugin
-  - Self Information
-  - Tracker URL remover
-  - Ahmia blacklist
-  - Hostnames plugin
-  - Open Access DOI rewrite
+plugins:
+  searx.plugins.tracker_url_remover.SXNGPlugin:
+    active: true
+  searx.plugins.oa_doi_rewrite.SXNGPlugin:
+    active: true
 
 # https://kagi.com/stats?stat=leaderboard
 hostnames:
