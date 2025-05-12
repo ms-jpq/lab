@@ -46,6 +46,37 @@ plugins:
   searx.plugins.oa_doi_rewrite.SXNGPlugin:
     active: true
 
+engines:
+  - name: wolframalpha
+    disabled: true
+
+  - name: pinterest
+    disabled: true
+
+  - name: duckduckgo
+    disabled: true
+
+  - name: startpage
+    disabled: true
+
+  - name: qwant
+    disabled: true
+
+  # - name: baidu
+  #   disabled: false
+  #
+  # - name: sogou
+  #   disabled: false
+
+  - name: bing
+    disabled: false
+
+  - name: bilibili
+    disabled: false
+
+  - name: yandex
+    disabled: false
+
 # https://kagi.com/stats?stat=leaderboard
 hostnames:
   replace:
@@ -193,25 +224,3 @@ hostnames:
     - ^([^.]+\.)*w3schools\.com$
     - ^([^.]+\.)*webmd\.com$
     - ^([^.]+\.)*wikihow\.com$
-
-engines:
-  - name: wolframalpha
-    disabled: true
-
-  - name: pinterest
-    disabled: true
-
-  - name: duckduckgo
-    disabled: true
-
-  - name: startpage
-    disabled: true
-
-  - name: bing
-    disabled: false
-
-  - name: bilibili
-    disabled: false
-
-  - name: yandex
-    disabled: false
