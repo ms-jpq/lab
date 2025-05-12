@@ -201,6 +201,12 @@ engines:
   - name: pinterest
     disabled: true
 
+  - name: duckduckgo
+    disabled: true
+
+  - name: startpage
+    disabled: true
+
   - name: bing
     disabled: false
 
