@@ -18,11 +18,6 @@ services:
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: ask.${DOMAIN}
-    environment:
-      # https://github.com/searxng/searxng/issues/4718
-      UWSGI_SETTINGS_PATH: /usr/local/searxng/dockerfiles/uwsgi.ini
-      UWSGI_THREADS: 4
-      UWSGI_WORKERS: 4
     ports:
       - 8080
     volumes:
