@@ -31,6 +31,7 @@ def benchmark(name: str) -> Iterator[None]:
 
 
 def register(name: str, uri: str, timeout: float) -> None:
+    lock = Lock()
     scheme, netloc, path, query, frag = urlsplit(uri)
     qs = parse_qs(query)
 
@@ -52,7 +53,7 @@ def register(name: str, uri: str, timeout: float) -> None:
             if fullname != name:
                 return None
 
-            code, lock = "", Lock()
+            code = ""
 
             class _Loader(SourceLoader, InspectLoader):  # type: ignore
                 def get_filename(self, fullname: str) -> str:
@@ -66,8 +67,8 @@ def register(name: str, uri: str, timeout: float) -> None:
                     nonlocal code
                     with lock:
                         code = ""
-                    if target:
-                        target.__dict__.clear()
+                        if target:
+                            target.__dict__.clear()
                     return target
 
                 def get_source(self, fullname: str) -> str:
@@ -88,7 +89,8 @@ def register(name: str, uri: str, timeout: float) -> None:
                         code = self.get_code(fullname)
                         assert code
                         module.__file__ = self.get_filename(fullname)
-                        exec(code, module.__dict__)
+                        with lock:
+                            exec(code, module.__dict__)
 
             loader = LazyLoader.factory(cast(Loader, _Loader))
             spec = spec_from_loader(fullname, loader())
