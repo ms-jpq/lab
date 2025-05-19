@@ -38,7 +38,7 @@ ui:
   hotkeys: vim
   infinite_scroll: true
   query_in_title: true
-  results_on_new_tab: true
+  results_on_new_tab: false
 
 plugins:
   searx.plugins.tracker_url_remover.SXNGPlugin:
