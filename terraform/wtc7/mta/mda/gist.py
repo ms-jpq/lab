@@ -9,7 +9,7 @@ from logging import getLogger
 from os import linesep
 from pathlib import PurePath
 from sys import meta_path
-from threading import Lock
+from threading import RLock
 from time import monotonic
 from types import CodeType, ModuleType
 from typing import cast
@@ -31,7 +31,7 @@ def benchmark(name: str) -> Iterator[None]:
 
 
 def register(name: str, uri: str, timeout: float) -> None:
-    lock = Lock()
+    lock = RLock()
     scheme, netloc, path, query, frag = urlsplit(uri)
     qs = parse_qs(query)
 
@@ -69,7 +69,7 @@ def register(name: str, uri: str, timeout: float) -> None:
                         code = ""
                         if target:
                             target.__dict__.clear()
-                    return target
+                        return target
 
                 def get_source(self, fullname: str) -> str:
                     nonlocal code
@@ -81,16 +81,16 @@ def register(name: str, uri: str, timeout: float) -> None:
                         return code
 
                 def get_code(self, fullname: str) -> CodeType | None:
-                    source = self.get_source(fullname)
-                    return InspectLoader.source_to_code(source)
+                    with lock:
+                        source = self.get_source(fullname)
+                        return InspectLoader.source_to_code(source)
 
                 def exec_module(self, module: ModuleType) -> None:
-                    with benchmark("compile"):
+                    with benchmark("compile"), lock:
                         code = self.get_code(fullname)
                         assert code
                         module.__file__ = self.get_filename(fullname)
-                        with lock:
-                            exec(code, module.__dict__)
+                        exec(code, module.__dict__)
 
             loader = LazyLoader.factory(cast(Loader, _Loader))
             spec = spec_from_loader(fullname, loader())
