@@ -57,8 +57,9 @@ def register(name: str, uri: str, timeout: float) -> None:
 
             class _Loader(SourceLoader, InspectLoader):  # type: ignore
                 def get_filename(self, fullname: str) -> str:
-                    src = self.get_source(fullname)
-                    return _NS.joinpath(str(hash(src))).as_posix()
+                    with lock:
+                        src = self.get_source(fullname)
+                        return _NS.joinpath(str(hash(src))).as_posix()
 
                 def get_data(self, path: str) -> bytes:
                     raise NotImplementedError()

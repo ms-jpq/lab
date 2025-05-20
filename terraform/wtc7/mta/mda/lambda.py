@@ -7,6 +7,7 @@ from logging import INFO, captureWarnings, getLogger
 from os import environ, linesep
 from pprint import pprint
 from smtplib import SMTPDataError
+from threading import RLock
 from typing import BinaryIO
 
 from aws_lambda_powertools.utilities.data_classes import S3Event, event_source
@@ -62,17 +63,20 @@ def _pool() -> Iterator[Executor]:
             pool.shutdown(wait=True, cancel_futures=True)
 
 
-cold_start = True
+_cold_start = True
+_lock = RLock()
 
 
 @event_source(data_class=S3Event)
 def main(event: S3Event, _: LambdaContext) -> None:
+    global _cold_start
+
     with benchmark(name="main"):
         getLogger().info("%s", ">>> >>> >>>")
 
-        global cold_start
-        s = sieve if cold_start else reload(sieve)
-        cold_start = False
+        with _lock:
+            s = sieve if _cold_start else reload(sieve)
+            _cold_start = False
 
         def step(record: S3EventRecord) -> None:
             with _fetching(msg=record.s3) as fp:
