@@ -18,12 +18,18 @@ services:
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: ask.${DOMAIN}
+    entrypoint:
+      - sh
+      - -euxc
+      - |-
+        cp -v -- /srv/* /etc/searxng/
+        exec /usr/local/searxng/entrypoint.sh
     ports:
       - 8080
     volumes:
-      - ./favicons.toml:/etc/searxng/favicons.toml
-      - ./limiter.toml:/etc/searxng/limiter.toml
-      - ./settings.yml:/etc/searxng/settings.yml
+      - ./favicons.toml:/srv/favicons.toml
+      - ./limiter.toml:/srv/limiter.toml
+      - ./settings.yml:/srv/settings.yml
       - cache:/var/cache/searxng
 
   redis:
