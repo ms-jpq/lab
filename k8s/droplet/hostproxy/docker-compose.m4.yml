@@ -1,6 +1,6 @@
 ---
 x-k8s:
-  # m5_for([PROXY_NS], [SUB_DOMAIN.ENV_DOMAIN
+  # m5_for([PROXY_NS], [
   - apiVersion: networking.k8s.io/v1
     kind: NetworkPolicy
     metadata:
