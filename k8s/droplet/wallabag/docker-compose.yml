@@ -1,10 +1,10 @@
 ---
 services:
   wallabag:
-    image: docker.io/wallabag/wallabag:latest
+    image: &img docker.io/wallabag/wallabag:latest
     labels:
       kompose.service.expose: pocket.${DOMAIN}
-      kompose.init.containers.image: docker.io/wallabag/wallabag:latest
+      kompose.init.containers.image: *img
       kompose.init.containers.command: '["sh", "-c", "/entrypoint.sh migrate || :"]'
     # healthcheck:
     #   test:

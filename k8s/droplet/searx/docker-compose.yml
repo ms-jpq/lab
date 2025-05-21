@@ -14,7 +14,7 @@ x-k8s:
 
 services:
   searxng:
-    image: docker.io/searxng/searxng:latest
+    image: ghcr.io/searxng/searxng:latest
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: ask.${DOMAIN}
