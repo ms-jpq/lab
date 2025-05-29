@@ -62,6 +62,9 @@ engines:
   - name: qwant
     disabled: true
 
+  - name: brave
+    disabled: true
+
   # - name: baidu
   #   disabled: false
   #
