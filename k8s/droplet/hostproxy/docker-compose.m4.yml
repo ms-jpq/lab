@@ -12,7 +12,7 @@ x-k8s:
             - namespaceSelector:
                 matchLabels:
                   kubernetes.io/metadata.name: kompsed-PROXY_NS
-  # ], archivebox, changedetection, invidious, miniflux, rss-bridge, searx, teddit)
+  # ], archivebox, changedetection, invidious, miniflux, rss-bridge, searx, redlib)
 
 services:
   proxy:
