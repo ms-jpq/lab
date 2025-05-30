@@ -12,18 +12,17 @@ from os import stat_result
 from pathlib import Path, PurePath
 from stat import S_ISDIR, S_ISLNK
 from subprocess import DEVNULL, PIPE, Popen
-from typing import Optional, cast
 from uuid import NAMESPACE_URL, UUID, uuid5
 
 
 @dataclass(frozen=True)
 class Stat:
-    ext: Optional[str]
+    ext: str | None
     gid: int
     id: UUID
     is_dir: bool
     itime: datetime
-    mime: Optional[str]
+    mime: str | None
     mtime: datetime
     name: str
     path: PurePath
@@ -31,7 +30,7 @@ class Stat:
     uid: int
 
 
-def _scandir(cwd: PurePath) -> Iterator[bytes]:
+def _scandir(cwd: PurePath) -> Iterator[bytes | bytearray]:
     with Popen(
         (
             "fdfind",
@@ -93,7 +92,7 @@ def _stat(path: PurePath, st: stat_result) -> Stat:
     return stat
 
 
-def _os_stat(path: Path, dir: PurePath, debug: bool) -> Optional[Stat]:
+def _os_stat(path: Path, dir: PurePath, debug: bool) -> Stat | None:
     try:
         st = path.stat(follow_symlinks=False)
         if S_ISLNK(st.st_mode):

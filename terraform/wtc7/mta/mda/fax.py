@@ -40,7 +40,7 @@ _MISSING_BODY_DEFECTS = (MultipartInvariantViolationDefect, StartBoundaryNotFoun
 def _parse(fp: BinaryIO) -> _Mail:
     lines = takewhile(lambda x: x != _NL and x != _LS, iter(fp.readline, b""))
     headers = b"".join(lines)
-    parsed = message_from_bytes(headers, policy=SMTPUTF8)  # type: ignore
+    parsed = message_from_bytes(headers, policy=SMTPUTF8)
     assert isinstance(parsed, EmailMessage)
     body = fp.read()
     return _Mail(headers=parsed, body=body)
