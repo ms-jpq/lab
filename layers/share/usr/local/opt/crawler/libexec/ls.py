@@ -12,6 +12,7 @@ from os import stat_result
 from pathlib import Path, PurePath
 from stat import S_ISDIR, S_ISLNK
 from subprocess import DEVNULL, PIPE, Popen
+from typing import cast
 from uuid import NAMESPACE_URL, UUID, uuid5
 
 
