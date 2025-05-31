@@ -82,7 +82,8 @@ engines:
 
 # https://kagi.com/stats?stat=leaderboard
 hostnames:
-  replace: []
+  replace:
+    []
     # '^([^.]+\.)*youtube\.com$': &youtube youtube.m5_assert([ENV_DOMAIN])
     # '^([^.]+\.)*youtu\.be$': *youtube
     # '^([^.]+\.)*redd\.it$': &reddit reddit.m5_assert([ENV_DOMAIN])
