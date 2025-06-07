@@ -20,6 +20,8 @@ services:
       AUTH_AUTH0_ID:
       AUTH_AUTH0_ISSUER:
       AUTH_AUTH0_SECRET:
+      BROWSERLESS_TOKEN:
+      BROWSERLESS_URL: http://browserless:3000
       DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg/${COMPOSE_PROJECT_NAME}
       DEEPSEEK_API_KEY:
       FEATURE_FLAGS: -clerk_sign_up,-welcome_suggest,-market
@@ -72,3 +74,12 @@ services:
       - 5432
     volumes:
       - /var/lib/local/lobe-chat:/var/lib/postgresql/data
+
+  browserless:
+    image: browserless/chrome:latest
+    environment:
+      PROXY_HOST: proxy.kompsed-hostproxy.svc.cluster.local
+      PROXY_PORT: 1080
+      TOKEN:
+    ports:
+      - 3000
