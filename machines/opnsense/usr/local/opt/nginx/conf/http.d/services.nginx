@@ -4,7 +4,7 @@ map $http_authorization $modified_auth {
 }
 
 server {
-  server_name cat.*;
+  server_name cat.* reddit.*;
   listen      unix:/run/local/nginx/gateway-https.sock;
   set         $x_k8s esxi.enp1s0.opnsense.home.arpa;
 
