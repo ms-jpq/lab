@@ -39,11 +39,11 @@ sort_by(.kind != "Namespace")[]
 JQ
 
   mkdir -p -- "$TMP"
+  RAND_HEX="$(cat -- "./facts/$SRC.k8s.env" "$DIR"/* | b3sum --length 64 -- | cut -d ' ' -f 1)"
   for F in "$DIR"/*; do
     B="$TMP/${F##*/}"
     case "$F" in
     *.m4*)
-      RAND_HEX="$(cat -- "./facts/$SRC.k8s.env" "$F" | b3sum --length 64 -- | cut -d ' ' -f 1)"
       RAND_HEX="$RAND_HEX" ./libexec/m4.sh "$F" "${B//'.m4'/''}" "$DEFS"
       ;;
     *)
