@@ -76,10 +76,9 @@ services:
       - /var/lib/local/lobe-chat:/var/lib/postgresql/data
 
   browserless:
-    image: browserless/chrome:latest
+    image: ghcr.io/browserless/chrome:latest
     environment:
-      PROXY_HOST: proxy.kompsed-hostproxy.svc.cluster.local
-      PROXY_PORT: 1080
+      HEALTH: true
       TOKEN:
     ports:
       - 3000
