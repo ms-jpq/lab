@@ -5,7 +5,8 @@
     "esxi.enp1s0.opnsense.ENV_TLD",
     "llama.ENV_TLD",
     "opnsense.w-0.opnsense.ENV_TLD",
-    "orthanc.enp1s0.opnsense.ENV_TLD"
+    "orthanc.enp1s0.opnsense.ENV_TLD",
+    "reddit.ENV_TLD"
   ],
   "ENV_CNAMES": [],
   "ENV_HOST_ALLOW_LIST": [
