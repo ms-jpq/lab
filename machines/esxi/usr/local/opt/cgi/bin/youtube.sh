@@ -41,6 +41,9 @@ CMD=(
 )
 printf -v COMMAND -- '%q ' "${CMD[@]}"
 
+# shellcheck disable=SC2154
+export -- HOME="$ANDROID_USER_HOME"
+
 adb connect "$TARGET"
 adb shell -T input keyevent KEYCODE_WAKEUP
 adb shell -T "$COMMAND"
