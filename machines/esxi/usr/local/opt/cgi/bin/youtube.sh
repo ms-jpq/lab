@@ -32,6 +32,7 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
+# https://github.com/yuliskov/SmartTube/issues/1999
 CMD=(
   am start
   -a android.intent.action.VIEW
@@ -41,4 +42,5 @@ CMD=(
 printf -v COMMAND -- '%q ' "${CMD[@]}"
 
 adb connect "$TARGET"
+adb shell -T input keyevent KEYCODE_WAKEUP
 adb shell -T "$COMMAND"
