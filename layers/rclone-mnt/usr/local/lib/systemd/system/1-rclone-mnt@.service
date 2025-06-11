@@ -15,8 +15,8 @@ CacheDirectory  = local/rclone/%i
 EnvironmentFile = /usr/local/etc/default/%i.rclone-mnt.env
 
 Environment     = WHAT=
+Environment     = ARGV=
 Environment     = WHERE=/media/%I
-Environment     = CACHE=%C/local/rclone/%i
 Environment     = TRANSFERS=8
 Environment     = VFS_MAX_SIZE=1G
 Environment     = VFS_CACHE_MODE=off
@@ -24,7 +24,6 @@ Environment     = DIR_CACHE_TIME=0
 Environment     = POLL_INTERVAL=0
 Environment     = WEBDAV="--webdav-vendor nginx --webdav-pacer-min-sleep 0"
 Environment     = READONLY="--read-only --vfs-fast-fingerprint"
-Environment     = ARGV=
 
 ExecStartPre    = !-fusermount -u -- ${WHERE}
 ExecStartPre    = !mkdir -v -p -- /media/%I
@@ -32,7 +31,7 @@ ExecStartPre    = !chown -v -- 1000:1000 /media/%I
 ExecStart       = rclone mount \
                     --allow-non-empty \
                     --allow-other \
-                    --cache-dir ${CACHE} \
+                    --cache-dir ${CACHE_DIRECTORY} \
                     --config /dev/null \
                     --default-permissions \
                     --transfers ${TRANSFERS} \
