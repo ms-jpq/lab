@@ -13,11 +13,11 @@ $argv = @(
     "--http-url=$remote"
     "--volname=$vol"
     '--config=NUL'
-    '--dir-cache-time=10s'
+    '--dir-cache-time=8s'
     '--network-mode'
     '--poll-interval=88s'
     '--read-only'
-    '--transfers=8'
+    '--transfers=88'
     '--use-mmap',
     '--vfs-refresh',
     '--vfs-fast-fingerprint',
