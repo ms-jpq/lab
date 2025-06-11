@@ -13,11 +13,14 @@ $argv = @(
     "--http-url=$remote"
     "--volname=$vol"
     '--config=NUL'
-    '--dir-cache-time=166ss'
+    '--dir-cache-time=10s'
     '--network-mode'
     '--poll-interval=88s'
     '--read-only'
+    '--transfers=8'
     '--use-mmap',
+    '--vfs-refresh',
+    '--vfs-fast-fingerprint',
     '--vfs-cache-mode=full'
     '--webdav-pacer-min-sleep=0',
     '--webdav-vendor=nginx',
