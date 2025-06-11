@@ -16,14 +16,16 @@ http {
     root   /run/local/webdav/root;
 
     location / {
-      # fancyindex_case_sensitive off;
+      # fancyindex_case_sensitive  off;
       create_full_put_path       on;
       fancyindex                 on;
+      fancyindex_exact_size      off;
       fancyindex_hide_parent_dir on;
       fancyindex_show_dotfiles   on;
       fancyindex_time_format     "%Y-%m-%d %H:%M";
-      dav_methods                PUT DELETE MKCOL COPY MOVE;
+      dav_access                 all:r;
       dav_ext_methods            PROPFIND OPTIONS LOCK UNLOCK;
+      dav_methods                PUT DELETE MKCOL COPY MOVE;
       min_delete_depth           1;
     }
   }
