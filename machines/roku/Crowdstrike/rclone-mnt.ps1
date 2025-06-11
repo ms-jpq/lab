@@ -23,7 +23,7 @@ $argv = @(
     '--webdav-vendor=rclone',
     'mount'
     '--'
-    ':http:/webdav/ro/'
+    ':http:/webdav/'
     '*'
 )
 # READ ONLY doesn't work LMAO

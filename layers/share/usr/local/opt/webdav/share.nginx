@@ -1,4 +1,4 @@
-pid                     /run/local/webdav/${RW}/nginx.pid;
+pid                     /run/local/webdav/nginx.pid;
 user                    www-data;
 error_log               stderr;
 worker_processes        auto;
@@ -12,8 +12,8 @@ http {
   include /usr/local/opt/nginx/conf/http.nginx;
 
   server {
-    listen unix:/run/local/webdav/${RW}/index.sock;
-    root   /run/local/webdav/${RW}/root;
+    listen unix:/run/local/webdav/index.sock;
+    root   /run/local/webdav/root;
 
     location / {
       # fancyindex_case_sensitive off;

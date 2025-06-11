@@ -33,7 +33,6 @@
     "misc",
     "wallpapers"
   ],
-  "ENV_WEB_RO_EXPORTS": ["bt", "downloads", "media"],
-  "ENV_WEB_RW_EXPORTS": "ENV_NFS_EXPORTS",
+  "ENV_WEB_EXPORTS": ["ENV_NFS_EXPORTS", "bt", "downloads", "media"],
   "ENV_ZFS_MEM": 30
 }

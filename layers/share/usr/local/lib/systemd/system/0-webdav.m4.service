@@ -20,4 +20,4 @@ ExecStart           = nginx -c ${RUNTIME_DIRECTORY}/main.nginx
 
 # m5_for([SHARE], [
 BindReadOnlyPaths   = /media/SHARE:%t/local/%J/%I/root/SHARE
-# ], m5_assert([ENV_WEB_RO_EXPORTS]))
+# ], m5_assert([ENV_WEB_EXPORTS]))

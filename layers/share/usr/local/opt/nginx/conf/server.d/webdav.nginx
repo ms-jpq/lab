@@ -1,15 +1,7 @@
-location /webdav/ro {
-  return 307 /webdav/ro/;
+location /webdav {
+  return 307 /webdav/;
 }
 
-location /webdav/rw {
-  return 307 /webdav/rw/;
-}
-
-location /webdav/ro/ {
-  proxy_pass http://unix:/run/local/webdav/ro/index.sock:/;
-}
-
-location /webdav/rw/ {
-  proxy_pass http://unix:/run/local/webdav/rw/index.sock:/;
+location /webdav/ {
+  proxy_pass http://unix:/run/local/webdav/index.sock:/;
 }

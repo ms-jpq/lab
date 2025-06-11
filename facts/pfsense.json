@@ -20,7 +20,7 @@
     "freenas.enp2s0.pfsense/bt",
     "freenas.enp2s0.pfsense/journald/tail.html",
     "freenas.enp2s0.pfsense/rclone",
-    "freenas.enp2s0.pfsense/webdav/ro",
+    "freenas.enp2s0.pfsense/webdav",
     "freenas.enp2s0.pfsense/youtube-dl",
     "freenas.enp2s0.pfsense/zfs.sh",
     "opnsense.w-0.opnsense",
