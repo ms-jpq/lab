@@ -12,7 +12,7 @@ RestartSec      = 2s
 # Group           = 1000
 CacheDirectory  = local/rclone/%i
 
-EnvironmentFile = /usr/local/etc/default/%i.rmount.env
+EnvironmentFile = /usr/local/etc/default/%i.rclone-mnt.env
 
 Environment     = WHAT=
 Environment     = WHERE=/media/%I
@@ -22,7 +22,7 @@ Environment     = VFS_MAX_SIZE=1G
 Environment     = VFS_CACHE_MODE=off
 Environment     = DIR_CACHE_TIME=0
 Environment     = POLL_INTERVAL=0
-Environment     = WEBDAV="--webdav-vendor rclone --webdav-pacer-min-sleep 0"
+Environment     = WEBDAV="--webdav-vendor nginx --webdav-pacer-min-sleep 0"
 Environment     = READONLY="--read-only --vfs-fast-fingerprint"
 Environment     = ARGV=
 

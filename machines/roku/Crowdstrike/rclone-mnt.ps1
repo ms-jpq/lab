@@ -20,7 +20,7 @@ $argv = @(
     '--use-mmap',
     '--vfs-cache-mode=full'
     '--webdav-pacer-min-sleep=0',
-    '--webdav-vendor=rclone',
+    '--webdav-vendor=nginx',
     'mount'
     '--'
     ':http:/webdav/'
