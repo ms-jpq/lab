@@ -195,9 +195,11 @@ hostnames:
     - ^([^.]+\.)*medium\.com$
     - ^([^.]+\.)*ruby-doc\.org$
     - ^([^.]+\.)*sourceforge\.net$
+    - ^([^.]+\.)*steamcommunity\.com$
     - ^([^.]+\.)*vice\.com$
     - ^([^.]+\.)*youtu\.be$
     - ^([^.]+\.)*youtube\.com$
+    - ^([^.]+\.)*zhihu\.com$
   remove:
     - ^([^.]+\.)*chegg\.com$
     - ^([^.]+\.)*codecademy\.com$
