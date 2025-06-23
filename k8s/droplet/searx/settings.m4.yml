@@ -178,6 +178,7 @@ hostnames:
     - ^([^.]+\.)*wikipedia\.org$
     - ^([^.]+\.)*wiktionary\.org$
     - ^([^.]+\.)*ycombinator\.com$
+    - ^([^.]+\.)\.wiki$
     - ^bbs(\.[^.]+){1,}
     - ^community(\.[^.]+){1,}
     - ^developer(\.[^.]+){1,}
