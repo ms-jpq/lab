@@ -49,17 +49,14 @@ If you had 5 days vs. 5 weeks vs. 5 months vs. 5 years to think about a problem,
 Labour of ~~love?~~ **hate**.
 
 - Why the hell is there a version on everything in k8s?
-
   - Just gonna break at inconvenient time
 
 - This library is 5 years old and has 7 major versions?
 
 - Why is Ansible so slow and keeps getting slower?
-
   - Why does it have 16 levels of variable precedence?
 
 - Generalized annoyance
-
   - Lots of Microk8s scripts don't even have basic `-e` error checking?
 
   - LXD (Canonical's OpenShift) sending SIGKILL instead of SIGTERM to display daemons, thus making cleaning up impossible.
@@ -192,7 +189,6 @@ Half a decade's worth of iterations.
 # ~~Magnets~~ containers how do they work?
 
 - We live in the world of ~~containers~~ **Systemd**
-
   - cgroups
 
   - network namespace
