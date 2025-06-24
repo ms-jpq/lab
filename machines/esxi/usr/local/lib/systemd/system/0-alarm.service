@@ -1,0 +1,10 @@
+[Unit]
+Description   = Alarm Service
+
+[Service]
+Type          = oneshot
+ProtectSystem = strict
+ProtectHome   = yes
+PrivateTmp    = yes
+
+ExecStart     = /usr/local/opt/alarm/am.sh

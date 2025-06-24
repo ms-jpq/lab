@@ -1,0 +1,6 @@
+[Unit]
+Description = Alarm Timer
+
+[Timer]
+Persistent  = yes
+OnCalendar  = 06:30:00 America/New_York
