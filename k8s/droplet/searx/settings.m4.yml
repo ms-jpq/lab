@@ -76,7 +76,6 @@ engines:
     disabled: false
 
   - name: yandex
-    disabled: false
     inactive: false
 
 # https://kagi.com/stats?stat=leaderboard
