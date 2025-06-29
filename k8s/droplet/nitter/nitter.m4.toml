@@ -1,15 +1,15 @@
-[Server]
+[[Server]]
 hostname = "twitter.m5_assert([ENV_DOMAIN])"
 https    = true
 title    = "🐓"
 
-[Cache]
+[[Cache]]
 redisHost = "redis"
 
-# [Config]
+# [[Config]]
 # proxy = ""
 
-[Preferences]
+[[Preferences]]
 hlsPlayback    = true
 infiniteScroll = true
 replaceReddit  = "old.reddit.com"
