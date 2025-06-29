@@ -1,0 +1,37 @@
+---
+services:
+  nitter:
+    image: docker.io/zedeus/nitter:latest
+    labels:
+      kompose.service.expose: twitter.${DOMAIN}
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - -O/dev/null
+        - --timeout
+        - "1"
+        - --
+        - localhost:8080/Jack/status/20
+    ports:
+      - 8080
+    volumes:
+      - ./nitter.toml:/src/nitter.conf:ro
+      - ./sessions.jsonl:/src/sessions.jsonl:ro
+
+  redis:
+    image: docker.io/library/redis:latest
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - incr
+        - ping
+    ports:
+      - 6379
+    volumes:
+      - data:/data
+
+volumes:
+  data:
