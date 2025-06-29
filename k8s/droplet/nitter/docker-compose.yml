@@ -4,16 +4,16 @@ services:
     image: docker.io/zedeus/nitter:latest
     labels:
       kompose.service.expose: twitter.${DOMAIN}
-    healthcheck:
-      test:
-        - CMD
-        - wget
-        - --quiet
-        - -O/dev/null
-        - --timeout
-        - "1"
-        - --
-        - localhost:8080/Jack/status/20
+    # healthcheck:
+    #   test:
+    #     - CMD
+    #     - wget
+    #     - --quiet
+    #     - -O/dev/null
+    #     - --timeout
+    #     - "1"
+    #     - --
+    #     - 127.0.0.1:8080
     ports:
       - 8080
     volumes:

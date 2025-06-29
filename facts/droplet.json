@@ -37,7 +37,6 @@
   "ENV_OVPN_SERVER_NAME": "ENV_WG_SERVER_NAME",
   "ENV_PUBLIC_SITES": [
     "12ft.*",
-    "ENV_DOMAIN/*",
     "ask.*",
     "autodiscover.*",
     "bridge.*",
@@ -45,6 +44,7 @@
     "dockerhub.*",
     "docs.*",
     "draw.*",
+    "ENV_DOMAIN/*",
     "glance.*",
     "http.*",
     "minio.*",
@@ -54,6 +54,7 @@
     "rss.*",
     "s3.*",
     "tools.*",
+    "twitter.*",
     "youtube-dl.*",
     "youtube.*"
   ],

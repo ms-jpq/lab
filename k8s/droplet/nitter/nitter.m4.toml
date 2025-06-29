@@ -6,8 +6,8 @@ title    = "🐓"
 [[Cache]]
 redisHost = "redis"
 
-# [[Config]]
-# proxy = ""
+[[Config]]
+proxy = "http://proxy.kompsed-hostproxy.svc.cluster.local:1080"
 
 [[Preferences]]
 hlsPlayback    = true
