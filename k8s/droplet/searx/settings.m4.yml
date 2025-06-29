@@ -83,6 +83,7 @@ hostnames:
   replace:
     # '^([^.]+\.)*youtube\.com$': &youtube youtube.m5_assert([ENV_DOMAIN])
     # '^([^.]+\.)*youtu\.be$': *youtube
+    '^([^.]+\.)*(twitter|x)\.com$': xcancel.com
     '^([^.]+\.)*redd\.it$': &reddit old.reddit.com
     '^([^.]+\.)*reddit\.com$': *reddit
     '^([^.]+\.)*redditmedia\.com$': *reddit
@@ -184,7 +185,6 @@ hostnames:
     - ^forums?(\.[^.]+){1,}
     - ^reddit\.m5_assert([ENV_DOMAIN])$
   low_priority:
-    - ^([^.]+\.)*(twitter|x)\.com$
     - ^([^.]+\.)*\.(au|in|uk|eu)$
     - ^([^.]+\.)*answers\.microsoft\.com$
     - ^([^.]+\.)*apidock\.com$
@@ -194,7 +194,6 @@ hostnames:
     - ^([^.]+\.)*medium\.com$
     - ^([^.]+\.)*ruby-doc\.org$
     - ^([^.]+\.)*sourceforge\.net$
-    - ^([^.]+\.)*steamcommunity\.com$
     - ^([^.]+\.)*vice\.com$
     - ^([^.]+\.)*youtu\.be$
     - ^([^.]+\.)*youtube\.com$
@@ -204,25 +203,37 @@ hostnames:
     - ^([^.]+\.)*codecademy\.com$
     - ^([^.]+\.)*coder\.social$
     - ^([^.]+\.)*codersrank\.io$
+    - ^([^.]+\.)*deltiasgaming\.com$
     - ^([^.]+\.)*dev\.to$
     - ^([^.]+\.)*facebook\.com$
     - ^([^.]+\.)*fortune\.com$
     - ^([^.]+\.)*freecodecamp\.org$
+    - ^([^.]+\.)*gamerant\.com$
+    - ^([^.]+\.)*gamesradar\.com$
+    - ^([^.]+\.)*gamestegy\.com$
     - ^([^.]+\.)*geeksforgeeks\.org$
     - ^([^.]+\.)*giters\.com$
     - ^([^.]+\.)*hackernoon\.com$
     - ^([^.]+\.)*healthline\.com$
     - ^([^.]+\.)*howtogeek\.com$
+    - ^([^.]+\.)*ign\.com$
     - ^([^.]+\.)*libhunt\.com$
     - ^([^.]+\.)*macworld\.com$
     - ^([^.]+\.)*medicalnewstoday\.com$
     - ^([^.]+\.)*msn\.com$
+    - ^([^.]+\.)*pcgamer\.com$
     - ^([^.]+\.)*pinterest(\.[^.]+){1,2}$
+    - ^([^.]+\.)*primagames\.com$
+    - ^([^.]+\.)*progameguides\.com$
     - ^([^.]+\.)*programiz\.com$
     - ^([^.]+\.)*quora\.com$
+    - ^([^.]+\.)*screenrant\.com$
     - ^([^.]+\.)*solveforum\.com$
     - ^([^.]+\.)*stackshare\.io$
+    - ^([^.]+\.)*steamcommunity\.com$
+    - ^([^.]+\.)*thegamer\.com$
     - ^([^.]+\.)*thehackernews\.com$
+    - ^([^.]+\.)*thenerdstash\.com$
     - ^([^.]+\.)*towardsdatascience\.com$
     - ^([^.]+\.)*tutorialspoint\.com$
     - ^([^.]+\.)*w3schools\.com$
