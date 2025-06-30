@@ -3,4 +3,4 @@ Description = Alarm Timer
 
 [Timer]
 Persistent  = yes
-OnCalendar  = 06:30:00 America/New_York
+OnCalendar  = Mon..Fri 06:30:00 America/New_York
