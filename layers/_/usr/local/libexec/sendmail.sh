@@ -71,6 +71,7 @@ CURL=(
   --ssl-reqd
   --mail-from "$FROM"
   --mail-rcpt "$RCPT"
+  --header "Date: $(date --rfc-email)"
   --header "From: <$FROM>"
   --header "To: <$RCPT>"
   "${HEADERS[@]}"
