@@ -3,10 +3,8 @@
     "cat.ENV_TLD",
     "droplet.w-0.droplet.ENV_TLD",
     "esxi.enp1s0.opnsense.ENV_TLD",
-    "llama.ENV_TLD",
     "opnsense.w-0.opnsense.ENV_TLD",
-    "orthanc.enp1s0.opnsense.ENV_TLD",
-    "reddit.ENV_TLD"
+    "orthanc.enp1s0.opnsense.ENV_TLD"
   ],
   "ENV_CNAMES": [],
   "ENV_HOST_ALLOW_LIST": [
@@ -30,7 +28,7 @@
   ],
   "ENV_OVPN_SERVER_NAME": "ENV_WG_SERVER_NAME",
   "ENV_OVPN_TCP_CLIENT_PORT": 1194,
-  "ENV_PUBLIC_SITES": ["cat.*", "llama.*"],
+  "ENV_PUBLIC_SITES": [],
   "ENV_WAN_IF": "enp2s0",
   "ENV_WG_PEERS": ["pfsense"],
   "ENV_WG_SERVER_NAME": "ENV_DOMAIN"

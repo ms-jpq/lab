@@ -1,5 +1,4 @@
 cuda
-k3s
 nspawn
 postgres
 qemu
