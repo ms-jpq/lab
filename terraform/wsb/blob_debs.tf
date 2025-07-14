@@ -18,6 +18,13 @@ data "aws_iam_policy_document" "s3_debs" {
   }
 }
 
+resource "aws_s3_bucket_website_configuration" "science_world" {
+  bucket = local.s3_debs.bucket
+  index_document {
+    suffix = "Packages"
+  }
+}
+
 data "aws_iam_policy_document" "science_world" {
   statement {
     principals {
@@ -38,6 +45,6 @@ resource "aws_s3_bucket_policy" "s3_debs" {
 
 output "aws_debs" {
   value = <<-SOURCE
-  deb [signed-by=/etc/apt/trusted.gpg.d/ms-jpq.gpg] https://${local.s3_debs.bucket_regional_domain_name} /
+  deb [signed-by=/etc/apt/trusted.gpg.d/ms-jpq.gpg] https://${aws_s3_bucket_website_configuration.science_world.website_endpoint} /
   SOURCE
 }
