@@ -17,7 +17,7 @@
     "XBOX.enp1s0.opnsense.home.arpa@tcp*3074:3074",
     "XBOX.enp1s0.opnsense.home.arpa@udp*3074:3074"
   ],
-  "ENV_INDEX": [],
+  "ENV_INDEX": ["cat"],
   "ENV_IOT_IFS": [],
   "ENV_LAN_IFS": ["enp1s0"],
   "ENV_MACHINES": [
@@ -28,7 +28,7 @@
   ],
   "ENV_OVPN_SERVER_NAME": "ENV_WG_SERVER_NAME",
   "ENV_OVPN_TCP_CLIENT_PORT": 1194,
-  "ENV_PUBLIC_SITES": [],
+  "ENV_PUBLIC_SITES": ["cat.*"],
   "ENV_WAN_IF": "enp2s0",
   "ENV_WG_PEERS": ["pfsense"],
   "ENV_WG_SERVER_NAME": "ENV_DOMAIN"
