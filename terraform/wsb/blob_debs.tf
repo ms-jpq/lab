@@ -1,25 +1,32 @@
-variable "s3_debs" {
+variable "deb_bucket" {
   type = string
 }
 
 locals {
-  s3_debs      = aws_s3_bucket.kfc[var.s3_debs]
   s3_deb_users = ["github-ci"]
 }
 
-data "aws_iam_policy_document" "s3_debs" {
+resource "aws_s3_bucket" "deb_bucket" {
+  bucket        = var.deb_bucket
+  force_destroy = true
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+data "aws_iam_policy_document" "deb_bucket" {
   statement {
     actions = ["s3:*"]
     effect  = "Allow"
     resources = [
-      "arn:aws:s3:::${local.s3_debs.bucket}",
-      "arn:aws:s3:::${local.s3_debs.bucket}/*"
+      "arn:aws:s3:::${aws_s3_bucket.deb_bucket.bucket}",
+      "arn:aws:s3:::${aws_s3_bucket.deb_bucket.bucket}/*"
     ]
   }
 }
 
 resource "aws_s3_bucket_website_configuration" "science_world" {
-  bucket = local.s3_debs.bucket
+  bucket = aws_s3_bucket.deb_bucket.bucket
   index_document {
     suffix = "Packages"
   }
@@ -34,12 +41,17 @@ data "aws_iam_policy_document" "science_world" {
 
     actions   = ["s3:GetObject"]
     effect    = "Allow"
-    resources = ["arn:aws:s3:::${local.s3_debs.bucket}/*"]
+    resources = ["arn:aws:s3:::${aws_s3_bucket.deb_bucket.bucket}/*"]
   }
 }
 
-resource "aws_s3_bucket_policy" "s3_debs" {
-  bucket = local.s3_debs.bucket
+resource "aws_s3_bucket_public_access_block" "science_world" {
+  bucket              = aws_s3_bucket.deb_bucket.bucket
+  block_public_policy = false
+}
+
+resource "aws_s3_bucket_policy" "science_world" {
+  bucket = aws_s3_bucket_public_access_block.science_world.bucket
   policy = data.aws_iam_policy_document.science_world.json
 }
 

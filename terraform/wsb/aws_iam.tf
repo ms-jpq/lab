@@ -32,7 +32,7 @@ locals {
   iam_policies = {
     s2      = { doc = data.aws_iam_policy_document.s2, users = local.s2_users }
     smtp    = { doc = data.aws_iam_policy_document.smtp, users = local.smtp_users }
-    s2-debs = { doc = data.aws_iam_policy_document.s3_debs, users = local.s3_deb_users }
+    s2-debs = { doc = data.aws_iam_policy_document.deb_bucket, users = local.s3_deb_users }
   }
 }
 
