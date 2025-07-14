@@ -39,7 +39,6 @@ endif
 
 V_HELM       = $(shell ./libexec/gh-latest.sh $(VAR) helm/helm)
 V_KUSTOMIZE  = $(subst /,_,$(shell ./libexec/gh-latest.sh $(VAR) kubernetes-sigs/kustomize))
-V_S5CMD      = $(patsubst v%,%,$(shell ./libexec/gh-latest.sh $(VAR) peak/s5cmd))
 V_SHELLCHECK = $(shell ./libexec/gh-latest.sh $(VAR) koalaman/shellcheck)
 V_SHFMT      = $(shell ./libexec/gh-latest.sh $(VAR) mvdan/sh)
 V_TFLINT     = $(shell ./libexec/gh-latest.sh $(VAR) terraform-linters/tflint)
@@ -69,11 +68,6 @@ $(VAR)/bin/tflint: | $(VAR)/bin
 	ZIP='$(TMP)/tflint.zip'
 	$(CURL) --output "$$ZIP" -- "$$URI"
 	unzip -o -d '$(VAR)/bin' -- "$$ZIP"
-
-$(VAR)/bin/s5cmd: | $(VAR)/bin
-	URI='https://github.com/peak/s5cmd/releases/latest/download/s5cmd_$(V_S5CMD)_$(S5_OS)-$(S5_TYPE).tar.gz'
-	$(CURL) -- "$$URI" | tar --extract --gz --file - --directory '$(VAR)/bin'
-	chmod +x '$@'
 
 $(VAR)/bin/terraform: | $(VAR)/bin
 	URI='https://releases.hashicorp.com/terraform/$(V_TOFU)/terraform_$(V_TOFU)_$(OS)_$(GOARCH).zip'
