@@ -30,8 +30,9 @@ data "aws_iam_policy_document" "smtp" {
 
 locals {
   iam_policies = {
-    s2   = { doc = data.aws_iam_policy_document.s2, users = local.s2_users }
-    smtp = { doc = data.aws_iam_policy_document.smtp, users = local.smtp_users }
+    s2      = { doc = data.aws_iam_policy_document.s2, users = local.s2_users }
+    smtp    = { doc = data.aws_iam_policy_document.smtp, users = local.smtp_users }
+    s2-debs = { doc = data.aws_iam_policy_document.s3_debs, users = local.s3_deb_users }
   }
 }
 
@@ -72,10 +73,16 @@ resource "aws_iam_access_key" "iam" {
 }
 
 resource "local_sensitive_file" "s2" {
-  for_each = {
-    for user in local.s2_users :
-    user => aws_iam_access_key.iam["s2-${user}"]
-  }
+  for_each = merge(
+    {
+      for user in local.s2_users :
+      user => aws_iam_access_key.iam["s2-${user}"]
+    },
+    {
+      for user in local.s3_deb_users :
+      user => aws_iam_access_key.iam["s2-debs-${user}"]
+    }
+  )
   filename = "${path.module}/../../facts/s2.${each.key}.env.ini"
   content  = <<-INI
   [${each.key}]
