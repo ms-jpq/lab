@@ -38,6 +38,6 @@ resource "aws_s3_bucket_policy" "s3_debs" {
 
 output "aws_debs" {
   value = <<-SOURCE
-  deb ${local.s3_debs.bucket_domain_name} /
+  deb [signed-by=/etc/apt/trusted.gpg.d/ms-jpq.gpg] ${local.s3_debs.bucket_domain_name} /
   SOURCE
 }

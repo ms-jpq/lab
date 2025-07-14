@@ -13,6 +13,7 @@ S3=(
   "$(realpath -- "$BASE/.venv/bin/s3cmd")"
   --no-guess-mime-type
   --no-mime-magic
+  --delete-after
   --host "$S3HOST"
   --host-bucket "%(bucket).$S3HOST"
 )
@@ -47,7 +48,7 @@ push)
   find "$TMP" -type f -exec gpg --batch --yes --encrypt-files -- '{}' +
   find "$TMP" -type f -not -name '*.gpg' -delete
   pushd -- "$TMP"
-  "${S3[@]}" sync --delete-removed -- ./ "$BUCKET"
+  "${S3[@]}" sync --delete-after --delete-removed -- ./ "$BUCKET"
   ;;
 pull)
   dir
