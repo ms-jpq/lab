@@ -1,3 +1,5 @@
+# + nvidia-container-runtime
+# + nvidia-container-toolkit
 + adb
-+ nvidia-container-runtime
-+ nvidia-container-toolkit
++ nvidia-cuda-toolkit
++ tabby

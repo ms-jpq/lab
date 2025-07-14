@@ -1,0 +1,14 @@
+[Unit]
+Description     = TabbyML
+
+[Service]
+ProtectSystem   = strict
+ProtectHome     = yes
+PrivateTmp      = yes
+
+StateDirectory  = local/tabbyml
+
+Environment     = TABBY_ROOT=%S/local/tabbyml
+Environment     = TABBY_MODEL=
+EnvironmentFile = /usr/local/etc/default/%j.env
+ExecStart       = /opt/%j/bin/%j serve --device cuda --host :: --port 9999 --model ${TABBY_MODEL}
