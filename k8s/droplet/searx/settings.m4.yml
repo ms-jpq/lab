@@ -81,18 +81,18 @@ engines:
 # https://kagi.com/stats?stat=leaderboard
 hostnames:
   replace:
-    # '^([^.]+\.)*youtube\.com$': &youtube youtube.m5_assert([ENV_DOMAIN])
-    # '^([^.]+\.)*youtu\.be$': *youtube
-    '^([^.]+\.)*(twitter|x)\.com$': xcancel.com
-    '^([^.]+\.)*redd\.it$': &reddit old.reddit.com
-    '^([^.]+\.)*reddit\.com$': *reddit
-    '^([^.]+\.)*redditmedia\.com$': *reddit
+    # '^([[^.]]+\.)*youtube\.com$': &youtube youtube.m5_assert([ENV_DOMAIN])
+    # '^([[^.]]+\.)*youtu\.be$': *youtube
+    '^([[^.]]+\.)*(twitter|x)\.com$': xcancel.com
+    '^([[^.]]+\.)*redd\.it$': &reddit old.reddit.com
+    '^([[^.]]+\.)*reddit\.com$': *reddit
+    '^([[^.]]+\.)*redditmedia\.com$': *reddit
   high_priority:
-    - ^bbs(\.[^.]+){1,}
-    - ^community(\.[^.]+){1,}
-    - ^developer(\.[^.]+){1,}
-    - ^docs?(\.[^.]+){1,}
-    - ^forums?(\.[^.]+){1,}
+    - ^bbs(\.[[^.]]+){1,}
+    - ^community(\.[[^.]]+){1,}
+    - ^developer(\.[[^.]]+){1,}
+    - ^docs?(\.[[^.]]+){1,}
+    - ^forums?(\.[[^.]]+){1,}
     - ^reddit\.m5_assert([ENV_DOMAIN])$
     # m4_esyscmd([./k8s/droplet/searx/proc.sed -- k8s/droplet/searx/domains/more.txt])
   low_priority:
