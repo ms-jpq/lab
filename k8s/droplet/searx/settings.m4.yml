@@ -71,8 +71,8 @@ engines:
   # - name: sogou
   #   disabled: false
 
-  # - name: bing
-  #   disabled: false
+  - name: bing
+    disabled: false
 
   - name: bilibili
     disabled: false
