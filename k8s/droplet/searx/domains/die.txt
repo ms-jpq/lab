@@ -56,7 +56,7 @@ caranddriver.com
 channelpro.co.uk
 chegg.com
 cinemablend.com
-clevver.com[27;5;106~cosmopolitan.com
+clevver.com
 closerweekly.com
 cloudpro.co.uk
 cnn.com
@@ -69,6 +69,7 @@ codecademy.com
 codegrepper.com
 coder.social
 codersrank.io
+cosmopolitan.com
 countrylife.co.uk
 countryliving.com
 creativebloq.com
@@ -153,7 +154,6 @@ hardreset.info
 harpersbazaar.com
 health.com
 healthline.com
-healthline.com[27;5;106~libhunt.com
 hgtv.com
 historyanswers.co.uk
 homebuilding.co.uk

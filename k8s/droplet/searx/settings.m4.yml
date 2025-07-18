@@ -94,8 +94,8 @@ hostnames:
     - ^docs?(\.[[^.]]+){1,}
     - ^forums?(\.[[^.]]+){1,}
     - ^reddit\.m5_assert([ENV_DOMAIN])$
-    # m4_esyscmd([./k8s/droplet/searx/proc.sed -- k8s/droplet/searx/domains/more.txt])
+    # m4_esyscmd([./k8s/droplet/searx/proc.sed -- ./k8s/droplet/searx/domains/more.txt])
   low_priority:
-    # m4_esyscmd([./k8s/droplet/searx/proc.sed -- k8s/droplet/searx/domains/ew.txt])
+    # m4_esyscmd([./k8s/droplet/searx/proc.sed -- ./k8s/droplet/searx/domains/ew.txt])
   remove:
-    # m4_esyscmd([./k8s/droplet/searx/proc.sed -- k8s/droplet/searx/domains/die.txt])
+    # m4_esyscmd([./k8s/droplet/searx/proc.sed -- ./k8s/droplet/searx/domains/die.txt])

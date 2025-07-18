@@ -38,10 +38,9 @@ sort_by(.kind != "Namespace")[]
   end
 JQ
 
-  FD_INNER=(-type f -or -type l)
-
+  FD_INNER=('(' -type f -or -type l ')')
   mkdir -p -- "$TMP"
-  RAND_HEX="$(find "$DIR" -print0 "${FD_INNER[@]}" | xargs -0 --no-run-if-empty -- cat -- "./facts/$SRC.k8s.env" | b3sum --length 64 -- | cut -d ' ' -f 1)"
+  RAND_HEX="$(find "$DIR" "${FD_INNER[@]}" -print0 | xargs -0 --no-run-if-empty -- cat -- "./facts/$SRC.k8s.env" | b3sum --length 64 -- | cut -d ' ' -f 1)"
   for F in "$DIR"/*; do
     B="$TMP/${F##*/}"
     case "$F" in
