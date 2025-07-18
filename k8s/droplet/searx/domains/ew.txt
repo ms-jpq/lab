@@ -1,6 +1,7 @@
 answers.microsoft.com
 apidock.com
 au
+ell.stackexchange.com
 etsy.com
 eu
 forbes.com
@@ -15,4 +16,3 @@ vice.com
 x.com
 youtu.be
 youtube.com
-zhihu.com

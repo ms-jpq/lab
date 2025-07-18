@@ -20,7 +20,6 @@ amateurgardening.com
 amazon.co.uk
 anandtech.com
 androidcentral.com
-answers.microsoft.com
 apcmag.com
 appsloveworld.com
 architecturaldigest.com
@@ -123,6 +122,7 @@ foxnews.com
 freecodecamp.org
 g2.com
 gamepressure.com
+gamer.com.tw
 gamerant.com
 gamespot.com
 gamesradar.com
@@ -398,3 +398,5 @@ yachtingmonthly.com
 yachtingworld.com
 ybw.com
 you.com
+zhidao.baidu.com
+zhihu.com
