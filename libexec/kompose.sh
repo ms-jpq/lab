@@ -38,8 +38,10 @@ sort_by(.kind != "Namespace")[]
   end
 JQ
 
+  FD_INNER=(-type f -or -type l)
+
   mkdir -p -- "$TMP"
-  RAND_HEX="$(cat -- "./facts/$SRC.k8s.env" "$DIR"/* | b3sum --length 64 -- | cut -d ' ' -f 1)"
+  RAND_HEX="$(find "$DIR" -print0 "${FD_INNER[@]}" | xargs -0 --no-run-if-empty -- cat -- "./facts/$SRC.k8s.env" | b3sum --length 64 -- | cut -d ' ' -f 1)"
   for F in "$DIR"/*; do
     B="$TMP/${F##*/}"
     case "$F" in
@@ -53,7 +55,7 @@ JQ
   done
 
   printf -- '%s\n' "@ $NAMESPACE" >&2
-  HASHED="$(cat -- "$TMP"/* | b3sum --length 32 -- | cut -d ' ' -f 1)"
+  HASHED="$(find "$TMP" "${FD_INNER[@]}" -exec cat -- '{}' + | b3sum --length 32 -- | cut -d ' ' -f 1)"
   FILE_IN="$TMP/docker-compose.yml"
   CONV=(./var/sh/zsh/dev/bin/denv.py -- "$TMP/.env" ./var/bin/kompose convert --stdout --generate-network-policies --namespace "$NAMESPACE" --file "$FILE_IN")
   {

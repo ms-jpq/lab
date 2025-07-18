@@ -18,4 +18,5 @@ ExecStart           = ip netns add ${NETNS}
 ExecStart           = ip --netns ${NETNS} link set dev lo up
 ExecStart           = cp -v -f -- /usr/local/opt/netns/resolv.conf %t/local/netns/%I/resolv.conf
 ExecStop            = -ip netns del ${NETNS}
+ExecStopPost        = -ip netns del ${NETNS}
 ExecStopPost        = rm -v -fr -- %t/local/netns/%I
