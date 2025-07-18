@@ -57,6 +57,7 @@ nhs.uk
 nih.gov
 nodejs.org
 npmjs.org
+old.reddit.com
 perl.org
 pewresearch.org
 php.net
@@ -66,6 +67,7 @@ python.org
 qemu.org
 r-project.org
 rancher.com
+reddit.com
 rottentomatoes.com
 rtings.com
 rubyapi.org

@@ -93,7 +93,6 @@ hostnames:
     - ^developer(\.[[^.]]+){1,}
     - ^docs?(\.[[^.]]+){1,}
     - ^forums?(\.[[^.]]+){1,}
-    - ^reddit\.m5_assert([ENV_DOMAIN])$
     # m4_esyscmd([./k8s/droplet/searx/proc.sed -- ./k8s/droplet/searx/domains/more.txt])
   low_priority:
     # m4_esyscmd([./k8s/droplet/searx/proc.sed -- ./k8s/droplet/searx/domains/ew.txt])
