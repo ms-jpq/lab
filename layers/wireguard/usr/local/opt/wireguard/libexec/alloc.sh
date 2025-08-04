@@ -26,6 +26,7 @@ printf -v V4_NET -- '%02x' ${IPV4_NETWORK//./ }
 printf -v V4_MASK -- '%02x' ${IPV4_NETMASK//./ }
 
 declare -A -- SEEN
+# shellcheck disable=SC2154
 SEEN=(
   ["$IPV4_MINADDR/$IPV4_PREFIX"]=1
   ["$IPV4_MAXADDR/$IPV4_PREFIX"]=1

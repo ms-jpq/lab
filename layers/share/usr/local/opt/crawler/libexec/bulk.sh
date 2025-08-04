@@ -60,7 +60,7 @@ else
     if ! FILE="$(realpath -- "$FILE")"; then
       exit
     fi
-    if ! [[ ${FILE:0:LEN} == "$DIR" ]]; then
+    if [[ ${FILE:0:LEN} != "$DIR" ]]; then
       exit
     fi
   fi

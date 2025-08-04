@@ -40,6 +40,7 @@ SED=(
 )
 
 declare -A -- TR=()
+# shellcheck disable=SC2154
 TR=(
   ['TX']="$WAN_IF"
   ['RX']='cake-rx'
