@@ -3,7 +3,7 @@
   "ENV_NFS_EXPORTS": [],
   "ENV_NFS_MNTS": [],
   "ENV_NO_HWE": true,
-  "ENV_NVIDIA_VERSION": "570",
+  "ENV_NVIDIA_VERSION": "575",
   "ENV_PG_CLUSTERS": ["16/miniflux", "16/wallabag", "16/lobechat"],
   "ENV_SMB_EXPORTS": ["freenas", "time-machine-hao", "time-machine-gray"],
   "ENV_VFIO_PCI_DEVICE_IDS": ["01:00.0[,]multifunction=on", "01:00.1"],
