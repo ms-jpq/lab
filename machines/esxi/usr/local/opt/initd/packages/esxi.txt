@@ -3,3 +3,4 @@
 + adb
 + nvidia-cuda-toolkit
 + tabby
++ katana

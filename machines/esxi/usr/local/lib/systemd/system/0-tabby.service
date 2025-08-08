@@ -11,5 +11,7 @@ StateDirectory  = local/tabbyml
 
 Environment     = TABBY_ROOT=%S/local/tabbyml
 Environment     = TABBY_MODEL=
+Environment     = LLAMA_CPP_FAST_ATTENTION=1
+
 EnvironmentFile = /usr/local/etc/default/%j.env
 ExecStart       = /opt/%j/bin/%j serve --device cuda --host :: --port 9999 --model ${TABBY_MODEL}
