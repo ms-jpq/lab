@@ -116,7 +116,7 @@ def _ip(headers: _Headers, max_ipv6_prefix: int) -> _IP:
 
 
 def _path(headers: _Headers) -> str:
-    for path in headers.get(b"x-real-uri", ()):
+    for path in headers.get(b"x-forwarded-uri", ()):
         with suppress(UnicodeError):
             return path.decode()
     else:
