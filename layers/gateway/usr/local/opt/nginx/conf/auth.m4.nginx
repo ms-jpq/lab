@@ -3,6 +3,7 @@ auth_request /-_-auth-_-;
 
 location /-_-auth-_- {
   auth_request            off;
+  proxy_set_header        Authorization $modified_auth;
   proxy_set_header        Content-Length "";
   proxy_set_header        Host $host;
   proxy_set_header        X-Real-IP $remote_addr;
