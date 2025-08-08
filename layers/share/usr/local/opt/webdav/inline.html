@@ -1,0 +1,12 @@
+<style>
+  tbody>tr>td>a {
+    visibility: hidden;
+
+    &:hover {}
+
+    &:before {
+      content: attr(title);
+      visibility: initial;
+    }
+  }
+</style>
