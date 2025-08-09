@@ -2,7 +2,6 @@
 + chasquid
 + dovecot-imapd
 + dovecot-lmtpd
-+ opensmtpd
 + php
 + roundcube
 + roundcube-sqlite3

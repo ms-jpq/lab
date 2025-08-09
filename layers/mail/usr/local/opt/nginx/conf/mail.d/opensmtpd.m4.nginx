@@ -6,7 +6,7 @@ server {
   # m4_define([SMTP_CONF], [
   auth_http        http://unix:/run/local/nginx/cgi.sock:/sieve.sh/;
   protocol         smtp;
-  # proxy_protocol   on;
+  proxy_protocol   on;
   smtp_auth        none plain login cram-md5;
   # ])
   starttls         on;
