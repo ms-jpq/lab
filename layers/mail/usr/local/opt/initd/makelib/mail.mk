@@ -5,7 +5,7 @@ mail: /var/lib/local/vmail
 
 /var/lib/local/vmail:
 	sudo -- mkdir -v --parents -- '$@'
-	sudo -- chown -v -- '1000:1000' '$@'
+	sudo -- chown -v -- 'chasquid:chasquid' '$@'
 
 mail: /usr/local/opt/apache2/apache2.conf
 
