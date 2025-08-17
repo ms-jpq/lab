@@ -25,6 +25,7 @@ rclone-mnt
 router
 share
 tv
+webdav
 wireguard
 xfs
 zfs

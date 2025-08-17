@@ -5,5 +5,5 @@ media
 nspawn
 oci-registry
 qemu
-share
+webdav
 zfs
