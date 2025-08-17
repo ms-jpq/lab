@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-ADDR='mta@localhost'
+ADDR='me@localhost'
 if [[ $1 != "$ADDR" ]]; then
   printf -- '%s' "$ADDR"
 fi
