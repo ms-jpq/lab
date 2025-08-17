@@ -1,7 +1,7 @@
 {
   "ENV_CERTBOT_SITES": [
     "ENV_TLD",
-    "cups.pfsense.enp2s0.pfsense.ENV_TLD",
+    "cups.pfsense.w-0.pfsense.ENV_TLD",
     "freenas.enp2s0.pfsense.ENV_TLD",
     "pfsense.w-0.pfsense.ENV_TLD",
     "plex.ENV_TLD",
@@ -12,7 +12,7 @@
   "ENV_HOST_FORWARD_LIST": ["freenas.enp2s0.pfsense.home.arpa@tcp*32400:32400"],
   "ENV_INDEX": [
     "/die/die/die",
-    "cups.pfsense.enp2s0.pfsense",
+    "cups.pfsense.w-0.pfsense",
     "droplet.w-0.droplet",
     "droplet.w-0.droplet/mail.html",
     "esxi.enp1s0.opnsense",
