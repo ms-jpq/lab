@@ -6,7 +6,23 @@ services:
       kompose.service.expose: mcp-terraform.${DOMAIN}
     environment:
       MCP_CORS_MODE: disabled
-      TRANSPORT_HOST: '[::]'
+      TRANSPORT_HOST: "[::]"
       TRANSPORT_MODE: streamable-http
+    ports:
+      - 8080
+
+  dockerhub:
+    image: docker.io/mcp/dockerhub:latest
+    labels:
+      kompose.service.expose: mcp-dockerhub.${DOMAIN}
+    command:
+      - --transport=http
+    ports:
+      - 3000
+
+  context7:
+    image: docker.io/mcp/context7:latest
+    labels:
+      kompose.service.expose: mcp-context7.${DOMAIN}
     ports:
       - 8080
