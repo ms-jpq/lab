@@ -1,0 +1,12 @@
+---
+services:
+  terraform:
+    image: docker.io/hashicorp/terraform-mcp-server:latest
+    labels:
+      kompose.service.expose: mcp-terraform.${DOMAIN}
+    environment:
+      MCP_CORS_MODE: disabled
+      TRANSPORT_HOST: '[::]'
+      TRANSPORT_MODE: streamable-http
+    ports:
+      - 8080

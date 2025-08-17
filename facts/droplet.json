@@ -4,6 +4,7 @@
     "ENV_DOMAIN",
     "autodiscover.ENV_DOMAIN",
     "ipfs.ENV_DOMAIN",
+    "mcp-terraform.ENV_DOMAIN",
     "s3.ENV_DOMAIN",
     "youtube-dl.ENV_DOMAIN",
     "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN,], ENV_INDEX)"
@@ -47,6 +48,7 @@
     "ENV_DOMAIN/*",
     "glance.*",
     "http.*",
+    "mcp-*.*",
     "minio.*",
     "pastebin.*",
     "pocket.*",
