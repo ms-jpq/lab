@@ -7,8 +7,8 @@ server {
   location / {
     proxy_pass_header Content-Security-Policy;
     proxy_set_header  Authorization
-      "Basic m4_esyscmd(PW="$(cut -d . -f 1 <<< 'MACH' | b3sum | cut -d ' ' -f 1)" && jq --raw-input --join-output '@base64' <<< "8080:$PW")";
- include /usr/local/opt/nginx/conf/http.d/proxy_params.nginx;
+      "Basic m4_esyscmd(cut -d . -f 1 <<< 'MACH' | b3sum | cut -d ' ' -f 1 | jq --raw-input --join-output '"8080:\(.)" | @base64')";
+    include           /usr/local/opt/nginx/conf/http.d/proxy_params.nginx;
     proxy_pass        http://$x_machine;
   }
 }

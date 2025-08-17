@@ -27,6 +27,7 @@ CAT=(
   --no-buffer
   --no-progress-meter
   --header 'Accept: application/vnd.fdo.journal'
+  --config -
 )
 
 if [[ -f $JOURNAL ]]; then
@@ -45,4 +46,5 @@ RTAIL=(
   -- -
 )
 
-timeout --preserve-status "$TIMEOUT" "${CAT[@]}" | "${RTAIL[@]}"
+PASSWD="8080:$(cut --delimiter '.' --field 1 <<< "$REMOTE" | b3sum | cut -d ' ' -f 1)"
+timeout --preserve-status "$TIMEOUT" "${CAT[@]}" <<< "--user $PASSWD" | "${RTAIL[@]}"
