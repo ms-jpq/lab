@@ -10,6 +10,10 @@ nginx: /usr/local/opt/nginx/conf/._touch
 	sudo -- /usr/local/libexec/try-reload.sh nginx.service
 	sudo -- touch -- '$@'
 
+nginx: /var/lib/local/nginx/8080.htpasswd
+/var/lib/local/nginx/8080.htpasswd: | pkg._
+	hostname | b3sum | cut --delimiter ' ' --fields 1 | sudo -- htpasswd -c -b -i -- '$@' 8080
+
 /opt/python3/gixy: | pkg._
 nginx.lint: /opt/python3/gixy
 	PYTHONPATH='$<' '$</bin/gixy' -- /usr/local/opt/nginx/conf/main.nginx
