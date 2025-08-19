@@ -1,5 +1,6 @@
 # + transmission-m5_assert([ENV_VERSION_ID])
 + ffmpeg
 + qbittorrent-nox
++ rclone
 + wireguard-tools
 + yt-dlp
