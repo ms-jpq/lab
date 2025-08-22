@@ -72,8 +72,10 @@ rubyapi.org
 rust-lang.org
 serverfault.com
 slashdot.org
+sourcehut.org
 spiceworks.com
 sqlite.org
+sr.ht
 ss64.com
 stackexchange.com
 stackoverflow.com
