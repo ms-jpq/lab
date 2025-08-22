@@ -21,6 +21,7 @@ amazon.co.uk
 anandtech.com
 androidcentral.com
 apcmag.com
+apidock.com
 appsloveworld.com
 architecturaldigest.com
 architecturaldigest.in
