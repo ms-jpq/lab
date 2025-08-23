@@ -18,21 +18,23 @@ if [[ -v RECURSION ]]; then
   KEEL="$(< ./k8s/keel.json)"
 
   read -r -d '' -- JQ <<- 'JQ' || true
+def lens: .spec | .template // .jobTemplate.spec.template;
+
 sort_by(.kind != "Namespace")[]
-| (.kind | IN(["DaemonSet", "Deployment", "StatefulSet"][])) as $pods
+| (.kind | IN(["DaemonSet", "Deployment", "StatefulSet", "CronJob"][])) as $pods
 | if $pods | not then
     .
   else
     .metadata.annotations += $keel
-    | .spec.template.spec.initContainers?.[]?.env ?= (.spec.template.spec.containers[].env // [])
-    | if ([(.spec.template.spec.volumes // [])[].configMap // empty] | length) > 0 then
-        .spec.template.metadata.annotations."jq.hash" = $hash
+    | (. | lens).spec.initContainers?.[]?.env ?= ((. | lens).spec.containers[].env // [])
+    | if ([((. | lens).spec.volumes // [])[].configMap // empty] | length) > 0 then
+        (. | lens).metadata.annotations."jq.hash" = $hash
       else
         .
       end
     | if .metadata.annotations."jq.mixin" then
         . as $this
-        | $this.spec.template.spec |= (. * ($this.metadata.annotations."jq.mixin" | fromjson))
+        | ($this | lens).spec |= (. * ($this.metadata.annotations."jq.mixin" | fromjson))
       else
         .
       end
