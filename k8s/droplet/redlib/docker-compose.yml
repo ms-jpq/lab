@@ -1,9 +1,18 @@
 ---
 services:
-  redlib:
-    image: quay.io/redlib/redlib:latest
+  anubis:
+    image: ghcr.io/techarohq/anubis:latest
     labels:
       kompose.service.expose: reddit.${DOMAIN}
+    environment:
+      COOKIE_DOMAIN: ${DOMAIN}
+      SERVE_ROBOTS_TXT: true
+      TARGET: http://redlib:8080
+    ports:
+      - 8923
+
+  redlib:
+    image: quay.io/redlib/redlib:latest
     environment:
       REDLIB_AUTOPLAY_VIDEOS: on
       REDLIB_DEFAULT_AUTOPLAY_VIDEOS: on
@@ -15,6 +24,7 @@ services:
       REDLIB_ENABLE_RSS: on
       REDLIB_FULL_URL: https://reddit.${DOMAIN}
       REDLIB_REMOVE_DEFAULT_FEEDS: on
+      REDLIB_ROBOTS_DISABLE_INDEXING: on
     ports:
       - 8080
     volumes:
