@@ -20,22 +20,22 @@ if [[ -v RECURSION ]]; then
   read -r -d '' -- JQ <<- 'JQ' || true
 sort_by(.kind != "Namespace")[]
 | (.kind | IN(["DaemonSet", "Deployment", "StatefulSet"][])) as $pods
-| if $pods then
+| if $pods | not then
+    .
+  else
     .metadata.annotations += $keel
     | .spec.template.spec.initContainers?.[]?.env ?= (.spec.template.spec.containers[].env // [])
-  else
-    .
-  end
-| if $pods and ([(.spec.template.spec.volumes // [])[].configMap // empty] | length) > 0 then
-    .spec.template.metadata.annotations."jq.hash" = $hash
-  else
-    .
-  end
-| if $pods and .metadata.annotations."jq.mixin" then
-    . as $this
-    | $this.spec.template.spec |= (. * ($this.metadata.annotations."jq.mixin" | fromjson))
-  else
-    .
+    | if ([(.spec.template.spec.volumes // [])[].configMap // empty] | length) > 0 then
+        .spec.template.metadata.annotations."jq.hash" = $hash
+      else
+        .
+      end
+    | if .metadata.annotations."jq.mixin" then
+        . as $this
+        | $this.spec.template.spec |= (. * ($this.metadata.annotations."jq.mixin" | fromjson))
+      else
+        .
+      end
   end
 JQ
 
