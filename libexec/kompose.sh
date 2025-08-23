@@ -31,8 +31,9 @@ sort_by(.kind != "Namespace")[]
   else
     .
   end
-| if $pods and .metadata.annotations."jq.runtime" then
-    .spec.template.spec.runtimeClassName = .metadata.annotations."jq.runtime"
+| if $pods and .metadata.annotations."jq.mixin" then
+    . as $this
+    | $this.spec.template.spec |= (. * ($this.metadata.annotations."jq.mixin" | fromjson))
   else
     .
   end

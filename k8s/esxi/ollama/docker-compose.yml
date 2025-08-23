@@ -3,7 +3,8 @@ services:
   ollama:
     image: docker.io/ollama/ollama:latest
     labels:
-      jq.runtime: nvidia
+      jq.mixin: |-
+        {"runtimeClassName": "nvidia"}
       kompose.controller.type: statefulset
       kompose.service.expose: llama.${DOMAIN}
       kompose.volume.type: hostPath
