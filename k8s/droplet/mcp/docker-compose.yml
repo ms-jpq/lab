@@ -26,3 +26,18 @@ services:
       kompose.service.expose: mcp-context7.${DOMAIN}
     ports:
       - 8080
+
+  python:
+    image: docker.io/denoland/deno:latest
+    labels:
+      kompose.service.expose: mcp-python.${DOMAIN}
+    command:
+      - run
+      - --allow-net
+      - --allow-read=node_modules
+      - --allow-write=node_modules
+      - --node-modules-dir=auto
+      - jsr:@pydantic/mcp-run-python
+      - streamable_http
+    ports:
+      - 3001

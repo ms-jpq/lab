@@ -6,6 +6,7 @@
     "ipfs.ENV_DOMAIN",
     "mcp-context7.ENV_DOMAIN",
     "mcp-dockerhub.ENV_DOMAIN",
+    "mcp-python.ENV_DOMAIN",
     "mcp-searx.ENV_DOMAIN",
     "mcp-terraform.ENV_DOMAIN",
     "s3.ENV_DOMAIN",
