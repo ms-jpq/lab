@@ -47,6 +47,19 @@ services:
     volumes:
       - data:/data
 
+  supergateway:
+    image: docker.io/supercorp/supergateway:latest
+    labels:
+      kompose.service.expose: mcp-searx.${DOMAIN}
+    environment:
+      SEARXNG_URL: http://searxng:8080
+    command:
+      - --outputTransport=streamableHttp
+      - --stdio
+      - npm exec --yes -- mcp-searxng
+    ports:
+      - 8000
+
 volumes:
   cache:
   data:
