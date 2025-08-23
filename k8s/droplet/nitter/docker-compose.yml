@@ -1,9 +1,18 @@
 ---
 services:
-  nitter:
-    image: docker.io/zedeus/nitter:latest
+  anubis:
+    image: ghcr.io/techarohq/anubis:latest
     labels:
       kompose.service.expose: twitter.${DOMAIN}
+    environment:
+      COOKIE_DOMAIN: ${DOMAIN}
+      SERVE_ROBOTS_TXT: true
+      TARGET: http://nitter:8080
+    ports:
+      - 8923
+
+  nitter:
+    image: docker.io/zedeus/nitter:latest
     # healthcheck:
     #   test:
     #     - CMD

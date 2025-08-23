@@ -1,9 +1,18 @@
 ---
 services:
-  invidious:
-    image: quay.io/invidious/invidious:${TAG}
+  anubis:
+    image: ghcr.io/techarohq/anubis:latest
     labels:
       kompose.service.expose: youtube.${DOMAIN}
+    environment:
+      COOKIE_DOMAIN: ${DOMAIN}
+      SERVE_ROBOTS_TXT: true
+      TARGET: http://invidious:3000
+    ports:
+      - 8923
+
+  invidious:
+    image: quay.io/invidious/invidious:${TAG}
     healthcheck:
       test:
         - CMD
