@@ -86,7 +86,7 @@ hostnames:
     # '^([[^.]]+\.)*youtube\.com$': &youtube youtube.m5_assert([ENV_DOMAIN])
     # '^([[^.]]+\.)*youtu\.be$': *youtube
     '^([[^.]]+\.)*(twitter|x)\.com$': xcancel.com
-    '^([[^.]]+\.)*redd\.it$': &reddit old.reddit.com
+    '^([[^.]]+\.)*redd\.it$': &reddit reddit.m5_assert([ENV_DOMAIN])
     '^([[^.]]+\.)*reddit\.com$': *reddit
     '^([[^.]]+\.)*redditmedia\.com$': *reddit
   high_priority:
