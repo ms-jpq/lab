@@ -4,10 +4,14 @@ server {
   include     /usr/local/opt/nginx/conf/auth.nginx;
 
   location / {
-    include    /usr/local/opt/nginx/conf/auth2.nginx;
-    add_header Content-Security-Policy
+    include          /usr/local/opt/nginx/conf/auth2.nginx;
+    add_header       Content-Security-Policy
       "default-src 'self' data: blob: 'unsafe-inline' 'unsafe-eval' *.$optimistic_host; img-src * data:; media-src * data:;"
       always;
-    proxy_pass http://127.0.0.1:8008/;
+    sub_filter_once  off;
+    sub_filter       "/anubis/static/img/" "/die/";
+    proxy_set_header Accept-Encoding "";
+    include          /usr/local/opt/nginx/conf/http.d/proxy_params.nginx;
+    proxy_pass       http://127.0.0.1:8008/;
   }
 }
