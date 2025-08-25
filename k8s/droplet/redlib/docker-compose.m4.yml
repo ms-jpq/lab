@@ -6,6 +6,7 @@ services:
       kompose.service.expose: reddit.${DOMAIN}
     environment:
       COOKIE_DOMAIN: ${DOMAIN}
+      ED25519_PRIVATE_KEY_HEX:
       SERVE_ROBOTS_TXT: true
       TARGET: http://redlib:8080
     ports:

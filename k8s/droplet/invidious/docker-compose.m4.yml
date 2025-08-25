@@ -6,6 +6,7 @@ services:
       kompose.service.expose: youtube.${DOMAIN}
     environment:
       COOKIE_DOMAIN: ${DOMAIN}
+      ED25519_PRIVATE_KEY_HEX: m4_esyscmd([b3sum <<< 'DOMAIN' | cut -d ' ' -f 1])
       SERVE_ROBOTS_TXT: true
       TARGET: http://invidious:3000
     ports:
