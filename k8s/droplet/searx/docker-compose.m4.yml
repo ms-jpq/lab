@@ -54,6 +54,7 @@ services:
     environment:
       SEARXNG_URL: http://searxng:8080
       MCP_HTTP_PORT: 8080
+    stdin_open: true
     ports:
       - 8000
 
