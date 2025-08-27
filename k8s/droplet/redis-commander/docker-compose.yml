@@ -11,6 +11,9 @@ services:
 
   redis:
     image: docker.io/library/redis:latest
+    labels:
+      kompose.service.type: nodeport
+      kompose.service.nodeport.port: &port 6379
     healthcheck:
       test:
         - CMD
@@ -22,7 +25,7 @@ services:
       # - --requirepass
       # - ${COMPOSE_PROJECT_NAME}
     ports:
-      - 6379
+      - *port
     volumes:
       - data:/data
 
