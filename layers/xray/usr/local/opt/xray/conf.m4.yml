@@ -52,7 +52,7 @@ server:
   log:
     # loglevel: info
   api: &ctl
-    tag: api
+    tag: &api api
     listen: 127.0.0.53:29999
     services:
       - StatsService
@@ -67,7 +67,12 @@ server:
   routing:
     domainStrategy: &ip-routing IPIfNonMatch
     rules:
-      - type: &tf field
+      - &api-rule
+        type: &tf field
+        outboundTag: *api
+        inboundTag:
+          - *api
+      - type: *tf
         outboundTag: &die blocked
         ip:
           - geoip:private
@@ -118,6 +123,7 @@ client:
           type: random
 
     rules:
+      - *api-rule
       - type: *tf
         inboundTag:
           - &dns dns
