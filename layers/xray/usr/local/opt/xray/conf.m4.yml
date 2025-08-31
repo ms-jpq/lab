@@ -19,40 +19,40 @@ _:
       - id: *password
 
   _:
-    _:
-      c-shadowsocks:
-        # m4_define([c-shadowsocks], [
-        #
-        servers:
-          - method: *ss-method
-            password: *password
-            port: 443
-            address: $1
-        # ])
+    c-shadowsocks:
+      # m4_define([c-shadowsocks], [
+      #
+      servers:
+        - method: *ss-method
+          password: *password
+          port: 443
+          address: $1
+      # ])
 
-      c-trojan:
-        # m4_define([c-trojan], [
-        #
-        servers:
-          - password: *password
-            port: 443
-            address: $1
-        # ])
+    c-trojan:
+      # m4_define([c-trojan], [
+      #
+      servers:
+        - password: *password
+          port: 443
+          address: $1
+      # ])
 
-      c-vmess:
-        # m4_define([c-vmess], [
-        #
-        vnext:
-          - users:
-              - id: *password
-            port: 443
-            address: $1
-        # ])
+    c-vmess:
+      # m4_define([c-vmess], [
+      #
+      vnext:
+        - users:
+            - id: *password
+          port: 443
+          address: $1
+      # ])
 
 server:
   log:
     # loglevel: info
   api: &ctl
+    tag: api
     listen: 127.0.0.53:29999
     services:
       - StatsService

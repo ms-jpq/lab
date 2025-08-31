@@ -11,5 +11,5 @@ NoNewPrivileges          = yes
 
 RestartPreventExitStatus = 23
 
-Environment              = XRAY_LOCATION_ASSET=%S/local/xray
+Environment              = XRAY_LOCATION_ASSET=/opt/xray
 ExecStart                = xray run -config /usr/local/opt/xray/server.json
