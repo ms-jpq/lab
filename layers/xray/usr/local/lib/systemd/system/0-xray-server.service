@@ -1,5 +1,5 @@
 [Unit]
-Description              = Xray Server
+Description              = Xray -- %J
 After                    = network-online.target
 
 [Service]
@@ -12,4 +12,4 @@ NoNewPrivileges          = yes
 RestartPreventExitStatus = 23
 
 Environment              = XRAY_LOCATION_ASSET=/opt/xray
-ExecStart                = xray run -config /usr/local/opt/xray/server.json
+ExecStart                = xray run -config /usr/local/opt/xray/%J.json

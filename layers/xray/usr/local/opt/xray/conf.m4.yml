@@ -167,35 +167,35 @@ client:
         domains: *foreign
 
   inbounds:
-    - tag: *dns
-      protocol: dokodemo-door
-      listen: *stub-addr
-      port: 52
-      sniffing: &sniff
-        enabled: true
-        destOverride:
-          - fakedns
-          - http
-          - quic
-          - tls
-      settings:
-        network: *tu
-        address: *stub-addr
-        port: 53
+    # - tag: *dns
+    #   protocol: dokodemo-door
+    #   listen: *stub-addr
+    #   port: 52
+    #   sniffing: &sniff
+    #     enabled: true
+    #     destOverride:
+    #       - fakedns
+    #       - http
+    #       - quic
+    #       - tls
+    #   settings:
+    #     network: *tu
+    #     address: *stub-addr
+    #     port: 53
 
-    - &capture
-      protocol: dokodemo-door
-      port: 8888
-      sniffing: *sniff
-      settings:
-        network: *tu
-        followRedirect: true
+    # - &capture
+    #   protocol: dokodemo-door
+    #   port: 8888
+    #   sniffing: *sniff
+    #   settings:
+    #     network: *tu
+    #     followRedirect: true
 
-    - <<: *capture
-      port: 8889
-      streamSettings:
-        sockopt:
-          tproxy: tproxy
+    # - <<: *capture
+    #   port: 8889
+    #   streamSettings:
+    #     sockopt:
+    #       tproxy: tproxy
 
     - protocol: socks
       port: 30001
@@ -213,10 +213,10 @@ client:
         sockopt: &mark
           mark: 0x69
 
-    - tag: *dns
-      protocol: *dns
-      streamSettings:
-        sockopt: *mark
+    # - tag: *dns
+    #   protocol: *dns
+    #   streamSettings:
+    #     sockopt: *mark
 
     - *hole
 
