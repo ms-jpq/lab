@@ -48,7 +48,7 @@ services:
       kompose.service.expose: mcp-postgres.${DOMAIN}
     command:
       - toolbox
-      - '--address=::'
+      - "--address=::"
     ports:
       - 5000
 
