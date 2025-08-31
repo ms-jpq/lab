@@ -17,12 +17,12 @@ services:
         - "1"
         - --
         - localhost:80
-    ports:
-      - 80
     environment:
       PMA_HOST: mysql
       PMA_PASSWORD: ${COMPOSE_PROJECT_NAME}
       PMA_USER: root
+    ports:
+      - 80
 
   mysql:
     image: docker.io/library/mysql:latest
