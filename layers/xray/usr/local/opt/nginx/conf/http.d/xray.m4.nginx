@@ -1,0 +1,20 @@
+# m4_include([layers/xray/usr/local/opt/xray/vars.m4.yml])
+# m4_pushdef([PORT], PORT_BEGIN)
+# m5_for([PROTOCOL], [
+# m5_for([TRANSPORT], [
+# m4_pushdef([TRANS], [m4_regexp(TRANSPORT, [\(^[^@]+\)], [\1])])
+# m4_pushdef([XPORT], [m4_regexp(TRANSPORT, [\([^@]+$\)], [\1])])
+# m4_ifelse(XPORT, [tcp], [
+# m4_pushdef([SALTED], m4_substr(m4_esyscmd(b3sum --no-names --length 8 <<<'PROTOCOL-TRANS-ENV_XRAY_SEED'), 0, 16))
+server {
+  server_name SALTED.*;
+  listen      unix:/run/local/nginx/xray.sock;
+
+  location / {
+    grpc_pass 127.0.0.53:PORT; # PROTOCOL-TRANS
+  }
+}
+# ])
+# m4_pushdef([PORT], m4_incr(PORT))
+# ], TRANSPORTS)
+# ], PROTOCOLS)
