@@ -42,5 +42,15 @@ services:
     volumes:
       - data:/var/lib/postgresql/data
 
+  mcp:
+    image: us-central1-docker.pkg.dev/database-toolbox/toolbox/toolbox:latest
+    labels:
+      kompose.service.expose: mcp-postgres.${DOMAIN}
+    command:
+      - toolbox
+      - '--address=::'
+    ports:
+      - 5000
+
 volumes:
   data:
