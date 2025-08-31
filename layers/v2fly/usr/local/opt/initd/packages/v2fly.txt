@@ -1,2 +1,0 @@
-+ python3-yaml
-+ v2ray-dat

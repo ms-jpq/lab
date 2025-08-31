@@ -65,9 +65,9 @@
     "youtube-dl.*",
     "youtube.*"
   ],
-  "ENV_V2R_CLIENT": 0,
-  "ENV_V2R_DOMAIN": "ENV_DOMAIN",
-  "ENV_V2R_LOCAL_DOMAINS": [],
+  "ENV_XRAY_CLIENT": 0,
+  "ENV_XRAY_DOMAIN": "ENV_DOMAIN",
+  "ENV_XRAY_LOCAL_DOMAINS": [],
   "ENV_WAN_IF": "eth0",
   "ENV_WG_PEERS": ["opnsense", "pfsense"],
   "ENV_WG_SERVER_NAME": "ENV_DOMAIN"

@@ -1,0 +1,15 @@
+[Unit]
+Description              = Xray Client
+After                    = network-online.target
+
+[Service]
+Restart                  = on-failure
+DynamicUser              = yes
+CapabilityBoundingSet    = CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+AmbientCapabilities      = CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+NoNewPrivileges          = yes
+
+RestartPreventExitStatus = 23
+
+Environment              = XRAY_LOCATION_ASSET=%S/local/xray
+ExecStart                = xray run -config /usr/local/opt/xray/client.json
