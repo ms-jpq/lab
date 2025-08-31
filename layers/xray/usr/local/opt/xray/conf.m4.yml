@@ -1,6 +1,8 @@
 ---
 # m4_include([layers/xray/usr/local/opt/xray/vars.m4.yml])
 _:
+  a: &stub-addr 127.0.0.53
+  l: &lo localhost
   s: &s-PROTOCOL
 
   s-shadowsocks: &s-shadowsocks
@@ -51,7 +53,7 @@ server:
   log:
     # loglevel: info
   api: &ctl
-    tag: &api api
+    listen: 127.0.0.53:29999
     services:
       - StatsService
   stats: {}
@@ -65,20 +67,10 @@ server:
   routing:
     domainStrategy: &ip-routing IPIfNonMatch
     rules:
-      - &api-rule
-        type: &tf field
-        outboundTag: *api
-        inboundTag:
-          - *api
-      - type: *tf
+      - type: &tf field
         outboundTag: &die blocked
         ip:
           - geoip:private
-      - &adblock
-        type: *tf
-        outboundTag: *die
-        domains:
-          - category-ads-all
       - type: *tf
         outboundTag: &local passthrough
         network: *tu
@@ -86,21 +78,11 @@ server:
   outbounds:
     - tag: *local
       protocol: freedom
-      settings: &use-ip
-        domainStrategy: UseIP
     - &hole
       tag: *die
       protocol: blackhole
 
   inbounds:
-    - &api-door
-      tag: *api
-      protocol: dokodemo-door
-      listen: &stub-addr 127.0.0.53
-      port: 30000
-      settings:
-        address: &lo localhost
-
     # m4_pushdef([PORT], PORT_BEGIN)
     # m5_for([PROTOCOL], [
     # m5_for([TRANSPORT], [
@@ -136,7 +118,6 @@ client:
           type: random
 
     rules:
-      - *api-rule
       - type: *tf
         inboundTag:
           - &dns dns
@@ -145,7 +126,6 @@ client:
         network: udp
         port: 51820
         outboundTag: *ldr
-      - *adblock
       - type: *tf
         outboundTag: *local
         ip:
@@ -181,8 +161,6 @@ client:
         domains: *foreign
 
   inbounds:
-    - *api-door
-
     - tag: *dns
       protocol: dokodemo-door
       listen: *stub-addr
@@ -225,7 +203,6 @@ client:
   outbounds:
     - tag: *local
       protocol: freedom
-      settings: *use-ip
       streamSettings:
         sockopt: &mark
           mark: 0x69

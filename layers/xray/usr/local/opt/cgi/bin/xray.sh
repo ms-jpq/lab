@@ -12,7 +12,7 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-A=(/usr/local/libexec/hr-run.sh xray api stats -server 127.0.0.53:30000)
+A=(/usr/local/libexec/hr-run.sh xray api stats -server 127.0.0.53:29999)
 
 "${A[@]}"
 "${A[@]}" -runtime
