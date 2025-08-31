@@ -4,3 +4,4 @@ irc
 k3s
 mail
 wireguard
+xray

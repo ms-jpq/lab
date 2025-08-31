@@ -6,7 +6,7 @@ all: xray
 define XRAY_TEMPLATE
 xray: /usr/local/opt/xray/$1.json
 /usr/local/opt/xray/$1.json: /usr/local/opt/xray/conf.yml ./libexec/xray.py | /usr/share/doc/python3-yaml
-	./libexec/xray.py $1 <'$$<' | sudo -- sponge -- '$$@'
+	./libexec/xray.py $1 < '$$<' | sudo -- sponge -- '$$@'
 endef
 
-$(foreach xray,server client,$(eval $(call XRAY_TEMPLATE,$(v2))))
+$(foreach name,server client,$(eval $(call XRAY_TEMPLATE,$(name))))
