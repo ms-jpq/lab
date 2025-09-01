@@ -100,6 +100,10 @@ server:
         <<: *s-PROTOCOL
       streamSettings:
         network: TRANS
+        # m4_ifelse(TRANS, [xhttp], [
+        xhttpSettings:
+          path: /xhttp
+        # ])
     # m4_pushdef([PORT], m4_incr(PORT))
     # ], TRANSPORTS)
     # ], PROTOCOLS)
@@ -221,21 +225,25 @@ client:
     # m4_pushdef([XPORT], [m4_regexp(TRANSPORT, [\([^@]+$\)], [\1])])
     # m4_pushdef([SALTED], m4_substr(m4_esyscmd(b3sum --no-names --length 8 <<<'PROTOCOL-TRANS-ENV_XRAY_SEED'), 0, 16))
     # m4_pushdef([ADDR], SALTED.x.m5_assert([ENV_XRAY_DOMAIN]))
+    # m4_pushdef([ADDR], 127.0.0.53)
     - tag: ldr-PROTOCOL-TRANS
       protocol: PROTOCOL
       settings:
-        # m4_indir(c-PROTOCOL,127.0.0.53,PORT)
+        # m4_indir(c-PROTOCOL,ADDR,PORT)
       streamSettings:
-        network: TRANS
-        # m4_ifelse(XPORT, [tcp], [
-        security: tls
-        tlsSettings:
-          allowInsecure: true
-          serverName: ADDR
         sockopt: *mark
+        network: TRANS
+        # m4_ifelse(TRANS, [xhttp], [
+        xhttpSettings:
+          path: /xhttp
+        # ], [
+        # security: tls
+        # tlsSettings:
+        #   allowInsecure: true
+        #   serverName: ADDR
       mux:
         enabled: true
-      # ])
+        # ])
     # m4_pushdef([PORT], m4_incr(PORT))
     # ], TRANSPORTS)
     # ], PROTOCOLS)
