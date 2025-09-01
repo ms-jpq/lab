@@ -8,7 +8,7 @@
 # m4_pushdef([SALTED], m4_substr(m4_esyscmd(b3sum --no-names --length 8 <<<'PROTOCOL-TRANS-ENV_XRAY_SEED'), 0, 16))
 server {
   server_name SALTED.*;
-  listen      unix:/run/local/nginx/xray.sock;
+  listen      unix:/run/local/nginx/gateway-http.sock;
 
   location / {
     grpc_pass 127.0.0.53:PORT; # PROTOCOL-TRANS
