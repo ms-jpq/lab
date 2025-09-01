@@ -100,6 +100,8 @@ server:
       settings:
         <<: *s-PROTOCOL
       streamSettings:
+        sockopt:
+          tcpNoDelay: true
         network: TRANS
         xhttpSettings:
           path: *xhttp
