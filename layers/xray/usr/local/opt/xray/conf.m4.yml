@@ -5,6 +5,7 @@ _:
   l: &lo localhost
   s: &s-PROTOCOL
   x: &xhttp /xhttp
+  w: &ws /ws
 
   s-shadowsocks: &s-shadowsocks
     method: &ss-method aes-256-gcm
@@ -52,7 +53,7 @@ _:
 
 server:
   log:
-    loglevel: debug
+    loglevel: info
   api: &ctl
     tag: &api api
     listen: 127.0.0.53:29999
@@ -101,17 +102,17 @@ server:
         <<: *s-PROTOCOL
       streamSettings:
         network: TRANS
-        # m4_ifelse(TRANS, [xhttp], [
         xhttpSettings:
           path: *xhttp
-        # ])
+        wsSettings:
+          path: *ws
     # m4_pushdef([PORT], m4_incr(PORT))
     # ], TRANSPORTS)
     # ], PROTOCOLS)
 
 client:
   log:
-    loglevel: debug
+    loglevel: info
   api:
     <<: *ctl
     listen: 127.0.0.1:39999
@@ -225,16 +226,15 @@ client:
       streamSettings:
         sockopt: *mark
         network: TRANS
-        # m4_ifelse(TRANS, [xhttp], [
         xhttpSettings:
           path: *xhttp
-        # ], [
-        # ])
+        wsSettings:
+          path: *ws
         security: tls
         tlsSettings:
           allowInsecure: true
-      mux:
-        enabled: true
+      # mux:
+      #   enabled: true
     # m4_pushdef([PORT], m4_incr(PORT))
     # ], TRANSPORTS)
     # ], PROTOCOLS)
