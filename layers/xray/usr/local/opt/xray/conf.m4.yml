@@ -6,7 +6,6 @@ _:
   s: &s-PROTOCOL
 
   s-shadowsocks: &s-shadowsocks
-    network: &tu tcp,udp
     method: &ss-method aes-256-gcm
     password: &password m4_esyscmd(./libexec/uuidgen.py m5_assert([ENV_XRAY_SEED]))
 
@@ -27,7 +26,7 @@ _:
           - method: *ss-method
             uot: true
             password: *password
-            port: 443
+            port: $2
             address: $1
         # ])
 
@@ -36,7 +35,7 @@ _:
         #
         servers:
           - password: *password
-            port: 443
+            port: $2
             address: $1
         # ])
 
@@ -46,13 +45,13 @@ _:
         vnext:
           - users:
               - id: *password
-            port: 443
+            port: $2
             address: $1
         # ])
 
 server:
   log:
-    # loglevel: info
+    loglevel: debug
   api: &ctl
     tag: &api api
     listen: 127.0.0.53:29999
@@ -80,7 +79,7 @@ server:
           - geoip:private
       - type: *tf
         outboundTag: &local passthrough
-        network: *tu
+        network: &tu tcp,udp
 
   outbounds:
     - tag: *local
@@ -107,7 +106,7 @@ server:
 
 client:
   log:
-    loglevel: warning
+    loglevel: debug
   api:
     <<: *ctl
     listen: 127.0.0.1:39999
@@ -123,8 +122,6 @@ client:
     balancers:
       - tag: *ldr
         selector: *ldrs
-        strategy:
-          type: random
 
     rules:
       - *api-rule
@@ -153,7 +150,7 @@ client:
 
       - type: *tf
         balancerTag: *ldr
-        domains: &foreign
+        domains:
           - geosite:geolocation-!cn
           - domain:ca
 
@@ -162,13 +159,6 @@ client:
       - type: *tf
         balancerTag: *ldr
         network: *tu
-
-  dns:
-    servers:
-      - *lo
-      - skipFallback: true
-        address: m5_assert([ENV_XRAY_DOMAIN])
-        domains: *foreign
 
   inbounds:
     # - tag: *dns
@@ -234,7 +224,7 @@ client:
     - tag: ldr-PROTOCOL-TRANS
       protocol: PROTOCOL
       settings:
-        # m4_indir(c-PROTOCOL,ADDR)
+        # m4_indir(c-PROTOCOL,127.0.0.53,PORT)
       streamSettings:
         network: TRANS
         # m4_ifelse(XPORT, [tcp], [
@@ -245,7 +235,7 @@ client:
         sockopt: *mark
       mux:
         enabled: true
-        # ])
+      # ])
     # m4_pushdef([PORT], m4_incr(PORT))
     # ], TRANSPORTS)
     # ], PROTOCOLS)
