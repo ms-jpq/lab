@@ -7,13 +7,9 @@ _:
   x: &xhttp /xhttp
   w: &ws /ws
 
-  s-shadowsocks: &s-shadowsocks
-    method: &ss-method aes-256-gcm
-    password: &password m4_esyscmd(./libexec/uuidgen.py m5_assert([ENV_XRAY_SEED]))
-
   s-vmess: &s-vmess
     clients:
-      - id: *password
+      - id: &password m4_esyscmd(./libexec/uuidgen.py m5_assert([ENV_XRAY_SEED]))
 
   s-vless: &s-vless
     decryption: none
@@ -26,17 +22,6 @@ _:
 
   _:
     _:
-      c-shadowsocks:
-        # m4_define([c-shadowsocks], [
-        #
-        servers:
-          - method: *ss-method
-            uot: true
-            password: *password
-            port: $2
-            address: $1
-        # ])
-
       c-vmess:
         # m4_define([c-vmess], [
         #
@@ -107,12 +92,10 @@ server:
       protocol: blackhole
 
   inbounds:
-    # m4_pushdef([PORT], PORT_BEGIN)
     # m5_for([PROTOCOL], [
     # m5_for([TRANSPORT], [
     # m4_pushdef([TRANS], [m4_regexp(TRANSPORT, [\(^[^@]+\)], [\1])])
-    - listen: *stub-addr
-      port: "PORT"
+    - listen: /run/local/xray/PROTOCOL+TRANSPORT.sock,0666
       protocol: PROTOCOL
       settings:
         <<: *s-PROTOCOL
@@ -122,7 +105,6 @@ server:
           path: *xhttp
         wsSettings:
           path: *ws
-    # m4_pushdef([PORT], m4_incr(PORT))
     # ], TRANSPORTS)
     # ], PROTOCOLS)
 
@@ -188,7 +170,7 @@ client:
     #       - tls
     #   settings:
     #     network: *tu
-    #     address: *stub-addr
+    #     address: 127.0.0.53
     #     port: 2053
 
     # - &capture
@@ -228,7 +210,6 @@ client:
 
     - *hole
 
-    # m4_pushdef([PORT], PORT_BEGIN)
     # m5_for([PROTOCOL], [
     # m5_for([TRANSPORT], [
     # m4_pushdef([TRANS], [m4_regexp(TRANSPORT, [\(^[^@]+\)], [\1])])
@@ -251,6 +232,5 @@ client:
           allowInsecure: true
       # mux:
       #   enabled: true
-    # m4_pushdef([PORT], m4_incr(PORT))
     # ], TRANSPORTS)
     # ], PROTOCOLS)
