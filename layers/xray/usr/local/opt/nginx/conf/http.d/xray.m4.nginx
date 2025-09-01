@@ -7,7 +7,7 @@
 # m4_ifelse(XPORT, [tcp], [
 # m4_pushdef([SALTED], m4_substr(m4_esyscmd(b3sum --no-names --length 8 <<<'PROTOCOL-TRANS-ENV_XRAY_SEED'), 0, 16))
 server {
-  server_name SALTED.*;
+  server_name SALTED.x.*;
   listen      unix:/run/local/nginx/gateway-http.sock;
 
   location / {

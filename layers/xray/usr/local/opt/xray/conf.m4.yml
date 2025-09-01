@@ -107,10 +107,10 @@ server:
 
 client:
   log:
-    # loglevel: info
+    loglevel: warning
   api:
     <<: *ctl
-    listen: 127.0.0.53:39999
+    listen: 127.0.0.1:39999
   stats: {}
   policy: *policy
   observatory:
@@ -173,7 +173,7 @@ client:
   inbounds:
     # - tag: *dns
     #   protocol: dokodemo-door
-    #   listen: *stub-addr
+    #   listen: 127.0.0.1
     #   port: 52
     #   sniffing: &sniff
     #     enabled: true
@@ -185,7 +185,7 @@ client:
     #   settings:
     #     network: *tu
     #     address: *stub-addr
-    #     port: 53
+    #     port: 2053
 
     # - &capture
     #   protocol: dokodemo-door
@@ -230,7 +230,7 @@ client:
     # m4_pushdef([TRANS], [m4_regexp(TRANSPORT, [\(^[^@]+\)], [\1])])
     # m4_pushdef([XPORT], [m4_regexp(TRANSPORT, [\([^@]+$\)], [\1])])
     # m4_pushdef([SALTED], m4_substr(m4_esyscmd(b3sum --no-names --length 8 <<<'PROTOCOL-TRANS-ENV_XRAY_SEED'), 0, 16))
-    # m4_pushdef([ADDR], SALTED.m5_assert([ENV_XRAY_DOMAIN]))
+    # m4_pushdef([ADDR], SALTED.x.m5_assert([ENV_XRAY_DOMAIN]))
     - tag: ldr-PROTOCOL-TRANS
       protocol: PROTOCOL
       settings:

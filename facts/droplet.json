@@ -42,6 +42,7 @@
   "ENV_MAIL": "me@ENV_DOMAIN",
   "ENV_OVPN_SERVER_NAME": "ENV_WG_SERVER_NAME",
   "ENV_PUBLIC_SITES": [
+    "*.x.*",
     "12ft.*",
     "ask.*",
     "autodiscover.*",
