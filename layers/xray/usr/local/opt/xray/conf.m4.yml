@@ -24,6 +24,7 @@ _:
       #
       servers:
         - method: *ss-method
+          uot: true
           password: *password
           port: 443
           address: $1
