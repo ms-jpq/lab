@@ -1,7 +1,6 @@
 ---
 # m4_include([layers/xray/usr/local/opt/xray/vars.m4.yml])
 _:
-  a: &stub-addr 127.0.0.53
   l: &lo localhost
   s: &s-PROTOCOL
   x: &xhttp /xhttp
@@ -69,7 +68,7 @@ server:
       statsOutboundUplink: true
 
   routing:
-    domainStrategy: &ip-routing IPIfNonMatch
+    domainStrategy: IPOnDemand
     rules:
       - &api-rule
         type: &tf field
@@ -86,7 +85,12 @@ server:
 
   outbounds:
     - tag: *local
-      protocol: freedom
+      protocol: socks
+      settings:
+        servers:
+          - uot: true
+            address: 127.0.0.1
+            port: 1080
     - &hole
       tag: *die
       protocol: blackhole
@@ -124,7 +128,7 @@ client:
     probeURL: http://m5_assert([ENV_XRAY_DOMAIN])/204
 
   routing:
-    domainStrategy: *ip-routing
+    domainStrategy: IPIfNonMatch
     balancers:
       - tag: *ldr
         selector: *ldrs
