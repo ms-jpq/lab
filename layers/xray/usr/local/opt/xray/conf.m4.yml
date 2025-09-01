@@ -11,13 +11,18 @@ _:
     method: &ss-method aes-256-gcm
     password: &password m4_esyscmd(./libexec/uuidgen.py m5_assert([ENV_XRAY_SEED]))
 
-  s-trojan: &s-trojan
-    clients:
-      - password: *password
-
   s-vmess: &s-vmess
     clients:
       - id: *password
+
+  s-vless: &s-vless
+    decryption: none
+    clients:
+      - id: *password
+
+  s-trojan: &s-trojan
+    clients:
+      - password: *password
 
   _:
     _:
@@ -32,21 +37,32 @@ _:
             address: $1
         # ])
 
-      c-trojan:
-        # m4_define([c-trojan], [
-        #
-        servers:
-          - password: *password
-            port: $2
-            address: $1
-        # ])
-
       c-vmess:
         # m4_define([c-vmess], [
         #
         vnext:
           - users:
               - id: *password
+            port: $2
+            address: $1
+        # ])
+
+      c-vless:
+        # m4_define([c-vless], [
+        #
+        vnext:
+          - users:
+              - encryption: none
+                id: *password
+            port: $2
+            address: $1
+        # ])
+
+      c-trojan:
+        # m4_define([c-trojan], [
+        #
+        servers:
+          - password: *password
             port: $2
             address: $1
         # ])
