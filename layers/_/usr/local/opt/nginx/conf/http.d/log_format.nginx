@@ -1,2 +1,2 @@
 log_format standard
-  '$remote_addr - $remote_user :: $status * $request_time :: "$request"';
+  '$remote_addr - $remote_user * $request_time :: $http_status $status -> $request_method $scheme://$host$request_uri';
