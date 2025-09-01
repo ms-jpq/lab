@@ -106,7 +106,9 @@ server:
 client:
   log:
     # loglevel: info
-  api: *ctl
+  api:
+    <<: *ctl
+    listen: 127.0.0.53:39999
   stats: {}
   policy: *policy
   observatory:
@@ -198,13 +200,13 @@ client:
     #       tproxy: tproxy
 
     - protocol: socks
-      port: 30001
+      port: 50001
       settings:
         udp: true
         auth: noauth
 
     - protocol: http
-      port: 30002
+      port: 50002
 
   outbounds:
     - tag: *local
