@@ -4,6 +4,7 @@ _:
   a: &stub-addr 127.0.0.53
   l: &lo localhost
   s: &s-PROTOCOL
+  x: &xhttp /xhttp
 
   s-shadowsocks: &s-shadowsocks
     method: &ss-method aes-256-gcm
@@ -102,7 +103,7 @@ server:
         network: TRANS
         # m4_ifelse(TRANS, [xhttp], [
         xhttpSettings:
-          path: /xhttp
+          path: *xhttp
         # ])
     # m4_pushdef([PORT], m4_incr(PORT))
     # ], TRANSPORTS)
@@ -129,14 +130,6 @@ client:
 
     rules:
       - *api-rule
-      - type: *tf
-        inboundTag:
-          - &dns dns
-        outboundTag: *dns
-      - type: *tf
-        network: udp
-        port: 51820
-        outboundTag: *ldr
       - type: *tf
         outboundTag: *local
         ip:
@@ -225,22 +218,21 @@ client:
     # m4_pushdef([XPORT], [m4_regexp(TRANSPORT, [\([^@]+$\)], [\1])])
     # m4_pushdef([SALTED], m4_substr(m4_esyscmd(b3sum --no-names --length 8 <<<'PROTOCOL-TRANS-ENV_XRAY_SEED'), 0, 16))
     # m4_pushdef([ADDR], SALTED.x.m5_assert([ENV_XRAY_DOMAIN]))
-    # m4_pushdef([ADDR], 127.0.0.53)
     - tag: ldr-PROTOCOL-TRANS
       protocol: PROTOCOL
       settings:
-        # m4_indir(c-PROTOCOL,ADDR,PORT)
+        # m4_indir(c-PROTOCOL,ADDR,443)
       streamSettings:
         sockopt: *mark
         network: TRANS
         # m4_ifelse(TRANS, [xhttp], [
         xhttpSettings:
-          path: /xhttp
+          path: *xhttp
         # ], [
-        # security: tls
-        # tlsSettings:
-        #   allowInsecure: true
-        #   serverName: ADDR
+        security: tls
+        tlsSettings:
+          allowInsecure: true
+          serverName: ADDR
       mux:
         enabled: true
         # ])
