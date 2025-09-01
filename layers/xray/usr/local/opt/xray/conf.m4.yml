@@ -67,6 +67,8 @@ server:
       statsInboundUplink: true
       statsOutboundDownlink: true
       statsOutboundUplink: true
+  dns:
+    disableCache: true
 
   routing:
     domainStrategy: IPOnDemand
@@ -107,6 +109,7 @@ server:
       streamSettings:
         sockopt:
           tcpNoDelay: true
+          domainStrategy: UseIP
         network: TRANS
         xhttpSettings:
           path: *xhttp
