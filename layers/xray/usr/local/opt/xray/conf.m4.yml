@@ -229,13 +229,12 @@ client:
         xhttpSettings:
           path: *xhttp
         # ], [
+        # ])
         security: tls
         tlsSettings:
           allowInsecure: true
-          serverName: ADDR
       mux:
         enabled: true
-        # ])
     # m4_pushdef([PORT], m4_incr(PORT))
     # ], TRANSPORTS)
     # ], PROTOCOLS)

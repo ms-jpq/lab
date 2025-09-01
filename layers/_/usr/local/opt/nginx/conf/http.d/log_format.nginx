@@ -1,0 +1,2 @@
+log_format standard
+  '$remote_addr - $remote_user :: $status * $request_time :: "$request"';

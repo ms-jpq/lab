@@ -9,7 +9,6 @@
 server {
   server_name SALTED.x.*;
   listen      unix:/run/local/nginx/gateway-http.sock;
-  access_log  syslog:server=unix:/dev/log,nohostname;
 
   location / {
     grpc_pass 127.0.0.53:PORT; # PROTOCOL-TRANS
