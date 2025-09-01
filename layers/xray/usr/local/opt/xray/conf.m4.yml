@@ -53,7 +53,8 @@ _:
 
 server:
   log:
-    loglevel: error
+    access: /dev/null
+    loglevel: warning
   api: &ctl
     tag: &api api
     listen: 127.0.0.53:29999
@@ -116,7 +117,8 @@ server:
 
 client:
   log:
-    loglevel: error
+    access: /dev/null
+    loglevel: warning
   api:
     <<: *ctl
     listen: 127.0.0.1:39999
