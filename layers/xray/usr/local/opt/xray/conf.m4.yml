@@ -52,7 +52,7 @@ _:
         # ])
 
 server:
-  log:
+  log: &log
     access: /dev/null
     loglevel: warning
   api: &ctl
@@ -120,8 +120,7 @@ server:
 
 client:
   log:
-    access: /dev/null
-    loglevel: warning
+    <<: *log
   api:
     <<: *ctl
     listen: 127.0.0.1:39999
