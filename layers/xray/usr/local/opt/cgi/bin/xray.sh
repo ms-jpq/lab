@@ -12,6 +12,10 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
+HR='/usr/local/libexec/hr-run.sh'
+
+"$HR" jq --exit-status --sort-keys < /usr/local/opt/xray/client.json
+
 A=(/usr/local/libexec/hr-run.sh xray api stats -server 127.0.0.53:29999)
 
 "${A[@]}"
