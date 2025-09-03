@@ -128,6 +128,7 @@ client:
   stats: {}
   policy: *policy
   observatory:
+    enableConcurrency: true
     subjectSelector: &ldrs
       - &ldr ldr-
     probeURL: http://m5_assert([ENV_XRAY_DOMAIN])/204
