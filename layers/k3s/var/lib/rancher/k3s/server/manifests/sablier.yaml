@@ -9,5 +9,6 @@ spec:
   chart: *chart
   createNamespace: true
   repo: https://sablierapp.github.io/helm-charts
-  targetNamespace: kube-system
-  valuesContent: ""
+  targetNamespace: *chart
+  valuesContent: |-
+    image.tag: 1.10.1

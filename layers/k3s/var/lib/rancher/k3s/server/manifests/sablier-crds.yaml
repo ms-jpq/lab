@@ -12,5 +12,5 @@ spec:
         refreshFrequency: 5s
         showDetails: "true"
         theme: hacker-terminal
-      sablierUrl: http://sablier-sablier.kube-system.svc.cluster.local:10000
+      sablierUrl: http://sablier-sablier.sablier.svc.cluster.local:10000
       sessionDuration: 1m
