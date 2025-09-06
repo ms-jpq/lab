@@ -1,0 +1,15 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: &name sablier
+  namespace: *name
+spec:
+  plugin:
+    sablier:
+      dynamic:
+        refreshFrequency: 5s
+        showDetails: "true"
+        theme: hacker-terminal
+      sablierUrl: http://sablier:10000
+      sessionDuration: 1m

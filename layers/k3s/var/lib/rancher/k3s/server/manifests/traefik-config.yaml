@@ -23,6 +23,16 @@ spec:
           insecure: true
         proxyProtocol:
           insecure: true
+        middlewares:
+          - sablier@kubernetes-crds
       websecure:
         expose:
           default: false
+    providers:
+      kubernetesCRD:
+        allowCrossNamespace: true
+    experimental:
+      plugins:
+        sablier:
+          moduleName: "github.com/sablierapp/sablier"
+          version: "latest"
