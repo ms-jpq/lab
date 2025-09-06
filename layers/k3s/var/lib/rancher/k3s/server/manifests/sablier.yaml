@@ -1,13 +1,13 @@
-# https://github.com/keel-hq/keel/blob/master/values.yaml
+# https://github.com/sablierapp/helm-charts/blob/main/charts/sablier/values.yaml
 ---
 apiVersion: helm.cattle.io/v1
 kind: HelmChart
 metadata:
-  name: &chart keel
+  name: &chart sablier
   namespace: kube-system
 spec:
   chart: *chart
   createNamespace: true
-  repo: https://charts.keel.sh
+  repo: https://sablierapp.github.io/helm-charts
   targetNamespace: *chart
   valuesContent: ""
