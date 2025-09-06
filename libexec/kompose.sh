@@ -69,6 +69,9 @@ JQ
     --namespace "$NAMESPACE"
     --file "$FILE_IN"
   )
+  if grep -F -e 'sablier@kubernetescrd' -- "$FILE_IN" > /dev/null; then
+    CONV+=(--replicas 0)
+  fi
   {
     "${CONV[@]}" | ./libexec/yq.sh --sort-keys --slurp --arg namespace "$NAMESPACE" --argjson keel "$KEEL" --arg hash "$HASHED" "$JQ"
     cat -- ./k8s/networkpolicy.k8s.yml ./k8s/sablier.k8s.yml | K8S_NAMESPACE="$NAMESPACE" envsubst

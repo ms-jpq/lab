@@ -51,7 +51,7 @@ if ((NOOP)); then
   exit
 fi
 
-CTL=(./libexec/kubectl.sh "$SRC")
+CTL=(env -- KUBECONFIG="${0%/*}/facts/$SRC.kubeconfig.yml.env" kubectl --insecure-skip-tls-verify)
 cat -- "$DST"/*.yml | if ((DIFF)); then
   "${CTL[@]}" diff --filename - | delta
 else
