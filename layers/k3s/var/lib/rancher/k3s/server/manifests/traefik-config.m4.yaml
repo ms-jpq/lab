@@ -23,8 +23,7 @@ spec:
           insecure: true
         proxyProtocol:
           insecure: true
-        middlewares:
-          - kubesystem-sablier@kubernetescrd
+        middlewares: []
       websecure:
         expose:
           default: false
@@ -35,4 +34,4 @@ spec:
       plugins:
         sablier:
           moduleName: github.com/sablierapp/sablier
-          version: v1.10.1
+          version: [v]m4_include([layers/k3s/usr/local/etc/default/sablier.env])

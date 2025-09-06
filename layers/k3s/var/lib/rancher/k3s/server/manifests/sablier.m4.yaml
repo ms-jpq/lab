@@ -1,0 +1,33 @@
+# https://github.com/sablierapp/helm-charts/blob/main/charts/sablier/values.yaml
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: &chart sablier
+  namespace: kube-system
+spec:
+  chart: *chart
+  createNamespace: true
+  repo: https://sablierapp.github.io/helm-charts
+  targetNamespace: *chart
+  valuesContent: |-
+    image:
+      tag: m4_include([layers/k3s/usr/local/etc/default/sablier.env])
+
+
+# https://doc.traefik.io/traefik/reference/routing-configuration/kubernetes/crd/http/middleware/
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: sablier
+  namespace: sablier
+spec:
+  plugin:
+    sablier:
+      dynamic:
+        refreshFrequency: 5s
+        showDetails: "true"
+        theme: shuffle
+      sablierUrl: http://sablier-sablier.sablier.svc.cluster.local:10000
+      sessionDuration: 1m
