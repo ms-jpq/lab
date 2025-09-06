@@ -10,7 +10,7 @@ spec:
     sablier:
       group: ${K8S_NAMESPACE}
       dynamic:
-        refreshFrequency: 3s
+        refreshFrequency: 5s
         showDetails: "true"
         theme: shuffle
       sablierUrl: http://sablier-sablier.sablier.svc.cluster.local:10000
