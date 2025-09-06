@@ -24,7 +24,7 @@ spec:
         proxyProtocol:
           insecure: true
         middlewares:
-          - sablier@kubernetes-crds
+          - sablier-sablier@kubernetescrd
       websecure:
         expose:
           default: false
