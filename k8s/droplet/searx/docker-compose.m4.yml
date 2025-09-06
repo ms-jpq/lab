@@ -19,7 +19,7 @@ services:
     image: ghcr.io/searxng/searxng:latest
     labels:
       kompose.controller.type: statefulset
-      kompose.service.expose: ask.${DOMAIN}
+      kompose.service.expose: true
     entrypoint:
       - sh
       - -euxc

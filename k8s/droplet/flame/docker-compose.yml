@@ -4,7 +4,7 @@ services:
     image: docker.io/pawelmalak/flame:latest
     labels:
       kompose.controller.type: statefulset
-      kompose.service.expose: true
+      kompose.service.expose: dash.${DOMAIN}
       kompose.volume.type: hostPath
     environment:
       PASSWORD:
