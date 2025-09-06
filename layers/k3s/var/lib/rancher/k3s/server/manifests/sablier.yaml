@@ -3,11 +3,11 @@
 apiVersion: helm.cattle.io/v1
 kind: HelmChart
 metadata:
-  name: &chart sablier
+  name: sablier
   namespace: kube-system
 spec:
   chart: *chart
   createNamespace: true
   repo: https://sablierapp.github.io/helm-charts
-  targetNamespace: *chart
+  targetNamespace: kube-system
   valuesContent: ""
