@@ -1,20 +1,10 @@
 ---
 services:
-  anubis:
-    image: ghcr.io/techarohq/anubis:main
+  invidious:
+    image: quay.io/invidious/invidious:${TAG}
     labels:
       kompose.service.expose: youtube.${DOMAIN}
       traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-sablier@kubernetescrd
-    environment:
-      COOKIE_DOMAIN: ${DOMAIN}
-      ED25519_PRIVATE_KEY_HEX: m4_esyscmd([b3sum <<< 'DOMAIN' | cut -d ' ' -f 1])
-      SERVE_ROBOTS_TXT: true
-      TARGET: http://invidious:3000
-    ports:
-      - 8923
-
-  invidious:
-    image: quay.io/invidious/invidious:${TAG}
     healthcheck:
       test:
         - CMD
