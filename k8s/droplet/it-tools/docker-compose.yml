@@ -4,6 +4,7 @@ services:
     image: ghcr.io/corentinth/it-tools:latest
     labels:
       kompose.service.expose: tools.${DOMAIN}
+      traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-sablier@kubernetescrd
     healthcheck:
       test:
         - CMD

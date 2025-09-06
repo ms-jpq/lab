@@ -4,6 +4,7 @@ services:
     image: ghcr.io/techarohq/anubis:main
     labels:
       kompose.service.expose: youtube.${DOMAIN}
+      traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-sablier@kubernetescrd
     environment:
       COOKIE_DOMAIN: ${DOMAIN}
       ED25519_PRIVATE_KEY_HEX: m4_esyscmd([b3sum <<< 'DOMAIN' | cut -d ' ' -f 1])
