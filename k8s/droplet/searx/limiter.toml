@@ -1,8 +1,17 @@
 # https://github.com/searxng/searxng/blob/master/searx/limiter.toml
-[real_ip]
+[botdetection]
 ipv4_prefix = 32
 ipv6_prefix = 48
-x_for       = 2
+
+trusted_proxies = [
+  "10.0.0.0/8",
+  "127.0.0.0/8",
+  "172.16.0.0/12",
+  "192.168.0.0/16",
+  "::1/128",
+  "fd00::/8",
+]
+
 
 [botdetection.ip_limit]
 filter_link_local = false
