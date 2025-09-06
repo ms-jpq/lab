@@ -6,6 +6,7 @@ services:
       kompose.controller.type: statefulset
       kompose.service.expose: irc.${DOMAIN}
       kompose.volume.type: hostPath
+      traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-sablier@kubernetescrd
     environment:
       CONVOS_REVERSE_PROXY: 1
     ports:
