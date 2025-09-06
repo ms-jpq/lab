@@ -25,7 +25,7 @@ sort_by(.kind != "Namespace")[]
 | if $pods | not then
     .
   else
-    .metadata.annotations += $keel
+    .metadata.annotations += $keel + {"sablier.enable": "true", "sablier.group": $namespace}
     | (. | lens).spec.initContainers?.[]?.env ?= ((. | lens).spec.containers[].env // [])
     | if ([((. | lens).spec.volumes // [])[].configMap // empty] | length) > 0 then
         (. | lens).metadata.annotations."jq.hash" = $hash
@@ -70,8 +70,8 @@ JQ
     --file "$FILE_IN"
   )
   {
-    "${CONV[@]}" | ./libexec/yq.sh --sort-keys --slurp --argjson keel "$KEEL" --arg hash "$HASHED" "$JQ"
-    K8S_NAMESPACE="$NAMESPACE" envsubst < ./k8s/networkpolicy.k8s.yml
+    "${CONV[@]}" | ./libexec/yq.sh --sort-keys --slurp --arg namespace "$NAMESPACE" --argjson keel "$KEEL" --arg hash "$HASHED" "$JQ"
+    cat -- ./k8s/networkpolicy.k8s.yml ./k8s/sablier.k8s.yml | K8S_NAMESPACE="$NAMESPACE" envsubst
     ./libexec/yq.sh --sort-keys '(.["x-k8s"] // [])[]' < "$FILE_IN" | COMPOSE_PROJECT_NAME="$NAMESPACE" envsubst
   } > "$YAML"
 else
