@@ -1,3 +1,4 @@
+# https://github.com/traefik/traefik-helm-chart/blob/master/traefik/VALUES.md
 ---
 apiVersion: helm.cattle.io/v1
 kind: HelmChartConfig
@@ -8,6 +9,9 @@ spec:
   valuesContent: |-
     additionalArguments:
       - --serverstransport.insecureskipverify=true
+    ingressRoute:
+      dashboard:
+        enabled: true
     ports:
       traefik:
         exposedPort: 9000
