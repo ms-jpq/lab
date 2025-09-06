@@ -5,6 +5,16 @@ services:
     labels:
       kompose.service.expose: docs.${DOMAIN}
       traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-sablier@kubernetescrd
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - -O/dev/null
+        - --timeout
+        - "1"
+        - --
+        - 127.0.0.1:9001
     environment:
       # LOGLEVEL: debug
       DB_CHARSET: utf8mb4
