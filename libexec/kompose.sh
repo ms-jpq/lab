@@ -59,7 +59,16 @@ JQ
   printf -- '%s\n' "@ $NAMESPACE" >&2
   HASHED="$(find "$TMP" "${FD_INNER[@]}" -exec cat -- '{}' + | b3sum --length 32 -- | cut -d ' ' -f 1)"
   FILE_IN="$TMP/docker-compose.yml"
-  CONV=(./var/sh/zsh/dev/bin/denv.py -- "$TMP/.env" ./var/bin/kompose convert --stdout --generate-network-policies --namespace "$NAMESPACE" --file "$FILE_IN")
+  CONV=(
+    ./var/sh/zsh/dev/bin/denv.py
+    -- "$TMP/.env"
+    ./var/bin/kompose convert
+    --stdout
+    --generate-network-policies
+    --service-group-mode label
+    --namespace "$NAMESPACE"
+    --file "$FILE_IN"
+  )
   {
     "${CONV[@]}" | ./libexec/yq.sh --sort-keys --slurp --argjson keel "$KEEL" --arg hash "$HASHED" "$JQ"
     K8S_NAMESPACE="$NAMESPACE" envsubst < ./k8s/networkpolicy.k8s.yml

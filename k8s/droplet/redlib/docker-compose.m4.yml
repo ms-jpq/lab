@@ -15,7 +15,7 @@ services:
   redlib:
     image: quay.io/redlib/redlib:latest
     labels:
-      kompose.service.group: &warp warp
+      kompose.service.group: &warp redlib
     environment:
       REDLIB_AUTOPLAY_VIDEOS: on
       REDLIB_DEFAULT_AUTOPLAY_VIDEOS: on
