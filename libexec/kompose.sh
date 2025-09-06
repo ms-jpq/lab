@@ -25,7 +25,8 @@ sort_by(.kind != "Namespace")[]
 | if $pods | not then
     .
   else
-    .metadata.annotations += $keel + {"sablier.enable": "true", "sablier.group": $namespace}
+    .metadata.annotations += $keel
+    | .metadata.labels += {"sablier.enable": "true", "sablier.group": $namespace}
     | (. | lens).spec.initContainers?.[]?.env ?= ((. | lens).spec.containers[].env // [])
     | if ([((. | lens).spec.volumes // [])[].configMap // empty] | length) > 0 then
         (. | lens).metadata.annotations."jq.hash" = $hash
