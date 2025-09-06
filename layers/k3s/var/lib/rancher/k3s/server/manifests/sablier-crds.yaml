@@ -3,8 +3,8 @@
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: &name sablier
-  namespace: *name
+  name: sablier
+  namespace: kube-system
 spec:
   plugin:
     sablier:
@@ -12,5 +12,5 @@ spec:
         refreshFrequency: 5s
         showDetails: "true"
         theme: hacker-terminal
-      sablierUrl: http://sablier:10000
+      sablierUrl: http://sablier-sablier.kube-system.svc.cluster.local:10000
       sessionDuration: 1m

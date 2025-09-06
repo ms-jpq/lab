@@ -3,7 +3,7 @@
 apiVersion: helm.cattle.io/v1
 kind: HelmChart
 metadata:
-  name: sablier
+  name: &chart sablier
   namespace: kube-system
 spec:
   chart: *chart
