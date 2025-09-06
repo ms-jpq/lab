@@ -14,6 +14,8 @@ services:
 
   redlib:
     image: quay.io/redlib/redlib:latest
+    labels:
+      kompose.service.group: &warp warp
     environment:
       REDLIB_AUTOPLAY_VIDEOS: on
       REDLIB_DEFAULT_AUTOPLAY_VIDEOS: on
@@ -30,3 +32,15 @@ services:
       - 8080
     volumes:
       - ./redlib.toml:/redlib.toml:ro
+
+  warp:
+    image: docker.io/caomingjun/warp:latest
+    labels:
+      kompose.service.group: *warp
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - data:/var/lib/cloudflare-warp
+
+volumes:
+  data:
