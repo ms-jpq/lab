@@ -1,7 +1,7 @@
 ---
 services:
   anubis:
-    image: ghcr.io/techarohq/anubis:latest
+    image: ghcr.io/techarohq/anubis:main
     labels:
       kompose.service.expose: youtube.${DOMAIN}
     environment:
