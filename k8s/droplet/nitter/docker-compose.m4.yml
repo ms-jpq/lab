@@ -4,6 +4,8 @@ services:
     image: ghcr.io/techarohq/anubis:main
     labels:
       kompose.service.expose: twitter.${DOMAIN}
+      sablier.enable: "true"
+      sablier.group: &group nitter
     environment:
       COOKIE_DOMAIN: ${DOMAIN}
       ED25519_PRIVATE_KEY_HEX: m4_esyscmd([b3sum <<< 'DOMAIN' | cut -d ' ' -f 1])
@@ -14,6 +16,9 @@ services:
 
   nitter:
     image: docker.io/zedeus/nitter:latest
+    labels:
+      sablier.enable: "true"
+      sablier.group: *group
     # healthcheck:
     #   test:
     #     - CMD
@@ -32,6 +37,9 @@ services:
 
   redis:
     image: docker.io/library/redis:latest
+    labels:
+      sablier.enable: "true"
+      sablier.group: *group
     healthcheck:
       test:
         - CMD
