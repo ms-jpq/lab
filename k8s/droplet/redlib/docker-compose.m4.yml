@@ -7,8 +7,8 @@ x-k8s:
       namespace: ${COMPOSE_PROJECT_NAME}
     type: kubernetes.io/basic-auth
     stringData:
-      username: "1"
-      password: "1"
+      username: "a"
+      password: ""
 
   - apiVersion: traefik.io/v1alpha1
     kind: Middleware
@@ -20,23 +20,12 @@ x-k8s:
         secret: *name
 
 services:
-  anubis:
-    image: ghcr.io/techarohq/anubis:main
-    labels:
-      kompose.service.expose: reddit.${DOMAIN}
-      traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-auth@kubernetescrd
-    environment:
-      COOKIE_DOMAIN: ${DOMAIN}
-      ED25519_PRIVATE_KEY_HEX:
-      SERVE_ROBOTS_TXT: true
-      TARGET: http://redlib:8080
-    ports:
-      - 8923
-
   redlib:
     image: quay.io/redlib/redlib:latest
     labels:
       kompose.service.group: &warp redlib
+      kompose.service.expose: reddit.${DOMAIN}
+      traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-auth@kubernetescrd
     environment:
       REDLIB_AUTOPLAY_VIDEOS: on
       REDLIB_DEFAULT_AUTOPLAY_VIDEOS: on
