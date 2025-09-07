@@ -4,5 +4,5 @@ variable "mein_email" {
 }
 
 locals {
-  budget = 20
+  budget = 4
 }
