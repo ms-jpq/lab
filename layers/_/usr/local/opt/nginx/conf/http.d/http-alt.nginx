@@ -1,6 +1,5 @@
 server {
-  listen               8080;
-  listen               [::]:8080;
+  listen               [::]:8080 ipv6only=off reuseport;
   auth_basic           "8080";
   auth_basic_user_file /var/lib/local/nginx/8080.htpasswd;
 

@@ -4,12 +4,13 @@ set -o pipefail
 
 cd -- "${0%/*}"
 
-OPTS='m:,e'
-LONG_OPTS='machine:,exec'
+OPTS='m:,e,d'
+LONG_OPTS='machine:,exec,dryrun'
 GO="$(getopt --options="$OPTS" --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
 MACHINES=()
+DRY=0
 EX=0
 while (($#)); do
   case "$1" in
@@ -23,6 +24,10 @@ while (($#)); do
     ;;
   -e | --exec)
     EX=1
+    shift -- 1
+    ;;
+  -d | --dryrun)
+    DRY=1
     shift -- 1
     ;;
   *)
@@ -63,7 +68,9 @@ else
     --action
   )
 
-  if ((EX)); then
+  if ((DRY)); then
+    :
+  elif ((EX)); then
     printf -v ESC -- '%q ' "$@"
   else
     SRC="./var/tmp/machines/$MACHINE/fs"
