@@ -1,4 +1,4 @@
-#!/usr/bin/env -S -- PYTHONSAFEPATH= python3
+#!/usr/bin/env -S -- python3
 
 from json import dump
 from sys import argv, stdin, stdout
