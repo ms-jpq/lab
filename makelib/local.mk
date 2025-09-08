@@ -9,7 +9,7 @@ M4 := ./libexec/m4.sh $(shell printf -- '%s ' ./layers/_/usr/local/include/m4/*.
 define LOCAL_CLEAN_TEMPLATE
 .PHONY: clean.$(notdir $1)
 clean.$(notdir $1):
-	rm -v -rf -- '$(TMP)/$1'
+	rm -v -rf -- '$(TMP)/$1' '$(DIF)/$1'
 endef
 
 $(foreach machine,$(ALL_MACHINES),$(eval $(call LOCAL_CLEAN_TEMPLATE,$(machine))))

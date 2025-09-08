@@ -24,8 +24,10 @@ clobber: clean
 
 
 VAR := ./var
+DIF := $(VAR)/diff
+
 ifeq ($(origin DIFF), command line)
-TMP := $(VAR)/diff
+TMP := $(DIF)
 else
 TMP := $(VAR)/tmp
 endif
