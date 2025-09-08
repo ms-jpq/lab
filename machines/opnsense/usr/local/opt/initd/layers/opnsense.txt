@@ -1,8 +1,8 @@
-avahi
-ddns
-gateway
-openvpn
-privoxy
-router
-vb
-wireguard
++ avahi
++ ddns
++ gateway
++ openvpn
++ privoxy
++ router
++ vb
++ wireguard

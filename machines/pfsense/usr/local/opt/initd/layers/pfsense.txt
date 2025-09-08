@@ -1,9 +1,9 @@
-avahi
-ddns
-gateway
-openvpn
-printer
-privoxy
-router
-vb
-wireguard
++ avahi
++ ddns
++ gateway
++ openvpn
++ printer
++ privoxy
++ router
++ vb
++ wireguard

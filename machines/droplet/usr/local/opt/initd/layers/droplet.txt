@@ -1,7 +1,7 @@
-cloudflare-warp
-gateway
-irc
-k3s
-mail
-wireguard
-xray
++ cloudflare-warp
++ gateway
++ irc
++ k3s
++ mail
++ wireguard
++ xray

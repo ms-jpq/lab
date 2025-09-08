@@ -1,10 +1,10 @@
-gh-mirror
-intel-gvt
-journal
-media
-nspawn
-oci-registry
-qemu
-vb
-webdav
-zfs
++ gh-mirror
++ intel-gvt
++ journal
++ media
++ nspawn
++ oci-registry
++ qemu
++ vb
++ webdav
++ zfs

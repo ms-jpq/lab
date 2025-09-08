@@ -57,19 +57,20 @@ if ! [[ -v UNDER ]]; then
     gmake MACHINE="${MACHINES[*]}" local "${MAKE_ARGS[@]}"
   fi
 
+  TEE=(tee)
   if ((DIFF)); then
     ARGV+=(--diff)
+    TEE=(delta)
   elif ((EX)); then
     ARGV+=(--exec)
   else
     ARGV=()
   fi
-  printf -- '%s\0' "${MACHINES[@]}" | UNDER=1 xargs -r -0 -I % -P 0 -- "$0" --machine % "${ARGV[@]}" -- "$@"
+  printf -- '%s\0' "${MACHINES[@]}" | UNDER=1 xargs -r -0 -I % -P 0 -- "$0" --machine % "${ARGV[@]}" -- "$@" | "${TEE[@]}"
   exit
 else
   MACHINE="${MACHINES[*]}"
   if ((DIFF)); then
-    set -x
     exec -- git diff --no-index --no-prefix -- "./var/tmp/machines/$MACHINE/fs" "./var/diff/machines/$MACHINE/fs"
   fi
   EXEC=(
