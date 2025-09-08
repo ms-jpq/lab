@@ -1,5 +1,4 @@
 # tvheadend
-# xray
 -
 avahi
 btrfs
@@ -25,7 +24,9 @@ rclone-mnt
 router
 share
 tv
+vb
 webdav
 wireguard
 xfs
+xray
 zfs

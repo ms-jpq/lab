@@ -4,4 +4,5 @@ gateway
 openvpn
 privoxy
 router
+vb
 wireguard

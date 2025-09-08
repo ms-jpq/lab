@@ -3,7 +3,6 @@
 + bat
 + bottom
 + cowsay
-+ dnsmasq
 + fd-find
 + figlet
 + fzf
@@ -32,7 +31,6 @@
 + python3-venv
 + ripgrep
 + rsync
-+ ruby
 + socat
 + ssh-import-id
 + systemd-journal-remote

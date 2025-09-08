@@ -5,4 +5,5 @@ qemu
 rclone-mnt
 share
 tvheadend
+vb
 zfs
