@@ -54,32 +54,34 @@ if ! [[ -v UNDER ]]; then
     if ((DIFF)); then
       MAKE_ARGS+=(DIFF=1)
     fi
-    gmake MACHINE="${MACHINES[*]}" local "${MAKE_ARGS[@]}"
+    gmake MACHINE="${MACHINES[*]}" local "${MAKE_ARGS[@]}" >&2
   fi
 
   TEE=(tee)
+  PAR=0
   if ((DIFF)); then
     ARGV+=(--diff)
-    TEE=(delta)
+    PAR=1
+    TEE=(diffnav)
   elif ((EX)); then
     ARGV+=(--exec)
   else
     ARGV=()
   fi
-  printf -- '%s\0' "${MACHINES[@]}" | UNDER=1 xargs -r -0 -I % -P 0 -- "$0" --machine % "${ARGV[@]}" -- "$@" | "${TEE[@]}"
+  printf -- '%s\0' "${MACHINES[@]}" | UNDER=1 xargs -r -0 -I % -P "$PAR" -- "$0" --machine % "${ARGV[@]}" -- "$@" | "${TEE[@]}"
   exit
 else
   MACHINE="${MACHINES[*]}"
   if ((DIFF)); then
     exec -- git diff --no-index --no-prefix -- "./var/tmp/machines/$MACHINE/fs" "./var/diff/machines/$MACHINE/fs"
   fi
+
   EXEC=(
     ./libexec/inventory.sh
     --inventory "$INVENTORY"
     --machine "$MACHINE"
     --action
   )
-
   if ((EX)); then
     printf -v ESC -- '%q ' "$@"
   else
