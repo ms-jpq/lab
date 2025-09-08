@@ -14,4 +14,4 @@ spec:
         showDetails: "true"
         theme: shuffle
       sablierUrl: http://sablier-sablier.sablier.svc.cluster.local:10000
-      sessionDuration: 5m
+      sessionDuration: 15m
