@@ -1,6 +1,6 @@
 set global auto_save_on_exit=false
 
-m4_define([ETC_ISCSI], [m4_include([layers/_/etc/iscsi/initiatorname.m4.iscsi])])
+m4_define([ETC_ISCSI], [m4_include([layers/nfs-client/etc/iscsi/initiatorname.m4.iscsi])])
 m4_define([ISCSI_FQDN], [m4_regexp(ETC_ISCSI, [^InitiatorName=\([A-z.0-9:-]+\)], [\1])])
 
 # [ETC_ISCSI]=ETC_ISCSI
