@@ -70,7 +70,7 @@ else
   MACHINE="${MACHINES[*]}"
   if ((DIFF)); then
     set -x
-    exec -- git diff --no-index --no-prefix -- "./var/tmp/machines/$MACHINE" "./var/diff/machines/$MACHINE"
+    exec -- git diff --no-index --no-prefix -- "./var/tmp/machines/$MACHINE/fs" "./var/diff/machines/$MACHINE/fs"
   fi
   EXEC=(
     ./libexec/inventory.sh
