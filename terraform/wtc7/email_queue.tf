@@ -27,6 +27,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "maildir" {
   rule {
     id     = "diediedie"
     status = "Enabled"
+    filter {}
     expiration {
       days = local.timeouts.s3_days
     }

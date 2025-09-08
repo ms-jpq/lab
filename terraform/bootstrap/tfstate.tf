@@ -39,6 +39,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "tfstate" {
   rule {
     id     = "death-and-decay"
     status = "Enabled"
+    filter {}
     noncurrent_version_expiration {
       newer_noncurrent_versions = 3
       noncurrent_days           = 9
