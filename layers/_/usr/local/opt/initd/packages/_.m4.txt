@@ -24,8 +24,6 @@
 + mosh
 + neovim
 + net-tools
-+ netdata
-+ netdata-plugins-python
 + nfs-common
 + nginx-extras
 + parallel
