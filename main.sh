@@ -5,12 +5,12 @@ set -o pipefail
 cd -- "${0%/*}"
 
 OPTS='m:,e,d'
-LONG_OPTS='machine:,exec,dryrun'
+LONG_OPTS='machine:,exec,diff'
 GO="$(getopt --options="$OPTS" --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
 MACHINES=()
-DRY=0
+DIFF=0
 EX=0
 while (($#)); do
   case "$1" in
@@ -26,8 +26,8 @@ while (($#)); do
     EX=1
     shift -- 1
     ;;
-  -d | --dryrun)
-    DRY=1
+  -d | --diff)
+    DIFF=1
     shift -- 1
     ;;
   *)
@@ -50,9 +50,16 @@ fi
 
 if ! [[ -v UNDER ]]; then
   if ! ((EX)); then
-    gmake MACHINE="${MACHINES[*]}" local
+    MAKE_ARGS=()
+    if ((DIFF)); then
+      MAKE_ARGS+=(DIFF=1)
+    fi
+    gmake MACHINE="${MACHINES[*]}" local "${MAKE_ARGS[@]}"
   fi
-  if ((EX)); then
+
+  if ((DIFF)); then
+    ARGV+=(--diff)
+  elif ((EX)); then
     ARGV+=(--exec)
   else
     ARGV=()
@@ -61,6 +68,10 @@ if ! [[ -v UNDER ]]; then
   exit
 else
   MACHINE="${MACHINES[*]}"
+  if ((DIFF)); then
+    set -x
+    exec -- git diff --no-index --no-prefix -- "./var/tmp/machines/$MACHINE" "./var/diff/machines/$MACHINE"
+  fi
   EXEC=(
     ./libexec/inventory.sh
     --inventory "$INVENTORY"
@@ -68,9 +79,7 @@ else
     --action
   )
 
-  if ((DRY)); then
-    :
-  elif ((EX)); then
+  if ((EX)); then
     printf -v ESC -- '%q ' "$@"
   else
     SRC="./var/tmp/machines/$MACHINE/fs"

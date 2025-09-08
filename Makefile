@@ -24,7 +24,11 @@ clobber: clean
 
 
 VAR := ./var
+ifeq ($(origin DIFF), command line)
+TMP := $(VAR)/diff
+else
 TMP := $(VAR)/tmp
+endif
 
 $(VAR):
 	mkdir -v -p -- '$@'
