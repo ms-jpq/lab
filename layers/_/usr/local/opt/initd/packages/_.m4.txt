@@ -23,7 +23,6 @@
 + mosh
 + neovim
 + net-tools
-+ nfs-common
 + nginx-extras
 + parallel
 + pv
