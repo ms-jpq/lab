@@ -1,5 +1,4 @@
 + cuda
 + nspawn
 + qemu
-+ vb
 + zfs

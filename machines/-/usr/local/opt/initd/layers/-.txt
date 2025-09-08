@@ -24,7 +24,6 @@
 + router
 + share
 + tv
-+ vb
 + webdav
 + wireguard
 + xfs

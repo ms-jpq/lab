@@ -5,6 +5,5 @@
 + nspawn
 + oci-registry
 + qemu
-+ vb
 + webdav
 + zfs

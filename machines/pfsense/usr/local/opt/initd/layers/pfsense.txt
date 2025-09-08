@@ -5,5 +5,4 @@
 + printer
 + privoxy
 + router
-+ vb
 + wireguard
