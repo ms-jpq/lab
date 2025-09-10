@@ -22,16 +22,16 @@ services:
     volumes:
       - ./conf.yml:/invidious/config/config.yml:ro
 
-  invidious-sig-helper:
-    image: quay.io/invidious/inv-sig-helper:latest
-    init: true
-    environment:
-      RUST_LOG: info
-    command:
-      - --tcp
-      - 0.0.0.0:12999
-    ports:
-      - 12999
+  # invidious-sig-helper:
+  #   image: quay.io/invidious/inv-sig-helper:latest
+  #   init: true
+  #   environment:
+  #     RUST_LOG: info
+  #   command:
+  #     - --tcp
+  #     - 0.0.0.0:12999
+  #   ports:
+  #     - 12999
 
   invidious-companion:
     image: quay.io/invidious/invidious-companion:latest
