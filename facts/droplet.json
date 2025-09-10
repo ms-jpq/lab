@@ -10,7 +10,6 @@
     "mcp-searx.ENV_DOMAIN",
     "mcp-terraform.ENV_DOMAIN",
     "s3.ENV_DOMAIN",
-    "youtube-dl.ENV_DOMAIN",
     "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN,], ENV_INDEX)"
   ],
   "ENV_INDEX": [
@@ -64,7 +63,6 @@
     "s3.*",
     "tools.*",
     "twitter.*",
-    "youtube-dl.*",
     "youtube.*"
   ],
   "ENV_XRAY_CLIENT": 0,
