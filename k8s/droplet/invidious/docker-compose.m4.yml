@@ -36,10 +36,10 @@ services:
   invidious-companion:
     image: quay.io/invidious/invidious-companion:latest
     labels:
-      kompose.service.expose: youtube-dl.${DOMAIN}
+      kompose.service.expose: youtube.${DOMAIN}
     environment:
       PROXY: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
-      SERVER_BASE_URL: https://youtube-dl.${DOMAIN}
+      SERVER_BASE_URL: https://youtube.${DOMAIN}/companion
       SERVER_SECRET_KEY:
     ports:
       - 8282
