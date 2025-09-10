@@ -1,4 +1,25 @@
 ---
+x-k8s:
+  - apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      labels:
+        io.kompose.service: &companion invidious-companion
+      name: *companion
+      namespace: ${COMPOSE_PROJECT_NAME}
+    spec:
+      rules:
+        - host: youtube.m5_assert([ENV_DOMAIN])
+          http:
+            paths:
+              - backend:
+                  service:
+                    name: *companion
+                    port:
+                      number: 8282
+                path: /companion
+                pathType: Prefix
+
 services:
   invidious:
     image: quay.io/invidious/invidious:${TAG}
@@ -35,8 +56,6 @@ services:
 
   invidious-companion:
     image: quay.io/invidious/invidious-companion:latest
-    labels:
-      kompose.service.expose: youtube.${DOMAIN}
     environment:
       PROXY: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
       SERVER_BASE_URL: https://youtube.${DOMAIN}/companion

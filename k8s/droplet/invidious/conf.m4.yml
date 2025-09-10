@@ -10,7 +10,7 @@ db:
 # signature_server: invidious-sig-helper:12999
 invidious_companion:
   - private_url: http://invidious-companion:8282/companion
-    public_url: https://youtube-dl.m5_assert([ENV_DOMAIN])/companion
+    public_url: https://youtube.m5_assert([ENV_DOMAIN])/companion
 invidious_companion_key: |-
   m4_esyscmd([printenv -- RAND_HEX | head --bytes 16])
 
