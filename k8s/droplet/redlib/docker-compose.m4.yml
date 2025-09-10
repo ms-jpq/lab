@@ -25,7 +25,7 @@ services:
     labels:
       kompose.service.group: &warp redlib
       kompose.service.expose: reddit.${DOMAIN}
-      traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-auth@kubernetescrd
+      traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-auth@kubernetescrd,${COMPOSE_PROJECT_NAME}-sablier@kubernetescrd
     environment:
       REDLIB_AUTOPLAY_VIDEOS: on
       REDLIB_DEFAULT_AUTOPLAY_VIDEOS: on

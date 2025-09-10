@@ -1,0 +1,13 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rewritebody
+  namespace: kube-system
+spec:
+  plugin:
+    rewritebody:
+      lastModified: true
+      rewrites:
+        - regex: /anubis/static/img/
+          replacement: /die/

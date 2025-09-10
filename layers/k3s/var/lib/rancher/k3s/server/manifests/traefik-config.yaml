@@ -23,7 +23,8 @@ spec:
           insecure: true
         proxyProtocol:
           insecure: true
-        middlewares: []
+        middlewares:
+          - kube-system-rewritebody@kubernetescrd
       websecure:
         expose:
           default: false
@@ -34,4 +35,7 @@ spec:
       plugins:
         sablier:
           moduleName: github.com/sablierapp/sablier
-          version: [v]m4_include([layers/k3s/usr/local/etc/default/sablier.env])
+          version: v1.10.1
+        rewritebody:
+          moduleName: github.com/traefik/plugin-rewritebody
+          version: v0.3.1
