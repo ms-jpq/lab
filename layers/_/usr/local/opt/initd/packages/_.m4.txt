@@ -2,6 +2,7 @@
 + b3sum
 + bat
 + bottom
++ collectd
 + cowsay
 + fd-find
 + figlet
