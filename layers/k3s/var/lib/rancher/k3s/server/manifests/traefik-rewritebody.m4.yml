@@ -11,3 +11,6 @@ spec:
       rewrites:
         - regex: /anubis/static/img/
           replacement: /die/
+
+        - regex: https://(www\.)?youtube.com
+          replacement: https://youtube.m5_assert([ENV_DOMAIN])
