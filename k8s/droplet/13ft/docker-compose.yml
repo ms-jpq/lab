@@ -14,5 +14,7 @@ services:
         - "1"
         - --
         - 127.0.0.1:5000
+    environment:
+      HTTP_PROXY: http://proxy.kompsed-hostproxy.svc.cluster.local:1080
     ports:
       - 5000
