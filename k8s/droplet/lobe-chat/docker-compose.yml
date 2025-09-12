@@ -24,7 +24,7 @@ services:
       BROWSERLESS_URL: http://browserless:3000
       DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg/${COMPOSE_PROJECT_NAME}
       DEEPSEEK_API_KEY:
-      FEATURE_FLAGS: -clerk_sign_up,-welcome_suggest,-market
+      FEATURE_FLAGS: -check_updates,-clerk_sign_up,-welcome_suggest,-market
       GOOGLE_API_KEY:
       KEY_VAULTS_SECRET:
       NEXT_AUTH_SECRET:
