@@ -25,7 +25,6 @@ services:
     image: quay.io/invidious/invidious:${TAG}
     labels:
       kompose.service.expose: youtube.${DOMAIN}
-      traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-sablier@kubernetescrd
     healthcheck:
       test:
         - CMD
