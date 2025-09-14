@@ -1,2 +1,1 @@
-+ collectd
-+ libprotobuf-c1
++ prometheus-node-exporter-collectors
