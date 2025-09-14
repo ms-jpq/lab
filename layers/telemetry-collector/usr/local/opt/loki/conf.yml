@@ -1,0 +1,3 @@
+# https://grafana.com/docs/loki/latest/configure/
+---
+auth_enabled: false
