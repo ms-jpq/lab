@@ -1,0 +1,7 @@
+location /grafana {
+  return 307 /grafana/;
+}
+
+location /grafana/ {
+  proxy_pass http://localhost:3000;
+}
