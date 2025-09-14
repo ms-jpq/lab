@@ -1,0 +1,7 @@
+location /prometheus {
+  return 307 /prometheus/;
+}
+
+location /prometheus/ {
+  proxy_pass http://localhost:9090;
+}

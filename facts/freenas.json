@@ -10,12 +10,16 @@
     "esxi.enp1s0.opnsense.home.arpa",
     "opnsense.w-0.opnsense.home.arpa",
     "orthanc.enp1s0.opnsense.home.arpa",
-    "pfsense.enp2s0.pfsense.home.arpa"
+    "pfsense.w-0.pfsense.home.arpa"
   ],
   "ENV_MACVLAN_IFS": ["enp109s0", "eno1"],
   "ENV_NFS_EXPORTS": ["downloads", "media", "wallpapers"],
   "ENV_OCI_REGISTRIES": ["registry-1.docker.io"],
   "ENV_PG_CLUSTERS": [],
+  "ENV_PROMETHEUS_HOSTS": [
+    "ENV_JOURNAL_HOSTS",
+    "freenas.enp2s0.pfsense.home.arpa"
+  ],
   "ENV_RCLONE_LOCAL": [
     "gray",
     "hao",
