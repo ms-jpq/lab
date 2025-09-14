@@ -108,7 +108,7 @@ def _ip(headers: _Headers, max_ipv6_prefix: int) -> _IP:
         elif isinstance(iface := ip_interface(ip.decode()), IPv6Interface):
             prefix = min(iface.network.prefixlen, max_ipv6_prefix)
             net = IPv6Network((iface.network.network_address, prefix), strict=False)
-            return next(net.hosts())
+            return next(net.hosts()) # type: ignore
         else:
             return iface.ip
     else:
