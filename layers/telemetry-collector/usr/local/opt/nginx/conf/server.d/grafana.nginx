@@ -3,5 +3,5 @@ location /grafana {
 }
 
 location /grafana/ {
-  proxy_pass http://localhost:3000;
+  proxy_pass http://unix:/run/grafana/http.sock;
 }
