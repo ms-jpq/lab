@@ -19,6 +19,7 @@
 + jq
 + language-pack-en
 + language-pack-zh-hans
++ libprotobuf-c1
 + m4
 + moreutils
 + mosh
