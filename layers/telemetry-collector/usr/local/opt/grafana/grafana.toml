@@ -1,6 +1,7 @@
 # https://grafana.com/docs/grafana/latest/setup-grafana/configure-grafana/
 [server]
 protocol            = "socket"
-root_url            = "http://localhost:3000/grafana"
+root_url            = "http://localhost/grafana"
 serve_from_sub_path = true
 socket              = "/run/grafana/http.sock"
+socket_mode         = "0777"
