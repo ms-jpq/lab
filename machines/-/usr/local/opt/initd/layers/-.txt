@@ -26,6 +26,7 @@
 + router
 + share
 + telemetry
++ telemetry-collector
 + tv
 + webdav
 + wireguard

@@ -38,7 +38,7 @@ _DNS = compile(
 
 
 def _interface(net: IPv6Network, token: IPv6Address | None = None) -> IPv6Interface:
-    addr = IPv6Address(int(net.network_address) | int(token or next(net.hosts()))) # type: ignore
+    addr = IPv6Address(int(net.network_address) | int(token or next(net.hosts())))  # type: ignore
     return IPv6Interface(f"{addr}/{net.prefixlen}")
 
 

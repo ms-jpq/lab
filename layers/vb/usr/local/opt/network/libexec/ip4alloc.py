@@ -101,7 +101,7 @@ def main() -> None:
     networks, leftover = _splits(free, prefixes=args.split)
 
     for net in networks:
-        iface = IPv4Interface(f"{next(net.hosts())}/{net.prefixlen}") # type: ignore
+        iface = IPv4Interface(f"{next(net.hosts())}/{net.prefixlen}")  # type: ignore
         stdout.writelines((iface.exploded, linesep))
 
     if args.verbose:

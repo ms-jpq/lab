@@ -6,5 +6,6 @@
 + oci-registry
 + qemu
 + telemetry
++ telemetry-collector
 + webdav
 + zfs
