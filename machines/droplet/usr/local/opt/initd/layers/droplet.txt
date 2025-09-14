@@ -4,5 +4,6 @@
 + k3s
 + mail
 + telemetry
++ vb
 + wireguard
 + xray
