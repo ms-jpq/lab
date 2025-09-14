@@ -1,0 +1,9 @@
+# https://opentelemetry.io/docs/collector/configuration/
+---
+receivers:
+  # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/journaldreceiver
+  journald:
+  # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/collectdreceiver
+  collectd:
+    endpoint: 127.0.0.53:8081
+exporters:
