@@ -4,5 +4,6 @@
 + qemu
 + rclone-mnt
 + share
++ telemetry
 + tvheadend
 + zfs

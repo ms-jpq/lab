@@ -25,6 +25,7 @@
 + rclone-mnt
 + router
 + share
++ telemetry
 + tv
 + webdav
 + wireguard

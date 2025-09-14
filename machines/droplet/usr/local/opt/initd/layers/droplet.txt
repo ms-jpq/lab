@@ -3,5 +3,6 @@
 + irc
 + k3s
 + mail
++ telemetry
 + wireguard
 + xray

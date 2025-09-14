@@ -5,4 +5,5 @@
 + printer
 + privoxy
 + router
++ telemetry
 + wireguard

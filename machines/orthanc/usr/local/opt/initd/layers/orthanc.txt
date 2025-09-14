@@ -2,3 +2,4 @@
 + nspawn
 + qemu
 + zfs
++ telemetry
