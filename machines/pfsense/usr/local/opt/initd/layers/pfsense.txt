@@ -6,4 +6,5 @@
 + privoxy
 + router
 + telemetry
++ vb
 + wireguard

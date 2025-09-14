@@ -6,4 +6,5 @@
 + share
 + telemetry
 + tvheadend
++ vb
 + zfs
