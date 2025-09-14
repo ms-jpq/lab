@@ -67,7 +67,7 @@ const parse_ansi = (() => {
       const str = String.fromCharCode(...codes);
       return str.replace(ansi, "");
     } catch {
-      return "";
+      return JSON.stringify(codes);
     }
   };
 })();
@@ -188,7 +188,7 @@ const append = (sym, root, json) => {
     ":" +
     ts.getSeconds().toString().padStart(2, "0");
   const time = document.createElement("time");
-  time.setAttribute("datetime", ts.toISOString());
+  time.setAttribute("datetime", ts.toLocaleTimeString());
   time.appendChild(document.createTextNode(tt));
 
   const id = document.createTextNode(
