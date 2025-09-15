@@ -3,5 +3,6 @@ location /grafana {
 }
 
 location /grafana/ {
-  proxy_pass http://unix:/run/grafana/http.sock;
+  proxy_hide_header Authorization;
+  proxy_pass        http://unix:/run/grafana/http.sock;
 }
