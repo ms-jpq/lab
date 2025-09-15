@@ -45,8 +45,6 @@ Environment       = K3S_NODE_NAME=%H
 
 Environment       = K3S_DATASTORE_ENDPOINT=
 
-Environment       = KS_LOCAL_STORE_PATH=%S/%J-volumes
-
 EnvironmentFile   = /usr/local/etc/default/%J.env
 
 ExecStart         = k3s server \
@@ -54,6 +52,4 @@ ExecStart         = k3s server \
                     --flannel-ipv6-masq \
                     --bind-address :: \
                     --node-name ${K3S_NODE_NAME} \
-                    --config ${K3S_CONFIG_FILE} \
-                    --datastore-endpoint ${K3S_DATASTORE_ENDPOINT} \
-                    --default-local-storage-path ${KS_LOCAL_STORE_PATH}
+                    --config ${K3S_CONFIG_FILE}
