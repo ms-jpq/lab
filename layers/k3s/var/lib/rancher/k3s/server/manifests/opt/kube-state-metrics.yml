@@ -1,0 +1,12 @@
+# https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-state-metrics/values.yaml
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: &chart kube-state-metrics
+  namespace: kube-system
+spec:
+  chart: *chart
+  createNamespace: true
+  repo: https://prometheus-community.github.io/helm-charts
+  targetNamespace: *chart
