@@ -31,6 +31,9 @@ spec:
     providers:
       kubernetesCRD:
         allowCrossNamespace: true
+    metrics:
+      prometheus:
+        entryPoint: traefik
     experimental:
       plugins:
         sablier:
