@@ -4,7 +4,7 @@ location /k3s {
 
 location /k3s/ {
   proxy_ssl_verify          off;
-  proxy_pass                https://localhost:6443;
+  proxy_pass                https://localhost:6443/;
   proxy_ssl_certificate     /var/lib/rancher/k3s/server/tls/client-admin.crt;
   proxy_ssl_certificate_key /var/lib/rancher/k3s/server/tls/client-admin.key;
 }
