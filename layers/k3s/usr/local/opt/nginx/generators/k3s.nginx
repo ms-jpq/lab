@@ -14,7 +14,6 @@ location /k3s.state {
 }
 
 location /k3s.state/ {
-  include          /usr/local/opt/nginx/conf/http.d/proxy_params.nginx;
   proxy_set_header Host "kube-state-metrics";
   proxy_pass       http://localhost:8008/;
 }
