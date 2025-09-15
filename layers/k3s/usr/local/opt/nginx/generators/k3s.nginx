@@ -8,3 +8,14 @@ location /k3s/ {
   proxy_ssl_certificate     /var/lib/rancher/k3s/server/tls/client-admin.crt;
   proxy_ssl_certificate_key /var/lib/rancher/k3s/server/tls/client-admin.key;
 }
+
+location /k2s {
+  return 307 /k2s/;
+}
+
+location /k2s/ {
+  proxy_ssl_verify          off;
+  proxy_pass                https://localhost:10250/;
+  proxy_ssl_certificate     /var/lib/rancher/k3s/server/tls/client-admin.crt;
+  proxy_ssl_certificate_key /var/lib/rancher/k3s/server/tls/client-admin.key;
+}

@@ -1,5 +1,14 @@
 ---
 scrape_configs:
+  - job_name: k2s.droplet.w-0.droplet.home.arpa
+    basic_auth:
+      username: "8080"
+      password: m4_esyscmd(printf -- '%s\n' 'SALT=ENV_MAIL'droplet | b3sum | cut -d ' ' -f 1)
+    metrics_path: /k2s/metrics
+    static_configs:
+      - targets:
+          - droplet.w-0.droplet.home.arpa:8080
+
   - job_name: k3s.droplet.w-0.droplet.home.arpa
     basic_auth:
       username: "8080"
