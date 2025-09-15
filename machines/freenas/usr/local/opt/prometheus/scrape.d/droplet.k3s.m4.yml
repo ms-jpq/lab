@@ -1,0 +1,9 @@
+---
+scrape_configs:
+  - job_name: droplet-k3s
+    basic_auth:
+      username: "8080"
+      password: m4_esyscmd(printf -- '%s\n' 'SALT=ENV_MAIL'droplet | b3sum | cut -d ' ' -f 1)
+    static_configs:
+      - targets:
+          - droplet.w-0.droplet.m5_assert([ENV_TLD]):8080

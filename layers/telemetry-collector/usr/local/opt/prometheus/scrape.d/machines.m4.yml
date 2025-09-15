@@ -1,15 +1,7 @@
-# https://prometheus.io/docs/prometheus/2.55/configuration/configuration/
 ---
-global:
-  scrape_interval: 15s
-  evaluation_interval: 15s
-
-scrape_config_files:
-  - /usr/local/opt/prometheus/scrape.d/*.yml
-
 scrape_configs:
   # m5_for([MACH], [
-  - job_name: machine-MACH
+  - job_name: MACH
     basic_auth:
       username: "8080"
       password: m4_esyscmd(printf -- '%s\n' 'SALT=ENV_MAIL'$(cut -d . -f 1 <<< 'MACH') | b3sum | cut -d ' ' -f 1)

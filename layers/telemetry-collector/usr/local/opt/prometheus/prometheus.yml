@@ -1,0 +1,8 @@
+# https://prometheus.io/docs/prometheus/2.55/configuration/configuration/
+---
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_config_files:
+  - /usr/local/opt/prometheus/scrape.d/*.yml
