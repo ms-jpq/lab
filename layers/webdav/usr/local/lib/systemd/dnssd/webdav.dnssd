@@ -3,4 +3,4 @@ Name    = %H
 Type    = _webdav._tcp
 Port    = 8080
 
-TxtText = path=/share
+TxtText = path=/webdav

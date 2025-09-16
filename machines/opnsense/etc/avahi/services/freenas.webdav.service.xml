@@ -4,6 +4,6 @@
     <host-name>freenas.enp2s0.pfsense.home.arpa</host-name>
     <type>_webdav._tcp</type>
     <port>8080</port>
-    <txt-record>path=/share</txt-record>
+    <txt-record>path=/webdav</txt-record>
   </service>
 </service-group>
