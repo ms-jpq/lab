@@ -15,5 +15,5 @@ location /k3s.state {
 
 location /k3s.state/ {
   proxy_set_header Host "kube-state-metrics";
-  proxy_pass       http://localhost:8008/;
+  proxy_pass       http://127.0.0.1:8008/;
 }
