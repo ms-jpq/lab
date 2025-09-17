@@ -1,4 +1,5 @@
 ---
-supervisor-metrics: true
-etcd-expose-metrics: true
 default-local-storage-path: /var/lib/k3s-volumes
+etcd-expose-metrics: true
+# resolv-conf:
+supervisor-metrics: true
