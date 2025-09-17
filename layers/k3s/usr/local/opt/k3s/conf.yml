@@ -1,5 +1,7 @@
 ---
+bind-address: "::"
 default-local-storage-path: /var/lib/k3s-volumes
 etcd-expose-metrics: true
-# resolv-conf:
+flannel-ipv6-masq: true
+prefer-bundled-bin: true
 supervisor-metrics: true

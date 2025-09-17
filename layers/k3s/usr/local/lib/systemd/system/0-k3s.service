@@ -24,7 +24,6 @@ PropagatesStopTo  = kubepods.slice
 [Service]
 Type              = notify
 Delegate          = yes
-# KillMode         = process
 Restart           = on-failure
 RestartSec        = 5s
 TimeoutStartSec   = 0s
@@ -33,6 +32,7 @@ ProtectSystem     = strict
 ProtectHome       = yes
 PrivateTmp        = yes
 ReadWritePaths    = %t %T %V %S %E %L
+RuntimeDirectory  = local/%J
 
 LimitNOFILE       = 1048576
 LimitNPROC        = infinity
@@ -47,9 +47,8 @@ Environment       = K3S_DATASTORE_ENDPOINT=
 
 EnvironmentFile   = /usr/local/etc/default/%J.env
 
+ExecStartPre      = /usr/local/opt/%J/libexec/resolv.sh
 ExecStart         = k3s server \
-                    --prefer-bundled-bin \
-                    --flannel-ipv6-masq \
-                    --bind-address :: \
+                    --resolv-conf ${RUNTIME_DIRECTORY}/resolv.conf \
                     --node-name ${K3S_NODE_NAME} \
                     --config ${K3S_CONFIG_FILE}
