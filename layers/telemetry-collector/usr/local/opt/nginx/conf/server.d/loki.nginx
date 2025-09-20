@@ -1,0 +1,7 @@
+location /loki {
+  return 307 /loki/;
+}
+
+location /ui/ {
+  proxy_pass http://localhost:3100;
+}

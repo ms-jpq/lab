@@ -4,6 +4,7 @@ auth_enabled: false
 
 ui:
   enabled: true
+  enable_ipv6: true
 
 server:
   log_level: warn
