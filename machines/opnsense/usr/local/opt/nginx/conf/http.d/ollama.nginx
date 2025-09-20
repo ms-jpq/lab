@@ -1,14 +1,4 @@
 server {
-  server_name cat.*;
-  listen      unix:/run/local/nginx/gateway-https.sock;
-  set         $x_k8s esxi.enp1s0.opnsense.home.arpa;
-
-  location / {
-    proxy_pass http://$x_k8s:9999;
-  }
-}
-
-server {
   listen unix:/run/local/nginx/ollama.sock;
   set    $x_k8s esxi.enp1s0.opnsense.home.arpa;
 
