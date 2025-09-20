@@ -1,10 +1,10 @@
 # https://grafana.com/docs/loki/latest/configure/
 ---
+http_prefix: /loki
 auth_enabled: false
 
 ui:
   enabled: true
-  enable_ipv6: true
 
 server:
   log_level: warn

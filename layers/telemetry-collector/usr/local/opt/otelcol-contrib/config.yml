@@ -2,19 +2,19 @@
 ---
 receivers:
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/journaldreceiver
-  journald:
+  &input journald:
     all: true
     # TODO: should be next release
     # merge: true
     retry_on_failure:
       enabled: true
 exporters:
-  otlphttp:
-    endpoint: http://localhost:3100/otlp
+  &output otlphttp:
+    endpoint: http://127.0.0.53:3100/otlp
 service:
   pipelines:
     logs:
       receivers:
-        - journald
+        - *input
       exporters:
-        - otlphttp
+        - *output

@@ -3,5 +3,5 @@ location /loki {
 }
 
 location /ui/ {
-  proxy_pass http://localhost:3100;
+  proxy_pass http://127.0.0.53:3100;
 }

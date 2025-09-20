@@ -3,4 +3,4 @@ scrape_configs:
   - job_name: loki.localhost
     static_configs:
       - targets:
-          - localhost:3100
+          - 127.0.0.53:3100
