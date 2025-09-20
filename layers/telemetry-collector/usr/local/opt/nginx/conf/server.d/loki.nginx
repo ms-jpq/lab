@@ -5,3 +5,7 @@ location /loki {
 location /ui/ {
   proxy_pass http://127.0.0.53:3100;
 }
+
+location /otlp {
+  proxy_pass http://127.0.0.53:3100;
+}

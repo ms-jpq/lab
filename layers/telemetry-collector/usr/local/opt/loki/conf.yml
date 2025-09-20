@@ -1,6 +1,5 @@
 # https://grafana.com/docs/loki/latest/configure/
 ---
-http_prefix: /loki
 auth_enabled: false
 
 ui:
