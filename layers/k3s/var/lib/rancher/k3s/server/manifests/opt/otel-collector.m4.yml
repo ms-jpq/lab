@@ -1,4 +1,4 @@
-# https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-state-metrics/values.yaml
+https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-collector/values.yaml
 ---
 apiVersion: helm.cattle.io/v1
 kind: HelmChart
@@ -10,7 +10,7 @@ spec:
   createNamespace: true
   repo: https://open-telemetry.github.io/opentelemetry-helm-charts
   targetNamespace: *chart
-  valuesContent: |-
+  valuesContent:
     mode: daemonset
     image:
       repository: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-k8s
@@ -20,3 +20,13 @@ spec:
         includeCollectorLogs: true
       kubernetesAttributes:
         enabled: true
+    config:
+      exporters:
+        &output otlp:
+          endpoint: https://m5_assert([ENV_OTLP_ENDPOINT])
+      pipelines:
+        logs:
+          receivers:
+            - logs
+          exporters:
+            - *output
