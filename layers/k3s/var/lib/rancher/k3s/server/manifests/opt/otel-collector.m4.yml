@@ -10,7 +10,7 @@ spec:
   createNamespace: true
   repo: https://open-telemetry.github.io/opentelemetry-helm-charts
   targetNamespace: *chart
-  valuesContent:
+  valuesContent: |-
     mode: daemonset
     image:
       repository: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-k8s
@@ -23,10 +23,10 @@ spec:
     config:
       exporters:
         &output otlp:
-          endpoint: https://m5_assert([ENV_OTLP_ENDPOINT])
+          endpoint: m5_assert([ENV_OTLP_ENDPOINT])
       pipelines:
         logs:
           receivers:
-            - logs
+            - filelog
           exporters:
             - *output
