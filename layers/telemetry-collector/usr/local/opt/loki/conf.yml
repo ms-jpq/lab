@@ -1,3 +1,25 @@
 # https://grafana.com/docs/loki/latest/configure/
 ---
 auth_enabled: false
+
+ui:
+  enabled: true
+
+server:
+  log_level: warn
+
+common:
+  replication_factor: 1
+  path_prefix: /tmp
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
