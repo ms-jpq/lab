@@ -1,0 +1,9 @@
+server {
+  server_name loki.*;
+  listen      unix:/run/local/nginx/gateway-https.sock;
+
+  location / {
+    proxy_set_header Host freenas.enp2s0.pfsense.localhost;
+    proxy_pass       http://unix:/run/local/nginx/gateway-https.sock:;
+  }
+}
