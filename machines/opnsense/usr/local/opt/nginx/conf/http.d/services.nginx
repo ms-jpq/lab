@@ -14,7 +14,7 @@ server {
 
   location / {
     auth_basic           "-";
-    auth_basic_user_file /var/lib/local/htpasswd/ollama;
+    auth_basic_user_file /var/lib/local/nginx/ollama.htpasswd;
     proxy_pass           http://$x_k8s:8888;
   }
 }

@@ -2,10 +2,9 @@
 
 set -o pipefail
 
-HT='/var/lib/local/htpasswd'
+LIB='/var/lib/local/nginx'
+PASSWD="$LIB/gateway.htpasswd"
 
-PASSWD="$HT/htpasswd"
-mkdir -v -p -- "$HT"
 touch -- "$PASSWD"
 
 HR="$("${0%/*}/../libexec/hr.sh")"
