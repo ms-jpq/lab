@@ -10,12 +10,14 @@ nginx: /usr/local/opt/nginx/conf/._touch
 	sudo -- /usr/local/libexec/try-reload.sh nginx.service
 	sudo -- touch -- '$@'
 
-nginx: /var/lib/local/nginx/8080.htpasswd
-/var/lib/local/nginx/8080.htpasswd: | pkg._
-	{
-	  cat -- /usr/local/etc/default/nginx-8080.env | tr --delete -- '\n'
-	  hostname
-	} | b3sum | cut --delimiter ' ' --fields 1 | sudo -- htpasswd -c -b -i -- '$@' 8080
+
+define NGINX_TEMPLATE
+nginx: /var/lib/local/nginx/$2.htpasswd
+/var/lib/local/nginx/$2.htpasswd: | pkg._
+	tr --delete -- '\n' < '$1' | xargs --no-run-if-empty --max-args 2 -- sudo -- htpasswd -c -b -- '$$@'
+endef
+
+$(foreach realm,$(shell printf -- '%s ' /usr/local/opt/nginx/htpasswd/*.env),$(eval $(call NGINX_TEMPLATE,$(realm),$(subst .env,,$(notdir $(realm))))))
 
 /opt/python3/gixy: | pkg._
 nginx.lint: /opt/python3/gixy
