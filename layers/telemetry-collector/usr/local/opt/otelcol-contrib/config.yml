@@ -1,18 +1,20 @@
 # https://opentelemetry.io/docs/collector/configuration/
 ---
-processors:
-  batch:
 receivers:
-  # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/collectdreceiver
-  collectd:
-    endpoint: 127.0.0.53:8081
+  # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/journaldreceiver
+  journald:
+    all: true
+    # TODO: should be next release
+    # merge: true
+    retry_on_failure:
+      enabled: true
 exporters:
+  otlphttp:
+    endpoint: http://localhost:3100/otlp
 service:
   pipelines:
-    metrics:
+    logs:
       receivers:
-        - collectd
-      processors:
-        - batch
+        - journald
       exporters:
-        -
+        - otlphttp

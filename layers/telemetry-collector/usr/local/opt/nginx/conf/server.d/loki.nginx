@@ -1,5 +1,5 @@
 location /loki {
-  return 307 /loki/;
+  return 307 /ui/;
 }
 
 location /ui/ {

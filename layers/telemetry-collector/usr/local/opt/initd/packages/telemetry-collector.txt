@@ -1,2 +1,4 @@
 + grafana
 + prometheus
++ loki
++ otelcol-contrib
