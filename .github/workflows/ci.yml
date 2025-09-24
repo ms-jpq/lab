@@ -11,14 +11,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # TODO: upstream apt repo returns 500
-
-      # - run: |-
-      #     gmake build
+      - run: |-
+          gmake build
 
   ubuntu:
-    # TODO: use ubuntu-latest
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4

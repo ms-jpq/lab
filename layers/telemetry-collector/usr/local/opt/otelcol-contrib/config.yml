@@ -4,8 +4,7 @@ receivers:
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/journaldreceiver
   &input journald:
     all: true
-    # TODO: should be next release
-    # merge: true
+    merge: true
     retry_on_failure:
       enabled: true
 exporters:
