@@ -4,7 +4,7 @@
 # m4_pushdef([TRANS], [m4_regexp(TRANSPORT, [\(^[^@]+\)], [\1])])
 # m4_pushdef([XPORT], [m4_regexp(TRANSPORT, [\([^@]+$\)], [\1])])
 # m4_ifelse(XPORT, [tcp], [
-# m4_pushdef([SALTED], m4_substr(m4_esyscmd(b3sum --no-names --length 8 <<<'PROTOCOL-TRANS-ENV_XRAY_SEED'), 0, 16))
+# m4_pushdef([SALTED], m4_substr(m4_esyscmd(printf -- %s 'PROTOCOL-TRANS-ENV_XRAY_SEED' | b3sum --no-names --length 8), 0, 16))
 server {
   server_name SALTED.x.*;
   listen      unix:/run/local/nginx/gateway-https.sock;
