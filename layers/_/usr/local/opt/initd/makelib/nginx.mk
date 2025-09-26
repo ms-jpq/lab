@@ -17,9 +17,7 @@ nginx: /var/lib/local/nginx/$2.htpasswd
 	tr --delete -- '\n' < '$1' | xargs --no-run-if-empty --max-args 2 -- sudo -- htpasswd -c -b -- '$$@'
 endef
 
-ifneq ($(origin CI), environment)
 $(foreach realm,$(shell printf -- '%s ' /usr/local/opt/nginx/htpasswd/*.env),$(eval $(call NGINX_TEMPLATE,$(realm),$(subst .env,,$(notdir $(realm))))))
-endif
 
 /opt/python3/gixy: | pkg._
 nginx.lint: /opt/python3/gixy
