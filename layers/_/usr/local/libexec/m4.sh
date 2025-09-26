@@ -26,4 +26,4 @@ while (($#)); do
 done
 
 H="$(realpath -- "$0")"
-exec -- m4 --fatal-warnings --prefix-builtins "${O[@]}" -- "${H%/*}/../include/m4"/*.m4 "${A[@]}"
+SHELL=bash exec -- m4 --fatal-warnings --prefix-builtins "${O[@]}" -- "${H%/*}/../include/m4"/*.m4 "${A[@]}"
