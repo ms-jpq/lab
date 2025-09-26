@@ -8,7 +8,7 @@ _:
 
   s-vmess: &s-vmess
     clients:
-      - id: &password m4_esyscmd(./libexec/uuidgen.py m5_assert([ENV_XRAY_SEED]))
+      - id: &password m5_esyscmd(./libexec/uuidgen.py m5_assert([ENV_XRAY_SEED]))
 
   s-vless: &s-vless
     decryption: none
@@ -225,7 +225,7 @@ client:
     # m5_for([TRANSPORT], [
     # m4_pushdef([TRANS], [m4_regexp(TRANSPORT, [\(^[^@]+\)], [\1])])
     # m4_pushdef([XPORT], [m4_regexp(TRANSPORT, [\([^@]+$\)], [\1])])
-    # m4_pushdef([SALTED], m4_substr(m4_esyscmd(printf -- %s 'PROTOCOL-TRANS-ENV_XRAY_SEED' | b3sum --no-names --length 8), 0, 16))
+    # m4_pushdef([SALTED], m4_substr(m5_esyscmd(printf -- %s 'PROTOCOL-TRANS-ENV_XRAY_SEED' | b3sum --no-names --length 8), 0, 16))
     # m4_pushdef([ADDR], SALTED.x.m5_assert([ENV_XRAY_DOMAIN]))
     - tag: ldr-PROTOCOL-TRANS
       protocol: PROTOCOL

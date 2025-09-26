@@ -12,7 +12,7 @@ server:
   method: GET
   public_instance: true
   secret_key: |-
-    m4_esyscmd([printenv -- RAND_HEX])
+    m5_esyscmd([printenv -- RAND_HEX])
 
 outgoing:
   request_timeout: &timeout 2.0
@@ -95,8 +95,8 @@ hostnames:
     - ^developer(\.[[^.]]+){1,}
     - ^docs?(\.[[^.]]+){1,}
     - ^forums?(\.[[^.]]+){1,}
-    # m4_esyscmd([./k8s/droplet/searx/proc.sed -- ./k8s/droplet/searx/domains/more.txt])
+    # m5_esyscmd([./k8s/droplet/searx/proc.sed -- ./k8s/droplet/searx/domains/more.txt])
   low_priority:
-    # m4_esyscmd([./k8s/droplet/searx/proc.sed -- ./k8s/droplet/searx/domains/ew.txt])
+    # m5_esyscmd([./k8s/droplet/searx/proc.sed -- ./k8s/droplet/searx/domains/ew.txt])
   remove:
-    # m4_esyscmd([./k8s/droplet/searx/proc.sed -- ./k8s/droplet/searx/domains/die.txt])
+    # m5_esyscmd([./k8s/droplet/searx/proc.sed -- ./k8s/droplet/searx/domains/die.txt])

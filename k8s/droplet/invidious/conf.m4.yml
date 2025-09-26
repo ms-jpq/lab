@@ -12,7 +12,7 @@ invidious_companion:
   - private_url: http://invidious-companion:8282/companion
     public_url: https://youtube.m5_assert([ENV_DOMAIN])/companion
 invidious_companion_key: |-
-  m4_esyscmd([printenv -- RAND_HEX | head --bytes 16])
+  m5_esyscmd([printenv -- RAND_HEX | head --bytes 16])
 
 domain: youtube.m5_assert([ENV_DOMAIN])
 external_port: 443
@@ -46,4 +46,4 @@ http_proxy:
   user:
 
 hmac_key: |-
-  m4_esyscmd([printenv -- RAND_HEX])
+  m5_esyscmd([printenv -- RAND_HEX])

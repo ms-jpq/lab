@@ -13,7 +13,7 @@ services:
     image: docker.io/library/redis:latest
     labels:
       kompose.service.type: nodeport
-      kompose.service.nodeport.port: m4_esyscmd([printf -- %s '30000 + 6379 % 2767' | bc])
+      kompose.service.nodeport.port: m5_esyscmd([printf -- %s '30000 + 6379 % 2767' | bc])
     healthcheck:
       test:
         - CMD
