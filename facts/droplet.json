@@ -1,14 +1,16 @@
 {
   "ENV_BTRFS_MNTS": [],
   "ENV_CERTBOT_SITES": [
-    "ENV_DOMAIN",
     "autodiscover.ENV_DOMAIN",
+    "llama.ENV_DOMAIN",
     "mcp-context7.ENV_DOMAIN",
     "mcp-dockerhub.ENV_DOMAIN",
     "mcp-python.ENV_DOMAIN",
     "mcp-searx.ENV_DOMAIN",
     "mcp-terraform.ENV_DOMAIN",
+    "ollama.ENV_DOMAIN",
     "s3.ENV_DOMAIN",
+    "ENV_DOMAIN",
     "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN,], ENV_INDEX)"
   ],
   "ENV_INDEX": [
