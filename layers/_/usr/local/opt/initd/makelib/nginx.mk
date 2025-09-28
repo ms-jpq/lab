@@ -14,7 +14,9 @@ nginx: /usr/local/opt/nginx/conf/._touch
 define NGINX_TEMPLATE
 nginx: /var/lib/local/nginx/$2.htpasswd
 /var/lib/local/nginx/$2.htpasswd: | pkg._
-	tr --delete -- '\n' < '$1' | tee -- /dev/stderr | cut -d ' ' -f -2 | xargs --no-run-if-empty --max-args 2 -- sudo -- htpasswd -c -b -- '$$@'
+	if [[ -v CI ]]; then exit; fi
+
+	tr --delete -- '\n' < '$1' | xargs --no-run-if-empty --max-args 2 -- sudo -- htpasswd -c -b -- '$$@'
 endef
 
 $(foreach realm,$(shell printf -- '%s ' /usr/local/opt/nginx/htpasswd/*.env),$(eval $(call NGINX_TEMPLATE,$(realm),$(subst .env,,$(notdir $(realm))))))
