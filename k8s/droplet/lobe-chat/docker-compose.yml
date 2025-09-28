@@ -31,7 +31,7 @@ services:
       NEXT_AUTH_SSO_PROVIDERS: auth0
       NEXT_PUBLIC_SERVICE_MODE: server
       NEXTAUTH_URL: https://chat.${DOMAIN}/api/auth
-      OLLAMA_MODEL_LIST: +qwen2.5-coder:3b
+      OLLAMA_MODEL_LIST:
       OLLAMA_PROXY_URL: http://proxy.kompsed-ollama-proxy.svc.cluster.local:80
       OPENAI_API_KEY:
       OPENROUTER_API_KEY:
