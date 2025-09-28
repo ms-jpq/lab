@@ -41,3 +41,11 @@ services:
       - streamable_http
     ports:
       - 3001
+
+  # TODO: https://github.com/teabranch/open-responses-server
+  # r:
+  #   image: ghcr.io/finite-sample/rmcp:latest
+  #   labels:
+  #     kompose.service.expose: mcp-r.${DOMAIN}
+  #   ports:
+  #     - 8080
