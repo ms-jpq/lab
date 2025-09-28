@@ -1,1 +1,1 @@
-CURL := curl --fail-with-body --location --remove-on-error --create-dirs --no-progress-meter
+CURL := curl --fail --location --remove-on-error --create-dirs --no-progress-meter

@@ -21,7 +21,7 @@ fi
 if ! [[ -f $CACHE ]]; then
   CURL=(
     curl
-    --fail-with-body
+    --fail
     --location
     --no-progress-meter
     --max-time 60

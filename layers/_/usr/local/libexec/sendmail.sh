@@ -67,7 +67,7 @@ fi
 
 CURL=(
   curl
-  --fail-with-body
+  --fail
   --ssl-reqd
   --mail-from "$FROM"
   --mail-rcpt "$RCPT"

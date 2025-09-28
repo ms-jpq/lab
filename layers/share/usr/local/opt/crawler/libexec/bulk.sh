@@ -23,7 +23,7 @@ if ! [[ -v UNDER ]]; then
   )
   CURL=(
     curl
-    --fail-with-body
+    --fail
     --location
     --no-progress-meter
     --header 'Content-Type: application/x-ndjson'

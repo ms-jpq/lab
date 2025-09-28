@@ -4,7 +4,7 @@ set -o pipefail
 
 CURL=(
   curl
-  --fail-with-body
+  --fail
   --location
   --remove-on-error
   --create-dirs

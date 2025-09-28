@@ -8,7 +8,7 @@ TMP="$(mktemp)"
 
 CURL=(
   curl
-  --fail-with-body
+  --fail
   --location
   --no-progress-meter
   --dump-header "$TMP"
