@@ -1,0 +1,32 @@
+---
+x-k8s:
+  # m5_for([PROXY_NS], [
+  - apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata:
+      name: addn-policy-PROXY_NS
+      namespace: ${COMPOSE_PROJECT_NAME}
+    spec:
+      ingress:
+        - from:
+            - namespaceSelector:
+                matchLabels:
+                  kubernetes.io/metadata.name: kompsed-PROXY_NS
+  # ], lobe-chat)
+
+services:
+  proxy:
+    image: docker.io/library/nginx:latest
+    ports:
+      - 80
+    volumes:
+      - ./proxy.nginx:/etc/nginx/nginx.conf:ro
+
+  responses-proxy:
+    image: ghcr.io/teabranch/open-responses-server:latest
+    labels:
+      kompose.service.expose: llama.${DOMAIN}
+    environment:
+      OPENAI_BASE_URL_INTERNAL: http://proxy:80
+    ports:
+      - 8080

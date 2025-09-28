@@ -32,7 +32,7 @@ services:
       NEXT_PUBLIC_SERVICE_MODE: server
       NEXTAUTH_URL: https://chat.${DOMAIN}/api/auth
       OLLAMA_MODEL_LIST: +qwen2.5-coder:3b
-      OLLAMA_PROXY_URL: http://proxy
+      OLLAMA_PROXY_URL: http://proxy.kompsed-ollama-proxy.svc.cluster.local:80
       OPENAI_API_KEY:
       OPENROUTER_API_KEY:
       S3_ACCESS_KEY_ID:
@@ -45,13 +45,6 @@ services:
       XAI_API_KEY:
     ports:
       - 3210
-
-  proxy:
-    image: docker.io/library/nginx:latest
-    ports:
-      - 80
-    volumes:
-      - ./proxy.nginx:/etc/nginx/nginx.conf:ro
 
   pg:
     image: docker.io/pgvector/pgvector:pg17
