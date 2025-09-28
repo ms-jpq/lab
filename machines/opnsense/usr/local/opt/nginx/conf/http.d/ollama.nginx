@@ -1,11 +1,11 @@
 server {
   listen unix:/run/local/nginx/ollama.sock;
-  set    $x_k8s esxi.enp1s0.opnsense.home.arpa;
+  set    $x_esxi esxi.enp1s0.opnsense.home.arpa;
 
   location / {
     auth_basic           "-";
     auth_basic_user_file /var/lib/local/nginx/ollama.htpasswd;
-    proxy_pass           http://$x_k8s:8888;
+    proxy_pass           http://$x_esxi:11434;
   }
 }
 

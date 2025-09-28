@@ -14,7 +14,7 @@ nginx: /usr/local/opt/nginx/conf/._touch
 define NGINX_TEMPLATE
 nginx: /var/lib/local/nginx/$2.htpasswd
 /var/lib/local/nginx/$2.htpasswd: | pkg._
-	if [[ -v CI ]]; then exit; fi
+	if [[ -f /.dockerenv ]]; then exit; fi
 
 	tr --delete -- '\n' < '$1' | xargs --no-run-if-empty --max-args 2 -- sudo -- htpasswd -c -b -- '$$@'
 endef

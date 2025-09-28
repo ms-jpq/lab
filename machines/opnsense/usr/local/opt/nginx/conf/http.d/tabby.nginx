@@ -1,9 +1,9 @@
 server {
   server_name cat.*;
   listen      unix:/run/local/nginx/gateway-https.sock;
-  set         $x_k8s esxi.enp1s0.opnsense.home.arpa;
+  set         $x_esxi esxi.enp1s0.opnsense.home.arpa;
 
   location / {
-    proxy_pass http://$x_k8s:9999;
+    proxy_pass http://$x_esxi:9999;
   }
 }
