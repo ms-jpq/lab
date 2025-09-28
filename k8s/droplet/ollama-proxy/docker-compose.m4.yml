@@ -29,6 +29,7 @@ services:
     labels:
       kompose.service.expose: llama.${DOMAIN}
     environment:
+      OPENAI_BASE_URL: https://llama.${DOMAIN}
       OPENAI_BASE_URL_INTERNAL: http://proxy:80
     ports:
       - 8080
