@@ -42,6 +42,20 @@ services:
     ports:
       - 3001
 
+  # playwright:
+  #   image: mcr.microsoft.com/playwright/mcp:latest
+  #   labels:
+  #     kompose.service.expose: mcp-playwright.${DOMAIN}
+  #   command:
+  #     - cli.js
+  #     - --headless
+  #     - --browser
+  #     - chromium
+  #     - --no-sandbox
+  #     - --port=8080
+  #   ports:
+  #     - 8080
+
   # TODO: https://github.com/teabranch/open-responses-server
   # r:
   #   image: ghcr.io/finite-sample/rmcp:latest
