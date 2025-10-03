@@ -28,7 +28,7 @@
     "orthanc.enp1s0.opnsense",
     "plex/management"
   ],
-  "ENV_IOT_IFS": ["enp4s0", "eno1"],
+  "ENV_IOT_IFS": [],
   "ENV_LAN_IFS": ["enp2s0", "enp4s0", "eno1"],
   "ENV_MACHINES": ["freenas.enp2s0.pfsense", "pfsense.w-0.pfsense"],
   "ENV_OVPN_SERVER_NAME": "ENV_WG_SERVER_NAME",
