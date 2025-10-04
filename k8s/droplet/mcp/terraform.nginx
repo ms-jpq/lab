@@ -1,0 +1,16 @@
+user      root;
+error_log stderr;
+
+events {
+}
+
+stream {
+  proxy_half_close       on;
+  proxy_socket_keepalive on;
+  proxy_timeout          28d;
+
+  server {
+    listen     [::]:1080 ipv6only=off reuseport;
+    proxy_pass 127.0.0.1:8080;
+  }
+}

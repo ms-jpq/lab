@@ -1,15 +1,22 @@
 ---
 services:
-  terraform:
+  &terraform terraform:
     image: docker.io/hashicorp/terraform-mcp-server:latest
     labels:
-      kompose.service.expose: mcp-terraform.${DOMAIN}
+      kompose.service.group: *terraform
     environment:
       MCP_CORS_MODE: disabled
-      TRANSPORT_HOST: "[::]"
       TRANSPORT_MODE: streamable-http
+
+  terraform-proxy:
+    image: docker.io/library/nginx:latest
+    labels:
+      kompose.service.expose: mcp-terraform.${DOMAIN}
+      kompose.service.group: *terraform
     ports:
-      - 8080
+      - 1080
+    volumes:
+      - ./terraform.nginx:/etc/nginx/nginx.conf:ro
 
   dockerhub:
     image: docker.io/mcp/dockerhub:latest
