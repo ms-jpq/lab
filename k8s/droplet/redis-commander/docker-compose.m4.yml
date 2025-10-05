@@ -10,7 +10,7 @@ services:
       - 8081
 
   redis:
-    image: docker.io/library/redis:latest
+    image: ghcr.io/valkey-io/valkey:latest
     labels:
       kompose.service.type: nodeport
       kompose.service.nodeport.port: m5_esyscmd([printf -- %s '30000 + 6379 % 2767' | bc])

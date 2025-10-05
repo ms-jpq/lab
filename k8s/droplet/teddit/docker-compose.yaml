@@ -25,7 +25,7 @@ services:
       - 8080
 
   redis:
-    image: docker.io/library/redis:latest
+    image: ghcr.io/valkey-io/valkey:latest
     healthcheck:
       test:
         - CMD

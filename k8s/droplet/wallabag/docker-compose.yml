@@ -34,7 +34,7 @@ services:
       - host.home.arpa:host-gateway
 
   redis:
-    image: docker.io/library/redis:latest
+    image: ghcr.io/valkey-io/valkey:latest
     healthcheck:
       test:
         - CMD
