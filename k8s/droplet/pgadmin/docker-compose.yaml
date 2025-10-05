@@ -40,7 +40,7 @@ services:
     ports:
       - 5432
     volumes:
-      - data:/var/lib/postgresql/data
+      - data:/var/lib/postgresql
 
   mcp:
     image: us-central1-docker.pkg.dev/database-toolbox/toolbox/toolbox:latest
