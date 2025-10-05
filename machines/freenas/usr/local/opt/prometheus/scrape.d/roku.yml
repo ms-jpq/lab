@@ -1,0 +1,6 @@
+---
+scrape_configs:
+  - job_name: roku.enp1s0.opnsense.home.arpa
+    static_configs:
+      - targets:
+          - roku.enp1s0.opnsense.home.arpa:9182
