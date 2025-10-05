@@ -1,4 +1,4 @@
-https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-collector/values.yaml
+# https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-collector/values.yaml
 ---
 apiVersion: helm.cattle.io/v1
 kind: HelmChart
@@ -24,9 +24,10 @@ spec:
       exporters:
         otlp:
           endpoint: m5_assert([ENV_OTLP_ENDPOINT])
-      pipelines:
-        logs:
-          receivers:
-            - filelog
-          exporters:
-            - otlp
+      service:
+        pipelines:
+          logs:
+            receivers:
+              - filelog
+            exporters:
+              - otlp
