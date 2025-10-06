@@ -24,12 +24,12 @@ services:
     volumes:
       - ./proxy.nginx:/etc/nginx/nginx.conf:ro
 
-  responses-proxy:
-    image: ghcr.io/teabranch/open-responses-server:latest
-    labels:
-      kompose.service.expose: llama.${DOMAIN}
-    environment:
-      OPENAI_BASE_URL: https://llama.${DOMAIN}
-      OPENAI_BASE_URL_INTERNAL: http://proxy:80
-    ports:
-      - 8080
+  # responses-proxy:
+  #   image: ghcr.io/teabranch/open-responses-server:latest
+  #   labels:
+  #     kompose.service.expose: llama.${DOMAIN}
+  #   environment:
+  #     OPENAI_BASE_URL: https://llama.${DOMAIN}
+  #     OPENAI_BASE_URL_INTERNAL: http://proxy:80
+  #   ports:
+  #     - 8080
