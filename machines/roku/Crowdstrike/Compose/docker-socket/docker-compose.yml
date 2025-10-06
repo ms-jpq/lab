@@ -1,0 +1,9 @@
+---
+services:
+  docker-socket-proxy:
+    image: docker.io/library/nginx:latest
+    ports:
+      - 2375:2375
+    volumes:
+      - ./socket-proxy.nginx:/etc/nginx/main.conf:ro
+      - /var/run/docker.sock:/var/run/docker.sock

@@ -1,0 +1,16 @@
+user      root;
+error_log stderr;
+
+events {
+}
+
+stream {
+  proxy_half_close       on;
+  proxy_socket_keepalive on;
+  proxy_timeout          28d;
+
+  server {
+    listen     [::]:2375 ipv6only=off reuseport;
+    proxy_pass unix:/var/run/docker.sock;
+  }
+}
