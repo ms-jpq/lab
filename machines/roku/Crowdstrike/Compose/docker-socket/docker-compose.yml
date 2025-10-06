@@ -5,5 +5,5 @@ services:
     ports:
       - 2375:2375
     volumes:
-      - ./socket-proxy.nginx:/etc/nginx/main.conf:ro
+      - ./socket-proxy.nginx:/etc/nginx/nginx.conf:ro
       - /var/run/docker.sock:/var/run/docker.sock
