@@ -49,7 +49,7 @@ JQ
     B="$TMP/${F##*/}"
     case "$F" in
     *.m4*)
-      RAND_HEX="$RAND_HEX" ./libexec/m4.sh "$F" "${B//'.m4'/''}" "$DEFS"
+      ./libexec/m4.sh "$F" "${B//'.m4'/''}" "$DEFS" -D"ENV_RAND_HEX=$RAND_HEX"
       ;;
     *)
       cp -fr -- "$F" "$B"

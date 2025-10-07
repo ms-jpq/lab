@@ -11,8 +11,7 @@ server:
   limiter: true
   method: GET
   public_instance: true
-  secret_key: |-
-    m5_esyscmd([printenv -- RAND_HEX])
+  secret_key: m5_assert([ENV_RAND_HEX])
 
 outgoing:
   request_timeout: &timeout 2.0
