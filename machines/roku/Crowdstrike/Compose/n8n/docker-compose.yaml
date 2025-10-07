@@ -4,7 +4,8 @@ services:
     restart: unless-stopped
     image: docker.n8n.io/n8nio/n8n:latest
     labels:
-      kompose.service.expose: n8n.${DOMAIN}
+      traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule: HostRegexp(`^n8n\.`)
+      traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port: 5678
     healthcheck:
       test:
         - CMD
@@ -16,5 +17,3 @@ services:
         - --
         - 127.0.0.1:5678
     environment: {}
-    ports:
-      - 5678

@@ -4,7 +4,8 @@ services:
     restart: unless-stopped
     image: docker.io/dpage/pgadmin4:latest
     labels:
-      kompose.service.expose: pgadmin.${DOMAIN}
+      traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule: HostRegexp(`^pgadmin\.`)
+      traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port: 80
     healthcheck:
       test:
         - CMD
@@ -21,8 +22,6 @@ services:
     environment:
       WEBSERVER_AUTO_CREATE_USER:
       WEBSERVER_REMOTE_USER: X-Forwarded-User
-    ports:
-      - 80
 
   pg:
     restart: unless-stopped
@@ -39,8 +38,6 @@ services:
         - ${COMPOSE_PROJECT_NAME}
         - --dbname
         - ${COMPOSE_PROJECT_NAME}
-    ports:
-      - 5432
     volumes:
       - data:/var/lib/postgresql
 
@@ -48,12 +45,11 @@ services:
     restart: unless-stopped
     image: us-central1-docker.pkg.dev/database-toolbox/toolbox/toolbox:latest
     labels:
-      kompose.service.expose: mcp-postgres.${DOMAIN}
+      traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule: HostRegexp(`^mcp-postgres\.`)
+      traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port: 8978
     command:
       - toolbox
       - "--address=::"
-    ports:
-      - 5000
 
 volumes:
   data:
