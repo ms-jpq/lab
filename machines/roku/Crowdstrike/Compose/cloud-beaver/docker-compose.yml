@@ -4,10 +4,7 @@ services:
     restart: unless-stopped
     image: docker.io/dbeaver/cloudbeaver:latest
     labels:
-      kompose.controller.type: statefulset
-      kompose.service.expose: sql.${DOMAIN}
-      kompose.volume.type: hostPath
-      traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-sablier@kubernetescrd
+      traefik.http.routers.miniflux.rule: Host(`sql.${DOMAIN}`)
     healthcheck:
       test:
         - CMD
@@ -24,4 +21,4 @@ services:
     ports:
       - 8978
     volumes:
-      - /var/lib/local/cloudbeaver:/opt/cloudbeaver/workspace
+      - d:/Docker/Volumes/cloudbeaver:/opt/cloudbeaver/workspace
