@@ -1,6 +1,7 @@
 ---
 services:
   docker-socket-proxy:
+    restart: unless-stopped
     image: docker.io/library/nginx:latest
     ports:
       - 2375:2375

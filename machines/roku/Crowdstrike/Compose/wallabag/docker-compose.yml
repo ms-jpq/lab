@@ -1,6 +1,7 @@
 ---
 services:
   wallabag:
+    restart: unless-stopped
     image: &img docker.io/wallabag/wallabag:latest
     labels:
       kompose.service.expose: pocket.${DOMAIN}

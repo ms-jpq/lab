@@ -2,8 +2,9 @@
 services:
   miniflux:
     image: ghcr.io/miniflux/miniflux:latest
+    restart: unless-stopped
     labels:
-      kompose.service.expose: rss.${DOMAIN}
+      traefik.http.routers.miniflux.rule: Host(`rss.${DOMAIN}`)
     healthcheck:
       test:
         - CMD

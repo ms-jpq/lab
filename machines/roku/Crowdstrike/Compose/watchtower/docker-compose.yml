@@ -1,6 +1,7 @@
 ---
 services:
   watchtower:
+    restart: unless-stopped
     image: docker.io/containrrr/watchtower:latest
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

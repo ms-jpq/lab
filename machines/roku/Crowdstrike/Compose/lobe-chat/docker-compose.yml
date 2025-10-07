@@ -1,6 +1,7 @@
 ---
 services:
   lobe-chat:
+    restart: unless-stopped
     image: docker.io/lobehub/lobe-chat-database:latest
     labels:
       kompose.service.expose: chat.${DOMAIN}
@@ -47,6 +48,7 @@ services:
       - 3210
 
   pg:
+    restart: unless-stopped
     image: docker.io/pgvector/pgvector:pg17
     healthcheck:
       test:
@@ -69,6 +71,7 @@ services:
       - /var/lib/local/lobe-chat:/var/lib/postgresql/data
 
   browserless:
+    restart: unless-stopped
     image: ghcr.io/browserless/chrome:latest
     environment:
       HEALTH: true

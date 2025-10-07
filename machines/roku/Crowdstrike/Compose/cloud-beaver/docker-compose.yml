@@ -1,6 +1,7 @@
 ---
 services:
   cloudbeaver:
+    restart: unless-stopped
     image: docker.io/dbeaver/cloudbeaver:latest
     labels:
       kompose.controller.type: statefulset
