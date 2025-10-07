@@ -39,6 +39,7 @@ TAR=(
   --directory
 )
 SINK='/c'
+FD_INNER=('(' -type f -or -type l ')')
 
 for MACHINE in "${MACHINES[@]}"; do
   DEFS="facts/$MACHINE.env"
@@ -47,13 +48,14 @@ for MACHINE in "${MACHINES[@]}"; do
 
   mkdir -p -- "$DST"
   find "$DST" -mindepth 1 -delete
+  RAND_HEX="$(find "$SRC" "${FD_INNER[@]}" -print0 | xargs -0 --no-run-if-empty -- cat -- "$DEFS" | b3sum --length 64 -- | cut -d ' ' -f 1)"
 
   for F in "$SRC"/**/*; do
     REL="$DST/${F#"$SRC"/}"
     if [[ -d $F ]]; then
       mkdir -p -- "$REL"
     elif [[ $F == *.m4* ]]; then
-      ./libexec/m4.sh "$F" "${REL//'.m4'/''}" "$DEFS"
+      ./libexec/m4.sh "$F" "${REL//'.m4'/''}" "$DEFS" -D"ENV_RAND_HEX=$RAND_HEX"
     else
       cp -a -- "$F" "$REL"
     fi
