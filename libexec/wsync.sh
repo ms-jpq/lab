@@ -41,6 +41,23 @@ TAR=(
 SINK='/c'
 
 for MACHINE in "${MACHINES[@]}"; do
+  DEFS="facts/$MACHINE.env"
   SRC="machines/$MACHINE"
-  tar --create --directory "$SRC" -- . | "${RSH[@]}" "$MACHINE" "${TAR[@]}" "$SINK"
+  DST="var/tmp/machines/$MACHINE"
+
+  mkdir -p -- "$DST"
+  find "$DST" -mindepth 1 -delete
+
+  for F in "$SRC"/**/*; do
+    REL="$DST/${F#"$SRC"/}"
+    if [[ -d $F ]]; then
+      mkdir -p -- "$REL"
+    elif [[ $F == *.m4* ]]; then
+      ./libexec/m4.sh "$F" "${REL//'.m4'/''}" "$DEFS"
+    else
+      cp -a -- "$F" "$REL"
+    fi
+  done
+
+  tar --create --directory "$DST" -- . | "${RSH[@]}" "$MACHINE" "${TAR[@]}" "$SINK"
 done

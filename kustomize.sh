@@ -3,20 +3,15 @@
 set -o pipefail
 shopt -u failglob
 
-OPTS='n,d,p'
-LONG_OPTS='noop,diff,prune'
+OPTS='d,p'
+LONG_OPTS='diff,prune'
 GO="$(getopt --options="$OPTS" --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
-NOOP=0
 DIFF=0
 PRUNE=()
 while (($#)); do
   case "$1" in
-  -n | --noop)
-    NOOP=1
-    shift -- 1
-    ;;
   -d | --diff)
     DIFF=1
     shift -- 1
@@ -45,10 +40,6 @@ find "$DST" -mindepth 1 -delete
 ./libexec/kompose.sh "$SRC" "$DST" "$@"
 if (($#)); then
   PRUNE=()
-fi
-
-if ((NOOP)); then
-  exit
 fi
 
 CTL=(env -- KUBECONFIG="${0%/*}/facts/$SRC.kubeconfig.yml.env" kubectl --insecure-skip-tls-verify)
