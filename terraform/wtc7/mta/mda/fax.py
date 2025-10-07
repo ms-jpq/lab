@@ -12,7 +12,7 @@ from email.header import decode_header
 from email.message import EmailMessage
 from email.policy import SMTP, SMTPUTF8
 from email.utils import formataddr, getaddresses, parseaddr, unquote
-from itertools import takewhile
+from itertools import islice, takewhile
 from logging import DEBUG, StreamHandler, getLogger
 from os import linesep
 from smtplib import SMTP_SSL
@@ -74,15 +74,17 @@ def _decode(name: str) -> Iterator[str]:
 
 
 def _redirect(msg: EmailMessage, src: str) -> Iterator[tuple[str, _Rewrite]]:
-    msg_from = " ".join(msg.get("from", "").split())
+    raw_name, x_from = parseaddr(" ".join(msg.get("from", "").split()))
+    cc = islice(map(formataddr, getaddresses(msg.get_all("cc", []))), 49)
 
-    raw_name, x_from = parseaddr(msg_from)
     name = " ".join(_decode(unquote(raw_name)))
     new_name = f'{name} faxed-by "{x_from}"'
     nxt_from = formataddr((new_name, src))
+    nxt_cc = ", ".join(cc)
 
     mod = {
         "from": _Rewrite(act="replace", val=nxt_from),
+        "cc": _Rewrite(act="replace", val=nxt_cc),
         "reply-to": (
             _Rewrite(act="set-default", val=x_from)
             if x_from
