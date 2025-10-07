@@ -4,7 +4,8 @@ services:
     image: ghcr.io/miniflux/miniflux:latest
     restart: unless-stopped
     labels:
-      traefik.http.routers.miniflux.rule: Host(`rss.${DOMAIN}`)
+      traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule: Host(`rss.${DOMAIN}`)
+      traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port: 8080
     healthcheck:
       test:
         - CMD

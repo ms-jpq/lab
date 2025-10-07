@@ -58,17 +58,12 @@ services:
         - ${COMPOSE_PROJECT_NAME}
         - --dbname
         - ${COMPOSE_PROJECT_NAME}
-    labels:
-      kompose.controller.type: statefulset
-      kompose.volume.type: hostPath
     environment:
       POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
       POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
-    ports:
-      - 5432
     volumes:
-      - /var/lib/local/lobe-chat:/var/lib/postgresql/data
+      - d:/Docker/Volumes/lobe-chat:/var/lib/postgresql/data
 
   browserless:
     restart: unless-stopped
@@ -76,5 +71,3 @@ services:
     environment:
       HEALTH: true
       TOKEN:
-    ports:
-      - 3000
