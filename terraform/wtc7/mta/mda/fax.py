@@ -75,12 +75,12 @@ def _decode(name: str) -> Iterator[str]:
 
 def _redirect(msg: EmailMessage, src: str) -> Iterator[tuple[str, _Rewrite]]:
     raw_name, x_from = parseaddr(" ".join(msg.get("from", "").split()))
-    cc = islice(map(formataddr, getaddresses(msg.get_all("cc", []))), 49)
+    cc = islice(map(formataddr, getaddresses(msg.get_all("cc", []))), 44)
 
     name = " ".join(_decode(unquote(raw_name)))
     new_name = f'{name} faxed-by "{x_from}"'
     nxt_from = formataddr((new_name, src))
-    nxt_cc = ", ".join(cc)
+    nxt_cc = ",".join(cc)
 
     mod = {
         "from": _Rewrite(act="replace", val=nxt_from),
