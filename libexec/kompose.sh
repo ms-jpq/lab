@@ -96,7 +96,7 @@ else
 
   gmake k8s
 
-  ./libexec/facts.sh "$MACHINE" "./facts/$SRC.k8s".{env,json} > "$DEFS"
+  ./libexec/facts.sh "$MACHINE" "./facts/$SRC.k8s".{json,env} > "$DEFS"
 
   printf -- '%s\n' ">>> $COMPOSE" >&2
   printf -- '%s\0' "${FILES[@]}" | RECURSION=1 xargs -r -0 -I % -P 0 -- "$0" "$SRC" "$DST" %

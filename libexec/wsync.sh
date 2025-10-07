@@ -32,7 +32,6 @@ RSH=(
 )
 TAR=(
   '"%PROGRAMFILES%\Git\usr\bin\tar"'
-  -v
   --extract
   --preserve-permissions
   --keep-directory-symlink
@@ -42,16 +41,18 @@ SINK='/c'
 FD_INNER=('(' -type f -or -type l ')')
 
 for MACHINE in "${MACHINES[@]}"; do
-  DEFS="facts/$MACHINE.env"
   SRC="machines/$MACHINE"
   DST="var/tmp/machines/$MACHINE"
+  FS="$DST/fs"
+  DEFS="$DST/.env"
 
-  mkdir -p -- "$DST"
-  find "$DST" -mindepth 1 -delete
+  mkdir -p -- "$FS"
+  find "$FS" -mindepth 1 -delete
+  ./libexec/facts.sh "$MACHINE" "facts/$MACHINE".{json,env} > "$DEFS"
+
   RAND_HEX="$(find "$SRC" "${FD_INNER[@]}" -print0 | xargs -0 --no-run-if-empty -- cat -- "$DEFS" | b3sum --length 64 -- | cut -d ' ' -f 1)"
-
   for F in "$SRC"/**/*; do
-    REL="$DST/${F#"$SRC"/}"
+    REL="$FS/${F#"$SRC"/}"
     if [[ -d $F ]]; then
       mkdir -p -- "$REL"
     elif [[ $F == *.m4* ]]; then
@@ -61,5 +62,5 @@ for MACHINE in "${MACHINES[@]}"; do
     fi
   done
 
-  tar --create --directory "$DST" -- . | "${RSH[@]}" "$MACHINE" "${TAR[@]}" "$SINK"
+  tar --create --directory "$FS" -- . | "${RSH[@]}" "$MACHINE" "${TAR[@]}" "$SINK"
 done
