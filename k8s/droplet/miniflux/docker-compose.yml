@@ -2,11 +2,8 @@
 services:
   miniflux:
     image: ghcr.io/miniflux/miniflux:latest
-    restart: unless-stopped
     labels:
-      traefik.enable: true
-      traefik.http.routers.miniflux.rule: HostRegexp(`^rss\.`)
-      traefik.http.services.miniflux.loadbalancer.server.port: 8080
+      kompose.service.expose: rss.${DOMAIN}
     healthcheck:
       test:
         - CMD
@@ -18,7 +15,7 @@ services:
         - --
         - localhost:8080/about
     environment:
-      # HTTPS_PROXY: socks5://droplet.w-0.droplet.home.arpa:1080
+      # HTTPS_PROXY: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
       # HTTP_PROXY: *proxy
       ADMIN_PASSWORD:
       ADMIN_USERNAME:
@@ -27,7 +24,7 @@ services:
       CLEANUP_ARCHIVE_UNREAD_DAYS: -1
       CREATE_ADMIN: 1
       DATABASE_URL:
-      HTTP_CLIENT_PROXY: socks5://droplet.w-0.droplet.home.arpa:1080
+      HTTP_CLIENT_PROXY: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
       HTTP_CLIENT_TIMEOUT: &timeout 600
       INVIDIOUS_INSTANCE: youtube.${DOMAIN}
       MEDIA_PROXY_HTTP_CLIENT_TIMEOUT: *timeout
@@ -36,8 +33,5 @@ services:
       RUN_MIGRATIONS: 1
       WORKER_POOL_SIZE:
       YOUTUBE_EMBED_URL_OVERRIDE: https://youtube.${DOMAIN}/embed/
-
-networks:
-  default:
-    external: true
-    name: traefik
+    ports:
+      - 8080

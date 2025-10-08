@@ -1,0 +1,25 @@
+---
+services:
+  rabbitmq:
+    image: docker.io/library/rabbitmq:management
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=15672
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^rabbit\.`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.middlewares=${COMPOSE_PROJECT_NAME}
+      - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}.headers.customRequestHeaders.Authorization=Basic cmFiYml0bXE6cmFiYml0bXE=
+    healthcheck:
+      test:
+        - CMD
+        - rabbitmq-diagnostics
+        - ping
+    environment:
+      RABBITMQ_DEFAULT_USER: ${COMPOSE_PROJECT_NAME}
+      RABBITMQ_DEFAULT_PASS: ${COMPOSE_PROJECT_NAME}
+    ports:
+      - 5672
+    volumes:
+      - data:/var/lib/rabbitmq
+
+volumes:
+  data:

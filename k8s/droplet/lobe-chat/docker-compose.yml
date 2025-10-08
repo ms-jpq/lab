@@ -1,12 +1,9 @@
 ---
 services:
   lobe-chat:
-    restart: unless-stopped
     image: docker.io/lobehub/lobe-chat-database:latest
     labels:
-      traefik.enable: true
-      traefik.http.routers.lobe-chat.rule: HostRegexp(`^chat\.`)
-      traefik.http.services.lobe-chat.loadbalancer.server.port: 3210
+      kompose.service.expose: chat.${DOMAIN}
     healthcheck:
       test:
         - CMD
@@ -44,14 +41,12 @@ services:
       S3_ENDPOINT: &s3 https://s3.${DOMAIN}
       S3_PUBLIC_DOMAIN: *s3
       S3_SECRET_ACCESS_KEY:
-      SEARXNG_URL: http://droplet.w-0.droplet.home.arpa:8080
+      SEARXNG_URL: http://searxng.kompsed-searx.svc.cluster.local:8080
       XAI_API_KEY:
-    networks:
-      - default
-      - traefik
+    ports:
+      - 3210
 
   pg:
-    restart: unless-stopped
     image: docker.io/pgvector/pgvector:pg17
     healthcheck:
       test:
@@ -61,21 +56,22 @@ services:
         - ${COMPOSE_PROJECT_NAME}
         - --dbname
         - ${COMPOSE_PROJECT_NAME}
+    labels:
+      kompose.controller.type: statefulset
+      kompose.volume.type: hostPath
     environment:
       POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
       POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
+    ports:
+      - 5432
     volumes:
-      - d:/Docker/Volumes/lobe-chat:/var/lib/postgresql/data
+      - /var/lib/local/lobe-chat:/var/lib/postgresql/data
 
   browserless:
-    restart: unless-stopped
     image: ghcr.io/browserless/chrome:latest
     environment:
       HEALTH: true
       TOKEN:
-
-networks:
-  traefik:
-    external: true
-    name: traefik
+    ports:
+      - 3000

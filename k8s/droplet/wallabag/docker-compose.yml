@@ -1,0 +1,50 @@
+---
+services:
+  wallabag:
+    image: &img docker.io/wallabag/wallabag:latest
+    labels:
+      kompose.service.expose: pocket.${DOMAIN}
+      kompose.init.containers.image: *img
+      kompose.init.containers.command: '["sh", "-c", "/entrypoint.sh migrate || :"]'
+    # healthcheck:
+    #   test:
+    #     - CMD
+    #     - curl
+    #     - --fail
+    #     - --location
+    #     - --no-progress-meter
+    #     - --output
+    #     - /dev/null
+    #     - --max-time
+    #     - "30"
+    #     - --
+    #     - 127.0.0.1:80
+    environment:
+      SYMFONY__ENV__DATABASE_DRIVER: pdo_pgsql
+      SYMFONY__ENV__DATABASE_HOST:
+      SYMFONY__ENV__DATABASE_NAME: wallabag
+      SYMFONY__ENV__DATABASE_PASSWORD:
+      SYMFONY__ENV__DATABASE_PORT: 5432
+      SYMFONY__ENV__DATABASE_USER:
+      SYMFONY__ENV__DOMAIN_NAME: https://pocket.${DOMAIN}
+      SYMFONY__ENV__MAILER_DSN: smtp://host.home.arpa:25
+    ports:
+      - 80
+    extra_hosts:
+      - host.home.arpa:host-gateway
+
+  redis:
+    image: ghcr.io/valkey-io/valkey:latest
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - incr
+        - ping
+    ports:
+      - 6379
+    volumes:
+      - data:/data
+
+volumes:
+  data:

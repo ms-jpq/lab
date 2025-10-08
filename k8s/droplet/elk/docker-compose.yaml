@@ -1,7 +1,6 @@
 ---
 services:
   kibana:
-    restart: unless-stopped
     image: docker.elastic.co/kibana/kibana:${VERSION}
     labels:
       kompose.controller.type: statefulset
@@ -26,7 +25,6 @@ services:
       - 5601
 
   elasticsearch:
-    restart: unless-stopped
     image: docker.elastic.co/elasticsearch/elasticsearch:${VERSION}
     mem_limit: 512M
     labels:
@@ -54,7 +52,6 @@ services:
       - data:/usr/share/elasticsearch/data
 
   log:
-    restart: unless-stopped
     image: docker.elastic.co/logstash/logstash:${VERSION}
     mem_limit: 512M
     labels:
