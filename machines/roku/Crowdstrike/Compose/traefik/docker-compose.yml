@@ -14,12 +14,15 @@ services:
       - --providers.docker.network=traefik
       - --entrypoints.web.address=:80
       - --entrypoints.web.forwardedHeaders.insecure=true
+    networks:
+      - default
+      - traefik
     ports:
       - 80:80
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
 
 networks:
-  default:
+  traefik:
     external: true
     name: traefik
