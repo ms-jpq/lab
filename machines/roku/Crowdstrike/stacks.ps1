@@ -1,10 +1,14 @@
-#!/usr/bin/env -S -- powershell.exe -NoProfile -NonInteractive
+#!/usr/bin/env -S -- pwsh -NoProfile -NonInteractive
 
 param (
     [switch] $up = $(throw)
 )
 
 Set-StrictMode -Version 'Latest'
+$PSStyle.OutputRendering = 'PlainText'
+$ProgressPreference = 'SilentlyContinue'
+$PSNativeCommandUseErrorActionPreference = $true
+
 # $ErrorActionPreference = 'Stop'
 
 
