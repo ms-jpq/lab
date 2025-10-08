@@ -5,7 +5,7 @@ variable "lobe_users" {
 resource "auth0_client" "lobe" {
   name      = "lobechat"
   app_type  = "spa"
-  callbacks = ["https://chat.${var.vps_domain}/api/auth/callback/auth0"]
+  callbacks = ["https://chat.${var.auth0_lobechat_domain}/api/auth/callback/auth0"]
 }
 
 data "auth0_client" "lobe" {
