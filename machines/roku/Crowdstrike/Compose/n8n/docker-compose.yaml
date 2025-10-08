@@ -4,8 +4,8 @@ services:
     restart: unless-stopped
     image: docker.n8n.io/n8nio/n8n:latest
     labels:
-      traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule: HostRegexp(`^n8n\.`)
-      traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port: 5678
+      traefik.web.routers.${COMPOSE_PROJECT_NAME}.rule: HostRegexp(`^n8n\.`)
+      traefik.web.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port: 5678
     healthcheck:
       test:
         - CMD

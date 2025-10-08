@@ -4,12 +4,14 @@ services:
     restart: unless-stopped
     image: docker.io/library/traefik:latest
     labels:
-      traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule: HostRegexp(`^traefik\.`)
-      traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port: 8080
+      traefik.web.routers.${COMPOSE_PROJECT_NAME}.rule: PathPrefix(`/`)
+      traefik.web.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port: 8080
     command:
       - --api.insecure=true
-      - --providers.docker=true
+      - --api.dashboard=true
+      - --providers.docker.network=traefik
       - --entrypoints.web.address=:80
+      - --entrypoints.web.forwardedHeaders.insecure=true
     ports:
       - 80:80
     volumes:

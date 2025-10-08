@@ -26,8 +26,8 @@ services:
       wallabag-init:
         condition: service_completed_successfully
     labels:
-      traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule: HostRegexp(`^pocket\.`)
-      traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port: 80
+      traefik.web.routers.${COMPOSE_PROJECT_NAME}.rule: HostRegexp(`^pocket\.`)
+      traefik.web.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port: 80
     # healthcheck:
     #   test:
     #     - CMD

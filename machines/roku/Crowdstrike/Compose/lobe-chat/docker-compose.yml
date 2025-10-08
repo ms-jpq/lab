@@ -4,8 +4,8 @@ services:
     restart: unless-stopped
     image: docker.io/lobehub/lobe-chat-database:latest
     labels:
-      traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule: HostRegexp(`^chat\.`)
-      traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port: 3210
+      traefik.web.routers.${COMPOSE_PROJECT_NAME}.rule: HostRegexp(`^chat\.`)
+      traefik.web.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port: 3210
     healthcheck:
       test:
         - CMD
