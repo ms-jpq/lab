@@ -33,4 +33,4 @@ done
 cd -- "${0%/*}"
 
 ./libexec/wsync.sh --machine "$SRC"
-exec -- ssh -- "$SRC" powershell.exe -File '%SYSTEMDRIVE%/Crowdstrike/stacks.ps1' --up "$UP"
+exec -- ssh -- "$SRC" powershell.exe -File '%SYSTEMDRIVE%/Crowdstrike/stacks.ps1' -up "$UP"

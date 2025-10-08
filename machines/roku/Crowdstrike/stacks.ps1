@@ -19,7 +19,7 @@ $root = Join-Path -Path $PSScriptRoot 'Compose'
 $jobs = Get-ChildItem -Recurse -LiteralPath $root -File -Filter 'docker-compose.yml' | ForEach-Object {
     $script = {
         $prefix = @('compose', '--progress', 'plain', '--file') + $args
-        $postfix = if ($up) {
+        $postfix = if ($using:up) {
             @('up', '--detach', '--remove-orphans')
         }
         else {
