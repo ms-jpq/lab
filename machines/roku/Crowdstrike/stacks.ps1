@@ -36,4 +36,4 @@ $jobs = Get-ChildItem -Recurse -LiteralPath $root -File -Filter 'docker-compose.
 }
 
 Wait-Job -Job $jobs
-Receive-Job -Job $jobs
+Receive-Job -AutoRemoveJob -Job $jobs
