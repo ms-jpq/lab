@@ -1,0 +1,11 @@
+{
+  "data-root": "d:\\Docker\\DataRoot",
+  "default-address-pools": [
+    {
+      "base": "10.69.0.0/16",
+      "size": 24
+    }
+  ],
+  "experimental": true,
+  "hosts": ["npipe:////./pipe/docker_engine_windows", "tcp://[::]:2375"]
+}
