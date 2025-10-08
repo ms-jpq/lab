@@ -4,7 +4,8 @@ services:
     restart: unless-stopped
     image: docker.io/lobehub/lobe-chat-database:latest
     labels:
-      kompose.service.expose: chat.${DOMAIN}
+      traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule: HostRegexp(`^chat\.`)
+      traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port: 3210
     healthcheck:
       test:
         - CMD
@@ -42,10 +43,8 @@ services:
       S3_ENDPOINT: &s3 https://s3.${DOMAIN}
       S3_PUBLIC_DOMAIN: *s3
       S3_SECRET_ACCESS_KEY:
-      SEARXNG_URL: http://searxng.kompsed-searx.svc.cluster.local:8080
+      SEARXNG_URL: http://droplet.w-0.droplet.home.arpa:8080
       XAI_API_KEY:
-    ports:
-      - 3210
 
   pg:
     restart: unless-stopped

@@ -28,8 +28,6 @@ services:
     labels:
       traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule: HostRegexp(`^pocket\.`)
       traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port: 80
-      kompose.service.expose: pocket.${DOMAIN}
-      kompose.init.containers.command: '["sh", "-c", "/entrypoint.sh migrate || :"]'
     # healthcheck:
     #   test:
     #     - CMD
