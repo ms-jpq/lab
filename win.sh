@@ -32,5 +32,10 @@ done
 
 cd -- "${0%/*}"
 
+STATE='False'
+if ((UP)); then
+  STATE='True'
+fi
+
 ./libexec/wsync.sh --machine "$SRC"
-exec -- ssh -- "$SRC" powershell.exe -File '%SYSTEMDRIVE%/Crowdstrike/stacks.ps1' -up "$UP"
+exec -- ssh -- "$SRC" powershell.exe -File '%SYSTEMDRIVE%/Crowdstrike/stacks.ps1' "-up \$$STATE"
