@@ -53,7 +53,7 @@ engines:
     disabled: true
 
   - name: duckduckgo
-    disabled: true
+    disabled: false
 
   - name: startpage
     disabled: true
@@ -62,7 +62,7 @@ engines:
     disabled: true
 
   - name: brave
-    disabled: true
+    disabled: false
 
   # - name: baidu
   #   disabled: false
