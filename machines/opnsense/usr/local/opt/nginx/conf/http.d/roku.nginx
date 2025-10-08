@@ -1,0 +1,9 @@
+server {
+  server_name chat.* pocket.* pgadmin.* sql.* rss.*;
+  listen      unix:/run/local/nginx/gateway-https.sock;
+  set         $x_roku roku.enp1s0.opnsense.home.arpa;
+
+  location / {
+    proxy_pass http://$x_roku:80;
+  }
+}

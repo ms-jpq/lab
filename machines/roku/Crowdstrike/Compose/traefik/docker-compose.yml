@@ -5,7 +5,7 @@ services:
     image: docker.io/library/traefik:latest
     labels:
       traefik.enable: true
-      traefik.http.routers.traefik.rule: PathPrefix(`/`)
+      traefik.http.routers.traefik.rule: HostRegexp(`^traefik\.`)
       traefik.http.services.traefik.loadbalancer.server.port: 8080
     command:
       - --api.insecure=true
@@ -16,6 +16,5 @@ services:
       - --entrypoints.web.forwardedHeaders.insecure=true
     ports:
       - 80:80
-      - 8080:8080
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
