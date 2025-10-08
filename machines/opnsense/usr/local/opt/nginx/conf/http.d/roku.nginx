@@ -1,5 +1,5 @@
 server {
-  server_name chat.* pocket.* pgadmin.* sql.* rss.*;
+  server_name chat.* pocket.* pgadmin.* sql.* rss.* traefik.*;
   listen      unix:/run/local/nginx/gateway-https.sock;
   set         $x_roku roku.enp1s0.opnsense.home.arpa;
 
