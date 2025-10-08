@@ -7,5 +7,6 @@
     }
   ],
   "experimental": true,
+  "fixed-cidr": "192.168.0.0/24",
   "hosts": ["npipe:////./pipe/docker_engine_windows", "tcp://[::]:2375"]
 }
