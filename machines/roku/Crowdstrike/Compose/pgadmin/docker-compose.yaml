@@ -1,11 +1,12 @@
 ---
 services:
-  phpmyadmin:
+  pgadmin:
     restart: unless-stopped
     image: docker.io/dpage/pgadmin4:latest
     labels:
-      traefik.web.routers.${COMPOSE_PROJECT_NAME}.rule: HostRegexp(`^pgadmin\.`)
-      traefik.web.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port: 80
+      traefik.enable: true
+      traefik.http.routers.pgadmin.rule: HostRegexp(`^pgadmin\.`)
+      traefik.http.services.pgadmin.loadbalancer.server.port: 80
     healthcheck:
       test:
         - CMD
@@ -45,8 +46,9 @@ services:
     restart: unless-stopped
     image: us-central1-docker.pkg.dev/database-toolbox/toolbox/toolbox:latest
     labels:
-      traefik.web.routers.${COMPOSE_PROJECT_NAME}.rule: HostRegexp(`^mcp-postgres\.`)
-      traefik.web.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port: 8978
+      traefik.enable: true
+      traefik.http.routers.pgadmin-mcp.rule: HostRegexp(`^mcp-postgres\.`)
+      traefik.http.services.pgadmin-mcp.loadbalancer.server.port: 8978
     command:
       - toolbox
       - "--address=::"

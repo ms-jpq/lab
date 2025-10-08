@@ -4,10 +4,11 @@ services:
     restart: unless-stopped
     image: docker.io/library/rabbitmq:management
     labels:
-      traefik.web.routers.${COMPOSE_PROJECT_NAME}.rule: HostRegexp(`^rabbit\.`)
-      traefik.web.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port: 15672
-      traefik.web.routers.${COMPOSE_PROJECT_NAME}.middlewares: ${COMPOSE_PROJECT_NAME}
-      traefik.web.middlewares.${COMPOSE_PROJECT_NAME}.headers.customRequestHeaders.Authorization: Basic cmFiYml0bXE6cmFiYml0bXE=
+      traefik.enable: true
+      traefik.http.routers.rabbitmq.rule: HostRegexp(`^rabbit\.`)
+      traefik.http.services.rabbitmq.loadbalancer.server.port: 15672
+      traefik.http.routers.rabbitmq.middlewares: rabbitmq
+      traefik.http.middlewares.rabbitmq.headers.customRequestHeaders.Authorization: Basic cmFiYml0bXE6cmFiYml0bXE=
     healthcheck:
       test:
         - CMD

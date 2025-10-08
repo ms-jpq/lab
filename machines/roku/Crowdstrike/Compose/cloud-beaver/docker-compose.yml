@@ -4,8 +4,9 @@ services:
     restart: unless-stopped
     image: docker.io/dbeaver/cloudbeaver:latest
     labels:
-      traefik.web.routers.${COMPOSE_PROJECT_NAME}.rule: HostRegexp(`^sql\.`)
-      traefik.web.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port: 8978
+      traefik.enable: true
+      traefik.http.routers.cloudbeaver.rule: HostRegexp(`^sql\.`)
+      traefik.http.services.cloudbeaver.loadbalancer.server.port: 8978
     healthcheck:
       test:
         - CMD

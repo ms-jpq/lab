@@ -4,8 +4,9 @@ services:
     image: ghcr.io/miniflux/miniflux:latest
     restart: unless-stopped
     labels:
-      traefik.web.routers.${COMPOSE_PROJECT_NAME}.rule: HostRegexp(`^rss\.`)
-      traefik.web.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port: 8080
+      traefik.enable: true
+      traefik.http.routers.miniflux.rule: HostRegexp(`^rss\.`)
+      traefik.http.services.miniflux.loadbalancer.server.port: 8080
     healthcheck:
       test:
         - CMD

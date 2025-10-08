@@ -16,15 +16,24 @@ if (-not $net) {
 
 
 $root = Join-Path -Path $PSScriptRoot 'Compose'
-Get-ChildItem -Recurse -LiteralPath $root -File -Filter 'docker-compose.yml' | ForEach-Object {
-    $prefix = @('compose', '--progress', 'plain', '--file', $_.FullName)
-    $argv = if ($up) {
-        @('up', '--detach', '--remove-orphans')
-    }
-    else {
-        @('down', '--volumes')
+$jobs = Get-ChildItem -Recurse -LiteralPath $root -File -Filter 'docker-compose.yml' | ForEach-Object {
+    $script = {
+        $prefix = @('compose', '--progress', 'plain', '--file') + $args
+        $postfix = if ($up) {
+            @('up', '--detach', '--remove-orphans')
+        }
+        else {
+            @('down', '--volumes')
+        }
+        $argv = $prefix + $postfix
+
+        Write-Host -- '>>' docker $argv
+        & docker $argv
+        Write-Host -- '<<' docker $argv
     }
 
-    Write-Host -- $_.FullName
-    & docker $prefix $argv
+    Start-Job -ScriptBlock $script -ArgumentList $_.FullName
 }
+
+Wait-Job -Job $jobs
+Receive-Job -Job $jobs
