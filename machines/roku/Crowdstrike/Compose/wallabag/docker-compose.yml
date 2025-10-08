@@ -42,6 +42,9 @@ services:
     #     - "30"
     #     - --
     #     - 127.0.0.1:80
+    networks:
+      - default
+      - traefik
 
   redis:
     image: ghcr.io/valkey-io/valkey:latest
@@ -53,6 +56,11 @@ services:
         - ping
     volumes:
       - data:/data
+
+networks:
+  traefik:
+    external: true
+    name: traefik
 
 volumes:
   data:

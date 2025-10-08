@@ -24,24 +24,6 @@ services:
       WEBSERVER_AUTO_CREATE_USER:
       WEBSERVER_REMOTE_USER: X-Forwarded-User
 
-  pg:
-    restart: unless-stopped
-    image: docker.io/library/postgres:latest
-    environment:
-      POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
-      POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
-      POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
-    healthcheck:
-      test:
-        - CMD
-        - pg_isready
-        - --username
-        - ${COMPOSE_PROJECT_NAME}
-        - --dbname
-        - ${COMPOSE_PROJECT_NAME}
-    volumes:
-      - data:/var/lib/postgresql
-
   mcp:
     restart: unless-stopped
     image: us-central1-docker.pkg.dev/database-toolbox/toolbox/toolbox:latest
@@ -52,6 +34,11 @@ services:
     command:
       - toolbox
       - "--address=::"
+
+networks:
+  default:
+    external: true
+    name: traefik
 
 volumes:
   data:

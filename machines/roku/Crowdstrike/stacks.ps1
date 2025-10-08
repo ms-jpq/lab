@@ -5,7 +5,7 @@ param (
 )
 
 Set-StrictMode -Version 'Latest'
-$ErrorActionPreference = 'Stop'
+# $ErrorActionPreference = 'Stop'
 
 
 $network = 'traefik'
@@ -16,24 +16,19 @@ if (-not $net) {
 
 
 $root = Join-Path -Path $PSScriptRoot 'Compose'
-$jobs = Get-ChildItem -Recurse -LiteralPath $root -File -Filter 'docker-compose.yml' | ForEach-Object {
-    $script = {
-        $prefix = @('compose', '--progress', 'plain', '--file') + $args
-        $postfix = if ($using:up) {
-            @('up', '--detach', '--remove-orphans')
-        }
-        else {
-            @('down', '--volumes')
-        }
-        $argv = $prefix + $postfix
 
-        Write-Host -- '>>' docker $argv
-        & docker $argv
-        Write-Host -- '<<' docker $argv
+Get-ChildItem -Recurse -LiteralPath $root -File -Filter 'docker-compose.yml' | ForEach-Object -Parallel {
+    $prefix = @('compose', '--progress', 'plain', '--file', $_.FullName)
+    $postfix = if ($using:up) {
+        @('up', '--detach', '--remove-orphans')
     }
+    else {
+        @('down', '--volumes')
+    }
+    $argv = $prefix + $postfix
 
-    Start-Job -ScriptBlock $script -ArgumentList $_.FullName
+    Write-Host -- '>>' docker $argv
+    & docker $argv
+    Write-Host -- '<<' docker $argv
 }
 
-Wait-Job -Job $jobs
-Receive-Job -AutoRemoveJob -Job $jobs

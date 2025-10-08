@@ -38,4 +38,4 @@ if ((UP)); then
 fi
 
 ./libexec/wsync.sh --machine "$SRC"
-exec -- ssh -- "$SRC" powershell.exe -File '%SYSTEMDRIVE%/Crowdstrike/stacks.ps1' "-up \$$STATE"
+exec -- ssh -- "$SRC" pwsh.exe -File '%SYSTEMDRIVE%/Crowdstrike/stacks.ps1' "-up \$$STATE"

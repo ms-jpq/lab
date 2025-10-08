@@ -18,3 +18,8 @@ services:
         - --
         - 127.0.0.1:5678
     environment: {}
+
+networks:
+  default:
+    external: true
+    name: traefik

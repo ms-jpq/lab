@@ -46,6 +46,9 @@ services:
       S3_SECRET_ACCESS_KEY:
       SEARXNG_URL: http://droplet.w-0.droplet.home.arpa:8080
       XAI_API_KEY:
+    networks:
+      - default
+      - traefik
 
   pg:
     restart: unless-stopped
@@ -71,3 +74,8 @@ services:
     environment:
       HEALTH: true
       TOKEN:
+
+networks:
+  traefik:
+    external: true
+    name: traefik
