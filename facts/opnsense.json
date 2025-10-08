@@ -1,14 +1,10 @@
 {
   "ENV_CERTBOT_SITES": [
-    "cat.ENV_TLD",
-    "chat.ENV_TLD",
-    "llama.ENV_TLD",
-    "pocket.ENV_TLD",
-    "rss.ENV_TLD",
     "droplet.w-0.droplet.ENV_TLD",
     "esxi.enp1s0.opnsense.ENV_TLD",
     "opnsense.w-0.opnsense.ENV_TLD",
-    "orthanc.enp1s0.opnsense.ENV_TLD"
+    "orthanc.enp1s0.opnsense.ENV_TLD",
+    "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN,], ENV_INDEX)"
   ],
   "ENV_CNAMES": [],
   "ENV_HOST_ALLOW_LIST": [
@@ -21,7 +17,7 @@
     "XBOX.enp1s0.opnsense.home.arpa@tcp*3074:3074",
     "XBOX.enp1s0.opnsense.home.arpa@udp*3074:3074"
   ],
-  "ENV_INDEX": ["cat"],
+  "ENV_INDEX": ["cat", "chat", "llama", "pocket", "rss"],
   "ENV_IOT_IFS": [],
   "ENV_LAN_IFS": ["enp1s0"],
   "ENV_MACHINES": [
