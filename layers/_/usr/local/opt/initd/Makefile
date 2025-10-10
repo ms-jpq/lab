@@ -30,4 +30,7 @@ APT_INSTALL := DEBIAN_FRONTEND=noninteractive sudo --preserve-env -- apt-get ins
 include lib/*.mk
 include makelib/*.mk
 
-all: pkg
+/usr/local/opt/._touch: | pkg
+	sudo -- touch -- '$@'
+
+all: /usr/local/opt/._touch
