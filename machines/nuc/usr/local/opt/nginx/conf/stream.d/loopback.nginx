@@ -1,0 +1,5 @@
+server {
+  listen     6379 reuseport;
+  listen     [::]:6379 reuseport;
+  proxy_pass localhost:30845;
+}
