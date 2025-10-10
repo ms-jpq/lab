@@ -25,7 +25,7 @@ data "digitalocean_volume" "droplet" {
 locals {
   do_sizes = [
     for size in data.digitalocean_sizes.super.sizes :
-    size if size.memory >= 8000
+    size if size.memory >= 3000
   ]
   do_size = local.do_sizes[0]
 }
