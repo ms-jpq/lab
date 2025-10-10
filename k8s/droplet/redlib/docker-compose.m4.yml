@@ -1,23 +1,23 @@
 ---
 x-k8s:
-  - apiVersion: v1
-    kind: Secret
-    metadata:
-      name: &name htpasswd
-      namespace: ${COMPOSE_PROJECT_NAME}
-    type: kubernetes.io/basic-auth
-    stringData:
-      username: "a"
-      password: ""
-
-  - apiVersion: traefik.io/v1alpha1
-    kind: Middleware
-    metadata:
-      name: auth
-      namespace: ${COMPOSE_PROJECT_NAME}
-    spec:
-      basicAuth:
-        secret: *name
+  # - apiVersion: v1
+  #   kind: Secret
+  #   metadata:
+  #     name: &name htpasswd
+  #     namespace: ${COMPOSE_PROJECT_NAME}
+  #   type: kubernetes.io/basic-auth
+  #   stringData:
+  #     username: "a"
+  #     password: ""
+  #
+  # - apiVersion: traefik.io/v1alpha1
+  #   kind: Middleware
+  #   metadata:
+  #     name: auth
+  #     namespace: ${COMPOSE_PROJECT_NAME}
+  #   spec:
+  #     basicAuth:
+  #       secret: *name
 
 services:
   redlib:
