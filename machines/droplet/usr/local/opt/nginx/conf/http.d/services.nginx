@@ -5,9 +5,6 @@ server {
 
   location / {
     include          /usr/local/opt/nginx/conf/auth2.nginx;
-    add_header       Content-Security-Policy
-      "default-src 'self' https://registry.npmmirror.com/ https://cdn.jsdelivr.net data: blob: 'unsafe-inline' 'unsafe-eval' *.$optimistic_host; img-src * data:; media-src * data:;"
-      always;
     proxy_set_header Accept-Encoding "";
     include          /usr/local/opt/nginx/conf/http.d/proxy_params.nginx;
     proxy_pass       http://127.0.0.1:8008/;

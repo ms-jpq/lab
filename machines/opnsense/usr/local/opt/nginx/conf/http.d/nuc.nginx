@@ -4,6 +4,6 @@ server {
   set         $x_nuc nuc.enp1s0.opnsense.home.arpa;
 
   location / {
-    proxy_pass http://$x_nuc:80;
+    proxy_pass http://$x_nuc:8008;
   }
 }
