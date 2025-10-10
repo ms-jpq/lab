@@ -25,6 +25,7 @@
     "freenas.enp2s0.pfsense/webdav",
     "freenas.enp2s0.pfsense/youtube-dl",
     "freenas.enp2s0.pfsense/zfs.sh",
+    "nuc.enp1s0.opnsense",
     "opnsense.w-0.opnsense",
     "orthanc.enp1s0.opnsense",
     "plex/management"

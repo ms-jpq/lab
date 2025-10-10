@@ -24,6 +24,7 @@
   "ENV_MACHINES": [
     "droplet.w-0.droplet",
     "esxi.enp1s0.opnsense",
+    "nuc.enp1s0.opnsense",
     "opnsense.w-0.opnsense",
     "orthanc.enp1s0.opnsense"
   ],

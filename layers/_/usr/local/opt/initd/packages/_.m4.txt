@@ -23,7 +23,6 @@
 + mosh
 + neovim
 + net-tools
-+ nginx-extras
 + parallel
 + pv
 + py-gixy
