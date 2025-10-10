@@ -8,8 +8,8 @@ x-k8s:
     spec:
       headers:
         customResponseHeaders:
-          Content-Security-Policy: |-
-            default-src 'self' https://registry.npmmirror.com/ https://cdn.jsdelivr.net data: blob: 'unsafe-inline' 'unsafe-eval' *.${DOMAIN}; img-src * data:; media-src * data:;
+          Content-Security-Policy: >-
+            default-src 'self' https://registry.npmmirror.com/ https://cdn.jsdelivr.net data: blob: 'unsafe-inline' 'unsafe-eval' *.m5_assert([ENV_DOMAIN]); img-src * data:; media-src * data:;
 
 services:
   lobe-chat:
