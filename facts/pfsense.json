@@ -8,6 +8,7 @@
     "registry.ENV_TLD"
   ],
   "ENV_CNAMES": [],
+  "ENV_DDNS_TYPE": "nat",
   "ENV_HOST_ALLOW_LIST": ["freenas.enp2s0.pfsense.home.arpa@tcp*32400"],
   "ENV_HOST_FORWARD_LIST": ["freenas.enp2s0.pfsense.home.arpa@tcp*32400:32400"],
   "ENV_INDEX": [
