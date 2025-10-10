@@ -4,6 +4,7 @@ server {
   set         $x_nuc nuc.enp1s0.opnsense.home.arpa;
 
   location / {
-    proxy_pass http://$x_nuc:8008;
+    proxy_pass_header Content-Security-Policy;
+    proxy_pass        http://$x_nuc:8008;
   }
 }
