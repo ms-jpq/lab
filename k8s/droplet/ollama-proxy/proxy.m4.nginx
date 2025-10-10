@@ -14,8 +14,9 @@ http {
     listen [[::]]:80 ipv6only=off reuseport;
 
     location / {
+      set              $x_ollama m5_assert([ENV_OLLAMA_API_BASE]);
       proxy_set_header Authorization "Basic m5_assert([ENV_OLLAMA_API_KEY])";
-      proxy_pass       m5_assert([ENV_OLLAMA_API_BASE]);
+      proxy_pass       $x_ollama;
     }
   }
 }
