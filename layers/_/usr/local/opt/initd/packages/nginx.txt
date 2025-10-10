@@ -1,8 +1,1 @@
-+ libnginx-mod-http-brotli-filter
-+ libnginx-mod-http-brotli-static
-+ libnginx-mod-http-fancyindex
-+ libnginx-mod-http-headers-more-filter
-+ libnginx-mod-http-subs-filter
-+ libnginx-mod-mail
-+ libnginx-mod-stream
-+ nginx
++ nginx-extras
