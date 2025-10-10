@@ -5,6 +5,7 @@
 + cowsay
 + fd-find
 + figlet
++ file
 + fzf
 + gay
 + gdu
