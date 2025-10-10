@@ -2,6 +2,7 @@
   "ENV_CERTBOT_SITES": [
     "droplet.w-0.droplet.ENV_TLD",
     "esxi.enp1s0.opnsense.ENV_TLD",
+    "nuc.enp1s0.opnsense.ENV_TLD",
     "opnsense.w-0.opnsense.ENV_TLD",
     "orthanc.enp1s0.opnsense.ENV_TLD",
     "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN,], ENV_INDEX)"

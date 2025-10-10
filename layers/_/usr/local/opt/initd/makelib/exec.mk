@@ -3,6 +3,7 @@
 reload: | all
 	shopt -u failglob
 	sudo -- systemctl daemon-reload --no-pager --show-transaction
+	sudo -- systemctl --state masked --output json | jq --raw-output0 '.[].unit' | xargs --null --no-run-if-empty -- systemctl reset-failed --
 	sudo -- systemctl --no-pager --show-transaction --failed --no-block -- restart '*'
 
 reload-new: | reload
