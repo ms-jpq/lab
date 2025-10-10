@@ -45,7 +45,7 @@ services:
       NEXT_PUBLIC_SERVICE_MODE: server
       NEXTAUTH_URL: https://chat.${DOMAIN}/api/auth
       OLLAMA_MODEL_LIST:
-      OLLAMA_PROXY_URL: http://proxy.kompsed-ollama-proxy.svc.cluster.local:80
+      OLLAMA_PROXY_URL: http://esxi.enp1s0.opnsense.home.arpa:11434
       OPENAI_API_KEY:
       OPENROUTER_API_KEY:
       S3_ACCESS_KEY_ID:
@@ -54,7 +54,6 @@ services:
       S3_ENDPOINT: &s3 https://s3.${DOMAIN}
       S3_PUBLIC_DOMAIN: *s3
       S3_SECRET_ACCESS_KEY:
-      SEARXNG_URL: http://searxng.kompsed-searx.svc.cluster.local:8080
       XAI_API_KEY:
     ports:
       - 3210
@@ -80,11 +79,3 @@ services:
       - 5432
     volumes:
       - /var/lib/local/lobe-chat:/var/lib/postgresql/data
-
-  browserless:
-    image: ghcr.io/browserless/chrome:latest
-    environment:
-      HEALTH: true
-      TOKEN:
-    ports:
-      - 3000
