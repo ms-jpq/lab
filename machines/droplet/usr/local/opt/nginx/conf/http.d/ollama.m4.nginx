@@ -1,0 +1,11 @@
+server {
+  server_name ollama.*;
+  listen      unix:/run/local/nginx/gateway-https.sock;
+  include     /usr/local/opt/nginx/conf/auth.nginx;
+
+  location / {
+    set              $x_ollama m5_assert([ENV_OLLAMA_API_BASE]);
+    proxy_set_header Authorization "Basic m5_assert([ENV_OLLAMA_API_KEY])";
+    proxy_pass       $x_ollama;
+  }
+}
