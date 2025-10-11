@@ -2,7 +2,6 @@
 + intel-gvt
 + journal
 + media
-+ nspawn
 + oci-registry
 + qemu
 + telemetry
