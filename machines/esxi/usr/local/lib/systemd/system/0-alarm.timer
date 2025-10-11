@@ -1,6 +1,0 @@
-[Unit]
-Description = Alarm Timer
-
-[Timer]
-Persistent  = yes
-OnCalendar  = Mon..Fri 06:30:00 America/New_York
