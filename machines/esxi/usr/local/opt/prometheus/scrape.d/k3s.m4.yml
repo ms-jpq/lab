@@ -1,7 +1,7 @@
 ---
 scrape_configs:
   # m5_for([K3S_MACH], [
-  # m4_pushdef([MACH_NAME], [m4_regexp(MACH, [\(^[^.]+\)], [\1])])
+  # m4_pushdef([MACH_NAME], [m4_regexp(K3S_MACH, [\(^[^.]+\)], [\1])])
   - job_name: k3s.K3S_MACH
     basic_auth:
       username: "8080"
