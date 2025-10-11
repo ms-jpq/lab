@@ -5,7 +5,7 @@ server {
   location / {
     auth_basic           "-";
     auth_basic_user_file /var/lib/local/nginx/loki.htpasswd;
-    proxy_set_header     Host freenas.enp2s0.pfsense.localhost;
+    proxy_set_header     Host freenas.eno1.pfsense.localhost;
     proxy_pass           http://unix:/run/local/nginx/gateway-https.sock:;
   }
 }

@@ -5,7 +5,7 @@ $ErrorActionPreference = 'Stop'
 
 Set-Location -- $PSScriptRoot
 
-$remote = 'http://freenas.enp2s0.pfsense.home.arpa:8080'
+$remote = 'http://freenas.eno1.pfsense.home.arpa:8080'
 $vol = 'freenas'
 $cache = 'D:\rclone.cache'
 $argv = @(

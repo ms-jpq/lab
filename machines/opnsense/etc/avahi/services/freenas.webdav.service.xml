@@ -1,7 +1,7 @@
 <service-group>
   <name>freenas</name>
   <service>
-    <host-name>freenas.enp2s0.pfsense.home.arpa</host-name>
+    <host-name>freenas.eno1.pfsense.home.arpa</host-name>
     <type>_webdav._tcp</type>
     <port>8080</port>
     <txt-record>path=/webdav</txt-record>

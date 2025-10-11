@@ -1,7 +1,7 @@
 <service-group>
   <name>freenas</name>
   <service>
-    <host-name>freenas.enp2s0.pfsense.home.arpa</host-name>
+    <host-name>freenas.eno1.pfsense.home.arpa</host-name>
     <type>_ssh._tcp</type>
     <port>22</port>
   </service>

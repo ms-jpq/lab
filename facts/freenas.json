@@ -18,7 +18,7 @@
   "ENV_PG_CLUSTERS": [],
   "ENV_PROMETHEUS_HOSTS": [
     "ENV_JOURNAL_HOSTS",
-    "freenas.enp2s0.pfsense.home.arpa"
+    "freenas.eno1.pfsense.home.arpa"
   ],
   "ENV_RCLONE_LOCAL": [
     "gray",
