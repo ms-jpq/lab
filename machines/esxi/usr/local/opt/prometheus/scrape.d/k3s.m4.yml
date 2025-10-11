@@ -1,0 +1,27 @@
+---
+scrape_configs:
+  # m5_for([K3S_MACH], [
+  # m4_pushdef([MACH_NAME], [m4_regexp(MACH, [\(^[^.]+\)], [\1])])
+  - job_name: k3s.K3S_MACH
+    basic_auth:
+      username: "8080"
+      password: m5_esyscmd(printf -- %s 'SALT=ENV_MAIL[]MACH_NAME' | b3sum | cut -d ' ' -f 1)
+    metrics_path: /k3s/metrics
+    static_configs:
+      - targets:
+          - K3S_MACH:8080
+
+  - job_name: state.k3s.K3S_MACH
+    basic_auth:
+      username: "8080"
+      password: m5_esyscmd(printf -- %s 'SALT=ENV_MAIL[]MACH_NAME' | b3sum | cut -d ' ' -f 1)
+    metrics_path: /k3s.state/metrics
+    static_configs:
+      - targets:
+          - K3S_MACH:8080
+
+  - job_name: traefik.K3S_MACH
+    static_configs:
+      - targets:
+          - K3S_MACH:9000
+  # ], m5_assert([ENV_PROMETHEUS_K3S_HOSTS]))

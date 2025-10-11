@@ -1,4 +1,5 @@
 # m5_for([MACH], [
+# m4_pushdef([MACH_NAME], [m4_regexp(MACH, [\(^[^.]+\)], [\1])])
 server {
   server_name MACH.*;
   set         $x_machine MACH.home.arpa:8080;
@@ -7,7 +8,7 @@ server {
   location / {
     proxy_pass_header Content-Security-Policy;
     proxy_set_header  Authorization
-      "Basic m5_esyscmd(printf -- %s 'SALT=ENV_MAIL'$(printf -- %s 'MACH' | cut -d . -f 1) | b3sum | cut -d ' ' -f 1 | jq --raw-input --join-output '"8080:\(.)" | @base64')";
+      "Basic m5_esyscmd(printf -- %s 'SALT=ENV_MAIL[]MACH_NAME' | b3sum | cut -d ' ' -f 1 | jq --raw-input --join-output '"8080:\(.)" | @base64')";
     include           /usr/local/opt/nginx/conf/http.d/proxy_params.nginx;
     proxy_pass        http://$x_machine;
   }

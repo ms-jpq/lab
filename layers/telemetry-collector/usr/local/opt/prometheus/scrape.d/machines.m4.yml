@@ -1,10 +1,11 @@
 ---
 scrape_configs:
   # m5_for([MACH], [
+  # m4_pushdef([MACH_NAME], [m4_regexp(MACH, [\(^[^.]+\)], [\1])])
   - job_name: MACH
     basic_auth:
       username: "8080"
-      password: m5_esyscmd(printf -- %s 'SALT=ENV_MAIL'$(printf -- %s 'MACH' | cut -d . -f 1) | b3sum | cut -d ' ' -f 1)
+      password: m5_esyscmd(printf -- %s 'SALT=ENV_MAIL[]MACH_NAME' | b3sum | cut -d ' ' -f 1)
     static_configs:
       - targets:
           - MACH:8080

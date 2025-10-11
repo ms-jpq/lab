@@ -16,6 +16,10 @@
     "ENV_JOURNAL_HOSTS",
     "freenas.eno1.pfsense.home.arpa"
   ],
+  "ENV_PROMETHEUS_K3S_HOSTS": [
+    "droplet.w-0.droplet.home.arpa",
+    "nuc.enp1s0.opnsense.home.arpa"
+  ],
   "ENV_SMB_EXPORTS": ["time-machine-hao", "time-machine-gray"],
   "ENV_TABBY_MODEL": "CodeLlama-7B",
   "ENV_VFIO_PCI_DEVICE_IDS": ["01:00.0[,]multifunction=on", "01:00.1"],
