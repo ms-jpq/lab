@@ -1,0 +1,1 @@
+/usr/local/lib/systemd/system/multi-user.target.wants/grafana-server.service /usr/lib/systemd/system/grafana-server.service
