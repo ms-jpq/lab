@@ -1,10 +1,12 @@
 + cuda
++ journal
 + nspawn
 + postgres
 + qemu
 + rclone-mnt
 + share
 + telemetry
++ telemetry-collector
 + tvheadend
 + vb
 + zfs

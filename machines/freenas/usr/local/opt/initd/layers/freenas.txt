@@ -1,11 +1,9 @@
 + gh-mirror
 + intel-gvt
-+ journal
 + media
 + oci-registry
 + qemu
 + telemetry
-+ telemetry-collector
 + vb
 + webdav
 + zfs
