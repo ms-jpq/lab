@@ -2,7 +2,6 @@
 + ddns
 + gateway
 + openvpn
-+ printer
 + privoxy
 + router
 + telemetry

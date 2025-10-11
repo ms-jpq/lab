@@ -47,7 +47,7 @@ RTAIL=(
 )
 
 PASSWD="8080:$({
-  cat -- /usr/local/etc/default/nginx-8080.env | tr --delete -- '\n'
+  tr --delete -- '\n' < /usr/local/etc/default/nginx-8080.env
   cut --delimiter '.' --field 1 <<< "$REMOTE"
 } | b3sum | cut -d ' ' -f 1)"
 timeout --preserve-status "$TIMEOUT" "${CAT[@]}" <<< "--user $PASSWD" | "${RTAIL[@]}"
