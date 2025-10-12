@@ -12,8 +12,15 @@ receivers:
     retry_on_failure:
       enabled: true
     storage: *cursor
-    operators: []
+    # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/operators/README.md#what-operators-are-available
+    operators:
+      # https://grafana.com/docs/loki/latest/send-data/otel/#format-considerations
+      - type: add
+        field: resource.service.name
+        value: journald
 exporters:
+  debug:
+    verbosity: detailed
   &output otlphttp:
     endpoint: http://127.0.0.53:3100/otlp
 service:
