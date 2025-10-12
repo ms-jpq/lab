@@ -1,5 +1,9 @@
 ---
 extensions:
+  &auth basicauth:
+    client_auth:
+      username: loki
+      password: m5_assert([ENV_OTLP_PASSWORD])
 receivers:
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/awscloudwatchreceiver/README.md
   &input awscloudwatch:
@@ -10,10 +14,11 @@ processors:
 exporters:
   &output otlphttp:
     endpoint: m5_assert([ENV_OTLP_ENDPOINT])/otlp
-    headers:
-      authorization: >-
-        Basic m5_esyscmd(printf -- %s 'm5_assert([ENV_OTLP_PASSWORD])' | jq --raw-input --join-output '"loki:\(.)" | @base64')
+    auth:
+      authenticator: *auth
 service:
+  extensions:
+    - *auth
   telemetry:
     logs:
       level: warn
