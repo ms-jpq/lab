@@ -1,0 +1,27 @@
+---
+extensions:
+receivers:
+  # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/awscloudwatchreceiver/README.md
+  &input awscloudwatch:
+    region: m5_assert([ENV_AWS_REGION])
+processors:
+  &meta transform:
+    log_statements: []
+exporters:
+  &output otlphttp:
+    endpoint: m5_assert([ENV_OTLP_ENDPOINT])/otlp
+    headers:
+      authorization: >-
+        Basic m5_esyscmd(printf -- %s 'm5_assert([ENV_OTLP_PASSWORD])' | jq --raw-input --join-output '"loki:\(.)" | @base64')
+service:
+  telemetry:
+    logs:
+      level: warn
+  pipelines:
+    logs:
+      receivers:
+        - *input
+      processors:
+        - *meta
+      exporters:
+        - *output

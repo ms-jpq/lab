@@ -1,0 +1,9 @@
+---
+services:
+  phpmyadmin:
+    image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:latest
+    environment:
+      AWS_ACCESS_KEY_ID:
+      AWS_SECRET_ACCESS_KEY:
+    volumes:
+      - ./conf.yml:/etc/otelcol-contrib/config.yaml:ro

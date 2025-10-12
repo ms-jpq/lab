@@ -36,8 +36,6 @@ processors:
       - >-
         set(resource.attributes["service.name"], "_journald_") where resource.attributes["service.name"] == nil
 exporters:
-  debug:
-    verbosity: detailed
   &output otlphttp:
     endpoint: http://127.0.0.53:3100/otlp
 service:
