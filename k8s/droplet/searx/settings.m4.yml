@@ -3,7 +3,7 @@
 use_default_settings: true
 
 valkey:
-  url: redis://redis:6379/0
+  url: valkey://redis:6379/0
 
 server:
   base_url: https://ask.m5_assert([ENV_DOMAIN])
