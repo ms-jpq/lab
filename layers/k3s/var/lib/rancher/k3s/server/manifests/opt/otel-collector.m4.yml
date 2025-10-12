@@ -22,16 +22,19 @@ spec:
         enabled: true
     config:
       extensions:
-        basicauth/loki:
+        &auth basicauth/client:
           client_auth:
             username: loki
-            password: m5_assert([ENV_LOKI_PASSWORD])
+            password: m5_assert([ENV_OTLP_PASSWORD])
       exporters:
         otlp:
           auth:
-            authenticator: basicauth/loki
+            authenticator: basicauth/client
           endpoint: m5_assert([ENV_OTLP_ENDPOINT])
       service:
+        extensions:
+          - healthcheckv2
+          - *auth
         pipelines:
           logs:
             receivers:
