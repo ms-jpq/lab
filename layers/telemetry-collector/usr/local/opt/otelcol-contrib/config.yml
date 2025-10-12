@@ -12,17 +12,27 @@ receivers:
     retry_on_failure:
       enabled: true
     storage: *cursor
-    # operators:
-    #   - type: copy
-    #     from: body._SYSTEMD_UNIT
-    #     to: resource.service.name
+    operators:
+      - type: remove
+        field: body.__CURSOR
+      - type: remove
+        field: body.__MONOTONIC_TIMESTAMP
+      - type: remove
+        field: body.__SEQNUM
+      - type: remove
+        field: body.__SEQNUM_ID
 processors:
-  &meta resource:
-    attributes:
-      # https://grafana.com/docs/loki/latest/send-data/otel/#format-considerations
-      - key: service.name
-        value: journald
-        action: upsert
+  # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor
+  &meta transform:
+    log_statements:
+      - >-
+        set(resource.attributes["service.name"], log.body["SYSLOG_IDENTIFIER"])
+      - >-
+        set(resource.attributes["service.name"], log.body["_SYSTEMD_UNIT"]) where not IsMatch(log.body["_SYSTEMD_UNIT"], "\\.slice$")
+      - >-
+        set(resource.attributes["service.name"], log.body["_KERNEL_SUBSYSTEM"])
+      - >-
+        set(resource.attributes["service.name"], "_journald_") where resource.attributes["service.name"] == nil
 exporters:
   debug:
     verbosity: detailed
