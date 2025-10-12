@@ -1,6 +1,6 @@
 ---
 services:
-  phpmyadmin:
+  otel-collector:
     image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:latest
     environment:
       AWS_ACCESS_KEY_ID:
