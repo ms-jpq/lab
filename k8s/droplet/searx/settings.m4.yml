@@ -40,6 +40,9 @@ ui:
   results_on_new_tab: false
 
 plugins:
+  searx.plugins.hostnames.SXNGPlugin:
+    active: true
+
   searx.plugins.oa_doi_rewrite.SXNGPlugin:
     active: true
 
