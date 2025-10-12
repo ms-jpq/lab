@@ -10,7 +10,7 @@ receivers:
     region: m5_assert([ENV_AWS_REGION])
 processors:
   &meta transform:
-    log_statements: []
+    log_statements: [[]]
 exporters:
   &output otlphttp:
     endpoint: m5_assert([ENV_OTLP_ENDPOINT])/otlp
