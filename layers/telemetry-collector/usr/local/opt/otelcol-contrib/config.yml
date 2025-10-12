@@ -1,16 +1,24 @@
 # https://opentelemetry.io/docs/collector/configuration/
 ---
+extensions:
+  &cursor file_storage/journald:
+    directory: /var/lib/local/otelcol-contrib
 receivers:
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/journaldreceiver
   &input journald:
-    all: true
     merge: true
+    all: true
+    convert_message_bytes: true
     retry_on_failure:
       enabled: true
+    storage: *cursor
+    operators: []
 exporters:
   &output otlphttp:
     endpoint: http://127.0.0.53:3100/otlp
 service:
+  extensions:
+    - *cursor
   pipelines:
     logs:
       receivers:
