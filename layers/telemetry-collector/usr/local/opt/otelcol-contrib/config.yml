@@ -41,6 +41,9 @@ exporters:
   &output otlphttp:
     endpoint: http://127.0.0.53:3100/otlp
 service:
+  telemetry:
+    logs:
+      level: warn
   extensions:
     - *cursor
   pipelines:

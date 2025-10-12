@@ -28,6 +28,9 @@ spec:
             authorization: >-
               Basic m5_esyscmd(printf -- %s 'm5_assert([ENV_OTLP_PASSWORD])' | jq --raw-input --join-output '"loki:\(.)" | @base64')
       service:
+        telemetry:
+          logs:
+            level: warn
         pipelines:
           logs:
             receivers:
