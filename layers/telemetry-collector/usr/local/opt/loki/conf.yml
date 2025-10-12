@@ -15,6 +15,12 @@ common:
     kvstore:
       store: inmemory
 
+limits_config:
+  ingestion_rate_mb: 69
+  ingestion_burst_size_mb: 420
+  per_stream_rate_limit: 69MB
+  per_stream_rate_limit_burst: 420MB
+
 schema_config:
   configs:
     - store: tsdb
