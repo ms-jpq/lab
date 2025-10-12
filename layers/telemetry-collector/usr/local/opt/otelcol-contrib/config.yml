@@ -12,12 +12,13 @@ receivers:
     retry_on_failure:
       enabled: true
     storage: *cursor
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/operators/README.md#what-operators-are-available
-    operators:
+processors:
+  &meta resource:
+    attributes:
       # https://grafana.com/docs/loki/latest/send-data/otel/#format-considerations
-      - type: add
-        field: resource.service.name
+      - key: service.name
         value: journald
+        action: upsert
 exporters:
   debug:
     verbosity: detailed
@@ -30,5 +31,7 @@ service:
     logs:
       receivers:
         - *input
+      processors:
+        - *meta
       exporters:
         - *output
