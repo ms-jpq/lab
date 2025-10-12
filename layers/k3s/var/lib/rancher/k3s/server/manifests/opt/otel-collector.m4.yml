@@ -21,20 +21,13 @@ spec:
       kubernetesAttributes:
         enabled: true
     config:
-      extensions:
-        &auth basicauth/client:
-          client_auth:
-            username: loki
-            password: m5_assert([ENV_OTLP_PASSWORD])
       exporters:
         otlp:
-          auth:
-            authenticator: basicauth/client
           endpoint: m5_assert([ENV_OTLP_ENDPOINT])
+          headers:
+            authorization: >-
+              Basic m5_esyscmd(printf -- %s 'm5_assert([ENV_OTLP_PASSWORD])' | jq --raw-input --join-output '"loki:\(.)" | @base64')
       service:
-        extensions:
-          - healthcheckv2
-          - *auth
         pipelines:
           logs:
             receivers:
