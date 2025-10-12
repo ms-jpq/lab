@@ -21,8 +21,13 @@ spec:
       kubernetesAttributes:
         enabled: true
     config:
+      processors:
+        &meta transform:
+          log_statements:
+            - >-
+              [set(resource.attributes["service.namespace"], "k3s")]
       exporters:
-        otlphttp:
+        &out otlphttp:
           endpoint: m5_assert([ENV_OTLP_ENDPOINT])/otlp
           headers:
             authorization: >-
@@ -35,5 +40,7 @@ spec:
           logs:
             receivers:
               - filelog
+            processors:
+              - *meta
             exporters:
-              - otlphttp
+              - *out
