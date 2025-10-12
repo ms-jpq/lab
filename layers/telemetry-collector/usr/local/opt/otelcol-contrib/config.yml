@@ -12,6 +12,10 @@ receivers:
     retry_on_failure:
       enabled: true
     storage: *cursor
+    # operators:
+    #   - type: copy
+    #     from: body._SYSTEMD_UNIT
+    #     to: resource.service.name
 processors:
   &meta resource:
     attributes:
