@@ -22,8 +22,8 @@ spec:
         enabled: true
     config:
       exporters:
-        otlp:
-          endpoint: m5_assert([ENV_OTLP_ENDPOINT])
+        otlphttp:
+          endpoint: m5_assert([ENV_OTLP_ENDPOINT])/otlp
           headers:
             authorization: >-
               Basic m5_esyscmd(printf -- %s 'm5_assert([ENV_OTLP_PASSWORD])' | jq --raw-input --join-output '"loki:\(.)" | @base64')
@@ -33,4 +33,4 @@ spec:
             receivers:
               - filelog
             exporters:
-              - otlp
+              - otlphttp
