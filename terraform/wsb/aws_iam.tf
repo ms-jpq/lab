@@ -38,7 +38,7 @@ locals {
     s2            = { doc = data.aws_iam_policy_document.s2, users = local.s2_users }
     smtp          = { doc = data.aws_iam_policy_document.smtp, users = local.smtp_users }
     s2-debs       = { doc = data.aws_iam_policy_document.deb_bucket, users = local.s3_deb_users }
-    cloudwatch-ro = { doc = {json = data.aws_iam_policy.cloudwatch_ro.policy}, users = local.cloudwatch_users }
+    cloudwatch-ro = { doc = { json = data.aws_iam_policy.cloudwatch_ro.policy }, users = local.cloudwatch_users }
   }
 }
 
@@ -82,15 +82,15 @@ resource "local_sensitive_file" "s2" {
   for_each = merge(
     {
       for user in local.s2_users :
-      user => {prefix = "s2", data = aws_iam_access_key.iam["s2-${user}"]}
+      user => { prefix = "s2", data = aws_iam_access_key.iam["s2-${user}"] }
     },
     {
       for user in local.s3_deb_users :
-      user => {prefix = "s2", data = aws_iam_access_key.iam["s2-debs-${user}"]}
+      user => { prefix = "s2", data = aws_iam_access_key.iam["s2-debs-${user}"] }
     },
     {
       for user in local.cloudwatch_users :
-      user => {prefix = "cw", data = aws_iam_access_key.iam["cloudwatch-ro-${user}"]}
+      user => { prefix = "cw", data = aws_iam_access_key.iam["cloudwatch-ro-${user}"] }
     }
   )
   filename = "${path.module}/../../facts/${each.value.prefix}.${each.key}.env.ini"

@@ -1,0 +1,4 @@
+[Delegate]
+DefaultRoute = yes
+DNS          = 127.0.0.53:3535
+Domains      = ~.
