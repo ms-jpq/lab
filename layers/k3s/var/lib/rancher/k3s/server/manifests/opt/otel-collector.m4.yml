@@ -25,7 +25,7 @@ spec:
         &meta transform:
           log_statements:
             - >-
-              [set(resource.attributes["service.namespace"], "k3s")]
+              set(resource.attributes[["k8s.cluster.name"]], "k3s.m5_assert([ENV_MACHINE])")
       exporters:
         &out otlphttp:
           endpoint: m5_assert([ENV_OTLP_ENDPOINT])/otlp
