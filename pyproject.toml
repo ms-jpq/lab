@@ -6,7 +6,6 @@ dependencies = [
   "s3cmd@https://github.com/s3tools/s3cmd/archive/heads/master.tar.gz",
   "elasticsearch",
   "aws-lambda-powertools",
-  "miniflux",
 ]
 
 [project.optional-dependencies]
