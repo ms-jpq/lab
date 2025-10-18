@@ -4,7 +4,6 @@ services:
     image: ghcr.io/techarohq/anubis:main
     labels:
       kompose.service.expose: twitter.${DOMAIN}
-      traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-sablier@kubernetescrd
     environment:
       COOKIE_DOMAIN: ${DOMAIN}
       ED25519_PRIVATE_KEY_HEX: m5_esyscmd([printf -- %s 'DOMAIN' | b3sum | cut -d ' ' -f 1])

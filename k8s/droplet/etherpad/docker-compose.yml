@@ -4,7 +4,6 @@ services:
     image: docker.io/etherpad/etherpad:latest
     labels:
       kompose.service.expose: docs.${DOMAIN}
-      traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-sablier@kubernetescrd
     healthcheck:
       test:
         - CMD

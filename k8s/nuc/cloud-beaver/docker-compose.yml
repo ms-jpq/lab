@@ -6,7 +6,6 @@ services:
       kompose.controller.type: statefulset
       kompose.service.expose: sql.${DOMAIN}
       kompose.volume.type: hostPath
-      traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-sablier@kubernetescrd
     healthcheck:
       test:
         - CMD

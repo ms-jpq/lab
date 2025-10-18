@@ -5,7 +5,6 @@ services:
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: pastebin.${DOMAIN}
-      traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-sablier@kubernetescrd
     healthcheck:
       test:
         - CMD

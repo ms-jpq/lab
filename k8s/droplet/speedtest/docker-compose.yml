@@ -4,7 +4,6 @@ services:
     image: ghcr.io/librespeed/speedtest:latest
     labels:
       kompose.service.expose: speedtest.${DOMAIN}
-      traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-sablier@kubernetescrd
     healthcheck:
       test:
         - CMD

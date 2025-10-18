@@ -4,7 +4,6 @@ services:
     image: docker.io/excalidraw/excalidraw:latest
     labels:
       kompose.service.expose: draw.${DOMAIN}
-      traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-sablier@kubernetescrd
     healthcheck:
       test:
         - CMD

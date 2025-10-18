@@ -32,8 +32,3 @@ spec:
     metrics:
       prometheus:
         entryPoint: traefik
-    experimental:
-      plugins:
-        sablier:
-          moduleName: github.com/sablierapp/sablier
-          version: v1.10.1

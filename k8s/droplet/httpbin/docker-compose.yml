@@ -4,6 +4,5 @@ services:
     image: docker.io/kennethreitz/httpbin:latest
     labels:
       kompose.service.expose: http.${DOMAIN}
-      traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-sablier@kubernetescrd
     ports:
       - 80
