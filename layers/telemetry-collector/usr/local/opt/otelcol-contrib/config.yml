@@ -28,13 +28,13 @@ processors:
       - >-
         set(resource.attributes["service.namespace"], log.body["_HOSTNAME"]) where log.body["_HOSTNAME"] != nil
       - >-
+        set(resource.attributes["service.name"], "_journald_")
+      - >-
         set(resource.attributes["service.name"], log.body["SYSLOG_IDENTIFIER"])
       - >-
         set(resource.attributes["service.name"], log.body["_SYSTEMD_UNIT"]) where not IsMatch(log.body["_SYSTEMD_UNIT"], "\\.slice$")
       - >-
         set(resource.attributes["service.name"], log.body["_KERNEL_SUBSYSTEM"])
-      - >-
-        set(resource.attributes["service.name"], "_journald_") where resource.attributes["service.name"] == nil
 exporters:
   &output otlphttp:
     endpoint: http://127.0.0.53:3100/otlp
