@@ -19,12 +19,21 @@ resource "aws_apigatewayv2_integration" "tube" {
   integration_type    = "AWS_PROXY"
 
   request_parameters = {
-    QueueUrl = aws_sqs_queue.sink.id
-    MessageBody = jsonencode({
-      method  = "$${request.method}"
-      path    = "$${request.path}"
-      headers = "$${request.header.*}"
-      body    = "$${request.body.*}"
+    QueueUrl    = aws_sqs_queue.sink.id
+    MessageBody = "$request.body"
+    MessageAttributes = jsonencode({
+      method = {
+        DataType    = "String"
+        StringValue = "$${request.method}"
+      }
+      path = {
+        DataType    = "String"
+        StringValue = "$${request.path}"
+      }
+      headers = {
+        DataType    = "String"
+        StringValue = "$${request.header.*}"
+      }
     })
   }
 }
