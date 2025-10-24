@@ -30,10 +30,6 @@ resource "aws_apigatewayv2_integration" "tube" {
         DataType    = "String"
         StringValue = "$${request.path}"
       }
-      ContentType = {
-        DataType    = "String"
-        StringValue = "$${request.header.content-type}"
-      }
     })
   }
 }
