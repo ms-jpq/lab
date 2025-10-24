@@ -43,3 +43,9 @@ resource "aws_apigatewayv2_route" "umbrella" {
   route_key = "$default"
   target    = "integrations/${aws_apigatewayv2_integration.tube.id}"
 }
+
+output "apigateway" {
+  value = {
+    endpoint = aws_apigatewayv2_api.funnel.api_endpoint
+  }
+}
