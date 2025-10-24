@@ -5,16 +5,8 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6"
     }
-    digitalocean = {
-      source  = "digitalocean/digitalocean"
-      version = "~> 2"
-    }
-    google = {
-      source  = "hashicorp/google"
-      version = "~> 7"
-    }
-    local = {
-      source  = "hashicorp/local"
+    archive = {
+      source  = "hashicorp/archive"
       version = "~> 2"
     }
   }
@@ -25,7 +17,7 @@ terraform {
     bucket                   = "kfc-tfstate"
     dynamodb_table           = "tfstate"
     encrypt                  = true
-    key                      = "wsb.json"
+    key                      = "wtc9.json"
     profile                  = "sudo"
     region                   = "ca-west-1"
     shared_credentials_files = ["../../facts/aws.sudo.env.ini"]
