@@ -11,7 +11,7 @@ terraform {
     }
     cloudinit = {
       source  = "hashicorp/cloudinit"
-      version = "~> 5"
+      version = "~> 2"
     }
     http = {
       source  = "hashicorp/http"

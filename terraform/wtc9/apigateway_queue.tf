@@ -21,11 +21,8 @@ resource "aws_apigatewayv2_integration" "tube" {
   request_parameters = {
     QueueUrl    = aws_sqs_queue.sink.id
     MessageBody = jsonencode({
-      body        = "$request.body"
-      headers     = "$request.header"
-      method      = "$context.httpMethod"
-      path        = "$context.path"
-      queryString = "$request.querystring"
+      request = "$request"
+      context = "$context"
     })
   }
 }

@@ -17,15 +17,15 @@ data "aws_iam_policy_document" "gateway_sqs_integration" {
       "sqs:SendMessage",
     ]
     effect    = "Allow"
-    resources = [aws_sqs_queue.api_queue.arn]
+    resources = [aws_sqs_queue.sink.arn]
   }
 }
 
 resource "aws_iam_role" "api_gateway_sqs" {
-  assume_role_policy = data.aws_iam_policy_document.gateway_sqs_integration.json
+  assume_role_policy = data.aws_iam_policy_document.gateway_allowed.json
 }
 
 resource "aws_iam_role_policy" "api_gateway_sqs" {
-  policy = data.aws_iam_policy_document.gateway_allowed.json
-  role = aws_iam_role.api_gateway_sqs.id
+  policy = data.aws_iam_policy_document.gateway_sqs_integration.json
+  role   = aws_iam_role.api_gateway_sqs.id
 }
