@@ -22,17 +22,17 @@ resource "aws_apigatewayv2_integration" "tube" {
     QueueUrl    = aws_sqs_queue.sink.id
     MessageBody = "$request.body"
     MessageAttributes = jsonencode({
-      method = {
+      Method = {
         DataType    = "String"
-        StringValue = "$${request.method}"
+        StringValue = "$${context.httpMethod}"
       }
-      path = {
+      Path = {
         DataType    = "String"
         StringValue = "$${request.path}"
       }
-      headers = {
+      Headers = {
         DataType    = "String"
-        StringValue = "$${request.header.*}"
+        StringValue = "ok"
       }
     })
   }
