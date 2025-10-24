@@ -10,7 +10,7 @@ data "aws_iam_policy_document" "maildir" {
   }
 }
 
-data "aws_iam_policy_document" "mta" {
+data "aws_iam_policy_document" "allow_lambda" {
   statement {
     actions = ["sts:AssumeRole"]
     effect  = "Allow"
@@ -48,7 +48,7 @@ resource "aws_s3_bucket_policy" "maildir" {
 
 resource "aws_iam_role" "mta" {
   provider           = aws.us_e1
-  assume_role_policy = data.aws_iam_policy_document.mta.json
+  assume_role_policy = data.aws_iam_policy_document.allow_lambda.json
 }
 
 resource "aws_lambda_permission" "mta" {

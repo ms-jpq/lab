@@ -14,12 +14,13 @@ resource "aws_apigatewayv2_stage" "one_wtc" {
 
 resource "aws_apigatewayv2_integration" "tube" {
   api_id              = aws_apigatewayv2_api.funnel.id
+  credentials_arn     = aws_iam_role.api_gateway_sqs.arn
   integration_subtype = "SQS-SendMessage"
   integration_type    = "AWS_PROXY"
 
   request_parameters = {
-    QueueUrl = aws_sqs_queue.sink.id
-    MessageBody =jsonencode({
+    QueueUrl    = aws_sqs_queue.sink.id
+    MessageBody = jsonencode({
       body        = "$request.body"
       headers     = "$request.header"
       method      = "$context.httpMethod"
