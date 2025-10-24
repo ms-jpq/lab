@@ -30,9 +30,9 @@ resource "aws_apigatewayv2_integration" "tube" {
         DataType    = "String"
         StringValue = "$${request.path}"
       }
-      Headers = {
+      UserAgent = {
         DataType    = "String"
-        StringValue = "ok"
+        StringValue = "$${request.header.user-agent}"
       }
     })
   }
