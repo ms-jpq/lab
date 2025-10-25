@@ -6,7 +6,7 @@ locals {
 
 data "archive_file" "mta" {
   output_path = "${path.module}/../../var/mta.zip"
-  source_dir  = "${path.module}/mta"
+  source_dir  = "${path.module}/lambdas"
   type        = "zip"
 }
 
@@ -14,8 +14,8 @@ resource "aws_lambda_function" "mta" {
   provider         = aws.us_e1
   architectures    = [local.lambda_arch]
   filename         = data.archive_file.mta.output_path
-  function_name    = basename(data.archive_file.mta.source_dir)
-  handler          = "mda.lambda.main"
+  function_name    = "mta"
+  handler          = "mta.lambda.main"
   layers           = [local.lambda_layer]
   role             = aws_iam_role.mta.arn
   runtime          = local.lambda_rt
