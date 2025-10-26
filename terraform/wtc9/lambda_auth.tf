@@ -4,7 +4,7 @@ locals {
   lambda_layer = "arn:aws:lambda:${local.aws_regions.ca_w1}:017000801446:layer:AWSLambdaPowertoolsPythonV3-${replace(local.lambda_rt, ".", "")}-${local.lambda_arch}:1"
 }
 
-data "archive_file" "okta" {
+data "archive_file" "haskell" {
   output_path = "${path.module}/../../var/skyhook.zip"
   source_dir  = "${path.module}/lambdas"
   type        = "zip"
@@ -37,13 +37,13 @@ resource "aws_iam_role_policy_attachment" "okta" {
 resource "aws_lambda_function" "okta" {
   provider         = aws.ca_w1
   architectures    = [local.lambda_arch]
-  filename         = data.archive_file.okta.output_path
+  filename         = data.archive_file.haskell.output_path
   function_name    = "okta"
   handler          = "okta.entry.main"
   layers           = [local.lambda_layer]
   role             = aws_iam_role.okta.arn
   runtime          = local.lambda_rt
-  source_code_hash = data.archive_file.okta.output_base64sha256
+  source_code_hash = data.archive_file.haskell.output_base64sha256
 
   environment {
     variables = {}
@@ -73,10 +73,4 @@ resource "aws_cloudwatch_log_group" "okta" {
   provider          = aws.ca_w1
   name              = "/aws/lambda/${aws_lambda_function.okta.function_name}"
   retention_in_days = 1
-}
-
-output "logging" {
-  value = {
-    auth = "aws --region ${local.aws_regions.ca_w1} logs tail ${aws_cloudwatch_log_group.okta.name} --follow"
-  }
 }
