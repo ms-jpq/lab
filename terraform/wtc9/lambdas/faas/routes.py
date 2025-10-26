@@ -8,5 +8,5 @@ with nullcontext():
 
 
 @app.get("/")
-def root() -> Response:
+def root() -> Response[None]:
     return Response(status_code=204)
