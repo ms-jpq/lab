@@ -20,7 +20,7 @@ resource "aws_lambda_function" "okta" {
   architectures    = [local.lambda_arch]
   filename         = data.archive_file.okta.output_path
   function_name    = "okta"
-  handler          = "okta.lambda.main"
+  handler          = "okta.entry.main"
   layers           = [local.lambda_layer]
   role             = aws_iam_role.okta.arn
   runtime          = local.lambda_rt

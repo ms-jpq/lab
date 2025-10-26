@@ -1,5 +1,6 @@
 from collections.abc import Mapping
-from logging import getLogger
+from contextlib import nullcontext
+from logging import INFO, captureWarnings, getLogger
 from typing import Any
 
 from aws_lambda_powertools.utilities.data_classes import (
@@ -7,6 +8,10 @@ from aws_lambda_powertools.utilities.data_classes import (
     event_source,
 )
 from aws_lambda_powertools.utilities.typing import LambdaContext
+
+with nullcontext():
+    captureWarnings(True)
+    getLogger().setLevel(INFO)
 
 
 @event_source(data_class=LambdaFunctionUrlEvent)
