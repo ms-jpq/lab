@@ -4,10 +4,10 @@ from logging import INFO, captureWarnings, getLogger
 from typing import Any
 
 from aws_lambda_powertools.utilities.data_classes import (
-    LambdaFunctionUrlEvent,
     event_source,
 )
 from aws_lambda_powertools.utilities.data_classes.api_gateway_authorizer_event import (
+    APIGatewayAuthorizerEventV2,
     APIGatewayAuthorizerResponseV2,
 )
 from aws_lambda_powertools.utilities.typing import LambdaContext
@@ -17,9 +17,12 @@ with nullcontext():
     getLogger().setLevel(INFO)
 
 
-@event_source(data_class=LambdaFunctionUrlEvent)
-def main(event: LambdaFunctionUrlEvent, _: LambdaContext) -> Mapping[str, Any]:
+@event_source(data_class=APIGatewayAuthorizerEventV2)
+def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, Any]:
     getLogger().info("%s", ">>> >>> >>>")
-    __ = event.path
 
-    return APIGatewayAuthorizerResponseV2(authorize=True).asdict()
+    match event.raw_path:
+        case "/":
+            return APIGatewayAuthorizerResponseV2(authorize=True).asdict()
+        case _:
+            return APIGatewayAuthorizerResponseV2(authorize=False).asdict()

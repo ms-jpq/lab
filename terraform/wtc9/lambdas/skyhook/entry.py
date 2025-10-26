@@ -22,7 +22,6 @@ def _main() -> Iterator[None]:
 
 @event_source(data_class=SQSEvent)
 def main(event: SQSEvent, _: LambdaContext) -> PartialItemFailureResponse:
-
     with _main():
         for record in event.records:
             getLogger().info("%s", record.message_id)
