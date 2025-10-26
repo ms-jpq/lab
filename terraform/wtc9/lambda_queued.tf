@@ -11,22 +11,6 @@ data "aws_iam_policy_document" "skyhook" {
   }
 }
 
-resource "aws_iam_role" "skyhook" {
-  provider           = aws.ca_w1
-  assume_role_policy = data.aws_iam_policy_document.allow_lambda.json
-}
-
-resource "aws_iam_policy" "skyhook" {
-  provider = aws.ca_w1
-  policy   = data.aws_iam_policy_document.skyhook.json
-}
-
-resource "aws_iam_role_policy_attachment" "skyhook" {
-  provider   = aws.ca_w1
-  role       = aws_iam_role.skyhook.name
-  policy_arn = aws_iam_policy.skyhook.arn
-}
-
 resource "aws_lambda_function" "skyhook" {
   provider         = aws.ca_w1
   architectures    = [local.lambda_arch]
@@ -34,7 +18,7 @@ resource "aws_lambda_function" "skyhook" {
   function_name    = "skyhook"
   handler          = "skyhook.entry.main"
   layers           = [local.lambda_layer]
-  role             = aws_iam_role.skyhook.arn
+  role             = aws_iam_role.lambdas.skyhook.arn
   runtime          = local.lambda_rt
   source_code_hash = data.archive_file.haskell.output_base64sha256
 
