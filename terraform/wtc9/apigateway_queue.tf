@@ -33,10 +33,3 @@ resource "aws_apigatewayv2_route" "umbrella" {
   route_key          = "$default"
   target             = "integrations/${aws_apigatewayv2_integration.tube.id}"
 }
-
-output "logging" {
-  value = {
-    auth    = "aws --region ${local.aws_regions.ca_w1} logs tail ${aws_cloudwatch_log_group.okta.name} --follow"
-    skyhook = "aws --region ${local.aws_regions.ca_w1} logs tail ${aws_cloudwatch_log_group.skyhook.name} --follow"
-  }
-}

@@ -1,16 +1,10 @@
-locals {
-  lambda_region = local.aws_regions.ca_w1
-  lambda_functions = {
-    okta    = { policy = data.aws_iam_policy_document.ppv }
-    ppv     = { policy = data.aws_iam_policy_document.ppv }
-    skyhook = { policy = data.aws_iam_policy_document.skyhook }
+data "aws_iam_policy_document" "allow_cloudwatch" {
+  for_each = local.lambda_functions
+  statement {
+    actions   = ["logs:CreateLogStream", "logs:PutLogEvents"]
+    effect    = "Allow"
+    resources = ["${aws_cloudwatch_log_group.lambdas[each.key].arn}:*"]
   }
-}
-
-data "archive_file" "haskell" {
-  output_path = "${path.module}/../../var/skyhook.zip"
-  source_dir  = "${path.module}/lambdas"
-  type        = "zip"
 }
 
 resource "aws_iam_role" "lambdas" {
@@ -22,7 +16,7 @@ resource "aws_iam_role" "lambdas" {
 resource "aws_iam_policy" "lambdas" {
   for_each = local.lambda_functions
   provider = aws.ca_w1
-  policy   = each.value.policy.json
+  policy   = data.aws_iam_policy_document.allow_cloudwatch[each.key].json
 }
 
 resource "aws_iam_role_policy_attachment" "lambdas" {
@@ -30,4 +24,15 @@ resource "aws_iam_role_policy_attachment" "lambdas" {
   provider   = aws.ca_w1
   role       = aws_iam_role.lambdas[each.key].name
   policy_arn = aws_iam_policy.lambdas[each.key].arn
+}
+
+resource "aws_cloudwatch_log_group" "lambdas" {
+  for_each          = local.lambda_functions
+  name              = "/aws/lambda/${each.key}"
+  region            = local.lambda_region
+  retention_in_days = 1
+}
+
+output "lambda_logging" {
+  value = {for name, log in aws_cloudwatch_log_group.lambdas : name => "aws --region ${log.region} logs tail ${log.name} --follow"}
 }
