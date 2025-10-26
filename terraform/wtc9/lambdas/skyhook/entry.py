@@ -2,6 +2,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager, nullcontext
 from logging import INFO, captureWarnings, getLogger
 
+from aws_lambda_powertools.utilities.batch.types import PartialItemFailureResponse
 from aws_lambda_powertools.utilities.data_classes import SQSEvent, event_source
 from aws_lambda_powertools.utilities.typing import LambdaContext
 
@@ -20,8 +21,10 @@ def _main() -> Iterator[None]:
 
 
 @event_source(data_class=SQSEvent)
-def main(event: SQSEvent, _: LambdaContext) -> None:
+def main(event: SQSEvent, _: LambdaContext) -> PartialItemFailureResponse:
 
     with _main():
         for record in event.records:
             getLogger().info("%s", record.message_id)
+
+        return {"batchItemFailures": []}

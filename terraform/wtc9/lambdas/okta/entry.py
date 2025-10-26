@@ -7,6 +7,9 @@ from aws_lambda_powertools.utilities.data_classes import (
     LambdaFunctionUrlEvent,
     event_source,
 )
+from aws_lambda_powertools.utilities.data_classes.api_gateway_authorizer_event import (
+    APIGatewayAuthorizerResponseV2,
+)
 from aws_lambda_powertools.utilities.typing import LambdaContext
 
 with nullcontext():
@@ -19,4 +22,4 @@ def main(event: LambdaFunctionUrlEvent, _: LambdaContext) -> Mapping[str, Any]:
     getLogger().info("%s", ">>> >>> >>>")
     __ = event.path
 
-    return {"isAuthorized": True, "context": {}}
+    return APIGatewayAuthorizerResponseV2(authorize=True).asdict()
