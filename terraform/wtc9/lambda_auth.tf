@@ -24,7 +24,7 @@ resource "aws_iam_role" "okta" {
 }
 
 resource "aws_iam_policy" "okta" {
-  provider   = aws.ca_w1
+  provider = aws.ca_w1
   policy   = data.aws_iam_policy_document.okta.json
 }
 

@@ -17,7 +17,7 @@ resource "aws_iam_role" "skyhook" {
 }
 
 resource "aws_iam_policy" "skyhook" {
-  provider   = aws.ca_w1
+  provider = aws.ca_w1
   policy   = data.aws_iam_policy_document.skyhook.json
 }
 
@@ -43,13 +43,10 @@ resource "aws_lambda_function" "skyhook" {
   }
 }
 
-resource "aws_lambda_permission" "skyhook" {
-  provider      = aws.ca_w1
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.skyhook.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.skyhook.execution_arn}/*"
-  statement_id  = "AllowAPIGatewayInvoke"
+resource "aws_lambda_event_source_mapping" "skyhook" {
+  provider         = aws.ca_w1
+  event_source_arn = aws_sqs_queue.sink.arn
+  function_name    = aws_lambda_function.skyhook.arn
 }
 
 resource "aws_cloudwatch_log_group" "skyhook" {
