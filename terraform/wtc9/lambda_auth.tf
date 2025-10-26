@@ -32,13 +32,13 @@ resource "aws_lambda_permission" "okta" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.okta.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.funnel.execution_arn}/*/*"
+  source_arn    = "${aws_apigatewayv2_api.skyhook.execution_arn}/*/*"
   statement_id  = "AllowAPIGatewayInvoke"
 }
 
 resource "aws_apigatewayv2_authorizer" "okta" {
   provider                          = aws.ca_w1
-  api_id                            = aws_apigatewayv2_api.funnel.id
+  api_id                            = aws_apigatewayv2_api.skyhook.id
   authorizer_payload_format_version = "2.0"
   authorizer_type                   = "REQUEST"
   authorizer_uri                    = aws_lambda_function.okta.invoke_arn
