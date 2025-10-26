@@ -1,7 +1,7 @@
 locals {
   lambda_rt    = "python3.12"
   lambda_arch  = "arm64"
-  lambda_layer = "arn:aws:lambda:us-east-1:017000801446:layer:AWSLambdaPowertoolsPythonV3-${replace(local.lambda_rt, ".", "")}-${local.lambda_arch}:1"
+  lambda_layer = "arn:aws:lambda:${local.aws_regions.us_e1}:017000801446:layer:AWSLambdaPowertoolsPythonV3-${replace(local.lambda_rt, ".", "")}-${local.lambda_arch}:1"
 }
 
 data "archive_file" "mta" {

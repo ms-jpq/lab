@@ -1,26 +1,30 @@
 locals {
   lambda_rt    = "python3.12"
   lambda_arch  = "arm64"
-  lambda_layer = "arn:aws:lambda:us-east-1:017000801446:layer:AWSLambdaPowertoolsPythonV3-${replace(local.lambda_rt, ".", "")}-${local.lambda_arch}:1"
+  lambda_layer = "arn:aws:lambda:${local.aws_regions.ca_w1}:017000801446:layer:AWSLambdaPowertoolsPythonV3-${replace(local.lambda_rt, ".", "")}-${local.lambda_arch}:1"
 }
 
 data "archive_file" "okta" {
-  output_path = "${path.module}/../../var/okta.zip"
-  source_dir  = "${path.module}/okta"
+  output_path = "${path.module}/../../var/skyhook.zip"
+  source_dir  = "${path.module}/lambdas"
   type        = "zip"
+}
+
+resource "aws_iam_role" "okta" {
+  provider           = aws.ca_w1
+  assume_role_policy = data.aws_iam_policy_document.allow_lambda.json
 }
 
 resource "aws_lambda_function" "okta" {
   provider         = aws.ca_w1
   architectures    = [local.lambda_arch]
   filename         = data.archive_file.okta.output_path
-  function_name    = basename(data.archive_file.okta.source_dir)
-  handler          = "mda.lambda.main"
+  function_name    = "okta"
+  handler          = "okta.lambda.main"
   layers           = [local.lambda_layer]
   role             = aws_iam_role.okta.arn
   runtime          = local.lambda_rt
   source_code_hash = data.archive_file.okta.output_base64sha256
-  timeout          = local.timeouts.lambda
 
   environment {
     variables = {}
@@ -53,5 +57,7 @@ resource "aws_cloudwatch_log_group" "okta" {
 }
 
 output "logging" {
-  value = "aws --region ${local.aws_regions.ca_w1} logs tail ${aws_cloudwatch_log_group.okta.name} --follow"
+  value = {
+    auth = "aws --region ${local.aws_regions.ca_w1} logs tail ${aws_cloudwatch_log_group.okta.name} --follow"
+  }
 }
