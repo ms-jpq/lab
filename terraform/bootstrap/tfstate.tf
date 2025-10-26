@@ -1,16 +1,5 @@
-resource "aws_dynamodb_table" "tfstate" {
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "LockID"
-  name         = "tfstate"
-
-  attribute {
-    name = "LockID"
-    type = "S"
-  }
-}
-
 resource "aws_s3_bucket" "tfstate" {
-  bucket        = "kfc-${aws_dynamodb_table.tfstate.id}"
+  bucket        = "kfc-tfstate"
   force_destroy = true
   lifecycle {
     prevent_destroy = true
@@ -50,6 +39,5 @@ resource "aws_s3_bucket_lifecycle_configuration" "tfstate" {
 output "tfstate" {
   value = {
     bucket = aws_s3_bucket.tfstate.id
-    table  = aws_dynamodb_table.tfstate.id
   }
 }
