@@ -10,9 +10,28 @@ data "archive_file" "okta" {
   type        = "zip"
 }
 
+data "aws_iam_policy_document" "okta" {
+  statement {
+    actions   = ["logs:CreateLogStream", "logs:PutLogEvents"]
+    effect    = "Allow"
+    resources = ["${aws_cloudwatch_log_group.okta.arn}:*"]
+  }
+}
+
 resource "aws_iam_role" "okta" {
   provider           = aws.ca_w1
   assume_role_policy = data.aws_iam_policy_document.allow_lambda.json
+}
+
+resource "aws_iam_policy" "okta" {
+  provider   = aws.ca_w1
+  policy   = data.aws_iam_policy_document.okta.json
+}
+
+resource "aws_iam_role_policy_attachment" "okta" {
+  provider   = aws.ca_w1
+  role       = aws_iam_role.okta.name
+  policy_arn = aws_iam_policy.okta.arn
 }
 
 resource "aws_lambda_function" "okta" {
@@ -36,7 +55,7 @@ resource "aws_lambda_permission" "okta" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.okta.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.skyhook.execution_arn}/*/*"
+  source_arn    = "${aws_apigatewayv2_api.skyhook.execution_arn}/*"
   statement_id  = "AllowAPIGatewayInvoke"
 }
 

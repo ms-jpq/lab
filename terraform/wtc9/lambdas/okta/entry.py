@@ -17,6 +17,6 @@ with nullcontext():
 @event_source(data_class=LambdaFunctionUrlEvent)
 def main(event: LambdaFunctionUrlEvent, _: LambdaContext) -> Mapping[str, Any]:
     getLogger().info("%s", ">>> >>> >>>")
-    getLogger().info("%s", event)
+    __ = event.path
 
     return {"isAuthorized": True, "context": {}}
