@@ -4,6 +4,11 @@ data "aws_iam_policy_document" "skyhook" {
     effect    = "Allow"
     resources = ["${aws_cloudwatch_log_group.skyhook.arn}:*"]
   }
+  statement {
+    actions   = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes"]
+    effect    = "Allow"
+    resources = [aws_sqs_queue.sink.arn]
+  }
 }
 
 resource "aws_iam_role" "skyhook" {

@@ -12,14 +12,14 @@ data "aws_iam_policy_document" "maildir" {
 
 data "aws_iam_policy_document" "port_auth" {
   statement {
-    actions   = ["sns:Publish"]
-    effect    = "Allow"
-    resources = [aws_sns_topic.sink.arn]
-  }
-  statement {
     actions   = ["logs:CreateLogStream", "logs:PutLogEvents"]
     effect    = "Allow"
     resources = ["${aws_cloudwatch_log_group.mta.arn}:*"]
+  }
+  statement {
+    actions   = ["sns:Publish"]
+    effect    = "Allow"
+    resources = [aws_sns_topic.sink.arn]
   }
   statement {
     actions   = ["s3:GetObject", "s3:DeleteObject", "s3:ListBucket"]
