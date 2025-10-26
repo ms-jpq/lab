@@ -1,0 +1,1 @@
+../wtc7/lambda_vars.tf

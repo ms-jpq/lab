@@ -1,7 +1,5 @@
 locals {
-  lambda_rt    = "python3.13"
-  lambda_arch  = "arm64"
-  lambda_layer = "arn:aws:lambda:${local.aws_regions.ca_w1}:017000801446:layer:AWSLambdaPowertoolsPythonV3-${replace(local.lambda_rt, ".", "")}-${local.lambda_arch}:23"
+  lambda_region = local.aws_regions.ca_w1
 }
 
 data "archive_file" "haskell" {
