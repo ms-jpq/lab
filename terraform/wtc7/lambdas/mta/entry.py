@@ -63,6 +63,16 @@ def _pool() -> Iterator[Executor]:
             pool.shutdown(wait=True, cancel_futures=True)
 
 
+@contextmanager
+def _main() -> Iterator[None]:
+    with benchmark(name="main"):
+        getLogger().info("%s", ">>> >>> >>>")
+        try:
+            yield
+        finally:
+            getLogger().info("%s", "<<< <<< <<<")
+
+
 _cold_start = True
 _lock = RLock()
 
@@ -71,9 +81,7 @@ _lock = RLock()
 def main(event: S3Event, _: LambdaContext) -> None:
     global _cold_start
 
-    with benchmark(name="main"):
-        getLogger().info("%s", ">>> >>> >>>")
-
+    with _main():
         with _lock:
             s = sieve if _cold_start else reload(sieve)
             _cold_start = False
@@ -124,5 +132,3 @@ def main(event: S3Event, _: LambdaContext) -> None:
             exn = ExceptionGroup(name, errs)
             getLogger().exception("%s", exn)
             raise exn from err
-
-        getLogger().info("%s", "<<< <<< <<<")
