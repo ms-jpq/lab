@@ -39,10 +39,12 @@ resource "aws_apigatewayv2_integration" "tube" {
 }
 
 resource "aws_apigatewayv2_route" "umbrella" {
-  provider  = aws.ca_w1
-  api_id    = aws_apigatewayv2_api.skyhook.id
-  route_key = "$default"
-  target    = "integrations/${aws_apigatewayv2_integration.tube.id}"
+  provider           = aws.ca_w1
+  api_id             = aws_apigatewayv2_api.skyhook.id
+  authorization_type = "CUSTOM"
+  authorizer_id      = aws_apigatewayv2_authorizer.okta.id
+  route_key          = "$default"
+  target             = "integrations/${aws_apigatewayv2_integration.tube.id}"
 }
 
 output "apigateway" {
