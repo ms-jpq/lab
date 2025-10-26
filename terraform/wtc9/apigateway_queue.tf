@@ -56,6 +56,6 @@ output "apigateway" {
 output "logging" {
   value = {
     auth    = "aws --region ${local.aws_regions.ca_w1} logs tail ${aws_cloudwatch_log_group.okta.name} --follow"
-    skyhook = "aws --region ${local.aws_regions.ca_w1} logs tail ${aws_cloudwatch_log_group.okta.name} --follow"
+    skyhook = "aws --region ${local.aws_regions.ca_w1} logs tail ${aws_cloudwatch_log_group.skyhook.name} --follow"
   }
 }
