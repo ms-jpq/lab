@@ -29,9 +29,9 @@ data "aws_iam_policy_document" "port_auth" {
 }
 
 resource "aws_s3_bucket_policy" "maildir" {
-  bucket   = aws_s3_bucket.maildir.id
-  policy   = data.aws_iam_policy_document.maildir.json
-  region   = aws_s3_bucket.maildir.region
+  bucket = aws_s3_bucket.maildir.id
+  policy = data.aws_iam_policy_document.maildir.json
+  region = aws_s3_bucket.maildir.region
 }
 
 resource "aws_iam_role" "mta" {
