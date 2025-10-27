@@ -2,7 +2,7 @@ resource "aws_sqs_queue" "sink" {
   region = aws_apigatewayv2_api.faas.region
 }
 
-resource "aws_apigatewayv2_integration" "tube" {
+resource "aws_apigatewayv2_integration" "sink" {
   api_id              = aws_apigatewayv2_api.faas.id
   credentials_arn     = aws_iam_role.api_gateway_sqs.arn
   integration_subtype = "SQS-SendMessage"
@@ -23,13 +23,4 @@ resource "aws_apigatewayv2_integration" "tube" {
       }
     })
   }
-}
-
-resource "aws_apigatewayv2_route" "umbrella" {
-  region             = aws_apigatewayv2_api.faas.region
-  api_id             = aws_apigatewayv2_api.faas.id
-  authorization_type = "CUSTOM"
-  authorizer_id      = aws_apigatewayv2_authorizer.okta.id
-  route_key          = "$default"
-  target             = "integrations/${aws_apigatewayv2_integration.tube.id}"
 }

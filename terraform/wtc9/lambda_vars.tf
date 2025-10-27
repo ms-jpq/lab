@@ -1,5 +1,5 @@
 locals {
-  lambda_region = local.aws_regions.ca_w1
+  lambda_region = aws_apigatewayv2_api.faas.region
   lambda_functions = {
     okta    = { policies = [] }
     ppv     = { policies = [] }

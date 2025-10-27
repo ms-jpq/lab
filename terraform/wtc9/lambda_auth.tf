@@ -14,11 +14,12 @@ resource "aws_lambda_function" "okta" {
   }
 }
 
-resource "aws_lambda_permission" "okta" {
+resource "aws_lambda_permission" "faas" {
+  for_each      = { okta = aws_lambda_function.okta, ppv = aws_lambda_function.ppv }
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.okta.function_name
+  function_name = each.value.function_name
   principal     = "apigateway.amazonaws.com"
-  region        = local.lambda_region
+  region        = each.value.region
   source_arn    = "${aws_apigatewayv2_api.faas.execution_arn}/*"
   statement_id  = "AllowAPIGatewayInvoke"
 }

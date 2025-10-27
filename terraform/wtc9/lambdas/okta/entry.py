@@ -21,8 +21,4 @@ with nullcontext():
 def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, Any]:
     getLogger().info("%s", ">>> >>> >>>")
 
-    match event.raw_path:
-        case "/":
-            return APIGatewayAuthorizerResponseV2(authorize=True).asdict()
-        case _:
-            return APIGatewayAuthorizerResponseV2(authorize=False).asdict()
+    return APIGatewayAuthorizerResponseV2(authorize=True).asdict()

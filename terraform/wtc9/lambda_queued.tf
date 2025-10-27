@@ -25,5 +25,5 @@ resource "aws_lambda_function" "skyhook" {
 resource "aws_lambda_event_source_mapping" "skyhook" {
   event_source_arn = aws_sqs_queue.sink.arn
   function_name    = aws_lambda_function.skyhook.arn
-  region           = local.lambda_region
+  region           = aws_lambda_function.skyhook.region
 }

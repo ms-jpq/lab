@@ -14,8 +14,10 @@ resource "aws_lambda_function" "ppv" {
   }
 }
 
-resource "aws_lambda_event_source_mapping" "ppv" {
-  event_source_arn = aws_sqs_queue.sink.arn
-  function_name    = aws_lambda_function.skyhook.arn
-  region           = local.lambda_region
+resource "aws_apigatewayv2_integration" "ppv" {
+  api_id                 = aws_apigatewayv2_api.faas.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.ppv.invoke_arn
+  payload_format_version = "2.0"
+  region                 = aws_apigatewayv2_api.faas.region
 }
