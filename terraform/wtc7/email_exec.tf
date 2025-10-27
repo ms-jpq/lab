@@ -9,12 +9,12 @@ data "archive_file" "mta" {
 }
 
 resource "aws_lambda_function" "mta" {
-  provider         = aws.us_e1
   architectures    = [local.lambda_arch]
   filename         = data.archive_file.mta.output_path
   function_name    = "mta"
   handler          = "mta.entry.main"
   layers           = [local.lambda_layer]
+  region           = aws_ses_domain_identity.limited_txt.region
   role             = aws_iam_role.mta.arn
   runtime          = local.lambda_rt
   source_code_hash = data.archive_file.mta.output_base64sha256
@@ -33,9 +33,9 @@ resource "aws_lambda_function" "mta" {
 }
 
 resource "aws_lambda_function_event_invoke_config" "mta" {
-  provider               = aws.us_e1
   function_name          = aws_lambda_function.mta.function_name
   maximum_retry_attempts = local.retries.lambda
+  region                 = aws_lambda_function.mta.region
 
   destination_config {
     on_failure {
@@ -45,8 +45,8 @@ resource "aws_lambda_function_event_invoke_config" "mta" {
 }
 
 resource "aws_cloudwatch_log_group" "mta" {
-  provider          = aws.us_e1
   name              = "/aws/lambda/${aws_lambda_function.mta.function_name}"
+  region            = aws_lambda_function.mta.region
   retention_in_days = 1
 }
 

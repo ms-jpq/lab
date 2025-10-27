@@ -1,24 +1,11 @@
-data "aws_availability_zones" "ca_w1" {
-  provider = aws
-  state    = "available"
-}
-
-data "aws_availability_zones" "us_e1" {
-  provider = aws.us_e1
-  state    = "available"
-}
-
-data "aws_availability_zones" "us_w2" {
-  provider = aws.us_w2
+data "aws_availability_zones" "cf" {
+  for_each = local.aws_regions
+  region   = each.value
   state    = "available"
 }
 
 locals {
-  aws_zones = {
-    ca_w1 = data.aws_availability_zones.ca_w1.names
-    us_e1 = data.aws_availability_zones.us_e1.names
-    us_w2 = data.aws_availability_zones.us_w2.names
-  }
+  aws_zones = { for key, val in data.aws_availability_zones.cf : key => val.names }
 }
 
 output "aws_zones" {

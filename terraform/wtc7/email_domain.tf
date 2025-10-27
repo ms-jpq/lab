@@ -11,8 +11,8 @@ resource "aws_route53_record" "limited_mx" {
 }
 
 resource "aws_ses_domain_identity" "limited_txt" {
-  provider = aws.us_e1
-  domain   = aws_route53_record.limited_mx.name
+  domain = aws_route53_record.limited_mx.name
+  region = local.aws_regions.us_e1
 }
 
 resource "aws_route53_record" "limited_txt" {
@@ -32,13 +32,13 @@ resource "aws_route53_record" "_dmarc" {
 }
 
 resource "aws_ses_domain_identity_verification" "limited_txt" {
-  provider = aws.us_e1
-  domain   = aws_route53_record.limited_txt.name
+  region = aws_ses_domain_identity.limited_txt.region
+  domain = aws_route53_record.limited_txt.name
 }
 
 resource "aws_ses_domain_dkim" "limited_txt" {
-  provider = aws.us_e1
-  domain   = data.aws_route53_zone.limited_void.name
+  domain = data.aws_route53_zone.limited_void.name
+  region = aws_ses_domain_identity.limited_txt.region
 }
 
 resource "aws_route53_record" "limited_cname" {
@@ -51,9 +51,9 @@ resource "aws_route53_record" "limited_cname" {
 }
 
 resource "aws_sesv2_email_identity" "mta" {
-  provider       = aws.us_e1
   for_each       = toset(concat([var.mail_from], var.mail_to))
   email_identity = each.key
+  region         = aws_ses_domain_identity.limited_txt.region
 }
 
 output "email" {

@@ -8,6 +8,7 @@ locals {
 
 resource "aws_s3_bucket" "deb_bucket" {
   bucket        = var.deb_bucket
+  region        = local.aws_regions.ca_w1
   force_destroy = true
   lifecycle {
     prevent_destroy = true
@@ -27,6 +28,7 @@ data "aws_iam_policy_document" "deb_bucket" {
 
 resource "aws_s3_bucket_website_configuration" "science_world" {
   bucket = aws_s3_bucket.deb_bucket.bucket
+  region = aws_s3_bucket.deb_bucket.region
   index_document {
     suffix = "Packages"
   }
@@ -46,8 +48,9 @@ data "aws_iam_policy_document" "science_world" {
 }
 
 resource "aws_s3_bucket_public_access_block" "science_world" {
-  bucket              = aws_s3_bucket.deb_bucket.bucket
   block_public_policy = false
+  bucket              = aws_s3_bucket.deb_bucket.bucket
+  region              = aws_s3_bucket.deb_bucket.region
 }
 
 resource "aws_s3_bucket_policy" "science_world" {

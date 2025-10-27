@@ -29,21 +29,20 @@ data "aws_iam_policy_document" "port_auth" {
 }
 
 resource "aws_s3_bucket_policy" "maildir" {
-  provider = aws.us_e1
   bucket   = aws_s3_bucket.maildir.id
   policy   = data.aws_iam_policy_document.maildir.json
+  region   = aws_s3_bucket.maildir.region
 }
 
 resource "aws_iam_role" "mta" {
-  provider           = aws.us_e1
   assume_role_policy = data.aws_iam_policy_document.allow_lambda.json
 }
 
 resource "aws_lambda_permission" "mta" {
-  provider      = aws.us_e1
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.mta.arn
   principal     = "s3.amazonaws.com"
+  region        = aws_lambda_function.mta.region
   source_arn    = aws_s3_bucket.maildir.arn
   statement_id  = "AllowExecutionFromS3Bucket"
 }
