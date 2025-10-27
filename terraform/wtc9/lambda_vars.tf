@@ -1,9 +1,9 @@
 locals {
   lambda_region = local.aws_regions.ca_w1
   lambda_functions = {
-    okta    = { policy = null }
-    ppv     = { policy = null }
-    skyhook = { policy = data.aws_iam_policy_document.skyhook }
+    okta    = { policies = [] }
+    ppv     = { policies = [] }
+    skyhook = { policies = [data.aws_iam_policy_document.skyhook] }
   }
 }
 
