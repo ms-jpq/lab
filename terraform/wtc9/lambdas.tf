@@ -17,25 +17,18 @@ locals {
   ]...)
 }
 
-output "lambda_role_policies" {
-  value = local.lambda_role_policies
-}
-
 resource "aws_iam_role" "lambdas" {
   for_each           = local.lambda_functions
-  provider           = aws.ca_w1
   assume_role_policy = data.aws_iam_policy_document.allow_lambda.json
 }
 
 resource "aws_iam_policy" "lambdas" {
   for_each = local.lambda_role_policies
-  provider = aws.ca_w1
   policy   = each.value.json
 }
 
 resource "aws_iam_role_policy_attachment" "lambdas" {
   for_each   = local.lambda_role_policies
-  provider   = aws.ca_w1
   role       = aws_iam_role.lambdas[each.value.name].name
   policy_arn = aws_iam_policy.lambdas[each.key].arn
 }
@@ -48,5 +41,8 @@ resource "aws_cloudwatch_log_group" "lambdas" {
 }
 
 output "lambda_logging" {
-  value = { for name, log in aws_cloudwatch_log_group.lambdas : name => "aws --region ${log.region} logs tail ${log.name} --follow" }
+  value = {
+    for name, log in aws_cloudwatch_log_group.lambdas :
+    name => "aws --region ${log.region} logs tail ${log.name} --follow"
+  }
 }

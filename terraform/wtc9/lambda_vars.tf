@@ -8,7 +8,7 @@ locals {
 }
 
 data "archive_file" "haskell" {
-  output_path = "${path.module}/../../var/skyhook.zip"
+  output_path = "${path.module}/../../var/faas.zip"
   source_dir  = "${path.module}/lambdas"
   type        = "zip"
 }
