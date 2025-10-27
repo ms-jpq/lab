@@ -41,7 +41,7 @@ for ROUTE in "${IPV6_ALLOC[@]}"; do
   fi
 done
 
-IPV4_IF="$("${0%/*}/ip4alloc.py" --verbose --no "${NOPE[@]}" -- "$IPV4_PREFIX")"
+IPV4_IF="$("${0%/*}/ip4alloc.py" --no "${NOPE[@]}" -- "$IPV4_PREFIX")"
 IPV4_ADDR="${IPV4_IF%%/*}"
 
 IPV6_ULA="$("${0%/*}/ula48.sh")"
