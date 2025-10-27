@@ -29,14 +29,26 @@ resource "aws_apigatewayv2_route" "umbrella" {
   target             = "integrations/${each.value.id}"
 }
 
-resource "aws_route53_zone" "limited_void" {
+data "aws_route53_zone" "limited_void" {
   name = var.faas_domain
 }
 
 resource "aws_acm_certificate" "fascia" {
-  domain_name       = aws_route53_zone.limited_void.name
+  domain_name       = "faas.${data.aws_route53_zone.limited_void.name}"
   region            = aws_apigatewayv2_api.faas.region
   validation_method = "DNS"
+}
+
+locals {
+  endpoint_domain = regex("\\w+://(.*)", aws_apigatewayv2_api.faas.api_endpoint)[0]
+}
+
+resource "aws_route53_record" "fascia" {
+  name    = aws_acm_certificate.fascia.domain_name
+  records = [local.endpoint_domain]
+  ttl     = 60
+  type    = "CNAME"
+  zone_id = data.aws_route53_zone.limited_void.zone_id
 }
 
 resource "aws_route53_record" "limited_void" {
@@ -45,7 +57,7 @@ resource "aws_route53_record" "limited_void" {
   records  = [each.value.resource_record_value]
   ttl      = 60
   type     = each.value.resource_record_type
-  zone_id  = aws_route53_zone.limited_void.zone_id
+  zone_id  = data.aws_route53_zone.limited_void.zone_id
 }
 
 resource "aws_acm_certificate_validation" "limited_void" {
