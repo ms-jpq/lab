@@ -13,9 +13,9 @@ resource "aws_apigatewayv2_stage" "one_wtc" {
 
 locals {
   api_gateway_routes = {
-    "$default"               = { integration = aws_apigatewayv2_integration.ppv }
-    "ANY /webhooks"          = { integration = aws_apigatewayv2_integration.sink }
-    "ANY /webhooks/{proxy+}" = { integration = aws_apigatewayv2_integration.sink }
+    "$default"               = aws_apigatewayv2_integration.ppv
+    "ANY /webhooks"          = aws_apigatewayv2_integration.sink
+    "ANY /webhooks/{proxy+}" = aws_apigatewayv2_integration.sink
   }
 }
 
@@ -26,7 +26,7 @@ resource "aws_apigatewayv2_route" "umbrella" {
   authorization_type = "CUSTOM"
   authorizer_id      = aws_apigatewayv2_authorizer.okta.id
   route_key          = each.key
-  target             = "integrations/${each.value.integration.id}"
+  target             = "integrations/${each.value.id}"
 }
 
 output "apigateway" {
