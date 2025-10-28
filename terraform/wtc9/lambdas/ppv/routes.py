@@ -13,12 +13,23 @@ from aws_lambda_powertools.event_handler.api_gateway import Response
 with nullcontext():
     app = APIGatewayHttpResolver()
 
-    _ARCHIVE = environ.get("ARCHIVE", "archive.is")
+    _ARCHIVE = environ.get("ENV_ARCHIVE", "archive.is")
 
 
 @cache
 def _mappings() -> Mapping[str, str]:
-    mappings: MutableMapping[str, str] = {}
+    if (domain := environ.get("ENV_DOMAIN")) is None:
+        return {}
+
+    mappings: MutableMapping[str, str] = {
+        "m.youtube.com": f"youtube.{domain}",
+        "mobile.twitter.com": f"xcancel.com",
+        "old.reddit.com": f"reddit.{domain}",
+        "reddit.com": f"reddit.{domain}",
+        "www.reddit.com": f"reddit.{domain}",
+        "x.com": f"xcancel.com",
+        "youtube.com": f"youtube.{domain}",
+    }
     return ChainMap(mappings, {v: k for k, v in mappings.items()})
 
 
