@@ -1,7 +1,8 @@
 resource "aws_apigatewayv2_api" "faas" {
-  name          = "faas"
-  protocol_type = "HTTP"
-  region        = local.aws_regions.ca_w1
+  ip_address_type = "dualstack"
+  name            = "faas"
+  protocol_type   = "HTTP"
+  region          = local.aws_regions.ca_w1
 }
 
 locals {
