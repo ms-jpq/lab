@@ -21,15 +21,16 @@ from boto3 import client  # pyright:ignore
 from .fax import parse, send
 from .gist import benchmark, log, register
 
-TIMEOUT = 6.9
-_M_SRV, _M_FROM, _M_TO, _M_USER, _M_PASS, _M_FILT = (
-    environ["MAIL_SRV"],
-    environ["MAIL_FROM"],
-    environ["MAIL_TO"],
-    environ["MAIL_USER"],
-    environ["MAIL_PASS"],
-    environ["MAIL_FILT"],
-)
+with nullcontext():
+    TIMEOUT = 6.9
+    _M_SRV, _M_FROM, _M_TO, _M_USER, _M_PASS, _M_FILT = (
+        environ["MAIL_SRV"],
+        environ["MAIL_FROM"],
+        environ["MAIL_TO"],
+        environ["MAIL_USER"],
+        environ["MAIL_PASS"],
+        environ["MAIL_FILT"],
+    )
 
 with nullcontext():
     _S3 = client(service_name="s3")
