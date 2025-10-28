@@ -12,10 +12,11 @@ resource "aws_apigatewayv2_stage" "one_wtc" {
 }
 
 locals {
+  dns_ttl = 60
   api_gateway_routes = {
-    "$default"               = aws_apigatewayv2_integration.ppv
-    "ANY /webhooks"          = aws_apigatewayv2_integration.sink
-    "ANY /webhooks/{proxy+}" = aws_apigatewayv2_integration.sink
+    "$default"               = { integration = aws_apigatewayv2_integration.ppv, authorizer = null }
+    "ANY /webhooks"          = { integration = aws_apigatewayv2_integration.sink, authorizer = aws_apigatewayv2_authorizer.okta.id }
+    "ANY /webhooks/{proxy+}" = { integration = aws_apigatewayv2_integration.sink, authorizer = aws_apigatewayv2_authorizer.okta.id }
   }
 }
 
@@ -24,9 +25,9 @@ resource "aws_apigatewayv2_route" "umbrella" {
   region             = aws_apigatewayv2_api.faas.region
   api_id             = aws_apigatewayv2_api.faas.id
   authorization_type = "CUSTOM"
-  authorizer_id      = aws_apigatewayv2_authorizer.okta.id
+  authorizer_id      = each.value.authorizer
   route_key          = each.key
-  target             = "integrations/${each.value.id}"
+  target             = "integrations/${each.value.integration.id}"
 }
 
 data "aws_route53_zone" "limited_void" {
@@ -46,7 +47,7 @@ locals {
 resource "aws_route53_record" "fascia" {
   name    = aws_acm_certificate.fascia.domain_name
   records = [local.endpoint_domain]
-  ttl     = 60
+  ttl     = local.dns_ttl
   type    = "CNAME"
   zone_id = data.aws_route53_zone.limited_void.zone_id
 }
@@ -55,7 +56,7 @@ resource "aws_route53_record" "limited_void" {
   for_each = { for dvo in aws_acm_certificate.fascia.domain_validation_options : dvo.domain_name => dvo }
   name     = each.value.resource_record_name
   records  = [each.value.resource_record_value]
-  ttl      = 60
+  ttl      = local.dns_ttl
   type     = each.value.resource_record_type
   zone_id  = data.aws_route53_zone.limited_void.zone_id
 }
