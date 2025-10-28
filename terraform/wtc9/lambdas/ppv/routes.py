@@ -9,6 +9,8 @@ from aws_lambda_powertools.event_handler.api_gateway import Response
 with nullcontext():
     app = APIGatewayHttpResolver()
 
+    _MAPPING = {}
+
 
 @app.get("/owncloud/.+")
 def owncloud() -> Response[str]:
@@ -24,7 +26,8 @@ def owncloud() -> Response[str]:
     except ValueError as e:
         return Response(status_code=HTTPStatus.BAD_REQUEST, body=str(e))
 
-    location = urlunsplit(url)
+    netloc = _MAPPING.get(url.netloc, url.netloc)
+    location = urlunsplit((url.scheme, netloc, url.path, url.query, url.fragment))
     return Response(
         status_code=HTTPStatus.TEMPORARY_REDIRECT,
         headers={"Location": location},
