@@ -109,6 +109,6 @@ resource "aws_route53_record" "fascia" {
 
 output "apigateway" {
   value = {
-    endpoint = aws_apigatewayv2_api_mapping.fascia.domain_name
+    endpoint = "https://${aws_apigatewayv2_api_mapping.fascia.domain_name}"
   }
 }
