@@ -1,4 +1,6 @@
+from collections.abc import Mapping
 from contextlib import nullcontext
+from functools import cache
 from http import HTTPStatus
 from re import sub
 from urllib.parse import urlsplit, urlunsplit
@@ -9,7 +11,11 @@ from aws_lambda_powertools.event_handler.api_gateway import Response
 with nullcontext():
     app = APIGatewayHttpResolver()
 
-    _MAPPING = {}
+
+@cache
+def _mappings() -> Mapping[str, str]:
+    mappings = {}
+    return mappings
 
 
 @app.get("/owncloud/.+")
@@ -26,7 +32,7 @@ def owncloud() -> Response[str]:
     except ValueError as e:
         return Response(status_code=HTTPStatus.BAD_REQUEST, body=str(e))
 
-    netloc = _MAPPING.get(url.netloc, url.netloc)
+    netloc = _mappings().get(url.netloc, url.netloc)
     location = urlunsplit((url.scheme, netloc, url.path, url.query, url.fragment))
     return Response(
         status_code=HTTPStatus.TEMPORARY_REDIRECT,
