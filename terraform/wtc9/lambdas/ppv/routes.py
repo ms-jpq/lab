@@ -1,6 +1,7 @@
 from contextlib import nullcontext
 from http import HTTPStatus
-from re import compile
+from re import sub
+from urllib.parse import urlsplit, urlunsplit
 
 from aws_lambda_powertools.event_handler import APIGatewayHttpResolver
 from aws_lambda_powertools.event_handler.api_gateway import Response
@@ -9,21 +10,21 @@ with nullcontext():
     app = APIGatewayHttpResolver()
 
 
-@app.get("/")
-def root() -> Response[None]:
-    return Response(status_code=HTTPStatus.NO_CONTENT)
-
-
-with nullcontext():
-    _RE = compile(r"^/owncloud/\w+:/")
-
-
 @app.get("/owncloud/.+")
 def owncloud() -> Response[str]:
-    path = _RE.sub("", app.current_event.path)
-    query = app.current_event.raw_query_string
+    raw = (
+        app.current_event.path.removeprefix("/owncloud/")
+        + "?"
+        + app.current_event.raw_query_string
+    )
+    subbed = sub(r"(\w+):/", r"\1://", raw)
 
-    location = "https://" + path + ("?" if query else "") + query
+    try:
+        url = urlsplit(subbed)
+    except ValueError as e:
+        return Response(status_code=HTTPStatus.BAD_REQUEST, body=str(e))
+
+    location = urlunsplit(url)
     return Response(
         status_code=HTTPStatus.TEMPORARY_REDIRECT,
         headers={"Location": location},
