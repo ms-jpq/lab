@@ -44,7 +44,6 @@ resource "aws_lambda_permission" "mta" {
   principal     = "s3.amazonaws.com"
   region        = aws_lambda_function.mta.region
   source_arn    = aws_s3_bucket.maildir.arn
-  statement_id  = "AllowExecutionFromS3Bucket"
 }
 
 resource "aws_iam_policy" "port_auth" {

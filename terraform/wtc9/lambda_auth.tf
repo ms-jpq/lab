@@ -21,7 +21,6 @@ resource "aws_lambda_permission" "faas" {
   principal     = "apigateway.amazonaws.com"
   region        = each.value.region
   source_arn    = "${aws_apigatewayv2_api.faas.execution_arn}/*"
-  statement_id  = "AllowAPIGatewayInvoke"
 }
 
 resource "aws_apigatewayv2_authorizer" "okta" {
