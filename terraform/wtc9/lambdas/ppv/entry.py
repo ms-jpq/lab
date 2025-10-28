@@ -20,8 +20,4 @@ with nullcontext():
 
 @event_source(data_class=APIGatewayProxyEventV2)
 def main(event: APIGatewayProxyEventV2, ctx: LambdaContext) -> Mapping[str, Any]:
-    getLogger().info("%s", ">>> >>> >>>")
-    try:
-        return app.resolve(event.raw_event, context=ctx)
-    finally:
-        getLogger().info("%s", "<<< <<< <<<")
+    return app.resolve(event.raw_event, context=ctx)

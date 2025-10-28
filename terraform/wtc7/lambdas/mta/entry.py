@@ -63,16 +63,6 @@ def _pool() -> Iterator[Executor]:
             pool.shutdown(wait=True, cancel_futures=True)
 
 
-@contextmanager
-def _main() -> Iterator[None]:
-    with benchmark(name="main"):
-        getLogger().info("%s", ">>> >>> >>>")
-        try:
-            yield
-        finally:
-            getLogger().info("%s", "<<< <<< <<<")
-
-
 _cold_start = True
 _lock = RLock()
 
@@ -81,54 +71,53 @@ _lock = RLock()
 def main(event: S3Event, _: LambdaContext) -> None:
     global _cold_start
 
-    with _main():
-        with _lock:
-            s = sieve if _cold_start else reload(sieve)
-            _cold_start = False
+    with _lock:
+        s = sieve if _cold_start else reload(sieve)
+        _cold_start = False
 
-        def step(record: S3EventRecord) -> None:
-            with _fetching(msg=record.s3) as fp:
-                with benchmark(name="parse"):
-                    io = BytesIO(fp.read())
-                    mail = parse(io)
-                go = True
-                try:
-                    ss = s.sieve
-                    with benchmark(name="sieve"):
-                        ss(mail)
-                except StopAsyncIteration as exn:
-                    go = False
-                    log(mod=sieve, exn=exn)
-                finally:
-                    if go:
-                        with benchmark(name="send"):
-                            try:
-                                send(
-                                    mail,
-                                    mail_from=_M_FROM,
-                                    mail_to=_M_TO,
-                                    mail_srv=_M_SRV,
-                                    mail_user=_M_USER,
-                                    mail_pass=_M_PASS,
-                                    timeout=TIMEOUT,
-                                )
-                            except SMTPDataError as e:
-                                pprint(record._data)
-                                raise e
+    def step(record: S3EventRecord) -> None:
+        with _fetching(msg=record.s3) as fp:
+            with benchmark(name="parse"):
+                io = BytesIO(fp.read())
+                mail = parse(io)
+            go = True
+            try:
+                ss = s.sieve
+                with benchmark(name="sieve"):
+                    ss(mail)
+            except StopAsyncIteration as exn:
+                go = False
+                log(mod=sieve, exn=exn)
+            finally:
+                if go:
+                    with benchmark(name="send"):
+                        try:
+                            send(
+                                mail,
+                                mail_from=_M_FROM,
+                                mail_to=_M_TO,
+                                mail_srv=_M_SRV,
+                                mail_user=_M_USER,
+                                mail_pass=_M_PASS,
+                                timeout=TIMEOUT,
+                            )
+                        except SMTPDataError as e:
+                            pprint(record._data)
+                            raise e
 
-        def cont() -> Iterator[Exception]:
-            with _pool() as pool:
-                futs = map(lambda x: pool.submit(step, x), event.records)
-                for fut in as_completed(futs):
-                    if exn := fut.exception():
-                        if isinstance(exn, Exception):
-                            yield exn
-                        else:
-                            raise exn
+    def cont() -> Iterator[Exception]:
+        with _pool() as pool:
+            futs = map(lambda x: pool.submit(step, x), event.records)
+            for fut in as_completed(futs):
+                if exn := fut.exception():
+                    if isinstance(exn, Exception):
+                        yield exn
+                    else:
+                        raise exn
 
-        if errs := tuple(cont()):
-            err, *__ = errs
-            name = linesep.join(f"{type(err)!r} :: {err!r}" for err in errs)
-            exn = ExceptionGroup(name, errs)
-            getLogger().exception("%s", exn)
-            raise exn from err
+    if errs := tuple(cont()):
+        err, *__ = errs
+        name = linesep.join(f"{type(err)!r} :: {err!r}" for err in errs)
+        exn = ExceptionGroup(name, errs)
+        getLogger().exception("%s", exn)
+        raise exn from err
