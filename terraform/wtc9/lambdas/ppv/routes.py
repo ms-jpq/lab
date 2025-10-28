@@ -3,6 +3,7 @@ from collections.abc import Mapping
 from contextlib import nullcontext
 from functools import cache
 from http import HTTPStatus
+from os import environ
 from re import sub
 from urllib.parse import urlsplit, urlunsplit
 
@@ -11,6 +12,8 @@ from aws_lambda_powertools.event_handler.api_gateway import Response
 
 with nullcontext():
     app = APIGatewayHttpResolver()
+
+    _ARCHIVE = environ.get("ARCHIVE", "archive.is")
 
 
 @cache
@@ -33,8 +36,12 @@ def owncloud() -> Response[str]:
     except ValueError as e:
         return Response(status_code=HTTPStatus.BAD_REQUEST, body=str(e))
 
-    netloc = _mappings().get(url.netloc, url.netloc)
-    location = urlunsplit((url.scheme, netloc, url.path, url.query, url.fragment))
+    if newloc := _mappings().get(url.netloc):
+        split = (url.scheme, newloc, url.path, url.query, url.fragment)
+    else:
+        split = ("https://", _ARCHIVE, "/" + urlunsplit(url), "", "")
+
+    location = urlunsplit(split)
     return Response(
         status_code=HTTPStatus.TEMPORARY_REDIRECT,
         headers={"Location": location},
