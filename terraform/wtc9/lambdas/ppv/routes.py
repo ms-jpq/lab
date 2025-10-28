@@ -50,7 +50,7 @@ def owncloud() -> Response[str]:
     if newloc := _mappings().get(url.netloc):
         split = (url.scheme, newloc, url.path, url.query, url.fragment)
     else:
-        split = ("https://", _ARCHIVE, "/" + urlunsplit(url), "", "")
+        split = ("https", _ARCHIVE, "/" + urlunsplit(url), "", "")
 
     location = urlunsplit(split)
     return Response(
