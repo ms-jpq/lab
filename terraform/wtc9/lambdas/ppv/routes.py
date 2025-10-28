@@ -1,5 +1,5 @@
 from collections import ChainMap
-from collections.abc import Mapping
+from collections.abc import Mapping, MutableMapping
 from contextlib import nullcontext
 from functools import cache
 from http import HTTPStatus
@@ -18,7 +18,7 @@ with nullcontext():
 
 @cache
 def _mappings() -> Mapping[str, str]:
-    mappings: Mapping[str, str] = {}
+    mappings: MutableMapping[str, str] = {}
     return ChainMap(mappings, {v: k for k, v in mappings.items()})
 
 
