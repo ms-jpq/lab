@@ -60,18 +60,6 @@ resource "aws_acm_certificate" "fascia" {
   validation_method = "DNS"
 }
 
-locals {
-  endpoint_domain = regex("\\w+://(.*)", aws_apigatewayv2_api.faas.api_endpoint)[0]
-}
-
-resource "aws_route53_record" "fascia" {
-  name    = aws_acm_certificate.fascia.domain_name
-  records = [local.endpoint_domain]
-  ttl     = local.dns_ttl
-  type    = "CNAME"
-  zone_id = data.aws_route53_zone.limited_void.zone_id
-}
-
 resource "aws_route53_record" "limited_void" {
   for_each = { for dvo in aws_acm_certificate.fascia.domain_validation_options : dvo.domain_name => dvo }
   name     = each.value.resource_record_name
@@ -106,8 +94,21 @@ resource "aws_apigatewayv2_api_mapping" "fascia" {
   stage       = aws_apigatewayv2_stage.one_wtc.name
 }
 
+resource "aws_route53_record" "fascia" {
+  for_each = toset(["A", "AAAA"])
+  name     = aws_apigatewayv2_api_mapping.fascia.domain_name
+  type     = each.key
+  zone_id  = data.aws_route53_zone.limited_void.zone_id
+
+  alias {
+    evaluate_target_health = false
+    name                   = aws_apigatewayv2_domain_name.fascia.domain_name_configuration[0].target_domain_name
+    zone_id                = aws_apigatewayv2_domain_name.fascia.domain_name_configuration[0].hosted_zone_id
+  }
+}
+
 output "apigateway" {
   value = {
-    endpoint = aws_apigatewayv2_domain_name.fascia.domain_name
+    endpoint = aws_apigatewayv2_api_mapping.fascia.domain_name
   }
 }
