@@ -1,3 +1,4 @@
+from collections import ChainMap
 from collections.abc import Mapping
 from contextlib import nullcontext
 from functools import cache
@@ -14,8 +15,8 @@ with nullcontext():
 
 @cache
 def _mappings() -> Mapping[str, str]:
-    mappings = {}
-    return mappings
+    mappings: Mapping[str, str] = {}
+    return ChainMap(mappings, {v: k for k, v in mappings.items()})
 
 
 @app.get("/owncloud/.+")
