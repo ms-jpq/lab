@@ -7,12 +7,11 @@ from os import environ
 from re import sub
 from urllib.parse import urlsplit, urlunsplit
 
-from aws_lambda_powertools.event_handler import APIGatewayHttpResolver
 from aws_lambda_powertools.event_handler.api_gateway import Response
 
-with nullcontext():
-    app = APIGatewayHttpResolver()
+from . import app
 
+with nullcontext():
     _ARCHIVE = environ.get("ENV_ARCHIVE", "archive.is")
 
 
@@ -34,7 +33,7 @@ def _mappings() -> Mapping[str, str]:
 
 
 @app.get("/owncloud/.+")
-def owncloud() -> Response[str]:
+def route() -> Response[str]:
     raw = (
         app.current_event.path.removeprefix("/owncloud/")
         + "?"
