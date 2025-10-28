@@ -7,7 +7,7 @@ resource "aws_apigatewayv2_api" "faas" {
 locals {
   dns_ttl = 60
   webhook_route = {
-    integration = aws_apigatewayv2_integration.sink,
+    integration = aws_apigatewayv2_integration.sink
     authorizer  = aws_apigatewayv2_authorizer.okta.id
     burst_limit = null
     rate_limit  = null
@@ -16,7 +16,7 @@ locals {
     "ANY /webhooks"          = local.webhook_route
     "ANY /webhooks/{proxy+}" = local.webhook_route
     "$default" = {
-      integration = aws_apigatewayv2_integration.ppv,
+      integration = aws_apigatewayv2_integration.ppv
       authorizer  = null
       burst_limit = 6
       rate_limit  = 2
@@ -108,6 +108,6 @@ resource "aws_apigatewayv2_api_mapping" "fascia" {
 
 output "apigateway" {
   value = {
-    endpoint = aws_apigatewayv2_api.faas.api_endpoint
+    endpoint = aws_apigatewayv2_domain_name.fascia.domain_name
   }
 }
