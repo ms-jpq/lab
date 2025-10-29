@@ -2,7 +2,7 @@
 extensions:
   &auth basicauth:
     client_auth:
-      username: loki
+      username: otlp
       password: m5_assert([ENV_OTLP_PASSWORD])
 receivers:
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/awscloudwatchreceiver/README.md

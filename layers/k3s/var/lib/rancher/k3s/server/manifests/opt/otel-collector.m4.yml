@@ -35,7 +35,7 @@ spec:
           endpoint: m5_assert([ENV_OTLP_ENDPOINT])/otlp
           headers:
             authorization: >-
-              Basic m5_esyscmd(printf -- %s 'm5_assert([ENV_OTLP_PASSWORD])' | jq --raw-input --join-output '"loki:\(.)" | @base64')
+              Basic m5_esyscmd(printf -- %s 'm5_assert([ENV_OTLP_PASSWORD])' | jq --raw-input --join-output '"otlp:\(.)" | @base64')
       service:
         telemetry:
           logs:

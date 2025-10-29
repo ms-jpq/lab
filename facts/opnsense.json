@@ -5,7 +5,7 @@
     "nuc.enp1s0.opnsense.ENV_TLD",
     "opnsense.w-0.opnsense.ENV_TLD",
     "orthanc.enp1s0.opnsense.ENV_TLD",
-    "loki.ENV_TLD",
+    "otlp.ENV_TLD",
     "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN_ZONE,], ENV_INDEX)"
   ],
   "ENV_CNAMES": [],
@@ -45,8 +45,8 @@
     "cat.*",
     "chat.*",
     "llama.*",
-    "loki.*",
     "minio.*",
+    "otlp.*",
     "pocket.*",
     "rss.*",
     "s3.*"
