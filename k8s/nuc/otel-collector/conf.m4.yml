@@ -6,11 +6,17 @@ extensions:
       password: m5_assert([ENV_OTLP_PASSWORD])
 receivers:
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/awscloudwatchreceiver/README.md
-  &input awscloudwatch:
-    region: m5_assert([ENV_AWS_REGION])
+
+  # m5_for([AWS_REGION], [
+  awscloudwatch/AWS_REGION:
+    region: AWS_REGION
+  # ], m5_assert([ENV_AWS_REGIONS]))
+
 processors:
   &meta transform:
-    log_statements: [[]]
+    log_statements:
+      - >-
+        set(resource.attributes[["k8s.cluster.name"]], "aws.lambda")
 exporters:
   &output otlphttp:
     endpoint: m5_assert([ENV_OTLP_ENDPOINT])/otlp
@@ -25,7 +31,9 @@ service:
   pipelines:
     logs:
       receivers:
-        - *input
+        # m5_for([AWS_REGION], [
+        - awscloudwatch/AWS_REGION
+        # ], m5_assert([ENV_AWS_REGIONS]))
       processors:
         - *meta
       exporters:
