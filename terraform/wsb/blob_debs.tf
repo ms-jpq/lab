@@ -30,7 +30,7 @@ resource "aws_cloudfront_cache_policy" "science_world" {
   name = "naive-debs"
   parameters_in_cache_key_and_forwarded_to_origin {
     query_strings_config {
-      query_string_behavior = "all"
+      query_string_behavior = "none"
     }
     headers_config {
       header_behavior = "none"
