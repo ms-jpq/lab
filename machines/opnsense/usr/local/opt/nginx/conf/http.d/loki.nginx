@@ -1,17 +1,17 @@
 server {
-  server_name          loki.*;
-  listen               unix:/run/local/nginx/gateway-https.sock;
-  set                  $x_esxi esxi.enp1s0.opnsense.home.arpa;
-  auth_basic           "-";
-  auth_basic_user_file /var/lib/local/nginx/loki.htpasswd;
+  server_name loki.*;
+  listen      unix:/run/local/nginx/gateway-https.sock;
+  set         $x_esxi esxi.enp1s0.opnsense.home.arpa;
 
   location / {
     try_files /dev/null =404;
   }
 
   location /otlp {
-    include          /usr/local/opt/nginx/conf/http.d/proxy_params.nginx;
-    proxy_set_header Host $x_esxi;
-    proxy_pass       http://$x_esxi:3100;
+    auth_basic           "-";
+    auth_basic_user_file /var/lib/local/nginx/loki.htpasswd;
+    include              /usr/local/opt/nginx/conf/http.d/proxy_params.nginx;
+    proxy_set_header     Host $x_esxi;
+    proxy_pass           http://$x_esxi:3100;
   }
 }
