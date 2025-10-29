@@ -32,9 +32,9 @@ processors:
       - >-
         set(resource.attributes["service.name"], log.body["SYSLOG_IDENTIFIER"])
       - >-
-        set(resource.attributes["service.name"], log.body["_SYSTEMD_UNIT"]) where not IsMatch(log.body["_SYSTEMD_UNIT"], "\\.slice$")
-      - >-
         set(resource.attributes["service.name"], log.body["_KERNEL_SUBSYSTEM"])
+      - >-
+        set(resource.attributes["service.name"], log.body["_SYSTEMD_UNIT"]) where not IsMatch(log.body["_SYSTEMD_UNIT"], "\\.slice$")
 exporters:
   &output otlphttp:
     endpoint: http://127.0.0.53:3100/otlp

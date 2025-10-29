@@ -7,7 +7,7 @@ socket              = "/run/grafana/http.sock"
 socket_mode         = "0777"
 
 [log]
-level = "warn"
+level = "error"
 
 [auth]
 disable_login_form   = true
