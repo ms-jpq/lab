@@ -17,6 +17,8 @@ processors:
     log_statements:
       - >-
         set(resource.attributes[["k8s.cluster.name"]], "aws.lambda")
+      - >-
+        set(resource.attributes["service.name"], log.attributes["cloudwatch_log_group_name"])
 exporters:
   &output otlphttp:
     endpoint: m5_assert([ENV_OTLP_ENDPOINT])/otlp
