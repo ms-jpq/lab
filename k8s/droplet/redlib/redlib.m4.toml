@@ -1,2 +1,2 @@
-REDLIB_DEFAULT_FILTERS="m5_esyscmd([jq --join-output -r '.ENV_REDLIB_DEFAULT_FILTERS | join("+")' < k8s/*/redlib/values.json])"
-REDLIB_DEFAULT_SUBSCRIPTIONS="m5_esyscmd([jq --join-output -r '.ENV_REDLIB_DEFAULT_SUBSCRIPTIONS | join("+")' < k8s/*/redlib/values.json])"
+REDLIB_DEFAULT_FILTERS="m5_esyscmd([jq --join-output -r '.ENV_REDLIB_DEFAULT_FILTERS | join("+")' < k8s/droplet/redlib/values.json])"
+REDLIB_DEFAULT_SUBSCRIPTIONS="m5_esyscmd([jq --join-output -r '.ENV_REDLIB_DEFAULT_SUBSCRIPTIONS | join("+")' < k8s/droplet/redlib/values.json])"
