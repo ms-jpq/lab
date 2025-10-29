@@ -14,21 +14,28 @@ resource "aws_lambda_function" "cron" {
   }
 }
 
-resource "aws_cloudwatch_event_rule" "cron" {
+resource "aws_iam_role" "cron" {
+  assume_role_policy = data.aws_iam_policy_document.allow_event_bridge.json
+}
+
+resource "aws_scheduler_schedule" "cron" {
   region              = aws_lambda_function.cron.region
-  schedule_expression = "rate(1 hour)"
+  schedule_expression = "rate(1 hours)"
+
+  flexible_time_window {
+    maximum_window_in_minutes = 15
+    mode                      = "FLEXIBLE"
+  }
+  target {
+    arn      = aws_lambda_function.cron.arn
+    role_arn = aws_iam_role.cron.arn
+  }
 }
 
-resource "aws_cloudwatch_event_target" "lambda_target" {
-  arn    = aws_lambda_function.cron.arn
-  region = aws_lambda_function.cron.region
-  rule   = aws_cloudwatch_event_rule.cron.name
-}
-
-resource "aws_lambda_permission" "allow_eventbridge" {
+resource "aws_lambda_permission" "cron" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.cron.function_name
   principal     = "events.amazonaws.com"
   region        = aws_lambda_function.cron.region
-  source_arn    = aws_cloudwatch_event_rule.cron.arn
+  source_arn    = aws_scheduler_schedule.cron.arn
 }
