@@ -5,6 +5,6 @@ server {
 
   location / {
     proxy_pass_header Content-Security-Policy;
-    proxy_pass        http://$x_nuc:8008;
+    proxy_pass        http://$x_nuc:8088;
   }
 }

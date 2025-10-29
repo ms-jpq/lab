@@ -6,7 +6,7 @@ ui:
   enabled: true
 
 server:
-  log_level: warn
+  log_level: error
 
 common:
   replication_factor: 1
