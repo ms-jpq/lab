@@ -18,7 +18,7 @@ from aws_lambda_powertools.utilities.data_classes.s3_event import (
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client  # pyright:ignore
 
-from .fax import parse, send
+from .__main__ import parse, send
 from .gist import benchmark, log, register
 
 with nullcontext():
