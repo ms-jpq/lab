@@ -26,13 +26,15 @@ processors:
   &meta transform:
     log_statements:
       - >-
-        set(resource.attributes["service.namespace"], log.body["_HOSTNAME"]) where log.body["_HOSTNAME"] != nil
+        set(resource.attributes["service.namespace"], log.body["_HOSTNAME"])
       - >-
         set(resource.attributes["service.name"], "_journald_")
       - >-
         set(resource.attributes["service.name"], log.body["SYSLOG_IDENTIFIER"])
       - >-
         set(resource.attributes["service.name"], log.body["_KERNEL_SUBSYSTEM"])
+      - >-
+        set(resource.attributes["service.name"], log.body["_SYSTEMD_SLICE"])
       - >-
         set(resource.attributes["service.name"], log.body["_SYSTEMD_UNIT"]) where not IsMatch(log.body["_SYSTEMD_UNIT"], "\\.(slice|scope)$")
 exporters:
