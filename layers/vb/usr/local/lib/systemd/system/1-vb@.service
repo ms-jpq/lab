@@ -53,5 +53,5 @@ ExecStart            = !nft -- 'add element inet user internal_ifs     { ${IFACE
 ExecReload           = !nft -- 'add element inet user internal_ifs     { ${IFACE} }; add element inet user masq_v4    { ${IPV4_NET} }; add element inet user masq_v6    { ${IPV6_NET} }'
 ExecStop             = !-nft -- 'delete element inet user internal_ifs { ${IFACE} }; delete element inet user masq_v4 { ${IPV4_NET} }; delete element inet user masq_v6 { ${IPV6_NET} };'
 
-ExecStop             = -networkctl delete -- ${IFACE}
+ExecStop             = !-networkctl delete -- ${IFACE}
 ExecStopPost         = rm -v --recursive --force -- ${NETDEV} ${NETWORK}
