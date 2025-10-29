@@ -10,6 +10,8 @@ receivers:
   # m5_for([AWS_REGION], [
   awscloudwatch/AWS_REGION:
     region: AWS_REGION
+    logs:
+      poll_interval: 16s
   # ], m5_assert([ENV_AWS_REGIONS]))
 
 processors:
