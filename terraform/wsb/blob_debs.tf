@@ -34,11 +34,50 @@ resource "aws_s3_bucket_website_configuration" "science_world" {
   }
 }
 
+resource "aws_cloudfront_cache_policy" "science_world" {
+  name = "naive-debs"
+  parameters_in_cache_key_and_forwarded_to_origin {
+    query_strings_config {
+      query_string_behavior = "all"
+    }
+    headers_config {
+      header_behavior = "none"
+    }
+    cookies_config {
+      cookie_behavior = "none"
+    }
+  }
+}
+
+resource "aws_cloudfront_distribution" "science_world" {
+  enabled         = true
+  is_ipv6_enabled = true
+
+  origin {
+    domain_name = aws_s3_bucket.deb_bucket.bucket_regional_domain_name
+    origin_id   = aws_s3_bucket.deb_bucket.bucket_regional_domain_name
+  }
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+  default_cache_behavior {
+    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
+    cache_policy_id        = aws_cloudfront_cache_policy.science_world.id
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = aws_s3_bucket.deb_bucket.bucket_regional_domain_name
+    viewer_protocol_policy = "allow-all"
+  }
+  viewer_certificate {
+  }
+}
+
 data "aws_iam_policy_document" "science_world" {
   statement {
     principals {
-      type        = "AWS"
-      identifiers = ["*"]
+      type        = "Service"
+      identifiers = ["cloudfront.amazonaws.com"]
     }
 
     actions   = ["s3:GetObject"]
@@ -47,19 +86,13 @@ data "aws_iam_policy_document" "science_world" {
   }
 }
 
-resource "aws_s3_bucket_public_access_block" "science_world" {
-  block_public_policy = false
-  bucket              = aws_s3_bucket.deb_bucket.bucket
-  region              = aws_s3_bucket.deb_bucket.region
-}
-
 resource "aws_s3_bucket_policy" "science_world" {
-  bucket = aws_s3_bucket_public_access_block.science_world.bucket
+  bucket = aws_s3_bucket.deb_bucket.bucket
   policy = data.aws_iam_policy_document.science_world.json
 }
 
 output "aws_debs" {
   value = <<-SOURCE
-  deb [signed-by=/etc/apt/trusted.gpg.d/ms-jpq.gpg] https://${aws_s3_bucket_website_configuration.science_world.website_endpoint} /
+  deb [signed-by=/etc/apt/trusted.gpg.d/ms-jpq.gpg] http://${aws_s3_bucket_website_configuration.science_world.website_endpoint} /
   SOURCE
 }
