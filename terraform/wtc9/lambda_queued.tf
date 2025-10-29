@@ -10,7 +10,7 @@ resource "aws_lambda_function" "skyhook" {
   architectures    = [local.lambda_arch]
   filename         = data.archive_file.haskell.output_path
   function_name    = "skyhook"
-  handler          = "skyhook.entry.main"
+  handler          = "skyhook.main"
   layers           = [local.lambda_layer]
   region           = local.lambda_region
   role             = aws_iam_role.lambdas["skyhook"].arn

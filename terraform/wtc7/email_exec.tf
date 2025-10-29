@@ -12,7 +12,7 @@ resource "aws_lambda_function" "mta" {
   architectures    = [local.lambda_arch]
   filename         = data.archive_file.mta.output_path
   function_name    = "mta"
-  handler          = "mta.entry.main"
+  handler          = "mta.main"
   layers           = [local.lambda_layer]
   region           = aws_ses_domain_identity.limited_txt.region
   role             = aws_iam_role.mta.arn

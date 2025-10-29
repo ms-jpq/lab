@@ -2,7 +2,7 @@ resource "aws_lambda_function" "ppv" {
   architectures    = [local.lambda_arch]
   filename         = data.archive_file.haskell.output_path
   function_name    = "ppv"
-  handler          = "ppv.entry.main"
+  handler          = "ppv.main"
   layers           = [local.lambda_layer]
   region           = local.lambda_region
   role             = aws_iam_role.lambdas["ppv"].arn
