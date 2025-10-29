@@ -1,1 +1,1 @@
-deb [[signed-by=/etc/apt/trusted.gpg.d/ms-jpq.gpg]] http://m5_assert([ENV_S3_DEB_BUCKET]) /
+deb [[signed-by=/etc/apt/trusted.gpg.d/ms-jpq.gpg]] https://m5_assert([ENV_S3_DEB_BUCKET]) /
