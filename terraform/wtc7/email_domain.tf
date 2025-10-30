@@ -2,8 +2,12 @@ data "aws_route53_zone" "limited_void" {
   name = replace(regex("@.+$", var.mail_from), "@", "")
 }
 
+locals {
+  mail_subdomain = "mail"
+}
+
 resource "aws_route53_record" "limited_mx" {
-  name    = data.aws_route53_zone.limited_void.name
+  name    = "${local.mail_subdomain}.${data.aws_route53_zone.limited_void.name}"
   records = ["10 inbound-smtp.${local.aws_regions.ca_c1}.amazonaws.com"]
   ttl     = local.dns_ttl
   type    = "MX"
@@ -42,9 +46,16 @@ resource "aws_sesv2_email_identity" "mta" {
   region         = aws_ses_domain_identity.limited_txt.region
 }
 
+resource "aws_sesv2_email_identity_mail_from_attributes" "mta" {
+  behavior_on_mx_failure = "USE_DEFAULT_VALUE"
+  email_identity         = aws_sesv2_email_identity.mta[var.mail_from].email_identity
+  mail_from_domain       = aws_route53_record.limited_mx.name
+  region                 = aws_sesv2_email_identity.mta[var.mail_from].region
+}
+
 resource "aws_route53_record" "limited_cname" {
   for_each   = toset(aws_ses_domain_dkim.limited_txt.dkim_tokens)
-  name       = "${each.key}._domainkey"
+  name       = "${each.key}._domainkey.${local.mail_subdomain}"
   records    = ["${each.key}.dkim.amazonses.com"]
   ttl        = local.dns_ttl
   type       = "CNAME"
