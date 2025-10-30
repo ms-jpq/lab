@@ -53,3 +53,7 @@ resource "aws_cloudwatch_log_group" "mta" {
 output "logging" {
   value = "aws --region ${aws_lambda_function.mta.region} logs tail ${aws_cloudwatch_log_group.mta.name} --follow"
 }
+
+output "local" {
+  value = "python3 -m terraform.wtc7.lambdas.mta --mail-from ${var.mail_from} --mail-to ${join("", var.mail_to)} --mail-srv ${local.mail_srv} --mail-user '<user>' --mail-pass '<pass>'"
+}
