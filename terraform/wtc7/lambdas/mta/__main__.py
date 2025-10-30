@@ -14,7 +14,7 @@ from email.policy import SMTP, SMTPUTF8
 from email.utils import formataddr, getaddresses, parseaddr, unquote
 from itertools import islice, takewhile
 from logging import DEBUG, StreamHandler, getLogger
-from os import linesep
+from os import environ, linesep
 from smtplib import SMTP_SSL
 from sys import stdin
 from typing import BinaryIO, Literal
@@ -151,11 +151,26 @@ def send(
 
 def _parse_args() -> Namespace:
     parser = ArgumentParser()
-    parser.add_argument("-f", "--mail-from", required=True)
-    parser.add_argument("-t", "--mail-to", required=True)
     parser.add_argument("-s", "--mail-srv", required=True)
-    parser.add_argument("-u", "--mail-user", required=True)
-    parser.add_argument("-p", "--mail-pass", required=True)
+    parser.add_argument(
+        "-f",
+        "--mail-from",
+        required=not (env := environ.get("TF_VAR_mail_from")),
+        default=env,
+    )
+    parser.add_argument("-t", "--mail-to", required=True)
+    parser.add_argument(
+        "-u",
+        "--mail-user",
+        required=not (env := environ.get("TF_VAR_mail_user")),
+        default=env,
+    )
+    parser.add_argument(
+        "-p",
+        "--mail-pass",
+        required=not (env := environ.get("TF_VAR_mail_pass")),
+        default=env,
+    )
     parser.add_argument("--timeout", type=float, default=5)
     return parser.parse_args()
 
