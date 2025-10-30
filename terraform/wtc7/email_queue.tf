@@ -1,6 +1,6 @@
 resource "aws_s3_bucket" "maildir" {
-  region = local.aws_regions.us_e1
-  bucket = "kfc-maildir"
+  region = local.aws_regions.ca_c1
+  bucket = "kfc-mailbox"
   lifecycle {
     prevent_destroy = true
   }

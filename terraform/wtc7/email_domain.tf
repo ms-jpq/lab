@@ -4,7 +4,7 @@ data "aws_route53_zone" "limited_void" {
 
 resource "aws_route53_record" "limited_mx" {
   name    = data.aws_route53_zone.limited_void.name
-  records = ["10 inbound-smtp.${local.aws_regions.us_e1}.amazonaws.com"]
+  records = ["10 inbound-smtp.${local.aws_regions.ca_c1}.amazonaws.com"]
   ttl     = local.dns_ttl
   type    = "MX"
   zone_id = data.aws_route53_zone.limited_void.zone_id
@@ -12,7 +12,7 @@ resource "aws_route53_record" "limited_mx" {
 
 resource "aws_ses_domain_identity" "limited_txt" {
   domain = aws_route53_record.limited_mx.name
-  region = local.aws_regions.us_e1
+  region = local.aws_regions.ca_c1
 }
 
 resource "aws_route53_record" "limited_txt" {
@@ -31,29 +31,29 @@ resource "aws_route53_record" "_dmarc" {
   zone_id = data.aws_route53_zone.limited_void.zone_id
 }
 
-resource "aws_ses_domain_identity_verification" "limited_txt" {
-  region = aws_ses_domain_identity.limited_txt.region
-  domain = aws_route53_record.limited_txt.name
-}
-
 resource "aws_ses_domain_dkim" "limited_txt" {
   domain = data.aws_route53_zone.limited_void.name
   region = aws_ses_domain_identity.limited_txt.region
-}
-
-resource "aws_route53_record" "limited_cname" {
-  for_each = toset(aws_ses_domain_dkim.limited_txt.dkim_tokens)
-  name     = "${each.key}._domainkey"
-  records  = ["${each.key}.dkim.amazonses.com"]
-  ttl      = local.dns_ttl
-  type     = "CNAME"
-  zone_id  = data.aws_route53_zone.limited_void.zone_id
 }
 
 resource "aws_sesv2_email_identity" "mta" {
   for_each       = toset(concat([var.mail_from], var.mail_to))
   email_identity = each.key
   region         = aws_ses_domain_identity.limited_txt.region
+}
+
+resource "aws_route53_record" "limited_cname" {
+  for_each   = toset(aws_ses_domain_dkim.limited_txt.dkim_tokens)
+  name       = "${each.key}._domainkey"
+  records    = ["${each.key}.dkim.amazonses.com"]
+  ttl        = local.dns_ttl
+  type       = "CNAME"
+  zone_id    = data.aws_route53_zone.limited_void.zone_id
+}
+
+resource "aws_ses_domain_identity_verification" "limited_txt" {
+  region = aws_ses_domain_identity.limited_txt.region
+  domain = aws_route53_record.limited_txt.name
 }
 
 output "email" {

@@ -1,5 +1,5 @@
 locals {
-  lambda_region = local.aws_regions.us_e1
+  lambda_region = local.aws_regions.ca_c1
 }
 
 data "archive_file" "mta" {
@@ -51,5 +51,5 @@ resource "aws_cloudwatch_log_group" "mta" {
 }
 
 output "logging" {
-  value = "aws --region ${local.aws_regions.us_e1} logs tail ${aws_cloudwatch_log_group.mta.name} --follow"
+  value = "aws --region ${local.aws_regions.ca_c1} logs tail ${aws_cloudwatch_log_group.mta.name} --follow"
 }

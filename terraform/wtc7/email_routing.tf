@@ -1,5 +1,5 @@
 resource "aws_ses_receipt_rule_set" "maildir" {
-  region        = local.aws_regions.us_e1
+  region        = local.aws_regions.ca_c1
   rule_set_name = "maildir"
 }
 
