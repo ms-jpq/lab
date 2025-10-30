@@ -32,7 +32,7 @@ resource "aws_route53_record" "_dmarc" {
 }
 
 resource "aws_ses_domain_dkim" "limited_txt" {
-  domain = data.aws_route53_zone.limited_void.name
+  domain = aws_route53_record.limited_mx.name
   region = aws_ses_domain_identity.limited_txt.region
 }
 
