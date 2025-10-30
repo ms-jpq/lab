@@ -47,15 +47,12 @@ resource "aws_route53_record" "spf" {
 }
 
 resource "aws_route53_record" "dkim" {
-  for_each = concat([
-    for i, attr in aws_sesv2_email_identity.mta.dkim_signing_attributes :
-    attr.tokens
-  ]...)
-  name    = "${each.key}._domainkey.${aws_sesv2_email_identity.mta.email_identity}"
-  records = ["${each.key}.dkim.amazonses.com"]
-  ttl     = local.dns_ttl
-  type    = "CNAME"
-  zone_id = data.aws_route53_zone.limited_void.zone_id
+  for_each = toset(concat([for attr in aws_sesv2_email_identity.mta.dkim_signing_attributes : attr.tokens]...))
+  name     = "${each.key}._domainkey.${aws_sesv2_email_identity.mta.email_identity}"
+  records  = ["${each.key}.dkim.amazonses.com"]
+  ttl      = local.dns_ttl
+  type     = "CNAME"
+  zone_id  = data.aws_route53_zone.limited_void.zone_id
 }
 
 resource "aws_sesv2_email_identity" "mda" {
