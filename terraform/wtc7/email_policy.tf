@@ -47,12 +47,10 @@ resource "aws_lambda_permission" "mta" {
 }
 
 resource "aws_iam_policy" "port_auth" {
-  provider = aws.us_e1
-  policy   = data.aws_iam_policy_document.port_auth.json
+  policy = data.aws_iam_policy_document.port_auth.json
 }
 
 resource "aws_iam_role_policy_attachment" "port_auth" {
-  provider   = aws.us_e1
   role       = aws_iam_role.mta.name
   policy_arn = aws_iam_policy.port_auth.arn
 }
