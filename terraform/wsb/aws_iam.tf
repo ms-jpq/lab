@@ -109,7 +109,7 @@ resource "local_sensitive_file" "smtp" {
   content  = <<-NETRC
   machine ${local.mail_srv}
     login ${each.value.id}
-    password ${each.value.ses_smtp_password_v4}
+    password ${each.value.secret} | https://docs.aws.amazon.com/ses/latest/dg/smtp-credentials.html#smtp-credentials-convert
   NETRC
 }
 

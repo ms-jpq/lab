@@ -163,6 +163,9 @@ def _parse_args() -> Namespace:
 def main() -> None:
     args = _parse_args()
 
+    if stdin.isatty():
+        exit(2)
+
     mail = parse(stdin.buffer)
     send(
         mail,
