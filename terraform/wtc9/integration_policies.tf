@@ -26,6 +26,6 @@ resource "aws_iam_role" "api_gateway_sqs" {
 }
 
 resource "aws_iam_role_policy" "api_gateway_sqs" {
-  policy   = data.aws_iam_policy_document.gateway_sqs_integration.json
-  role     = aws_iam_role.api_gateway_sqs.id
+  policy = data.aws_iam_policy_document.gateway_sqs_integration.json
+  role   = aws_iam_role.api_gateway_sqs.id
 }

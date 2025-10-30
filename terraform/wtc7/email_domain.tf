@@ -3,19 +3,19 @@ data "aws_route53_zone" "limited_void" {
 }
 
 resource "aws_sesv2_email_identity" "mta" {
-  email_identity = aws_route53_record.limited_mx.name
+  email_identity = data.aws_route53_zone.limited_void.name
   region         = local.aws_regions.ca_c1
 }
 
 resource "aws_sesv2_email_identity_mail_from_attributes" "mta" {
   behavior_on_mx_failure = "USE_DEFAULT_VALUE"
   email_identity         = aws_sesv2_email_identity.mta.email_identity
-  mail_from_domain       = "mail.${aws_route53_record.limited_mx.name}"
+  mail_from_domain       = "mail.${aws_sesv2_email_identity.mta.email_identity}"
   region                 = aws_sesv2_email_identity.mta.region
 }
 
 resource "aws_route53_record" "limited_mx" {
-  name    = aws_sesv2_email_identity_mail_from_attributes.mta.mail_from_domain
+  name    = aws_sesv2_email_identity.mta.email_identity
   records = ["10 inbound-smtp.${local.aws_regions.ca_c1}.amazonaws.com"]
   ttl     = local.dns_ttl
   type    = "MX"
@@ -23,7 +23,7 @@ resource "aws_route53_record" "limited_mx" {
 }
 
 resource "aws_route53_record" "_dmarc" {
-  name    = "_dmarc.${aws_route53_record.limited_mx.zone_id}"
+  name    = "_dmarc.${aws_sesv2_email_identity.mta.email_identity}"
   records = ["v=DMARC1;p=quarantine;rua=mailto:${local.mail_alert}"]
   ttl     = local.dns_ttl
   type    = "TXT"
@@ -31,12 +31,15 @@ resource "aws_route53_record" "_dmarc" {
 }
 
 resource "aws_route53_record" "dkim" {
-  for_each = aws_sesv2_email_identity.mta.dkim_signing_attributes
-  name     = each.value.domain_signing_selector
-  records  = each.value.tokens
-  ttl      = local.dns_ttl
-  type     = "CNAME"
-  zone_id  = data.aws_route53_zone.limited_void.zone_id
+  for_each = merge([
+    for i, attr in aws_sesv2_email_identity.mta.dkim_signing_attributes :
+    { for token in attr.tokens : "${i}-${token}" => token }
+  ]...)
+  name    = "${each.value}._domainkey.${aws_sesv2_email_identity.mta.email_identity}"
+  records = ["${each.value}.dkim.amazonses.com"]
+  ttl     = local.dns_ttl
+  type    = "CNAME"
+  zone_id = data.aws_route53_zone.limited_void.zone_id
 }
 
 resource "aws_sesv2_email_identity" "mda" {
