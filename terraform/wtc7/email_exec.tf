@@ -14,7 +14,7 @@ resource "aws_lambda_function" "mta" {
   function_name    = "mta"
   handler          = "mta.main"
   layers           = [local.lambda_layer]
-  region           = aws_ses_domain_identity.limited_txt.region
+  region           = local.lambda_region
   role             = aws_iam_role.mta.arn
   runtime          = local.lambda_rt
   source_code_hash = data.archive_file.mta.output_base64sha256
@@ -51,5 +51,5 @@ resource "aws_cloudwatch_log_group" "mta" {
 }
 
 output "logging" {
-  value = "aws --region ${local.aws_regions.ca_c1} logs tail ${aws_cloudwatch_log_group.mta.name} --follow"
+  value = "aws --region ${aws_lambda_function.mta.region} logs tail ${aws_cloudwatch_log_group.mta.name} --follow"
 }

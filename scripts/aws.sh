@@ -49,7 +49,7 @@ AWK
 cpu)
   DELTA=$((60 * 60 * 24))
   AWS+=(
-    --region us-west-2
+    --region ca-central-1
     lightsail
   )
   IS="$("${AWS[@]}" get-instances | "${JQ[@]}" '.instances[].name')"
