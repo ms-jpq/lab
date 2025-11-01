@@ -45,13 +45,9 @@ def _auth(
     if not (signature := event.headers.get("x-twilio-signature")):
         return Response(status_code=HTTPStatus.UNAUTHORIZED)
 
+    ordered = sorted(_params(app.current_event).items())
     auth_key = environ["ENV_TWILIO_TOKEN"].encode()
-    auth_msg = "".join(
-        chain(
-            (raw_uri(event),),
-            chain.from_iterable(sorted(_params(app.current_event).items())),
-        )
-    ).encode()
+    auth_msg = "".join(chain((raw_uri(event),), chain.from_iterable(ordered))).encode()
 
     hmac = HMAC(auth_key, auth_msg, digestmod=sha1)
     expected = b64encode(hmac.digest()).decode()
