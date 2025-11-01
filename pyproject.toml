@@ -4,8 +4,9 @@ version = "0"
 
 dependencies = [
   "s3cmd@https://github.com/s3tools/s3cmd/archive/heads/master.tar.gz",
-  "elasticsearch",
   "aws-lambda-powertools",
+  "elasticsearch",
+  "twilio",
 ]
 
 [project.optional-dependencies]
