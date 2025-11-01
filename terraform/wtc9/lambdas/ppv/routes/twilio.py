@@ -1,7 +1,7 @@
 from contextlib import nullcontext
 from functools import cache
 from http import HTTPStatus
-from os import environ
+from os import environ, linesep
 
 from aws_lambda_powertools.event_handler import APIGatewayHttpResolver
 from aws_lambda_powertools.event_handler.api_gateway import Response
@@ -38,18 +38,19 @@ def _auth(app: APIGatewayHttpResolver, next_middleware: NextMiddleware) -> Respo
 
 @app.get("/twilio/voice", middlewares=[_auth])
 def voice() -> Response[str]:
-    app.current_event.json_body
-
     rsp = VoiceResponse()
     rsp.dial(number=_REDIRECT)
-
     return Response(status_code=HTTPStatus.OK, body=str(rsp))
 
 
 @app.get("/twilio/message", middlewares=[_auth])
 def message() -> Response[str]:
-    app.current_event.json_body
+    match app.current_event.json_body:
+        case {"From": str(xfrom), "Body": str(body)}:
+            msg = f">>> {xfrom}{linesep}" + body
 
-    rsp = MessagingResponse()
-
-    return Response(status_code=HTTPStatus.OK, body=str(rsp))
+            rsp = MessagingResponse()
+            rsp.message(to=_REDIRECT, body=msg)
+            return Response(status_code=HTTPStatus.OK, body=str(rsp))
+        case _:
+            return Response(status_code=HTTPStatus.BAD_REQUEST)
