@@ -6,7 +6,7 @@ from hmac import HMAC, compare_digest
 from http import HTTPStatus
 from os import environ
 from urllib.parse import parse_qsl
-from xml.etree.ElementTree import Element, tostring
+from xml.etree.ElementTree import Element, SubElement, tostring
 
 from aws_lambda_powertools.event_handler import APIGatewayHttpResolver
 from aws_lambda_powertools.event_handler.api_gateway import Response
@@ -24,7 +24,7 @@ def _redirect() -> str:
 
 
 def _params(event: APIGatewayProxyEventV2) -> Mapping[str, str]:
-    return dict(parse_qsl(event.decoded_body))
+    return dict(parse_qsl(event.decoded_body, keep_blank_values=True))
 
 
 def _auth(
@@ -44,7 +44,7 @@ def _auth(
     expected = b64encode(hmac.digest()).decode()
 
     if not compare_digest(signature, expected):
-        pass
+        return Response(status_code=HTTPStatus.FORBIDDEN)
 
     return next_middleware.__call__(app)
 
@@ -61,12 +61,10 @@ def _reply(el: Element) -> Response[str]:
 @app.post("/twilio/voice", middlewares=[_auth])
 def voice() -> Response[str]:
     root = Element("Response")
-    msg = Element("Dial")
 
     match _params(app.current_event):
         case _:
-            msg.text = _redirect()
-            root.append(msg)
+            SubElement(root, "Dial").text = _redirect()
 
             return _reply(root)
 
@@ -74,22 +72,16 @@ def voice() -> Response[str]:
 @app.post("/twilio/message", middlewares=[_auth])
 def message() -> Response[str]:
     root = Element("Response")
+    redirect = {"to": _redirect()}
 
     match _params(app.current_event):
         case {"From": xfrom, "Body": body} if xfrom == _redirect():
-            msg = Element("Message", attrib={"to": _redirect()})
-            msg.text = body
-            root.append(msg)
+            SubElement(root, "Message", attrib=redirect).text = body
 
             return _reply(root)
         case {"From": xfrom, "Body": body}:
-
-            msg = Element("Message", attrib={"to": _redirect()})
-            msg.text = f">>> {xfrom}"
-            root.append(msg)
-            msg = Element("Message", attrib={"to": _redirect()})
-            msg.text = body
-            root.append(msg)
+            SubElement(root, "Message", attrib=redirect).text = f">>> {xfrom}"
+            SubElement(root, "Message", attrib=redirect).text = body
 
             return _reply(root)
         case _:
