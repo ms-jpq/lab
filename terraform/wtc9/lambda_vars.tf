@@ -7,11 +7,13 @@ variable "faas_domain" {
 }
 
 variable "twilio_redirect" {
+  sensitive = true
   type = string
 }
 
 variable "twilio_token" {
-  type = string
+  sensitive = true
+  type      = string
 }
 
 locals {
