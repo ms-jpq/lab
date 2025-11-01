@@ -1,9 +1,12 @@
+from base64 import b64encode
 from collections.abc import Mapping
-from contextlib import nullcontext
 from functools import cache
+from hashlib import sha1
+from hmac import HMAC, compare_digest
 from http import HTTPStatus
 from os import environ, linesep
 from urllib.parse import parse_qsl
+from xml.etree.ElementTree import Element, tostring
 
 from aws_lambda_powertools.event_handler import APIGatewayHttpResolver
 from aws_lambda_powertools.event_handler.api_gateway import Response
@@ -11,18 +14,13 @@ from aws_lambda_powertools.event_handler.middlewares import (
     NextMiddleware,
 )
 from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEventV2
-from twilio.request_validator import RequestValidator  # type: ignore
 
 from . import app, raw_uri
 
-with nullcontext():
-    _REDIRECT = environ.get("ENV_TWILIO_REDIRECT")
-
 
 @cache
-def _request_validator() -> RequestValidator:
-    token = environ["ENV_TWILIO_TOKEN"]
-    return RequestValidator(token)
+def _redirect() -> str:
+    return environ["ENV_TWILIO_REDIRECT"]
 
 
 def _params(event: APIGatewayProxyEventV2) -> Mapping[str, str]:
@@ -36,33 +34,44 @@ def _auth(
     if not (signature := event.headers.get("x-twilio-signature")):
         return Response(status_code=HTTPStatus.UNAUTHORIZED)
 
-    rv, uri = _request_validator(), raw_uri(event)
-    params = _params(app.current_event)
+    auth_key = environ["ENV_TWILIO_TOKEN"].encode()
+    acc = [raw_uri(event)]
+    for key, val in sorted(_params(app.current_event).items()):
+        acc.extend((key, val))
+    auth_msg = "".join(acc).encode()
 
-    # if not rv.validate(uri=uri, params=params, signature=signature):
-    #     return Response(status_code=HTTPStatus.FORBIDDEN)
+    hmac = HMAC(auth_key, auth_msg, digestmod=sha1)
+    expected = b64encode(hmac.digest()).decode()
+
+    if not compare_digest(signature, expected):
+        pass
 
     return next_middleware.__call__(app)
 
 
 @app.post("/twilio/voice", middlewares=[_auth])
-def voice() -> Response[str]:
-    from twilio.twiml.voice_response import VoiceResponse  # type: ignore
+def voice() -> Response[bytes]:
+    msg = Element("Dial")
+    msg.text = _redirect()
+    root = Element("Response")
+    root.append(msg)
 
-    rsp = VoiceResponse()
-    rsp.dial(number=_REDIRECT)
-    return Response(status_code=HTTPStatus.OK, body=str(rsp))
+    return Response(
+        status_code=HTTPStatus.OK, body=tostring(root, xml_declaration=True)
+    )
 
 
 @app.post("/twilio/message", middlewares=[_auth])
-def message() -> Response[str]:
-    from twilio.twiml.messaging_response import MessagingResponse  # type: ignore
-
+def message() -> Response[bytes]:
     match _params(app.current_event):
         case {"From": xfrom, "Body": body}:
-            msg = f">>> {xfrom}{linesep}{body}"
-            rsp = MessagingResponse()
-            rsp.message(to=_REDIRECT, body=msg)
-            return Response(status_code=HTTPStatus.OK, body=str(rsp))
+            msg = Element("Message", attrib={"to": _redirect()})
+            msg.text = f">>> {xfrom}{linesep}{body}"
+            root = Element("Response")
+            root.append(msg)
+
+            return Response(
+                status_code=HTTPStatus.OK, body=tostring(root, xml_declaration=True)
+            )
         case _:
             return Response(status_code=HTTPStatus.BAD_REQUEST)
