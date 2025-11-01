@@ -4,6 +4,11 @@ data "aws_iam_policy_document" "skycrane" {
     effect    = "Allow"
     resources = [aws_sqs_queue.sink.arn]
   }
+  # statement {
+  #   actions   = ["dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem","dynamodb:BatchWriteItem"]
+  #   effect    = "Allow"
+  #   resources = []
+  # }
 }
 
 resource "aws_lambda_function" "ppv" {

@@ -11,9 +11,9 @@ from aws_lambda_powertools.event_handler.middlewares import (
     NextMiddleware,
 )
 
-from twilio.request_validator import RequestValidator
-from twilio.twiml.messaging_response import MessagingResponse
-from twilio.twiml.voice_response import VoiceResponse
+from twilio.request_validator import RequestValidator # type: ignore
+from twilio.twiml.messaging_response import MessagingResponse # type: ignore
+from twilio.twiml.voice_response import VoiceResponse # type: ignore
 
 from . import app, raw_uri
 
@@ -27,7 +27,7 @@ def _request_validator() -> RequestValidator:
     return RequestValidator(token)
 
 
-def _auth(app: APIGatewayHttpResolver, next_middleware: NextMiddleware) -> Response:
+def _auth(app: APIGatewayHttpResolver, next_middleware: NextMiddleware) -> Response[None]:
     event = app.current_event
     if not (signature := event.headers.get("x-twilio-signature")):
         return Response(status_code=HTTPStatus.UNAUTHORIZED)
