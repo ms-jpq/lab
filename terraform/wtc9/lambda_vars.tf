@@ -6,9 +6,9 @@ variable "faas_domain" {
   type = string
 }
 
-variable "twilio_redirect" {
+variable "twilio_redirects" {
   sensitive = true
-  type      = string
+  type      = list(string)
 }
 
 variable "twilio_token" {

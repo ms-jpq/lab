@@ -1,12 +1,14 @@
 from base64 import b64encode
-from collections.abc import Mapping
+from collections.abc import Mapping, Set
 from contextlib import nullcontext
 from functools import cache
 from hashlib import sha1
 from hmac import HMAC, compare_digest
 from http import HTTPStatus
-from itertools import chain
+from itertools import chain, product
+from json import loads
 from os import environ
+from typing import cast
 from urllib.parse import parse_qsl
 from uuid import uuid4
 from xml.etree.ElementTree import Element, SubElement, tostring
@@ -25,13 +27,14 @@ with nullcontext():
 
 
 @cache
-def _redirect() -> str:
-    return environ["ENV_TWILIO_REDIRECT"]
+def _numbers() -> Set[str]:
+    json = loads(environ["ENV_TWILIO_REDIRECTS"])
+    return {*json}
 
 
 def _params(event: APIGatewayProxyEventV2) -> Mapping[str, str]:
     if parsed := event.raw_event.get(_ID):
-        return parsed
+        return cast(Mapping[str, str], parsed)
 
     parsed = dict(parse_qsl(event.decoded_body, keep_blank_values=True))
     event.raw_event.setdefault(_ID, parsed)
@@ -70,27 +73,27 @@ def _reply(el: Element) -> Response[str]:
 @app.post("/twilio/voice", middlewares=[_auth])
 def voice() -> Response[str]:
     root = Element("Response")
+    dial = SubElement(root, "Dial")
 
-    match _params(app.current_event):
-        case _:
-            SubElement(root, "Dial").text = _redirect()
+    for tel in _numbers():
+        SubElement(dial, "Number").text = tel
 
-            return _reply(root)
+    return _reply(root)
 
 
 @app.post("/twilio/message", middlewares=[_auth])
 def message() -> Response[str]:
     root = Element("Response")
-    redirect = {"to": _redirect()}
 
     match _params(app.current_event):
-        case {"From": xfrom, "Body": body} if xfrom == _redirect():
-            SubElement(root, "Message", attrib=redirect).text = body
+        case {"From": xfrom, "Body": body} if xfrom in _numbers():
+            for tel in _numbers():
+                SubElement(root, "Message", attrib={"to": tel}).text = body
 
             return _reply(root)
         case {"From": xfrom, "Body": body}:
-            SubElement(root, "Message", attrib=redirect).text = f">>> {xfrom}"
-            SubElement(root, "Message", attrib=redirect).text = body
+            for tel, text in product(_numbers(), (f">>> {xfrom}", body)):
+                SubElement(root, "Message", attrib={"to": tel}).text = text
 
             return _reply(root)
         case _:
