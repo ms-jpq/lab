@@ -24,7 +24,6 @@ resource "aws_lambda_function" "ppv" {
 
   environment {
     variables = {
-      ENV_ARCHIVE         = null
       ENV_DOMAIN          = var.vps_domain
       ENV_TWILIO_REDIRECT = var.twilio_redirect
       ENV_TWILIO_TOKEN    = var.twilio_token

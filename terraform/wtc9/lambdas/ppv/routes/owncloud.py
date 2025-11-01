@@ -12,7 +12,7 @@ from aws_lambda_powertools.event_handler.api_gateway import Response
 from . import app
 
 with nullcontext():
-    _ARCHIVE = environ.get("ENV_ARCHIVE", "archive.is")
+    _ARCHIVE = "archive.is"
 
 
 @cache

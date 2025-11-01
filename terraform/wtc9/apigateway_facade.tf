@@ -7,21 +7,13 @@ resource "aws_apigatewayv2_api" "faas" {
 
 locals {
   dns_ttl = 60
-  api_gateway_routes = {
-    "$default" = {
-      burst_limit = 6
-      rate_limit  = 2
-    }
-  }
 }
 
 resource "aws_apigatewayv2_route" "umbrella" {
-  for_each           = local.api_gateway_routes
-  region             = aws_apigatewayv2_api.faas.region
-  api_id             = aws_apigatewayv2_api.faas.id
-  authorization_type = "NONE"
-  route_key          = each.key
-  target             = "integrations/${aws_apigatewayv2_integration.ppv.id}"
+  region    = aws_apigatewayv2_api.faas.region
+  api_id    = aws_apigatewayv2_api.faas.id
+  route_key = "$default"
+  target    = "integrations/${aws_apigatewayv2_integration.ppv.id}"
 }
 
 resource "aws_apigatewayv2_stage" "one_wtc" {
@@ -30,13 +22,9 @@ resource "aws_apigatewayv2_stage" "one_wtc" {
   name        = "$default"
   region      = aws_apigatewayv2_api.faas.region
 
-  dynamic "route_settings" {
-    for_each = local.api_gateway_routes
-    content {
-      route_key              = aws_apigatewayv2_route.umbrella[route_settings.key].route_key
-      throttling_burst_limit = route_settings.value.burst_limit
-      throttling_rate_limit  = route_settings.value.rate_limit
-    }
+  default_route_settings {
+    throttling_burst_limit = 6
+    throttling_rate_limit  = 2
   }
 }
 
