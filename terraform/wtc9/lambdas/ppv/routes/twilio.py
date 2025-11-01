@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from contextlib import nullcontext
 from functools import cache
 from http import HTTPStatus
@@ -9,8 +10,9 @@ from aws_lambda_powertools.event_handler.api_gateway import Response
 from aws_lambda_powertools.event_handler.middlewares import (
     NextMiddleware,
 )
+from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEventV2
 
-from twilio.request_validator import RequestValidator
+from twilio.request_validator import RequestValidator # type: ignore
 
 from . import app, raw_uri
 
@@ -24,6 +26,10 @@ def _request_validator() -> RequestValidator:
     return RequestValidator(token)
 
 
+def _params(event: APIGatewayProxyEventV2) -> Mapping[str, str]:
+    return dict(parse_qsl(event.decoded_body))
+
+
 def _auth(
     app: APIGatewayHttpResolver, next_middleware: NextMiddleware
 ) -> Response[None]:
@@ -32,7 +38,9 @@ def _auth(
         return Response(status_code=HTTPStatus.UNAUTHORIZED)
 
     rv, uri = _request_validator(), raw_uri(event)
-    if not rv.validate(uri=uri, params=event.body, signature=signature):
+    params = _params(app.current_event)
+
+    if not rv.validate(uri=uri, params=params, signature=signature):
         return Response(status_code=HTTPStatus.FORBIDDEN)
 
     return next_middleware.__call__(app)
@@ -40,7 +48,7 @@ def _auth(
 
 @app.post("/twilio/voice", middlewares=[_auth])
 def voice() -> Response[str]:
-    from twilio.twiml.voice_response import VoiceResponse
+    from twilio.twiml.voice_response import VoiceResponse # type: ignore
 
     rsp = VoiceResponse()
     rsp.dial(number=_REDIRECT)
@@ -49,12 +57,10 @@ def voice() -> Response[str]:
 
 @app.post("/twilio/message", middlewares=[_auth])
 def message() -> Response[str]:
-    from twilio.twiml.messaging_response import MessagingResponse
+    from twilio.twiml.messaging_response import MessagingResponse # type: ignore
 
-    parsed = dict(parse_qsl(app.current_event.decoded_body))
-
-    match parsed:
-        case {"From": str(xfrom), "Body": str(body)}:
+    match _params(app.current_event):
+        case {"From": xfrom, "Body": body}:
             msg = f">>> {xfrom}{linesep}" + body
 
             rsp = MessagingResponse()
