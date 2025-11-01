@@ -70,15 +70,23 @@ def voice() -> Response[str]:
 
 @app.post("/twilio/message", middlewares=[_auth])
 def message() -> Response[str]:
+    root = Element("Response")
+
     match _params(app.current_event):
+        case {"From": xfrom, "Body": body} if xfrom == _redirect():
+            msg = Element("Message", attrib={"to": _redirect()})
+            msg.text = body
+            root.append(msg)
+
+            return _reply(root)
         case {"From": xfrom, "Body": body}:
-            root = Element("Response")
 
             msg = Element("Message", attrib={"to": _redirect()})
             msg.text = f">>> {xfrom}"
             root.append(msg)
             msg = Element("Message", attrib={"to": _redirect()})
             msg.text = body
+            root.append(msg)
 
             return _reply(root)
         case _:
