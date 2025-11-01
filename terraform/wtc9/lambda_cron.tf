@@ -31,11 +31,3 @@ resource "aws_scheduler_schedule" "cron" {
     role_arn = aws_iam_role.cron.arn
   }
 }
-
-resource "aws_lambda_permission" "cron" {
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.cron.function_name
-  principal     = "events.amazonaws.com"
-  region        = aws_lambda_function.cron.region
-  source_arn    = aws_scheduler_schedule.cron.arn
-}

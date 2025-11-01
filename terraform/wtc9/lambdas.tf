@@ -40,6 +40,15 @@ resource "aws_cloudwatch_log_group" "lambdas" {
   retention_in_days = 1
 }
 
+resource "aws_lambda_permission" "faas" {
+  for_each      = local.lambda_permissions
+  action        = "lambda:InvokeFunction"
+  function_name = each.key
+  principal     = each.value.principal
+  region        = local.lambda_region
+  source_arn    = each.value.source_arn
+}
+
 output "lambda_logging" {
   value = {
     for name, log in aws_cloudwatch_log_group.lambdas :

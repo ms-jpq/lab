@@ -21,6 +21,10 @@ locals {
     ppv     = { policies = [data.aws_iam_policy_document.skycrane] }
     skyhook = { policies = [data.aws_iam_policy_document.skyhook] }
   }
+  lambda_permissions = {
+    ppv  = { principal = "apigateway.amazonaws.com", source_arn = "${aws_apigatewayv2_api.faas.execution_arn}/*" }
+    cron = { principal = "events.amazonaws.com", source_arn = aws_scheduler_schedule.cron.arn }
+  }
 }
 
 data "archive_file" "haskell" {
