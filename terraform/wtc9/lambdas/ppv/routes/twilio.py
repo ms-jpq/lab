@@ -49,29 +49,37 @@ def _auth(
     return next_middleware.__call__(app)
 
 
+def _reply(el: Element) -> Response[str]:
+    body = tostring(el, encoding="unicode", xml_declaration=True)
+    return Response(
+        status_code=HTTPStatus.OK,
+        headers={"content-type": "application/xml"},
+        body=body,
+    )
+
+
 @app.post("/twilio/voice", middlewares=[_auth])
-def voice() -> Response[bytes]:
+def voice() -> Response[str]:
     msg = Element("Dial")
     msg.text = _redirect()
     root = Element("Response")
     root.append(msg)
 
-    return Response(
-        status_code=HTTPStatus.OK, body=tostring(root, xml_declaration=True)
-    )
+    return _reply(root)
 
 
 @app.post("/twilio/message", middlewares=[_auth])
-def message() -> Response[bytes]:
+def message() -> Response[str]:
     match _params(app.current_event):
         case {"From": xfrom, "Body": body}:
-            msg = Element("Message", attrib={"to": _redirect()})
-            msg.text = f">>> {xfrom}{linesep}{body}"
             root = Element("Response")
-            root.append(msg)
 
-            return Response(
-                status_code=HTTPStatus.OK, body=tostring(root, xml_declaration=True)
-            )
+            msg = Element("Message", attrib={"to": _redirect()})
+            msg.text = f">>> {xfrom}"
+            root.append(msg)
+            msg = Element("Message", attrib={"to": _redirect()})
+            msg.text = body
+
+            return _reply(root)
         case _:
             return Response(status_code=HTTPStatus.BAD_REQUEST)
