@@ -1,5 +1,6 @@
 from base64 import b64encode
 from collections.abc import Mapping
+from contextlib import nullcontext
 from functools import cache
 from hashlib import sha1
 from hmac import HMAC, compare_digest
@@ -7,6 +8,7 @@ from http import HTTPStatus
 from itertools import chain
 from os import environ
 from urllib.parse import parse_qsl
+from uuid import uuid4
 from xml.etree.ElementTree import Element, SubElement, tostring
 
 from aws_lambda_powertools.event_handler import APIGatewayHttpResolver
@@ -18,6 +20,9 @@ from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEventV2
 
 from . import app, raw_uri
 
+with nullcontext():
+    _ID = uuid4().hex
+
 
 @cache
 def _redirect() -> str:
@@ -25,7 +30,12 @@ def _redirect() -> str:
 
 
 def _params(event: APIGatewayProxyEventV2) -> Mapping[str, str]:
-    return dict(parse_qsl(event.decoded_body, keep_blank_values=True))
+    if parsed := event.raw_event.get(_ID):
+        return parsed
+
+    parsed = dict(parse_qsl(event.decoded_body, keep_blank_values=True))
+    event.raw_event.setdefault(_ID, parsed)
+    return parsed
 
 
 def _auth(
