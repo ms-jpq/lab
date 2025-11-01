@@ -4,6 +4,7 @@ from functools import cache
 from hashlib import sha1
 from hmac import HMAC, compare_digest
 from http import HTTPStatus
+from itertools import chain
 from os import environ
 from urllib.parse import parse_qsl
 from xml.etree.ElementTree import Element, SubElement, tostring
@@ -35,10 +36,12 @@ def _auth(
         return Response(status_code=HTTPStatus.UNAUTHORIZED)
 
     auth_key = environ["ENV_TWILIO_TOKEN"].encode()
-    acc = [raw_uri(event)]
-    for key, val in sorted(_params(app.current_event).items()):
-        acc.extend((key, val))
-    auth_msg = "".join(acc).encode()
+    auth_msg = "".join(
+        chain(
+            (raw_uri(event),),
+            chain.from_iterable(sorted(_params(app.current_event).items())),
+        )
+    ).encode()
 
     hmac = HMAC(auth_key, auth_msg, digestmod=sha1)
     expected = b64encode(hmac.digest()).decode()
