@@ -13,7 +13,7 @@ def raw_uri(event: APIGatewayProxyEventV2) -> str:
         (
             "https",
             event.request_context.domain_name,
-            event.path,
+            event.raw_path,
             event.raw_query_string,
             "",
         )

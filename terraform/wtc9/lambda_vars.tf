@@ -8,7 +8,7 @@ variable "faas_domain" {
 
 variable "twilio_redirect" {
   sensitive = true
-  type = string
+  type      = string
 }
 
 variable "twilio_token" {

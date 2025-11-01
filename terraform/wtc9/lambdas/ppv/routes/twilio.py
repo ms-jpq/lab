@@ -11,7 +11,6 @@ from aws_lambda_powertools.event_handler.middlewares import (
     NextMiddleware,
 )
 from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEventV2
-
 from twilio.request_validator import RequestValidator  # type: ignore
 
 from . import app, raw_uri
@@ -40,6 +39,7 @@ def _auth(
     rv, uri = _request_validator(), raw_uri(event)
     params = _params(app.current_event)
 
+    print(dict(body=event.decoded_body, params=params, uri=uri, signature=signature))
     if not rv.validate(uri=uri, params=params, signature=signature):
         return Response(status_code=HTTPStatus.FORBIDDEN)
 
