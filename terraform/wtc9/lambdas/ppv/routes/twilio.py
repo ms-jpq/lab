@@ -12,7 +12,7 @@ from aws_lambda_powertools.event_handler.middlewares import (
 )
 from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEventV2
 
-from twilio.request_validator import RequestValidator # type: ignore
+from twilio.request_validator import RequestValidator  # type: ignore
 
 from . import app, raw_uri
 
@@ -48,7 +48,7 @@ def _auth(
 
 @app.post("/twilio/voice", middlewares=[_auth])
 def voice() -> Response[str]:
-    from twilio.twiml.voice_response import VoiceResponse # type: ignore
+    from twilio.twiml.voice_response import VoiceResponse  # type: ignore
 
     rsp = VoiceResponse()
     rsp.dial(number=_REDIRECT)
@@ -57,12 +57,11 @@ def voice() -> Response[str]:
 
 @app.post("/twilio/message", middlewares=[_auth])
 def message() -> Response[str]:
-    from twilio.twiml.messaging_response import MessagingResponse # type: ignore
+    from twilio.twiml.messaging_response import MessagingResponse  # type: ignore
 
     match _params(app.current_event):
         case {"From": xfrom, "Body": body}:
-            msg = f">>> {xfrom}{linesep}" + body
-
+            msg = f">>> {xfrom}{linesep}{body}"
             rsp = MessagingResponse()
             rsp.message(to=_REDIRECT, body=msg)
             return Response(status_code=HTTPStatus.OK, body=str(rsp))
