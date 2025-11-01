@@ -11,9 +11,7 @@ from aws_lambda_powertools.event_handler.middlewares import (
     NextMiddleware,
 )
 
-from twilio.request_validator import RequestValidator # type: ignore
-from twilio.twiml.messaging_response import MessagingResponse # type: ignore
-from twilio.twiml.voice_response import VoiceResponse # type: ignore
+from twilio.request_validator import RequestValidator
 
 from . import app, raw_uri
 
@@ -23,11 +21,15 @@ with nullcontext():
 
 @cache
 def _request_validator() -> RequestValidator:
+    from twilio.request_validator import RequestValidator
+
     token = environ["TWILIO_TOKEN"]
     return RequestValidator(token)
 
 
-def _auth(app: APIGatewayHttpResolver, next_middleware: NextMiddleware) -> Response[None]:
+def _auth(
+    app: APIGatewayHttpResolver, next_middleware: NextMiddleware
+) -> Response[None]:
     event = app.current_event
     if not (signature := event.headers.get("x-twilio-signature")):
         return Response(status_code=HTTPStatus.UNAUTHORIZED)
@@ -41,6 +43,8 @@ def _auth(app: APIGatewayHttpResolver, next_middleware: NextMiddleware) -> Respo
 
 @app.get("/twilio/voice", middlewares=[_auth])
 def voice() -> Response[str]:
+    from twilio.twiml.voice_response import VoiceResponse
+
     rsp = VoiceResponse()
     rsp.dial(number=_REDIRECT)
     return Response(status_code=HTTPStatus.OK, body=str(rsp))
@@ -48,6 +52,8 @@ def voice() -> Response[str]:
 
 @app.get("/twilio/message", middlewares=[_auth])
 def message() -> Response[str]:
+    from twilio.twiml.messaging_response import MessagingResponse
+
     getLogger().info("%s", pformat(app.current_event))
 
     match app.current_event.json_body:
