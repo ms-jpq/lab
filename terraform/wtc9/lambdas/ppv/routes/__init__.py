@@ -11,7 +11,7 @@ with nullcontext():
 def raw_uri(event: APIGatewayProxyEventV2) -> str:
     uri = urlunsplit(
         (
-            "https",
+            event.headers.get("x-forwarded-proto", "https"),
             event.request_context.domain_name,
             event.raw_path,
             event.raw_query_string,

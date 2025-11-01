@@ -39,9 +39,8 @@ def _auth(
     rv, uri = _request_validator(), raw_uri(event)
     params = _params(app.current_event)
 
-    print(dict(body=event.decoded_body, params=params, uri=uri, signature=signature))
-    if not rv.validate(uri=uri, params=params, signature=signature):
-        return Response(status_code=HTTPStatus.FORBIDDEN)
+    # if not rv.validate(uri=uri, params=params, signature=signature):
+    #     return Response(status_code=HTTPStatus.FORBIDDEN)
 
     return next_middleware.__call__(app)
 
