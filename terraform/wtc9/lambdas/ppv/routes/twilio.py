@@ -1,9 +1,8 @@
 from contextlib import nullcontext
 from functools import cache
 from http import HTTPStatus
-from logging import getLogger
 from os import environ, linesep
-from pprint import pformat
+from urllib.parse import parse_qsl
 
 from aws_lambda_powertools.event_handler import APIGatewayHttpResolver
 from aws_lambda_powertools.event_handler.api_gateway import Response
@@ -16,14 +15,12 @@ from twilio.request_validator import RequestValidator
 from . import app, raw_uri
 
 with nullcontext():
-    _REDIRECT = environ.get("TWILIO_REDIRECT")
+    _REDIRECT = environ.get("ENV_TWILIO_REDIRECT")
 
 
 @cache
 def _request_validator() -> RequestValidator:
-    from twilio.request_validator import RequestValidator
-
-    token = environ["TWILIO_TOKEN"]
+    token = environ["ENV_TWILIO_TOKEN"]
     return RequestValidator(token)
 
 
@@ -41,7 +38,7 @@ def _auth(
     return next_middleware.__call__(app)
 
 
-@app.get("/twilio/voice", middlewares=[_auth])
+@app.post("/twilio/voice", middlewares=[_auth])
 def voice() -> Response[str]:
     from twilio.twiml.voice_response import VoiceResponse
 
@@ -50,13 +47,13 @@ def voice() -> Response[str]:
     return Response(status_code=HTTPStatus.OK, body=str(rsp))
 
 
-@app.get("/twilio/message", middlewares=[_auth])
+@app.post("/twilio/message", middlewares=[_auth])
 def message() -> Response[str]:
     from twilio.twiml.messaging_response import MessagingResponse
 
-    getLogger().info("%s", pformat(app.current_event))
+    parsed = dict(parse_qsl(app.current_event.decoded_body))
 
-    match app.current_event.json_body:
+    match parsed:
         case {"From": str(xfrom), "Body": str(body)}:
             msg = f">>> {xfrom}{linesep}" + body
 
