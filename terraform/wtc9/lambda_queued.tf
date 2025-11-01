@@ -1,3 +1,31 @@
+resource "aws_sqs_queue" "sink" {
+  region = aws_apigatewayv2_api.faas.region
+}
+
+resource "aws_sqs_queue" "drain" {
+  region = aws_sqs_queue.sink.region
+}
+
+resource "aws_sqs_queue_redrive_allow_policy" "pipe" {
+  queue_url = aws_sqs_queue.drain.id
+  region    = aws_sqs_queue.drain.region
+
+  redrive_allow_policy = jsonencode({
+    redrivePermission = "byQueue",
+    sourceQueueArns   = [aws_sqs_queue.sink.arn]
+  })
+}
+
+resource "aws_sqs_queue_redrive_policy" "pipe" {
+  queue_url = aws_sqs_queue.sink.id
+  region    = aws_sqs_queue.sink.region
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.drain.arn
+    maxReceiveCount     = 2
+  })
+}
+
 data "aws_iam_policy_document" "skyhook" {
   statement {
     actions   = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes"]

@@ -1,7 +1,9 @@
 from contextlib import nullcontext
 from functools import cache
 from http import HTTPStatus
+from logging import getLogger
 from os import environ, linesep
+from pprint import pformat
 
 from aws_lambda_powertools.event_handler import APIGatewayHttpResolver
 from aws_lambda_powertools.event_handler.api_gateway import Response
@@ -21,7 +23,8 @@ with nullcontext():
 
 @cache
 def _request_validator() -> RequestValidator:
-    return RequestValidator(token=environ[""])
+    token = environ["TWILIO_TOKEN"]
+    return RequestValidator(token)
 
 
 def _auth(app: APIGatewayHttpResolver, next_middleware: NextMiddleware) -> Response:
@@ -45,6 +48,8 @@ def voice() -> Response[str]:
 
 @app.get("/twilio/message", middlewares=[_auth])
 def message() -> Response[str]:
+    getLogger().info("%s", pformat(app.current_event))
+
     match app.current_event.json_body:
         case {"From": str(xfrom), "Body": str(body)}:
             msg = f">>> {xfrom}{linesep}" + body
