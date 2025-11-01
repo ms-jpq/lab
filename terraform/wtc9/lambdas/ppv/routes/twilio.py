@@ -60,12 +60,15 @@ def _reply(el: Element) -> Response[str]:
 
 @app.post("/twilio/voice", middlewares=[_auth])
 def voice() -> Response[str]:
-    msg = Element("Dial")
-    msg.text = _redirect()
     root = Element("Response")
-    root.append(msg)
+    msg = Element("Dial")
 
-    return _reply(root)
+    match _params(app.current_event):
+        case _:
+            msg.text = _redirect()
+            root.append(msg)
+
+            return _reply(root)
 
 
 @app.post("/twilio/message", middlewares=[_auth])
