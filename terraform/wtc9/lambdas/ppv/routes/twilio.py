@@ -4,7 +4,7 @@ from functools import cache
 from hashlib import sha1
 from hmac import HMAC, compare_digest
 from http import HTTPStatus
-from os import environ, linesep
+from os import environ
 from urllib.parse import parse_qsl
 from xml.etree.ElementTree import Element, tostring
 
