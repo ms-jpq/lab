@@ -1,12 +1,12 @@
 from collections.abc import Callable
 from contextlib import nullcontext
+from functools import wraps
 from json import dumps
 from typing import TypeVar, cast
 from urllib.parse import urlunsplit
 from uuid import uuid4
 
 from aws_lambda_powertools.event_handler import APIGatewayHttpResolver
-from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEventV2
 from boto3 import client  # pyright:ignore
 
 with nullcontext():
@@ -26,13 +26,17 @@ with nullcontext():
     dynamodb = client(service_name="dynamodb")
 
 
-def compute_once(fn: Callable[[APIGatewayProxyEventV2], _T]) -> _T:
-    f_id = f"{_UUID}-{id(fn)}"
+def compute_once(fn: Callable[[], _T]) -> Callable[[], _T]:
+    @wraps(fn)
+    def cont() -> _T:
+        f_id = f"{_UUID}-{id(fn)}"
 
-    if f_id not in app.current_event.raw_event:
-        app.current_event.raw_event[f_id] = fn(app.current_event)
+        if f_id not in app.current_event.raw_event:
+            app.current_event.raw_event[f_id] = fn()
 
-    return cast(_T, app.current_event.raw_event[f_id])
+        return cast(_T, app.current_event.raw_event[f_id])
+
+    return cont
 
 
 def current_raw_uri() -> str:

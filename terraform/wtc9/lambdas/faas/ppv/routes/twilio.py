@@ -34,10 +34,9 @@ def _table() -> str:
     return environ["ENV_TBL_NAME"]
 
 
+@compute_once
 def _params() -> Mapping[str, str]:
-    return compute_once(
-        lambda e: dict(parse_qsl(e.decoded_body, keep_blank_values=True))
-    )
+    return dict(parse_qsl(app.current_event.decoded_body, keep_blank_values=True))
 
 
 def _auth(
