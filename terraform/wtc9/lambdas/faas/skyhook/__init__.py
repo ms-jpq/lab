@@ -1,5 +1,5 @@
 from contextlib import nullcontext
-from logging import INFO, captureWarnings, getLogger
+from logging import getLogger
 
 from aws_lambda_powertools.utilities.batch import (
     BatchProcessor,
@@ -14,9 +14,7 @@ from aws_lambda_powertools.utilities.data_classes import (
 )
 from aws_lambda_powertools.utilities.typing import LambdaContext
 
-with nullcontext():
-    captureWarnings(True)
-    getLogger().setLevel(INFO)
+from .. import _
 
 with nullcontext():
     _PROC = BatchProcessor(event_type=EventType.SQS)
