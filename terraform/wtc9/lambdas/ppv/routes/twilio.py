@@ -119,7 +119,7 @@ def _upsert_reply_to(incoming: str, route_to: str, reply_to: str) -> str:
             ReturnValues="ALL_OLD",
             Item={
                 "ID": {"S": id},
-                "TTL": {"N": ttl},
+                "TTL": {"N": str(ttl)},
                 "Reply-To": {"S": reply_to},
             },
         )
@@ -157,18 +157,35 @@ def _messages(
 
     elif route_to == src:
         """
-        received text from a physical #
+        received text from a privileged #
         """
 
-        if body.startswith(prefix):
+        if body.startswith(prefix) and len(body.splitlines()) == 1:
+            """
+            received instruction for reply destination
+            """
+
             set_reply_to = body.removeprefix(prefix)
             _upsert_reply_to(incoming=dst, route_to=route_to, reply_to=set_reply_to)
+
             return route_to, (f"*** {set_reply_to}", body)
         elif prev_reply_to := _retrieve_reply_to(incoming=dst, route_to=route_to):
+            """
+            found previous reply destination
+            """
+
             return route_to, (f"<<< {prev_reply_to}", body)
         else:
-            return route_to, (body,)
+            """
+            did not find previous reply destination
+            """
+
+            return route_to, ()
     else:
+        """
+        received text from an arbitrary #
+        """
+
         reply_to = src
         _upsert_reply_to(incoming=dst, route_to=route_to, reply_to=reply_to)
 

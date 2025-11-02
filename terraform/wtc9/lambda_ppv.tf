@@ -21,7 +21,13 @@ data "aws_iam_policy_document" "skycrane" {
     resources = [aws_sqs_queue.sink.arn]
   }
   statement {
-    actions   = ["dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem","dynamodb:BatchWriteItem"]
+    actions = [
+      "dynamodb:BatchWriteItem",
+      "dynamodb:DeleteItem",
+      "dynamodb:GetItem",
+      "dynamodb:PutItem",
+      "dynamodb:UpdateItem",
+    ]
     effect    = "Allow"
     resources = [aws_dynamodb_table.mango.arn]
   }
