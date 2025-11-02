@@ -163,12 +163,11 @@ def _messages(
         if body.startswith(prefix):
             set_reply_to = body.removeprefix(prefix)
             _upsert_reply_to(incoming=dst, route_to=route_to, reply_to=set_reply_to)
-
             return route_to, (f"*** {set_reply_to}", body)
-        else:
-            prev_reply_to = _retrieve_reply_to(incoming=dst, route_to=route_to)
-
+        elif prev_reply_to := _retrieve_reply_to(incoming=dst, route_to=route_to):
             return route_to, (f"<<< {prev_reply_to}", body)
+        else:
+            return route_to, (body,)
     else:
         reply_to = src
         _upsert_reply_to(incoming=dst, route_to=route_to, reply_to=reply_to)
