@@ -1,8 +1,6 @@
 from collections.abc import Mapping
 from contextlib import nullcontext
 from logging import INFO, captureWarnings, getLogger
-from pathlib import PurePath
-from sys import path
 from typing import Any
 
 from aws_lambda_powertools.utilities.data_classes import (
@@ -12,9 +10,6 @@ from aws_lambda_powertools.utilities.data_classes.api_gateway_proxy_event import
     APIGatewayProxyEventV2,
 )
 from aws_lambda_powertools.utilities.typing import LambdaContext
-
-_LIB = PurePath(__file__).parent.parent.joinpath("python")
-path.append(str(_LIB))
 
 from .routes import app
 
