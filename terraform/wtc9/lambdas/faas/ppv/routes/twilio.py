@@ -95,7 +95,7 @@ def _id(dst: str, route_to: str) -> str:
 
 def _upsert_reply_to(dst: str, route_to: str, reply_to: str) -> None:
     id = _id(dst, route_to=route_to)
-    ttl = int((datetime.now(tz=timezone.utc) + timedelta(weeks=4)).timestamp())
+    ttl = int((datetime.now(tz=timezone.utc) + timedelta(hours=8)).timestamp())
     with suppress_exn():
         dynamodb.put_item(
             TableName=_table(),
