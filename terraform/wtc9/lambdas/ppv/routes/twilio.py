@@ -1,6 +1,5 @@
 from base64 import b64encode
 from collections.abc import Iterator, Mapping, Sequence, Set
-from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager, nullcontext
 from datetime import datetime, timedelta, timezone
 from functools import cache, partial
@@ -23,11 +22,11 @@ from aws_lambda_powertools.event_handler.middlewares import (
 )
 from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEventV2
 
+from .. import executor
 from . import app, raw_uri
 
 with nullcontext():
     _ID = uuid4().hex
-    _POOL = ThreadPoolExecutor()
 
 
 @cache
@@ -238,7 +237,7 @@ def message() -> Response[str]:
                 """
 
                 fn = partial(_messages, src, dst, body)
-                for pairs in _POOL.map(fn, _routes()):
+                for pairs in executor().map(fn, _routes()):
                     for tel, msgs in pairs:
                         for msg in msgs:
                             SubElement(root, "Message", attrib={"to": tel}).text = msg
