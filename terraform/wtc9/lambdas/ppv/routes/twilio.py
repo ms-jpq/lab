@@ -110,24 +110,18 @@ def _id(incoming: str, route_to: str) -> str:
     return id
 
 
-def _upsert_reply_to(incoming: str, route_to: str, reply_to: str) -> str:
+def _upsert_reply_to(incoming: str, route_to: str, reply_to: str) -> None:
     id = _id(incoming, route_to=route_to)
     ttl = int((datetime.now(tz=timezone.utc) + timedelta(weeks=4)).timestamp())
     with _suppress_exns():
-        rsp = _DB.put_item(
+        _DB.put_item(
             TableName=_table(),
-            ReturnValues="ALL_OLD",
             Item={
                 "ID": {"S": id},
                 "TTL": {"N": str(ttl)},
                 "Reply-To": {"S": reply_to},
             },
         )
-        match rsp:
-            case {"Attributes": {"Reply-To": {"S": str(prev_reply_to)}}}:
-                return prev_reply_to
-
-    return reply_to
 
 
 def _retrieve_reply_to(incoming: str, route_to: str) -> str | None:
