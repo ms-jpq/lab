@@ -164,7 +164,8 @@ def _messages(
                 f"*** route_to={route_to} received question for reply destination ***",
             )
 
-            prev_reply_to = _retrieve_reply_to(dst=dst, route_to=route_to)
+            if prev_reply_to := _retrieve_reply_to(dst=dst, route_to=route_to):
+                _upsert_reply_to(dst=dst, route_to=route_to, reply_to=prev_reply_to)
 
             return ((route_to, (f"<<< {prev_reply_to}",)),)
         elif instruction:
