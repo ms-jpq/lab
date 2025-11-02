@@ -48,7 +48,7 @@ with nullcontext():
 
 @contextmanager
 def _fetching(msg: S3Message) -> Iterator[BinaryIO]:
-    kw = dict(Bucket=msg.bucket.name, Key=msg.get_object.key)
+    kw = {"Bucket": msg.bucket.name, "Key": msg.get_object.key}
     rsp = _S3.get_object(**kw)
     yield rsp["Body"]
     _S3.delete_object(**kw)

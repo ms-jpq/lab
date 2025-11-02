@@ -19,15 +19,17 @@ from aws_lambda_powertools.event_handler.middlewares import (
     NextMiddleware,
 )
 from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEventV2
+from boto3 import client  # pyright:ignore
 
 from . import app, raw_uri
 
 with nullcontext():
     _ID = uuid4().hex
+    _DB = client(service_name="dynamodb")
 
 
 @cache
-def _numbers() -> Set[str]:
+def _routes() -> Set[str]:
     json = loads(environ["ENV_TWILIO_REDIRECTS"])
     return {*json}
 
@@ -75,26 +77,35 @@ def voice() -> Response[str]:
     root = Element("Response")
     dial = SubElement(root, "Dial")
 
-    sinks = _numbers()
+    routes = _routes()
     match _params(app.current_event):
         case {"Caller": src, "Called": dst}:
-            sinks -= {src, dst}
+            routes -= {src, dst}
 
-    for tel in sinks:
+    for tel in routes:
         SubElement(dial, "Number").text = tel
 
     return _reply(root)
+
+
+def _route_messages(src: str, dst: str, numbers: Set[str]) -> Set[str]:
+    tbl = environ["ENV_TBL_NAME"]
+    kw = {"TableName": tbl, "Key": {"ID": {"S": src}}}
+
+    _DB.get_item(**kw)
+
+    return numbers - {src, dst}
 
 
 @app.post("/twilio/message", middlewares=[_auth])
 def message() -> Response[str]:
     root = Element("Response")
 
-    sinks = numbers = _numbers()
+    routes = _routes()
     match _params(app.current_event):
         case {"From": src, "To": dst, "Body": msg}:
-            sinks -= {src, dst}
-            texts = (msg,) if src in numbers else (f">>> {src}", msg)
+            texts = (msg,) if src in routes else (f">>> {src}", msg)
+            sinks = _route_messages(src, dst=dst, numbers=routes)
 
             for tel, text in product(sinks, texts):
                 SubElement(root, "Message", attrib={"to": tel}).text = text

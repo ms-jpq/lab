@@ -1,15 +1,15 @@
 resource "aws_dynamodb_table" "mango" {
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "id"
-  name         = "mango-db"
+  hash_key     = "ID"
+  name         = "mango_db"
   region       = aws_sqs_queue.sink.region
 
   attribute {
-    name = "id"
+    name = "ID"
     type = "S"
   }
   ttl {
-    attribute_name = "ttl"
+    attribute_name = "TTL"
     enabled        = true
   }
 }
@@ -41,6 +41,7 @@ resource "aws_lambda_function" "ppv" {
   environment {
     variables = {
       ENV_DOMAIN           = var.vps_domain
+      ENV_TBL_NAME         = aws_dynamodb_table.mango.name
       ENV_TWILIO_REDIRECTS = jsonencode(var.twilio_redirects)
       ENV_TWILIO_TOKEN     = var.twilio_token
     }
