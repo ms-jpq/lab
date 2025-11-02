@@ -3,26 +3,20 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager, nullcontext
 from functools import cache
 from logging import getLogger
-from typing import Any
 from urllib.parse import urlunsplit
 
 from aws_lambda_powertools.event_handler import APIGatewayHttpResolver
 from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEventV2
+from boto3 import client  # pyright:ignore
 
 with nullcontext():
     app = APIGatewayHttpResolver()
+    dynamodb = client(service_name="dynamodb")
 
 
 @cache
 def executor() -> ThreadPoolExecutor:
     return ThreadPoolExecutor()
-
-
-@cache
-def dynamodb() -> Any:
-    from boto3 import client  # pyright:ignore
-
-    return client(service_name="dynamodb")
 
 
 @contextmanager

@@ -112,7 +112,7 @@ def _upsert_reply_to(dst: str, route_to: str, reply_to: str) -> None:
     id = _id(dst, route_to=route_to)
     ttl = int((datetime.now(tz=timezone.utc) + timedelta(weeks=4)).timestamp())
     with _suppress_exns():
-        dynamodb().put_item(
+        dynamodb.put_item(
             TableName=_table(),
             Item={
                 "ID": {"S": id},
@@ -125,7 +125,7 @@ def _upsert_reply_to(dst: str, route_to: str, reply_to: str) -> None:
 def _retrieve_reply_to(dst: str, route_to: str) -> str | None:
     id = _id(dst, route_to=route_to)
     with _suppress_exns():
-        rsp = dynamodb().get_item(
+        rsp = dynamodb.get_item(
             TableName=_table(),
             Key={"ID": {"S": id}},
         )
