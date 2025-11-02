@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from contextlib import nullcontext
 from functools import wraps
+from http.cookies import SimpleCookie
 from json import dumps
 from typing import TypeVar, cast
 from urllib.parse import urlunsplit
@@ -27,10 +28,10 @@ with nullcontext():
 
 
 def compute_once(fn: Callable[[], _T]) -> Callable[[], _T]:
+    f_id = f"{_UUID}-{id(fn)}"
+
     @wraps(fn)
     def cont() -> _T:
-        f_id = f"{_UUID}-{id(fn)}"
-
         if f_id not in app.current_event.raw_event:
             app.current_event.raw_event[f_id] = fn()
 
@@ -40,16 +41,24 @@ def compute_once(fn: Callable[[], _T]) -> Callable[[], _T]:
 
 
 def current_raw_uri() -> str:
+    event = app.current_event
     uri = urlunsplit(
         (
-            app.current_event.headers.get("x-forwarded-proto", "https"),
-            app.current_event.request_context.domain_name,
-            app.current_event.raw_path,
-            app.current_event.raw_query_string,
+            event.headers.get("x-forwarded-proto", "https"),
+            event.request_context.domain_name,
+            event.raw_path,
+            event.raw_query_string,
             "",
         )
     )
     return uri
+
+
+def current_cookies() -> SimpleCookie:
+    cookie = SimpleCookie()
+    for c in app.current_event.cookies:
+        cookie.load(c)
+    return cookie
 
 
 from . import echo, owncloud, twilio
