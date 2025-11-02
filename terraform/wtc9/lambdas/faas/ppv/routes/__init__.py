@@ -40,6 +40,7 @@ def compute_once(fn: Callable[[], _T]) -> Callable[[], _T]:
     return cont
 
 
+@compute_once
 def current_raw_uri() -> str:
     event = app.current_event
     uri = urlunsplit(
@@ -54,6 +55,7 @@ def current_raw_uri() -> str:
     return uri
 
 
+@compute_once
 def current_cookies() -> SimpleCookie:
     cookie = SimpleCookie()
     for c in app.current_event.cookies:
