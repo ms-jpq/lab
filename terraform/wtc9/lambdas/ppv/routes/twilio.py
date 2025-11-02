@@ -75,7 +75,12 @@ def voice() -> Response[str]:
     root = Element("Response")
     dial = SubElement(root, "Dial")
 
-    for tel in _numbers():
+    sinks = _numbers()
+    match _params(app.current_event):
+        case {"Caller": src, "Called": dst}:
+            sinks -= {src, dst}
+
+    for tel in sinks:
         SubElement(dial, "Number").text = tel
 
     return _reply(root)
@@ -85,14 +90,13 @@ def voice() -> Response[str]:
 def message() -> Response[str]:
     root = Element("Response")
 
+    sinks = numbers = _numbers()
     match _params(app.current_event):
-        case {"From": xfrom, "Body": body} if xfrom in _numbers():
-            for tel in _numbers():
-                SubElement(root, "Message", attrib={"to": tel}).text = body
+        case {"From": src, "To": dst, "Body": msg}:
+            sinks -= {src, dst}
+            texts = (msg,) if src in numbers else (f">>> {src}", msg)
 
-            return _reply(root)
-        case {"From": xfrom, "Body": body}:
-            for tel, text in product(_numbers(), (f">>> {xfrom}", body)):
+            for tel, text in product(sinks, texts):
                 SubElement(root, "Message", attrib={"to": tel}).text = text
 
             return _reply(root)
