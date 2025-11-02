@@ -144,6 +144,7 @@ def _messages(
     src: str, dst: str, body: str, route_to: str
 ) -> Sequence[tuple[str, Sequence[str]]]:
     prefix = ">>> "
+    instruction = body.startswith(prefix) and len(body.splitlines()) == 1
 
     if route_to == dst:
         """
@@ -153,10 +154,11 @@ def _messages(
 
     elif route_to == src:
         getLogger().info(
-            "%s", f"*** route_to={route_to} received text from a privileged # ***"
+            "%s",
+            f"*** route_to={route_to} received text from a privileged # ***",
         )
 
-        if body.startswith(prefix) and len(body.splitlines()) == 1:
+        if instruction:
             getLogger().info(
                 "%s",
                 f"*** route_to={route_to} received instruction for reply destination ***",
@@ -168,7 +170,8 @@ def _messages(
             return ((route_to, (f"*** {set_reply_to}",)),)
         elif prev_reply_to := _retrieve_reply_to(incoming=dst, route_to=route_to):
             getLogger().info(
-                "%s", f"*** route_to={route_to} found previous reply destination ***"
+                "%s",
+                f"*** route_to={route_to} found previous reply destination ***",
             )
 
             return ((route_to, (f"<<< {prev_reply_to}",)), (prev_reply_to, (body,)))
@@ -179,6 +182,13 @@ def _messages(
             )
 
             return ()
+    elif src in _routes() and instruction:
+        getLogger().info(
+            "%s",
+            f"*** route_to={route_to} received instruction from another privileged # ***",
+        )
+
+        return ()
     else:
         getLogger().info(
             "%s", f"*** route_to={route_to} received text from an arbitrary # ***"
