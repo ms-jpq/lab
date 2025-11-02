@@ -22,7 +22,8 @@ from aws_lambda_powertools.event_handler.middlewares import (
 )
 from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEventV2
 
-from . import app, dynamodb, executor, log_span, raw_uri
+from ... import executor, log_span
+from . import app, dynamodb, raw_uri
 
 with nullcontext():
     _ID = uuid4().hex
