@@ -1,6 +1,6 @@
 from base64 import b64encode
-from collections.abc import Iterator, Mapping, Sequence, Set
-from contextlib import contextmanager, nullcontext
+from collections.abc import Mapping, Sequence, Set
+from contextlib import nullcontext
 from datetime import datetime, timedelta, timezone
 from functools import cache, partial
 from hashlib import sha1
@@ -22,7 +22,7 @@ from aws_lambda_powertools.event_handler.middlewares import (
 )
 from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEventV2
 
-from ... import executor, log_span
+from ... import executor, log_span, suppress_exn
 from . import app, dynamodb, raw_uri
 
 with nullcontext():
@@ -96,14 +96,6 @@ def voice() -> Response[str]:
     return _reply(root)
 
 
-@contextmanager
-def _suppress_exns() -> Iterator[None]:
-    try:
-        yield None
-    except Exception as e:
-        getLogger().error("%s", e)
-
-
 def _id(dst: str, route_to: str) -> str:
     id = f"twilio-{dst}>>>{route_to}"
     return id
@@ -112,7 +104,7 @@ def _id(dst: str, route_to: str) -> str:
 def _upsert_reply_to(dst: str, route_to: str, reply_to: str) -> None:
     id = _id(dst, route_to=route_to)
     ttl = int((datetime.now(tz=timezone.utc) + timedelta(weeks=4)).timestamp())
-    with _suppress_exns():
+    with suppress_exn():
         dynamodb.put_item(
             TableName=_table(),
             Item={
@@ -125,7 +117,7 @@ def _upsert_reply_to(dst: str, route_to: str, reply_to: str) -> None:
 
 def _retrieve_reply_to(dst: str, route_to: str) -> str | None:
     id = _id(dst, route_to=route_to)
-    with _suppress_exns():
+    with suppress_exn():
         rsp = dynamodb.get_item(
             TableName=_table(),
             Key={"ID": {"S": id}},

@@ -23,3 +23,11 @@ def log_span() -> Iterator[None]:
         yield None
     finally:
         getLogger().info("%s", "<<<")
+
+
+@contextmanager
+def suppress_exn() -> Iterator[None]:
+    try:
+        yield None
+    except Exception as e:
+        getLogger().error("%s", e)
