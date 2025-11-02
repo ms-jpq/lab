@@ -1,14 +1,30 @@
+resource "aws_dynamodb_table" "once" {
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
+  name         = ""
+  region       = aws_sqs_queue.sink.region
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+  ttl {
+    attribute_name = "expiration"
+    enabled        = true
+  }
+}
+
 data "aws_iam_policy_document" "skycrane" {
   statement {
     actions   = ["sqs:SendMessage", "sqs:GetQueueUrl", "sqs:GetQueueAttributes"]
     effect    = "Allow"
     resources = [aws_sqs_queue.sink.arn]
   }
-  # statement {
-  #   actions   = ["dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem","dynamodb:BatchWriteItem"]
-  #   effect    = "Allow"
-  #   resources = []
-  # }
+  statement {
+    actions   = ["dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem","dynamodb:BatchWriteItem"]
+    effect    = "Allow"
+    resources = [aws_dynamodb_table.once.arn]
+  }
 }
 
 resource "aws_lambda_function" "ppv" {
