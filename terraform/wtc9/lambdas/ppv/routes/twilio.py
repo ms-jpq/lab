@@ -1,7 +1,7 @@
 from base64 import b64encode
-from collections.abc import Mapping, Sequence, Set
+from collections.abc import Iterator, Mapping, Sequence, Set
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from datetime import datetime, timedelta, timezone
 from functools import cache, partial
 from hashlib import sha1
@@ -97,11 +97,23 @@ def voice() -> Response[str]:
     return _reply(root)
 
 
-def _upsert_reply_to(incoming: str, route_to: str, reply_to: str) -> str:
-    ttl = int((datetime.now(tz=timezone.utc) + timedelta(weeks=4)).timestamp())
-    id = f"twilio-{incoming}>>>{route_to}"
-
+@contextmanager
+def _suppress_exns() -> Iterator[None]:
     try:
+        yield None
+    except Exception as e:
+        getLogger().error("%s", e)
+
+
+def _id(incoming: str, route_to: str) -> str:
+    id = f"twilio-{incoming}>>>{route_to}"
+    return id
+
+
+def _upsert_reply_to(incoming: str, route_to: str, reply_to: str) -> str:
+    id = _id(incoming, route_to=route_to)
+    ttl = int((datetime.now(tz=timezone.utc) + timedelta(weeks=4)).timestamp())
+    with _suppress_exns():
         rsp = _DB.put_item(
             TableName=_table(),
             ReturnValues="ALL_OLD",
@@ -114,15 +126,29 @@ def _upsert_reply_to(incoming: str, route_to: str, reply_to: str) -> str:
         match rsp:
             case {"Attributes": {"Reply-To": {"S": str(prev_reply_to)}}}:
                 return prev_reply_to
-    except Exception as e:
-        getLogger().error("%s", e)
 
     return reply_to
+
+
+def _retrieve_reply_to(incoming: str, route_to: str) -> str | None:
+    id = _id(incoming, route_to=route_to)
+    with _suppress_exns():
+        rsp = _DB.get_item(
+            TableName=_table(),
+            Key={"ID": {"S": id}},
+        )
+        match rsp:
+            case {"Item": {"Reply-To": {"S": str(prev_reply_to)}}}:
+                return prev_reply_to
+
+    return None
 
 
 def _messages(
     src: str, dst: str, body: str, route_to: str
 ) -> tuple[str, Sequence[str]]:
+    prefix = ">>> "
+
     if route_to == dst:
         """
         forwarding text to twilio #
@@ -134,9 +160,20 @@ def _messages(
         received text from a physical #
         """
 
-    reply_to = _upsert_reply_to(incoming=dst, route_to=route_to, reply_to=src)
+        if body.startswith(prefix):
+            set_reply_to = body.removeprefix(prefix)
+            _upsert_reply_to(incoming=dst, route_to=route_to, reply_to=set_reply_to)
 
-    return route_to, (f">>> {reply_to}", body)
+            return route_to, (f"*** {set_reply_to}", body)
+        else:
+            prev_reply_to = _retrieve_reply_to(incoming=dst, route_to=route_to)
+
+            return route_to, (f"<<< {prev_reply_to}", body)
+    else:
+        reply_to = src
+        _upsert_reply_to(incoming=dst, route_to=route_to, reply_to=reply_to)
+
+        return route_to, (prefix + reply_to, body)
 
 
 @app.post("/twilio/message", middlewares=[_auth])
