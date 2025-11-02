@@ -22,7 +22,7 @@ from aws_lambda_powertools.event_handler.middlewares import (
 )
 from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEventV2
 
-from . import app, dynamodb, executor, raw_uri
+from . import app, dynamodb, executor, log_span, raw_uri
 
 with nullcontext():
     _ID = uuid4().hex
@@ -208,20 +208,11 @@ def _messages(
         return ((route_to, (prefix + reply_to, body)),)
 
 
-@contextmanager
-def _log_span() -> Iterator[None]:
-    getLogger().info("%s", ">>>")
-    try:
-        yield None
-    finally:
-        getLogger().info("%s", "<<<")
-
-
 @app.post("/twilio/message", middlewares=[_auth])
 def message() -> Response[str]:
     root = Element("Response")
 
-    with _log_span():
+    with log_span():
         match _params(app.current_event):
             case {"From": src, "To": dst, "Body": body}:
                 """
