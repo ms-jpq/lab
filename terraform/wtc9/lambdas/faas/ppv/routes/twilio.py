@@ -1,5 +1,6 @@
 from base64 import b64encode
-from collections.abc import Mapping, Sequence, Set
+from collections import defaultdict
+from collections.abc import Mapping, MutableSet, Sequence, Set
 from contextlib import nullcontext
 from datetime import datetime, timedelta, timezone
 from functools import cache, partial
@@ -213,10 +214,17 @@ def message() -> Response[str]:
                 """
 
                 fn = partial(_messages, src, dst, body)
+                seen: Mapping[str, MutableSet[int]] = defaultdict(set)
                 for pairs in executor().map(fn, _routes()):
                     for tel, msgs in pairs:
+                        acc = seen[tel]
                         for msg in msgs:
-                            SubElement(root, "Message", attrib={"to": tel}).text = msg
+                            key = hash(msg)
+                            if not key in acc:
+                                SubElement(root, "Message", attrib={"to": tel}).text = (
+                                    msg
+                                )
+                                acc.add(key)
 
                 return _reply(root)
             case _:
