@@ -21,12 +21,12 @@ def _mappings() -> Mapping[str, str]:
         return {}
 
     mappings: MutableMapping[str, str] = {
-        "google.ca": f"ask.{domain}",
-        "google.com": f"ask.{domain}",
         "m.youtube.com": f"youtube.{domain}",
         "mobile.twitter.com": f"xcancel.com",
         "old.reddit.com": f"reddit.{domain}",
         "reddit.com": f"reddit.{domain}",
+        "www.google.ca": f"ask.{domain}",
+        "www.google.com": f"ask.{domain}",
         "www.reddit.com": f"reddit.{domain}",
         "x.com": f"xcancel.com",
         "youtube.com": f"youtube.{domain}",
