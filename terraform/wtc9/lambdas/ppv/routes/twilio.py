@@ -107,13 +107,13 @@ def _suppress_exns() -> Iterator[None]:
         getLogger().error("%s", e)
 
 
-def _id(incoming: str, route_to: str) -> str:
-    id = f"twilio-{incoming}>>>{route_to}"
+def _id(dst: str, route_to: str) -> str:
+    id = f"twilio-{dst}>>>{route_to}"
     return id
 
 
-def _upsert_reply_to(incoming: str, route_to: str, reply_to: str) -> None:
-    id = _id(incoming, route_to=route_to)
+def _upsert_reply_to(dst: str, route_to: str, reply_to: str) -> None:
+    id = _id(dst, route_to=route_to)
     ttl = int((datetime.now(tz=timezone.utc) + timedelta(weeks=4)).timestamp())
     with _suppress_exns():
         _DB.put_item(
@@ -126,8 +126,8 @@ def _upsert_reply_to(incoming: str, route_to: str, reply_to: str) -> None:
         )
 
 
-def _retrieve_reply_to(incoming: str, route_to: str) -> str | None:
-    id = _id(incoming, route_to=route_to)
+def _retrieve_reply_to(dst: str, route_to: str) -> str | None:
+    id = _id(dst, route_to=route_to)
     with _suppress_exns():
         rsp = _DB.get_item(
             TableName=_table(),
@@ -165,14 +165,15 @@ def _messages(
             )
 
             set_reply_to = body.removeprefix(prefix)
-            _upsert_reply_to(incoming=dst, route_to=route_to, reply_to=set_reply_to)
+            _upsert_reply_to(dst=dst, route_to=route_to, reply_to=set_reply_to)
 
             return ((route_to, (f"*** {set_reply_to}",)),)
-        elif prev_reply_to := _retrieve_reply_to(incoming=dst, route_to=route_to):
+        elif prev_reply_to := _retrieve_reply_to(dst=dst, route_to=route_to):
             getLogger().info(
                 "%s",
                 f"*** route_to={route_to} found previous reply destination ***",
             )
+            _upsert_reply_to(dst=dst, route_to=route_to, reply_to=prev_reply_to)
 
             return ((route_to, (f"<<< {prev_reply_to}",)), (prev_reply_to, (body,)))
         else:
@@ -195,7 +196,7 @@ def _messages(
         )
 
         reply_to = src
-        _upsert_reply_to(incoming=dst, route_to=route_to, reply_to=reply_to)
+        _upsert_reply_to(dst=dst, route_to=route_to, reply_to=reply_to)
 
         return ((route_to, (prefix + reply_to, body)),)
 
