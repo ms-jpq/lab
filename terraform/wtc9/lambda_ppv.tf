@@ -1,7 +1,7 @@
-resource "aws_dynamodb_table" "once" {
+resource "aws_dynamodb_table" "mango" {
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "id"
-  name         = ""
+  name         = "mango-db"
   region       = aws_sqs_queue.sink.region
 
   attribute {
@@ -9,7 +9,7 @@ resource "aws_dynamodb_table" "once" {
     type = "S"
   }
   ttl {
-    attribute_name = "expiration"
+    attribute_name = "ttl"
     enabled        = true
   }
 }
@@ -23,7 +23,7 @@ data "aws_iam_policy_document" "skycrane" {
   statement {
     actions   = ["dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem","dynamodb:BatchWriteItem"]
     effect    = "Allow"
-    resources = [aws_dynamodb_table.once.arn]
+    resources = [aws_dynamodb_table.mango.arn]
   }
 }
 
