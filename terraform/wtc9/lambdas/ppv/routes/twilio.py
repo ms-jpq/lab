@@ -11,6 +11,7 @@ from itertools import chain
 from json import loads
 from logging import getLogger
 from os import environ
+from textwrap import dedent
 from typing import cast
 from urllib.parse import parse_qsl
 from uuid import uuid4
@@ -156,35 +157,25 @@ def _messages(
         assert False
 
     elif route_to == src:
-        """
-        received text from a privileged #
-        """
+        getLogger().info("%s", "*** received text from a privileged # ***")
 
         if body.startswith(prefix) and len(body.splitlines()) == 1:
-            """
-            received instruction for reply destination
-            """
+            getLogger().info("%s", "*** received instruction for reply destination ***")
 
             set_reply_to = body.removeprefix(prefix)
             _upsert_reply_to(incoming=dst, route_to=route_to, reply_to=set_reply_to)
 
             return route_to, (f"*** {set_reply_to}", body)
         elif prev_reply_to := _retrieve_reply_to(incoming=dst, route_to=route_to):
-            """
-            found previous reply destination
-            """
+            getLogger().info("%s", "*** found previous reply destination ***")
 
             return route_to, (f"<<< {prev_reply_to}", body)
         else:
-            """
-            did not find previous reply destination
-            """
+            getLogger().info("%s", "*** did not find previous reply destination ***")
 
             return route_to, ()
     else:
-        """
-        received text from an arbitrary #
-        """
+        getLogger().info("%s", "*** received text from an arbitrary # ***")
 
         reply_to = src
         _upsert_reply_to(incoming=dst, route_to=route_to, reply_to=reply_to)
