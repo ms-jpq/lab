@@ -183,21 +183,31 @@ def _messages(
         return route_to, (prefix + reply_to, body)
 
 
+@contextmanager
+def _log_span() -> Iterator[None]:
+    getLogger().info("%s", ">>>")
+    try:
+        yield None
+    finally:
+        getLogger().info("%s", "<<<")
+
+
 @app.post("/twilio/message", middlewares=[_auth])
 def message() -> Response[str]:
     root = Element("Response")
 
-    match _params(app.current_event):
-        case {"From": src, "To": dst, "Body": body}:
-            """
-            dst is always a twilio number
-            """
+    with _log_span():
+        match _params(app.current_event):
+            case {"From": src, "To": dst, "Body": body}:
+                """
+                dst is always a twilio number
+                """
 
-            fn = partial(_messages, src, dst, body)
-            for tel, msgs in _POOL.map(fn, _routes()):
-                for msg in msgs:
-                    SubElement(root, "Message", attrib={"to": tel}).text = msg
+                fn = partial(_messages, src, dst, body)
+                for tel, msgs in _POOL.map(fn, _routes()):
+                    for msg in msgs:
+                        SubElement(root, "Message", attrib={"to": tel}).text = msg
 
-            return _reply(root)
-        case _:
-            return Response(status_code=HTTPStatus.BAD_REQUEST)
+                return _reply(root)
+            case _:
+                return Response(status_code=HTTPStatus.BAD_REQUEST)
