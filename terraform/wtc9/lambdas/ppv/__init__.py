@@ -1,7 +1,5 @@
 from collections.abc import Mapping
-from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
-from functools import cache
 from logging import INFO, captureWarnings, getLogger
 from pathlib import PurePath
 from sys import path
@@ -23,11 +21,6 @@ from .routes import app
 with nullcontext():
     captureWarnings(True)
     getLogger().setLevel(INFO)
-
-
-@cache
-def executor() -> ThreadPoolExecutor:
-    return ThreadPoolExecutor()
 
 
 @event_source(data_class=APIGatewayProxyEventV2)

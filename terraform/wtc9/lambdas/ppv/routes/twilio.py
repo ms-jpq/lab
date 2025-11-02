@@ -10,7 +10,7 @@ from itertools import chain
 from json import loads
 from logging import getLogger
 from os import environ
-from typing import Any, cast
+from typing import cast
 from urllib.parse import parse_qsl
 from uuid import uuid4
 from xml.etree.ElementTree import Element, SubElement, indent, tostring
@@ -22,8 +22,7 @@ from aws_lambda_powertools.event_handler.middlewares import (
 )
 from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEventV2
 
-from .. import executor
-from . import app, raw_uri
+from . import app, dynamodb, executor, raw_uri
 
 with nullcontext():
     _ID = uuid4().hex
@@ -38,13 +37,6 @@ def _routes() -> Set[str]:
 @cache
 def _table() -> str:
     return environ["ENV_TBL_NAME"]
-
-
-@cache
-def _db() -> Any:
-    from boto3 import client  # pyright:ignore
-
-    return client(service_name="dynamodb")
 
 
 def _params(event: APIGatewayProxyEventV2) -> Mapping[str, str]:
@@ -120,7 +112,7 @@ def _upsert_reply_to(dst: str, route_to: str, reply_to: str) -> None:
     id = _id(dst, route_to=route_to)
     ttl = int((datetime.now(tz=timezone.utc) + timedelta(weeks=4)).timestamp())
     with _suppress_exns():
-        _db().put_item(
+        dynamodb().put_item(
             TableName=_table(),
             Item={
                 "ID": {"S": id},
@@ -133,7 +125,7 @@ def _upsert_reply_to(dst: str, route_to: str, reply_to: str) -> None:
 def _retrieve_reply_to(dst: str, route_to: str) -> str | None:
     id = _id(dst, route_to=route_to)
     with _suppress_exns():
-        rsp = _db().get_item(
+        rsp = dynamodb().get_item(
             TableName=_table(),
             Key={"ID": {"S": id}},
         )
