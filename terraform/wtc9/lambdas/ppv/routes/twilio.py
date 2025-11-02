@@ -145,6 +145,7 @@ def _messages(
 ) -> Sequence[tuple[str, Sequence[str]]]:
     prefix = ">>> "
     instruction = body.startswith(prefix) and len(body.splitlines()) == 1
+    question = body == "???"
 
     if route_to == dst:
         """
@@ -157,8 +158,16 @@ def _messages(
             "%s",
             f"*** route_to={route_to} received text from a privileged # ***",
         )
+        if question:
+            getLogger().info(
+                "%s",
+                f"*** route_to={route_to} received question for reply destination ***",
+            )
 
-        if instruction:
+            prev_reply_to = _retrieve_reply_to(dst=dst, route_to=route_to)
+
+            return ((route_to, (f"<<< {prev_reply_to}",)),)
+        elif instruction:
             getLogger().info(
                 "%s",
                 f"*** route_to={route_to} received instruction for reply destination ***",
@@ -183,7 +192,7 @@ def _messages(
             )
 
             return ()
-    elif src in _routes() and instruction:
+    elif src in _routes() and (question or instruction):
         getLogger().info(
             "%s",
             f"*** route_to={route_to} received instruction from another privileged # ***",
