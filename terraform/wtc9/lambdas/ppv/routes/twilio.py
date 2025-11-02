@@ -165,13 +165,13 @@ def _messages(
             set_reply_to = body.removeprefix(prefix)
             _upsert_reply_to(incoming=dst, route_to=route_to, reply_to=set_reply_to)
 
-            return ((route_to, f"*** {set_reply_to}"),)
+            return ((route_to, (f"*** {set_reply_to}",)),)
         elif prev_reply_to := _retrieve_reply_to(incoming=dst, route_to=route_to):
             getLogger().info(
                 "%s", f"*** route_to={route_to} found previous reply destination ***"
             )
 
-            return ((route_to, f"<<< {prev_reply_to}"), (prev_reply_to, (body,)))
+            return ((route_to, (f"<<< {prev_reply_to}",)), (prev_reply_to, (body,)))
         else:
             getLogger().info(
                 "%s",
