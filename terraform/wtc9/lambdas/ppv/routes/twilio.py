@@ -14,7 +14,7 @@ from os import environ
 from typing import cast
 from urllib.parse import parse_qsl
 from uuid import uuid4
-from xml.etree.ElementTree import Element, SubElement, tostring
+from xml.etree.ElementTree import Element, SubElement, indent, tostring
 
 from aws_lambda_powertools.event_handler import APIGatewayHttpResolver
 from aws_lambda_powertools.event_handler.api_gateway import Response
@@ -73,7 +73,9 @@ def _auth(
 
 
 def _reply(el: Element) -> Response[str]:
+    indent(el)
     body = tostring(el, encoding="unicode", xml_declaration=True)
+    getLogger().info("%s", body)
     return Response(
         status_code=HTTPStatus.OK,
         headers={"content-type": "application/xml"},
@@ -150,25 +152,37 @@ def _messages(
         assert False
 
     elif route_to == src:
-        getLogger().info("%s", f"*** route_to={route_to} received text from a privileged # ***")
+        getLogger().info(
+            "%s", f"*** route_to={route_to} received text from a privileged # ***"
+        )
 
         if body.startswith(prefix) and len(body.splitlines()) == 1:
-            getLogger().info("%s", f"*** route_to={route_to} received instruction for reply destination ***")
+            getLogger().info(
+                "%s",
+                f"*** route_to={route_to} received instruction for reply destination ***",
+            )
 
             set_reply_to = body.removeprefix(prefix)
             _upsert_reply_to(incoming=dst, route_to=route_to, reply_to=set_reply_to)
 
             return ((route_to, f"*** {set_reply_to}"),)
         elif prev_reply_to := _retrieve_reply_to(incoming=dst, route_to=route_to):
-            getLogger().info("%s", f"*** route_to={route_to} found previous reply destination ***")
+            getLogger().info(
+                "%s", f"*** route_to={route_to} found previous reply destination ***"
+            )
 
             return ((route_to, f"<<< {prev_reply_to}"), (prev_reply_to, (body,)))
         else:
-            getLogger().info("%s", f"*** route_to={route_to} did not find previous reply destination ***")
+            getLogger().info(
+                "%s",
+                f"*** route_to={route_to} did not find previous reply destination ***",
+            )
 
             return ()
     else:
-        getLogger().info("%s", f"*** route_to={route_to} received text from an arbitrary # ***")
+        getLogger().info(
+            "%s", f"*** route_to={route_to} received text from an arbitrary # ***"
+        )
 
         reply_to = src
         _upsert_reply_to(incoming=dst, route_to=route_to, reply_to=reply_to)
