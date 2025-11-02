@@ -11,7 +11,6 @@ from itertools import chain
 from json import loads
 from logging import getLogger
 from os import environ
-from textwrap import dedent
 from typing import cast
 from urllib.parse import parse_qsl
 from uuid import uuid4
@@ -147,7 +146,7 @@ def _retrieve_reply_to(incoming: str, route_to: str) -> str | None:
 
 def _messages(
     src: str, dst: str, body: str, route_to: str
-) -> tuple[str, Sequence[str]]:
+) -> Sequence[tuple[str, Sequence[str]]]:
     prefix = ">>> "
 
     if route_to == dst:
@@ -165,22 +164,22 @@ def _messages(
             set_reply_to = body.removeprefix(prefix)
             _upsert_reply_to(incoming=dst, route_to=route_to, reply_to=set_reply_to)
 
-            return route_to, (f"*** {set_reply_to}", body)
+            return ((route_to, f"*** {set_reply_to}"),)
         elif prev_reply_to := _retrieve_reply_to(incoming=dst, route_to=route_to):
             getLogger().info("%s", "*** found previous reply destination ***")
 
-            return route_to, (f"<<< {prev_reply_to}", body)
+            return ((route_to, f"<<< {prev_reply_to}"), (prev_reply_to, (body,)))
         else:
             getLogger().info("%s", "*** did not find previous reply destination ***")
 
-            return route_to, ()
+            return ()
     else:
         getLogger().info("%s", "*** received text from an arbitrary # ***")
 
         reply_to = src
         _upsert_reply_to(incoming=dst, route_to=route_to, reply_to=reply_to)
 
-        return route_to, (prefix + reply_to, body)
+        return ((route_to, (prefix + reply_to, body)),)
 
 
 @contextmanager
@@ -204,9 +203,10 @@ def message() -> Response[str]:
                 """
 
                 fn = partial(_messages, src, dst, body)
-                for tel, msgs in _POOL.map(fn, _routes()):
-                    for msg in msgs:
-                        SubElement(root, "Message", attrib={"to": tel}).text = msg
+                for pairs in _POOL.map(fn, _routes()):
+                    for tel, msgs in pairs:
+                        for msg in msgs:
+                            SubElement(root, "Message", attrib={"to": tel}).text = msg
 
                 return _reply(root)
             case _:
