@@ -192,7 +192,8 @@ def _messages(
                 f"*** route_to={route_to} did not find previous reply destination ***",
             )
 
-            return ()
+            others = tuple(prefix + tel for tel in (_routes() - {route_to}))
+            return ((route_to, others),)
     elif src in _routes() and (question or instruction):
         getLogger().info(
             "%s",
