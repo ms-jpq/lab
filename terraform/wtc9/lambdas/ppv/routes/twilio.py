@@ -1,12 +1,15 @@
 from base64 import b64encode
-from collections.abc import Mapping, Set
+from collections.abc import Mapping, Sequence, Set
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
-from functools import cache
+from datetime import datetime, timedelta, timezone
+from functools import cache, partial
 from hashlib import sha1
 from hmac import HMAC, compare_digest
 from http import HTTPStatus
-from itertools import chain, product
+from itertools import chain
 from json import loads
+from logging import getLogger
 from os import environ
 from typing import cast
 from urllib.parse import parse_qsl
@@ -25,6 +28,7 @@ from . import app, raw_uri
 
 with nullcontext():
     _ID = uuid4().hex
+    _POOL = ThreadPoolExecutor()
     _DB = client(service_name="dynamodb")
 
 
@@ -32,6 +36,11 @@ with nullcontext():
 def _routes() -> Set[str]:
     json = loads(environ["ENV_TWILIO_REDIRECTS"])
     return {*json}
+
+
+@cache
+def _table() -> str:
+    return environ["ENV_TBL_NAME"]
 
 
 def _params(event: APIGatewayProxyEventV2) -> Mapping[str, str]:
@@ -88,27 +97,62 @@ def voice() -> Response[str]:
     return _reply(root)
 
 
-def _route_messages(src: str, dst: str, numbers: Set[str]) -> Set[str]:
-    tbl = environ["ENV_TBL_NAME"]
-    kw = {"TableName": tbl, "Key": {"ID": {"S": src}}}
+def _upsert_reply_to(incoming: str, route_to: str, reply_to: str) -> str:
+    ttl = int((datetime.now(tz=timezone.utc) + timedelta(weeks=4)).timestamp())
+    id = f"twilio-{incoming}>>>{route_to}"
 
-    _DB.get_item(**kw)
+    try:
+        rsp = _DB.put_item(
+            TableName=_table(),
+            ReturnValues="ALL_OLD",
+            Item={
+                "ID": {"S": id},
+                "TTL": {"N": ttl},
+                "Reply-To": {"S": reply_to},
+            },
+        )
+        match rsp:
+            case {"Attributes": {"Reply-To": {"S": str(prev_reply_to)}}}:
+                return prev_reply_to
+    except Exception as e:
+        getLogger().error("%s", e)
 
-    return numbers - {src, dst}
+    return reply_to
+
+
+def _messages(
+    src: str, dst: str, body: str, route_to: str
+) -> tuple[str, Sequence[str]]:
+    if route_to == dst:
+        """
+        forwarding text to twilio #
+        """
+        assert False
+
+    elif route_to == src:
+        """
+        received text from a physical #
+        """
+
+    reply_to = _upsert_reply_to(incoming=dst, route_to=route_to, reply_to=src)
+
+    return route_to, (f">>> {reply_to}", body)
 
 
 @app.post("/twilio/message", middlewares=[_auth])
 def message() -> Response[str]:
     root = Element("Response")
 
-    routes = _routes()
     match _params(app.current_event):
-        case {"From": src, "To": dst, "Body": msg}:
-            texts = (msg,) if src in routes else (f">>> {src}", msg)
-            sinks = _route_messages(src, dst=dst, numbers=routes)
+        case {"From": src, "To": dst, "Body": body}:
+            """
+            dst is always a twilio number
+            """
 
-            for tel, text in product(sinks, texts):
-                SubElement(root, "Message", attrib={"to": tel}).text = text
+            fn = partial(_messages, src, dst, body)
+            for tel, msgs in _POOL.map(fn, _routes()):
+                for msg in msgs:
+                    SubElement(root, "Message", attrib={"to": tel}).text = msg
 
             return _reply(root)
         case _:
