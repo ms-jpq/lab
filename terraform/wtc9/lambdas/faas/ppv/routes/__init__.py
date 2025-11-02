@@ -1,29 +1,55 @@
+from collections.abc import Callable
 from contextlib import nullcontext
+from json import dumps
+from typing import TypeVar, cast
 from urllib.parse import urlunsplit
+from uuid import uuid4
 
 from aws_lambda_powertools.event_handler import APIGatewayHttpResolver
 from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEventV2
 from boto3 import client  # pyright:ignore
 
 with nullcontext():
-    app = APIGatewayHttpResolver()
+    _UUID = uuid4().hex
+    _T = TypeVar("_T")
+
+    app = APIGatewayHttpResolver(
+        serializer=lambda d: dumps(
+            d,
+            check_circular=False,
+            ensure_ascii=False,
+            allow_nan=False,
+            indent=2,
+            sort_keys=True,
+        )
+    )
     dynamodb = client(service_name="dynamodb")
 
 
-def raw_uri(event: APIGatewayProxyEventV2) -> str:
+def compute_once(fn: Callable[[APIGatewayProxyEventV2], _T]) -> _T:
+    f_id = f"{_UUID}-{id(fn)}"
+
+    if f_id not in app.current_event.raw_event:
+        app.current_event.raw_event[f_id] = fn(app.current_event)
+
+    return cast(_T, app.current_event.raw_event[f_id])
+
+
+def current_raw_uri() -> str:
     uri = urlunsplit(
         (
-            event.headers.get("x-forwarded-proto", "https"),
-            event.request_context.domain_name,
-            event.raw_path,
-            event.raw_query_string,
+            app.current_event.headers.get("x-forwarded-proto", "https"),
+            app.current_event.request_context.domain_name,
+            app.current_event.raw_path,
+            app.current_event.raw_query_string,
             "",
         )
     )
     return uri
 
 
-from . import owncloud, twilio
+from . import echo, owncloud, twilio
 
+assert echo
 assert owncloud
 assert twilio

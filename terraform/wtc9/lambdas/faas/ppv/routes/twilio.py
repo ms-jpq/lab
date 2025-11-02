@@ -1,7 +1,6 @@
 from base64 import b64encode
 from collections import defaultdict
 from collections.abc import Mapping, MutableSet, Sequence, Set
-from contextlib import nullcontext
 from datetime import datetime, timedelta, timezone
 from functools import cache, partial
 from hashlib import sha1
@@ -11,9 +10,7 @@ from itertools import chain
 from json import loads
 from logging import getLogger
 from os import environ
-from typing import cast
 from urllib.parse import parse_qsl
-from uuid import uuid4
 from xml.etree.ElementTree import Element, SubElement, indent, tostring
 
 from aws_lambda_powertools.event_handler import APIGatewayHttpResolver
@@ -21,13 +18,9 @@ from aws_lambda_powertools.event_handler.api_gateway import Response
 from aws_lambda_powertools.event_handler.middlewares import (
     NextMiddleware,
 )
-from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEventV2
 
 from ... import executor, log_span, suppress_exn
-from . import app, dynamodb, raw_uri
-
-with nullcontext():
-    _ID = uuid4().hex
+from . import app, compute_once, current_raw_uri, dynamodb
 
 
 @cache
@@ -41,13 +34,10 @@ def _table() -> str:
     return environ["ENV_TBL_NAME"]
 
 
-def _params(event: APIGatewayProxyEventV2) -> Mapping[str, str]:
-    if parsed := event.raw_event.get(_ID):
-        return cast(Mapping[str, str], parsed)
-
-    parsed = dict(parse_qsl(event.decoded_body, keep_blank_values=True))
-    event.raw_event.setdefault(_ID, parsed)
-    return parsed
+def _params() -> Mapping[str, str]:
+    return compute_once(
+        lambda e: dict(parse_qsl(e.decoded_body, keep_blank_values=True))
+    )
 
 
 def _auth(
@@ -57,9 +47,11 @@ def _auth(
     if not (signature := event.headers.get("x-twilio-signature")):
         return Response(status_code=HTTPStatus.UNAUTHORIZED)
 
-    ordered = sorted(_params(app.current_event).items())
+    ordered = sorted(_params().items())
     auth_key = environ["ENV_TWILIO_TOKEN"].encode()
-    auth_msg = "".join(chain((raw_uri(event),), chain.from_iterable(ordered))).encode()
+    auth_msg = "".join(
+        chain((current_raw_uri(),), chain.from_iterable(ordered))
+    ).encode()
 
     hmac = HMAC(auth_key, auth_msg, digestmod=sha1)
     expected = b64encode(hmac.digest()).decode()
@@ -87,7 +79,7 @@ def voice() -> Response[str]:
     dial = SubElement(root, "Dial")
 
     routes = _routes()
-    match _params(app.current_event):
+    match _params():
         case {"Caller": src, "Called": dst}:
             routes -= {src, dst}
 
@@ -207,7 +199,7 @@ def message() -> Response[str]:
     root = Element("Response")
 
     with log_span():
-        match _params(app.current_event):
+        match _params():
             case {"From": src, "To": dst, "Body": body}:
                 """
                 dst is always a twilio number
