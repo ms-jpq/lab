@@ -18,7 +18,6 @@ from aws_lambda_powertools.event_handler.api_gateway import Response
 from aws_lambda_powertools.event_handler.middlewares import (
     NextMiddleware,
 )
-from botocore.plugin import importlib
 
 from ... import executor, log_span, suppress_exn
 from . import app, compute_once, current_raw_uri, dynamodb
@@ -125,8 +124,8 @@ def _retrieve_reply_to(dst: str, route_to: str) -> str | None:
 def _messages(
     src: str, dst: str, body: str, route_to: str
 ) -> Sequence[tuple[str, Sequence[str]]]:
-    prefix = ">>> "
-    instruction = body.startswith(prefix) and len(body.splitlines()) == 1
+    prefix_1, prefix_2 = ">>> ", "<<< "
+    instruction = body.startswith((prefix_1, prefix_2)) and len(body.splitlines()) == 1
     question = body == "???"
     if body.lower() == "nein":
         body = "STOP"
@@ -151,14 +150,14 @@ def _messages(
             if prev_reply_to := _retrieve_reply_to(dst=dst, route_to=route_to):
                 _upsert_reply_to(dst=dst, route_to=route_to, reply_to=prev_reply_to)
 
-            return ((route_to, (f"<<< {prev_reply_to}",)),)
+            return ((route_to, (prefix_2 + str(prev_reply_to),)),)
         elif instruction:
             getLogger().info(
                 "%s",
                 f"*** route_to={route_to} received instruction for reply destination ***",
             )
 
-            set_reply_to = body.removeprefix(prefix)
+            set_reply_to = body.removeprefix(prefix_1).removeprefix(prefix_2)
             _upsert_reply_to(dst=dst, route_to=route_to, reply_to=set_reply_to)
 
             return ((route_to, (f"*** {set_reply_to}",)),)
@@ -169,14 +168,14 @@ def _messages(
             )
             _upsert_reply_to(dst=dst, route_to=route_to, reply_to=prev_reply_to)
 
-            return ((route_to, (f"<<< {prev_reply_to}",)), (prev_reply_to, (body,)))
+            return ((route_to, (prefix_2 + prev_reply_to,)), (prev_reply_to, (body,)))
         else:
             getLogger().info(
                 "%s",
                 f"*** route_to={route_to} did not find previous reply destination ***",
             )
 
-            others = tuple(prefix + tel for tel in (_routes() - {route_to}))
+            others = tuple(prefix_1 + tel for tel in (_routes() - {route_to}))
             return ((route_to, others),)
     elif src in _routes() and (question or instruction):
         getLogger().info(
@@ -193,7 +192,7 @@ def _messages(
         reply_to = src
         _upsert_reply_to(dst=dst, route_to=route_to, reply_to=reply_to)
 
-        return ((route_to, (prefix + reply_to, body)),)
+        return ((route_to, (prefix_1 + reply_to, body)),)
 
 
 @app.post("/twilio/message", middlewares=[_auth])
