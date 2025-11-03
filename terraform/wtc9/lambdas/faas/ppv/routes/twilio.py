@@ -18,6 +18,7 @@ from aws_lambda_powertools.event_handler.api_gateway import Response
 from aws_lambda_powertools.event_handler.middlewares import (
     NextMiddleware,
 )
+from botocore.plugin import importlib
 
 from ... import executor, log_span, suppress_exn
 from . import app, compute_once, current_raw_uri, dynamodb
@@ -127,6 +128,8 @@ def _messages(
     prefix = ">>> "
     instruction = body.startswith(prefix) and len(body.splitlines()) == 1
     question = body == "???"
+    if body.lower() == "nein":
+        body = "STOP"
 
     if route_to == dst:
         """
@@ -220,3 +223,21 @@ def message() -> Response[str]:
                 return _reply(root)
             case _:
                 return Response(status_code=HTTPStatus.BAD_REQUEST)
+
+
+@app.post("/twilio/status/voice", middlewares=[_auth])
+def voice_status() -> Response[None]:
+    from pprint import pformat
+
+    getLogger().info("%s", pformat(app.current_event.raw_event))
+
+    return Response(status_code=HTTPStatus.NO_CONTENT)
+
+
+@app.post("/twilio/status/message", middlewares=[_auth])
+def message_status() -> Response[None]:
+    from pprint import pformat
+
+    getLogger().info("%s", pformat(app.current_event.raw_event))
+
+    return Response(status_code=HTTPStatus.NO_CONTENT)
