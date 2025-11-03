@@ -35,7 +35,7 @@ def _table() -> str:
 
 
 @compute_once
-def _params() -> Mapping[str, str]:
+def _current_params() -> Mapping[str, str]:
     return dict(parse_qsl(app.current_event.decoded_body, keep_blank_values=True))
 
 
@@ -46,7 +46,7 @@ def _auth(
     if not (signature := event.headers.get("x-twilio-signature")):
         return Response(status_code=HTTPStatus.UNAUTHORIZED)
 
-    ordered = sorted(_params().items())
+    ordered = sorted(_current_params().items())
     auth_key = environ["ENV_TWILIO_TOKEN"].encode()
     auth_msg = "".join(
         chain((current_raw_uri(),), chain.from_iterable(ordered))
@@ -78,7 +78,7 @@ def voice() -> Response[str]:
     dial = SubElement(root, "Dial")
 
     routes = _routes()
-    match _params():
+    match _current_params():
         case {"Caller": src, "Called": dst}:
             routes -= {src, dst}
 
@@ -200,7 +200,7 @@ def message() -> Response[str]:
     root = Element("Response")
 
     with log_span():
-        match _params():
+        match _current_params():
             case {"From": src, "To": dst, "Body": body}:
                 """
                 dst is always a twilio number
@@ -246,6 +246,8 @@ def message_status() -> Response[None]:
 def error() -> Response[None]:
     from pprint import pformat
 
-    getLogger().info("%s", pformat(app.current_event.raw_event))
+    params = _current_params()
+
+    getLogger().info("%s", pformat(params))
 
     return Response(status_code=HTTPStatus.NO_CONTENT)
