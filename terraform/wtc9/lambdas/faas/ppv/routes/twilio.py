@@ -240,3 +240,12 @@ def message_status() -> Response[None]:
     getLogger().info("%s", pformat(app.current_event.raw_event))
 
     return Response(status_code=HTTPStatus.NO_CONTENT)
+
+
+@app.post("/twilio/error", middlewares=[_auth])
+def error() -> Response[None]:
+    from pprint import pformat
+
+    getLogger().info("%s", pformat(app.current_event.raw_event))
+
+    return Response(status_code=HTTPStatus.NO_CONTENT)
