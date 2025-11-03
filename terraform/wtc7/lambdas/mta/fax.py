@@ -17,6 +17,7 @@ from aws_lambda_powertools.utilities.data_classes.s3_event import (
 )
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client  # pyright:ignore
+from botocore.config import Config
 
 from .__main__ import parse, send
 from .gist import benchmark, log, register
@@ -33,7 +34,7 @@ with nullcontext():
     )
 
 with nullcontext():
-    _S3 = client(service_name="s3")
+    _S3 = client(service_name="s3", config=Config(retries={"mode": "adaptive"}))
 
 
 with nullcontext():

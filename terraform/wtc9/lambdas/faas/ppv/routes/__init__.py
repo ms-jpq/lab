@@ -9,10 +9,12 @@ from uuid import uuid4
 
 from aws_lambda_powertools.event_handler import APIGatewayHttpResolver
 from boto3 import client  # pyright:ignore
+from botocore.config import Config
 
 with nullcontext():
-    _UUID = uuid4().hex
     _T = TypeVar("_T")
+    _UUID = uuid4().hex
+    _B3_CONF = Config(retries={"mode": "adaptive"})
 
     app = APIGatewayHttpResolver(
         serializer=lambda d: dumps(
@@ -24,7 +26,8 @@ with nullcontext():
             sort_keys=True,
         )
     )
-    dynamodb = client(service_name="dynamodb")
+    dynamodb = client(service_name="dynamodb", config=_B3_CONF)
+    sns = client(service_name="sns", config=_B3_CONF)
 
 
 def compute_once(fn: Callable[[], _T]) -> Callable[[], _T]:
