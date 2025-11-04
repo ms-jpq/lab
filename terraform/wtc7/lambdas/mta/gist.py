@@ -52,11 +52,6 @@ def register(name: str, uri: str, timeout: float) -> None:
                 return None
 
             class _Loader(SourceLoader, InspectLoader):  # type: ignore
-                def __init__(self) -> None:
-                    super().__init__()
-                    self._src = ""
-                    self._compiled: CodeType | None = None
-
                 def get_filename(self, fullname: str) -> str:
                     return _NS.joinpath(fullname).as_posix()
 
@@ -64,29 +59,25 @@ def register(name: str, uri: str, timeout: float) -> None:
                     raise NotImplementedError()
 
                 def create_module(self, spec: ModuleSpec) -> ModuleType | None:
-                    self._src, self._compiled = "", None
                     if target:
                         target.__dict__.clear()
                     return target
 
                 def get_source(self, fullname: str) -> str:
-                    if not self._src:
-                        with benchmark("get"):
-                            src = get()
-                        self._src = src.decode()
-                    return self._src
+                    with benchmark("get"):
+                        src = get()
+                        return src.decode()
 
                 def get_code(self, fullname: str) -> CodeType | None:
-                    if not self._compiled:
-                        source = self.get_source(fullname)
-                        self._compiled = InspectLoader.source_to_code(source)
-                    return self._compiled
+                    source = self.get_source(fullname)
+                    return InspectLoader.source_to_code(source)
 
                 def exec_module(self, module: ModuleType) -> None:
+                    module.__file__ = self.get_filename(fullname)
+
                     with benchmark("compile"):
                         compiled = self.get_code(fullname)
                         assert compiled
-                        module.__file__ = self.get_filename(fullname)
                         exec(compiled, module.__dict__)
 
             loader = LazyLoader.factory(cast(Loader, _Loader))
