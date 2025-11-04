@@ -51,9 +51,12 @@ def register(name: str, uri: str, timeout: float) -> None:
             if fullname != name:
                 return None
 
-            code = ""
-
             class _Loader(SourceLoader, InspectLoader):  # type: ignore
+                def __init__(self) -> None:
+                    super().__init__()
+                    self._src = ""
+                    self._compiled: CodeType | None = None
+
                 def get_filename(self, fullname: str) -> str:
                     src = self.get_source(fullname)
                     return _NS.joinpath(str(hash(src))).as_posix()
@@ -62,30 +65,30 @@ def register(name: str, uri: str, timeout: float) -> None:
                     raise NotImplementedError()
 
                 def create_module(self, spec: ModuleSpec) -> ModuleType | None:
-                    nonlocal code
-                    code = ""
+                    self._src, self._compiled = "", None
                     if target:
                         target.__dict__.clear()
                     return target
 
                 def get_source(self, fullname: str) -> str:
-                    nonlocal code
-                    if not code:
+                    if not self._src:
                         with benchmark("get"):
                             src = get()
-                        code = src.decode()
-                    return code
+                        self._src = src.decode()
+                    return self._src
 
                 def get_code(self, fullname: str) -> CodeType | None:
-                    source = self.get_source(fullname)
-                    return InspectLoader.source_to_code(source)
+                    if not self._compiled:
+                        source = self.get_source(fullname)
+                        self._compiled = InspectLoader.source_to_code(source)
+                    return self._compiled
 
                 def exec_module(self, module: ModuleType) -> None:
                     with benchmark("compile"):
-                        code_type = self.get_code(fullname)
-                        assert code_type
+                        compiled = self.get_code(fullname)
+                        assert compiled
                         module.__file__ = self.get_filename(fullname)
-                        exec(code_type, module.__dict__)
+                        exec(compiled, module.__dict__)
 
             loader = LazyLoader.factory(cast(Loader, _Loader))
             spec = spec_from_loader(fullname, loader())
