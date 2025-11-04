@@ -16,7 +16,6 @@ from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 from urllib.request import build_opener
 from uuid import uuid4
 
-_NS = PurePath(uuid4().hex)
 _OPENER = build_opener()
 
 
@@ -53,7 +52,7 @@ def register(name: str, uri: str, timeout: float) -> None:
 
             class _Loader(SourceLoader):
                 def get_filename(self, fullname: str) -> str:
-                    return _NS.joinpath(fullname).as_posix()
+                    raise NotImplementedError()
 
                 def get_data(self, path: str) -> bytes:
                     raise NotImplementedError()
@@ -72,15 +71,8 @@ def register(name: str, uri: str, timeout: float) -> None:
                     source = self.get_source(fullname)
                     return InspectLoader.source_to_code(source)
 
-                def exec_module(self, module: ModuleType) -> None:
-                    module.__file__ = self.get_filename(fullname)
-
-                    with benchmark("compile"):
-                        assert (compiled := self.get_code(fullname))
-                        exec(compiled, module.__dict__)
-
             loader = LazyLoader.factory(cast(Loader, _Loader))
-            spec = spec_from_loader(fullname, loader())
+            spec = spec_from_loader(fullname, loader=loader())
             return spec
 
     meta_path.append(_Finder())
