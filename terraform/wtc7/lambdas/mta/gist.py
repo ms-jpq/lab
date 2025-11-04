@@ -58,8 +58,7 @@ def register(name: str, uri: str, timeout: float) -> None:
                     self._compiled: CodeType | None = None
 
                 def get_filename(self, fullname: str) -> str:
-                    src = self.get_source(fullname)
-                    return _NS.joinpath(str(hash(src))).as_posix()
+                    return _NS.joinpath(fullname).as_posix()
 
                 def get_data(self, path: str) -> bytes:
                     raise NotImplementedError()
