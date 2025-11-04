@@ -19,8 +19,8 @@ from aws_lambda_powertools.event_handler.middlewares import (
     NextMiddleware,
 )
 
-from ... import executor, log_span, suppress_exn
-from . import app, compute_once, current_raw_uri, dynamodb
+from ... import dump_json, executor, log_span, suppress_exn
+from . import app, compute_once, current_raw_uri, dynamodb, sns
 
 
 @cache
@@ -32,6 +32,11 @@ def _routes() -> Set[str]:
 @cache
 def _table() -> str:
     return environ["ENV_TBL_NAME"]
+
+
+@cache
+def _channel() -> str:
+    return environ["ENV_CHAN_NAME"]
 
 
 @compute_once
@@ -244,10 +249,9 @@ def message_status() -> Response[None]:
 
 @app.post("/twilio/error", middlewares=[_auth])
 def error() -> Response[None]:
-    from pprint import pformat
-
     params = _current_params()
+    json = dump_json(params)
+    hashed = sha1(json.encode()).hexdigest()
 
-    getLogger().info("%s", pformat(params))
-
+    sns.publish(TopicArn=_channel(), Subject=f"/twilio/error - {hashed}", Message=json)
     return Response(status_code=HTTPStatus.NO_CONTENT)
