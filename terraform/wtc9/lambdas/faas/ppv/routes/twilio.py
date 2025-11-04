@@ -40,7 +40,7 @@ def _channel() -> str:
 
 
 @compute_once
-def _current_params() -> Mapping[str, str]:
+def _current_params() -> dict[str, str]:
     return dict(parse_qsl(app.current_event.decoded_body, keep_blank_values=True))
 
 
@@ -250,6 +250,10 @@ def message_status() -> Response[None]:
 @app.post("/twilio/error", middlewares=[_auth])
 def error() -> Response[None]:
     params = _current_params()
+    match params:
+        case {"PayloadType": "application/json", "Payload": str(payload)}:
+            params["Payload"] = loads(payload)
+
     json = dump_json(params)
     hashed = sha1(json.encode()).hexdigest()
 
