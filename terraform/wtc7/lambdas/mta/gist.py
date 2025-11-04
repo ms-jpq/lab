@@ -76,8 +76,7 @@ def register(name: str, uri: str, timeout: float) -> None:
                     module.__file__ = self.get_filename(fullname)
 
                     with benchmark("compile"):
-                        compiled = self.get_code(fullname)
-                        assert compiled
+                        assert (compiled := self.get_code(fullname))
                         exec(compiled, module.__dict__)
 
             loader = LazyLoader.factory(cast(Loader, _Loader))
