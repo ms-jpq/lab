@@ -57,11 +57,6 @@ def register(name: str, uri: str, timeout: float) -> None:
                 def get_data(self, path: str) -> bytes:
                     raise NotImplementedError()
 
-                def create_module(self, spec: ModuleSpec) -> ModuleType | None:
-                    if target:
-                        target.__dict__.clear()
-                    return target
-
                 def get_source(self, fullname: str) -> str:
                     with benchmark("get"):
                         src = get()
