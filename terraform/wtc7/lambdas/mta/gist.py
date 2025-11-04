@@ -51,7 +51,7 @@ def register(name: str, uri: str, timeout: float) -> None:
             if fullname != name:
                 return None
 
-            class _Loader(SourceLoader, InspectLoader):  # type: ignore
+            class _Loader(SourceLoader):
                 def get_filename(self, fullname: str) -> str:
                     return _NS.joinpath(fullname).as_posix()
 
