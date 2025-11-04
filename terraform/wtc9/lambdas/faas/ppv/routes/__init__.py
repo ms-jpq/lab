@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from aws_lambda_powertools.event_handler import APIGatewayHttpResolver
 from boto3 import client  # pyright:ignore
-from botocore.config import Config
+from botocore.config import Config  # pyright:ignore
 
 from ... import dump_json
 
