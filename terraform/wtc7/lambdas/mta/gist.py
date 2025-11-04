@@ -9,7 +9,6 @@ from logging import getLogger
 from os import linesep
 from pathlib import PurePath
 from sys import meta_path
-from threading import RLock
 from time import monotonic
 from types import CodeType, ModuleType
 from typing import cast
@@ -31,7 +30,6 @@ def benchmark(name: str) -> Iterator[None]:
 
 
 def register(name: str, uri: str, timeout: float) -> None:
-    lock = RLock()
     scheme, netloc, path, query, frag = urlsplit(uri)
     qs = parse_qs(query)
 
@@ -57,41 +55,37 @@ def register(name: str, uri: str, timeout: float) -> None:
 
             class _Loader(SourceLoader, InspectLoader):  # type: ignore
                 def get_filename(self, fullname: str) -> str:
-                    with lock:
-                        src = self.get_source(fullname)
-                        return _NS.joinpath(str(hash(src))).as_posix()
+                    src = self.get_source(fullname)
+                    return _NS.joinpath(str(hash(src))).as_posix()
 
                 def get_data(self, path: str) -> bytes:
                     raise NotImplementedError()
 
                 def create_module(self, spec: ModuleSpec) -> ModuleType | None:
                     nonlocal code
-                    with lock:
-                        code = ""
-                        if target:
-                            target.__dict__.clear()
-                        return target
+                    code = ""
+                    if target:
+                        target.__dict__.clear()
+                    return target
 
                 def get_source(self, fullname: str) -> str:
                     nonlocal code
-                    with lock:
-                        if not code:
-                            with benchmark("get"):
-                                src = get()
-                            code = src.decode()
-                        return code
+                    if not code:
+                        with benchmark("get"):
+                            src = get()
+                        code = src.decode()
+                    return code
 
                 def get_code(self, fullname: str) -> CodeType | None:
-                    with lock:
-                        source = self.get_source(fullname)
-                        return InspectLoader.source_to_code(source)
+                    source = self.get_source(fullname)
+                    return InspectLoader.source_to_code(source)
 
                 def exec_module(self, module: ModuleType) -> None:
-                    with benchmark("compile"), lock:
-                        code = self.get_code(fullname)
-                        assert code
+                    with benchmark("compile"):
+                        code_type = self.get_code(fullname)
+                        assert code_type
                         module.__file__ = self.get_filename(fullname)
-                        exec(code, module.__dict__)
+                        exec(code_type, module.__dict__)
 
             loader = LazyLoader.factory(cast(Loader, _Loader))
             spec = spec_from_loader(fullname, loader())
