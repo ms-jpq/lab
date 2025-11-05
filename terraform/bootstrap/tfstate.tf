@@ -25,6 +25,15 @@ resource "aws_s3_bucket_versioning" "tfstate" {
 
 resource "aws_s3_bucket_lifecycle_configuration" "tfstate" {
   bucket = aws_s3_bucket.tfstate.bucket
+
+  rule {
+    id     = "diedie"
+    status = "Enabled"
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 4
+    }
+  }
+
   rule {
     id     = "death-and-decay"
     status = "Enabled"

@@ -1,4 +1,5 @@
 provider "aws" {
+  region = "ca-west-1"
 }
 
 data "aws_caller_identity" "whoami" {

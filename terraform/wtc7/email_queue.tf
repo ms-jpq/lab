@@ -25,6 +25,15 @@ resource "aws_s3_bucket_lifecycle_configuration" "maildir" {
   region = aws_s3_bucket.maildir.region
 
   rule {
+    id     = "diedie"
+    status = "Enabled"
+    filter {}
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 4
+    }
+  }
+
+  rule {
     id     = "diediedie"
     status = "Enabled"
     filter {}

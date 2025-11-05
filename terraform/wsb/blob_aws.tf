@@ -12,6 +12,23 @@ resource "aws_s3_bucket" "kfc" {
   }
 }
 
+resource "aws_s3_bucket_lifecycle_configuration" "kfc" {
+  for_each = merge(
+    { for bucket in local.s3_buckets : bucket => aws_s3_bucket.kfc[bucket].region },
+    { (aws_s3_bucket.deb_bucket.bucket) = aws_s3_bucket.deb_bucket.region }
+  )
+  bucket = each.key
+  region = each.value
+
+  rule {
+    id     = "diedie"
+    status = "Enabled"
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 4
+    }
+  }
+}
+
 resource "aws_s3_bucket_server_side_encryption_configuration" "kfc" {
   for_each = aws_s3_bucket.kfc
   bucket   = each.value.bucket
