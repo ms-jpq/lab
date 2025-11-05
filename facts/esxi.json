@@ -22,6 +22,8 @@
     "nuc.enp1s0.opnsense.home.arpa"
   ],
   "ENV_SMB_EXPORTS": [
+    "gray-bucket",
+    "hao-bucket",
     "time-machine-gray",
     "time-machine-gray-m4",
     "time-machine-hao"
