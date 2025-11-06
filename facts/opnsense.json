@@ -44,8 +44,8 @@
   "ENV_PUBLIC_SITES": [
     "cat.*",
     "chat.*",
-    "llama.*",
     "minio.*",
+    "ollama.*",
     "otlp.*",
     "pocket.*",
     "rss.*",

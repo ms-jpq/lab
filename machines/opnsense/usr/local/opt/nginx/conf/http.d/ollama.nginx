@@ -10,7 +10,7 @@ server {
 }
 
 server {
-  server_name llama.*;
+  server_name ollama.*;
   listen      unix:/run/local/nginx/gateway-https.sock;
 
   location / {

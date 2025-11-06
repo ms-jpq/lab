@@ -6,7 +6,7 @@ services:
       jq.mixin: |-
         {"runtimeClassName": "nvidia"}
       kompose.controller.type: statefulset
-      kompose.service.expose: llama.${DOMAIN}
+      kompose.service.expose: ollama.${DOMAIN}
       kompose.volume.type: hostPath
     environment:
       OLLAMA_FLASH_ATTENTION: 1
