@@ -22,8 +22,8 @@
   "ENV_INDEX": [
     "cat",
     "chat",
-    "llama",
     "minio",
+    "ollama",
     "pdf",
     "pocket",
     "redis",
