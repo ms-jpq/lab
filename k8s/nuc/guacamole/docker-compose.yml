@@ -44,6 +44,7 @@ services:
   pg:
     image: docker.io/library/postgres:latest
     labels:
+      kompose.controller.type: statefulset
       kompose.init.containers.image: *img
       kompose.init.containers.command: '["sh", "-c", "/opt/guacamole/bin/initdb.sh --postgresql > /var/tmp/init.sql"]'
     healthcheck:
@@ -54,6 +55,10 @@ services:
         - ${COMPOSE_PROJECT_NAME}
         - --dbname
         - ${COMPOSE_PROJECT_NAME}
+    environment:
+      POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
     ports:
       - 5432
     volumes:
