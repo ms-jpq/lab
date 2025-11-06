@@ -87,13 +87,15 @@ server:
         network: &tu tcp,udp
 
   outbounds:
+    # - tag: *local
+    #   protocol: freedom
     - tag: *local
       protocol: socks
       settings:
         servers:
           - uot: true
             address: 127.0.0.1
-            port: 1080
+            port: 40000
     - &hole
       tag: *die
       protocol: blackhole
