@@ -7,7 +7,8 @@ LOG=/var/cache/local/certbot/logs
 
 mkdir -v -p -- "$LOG"
 
-readarray -t -- SITES < /usr/local/etc/default/certbot.env
+WANTED="$(sed -E -e '/^#/d' -e '/^$/d' -- /usr/local/etc/default/certbot*.env)"
+readarray -t -- SITES <<< "$WANTED"
 
 CERTBOT=(
   /opt/python3/certbot/bin/certbot
