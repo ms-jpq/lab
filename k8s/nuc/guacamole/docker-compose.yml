@@ -11,8 +11,8 @@ x-k8s:
           Authorization: Basic Z3VhY2FkbWluOmd1YWNhZG1pbg==
 
 services:
-  miniflux:
-    image: docker.io/guacamole/guacamole:latest
+  guacamole:
+    image: &img docker.io/guacamole/guacamole:latest
     labels:
       kompose.service.expose: rdp.${DOMAIN}
     healthcheck:
@@ -40,3 +40,24 @@ services:
     image: docker.io/guacamole/guacd:latest
     ports:
       - 4822
+
+  pg:
+    image: docker.io/library/postgres:latest
+    labels:
+      kompose.init.containers.image: *img
+      kompose.init.containers.command: '["sh", "-c", "/opt/guacamole/bin/initdb.sh --postgresql > /var/tmp/init.sql"]'
+    healthcheck:
+      test:
+        - CMD
+        - pg_isready
+        - --username
+        - ${COMPOSE_PROJECT_NAME}
+        - --dbname
+        - ${COMPOSE_PROJECT_NAME}
+    ports:
+      - 5432
+    volumes:
+      - data:/var/lib/postgresql
+
+volumes:
+  data:
