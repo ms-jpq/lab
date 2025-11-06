@@ -241,8 +241,8 @@ client:
         wsSettings:
           path: *ws
         security: tls
-        tlsSettings:
-          allowInsecure: true
+        tlsSettings: {}
+          # allowInsecure: true
       # mux:
       #   enabled: true
     # ], TRANSPORTS)
