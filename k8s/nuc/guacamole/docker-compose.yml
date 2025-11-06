@@ -1,0 +1,42 @@
+---
+x-k8s:
+  - apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+      name: auth
+      namespace: ${COMPOSE_PROJECT_NAME}
+    spec:
+      headers:
+        customRequestHeaders:
+          Authorization: Basic Z3VhY2FkbWluOmd1YWNhZG1pbg==
+
+services:
+  miniflux:
+    image: docker.io/guacamole/guacamole:latest
+    labels:
+      kompose.service.expose: rdp.${DOMAIN}
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - -O/dev/null
+        - --timeout
+        - "1"
+        - --
+        - localhost:8080
+    environment:
+      GUACD_HOSTNAME: guacd.${COMPOSE_PROJECT_NAME}.svc.cluster.local
+      REMOTE_IP_VALVE_ENABLED: true
+      POSTGRES_DATABASE:
+      POSTGRES_HOSTNAME:
+      POSTGRES_PASSWORD:
+      POSTGRES_USER:
+      WEBAPP_CONTEXT: ROOT
+    ports:
+      - 8080
+
+  guacd:
+    image: docker.io/guacamole/guacd:latest
+    ports:
+      - 4822
