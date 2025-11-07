@@ -93,7 +93,7 @@ ARGV+=(
   -no-user-config
   -nographic
   # TODO: x-option-roms=off?
-  -machine 'microvm,pit=off,pic=off,isa-serial=off,rtc=off,accel=kvm'
+  -machine 'microvm,pit=off,pic=off,isa-serial=off,rtc=on,accel=kvm'
   -cpu 'host,migratable=off'
   -smp "$CPUS"
   -m "${MEM:-"size=1G"}"
