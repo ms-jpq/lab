@@ -23,7 +23,7 @@ with nullcontext():
 
 
 def compute_once(fn: Callable[[], _T]) -> Callable[[], _T]:
-    f_id = f"{_UUID}-{id(fn)}"
+    f_id = f"{fn.__name__}-{_UUID}-{id(fn)}"
 
     @wraps(fn)
     def cont() -> _T:
