@@ -1,0 +1,16 @@
+[Unit]
+Description     = %J
+
+[Service]
+Restart         = on-failure
+Type            = notify
+
+ProtectSystem   = strict
+ProtectHome     = yes
+PrivateTmp      = yes
+
+WatchdogSec     = 30s
+
+EnvironmentFile = /usr/local/etc/default/warp-mon.env
+Environment     = TEST_URI=
+ExecStart       = /usr/local/opt/warp/libexec/monitor.sh ${TEST_URI}
