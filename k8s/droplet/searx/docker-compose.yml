@@ -1,19 +1,4 @@
 ---
-x-k8s:
-  # m5_for([PROXY_NS], [
-  - apiVersion: networking.k8s.io/v1
-    kind: NetworkPolicy
-    metadata:
-      name: addn-policy-PROXY_NS
-      namespace: ${COMPOSE_PROJECT_NAME}
-    spec:
-      ingress:
-        - from:
-            - namespaceSelector:
-                matchLabels:
-                  kubernetes.io/metadata.name: kompsed-PROXY_NS
-  # ], lobe-chat)
-
 services:
   searxng:
     image: ghcr.io/searxng/searxng:latest

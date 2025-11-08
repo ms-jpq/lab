@@ -17,9 +17,9 @@ outgoing:
   request_timeout: &timeout 2.0
   max_request_timeout: *timeout
   extra_proxy_timeout: 1
-  # proxies:
-  #   all://:
-  #     - socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
+  proxies:
+    all://:
+      - socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
 
 search:
   autocomplete: google
