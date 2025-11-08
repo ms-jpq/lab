@@ -8,9 +8,6 @@ After             = network-online.target
 
 After             = nftables.service
 
-BindsTo           = 1-ip-alloc@%j.service
-After             = 1-ip-alloc@%j.service
-
 After             = modprobe@br_netfilter.service
 Requires          = modprobe@br_netfilter.service
 
