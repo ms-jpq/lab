@@ -130,15 +130,16 @@ client:
   policy: *policy
   observatory:
     enableConcurrency: true
-    subjectSelector: &ldrs
-      - &ldr ldr-
+    subjectSelector:
+      - ldr-xhttp
     probeURL: http://m5_assert([ENV_XRAY_DOMAIN])/204
 
   routing:
     domainStrategy: IPIfNonMatch
     balancers:
-      - tag: *ldr
-        selector: *ldrs
+      - tag: &ldr ldr-
+        selector:
+          - *ldr
 
     rules:
       - *api-rule
@@ -229,7 +230,7 @@ client:
     # m4_pushdef([XPORT], [m4_regexp(TRANSPORT, [\([^@]+$\)], [\1])])
     # m4_pushdef([SALTED], m4_substr(m5_esyscmd(printf -- %s 'PROTOCOL-TRANS-ENV_XRAY_SEED' | b3sum --no-names --length 8), 0, 16))
     # m4_pushdef([ADDR], SALTED.x.m5_assert([ENV_XRAY_DOMAIN]))
-    - tag: ldr-PROTOCOL-TRANS
+    - tag: ldr-TRANS-PROTOCOL
       protocol: PROTOCOL
       settings:
         # m4_indir(c-PROTOCOL,ADDR,443)
