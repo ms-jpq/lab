@@ -1,1 +1,1 @@
-/usr/local/lib/systemd/system/multi-user.target.wants/0-xray-client.service ../0-xray-client.service
+/usr/local/lib/systemd/system/multi-user.target.wants/0-xray-server.service ../0-xray-server.service
