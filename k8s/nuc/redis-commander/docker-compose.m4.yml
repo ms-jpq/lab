@@ -5,6 +5,7 @@ services:
     labels:
       kompose.service.expose: redis.${DOMAIN}
     environment:
+      ADDRESS: "::"
       REDIS_HOSTS: lo:redis:6379:0:${COMPOSE_PROJECT_NAME}
     ports:
       - 8081
