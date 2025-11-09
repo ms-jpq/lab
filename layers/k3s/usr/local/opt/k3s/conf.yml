@@ -1,7 +1,7 @@
 ---
-# cluster-cidr: fd00:42::/56,10.42.0.0/16
-# service-cidr: fd00:43::/112,10.43.0.0/16
-# kubelet-arg: "node-ip=::"
+cluster-cidr: fd00:42::/56,10.42.0.0/16
+service-cidr: fd00:43::/112,10.43.0.0/16
+kubelet-arg: "node-ip=::"
 bind-address: "::"
 default-local-storage-path: /var/lib/k3s-volumes
 etcd-expose-metrics: true

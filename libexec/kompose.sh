@@ -71,6 +71,7 @@ JQ
   )
   {
     "${CONV[@]}" | ./libexec/yq.sh --sort-keys --slurp --arg namespace "$NAMESPACE" --argjson keel "$KEEL" --arg hash "$HASHED" "$JQ"
+    cat -- ./k8s/networkpolicy.k8s.yml | K8S_NAMESPACE="$NAMESPACE" envsubst
     ./libexec/yq.sh --sort-keys '(.["x-k8s"] // [])[]' < "$FILE_IN" | COMPOSE_PROJECT_NAME="$NAMESPACE" envsubst
   } > "$YAML"
 else
