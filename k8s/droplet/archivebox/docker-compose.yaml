@@ -17,7 +17,7 @@ services:
         - --max-time
         - "1"
         - --
-        - 127.0.0.1:8000
+        - localhost:8000
     environment:
       ADMIN_PASSWORD: None
       ADMIN_USERNAME: None

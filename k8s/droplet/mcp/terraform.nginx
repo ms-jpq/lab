@@ -11,6 +11,6 @@ stream {
 
   server {
     listen     [::]:1080 ipv6only=off reuseport;
-    proxy_pass 127.0.0.1:8080;
+    proxy_pass localhost:8080;
   }
 }
