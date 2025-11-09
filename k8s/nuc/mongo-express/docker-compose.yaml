@@ -17,7 +17,7 @@ services:
         - --timeout
         - "1"
         - --
-        - 127.0.0.1:8081
+        - localhost:8081
     environment:
       ME_CONFIG_MONGODB_URL: mongodb://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@mongo:27017/
     ports:

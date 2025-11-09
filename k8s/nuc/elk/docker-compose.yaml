@@ -17,7 +17,7 @@ services:
         - --max-time
         - "1"
         - --
-        - 127.0.0.1:5601
+        - localhost:5601
     environment:
       SERVER_NAME:
       ELASTICSEARCH_SSL_VERIFICATIONMODE: none
@@ -42,7 +42,7 @@ services:
         - --max-time
         - "1"
         - --
-        - 127.0.0.1:9200/_cluster/health
+        - localhost:9200/_cluster/health
     environment:
       discovery.type: single-node
       xpack.security.enabled: false
@@ -68,7 +68,7 @@ services:
         - --max-time
         - "1"
         - --
-        - 127.0.0.1:9600/_node/jvm
+        - localhost:9600/_node/jvm
     ports:
       - 9600
 

@@ -26,7 +26,7 @@ services:
         - --timeout
         - "1"
         - --
-        - 127.0.0.1:3210
+        - localhost:3210
     environment:
       ANTHROPIC_API_KEY:
       APP_URL: https://chat.${DOMAIN}
@@ -39,6 +39,7 @@ services:
       DEEPSEEK_API_KEY:
       FEATURE_FLAGS: -check_updates,-clerk_sign_up,-welcome_suggest,-market
       GOOGLE_API_KEY:
+      HOSTNAME: "::"
       KEY_VAULTS_SECRET:
       NEXT_AUTH_SECRET:
       NEXT_AUTH_SSO_PROVIDERS: auth0

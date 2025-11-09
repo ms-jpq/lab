@@ -18,7 +18,7 @@ services:
     #     - --max-time
     #     - "30"
     #     - --
-    #     - 127.0.0.1:80
+    #     - localhost:80
     environment:
       SYMFONY__ENV__DATABASE_DRIVER: pdo_pgsql
       SYMFONY__ENV__DATABASE_HOST:
