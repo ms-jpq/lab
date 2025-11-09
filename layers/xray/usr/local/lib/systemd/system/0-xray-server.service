@@ -17,6 +17,6 @@ NoNewPrivileges          = yes
 RestartPreventExitStatus = 23
 
 Environment              = XRAY_LOCATION_ASSET=/opt/xray
-ExecStartPre             = !find ${RUNTIME_DIRECTORY} -mindepth 1 -delete
+ExecStartPre             = !-find ${RUNTIME_DIRECTORY} -mindepth 1 -delete
 ExecStart                = xray run -config /usr/local/opt/xray/%J.json
-ExecStartPost            = !find ${RUNTIME_DIRECTORY} -mindepth 1 -delete
+ExecStartPost            = !-find ${RUNTIME_DIRECTORY} -mindepth 1 -delete
