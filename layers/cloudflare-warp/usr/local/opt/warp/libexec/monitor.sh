@@ -7,8 +7,8 @@ CURL=(
   --fail
   --location
   --no-progress-meter
-  --proxy socks5://127.0.0.1:40000
-  -- "$1"
+  --proxy "$1"
+  -- "$2"
 )
 
 systemd-notify --ready

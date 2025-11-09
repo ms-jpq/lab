@@ -2,6 +2,10 @@
 Description              = Xray -- %J
 After                    = network-online.target
 
+Wants                    = 0-xray-mon.service
+Before                   = 0-xray-mon.service
+PartOf                   = 0-xray-mon.service
+
 [Service]
 Restart                  = on-failure
 DynamicUser              = yes
@@ -13,4 +17,6 @@ NoNewPrivileges          = yes
 RestartPreventExitStatus = 23
 
 Environment              = XRAY_LOCATION_ASSET=/opt/xray
+ExecStartPre             = !find ${RUNTIME_DIRECTORY} -mindepth 1 -delete
 ExecStart                = xray run -config /usr/local/opt/xray/%J.json
+ExecStartPost            = !find ${RUNTIME_DIRECTORY} -mindepth 1 -delete
