@@ -1,5 +1,5 @@
 [Unit]
-Description     = %J
+Description     = Warp Monitor
 
 [Service]
 Restart         = on-failure
@@ -12,5 +12,6 @@ PrivateTmp      = yes
 WatchdogSec     = 30s
 
 EnvironmentFile = /usr/local/etc/default/warp-mon.env
+Environment     = PROXY_URL=socks5://127.0.0.1:40000
 Environment     = TEST_URI=
-ExecStart       = /usr/local/opt/warp/libexec/monitor.sh ${TEST_URI}
+ExecStart       = /usr/local/opt/warp/libexec/monitor.sh ${PROXY_URL} ${TEST_URI}

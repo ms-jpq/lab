@@ -26,9 +26,6 @@ spec:
       websecure:
         expose:
           default: false
-    providers:
-      kubernetesCRD:
-        allowCrossNamespace: true
     metrics:
       prometheus:
         entryPoint: traefik
