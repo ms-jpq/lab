@@ -21,6 +21,11 @@ spec:
       kubernetesAttributes:
         enabled: true
     config:
+      extensions:
+        health_check:
+          endpoint: "[[::]]:13133"
+      receivers:
+        jaeger: null
       processors:
         &meta transform:
           log_statements:
@@ -48,3 +53,5 @@ spec:
               - *meta
             exporters:
               - *out
+          metrics: null
+          traces: null
