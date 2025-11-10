@@ -39,6 +39,7 @@ TasksMax          = infinity
 
 Environment       = K3S_CONFIG_FILE=/usr/local/opt/%J/conf.yml
 Environment       = K3S_NODE_NAME=%H
+Environment       = CONTAINERD_LOG_LEVEL=warn
 
 Environment       = K3S_DATASTORE_ENDPOINT=
 
