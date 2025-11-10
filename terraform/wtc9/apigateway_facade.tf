@@ -5,27 +5,39 @@ resource "aws_apigatewayv2_api" "faas" {
   region          = local.aws_regions.ca_w1
 }
 
-locals {
-  dns_ttl = 60
-}
-
-resource "aws_apigatewayv2_route" "umbrella" {
-  region    = aws_apigatewayv2_api.faas.region
-  api_id    = aws_apigatewayv2_api.faas.id
-  route_key = "$default"
-  target    = "integrations/${aws_apigatewayv2_integration.ppv.id}"
-}
-
 resource "aws_apigatewayv2_stage" "one_wtc" {
   api_id      = aws_apigatewayv2_api.faas.id
   auto_deploy = true
   name        = "$default"
   region      = aws_apigatewayv2_api.faas.region
+}
 
-  default_route_settings {
-    throttling_burst_limit = 6
-    throttling_rate_limit  = 2
+locals {
+  dns_ttl = 60
+  api_gateway_routes = {
+    "$default" = {
+      integration = aws_apigatewayv2_integration.ppv,
+      authorizer  = null
+    }
+    "ANY /webhooks" = {
+      integration = aws_apigatewayv2_integration.sink,
+      authorizer  = aws_apigatewayv2_authorizer.okta.id
+    }
+    "ANY /webhooks/{proxy+}" = {
+      integration = aws_apigatewayv2_integration.sink,
+      authorizer  = aws_apigatewayv2_authorizer.okta.id
+    }
   }
+}
+
+resource "aws_apigatewayv2_route" "umbrella" {
+  for_each           = local.api_gateway_routes
+  region             = aws_apigatewayv2_api.faas.region
+  api_id             = aws_apigatewayv2_api.faas.id
+  authorization_type = each.value.authorizer != null ? "CUSTOM" : "NONE"
+  authorizer_id      = each.value.authorizer
+  route_key          = each.key
+  target             = "integrations/${each.value.integration.id}"
 }
 
 data "aws_route53_zone" "limited_void" {
