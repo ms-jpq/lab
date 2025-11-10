@@ -6,6 +6,7 @@ RequiresMountsFor = %S/local
 Wants             = network-online.target
 After             = network-online.target
 
+After             = systemd-resolved.service
 After             = nftables.service
 
 After             = modprobe@br_netfilter.service
