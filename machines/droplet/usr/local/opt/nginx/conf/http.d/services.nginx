@@ -1,5 +1,5 @@
 server {
-  server_name ~^(?!local\.).*$;
+  server_name ~^.*$;
   listen      unix:/run/local/nginx/gateway-https.sock;
   include     /usr/local/opt/nginx/conf/auth.nginx;
 
