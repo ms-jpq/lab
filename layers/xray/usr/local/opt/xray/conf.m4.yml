@@ -131,7 +131,7 @@ client:
   observatory:
     enableConcurrency: true
     subjectSelector:
-      - ldr-xhttp
+      - &non-deprecated ldr-xhttp
     probeURL: http://m5_assert([ENV_XRAY_DOMAIN])/204
 
   routing:
@@ -139,7 +139,7 @@ client:
     balancers:
       - tag: &ldr ldr-
         selector:
-          - *ldr
+          - *non-deprecated
 
     rules:
       - *api-rule
