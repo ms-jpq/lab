@@ -89,6 +89,7 @@ server:
   outbounds:
     # - tag: *local
     #   protocol: freedom
+    #   targetStrategy: UseIP
     - tag: *local
       protocol: socks
       settings:
@@ -213,6 +214,7 @@ client:
   outbounds:
     - tag: *local
       protocol: freedom
+      targetStrategy: UseIP
       streamSettings:
         sockopt: &mark
           mark: 0x69
