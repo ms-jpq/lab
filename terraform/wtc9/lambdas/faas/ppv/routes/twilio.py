@@ -1,12 +1,9 @@
-from base64 import b64encode
 from collections import defaultdict
 from collections.abc import Mapping, MutableSet, Sequence, Set
 from datetime import datetime, timedelta, timezone
 from functools import cache, partial
 from hashlib import sha1
-from hmac import HMAC, compare_digest
 from http import HTTPStatus
-from itertools import chain
 from json import loads
 from logging import getLogger
 from os import environ
@@ -19,7 +16,7 @@ from aws_lambda_powertools.event_handler.middlewares import (
 )
 
 from ... import dump_json, executor, log_span, suppress_exn
-from ...twilio import parse_params
+from ...twilio import parse_params, verify
 from . import app, compute_once, current_raw_uri, dynamodb, sns
 
 
@@ -51,22 +48,13 @@ def _auth(
     if not (signature := event.headers.get("x-twilio-signature")):
         return Response(status_code=HTTPStatus.UNAUTHORIZED)
 
-    ordered = sorted(_current_params().items())
-    auth_key = environ["ENV_TWILIO_TOKEN"].encode()
-    auth_msg = "".join(
-        chain((current_raw_uri(),), chain.from_iterable(ordered))
-    ).encode()
-
-    hmac = HMAC(auth_key, auth_msg, digestmod=sha1)
-    expected = b64encode(hmac.digest()).decode()
-
-    if not compare_digest(signature, expected):
+    if not verify(current_raw_uri(), params=_current_params(), signature=signature):
         return Response(status_code=HTTPStatus.FORBIDDEN)
 
     return next_middleware.__call__(app)
 
 
-def _reply(el: Element) -> Response[str]:
+def _xml_ok(el: Element) -> Response[str]:
     indent(el)
     body = tostring(el, encoding="unicode", xml_declaration=True)
     getLogger().info("%s", body)
@@ -90,7 +78,7 @@ def voice() -> Response[str]:
     for tel in routes:
         SubElement(dial, "Number").text = tel
 
-    return _reply(root)
+    return _xml_ok(root)
 
 
 def _id(dst: str, route_to: str) -> str:
@@ -224,7 +212,7 @@ def message() -> Response[str]:
                                 )
                                 acc.add(key)
 
-                return _reply(root)
+                return _xml_ok(root)
             case _:
                 return Response(status_code=HTTPStatus.BAD_REQUEST)
 
