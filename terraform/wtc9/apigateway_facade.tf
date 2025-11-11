@@ -19,14 +19,13 @@ locals {
   api_gateway_routes = merge(
     {
       "$default" = {
-        integration = aws_apigatewayv2_integration.ppv,
-        authorizer  = null
+        integration = aws_apigatewayv2_integration.ppv
       }
     },
     {
       for key, val in local.api_gateway_webhooks : "ANY ${key}" =>
       {
-        integration = aws_apigatewayv2_integration.sink[key],
+        integration = aws_apigatewayv2_integration.sink[key]
         authorizer  = aws_apigatewayv2_authorizer.okta.id
       }
     }
@@ -35,10 +34,10 @@ locals {
 
 resource "aws_apigatewayv2_route" "umbrella" {
   for_each           = local.api_gateway_routes
-  region             = aws_apigatewayv2_api.faas.region
   api_id             = aws_apigatewayv2_api.faas.id
-  authorization_type = each.value.authorizer != null ? "CUSTOM" : "NONE"
-  authorizer_id      = each.value.authorizer
+  authorization_type = "CUSTOM"
+  authorizer_id      = aws_apigatewayv2_authorizer.okta.id
+  region             = aws_apigatewayv2_api.faas.region
   route_key          = each.key
   target             = "integrations/${each.value.integration.id}"
 }
