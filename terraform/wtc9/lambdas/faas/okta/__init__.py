@@ -27,10 +27,7 @@ def _basic_auth(event: APIGatewayAuthorizerEventV2) -> bool:
 
 
 def _auth(event: APIGatewayAuthorizerEventV2) -> bool:
-    if event.raw_path in {"/echo"}:
-        return True
-
-    for route in ("/owncloud/",):
+    for route in ("/echo", "/owncloud/"):
         if event.raw_path.startswith(route):
             return True
 
