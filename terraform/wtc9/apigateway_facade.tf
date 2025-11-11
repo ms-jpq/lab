@@ -1,15 +1,12 @@
+data "aws_route53_zone" "limited_void" {
+  name = var.faas_domain
+}
+
 resource "aws_apigatewayv2_api" "faas" {
   ip_address_type = "dualstack"
   name            = "faas"
   protocol_type   = "HTTP"
   region          = local.aws_regions.ca_w1
-}
-
-resource "aws_apigatewayv2_stage" "one_wtc" {
-  api_id      = aws_apigatewayv2_api.faas.id
-  auto_deploy = true
-  name        = "$default"
-  region      = aws_apigatewayv2_api.faas.region
 }
 
 locals {
@@ -40,8 +37,18 @@ resource "aws_apigatewayv2_route" "umbrella" {
   target             = "integrations/${each.value.integration.id}"
 }
 
-data "aws_route53_zone" "limited_void" {
-  name = var.faas_domain
+resource "aws_apigatewayv2_stage" "one_wtc" {
+  api_id      = aws_apigatewayv2_api.faas.id
+  auto_deploy = true
+  name        = "$default"
+  region      = aws_apigatewayv2_api.faas.region
+
+  dynamic "route_settings" {
+    for_each = local.api_gateway_routes
+    content {
+      route_key              = route_settings.key
+    }
+  }
 }
 
 resource "aws_acm_certificate" "fascia" {
