@@ -4,6 +4,6 @@ locals {
   lambda_arch = "arm64"
   lambda_layers = [
     "arn:aws:lambda:${local.lambda_region}:017000801446:layer:AWSLambdaPowertoolsPythonV3-${replace(local.lambda_rt, ".", "")}-${local.lambda_arch}:23",
-    "arn:aws:lambda:${local.lambda_region}:184161586896:layer:opentelemetry-python-${regex("\\d+.\\d+", local.lambda_rt)}:1"
+    "arn:aws:lambda:${local.lambda_region}:184161586896:layer:opentelemetry-python-0_17_0:1"
   ]
 }

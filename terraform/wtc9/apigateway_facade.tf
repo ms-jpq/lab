@@ -6,7 +6,7 @@ resource "aws_apigatewayv2_api" "faas" {
   ip_address_type = "dualstack"
   name            = "faas"
   protocol_type   = "HTTP"
-  region          = local.aws_regions.ca_w1
+  region          = local.aws_regions.ca_c1
 }
 
 locals {
@@ -79,7 +79,7 @@ resource "aws_apigatewayv2_domain_name" "fascia" {
   region      = aws_apigatewayv2_api.faas.region
 
   domain_name_configuration {
-    certificate_arn = aws_acm_certificate.fascia.arn
+    certificate_arn = aws_acm_certificate_validation.limited_void.certificate_arn
     endpoint_type   = "REGIONAL"
     ip_address_type = "dualstack"
     security_policy = "TLS_1_2"
