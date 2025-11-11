@@ -209,21 +209,3 @@ def message() -> Response[str]:
                 return _xml_ok(root)
             case _:
                 return Response(status_code=HTTPStatus.BAD_REQUEST)
-
-
-@app.post("/twilio/status/voice", middlewares=[_auth])
-def voice_status() -> Response[None]:
-    from pprint import pformat
-
-    getLogger().info("%s", pformat(app.current_event.raw_event))
-
-    return Response(status_code=HTTPStatus.NO_CONTENT)
-
-
-@app.post("/twilio/status/message", middlewares=[_auth])
-def message_status() -> Response[None]:
-    from pprint import pformat
-
-    getLogger().info("%s", pformat(app.current_event.raw_event))
-
-    return Response(status_code=HTTPStatus.NO_CONTENT)

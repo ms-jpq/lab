@@ -24,7 +24,7 @@ resource "aws_apigatewayv2_integration" "sink" {
       }
       RawURL = {
         DataType    = "String"
-        StringValue = "$${request.header.x-forwarded-proto}://$${context.domainName}$${request.path}?$${request.rawQueryString}"
+        StringValue = "$${request.header.x-forwarded-proto}://$${context.domainName}$${request.path}"
       }
       Signature  = {
         DataType    = "String"
