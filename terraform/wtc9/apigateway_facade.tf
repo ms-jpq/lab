@@ -11,20 +11,24 @@ resource "aws_apigatewayv2_api" "faas" {
 
 locals {
   dns_ttl = 60
-  api_gateway_routes = {
-    "$default" = {
-      integration = aws_apigatewayv2_integration.ppv,
-      authorizer  = null
-    }
-    "ANY /webhooks" = {
-      integration = aws_apigatewayv2_integration.sink,
-      authorizer  = aws_apigatewayv2_authorizer.okta.id
-    }
-    "ANY /webhooks/{proxy+}" = {
-      integration = aws_apigatewayv2_integration.sink,
-      authorizer  = aws_apigatewayv2_authorizer.okta.id
-    }
+  api_gateway_webhooks = {
+    "/twilio/error" = "x-twilio-signature"
   }
+  api_gateway_routes = merge(
+    {
+      "$default" = {
+        integration = aws_apigatewayv2_integration.ppv,
+        authorizer  = null
+      }
+    },
+    {
+      for key, val in local.api_gateway_webhooks : "ANY ${key}" =>
+      {
+        integration = aws_apigatewayv2_integration.sink[key],
+        authorizer  = aws_apigatewayv2_authorizer.okta.id
+      }
+    }
+  )
 }
 
 resource "aws_apigatewayv2_route" "umbrella" {

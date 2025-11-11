@@ -7,6 +7,7 @@ resource "aws_sqs_queue" "drain" {
 }
 
 resource "aws_apigatewayv2_integration" "sink" {
+  for_each            = local.api_gateway_webhooks
   api_id              = aws_apigatewayv2_api.faas.id
   credentials_arn     = aws_iam_role.api_gateway_sqs.arn
   integration_subtype = "SQS-SendMessage"
@@ -24,6 +25,10 @@ resource "aws_apigatewayv2_integration" "sink" {
       Path = {
         DataType    = "String"
         StringValue = "$${request.path}"
+      }
+      Signature  = {
+        DataType    = "String"
+        StringValue = "$${request.header.${each.value}}"
       }
     })
   }
@@ -69,7 +74,9 @@ resource "aws_lambda_function" "skyhook" {
   source_code_hash = data.archive_file.haskell.output_base64sha256
 
   environment {
-    variables = {}
+    variables = {
+      ENV_TWILIO_TOKEN = var.twilio_token
+    }
   }
 }
 
