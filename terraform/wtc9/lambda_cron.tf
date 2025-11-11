@@ -3,7 +3,7 @@ resource "aws_lambda_function" "cron" {
   filename         = data.archive_file.haskell.output_path
   function_name    = "cron"
   handler          = "faas.cron.main"
-  layers           = [local.lambda_layer]
+  layers           = local.lambda_layers
   region           = local.lambda_region
   role             = aws_iam_role.lambdas["cron"].arn
   runtime          = local.lambda_rt

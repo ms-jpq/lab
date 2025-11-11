@@ -3,7 +3,7 @@ resource "aws_lambda_function" "okta" {
   filename         = data.archive_file.haskell.output_path
   function_name    = "okta"
   handler          = "faas.okta.main"
-  layers           = [local.lambda_layer]
+  layers           = local.lambda_layers
   region           = local.lambda_region
   role             = aws_iam_role.lambdas["okta"].arn
   runtime          = local.lambda_rt
