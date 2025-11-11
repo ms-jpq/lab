@@ -47,6 +47,8 @@ resource "aws_apigatewayv2_stage" "one_wtc" {
     for_each = local.api_gateway_routes
     content {
       route_key              = route_settings.key
+      throttling_burst_limit = 6
+      throttling_rate_limit  = 2
     }
   }
 }
