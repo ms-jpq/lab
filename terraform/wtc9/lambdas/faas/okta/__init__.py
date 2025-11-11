@@ -30,13 +30,11 @@ def _auth(event: APIGatewayAuthorizerEventV2) -> bool:
     if event.raw_path in {"/echo"}:
         return True
 
-    if event.raw_path.startswith("/owncloud/"):
-        return True
-
-    if event.raw_path.startswith("/twilio/"):
-        return _basic_auth(event)
-
-    return False
+    for route in ("/owncloud/", "/twilio/"):
+        if event.raw_path.startswith(route):
+            return _basic_auth(event)
+    else:
+        return False
 
 
 @event_source(data_class=APIGatewayAuthorizerEventV2)
