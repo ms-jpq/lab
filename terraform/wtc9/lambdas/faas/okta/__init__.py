@@ -1,5 +1,5 @@
+from base64 import b64decode
 from collections.abc import Mapping
-from contextlib import nullcontext
 from typing import Any
 
 from aws_lambda_powertools.utilities.data_classes import event_source
@@ -11,8 +11,19 @@ from aws_lambda_powertools.utilities.typing import LambdaContext
 
 from .. import _
 
-with nullcontext():
-    _BASIC = "basic "
+
+def _basic_auth(event: APIGatewayAuthorizerEventV2) -> bool:
+    basic, auth = "basic ", event.headers.get("authorization", "").lower()
+    if not auth.startswith(basic):
+        return False
+
+    encoded = auth.removeprefix(basic)
+    decoded = b64decode(encoded).decode()
+    lhs, sep, rhs = decoded.partition(":")
+    if not sep == ":":
+        return False
+
+    return True
 
 
 def _auth(event: APIGatewayAuthorizerEventV2) -> bool:
@@ -23,14 +34,7 @@ def _auth(event: APIGatewayAuthorizerEventV2) -> bool:
         return True
 
     if event.raw_path.startswith("/twilio/"):
-        if (
-            not (auth := event.headers.get("authorization", ""))
-            .lower()
-            .startswith(_BASIC)
-        ):
-            _ = auth.removeprefix(_BASIC)
-
-        return True
+        return _basic_auth(event)
 
     return False
 
