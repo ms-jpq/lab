@@ -16,7 +16,7 @@ with nullcontext():
 
 
 def _auth(event: APIGatewayAuthorizerEventV2) -> bool:
-    if event.raw_path in {"echo"}:
+    if event.raw_path in {"/echo"}:
         return True
 
     if event.raw_path.startswith("/owncloud/"):
