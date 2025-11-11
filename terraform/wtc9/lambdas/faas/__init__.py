@@ -6,11 +6,16 @@ from json import dumps
 from logging import INFO, captureWarnings, getLogger
 from typing import Any
 
+from botocore.config import Config
+
 with nullcontext():
     captureWarnings(True)
     getLogger().setLevel(INFO)
 
     _ = True
+
+with nullcontext():
+    B3_CONF = Config(retries={"mode": "adaptive"})
 
 
 @cache

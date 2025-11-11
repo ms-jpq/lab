@@ -1,5 +1,8 @@
 from contextlib import nullcontext
-from logging import getLogger
+from functools import cache
+from hashlib import sha1
+from json import loads
+from os import environ
 
 from aws_lambda_powertools.utilities.batch import (
     BatchProcessor,
@@ -13,15 +16,42 @@ from aws_lambda_powertools.utilities.data_classes import (
     event_source,
 )
 from aws_lambda_powertools.utilities.typing import LambdaContext
+from boto3 import client  # pyright:ignore
 
-from .. import _
+from .. import B3_CONF, _, dump_json
+from ..twilio import parse_params, verify
 
 with nullcontext():
     _PROC = BatchProcessor(event_type=EventType.SQS)
+    _sns = client(service_name="sns", config=B3_CONF)
+
+
+@cache
+def _channel() -> str:
+    return environ["ENV_CHAN_NAME"]
 
 
 def _handler(record: SQSRecord) -> None:
-    getLogger().info("%s", record.message_id)
+    match record.attributes.raw_event:
+        case {"": str(uri), "Signature": str(signature)}:
+            pass
+        case _:
+            return
+
+    params = parse_params(record.body)
+    if not verify(uri, params=params, signature=signature):
+        return
+
+    match params:
+        case {"PayloadType": "application/json", "Payload": str(payload)}:
+            params["Payload"] = loads(payload)
+        case _:
+            return
+
+    json = dump_json(params)
+    hashed = sha1(json.encode()).hexdigest()
+
+    _sns.publish(TopicArn=_channel(), Subject=f"/twilio/error - {hashed}", Message=json)
 
 
 @event_source(data_class=SQSEvent)

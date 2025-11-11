@@ -2,7 +2,6 @@ from collections import defaultdict
 from collections.abc import Mapping, MutableSet, Sequence, Set
 from datetime import datetime, timedelta, timezone
 from functools import cache, partial
-from hashlib import sha1
 from http import HTTPStatus
 from json import loads
 from logging import getLogger
@@ -15,9 +14,9 @@ from aws_lambda_powertools.event_handler.middlewares import (
     NextMiddleware,
 )
 
-from ... import dump_json, executor, log_span, suppress_exn
+from ... import executor, log_span, suppress_exn
 from ...twilio import parse_params, verify
-from . import app, compute_once, current_raw_uri, dynamodb, sns
+from . import app, compute_once, current_raw_uri, dynamodb
 
 
 @cache
@@ -29,11 +28,6 @@ def _routes() -> Set[str]:
 @cache
 def _table() -> str:
     return environ["ENV_TBL_NAME"]
-
-
-@cache
-def _channel() -> str:
-    return environ["ENV_CHAN_NAME"]
 
 
 @compute_once
@@ -232,18 +226,4 @@ def message_status() -> Response[None]:
 
     getLogger().info("%s", pformat(app.current_event.raw_event))
 
-    return Response(status_code=HTTPStatus.NO_CONTENT)
-
-
-@app.post("/twilio/error", middlewares=[_auth])
-def error() -> Response[None]:
-    params = _current_params()
-    match params:
-        case {"PayloadType": "application/json", "Payload": str(payload)}:
-            params["Payload"] = loads(payload)
-
-    json = dump_json(params)
-    hashed = sha1(json.encode()).hexdigest()
-
-    sns.publish(TopicArn=_channel(), Subject=f"/twilio/error - {hashed}", Message=json)
     return Response(status_code=HTTPStatus.NO_CONTENT)
