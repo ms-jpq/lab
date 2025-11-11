@@ -12,7 +12,7 @@ resource "aws_lambda_function" "mta" {
   architectures    = [local.lambda_arch]
   filename         = data.archive_file.mta.output_path
   function_name    = "mta"
-  handler          = "mta.fax.main"
+  handler          = "mta.fax"
   layers           = [local.lambda_layer]
   region           = local.lambda_region
   role             = aws_iam_role.mta.arn
