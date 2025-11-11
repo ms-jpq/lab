@@ -10,7 +10,6 @@ from itertools import chain
 from json import loads
 from logging import getLogger
 from os import environ
-from urllib.parse import parse_qsl
 from xml.etree.ElementTree import Element, SubElement, indent, tostring
 
 from aws_lambda_powertools.event_handler import APIGatewayHttpResolver
@@ -20,6 +19,7 @@ from aws_lambda_powertools.event_handler.middlewares import (
 )
 
 from ... import dump_json, executor, log_span, suppress_exn
+from ...twilio import parse_params
 from . import app, compute_once, current_raw_uri, dynamodb, sns
 
 
@@ -41,7 +41,7 @@ def _channel() -> str:
 
 @compute_once
 def _current_params() -> dict[str, str]:
-    return dict(parse_qsl(app.current_event.decoded_body, keep_blank_values=True))
+    return parse_params(app.current_event.decoded_body)
 
 
 def _auth(
