@@ -32,13 +32,17 @@ def _channel() -> str:
 
 
 def _handler(record: SQSRecord) -> None:
-    match record.attributes.raw_event:
-        case {"": str(uri), "Signature": str(signature)}:
-            pass
+    match record.raw_event:
+        case {
+            "messageAttributes": {
+                "RawURL": {"stringValue": str(uri)},
+                "Signature": {"stringValue": str(signature)},
+            }
+        }:
+            params = parse_params(record.body)
         case _:
             return
 
-    params = parse_params(record.body)
     if not verify(uri, params=params, signature=signature):
         return
 

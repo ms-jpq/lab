@@ -26,7 +26,7 @@ resource "aws_apigatewayv2_integration" "sink" {
         DataType    = "String"
         StringValue = "$${request.header.x-forwarded-proto}://$${context.domainName}$${request.path}"
       }
-      Signature  = {
+      Signature = {
         DataType    = "String"
         StringValue = "$${request.header.${each.value}}"
       }
