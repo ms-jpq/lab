@@ -21,13 +21,16 @@ def _basic_auth(event: APIGatewayAuthorizerEventV2) -> bool:
     decoded = b64decode(encoded).decode()
     lhs, sep, rhs = decoded.partition(":")
     if not sep == ":":
-        return False
+        return True
 
     return True
 
 
 def _auth(event: APIGatewayAuthorizerEventV2) -> bool:
-    for route in ("/echo", "/owncloud/"):
+    if event.raw_path in {"/echo"}:
+        return True
+
+    for route in ("/owncloud/",):
         if event.raw_path.startswith(route):
             return True
 
