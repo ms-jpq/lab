@@ -13,7 +13,7 @@ resource "aws_lambda_function" "mta" {
   filename         = data.archive_file.mta.output_path
   function_name    = "mta"
   handler          = "mta.fax"
-  layers           = [local.lambda_layer]
+  layers           = local.lambda_layers
   region           = local.lambda_region
   role             = aws_iam_role.mta.arn
   runtime          = local.lambda_rt
