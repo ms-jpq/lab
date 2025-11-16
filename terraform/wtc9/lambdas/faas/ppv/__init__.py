@@ -1,5 +1,6 @@
 from collections.abc import Mapping
 from contextlib import nullcontext
+from itertools import permutations
 from typing import Any
 
 from aws_lambda_powertools.utilities.data_classes import (
@@ -11,11 +12,9 @@ from aws_lambda_powertools.utilities.data_classes.api_gateway_proxy_event import
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from opentelemetry.propagate import extract
 from opentelemetry.trace import (
-    NonRecordingSpan,
+    get_current_span,
     get_tracer,
-    set_span_in_context,
 )
-from opentelemetry.context import attach, detach
 
 from .. import _
 from .routes import app
@@ -26,18 +25,10 @@ with nullcontext():
 
 @event_source(data_class=APIGatewayProxyEventV2)
 def main(event: APIGatewayProxyEventV2, ctx: LambdaContext) -> Mapping[str, Any]:
+    span = get_current_span()
     context = extract(event.request_context.authorizer.get_lambda)
-    for v in context.values():
-        if isinstance(v, NonRecordingSpan):
-            ct = set_span_in_context(v)
-            break
-    else:
-        assert False
 
-    token = attach(ct)
-    try:
-        with _TRACER.start_as_current_span("router", context=ct):
-            return app.resolve(event.raw_event, context=ctx)
-    finally:
-        detach(token)
-
+    with _TRACER.start_as_current_span("router", context=context) as s:
+        for l, r in permutations((s, span), 2):
+            l.add_link(r.get_span_context())
+        return app.resolve(event.raw_event, context=ctx)
