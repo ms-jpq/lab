@@ -15,6 +15,7 @@ from aws_lambda_powertools.utilities.data_classes.api_gateway_authorizer_event i
 )
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from opentelemetry.baggage import set_baggage
+from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
 from opentelemetry.propagate import inject
 from opentelemetry.trace import get_tracer
 
@@ -90,3 +91,6 @@ def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, A
         authorize = _auth(event)
         rsp = APIGatewayAuthorizerResponseV2(authorize=authorize, context=context)
         return rsp.asdict()
+
+
+AwsLambdaInstrumentor().instrument()

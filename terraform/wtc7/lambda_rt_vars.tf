@@ -12,7 +12,6 @@ locals {
     "arn:aws:lambda:${local.lambda_region}:184161586896:layer:opentelemetry-python-0_17_0:1"
   ]
   lambda_envs = {
-    AWS_LAMBDA_EXEC_WRAPPER     = "/opt/otel-handler"
     OTEL_EXPORTER_OTLP_ENDPOINT = var.otlp_endpoint
   }
 }
