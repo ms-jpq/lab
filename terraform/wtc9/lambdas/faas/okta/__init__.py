@@ -38,12 +38,16 @@ def _authorized_users() -> Mapping[str, str]:
 
 
 def _basic_auth(event: APIGatewayAuthorizerEventV2) -> bool:
-    basic, auth = "basic ", event.headers.get("authorization", "").lower()
-    if not auth.startswith(basic):
+    auth = event.headers.get("authorization", "")
+    _, sep, rhs = auth.partition(" ")
+    if sep != " ":
         return False
 
-    encoded = auth.removeprefix(basic)
-    decoded = b64decode(encoded).decode()
+    try:
+        decoded = b64decode(rhs).decode()
+    except UnicodeDecodeError:
+        return False
+
     lhs, sep, rhs = decoded.partition(":")
     if not sep == ":":
         return False
