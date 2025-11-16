@@ -14,7 +14,7 @@ from aws_lambda_powertools.event_handler.middlewares import (
     NextMiddleware,
 )
 
-from ... import executor, log_span, suppress_exn
+from ... import executor, suppress_exn
 from ...twilio import parse_params, verify
 from . import app, compute_once, current_raw_uri, dynamodb
 
@@ -186,26 +186,23 @@ def _messages(
 def message() -> Response[str]:
     root = Element("Response")
 
-    with log_span():
-        match _current_params():
-            case {"From": src, "To": dst, "Body": body}:
-                """
-                dst is always a twilio number
-                """
+    match _current_params():
+        case {"From": src, "To": dst, "Body": body}:
+            """
+            dst is always a twilio number
+            """
 
-                fn = partial(_messages, src, dst, body)
-                seen: Mapping[str, MutableSet[int]] = defaultdict(set)
-                for pairs in executor().map(fn, _routes()):
-                    for tel, msgs in pairs:
-                        acc = seen[tel]
-                        for msg in msgs:
-                            key = hash(msg)
-                            if not key in acc:
-                                SubElement(root, "Message", attrib={"to": tel}).text = (
-                                    msg
-                                )
-                                acc.add(key)
+            fn = partial(_messages, src, dst, body)
+            seen: Mapping[str, MutableSet[int]] = defaultdict(set)
+            for pairs in executor().map(fn, _routes()):
+                for tel, msgs in pairs:
+                    acc = seen[tel]
+                    for msg in msgs:
+                        key = hash(msg)
+                        if not key in acc:
+                            SubElement(root, "Message", attrib={"to": tel}).text = msg
+                            acc.add(key)
 
-                return _xml_ok(root)
-            case _:
-                return Response(status_code=HTTPStatus.BAD_REQUEST)
+            return _xml_ok(root)
+        case _:
+            return Response(status_code=HTTPStatus.BAD_REQUEST)

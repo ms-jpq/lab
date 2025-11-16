@@ -24,15 +24,6 @@ def executor() -> ThreadPoolExecutor:
 
 
 @contextmanager
-def log_span() -> Iterator[None]:
-    getLogger().info("%s", ">>>")
-    try:
-        yield None
-    finally:
-        getLogger().info("%s", "<<<")
-
-
-@contextmanager
 def suppress_exn() -> Iterator[None]:
     try:
         yield None
