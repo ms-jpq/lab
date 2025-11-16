@@ -14,16 +14,18 @@ extensions:
     storage:
       traces: *store
     ui:
-      config_file:
 receivers:
   &recv otlp:
     protocols:
       http:
+        endpoint: "[::]:4318"
 processors:
   &batch batch:
 exporters:
   &jexporter jaeger_storage_exporter:
     trace_storage: some_store
+  &loki otlphttp:
+    endpoint: localhost:3100/otlp
 service:
   extensions:
     - *jstorage
@@ -36,3 +38,8 @@ service:
         - *batch
       exporters:
         - *jexporter
+    logs:
+      receivers:
+        - *recv
+      exporters:
+        - *loki
