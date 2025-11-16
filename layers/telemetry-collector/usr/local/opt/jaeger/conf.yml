@@ -1,0 +1,38 @@
+# https://www.jaegertracing.io/docs/2.0/deployment/configuration
+# https://github.com/jaegertracing/jaeger/blob/v2.0.0/cmd/jaeger/config.yaml
+---
+extensions:
+  &jstorage jaeger_storage:
+    backends:
+      &store var_local_state:
+        badger:
+          ephemeral: false
+          directories:
+            keys: /var/lib/local/jaeger/keys
+            values: /var/lib/local/jaeger/values
+  &jquery jaeger_query:
+    storage:
+      traces: *store
+    ui:
+      config_file:
+receivers:
+  &recv otlp:
+    protocols:
+      http:
+processors:
+  &batch batch:
+exporters:
+  &jexporter jaeger_storage_exporter:
+    trace_storage: some_store
+service:
+  extensions:
+    - *jstorage
+    - *jquery
+  pipelines:
+    traces:
+      receivers:
+        - *recv
+      processors:
+        - *batch
+      exporters:
+        - *jexporter

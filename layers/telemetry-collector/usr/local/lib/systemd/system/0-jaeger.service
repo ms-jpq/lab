@@ -1,0 +1,11 @@
+[Unit]
+Description    = "Jägermeister"
+
+[Service]
+Restart        = on-failure
+ProtectSystem  = strict
+ProtectHome    = yes
+PrivateTmp     = yes
+StateDirectory = local/jaeger
+
+ExecStart      = jaeger --config /usr/local/opt/jaeger/conf.yml
