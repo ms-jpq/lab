@@ -17,16 +17,22 @@ extensions:
 receivers:
   &recv otlp:
     protocols:
+      grpc:
       http:
         endpoint: "[::]:4318"
 processors:
   &batch batch:
 exporters:
   &jexporter jaeger_storage_exporter:
-    trace_storage: some_store
+    trace_storage: *store
   &loki otlphttp:
     endpoint: localhost:3100/otlp
 service:
+  telemetry:
+    metrics:
+      level: none
+    logs:
+      level: warn
   extensions:
     - *jstorage
     - *jquery
