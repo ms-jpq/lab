@@ -1,3 +1,8 @@
+variable "basic_users" {
+  sensitive = true
+  type      = string
+}
+
 resource "aws_lambda_function" "okta" {
   architectures    = [local.lambda_arch]
   filename         = data.archive_file.haskell.output_path
@@ -12,7 +17,7 @@ resource "aws_lambda_function" "okta" {
   environment {
     variables = merge(
       local.lambda_envs,
-      {}
+      { ENV_AUTH_USERS = var.basic_users }
     )
   }
 }

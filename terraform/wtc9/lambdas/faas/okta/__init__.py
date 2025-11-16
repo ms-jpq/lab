@@ -1,6 +1,12 @@
 from base64 import b64decode
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
+from contextlib import nullcontext
+from functools import cache
+from hashlib import sha256
+from hmac import HMAC, compare_digest
+from os import environ
 from typing import Any
+from uuid import uuid4
 
 from aws_lambda_powertools.utilities.data_classes import event_source
 from aws_lambda_powertools.utilities.data_classes.api_gateway_authorizer_event import (
@@ -10,6 +16,25 @@ from aws_lambda_powertools.utilities.data_classes.api_gateway_authorizer_event i
 from aws_lambda_powertools.utilities.typing import LambdaContext
 
 from .. import _
+
+with nullcontext():
+    _SEC = uuid4().hex.encode()
+
+
+def _hmac(msg: str) -> str:
+    hmac = HMAC(_SEC, msg.encode(), digestmod=sha256)
+    return hmac.hexdigest()
+
+
+@cache
+def _authorized_users() -> Mapping[str, str]:
+    def cont() -> Iterator[tuple[str, str]]:
+        for users in environ["ENV_AUTH_USERS"].split(","):
+            lhs, sep, rhs = users.partition(":")
+            assert sep == ":"
+            yield lhs, _hmac(rhs)
+
+    return {k: v for k, v in cont()}
 
 
 def _basic_auth(event: APIGatewayAuthorizerEventV2) -> bool:
@@ -21,9 +46,12 @@ def _basic_auth(event: APIGatewayAuthorizerEventV2) -> bool:
     decoded = b64decode(encoded).decode()
     lhs, sep, rhs = decoded.partition(":")
     if not sep == ":":
-        return True
+        return False
 
-    return True
+    if not (digest := _authorized_users().get(lhs)):
+        return False
+
+    return compare_digest(_hmac(rhs), digest)
 
 
 def _auth(event: APIGatewayAuthorizerEventV2) -> bool:
@@ -33,6 +61,9 @@ def _auth(event: APIGatewayAuthorizerEventV2) -> bool:
     for route in ("/owncloud/",):
         if event.raw_path.startswith(route):
             return True
+
+    if event.raw_path in {}:
+        return _basic_auth(event)
 
     for route in ("/twilio/",):
         if event.raw_path.startswith(route):
