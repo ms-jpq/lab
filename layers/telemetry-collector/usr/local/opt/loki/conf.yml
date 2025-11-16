@@ -7,6 +7,7 @@ ui:
 
 server:
   log_level: error
+  # http_path_prefix: /loki
 
 common:
   replication_factor: 1
