@@ -74,9 +74,12 @@ resource "aws_lambda_function" "skyhook" {
   source_code_hash = data.archive_file.haskell.output_base64sha256
 
   environment {
-    variables = {
-      ENV_TWILIO_TOKEN = var.twilio_token
-    }
+    variables = merge(
+      local.lambda_envs,
+      {
+        ENV_TWILIO_TOKEN = var.twilio_token
+      }
+    )
   }
 }
 

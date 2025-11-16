@@ -21,14 +21,17 @@ resource "aws_lambda_function" "mta" {
   timeout          = local.timeouts.lambda
 
   environment {
-    variables = {
-      MAIL_FROM = var.mail_from
-      MAIL_TO   = join(", ", var.mail_to)
-      MAIL_SRV  = local.mail_srv
-      MAIL_USER = var.mail_user
-      MAIL_PASS = var.mail_pass
-      MAIL_FILT = var.mail_filter
-    }
+    variables = merge(
+      local.lambda_envs,
+      {
+        MAIL_FROM = var.mail_from
+        MAIL_TO   = join(", ", var.mail_to)
+        MAIL_SRV  = local.mail_srv
+        MAIL_USER = var.mail_user
+        MAIL_PASS = var.mail_pass
+        MAIL_FILT = var.mail_filter
+      }
+    )
   }
 }
 
