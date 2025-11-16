@@ -1,31 +1,10 @@
 server {
   server_name otlp.*;
   listen      unix:/run/local/nginx/gateway-https.sock;
-  set         $x_esxi esxi.enp1s0.opnsense.home.arpa;
 
   location / {
-    try_files /dev/null =404;
-  }
-
-  location /otlp {
     auth_basic           "-";
     auth_basic_user_file /var/lib/local/nginx/otlp.htpasswd;
-    proxy_pass           http://$x_esxi:3100;
-  }
-}
-
-server {
-  server_name jaeger.*;
-  listen      unix:/run/local/nginx/gateway-https.sock;
-  set         $x_esxi esxi.enp1s0.opnsense.home.arpa;
-
-  location / {
-    try_files /dev/null =404;
-  }
-
-  location /otlp {
-    auth_basic           "-";
-    auth_basic_user_file /var/lib/local/nginx/otlp.htpasswd;
-    proxy_pass           http://$x_esxi:4318;
+    proxy_pass           http://127.0.0.53:4318;
   }
 }

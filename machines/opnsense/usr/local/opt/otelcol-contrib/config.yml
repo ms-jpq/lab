@@ -1,0 +1,29 @@
+# https://opentelemetry.io/docs/collector/configuration/
+---
+receivers:
+  &recv otlp:
+    protocols:
+      http:
+        endpoint: 127.0.0.53:4318
+exporters:
+  &t-logs otlphttp/logs:
+    endpoint: http://esxi.enp1s0.opnsense.home.arpa:3100/otlp
+  &t-traces otlphttp/traces:
+    endpoint: http://esxi.enp1s0.opnsense.home.arpa:4318/otlp
+service:
+  telemetry:
+    metrics:
+      level: none
+    logs:
+      level: warn
+  pipelines:
+    logs:
+      receivers:
+        - *recv
+      exporters:
+        - *t-logs
+    traces:
+      receivers:
+        - *recv
+      exporters:
+        - *t-traces
