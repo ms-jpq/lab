@@ -13,7 +13,6 @@ locals {
   ]
   lambda_envs = {
     AWS_LAMBDA_EXEC_WRAPPER     = "/opt/otel-handler"
-    OTEL_EXPORTER_OTLP_PROTOCOL = "http/json"
     OTEL_EXPORTER_OTLP_ENDPOINT = var.otlp_endpoint
   }
 }

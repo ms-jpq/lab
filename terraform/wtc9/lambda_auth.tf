@@ -10,7 +10,10 @@ resource "aws_lambda_function" "okta" {
   source_code_hash = data.archive_file.haskell.output_base64sha256
 
   environment {
-    variables = {}
+    variables = merge(
+      local.lambda_envs,
+      {}
+    )
   }
 }
 

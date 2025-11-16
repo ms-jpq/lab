@@ -9,7 +9,7 @@ exporters:
   &t-logs otlphttp/logs:
     endpoint: http://esxi.enp1s0.opnsense.home.arpa:3100/otlp
   &t-traces otlphttp/traces:
-    endpoint: http://esxi.enp1s0.opnsense.home.arpa:4318/otlp
+    endpoint: http://esxi.enp1s0.opnsense.home.arpa:4318
 service:
   telemetry:
     metrics:
