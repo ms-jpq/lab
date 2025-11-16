@@ -38,7 +38,7 @@ service:
     traces:
       receivers:
         - *recv
-      processors:
-        - *batch
+      # processors:
+      #   - *batch
       exporters:
         - *jexporter
