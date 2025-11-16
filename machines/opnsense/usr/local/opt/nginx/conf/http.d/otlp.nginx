@@ -3,8 +3,16 @@ server {
   listen      unix:/run/local/nginx/gateway-https.sock;
 
   location / {
+    try_files /dev/null =404;
+  }
+
+  location /otlp {
+    return 307 /otlp/;
+  }
+
+  location /otlp/ {
     auth_basic           "-";
     auth_basic_user_file /var/lib/local/nginx/otlp.htpasswd;
-    proxy_pass           http://127.0.0.53:4318;
+    proxy_pass           http://127.0.0.53:4318/;
   }
 }
