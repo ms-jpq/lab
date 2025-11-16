@@ -1,5 +1,5 @@
 from base64 import b64decode
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, MutableMapping
 from contextlib import nullcontext
 from functools import cache
 from hashlib import sha256
@@ -82,7 +82,7 @@ def _auth(event: APIGatewayAuthorizerEventV2) -> bool:
 
 @event_source(data_class=APIGatewayAuthorizerEventV2)
 def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, Any]:
-    context = {}
+    context: MutableMapping[str, Any] = {}
     with _TRACER.start_as_current_span("auth"):
         set_baggage("request_id", event.request_context.request_id)
         inject(context)
