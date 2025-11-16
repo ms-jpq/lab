@@ -1,0 +1,7 @@
+location /jaeger {
+  return 307 /jaeger/;
+}
+
+location /jaeger/ {
+  proxy_pass http://127.0.0.53:16686;
+}
