@@ -15,6 +15,7 @@ from opentelemetry.trace import (
     get_tracer,
     set_span_in_context,
 )
+from opentelemetry.context import attach, detach
 
 from .. import _
 from .routes import app
@@ -33,5 +34,10 @@ def main(event: APIGatewayProxyEventV2, ctx: LambdaContext) -> Mapping[str, Any]
     else:
         assert False
 
-    with _TRACER.start_as_current_span("router", context=ct):
-        return app.resolve(event.raw_event, context=ctx)
+    token = attach(ct)
+    try:
+        with _TRACER.start_as_current_span("router", context=ct):
+            return app.resolve(event.raw_event, context=ctx)
+    finally:
+        detach(token)
+
