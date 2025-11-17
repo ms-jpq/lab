@@ -37,7 +37,7 @@ spec:
               delete_key(log.attributes, "logtag")
       exporters:
         &out otlphttp:
-          endpoint: m5_assert([ENV_OTLP_ENDPOINT])/otlp
+          endpoint: m5_assert([ENV_OTLP_ENDPOINT])
           headers:
             authorization: >-
               Basic m5_esyscmd(printf -- %s 'm5_assert([ENV_OTLP_PASSWORD])' | jq --raw-input --join-output '"otlp:\(.)" | @base64')

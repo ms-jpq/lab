@@ -5,7 +5,7 @@ extensions:
     directory: /var/lib/local/otelcol-contrib
 receivers:
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/journaldreceiver
-  &input journald:
+  &journal journald:
     merge: true
     all: true
     convert_message_bytes: true
@@ -21,9 +21,13 @@ receivers:
         field: body.__SEQNUM
       - type: remove
         field: body.__SEQNUM_ID
+  &recv otlp:
+    protocols:
+      http:
+        endpoint: "[::]:4318"
 processors:
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor
-  &meta transform:
+  &journal-meta transform:
     log_statements:
       - >-
         set(resource.attributes["service.namespace"], log.body["_HOSTNAME"])
@@ -38,8 +42,12 @@ processors:
       - >-
         set(resource.attributes["service.name"], log.body["_SYSTEMD_UNIT"]) where not IsMatch(log.body["_SYSTEMD_UNIT"], "\\.(slice|scope)$")
 exporters:
-  &output otlphttp:
+  &loki otlphttp/logs:
     endpoint: http://127.0.0.53:3100/otlp
+  &prometheus otlphttp/metrics:
+    endpoint: http://127.0.0.53:4318
+  &jaeger otlphttp/traces:
+    endpoint: http://127.0.0.53:44318
 service:
   telemetry:
     metrics:
@@ -51,8 +59,13 @@ service:
   pipelines:
     logs:
       receivers:
-        - *input
+        - *journal
       processors:
-        - *meta
+        - *journal-meta
       exporters:
-        - *output
+        - *loki
+    traces:
+      receivers:
+        - *recv
+      exporters:
+        - *jaeger

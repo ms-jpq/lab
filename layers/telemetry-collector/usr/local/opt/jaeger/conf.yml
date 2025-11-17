@@ -17,9 +17,8 @@ extensions:
 receivers:
   &recv otlp:
     protocols:
-      grpc:
       http:
-        endpoint: "[::]:4318"
+        endpoint: 127.0.0.53:44318
 processors:
   &batch batch:
 exporters:
@@ -38,7 +37,5 @@ service:
     traces:
       receivers:
         - *recv
-      # processors:
-      #   - *batch
       exporters:
         - *jexporter

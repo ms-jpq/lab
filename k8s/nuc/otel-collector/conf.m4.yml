@@ -23,7 +23,7 @@ processors:
         set(resource.attributes[["service.name"]], resource.attributes[["cloudwatch.log.group.name"]])
 exporters:
   &output otlphttp:
-    endpoint: m5_assert([ENV_OTLP_ENDPOINT])/otlp
+    endpoint: m5_assert([ENV_OTLP_ENDPOINT])
     auth:
       authenticator: *auth
 service:
