@@ -70,10 +70,11 @@ def main(event: S3Event, _: LambdaContext) -> None:
     _cold_start = False
     ctx = get_current()
 
+    with TRACER.start_as_current_span("load sieve"):
+        ss = s.sieve
+
     def step(record: S3EventRecord) -> None:
         with with_context(ctx), _fetching(msg=record.s3) as fp:
-            with TRACER.start_as_current_span("load sieve"):
-                ss = s.sieve
             with TRACER.start_as_current_span("parse mail"):
                 io = BytesIO(fp.read())
                 mail = parse(io)
