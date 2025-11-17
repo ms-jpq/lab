@@ -1,5 +1,5 @@
-from collections.abc import Iterator, Sequence
-from contextlib import contextmanager
+from collections.abc import Sequence
+from contextlib import nullcontext
 from http.client import HTTPResponse
 from importlib.abc import InspectLoader, Loader, MetaPathFinder, SourceLoader
 from importlib.machinery import ModuleSpec
@@ -9,24 +9,18 @@ from logging import getLogger
 from os import linesep
 from pathlib import PurePath
 from sys import meta_path
-from time import monotonic
 from types import CodeType, ModuleType
 from typing import cast
 from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 from urllib.request import build_opener
 from uuid import uuid4
 
-_NS = PurePath(uuid4().hex)
-_OPENER = build_opener()
+from opentelemetry.trace import get_tracer
 
-
-@contextmanager
-def benchmark(name: str) -> Iterator[None]:
-    t0 = monotonic()
-    try:
-        yield
-    finally:
-        getLogger().info("%s", f"((({name}::{monotonic()-t0:.3f})))")
+with nullcontext():
+    _TRACER = get_tracer(__name__)
+    _NS = PurePath(uuid4().hex)
+    _OPENER = build_opener()
 
 
 def register(name: str, uri: str, timeout: float) -> None:
@@ -59,7 +53,7 @@ def register(name: str, uri: str, timeout: float) -> None:
                     raise NotImplementedError()
 
                 def get_source(self, fullname: str) -> str:
-                    with benchmark("get"):
+                    with _TRACER.start_as_current_span("get"):
                         src = get()
                         return src.decode()
 
@@ -70,7 +64,7 @@ def register(name: str, uri: str, timeout: float) -> None:
                 def exec_module(self, module: ModuleType) -> None:
                     module.__file__ = self.get_filename(fullname)
 
-                    with benchmark("compile"):
+                    with _TRACER.start_as_current_span("compile"):
                         assert (compiled := self.get_code(fullname))
                         exec(compiled, module.__dict__)
 
