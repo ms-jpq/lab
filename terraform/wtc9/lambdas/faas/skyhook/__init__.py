@@ -1,8 +1,10 @@
+from collections.abc import Mapping
 from contextlib import nullcontext
 from functools import cache
 from hashlib import sha1
 from json import loads
 from os import environ
+from typing import Any
 
 from aws_lambda_powertools.utilities.batch import (
     BatchProcessor,
@@ -17,7 +19,9 @@ from aws_lambda_powertools.utilities.data_classes import (
 )
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client  # pyright:ignore
+from opentelemetry.context.context import Context
 from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
+from opentelemetry.propagate import extract
 
 from .. import B3_CONF, _, dump_json
 from ..twilio import parse_params, verify
@@ -69,4 +73,9 @@ def main(event: SQSEvent, ctx: LambdaContext) -> PartialItemFailureResponse:
     )
 
 
-AwsLambdaInstrumentor().instrument()
+def _extract(event: Mapping[str, Any]) -> Context:
+    carrier = {"traceparent": event["messageAttributes"]["TraceParent"]["stringValue"]}
+    return extract(carrier)
+
+
+AwsLambdaInstrumentor().instrument(event_context_extractor=_extract)

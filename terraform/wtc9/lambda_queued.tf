@@ -18,6 +18,10 @@ resource "aws_apigatewayv2_integration" "sink" {
     QueueUrl    = aws_sqs_queue.sink.id
     MessageBody = "$request.body"
     MessageAttributes = jsonencode({
+      TraceParent = {
+        DataType = "String"
+        StringValue = "$${context.authorizer.traceparent}"
+      }
       Method = {
         DataType    = "String"
         StringValue = "$${context.httpMethod}"
