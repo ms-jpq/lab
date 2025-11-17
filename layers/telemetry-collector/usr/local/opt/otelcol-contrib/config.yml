@@ -57,14 +57,19 @@ service:
   extensions:
     - *cursor
   pipelines:
-    logs:
+    logs/journal:
       receivers:
         - *journal
       processors:
         - *journal-meta
       exporters:
         - *loki
-    traces:
+    logs/otel:
+      receivers:
+        - *recv
+      exporters:
+        - *loki
+    traces/otel:
       receivers:
         - *recv
       exporters:
