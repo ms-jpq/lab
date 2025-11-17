@@ -6,6 +6,6 @@ server {
   location / {
     auth_basic           "-";
     auth_basic_user_file /var/lib/local/nginx/otlp.htpasswd;
-    proxy_pass           http://$x_esxi:4318/;
+    proxy_pass           http://$x_esxi:4318;
   }
 }
