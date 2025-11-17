@@ -18,7 +18,7 @@ from opentelemetry.baggage import set_baggage
 from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
 from opentelemetry.propagate import inject
 from opentelemetry.trace import get_tracer
-from opentelemetry.trace.status import Status, StatusCode
+from opentelemetry.trace.status import StatusCode
 
 from .. import _
 

@@ -20,6 +20,7 @@ from boto3 import client  # pyright:ignore
 from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
 from opentelemetry.propagate import extract
 from opentelemetry.trace import Span, get_current_span, get_tracer
+from opentelemetry.trace.status import StatusCode
 
 from .. import B3_CONF, _, dump_json
 from ..twilio import parse_params, verify
@@ -37,7 +38,7 @@ def _channel() -> str:
     return environ["ENV_CHAN_NAME"]
 
 
-def _process(record: SQSRecord) -> None:
+def _process(record: SQSRecord) -> bool:
     match record.raw_event:
         case {
             "messageAttributes": {
@@ -47,21 +48,22 @@ def _process(record: SQSRecord) -> None:
         }:
             params = parse_params(record.body)
         case _:
-            return
+            return False
 
     if not verify(uri, params=params, signature=signature):
-        return
+        return False
 
     match params:
         case {"PayloadType": "application/json", "Payload": str(payload)}:
             params["Payload"] = loads(payload)
         case _:
-            return
+            return False
 
     json = dump_json(params)
     hashed = sha1(json.encode()).hexdigest()
 
     _sns.publish(TopicArn=_channel(), Subject=f"/twilio/error - {hashed}", Message=json)
+    return True
 
 
 def _handler(span: Span, record: SQSRecord) -> None:
@@ -75,7 +77,8 @@ def _handler(span: Span, record: SQSRecord) -> None:
         s.add_link(span.get_span_context())
         span.add_link(s.get_span_context())
 
-        _process(record)
+        ok = _process(record)
+        span.set_status(StatusCode.OK if ok else StatusCode.ERROR)
 
 
 @event_source(data_class=SQSEvent)
