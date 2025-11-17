@@ -58,12 +58,11 @@ def register(name: str, uri: str, timeout: float) -> None:
 
                 def get_source(self, fullname: str) -> str:
                     with TRACER.start_as_current_span("get src"):
-                        if store.cache:
-                            return cast(str, store.cache)
-                        else:
+                        if not store.cache:
                             src = get()
                             store.cache = src.decode()
-                            return cast(str, store.cache)
+
+                        return cast(str, store.cache)
 
                 def get_code(self, fullname: str) -> CodeType | None:
                     source = self.get_source(fullname)
