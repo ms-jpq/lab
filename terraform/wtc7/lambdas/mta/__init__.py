@@ -17,9 +17,10 @@ from aws_lambda_powertools.utilities.data_classes.s3_event import (
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client  # pyright:ignore
 from botocore.config import Config  # pyright:ignore
+from opentelemetry.context import get_current
 from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
 
-from .tel import __
+from .tel import __, with_context
 
 assert __
 
@@ -67,37 +68,38 @@ def main(event: S3Event, _: LambdaContext) -> None:
 
     s = sieve if _cold_start else reload(sieve)
     _cold_start = False
+    ctx = get_current()
 
     def step(record: S3EventRecord) -> None:
-        with _fetching(msg=record.s3) as fp:
+        with with_context(ctx), _fetching(msg=record.s3) as fp:
             with TRACER.start_as_current_span("parse"):
                 io = BytesIO(fp.read())
                 mail = parse(io)
             go = True
-            try:
-                ss = s.sieve
-                with TRACER.start_as_current_span("sieve"):
+            with TRACER.start_as_current_span("sieve"):
+                try:
+                    ss = s.sieve
                     ss(mail)
-            except StopAsyncIteration as exn:
-                go = False
-                log(mod=sieve, exn=exn)
-            finally:
-                if go:
-                    with TRACER.start_as_current_span("send"):
-                        try:
-                            send(
-                                mail,
-                                mail_from=environ["MAIL_FROM"],
-                                mail_to=environ["MAIL_TO"],
-                                mail_srv=environ["MAIL_SRV"],
-                                mail_user=environ["MAIL_USER"],
-                                mail_pass=environ["MAIL_PASS"],
-                                timeout=TIMEOUT,
-                            )
-                        except SMTPDataError as e:
-                            data = pformat(record._data)
-                            getLogger().error("%s", data, exc_info=e)
-                            raise e
+                except StopAsyncIteration as exn:
+                    go = False
+                    log(mod=sieve, exn=exn)
+
+            if go:
+                with TRACER.start_as_current_span("send"):
+                    try:
+                        send(
+                            mail,
+                            mail_from=environ["MAIL_FROM"],
+                            mail_to=environ["MAIL_TO"],
+                            mail_srv=environ["MAIL_SRV"],
+                            mail_user=environ["MAIL_USER"],
+                            mail_pass=environ["MAIL_PASS"],
+                            timeout=TIMEOUT,
+                        )
+                    except SMTPDataError as e:
+                        data = pformat(record._data)
+                        getLogger().error("%s", data, exc_info=e)
+                        raise e
 
     def cont() -> Iterator[Exception]:
         with _pool() as pool:
