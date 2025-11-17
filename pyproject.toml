@@ -6,6 +6,7 @@ dependencies = [
   "s3cmd@https://github.com/s3tools/s3cmd/archive/heads/master.tar.gz",
   "aws-lambda-powertools",
   "elasticsearch",
+  "opentelemetry-exporter-otlp-proto-http",
   "opentelemetry-instrumentation-aws-lambda",
   "opentelemetry-instrumentation-botocore",
   "opentelemetry-sdk",

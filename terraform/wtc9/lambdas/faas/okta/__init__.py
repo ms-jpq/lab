@@ -17,7 +17,7 @@ from aws_lambda_powertools.utilities.typing import LambdaContext
 from opentelemetry.baggage import set_baggage
 from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
 from opentelemetry.propagate import inject
-from opentelemetry.trace import get_current_span, get_tracer
+from opentelemetry.trace import get_tracer
 
 from .. import _
 
@@ -83,8 +83,6 @@ def _auth(event: APIGatewayAuthorizerEventV2) -> bool:
 
 @event_source(data_class=APIGatewayAuthorizerEventV2)
 def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, Any]:
-    span = get_current_span()
-    print(span)
     context: dict[str, Any] = {}
     with _TRACER.start_as_current_span("auth"):
         set_baggage("request_id", event.request_context.request_id)
