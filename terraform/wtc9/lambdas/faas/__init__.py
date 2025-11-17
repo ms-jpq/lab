@@ -3,30 +3,14 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager, nullcontext
 from functools import cache
 from json import dumps
-from logging import INFO, captureWarnings, getLogger
+from logging import getLogger
 from typing import Any
 
 from botocore.config import Config
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-from opentelemetry.trace import set_tracer_provider
+
+from .telemetry import _
 
 with nullcontext():
-    captureWarnings(True)
-    getLogger().setLevel(INFO)
-
-    _ = True
-
-with nullcontext():
-    _provider = TracerProvider()
-    _provider.add_span_processor(SimpleSpanProcessor(OTLPSpanExporter()))
-    set_tracer_provider(_provider)
-
-
-with nullcontext():
-    BotocoreInstrumentor().instrument()
     B3_CONF = Config(retries={"mode": "adaptive"})
 
 
