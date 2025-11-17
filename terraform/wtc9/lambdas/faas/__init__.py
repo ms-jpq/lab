@@ -8,7 +8,10 @@ from typing import Any
 
 from botocore.config import Config
 
-from .telemetry import _
+from .telemetry import __
+
+assert __
+_ = True
 
 with nullcontext():
     B3_CONF = Config(retries={"mode": "adaptive"})

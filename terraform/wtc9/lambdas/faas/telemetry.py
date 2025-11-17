@@ -1,6 +1,7 @@
 from contextlib import nullcontext
 from logging import INFO, captureWarnings, getLogger
 from os import environ
+from pathlib import PurePath
 
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
@@ -39,7 +40,7 @@ with nullcontext():
                     FAAS_INSTANCE: environ["AWS_LAMBDA_LOG_STREAM_NAME"],
                     FAAS_NAME: environ["AWS_LAMBDA_FUNCTION_NAME"],
                     FAAS_VERSION: environ["AWS_LAMBDA_FUNCTION_VERSION"],
-                    SERVICE_NAME: "wtc9",
+                    SERVICE_NAME: PurePath(__file__).parent.name,
                 }
             )
 
@@ -54,4 +55,4 @@ with nullcontext():
     BotocoreInstrumentor().instrument()
 
 
-_ = True
+__ = True
