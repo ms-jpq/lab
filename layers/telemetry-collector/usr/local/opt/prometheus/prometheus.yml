@@ -4,5 +4,7 @@ global:
   scrape_interval: 9s
   evaluation_interval: 9s
 
+# TODO: need v3 to enable https://prometheus.io/docs/prometheus/latest/querying/api/#otlp-receiver
+
 scrape_config_files:
   - /usr/local/opt/prometheus/scrape.d/*.yml
