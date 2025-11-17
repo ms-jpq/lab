@@ -1,10 +1,8 @@
-from collections.abc import Mapping
 from contextlib import nullcontext
-from functools import cache
+from functools import cache, partial
 from hashlib import sha1
 from json import loads
 from os import environ
-from typing import Any
 
 from aws_lambda_powertools.utilities.batch import (
     BatchProcessor,
@@ -19,12 +17,15 @@ from aws_lambda_powertools.utilities.data_classes import (
 )
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client  # pyright:ignore
-from opentelemetry.context.context import Context
 from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
 from opentelemetry.propagate import extract
+from opentelemetry.trace import Span, get_current_span, get_tracer
 
 from .. import B3_CONF, _, dump_json
 from ..twilio import parse_params, verify
+
+with nullcontext():
+    TRACER = get_tracer(__name__)
 
 with nullcontext():
     _PROC = BatchProcessor(event_type=EventType.SQS)
@@ -36,7 +37,7 @@ def _channel() -> str:
     return environ["ENV_CHAN_NAME"]
 
 
-def _handler(record: SQSRecord) -> None:
+def _process(record: SQSRecord) -> None:
     match record.raw_event:
         case {
             "messageAttributes": {
@@ -63,19 +64,29 @@ def _handler(record: SQSRecord) -> None:
     _sns.publish(TopicArn=_channel(), Subject=f"/twilio/error - {hashed}", Message=json)
 
 
+def _handler(span: Span, record: SQSRecord) -> None:
+    carrier = (
+        {"traceparent": parent.string_value}
+        if (parent := record.message_attributes["TraceParent"])
+        else {}
+    )
+    ctx = extract(carrier)
+    with TRACER.start_as_current_span("process", context=ctx) as s:
+        s.add_link(span.get_span_context())
+        span.add_link(s.get_span_context())
+
+        _process(record)
+
+
 @event_source(data_class=SQSEvent)
 def main(event: SQSEvent, ctx: LambdaContext) -> PartialItemFailureResponse:
+    span = get_current_span()
     return process_partial_response(
         processor=_PROC,
         event=event.raw_event,
         context=ctx,
-        record_handler=_handler,
+        record_handler=partial(_handler, span),
     )
 
 
-def _extract(event: Mapping[str, Any]) -> Context:
-    carrier = {"traceparent": event["messageAttributes"]["TraceParent"]["stringValue"]}
-    return extract(carrier)
-
-
-AwsLambdaInstrumentor().instrument(event_context_extractor=_extract)
+AwsLambdaInstrumentor().instrument()
