@@ -17,6 +17,7 @@ from aws_lambda_powertools.utilities.data_classes import (
 )
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client  # pyright:ignore
+from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
 
 from .. import B3_CONF, _, dump_json
 from ..twilio import parse_params, verify
@@ -66,3 +67,6 @@ def main(event: SQSEvent, ctx: LambdaContext) -> PartialItemFailureResponse:
         context=ctx,
         record_handler=_handler,
     )
+
+
+AwsLambdaInstrumentor().instrument()

@@ -17,6 +17,12 @@ from aws_lambda_powertools.utilities.data_classes.s3_event import (
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client  # pyright:ignore
 from botocore.config import Config  # pyright:ignore
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
+from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.trace import set_tracer_provider
 
 from .__main__ import parse, send
 from .gist import benchmark, log, register
@@ -25,6 +31,13 @@ with nullcontext():
     TIMEOUT = 6.9
 
 with nullcontext():
+    _provider = TracerProvider()
+    _provider.add_span_processor(SimpleSpanProcessor(OTLPSpanExporter()))
+    set_tracer_provider(_provider)
+
+
+with nullcontext():
+    BotocoreInstrumentor().instrument()
     _S3 = client(service_name="s3", config=Config(retries={"mode": "adaptive"}))
 
 
@@ -113,3 +126,6 @@ def main(event: S3Event, _: LambdaContext) -> None:
         exn = ExceptionGroup(name, errs)
         getLogger().exception("%s", exn)
         raise exn from err
+
+
+AwsLambdaInstrumentor().instrument()
