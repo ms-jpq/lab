@@ -52,7 +52,7 @@ with nullcontext():
 
 
 with nullcontext():
-    BotocoreInstrumentor().instrument()
+    BotocoreInstrumentor().instrument()  # type:ignore
 
 
 __ = True

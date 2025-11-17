@@ -18,21 +18,19 @@ from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client  # pyright:ignore
 from botocore.config import Config  # pyright:ignore
 from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
-from opentelemetry.trace import get_tracer
 
 from .tel import __
 
 assert __
 
 from .__main__ import parse, send
-from .gist import log, register
+from .gist import TRACER, log, register
 
 with nullcontext():
     TIMEOUT = 6.9
 
 
 with nullcontext():
-    _TRACER = get_tracer(__name__)
     _S3 = client(service_name="s3", config=Config(retries={"mode": "adaptive"}))
 
 
@@ -56,7 +54,7 @@ def _pool() -> Iterator[Executor]:
     try:
         yield pool
     finally:
-        with _TRACER.start_as_current_span("shutdown"):
+        with TRACER.start_as_current_span("shutdown"):
             pool.shutdown(wait=True, cancel_futures=True)
 
 
@@ -72,20 +70,20 @@ def main(event: S3Event, _: LambdaContext) -> None:
 
     def step(record: S3EventRecord) -> None:
         with _fetching(msg=record.s3) as fp:
-            with _TRACER.start_as_current_span("parse"):
+            with TRACER.start_as_current_span("parse"):
                 io = BytesIO(fp.read())
                 mail = parse(io)
             go = True
             try:
                 ss = s.sieve
-                with _TRACER.start_as_current_span("sieve"):
+                with TRACER.start_as_current_span("sieve"):
                     ss(mail)
             except StopAsyncIteration as exn:
                 go = False
                 log(mod=sieve, exn=exn)
             finally:
                 if go:
-                    with _TRACER.start_as_current_span("send"):
+                    with TRACER.start_as_current_span("send"):
                         try:
                             send(
                                 mail,

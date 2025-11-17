@@ -18,12 +18,12 @@ from .. import _
 from .routes import app
 
 with nullcontext():
-    _TRACER = get_tracer(__name__)
+    TRACER = get_tracer(__name__)
 
 
 @event_source(data_class=APIGatewayProxyEventV2)
 def main(event: APIGatewayProxyEventV2, ctx: LambdaContext) -> Mapping[str, Any]:
-    with _TRACER.start_as_current_span("router"):
+    with TRACER.start_as_current_span("router"):
         return app.resolve(event.raw_event, context=ctx)
 
 

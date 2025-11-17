@@ -18,7 +18,7 @@ from uuid import uuid4
 from opentelemetry.trace import get_tracer
 
 with nullcontext():
-    _TRACER = get_tracer(__name__)
+    TRACER = get_tracer("mta")
     _NS = PurePath(uuid4().hex)
     _OPENER = build_opener()
 
@@ -53,7 +53,7 @@ def register(name: str, uri: str, timeout: float) -> None:
                     raise NotImplementedError()
 
                 def get_source(self, fullname: str) -> str:
-                    with _TRACER.start_as_current_span("get"):
+                    with TRACER.start_as_current_span("get"):
                         src = get()
                         return src.decode()
 
@@ -64,7 +64,7 @@ def register(name: str, uri: str, timeout: float) -> None:
                 def exec_module(self, module: ModuleType) -> None:
                     module.__file__ = self.get_filename(fullname)
 
-                    with _TRACER.start_as_current_span("compile"):
+                    with TRACER.start_as_current_span("compile"):
                         assert (compiled := self.get_code(fullname))
                         exec(compiled, module.__dict__)
 

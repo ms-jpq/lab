@@ -22,7 +22,7 @@ from opentelemetry.trace import get_tracer
 from .. import _
 
 with nullcontext():
-    _TRACER = get_tracer(__name__)
+    TRACER = get_tracer(__name__)
     _SEC = uuid4().hex.encode()
 
 
@@ -84,7 +84,7 @@ def _auth(event: APIGatewayAuthorizerEventV2) -> bool:
 @event_source(data_class=APIGatewayAuthorizerEventV2)
 def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, Any]:
     context: dict[str, Any] = {}
-    with _TRACER.start_as_current_span("auth"):
+    with TRACER.start_as_current_span("auth"):
         set_baggage("request_id", event.request_context.request_id)
         inject(context)
 
