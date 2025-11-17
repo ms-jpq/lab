@@ -69,6 +69,11 @@ service:
         - *recv
       exporters:
         - *loki
+    metrics/otel:
+      receivers:
+        - *recv
+      exporters:
+        - *prometheus
     traces/otel:
       receivers:
         - *recv
