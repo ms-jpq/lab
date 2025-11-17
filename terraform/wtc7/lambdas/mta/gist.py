@@ -53,7 +53,7 @@ def register(name: str, uri: str, timeout: float) -> None:
                     raise NotImplementedError()
 
                 def get_source(self, fullname: str) -> str:
-                    with TRACER.start_as_current_span("get"):
+                    with TRACER.start_as_current_span("get src"):
                         src = get()
                         return src.decode()
 
@@ -64,8 +64,8 @@ def register(name: str, uri: str, timeout: float) -> None:
                 def exec_module(self, module: ModuleType) -> None:
                     module.__file__ = self.get_filename(fullname)
 
-                    with TRACER.start_as_current_span("compile"):
-                        assert (compiled := self.get_code(fullname))
+                    assert (compiled := self.get_code(fullname))
+                    with TRACER.start_as_current_span("compile src"):
                         exec(compiled, module.__dict__)
 
             loader = LazyLoader.factory(cast(Loader, _Loader))
