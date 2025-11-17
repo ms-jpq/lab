@@ -19,7 +19,7 @@ resource "aws_apigatewayv2_integration" "sink" {
     MessageBody = "$request.body"
     MessageAttributes = jsonencode({
       TraceParent = {
-        DataType = "String"
+        DataType    = "String"
         StringValue = "$${context.authorizer.traceparent}"
       }
       Method = {
