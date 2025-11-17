@@ -18,6 +18,7 @@ from opentelemetry.baggage import set_baggage
 from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
 from opentelemetry.propagate import inject
 from opentelemetry.trace import get_tracer
+from opentelemetry.trace.status import Status, StatusCode
 
 from .. import _
 
@@ -84,12 +85,13 @@ def _auth(event: APIGatewayAuthorizerEventV2) -> bool:
 @event_source(data_class=APIGatewayAuthorizerEventV2)
 def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, Any]:
     context: dict[str, Any] = {}
-    with TRACER.start_as_current_span("auth"):
+    with TRACER.start_as_current_span("auth") as span:
         set_baggage("request_id", event.request_context.request_id)
         inject(context)
 
-        authorize = _auth(event)
-        rsp = APIGatewayAuthorizerResponseV2(authorize=authorize, context=context)
+        authorized = _auth(event)
+        rsp = APIGatewayAuthorizerResponseV2(authorize=authorized, context=context)
+        span.set_status(StatusCode.OK if authorized else StatusCode.ERROR)
         return rsp.asdict()
 
 
