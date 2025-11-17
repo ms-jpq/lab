@@ -45,6 +45,8 @@ def register(name: str, uri: str, timeout: float) -> None:
             if fullname != name:
                 return None
 
+            cache = ""
+
             class _Loader(SourceLoader):
                 def get_filename(self, fullname: str) -> str:
                     return _NS.joinpath(fullname).as_posix()
@@ -53,15 +55,21 @@ def register(name: str, uri: str, timeout: float) -> None:
                     raise NotImplementedError()
 
                 def get_source(self, fullname: str) -> str:
+                    nonlocal cache
                     with TRACER.start_as_current_span("get src"):
-                        src = get()
-                        return src.decode()
+                        if cache:
+                            return cache
+                        else:
+                            src = get()
+                            return (cache := src.decode())
 
                 def get_code(self, fullname: str) -> CodeType | None:
                     source = self.get_source(fullname)
                     return InspectLoader.source_to_code(source)
 
                 def exec_module(self, module: ModuleType) -> None:
+                    nonlocal cache
+                    cache = ""
                     module.__file__ = self.get_filename(fullname)
 
                     assert (compiled := self.get_code(fullname))
