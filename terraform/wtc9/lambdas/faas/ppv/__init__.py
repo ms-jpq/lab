@@ -9,17 +9,12 @@ from aws_lambda_powertools.utilities.data_classes.api_gateway_proxy_event import
     APIGatewayProxyEventV2,
 )
 from aws_lambda_powertools.utilities.typing import LambdaContext
-
-from .. import _
-
-"""
-"""
-
 from opentelemetry.context.context import Context
 from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
 from opentelemetry.propagate import extract
 from opentelemetry.trace import get_tracer
 
+from .. import _
 from .routes import app
 
 with nullcontext():

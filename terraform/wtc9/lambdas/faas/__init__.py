@@ -7,6 +7,7 @@ from logging import INFO, captureWarnings, getLogger
 from typing import Any
 
 from botocore.config import Config
+from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
 
 with nullcontext():
     captureWarnings(True)
@@ -15,6 +16,7 @@ with nullcontext():
     _ = True
 
 with nullcontext():
+    BotocoreInstrumentor().instrument()
     B3_CONF = Config(retries={"mode": "adaptive"})
 
 
