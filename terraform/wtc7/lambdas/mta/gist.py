@@ -9,6 +9,7 @@ from logging import getLogger
 from os import linesep
 from pathlib import PurePath
 from sys import meta_path
+from threading import local
 from types import CodeType, ModuleType
 from typing import cast
 from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
@@ -45,7 +46,8 @@ def register(name: str, uri: str, timeout: float) -> None:
             if fullname != name:
                 return None
 
-            cache = ""
+            store = local()
+            store.cache = ""
 
             class _Loader(SourceLoader):
                 def get_filename(self, fullname: str) -> str:
@@ -55,21 +57,20 @@ def register(name: str, uri: str, timeout: float) -> None:
                     raise NotImplementedError()
 
                 def get_source(self, fullname: str) -> str:
-                    nonlocal cache
                     with TRACER.start_as_current_span("get src"):
-                        if cache:
-                            return cache
+                        if store.cache:
+                            return cast(str, store.cache)
                         else:
                             src = get()
-                            return (cache := src.decode())
+                            store.cache = src.decode()
+                            return cast(str, store.cache)
 
                 def get_code(self, fullname: str) -> CodeType | None:
                     source = self.get_source(fullname)
                     return InspectLoader.source_to_code(source)
 
                 def exec_module(self, module: ModuleType) -> None:
-                    nonlocal cache
-                    cache = ""
+                    store.cache = ""
                     module.__file__ = self.get_filename(fullname)
 
                     assert (compiled := self.get_code(fullname))
