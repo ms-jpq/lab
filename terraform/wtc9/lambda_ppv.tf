@@ -37,11 +37,6 @@ data "aws_iam_policy_document" "skycrane" {
     resources = [aws_sqs_queue.sink.arn]
   }
   statement {
-    actions   = ["sns:Publish"]
-    effect    = "Allow"
-    resources = [aws_sns_topic.siphon.arn]
-  }
-  statement {
     actions = [
       "dynamodb:BatchWriteItem",
       "dynamodb:DeleteItem",

@@ -63,6 +63,11 @@ data "aws_iam_policy_document" "skyhook" {
     effect    = "Allow"
     resources = [aws_sqs_queue.sink.arn]
   }
+  statement {
+    actions   = ["sns:Publish"]
+    effect    = "Allow"
+    resources = [aws_sns_topic.siphon.arn]
+  }
 }
 
 resource "aws_lambda_function" "skyhook" {
