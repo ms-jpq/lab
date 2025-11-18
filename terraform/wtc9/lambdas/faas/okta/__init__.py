@@ -69,14 +69,14 @@ def _auth(event: APIGatewayAuthorizerEventV2) -> bool:
     if event.raw_path in {"/echo"}:
         return True
 
-    for route in ("/owncloud/", "/twilio/"):
+    for route in ("/owncloud/",):
         if event.raw_path.startswith(route):
             return True
 
     if event.raw_path in {}:
         return _basic_auth(event)
 
-    for route in ():
+    for route in ("/twilio/",):
         if event.raw_path.startswith(route):
             return _basic_auth(event)
     else:
@@ -101,7 +101,14 @@ def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, A
     with TRACER.start_as_current_span("auth"):
         with TRACER.start_as_current_span("auth verdict") as span:
             if not (authorized := _auth(event)):
-                span.add_event("das.ist.verboten", attributes=event.raw_event)
+                span.add_event(
+                    "das.ist.verboten",
+                    attributes={
+                        "path": event.raw_path,
+                        "query": event.raw_query_string,
+                        **{f"header-{k}": v for k, v in event.headers},
+                    },
+                )
             span.set_status(StatusCode.OK if authorized else StatusCode.ERROR)
 
         _inject_signature(event, carrier=context)
