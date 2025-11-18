@@ -29,7 +29,6 @@ locals {
     okta = { principal = "apigateway.amazonaws.com", source_arn = "${aws_apigatewayv2_api.faas.execution_arn}/*" }
     ppv  = { principal = "apigateway.amazonaws.com", source_arn = "${aws_apigatewayv2_api.faas.execution_arn}/*" }
     cron = { principal = "events.amazonaws.com", source_arn = aws_scheduler_schedule.cron.arn }
-    mta  = { principal = "" , source_arn = "" }
   }
 }
 

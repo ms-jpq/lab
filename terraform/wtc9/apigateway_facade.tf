@@ -10,7 +10,6 @@ resource "aws_apigatewayv2_api" "faas" {
 }
 
 locals {
-  dns_ttl              = 60
   api_gateway_webhooks = ["/twilio/error", "/twilio/status/message", "/twilio/status/voice"]
   api_gateway_routes = merge(
     {

@@ -1,3 +1,23 @@
+variable "email_alert" {
+  sensitive = true
+  type      = string
+}
+
+variable "mail_user" {
+  sensitive = true
+  type      = string
+}
+
+variable "mail_pass" {
+  sensitive = true
+  type      = string
+}
+
+variable "mail_filter" {
+  sensitive = true
+  type      = string
+}
+
 data "aws_s3_bucket" "maildir" {
   bucket = "kfc-mailbox"
   region = local.lambda_region
@@ -56,11 +76,11 @@ resource "aws_lambda_function_event_invoke_config" "mta" {
 }
 
 resource "aws_s3_bucket_notification" "maildir" {
-  bucket = data.aws_s3_bucket.maildir.id
+  bucket = data.aws_s3_bucket.maildir.bucket
   region = data.aws_s3_bucket.maildir.region
 
   lambda_function {
     events              = ["s3:ObjectCreated:*"]
-    lambda_function_arn = aws_lambda_function.mta.function_name
+    lambda_function_arn = aws_lambda_function.mta.arn
   }
 }

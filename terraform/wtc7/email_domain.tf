@@ -1,5 +1,5 @@
 data "aws_route53_zone" "limited_void" {
-  name = replace(regex("@.+$", var.mail_to[0]), "@", "")
+  name = replace(regex("@.+$", var.mail_from), "@", "")
 }
 
 resource "aws_sesv2_email_identity" "mta" {
@@ -24,7 +24,7 @@ resource "aws_route53_record" "mx_in" {
 
 resource "aws_route53_record" "dmarc" {
   name    = "_dmarc.${aws_sesv2_email_identity.mta.email_identity}"
-  records = ["v=DMARC1;p=quarantine;rua=mailto:${var.email_alert}"]
+  records = ["v=DMARC1;p=quarantine;rua=mailto:${var.mail_from}"]
   ttl     = local.dns_ttl
   type    = "TXT"
   zone_id = data.aws_route53_zone.limited_void.zone_id
@@ -78,8 +78,5 @@ output "email" {
   value = {
     accounts  = [for id in aws_sesv2_email_identity.mda : id.email_identity],
     domain    = data.aws_route53_zone.limited_void.name,
-    mail_from = var.mail_from
-    mail_srv  = local.mail_srv
-    mail_to   = var.mail_to,
   }
 }
