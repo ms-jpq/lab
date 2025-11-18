@@ -74,12 +74,15 @@ def _handler(span: Span, record: SQSRecord) -> None:
         else {}
     )
     ctx = extract(carrier)
-    with TRACER.start_as_current_span("process", context=ctx) as s:
+    with TRACER.start_as_current_span("process record", context=ctx) as s:
         s.add_link(span.get_span_context())
         span.add_link(s.get_span_context())
 
-        ok = _process(record)
-        span.set_status(StatusCode.OK if ok else StatusCode.ERROR)
+        ok = False
+        try:
+            ok = _process(record)
+        finally:
+            span.set_status(StatusCode.OK if ok else StatusCode.ERROR)
 
 
 @flush_otlp
