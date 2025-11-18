@@ -24,7 +24,7 @@ from .tel import __, flush_otlp, with_context
 assert __
 
 from .__main__ import parse, send
-from .gist import TRACER, log, register
+from .gist import TRACER, register, traceback
 
 with nullcontext():
     TIMEOUT = 6.9
@@ -79,13 +79,18 @@ def main(event: S3Event, _: LambdaContext) -> None:
                 io = BytesIO(fp.read())
                 mail = parse(io)
 
-            go = True
-            with TRACER.start_as_current_span("run sieve"):
+            with TRACER.start_as_current_span("run sieve") as span:
                 try:
                     ss(mail)
                 except StopAsyncIteration as exn:
                     go = False
-                    log(mod=sieve, exn=exn)
+                    if tb := traceback(sieve, exn=exn):
+                        span.add_event("rejected", attributes={"traceback": tb})
+                else:
+                    go = True
+                    span.add_event(
+                        "accepted", attributes={"headers": str(mail.headers)}
+                    )
 
             if go:
                 with TRACER.start_as_current_span("send"):

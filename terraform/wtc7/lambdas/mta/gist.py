@@ -16,7 +16,6 @@ from urllib.request import build_opener
 from uuid import uuid4
 
 from opentelemetry.trace import get_tracer
-from opentelemetry.trace.propagation import get_current_span
 
 with nullcontext():
     TRACER = get_tracer("mta")
@@ -86,20 +85,20 @@ def register(name: str, uri: str, timeout: float) -> None:
     meta_path.append(_Finder())
 
 
-def log(mod: ModuleType, exn: Exception, ctx: int = 6) -> None:
-    if tb := exn.__traceback__:
-        while tb.tb_next:
-            tb = tb.tb_next
+def traceback(mod: ModuleType, exn: Exception, ctx: int = 6) -> str | None:
+    if not (tb := exn.__traceback__):
+        return None
+    while tb.tb_next:
+        tb = tb.tb_next
 
-        lines, offset = getsourcelines(mod)
-        lineno = tb.tb_lineno - offset
-        lo = max(lineno - ctx - 1, 0)
-        hi = min(len(lines), lineno + ctx)
-        width = len(str(hi))
-        py = "".join(
-            f"{'*' if idx == lineno else ' '}{str(idx).rjust(width, '0')} {line}"
-            for idx, line in enumerate(lines[lo:hi], start=lo + 1)
-        )
-        span = get_current_span()
-        getLogger().info("%s", span)
-        span.set_attribute("traceback", py)
+    lines, offset = getsourcelines(mod)
+    lineno = tb.tb_lineno - offset
+    lo = max(lineno - ctx - 1, 0)
+    hi = min(len(lines), lineno + ctx)
+    width = len(str(hi))
+    py = "".join(
+        f"{'*' if idx == lineno else ' '}{str(idx).rjust(width, '0')} {line}"
+        for idx, line in enumerate(lines[lo:hi], start=lo + 1)
+    )
+
+    return py
