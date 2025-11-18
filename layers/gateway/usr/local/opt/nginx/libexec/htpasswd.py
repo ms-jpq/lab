@@ -33,7 +33,7 @@ from http.cookies import CookieError, Morsel, SimpleCookie
 from io import BytesIO
 from ipaddress import IPv4Address, IPv6Address, IPv6Interface, IPv6Network, ip_interface
 from itertools import repeat
-from logging import DEBUG, StreamHandler, captureWarnings, getLogger
+from logging import DEBUG, captureWarnings, getLogger
 from multiprocessing import cpu_count
 from pathlib import Path, PurePosixPath
 from posixpath import commonpath, normpath, sep
@@ -384,8 +384,8 @@ def main() -> None:
 
 
 with nullcontext():
-    LOG = getLogger()
-    LOG.addHandler(StreamHandler())
-    LOG.setLevel(DEBUG)
     captureWarnings(True)
+
+    LOG = getLogger()
+    LOG.setLevel(DEBUG)
     main()

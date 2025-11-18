@@ -6,7 +6,6 @@ from importlib.machinery import ModuleSpec
 from importlib.util import LazyLoader, spec_from_loader
 from inspect import getsourcelines
 from logging import getLogger
-from os import linesep
 from pathlib import PurePath
 from sys import meta_path
 from threading import Lock
@@ -101,4 +100,6 @@ def log(mod: ModuleType, exn: Exception, ctx: int = 6) -> None:
             f"{'*' if idx == lineno else ' '}{str(idx).rjust(width, '0')} {line}"
             for idx, line in enumerate(lines[lo:hi], start=lo + 1)
         )
-        get_current_span().set_attribute("traceback", py)
+        span = get_current_span()
+        getLogger().info("%s", span)
+        span.set_attribute("traceback", py)
