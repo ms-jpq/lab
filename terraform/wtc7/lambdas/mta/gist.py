@@ -17,6 +17,7 @@ from urllib.request import build_opener
 from uuid import uuid4
 
 from opentelemetry.trace import get_tracer
+from opentelemetry.trace.propagation import get_current_span
 
 with nullcontext():
     TRACER = get_tracer("mta")
@@ -100,4 +101,4 @@ def log(mod: ModuleType, exn: Exception, ctx: int = 6) -> None:
             f"{'*' if idx == lineno else ' '}{str(idx).rjust(width, '0')} {line}"
             for idx, line in enumerate(lines[lo:hi], start=lo + 1)
         )
-        getLogger().warning("%s", linesep + py)
+        get_current_span().add_event("rejected", attributes={"traceback": py})
