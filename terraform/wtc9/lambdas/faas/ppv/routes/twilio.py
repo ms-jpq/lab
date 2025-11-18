@@ -13,11 +13,11 @@ from aws_lambda_powertools.event_handler.api_gateway import Response
 from aws_lambda_powertools.event_handler.middlewares import (
     NextMiddleware,
 )
-from terraform.wtc7.lambdas.mta.gist import TRACER
 
 from ... import executor, suppress_exn
 from ...telemetry import with_context
 from ...twilio import parse_params, verify
+from .. import TRACER
 from . import app, compute_once, current_raw_uri, dynamodb
 
 _Routed = Sequence[tuple[str, Sequence[str]]]
