@@ -90,8 +90,8 @@ def _parse_mail(io: BytesIO) -> Mail:
 @flush_otlp
 @event_source(data_class=S3Event)
 def main(event: S3Event, _: LambdaContext) -> None:
-    w_ctx = with_context()
     ss = _load_sieve()
+    w_ctx = with_context()
 
     def step(record: S3EventRecord) -> None:
         with w_ctx(), _fetching(msg=record.s3) as fp:
