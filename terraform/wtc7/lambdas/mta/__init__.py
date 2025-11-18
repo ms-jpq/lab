@@ -79,7 +79,7 @@ def main(event: S3Event, _: LambdaContext) -> None:
                 io = BytesIO(fp.read())
                 mail = parse(io)
                 headers = {
-                    key: linesep.join(mail.headers.get_all(key, ""))
+                    key: linesep.join(mail.headers.get_all(key, "")).strip()
                     for key in mail.headers.keys()
                 }
                 getLogger().info("%s", headers)
