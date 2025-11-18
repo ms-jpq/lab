@@ -79,10 +79,8 @@ def main(event: S3Event, _: LambdaContext) -> None:
                 io = BytesIO(fp.read())
                 mail = parse(io)
 
-            with TRACER.start_as_current_span(
-                "run sieve",
-                attributes={"headers": mail.headers.as_string(maxheaderlen=2**16)},
-            ) as span:
+            headers = {key: mail.headers.get_all(key, "") for key in mail.headers}
+            with TRACER.start_as_current_span("run sieve", attributes=headers) as span:
                 try:
                     ss(mail)
                 except StopAsyncIteration as exn:
