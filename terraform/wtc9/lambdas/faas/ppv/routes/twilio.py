@@ -13,6 +13,7 @@ from aws_lambda_powertools.event_handler.api_gateway import Response
 from aws_lambda_powertools.event_handler.middlewares import (
     NextMiddleware,
 )
+from terraform.wtc7.lambdas.mta.gist import TRACER
 
 from ... import executor, suppress_exn
 from ...telemetry import with_context
@@ -195,7 +196,12 @@ def message() -> Response[str]:
             """
 
             def cont(route_to: str) -> _Routed:
-                with w_ctx():
+                with (
+                    w_ctx(),
+                    TRACER.start_as_current_span(
+                        "calc routing", attributes={"src": src, "dst": dst}
+                    ),
+                ):
                     return _messages(src, dst=dst, body=body, route_to=route_to)
 
             seen: Mapping[str, MutableSet[int]] = defaultdict(set)
