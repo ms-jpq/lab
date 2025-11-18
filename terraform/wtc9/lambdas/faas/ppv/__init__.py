@@ -21,7 +21,8 @@ from .routes import TRACER, app
 @flush_otlp
 @event_source(data_class=APIGatewayProxyEventV2)
 def main(event: APIGatewayProxyEventV2, ctx: LambdaContext) -> Mapping[str, Any]:
-    with TRACER.start_as_current_span("router"):
+    with TRACER.start_as_current_span("router") as span:
+        span.add_event("routing", attributes={"path": event.path})
         return app.resolve(event.raw_event, context=ctx)
 
 
