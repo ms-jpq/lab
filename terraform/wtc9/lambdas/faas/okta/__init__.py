@@ -112,9 +112,10 @@ def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, A
                 )
             span.set_status(StatusCode.OK if authorized else StatusCode.ERROR)
 
-        _inject_signature(event, carrier=context)
-        ctx = set_baggage("request_id", event.request_context.request_id)
-        inject(context, context=ctx)
+        with nullcontext():
+            _inject_signature(event, carrier=context)
+            ctx = set_baggage("request_id", event.request_context.request_id)
+            inject(context, context=ctx)
 
         if authorized is None:
             return {"errorMessage": "Unauthorized"}
