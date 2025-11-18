@@ -1,19 +1,26 @@
 from collections.abc import Callable, Iterator
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import AbstractContextManager, contextmanager, nullcontext
+from functools import wraps
 from logging import INFO, captureWarnings, getLogger
 from os import environ
 from pathlib import PurePath
+from typing import Any
 
+from opentelemetry._logs import set_logger_provider
 from opentelemetry.context import Context, attach, detach, get_current
+from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
+from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.resources import (
     Resource,
     ResourceDetector,
     get_aggregated_resources,
 )
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.semconv._incubating.attributes.cloud_attributes import (
     CLOUD_PROVIDER,
     CLOUD_REGION,
@@ -25,11 +32,6 @@ from opentelemetry.semconv._incubating.attributes.faas_attributes import (
 )
 from opentelemetry.semconv.attributes.service_attributes import SERVICE_NAME
 from opentelemetry.trace import set_tracer_provider
-
-with nullcontext():
-    captureWarnings(True)
-    getLogger().setLevel(INFO)
-
 
 with nullcontext():
 
@@ -46,11 +48,25 @@ with nullcontext():
                 }
             )
 
-    _provider = TracerProvider(
-        resource=get_aggregated_resources(detectors=[_detector()])
-    )
-    _provider.add_span_processor(SimpleSpanProcessor(OTLPSpanExporter()))
-    set_tracer_provider(_provider)
+    _resource = get_aggregated_resources(detectors=[_detector()])
+    _ex = ThreadPoolExecutor()
+
+
+with nullcontext():
+    captureWarnings(True)
+
+    _lp = LoggerProvider(resource=_resource)
+    _lp.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter()))
+    set_logger_provider(_lp)
+
+    getLogger().addHandler(LoggingHandler(logger_provider=_lp))
+    getLogger().setLevel(INFO)
+
+
+with nullcontext():
+    _tp = TracerProvider(resource=_resource)
+    _tp.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+    set_tracer_provider(_tp)
 
 
 with nullcontext():
@@ -67,6 +83,18 @@ def with_context() -> Callable[[], AbstractContextManager[Context]]:
             yield ctx
         finally:
             detach(token)
+
+    return cont
+
+
+def flush_otlp(f: Callable[..., Any]) -> Callable[..., Any]:
+    @wraps(f)
+    def cont(*__args, **__kwargs) -> Any:
+        try:
+            return f(*__args, **__kwargs)
+        finally:
+            for p in (_tp, _lp):
+                _ex.submit(p.force_flush)
 
     return cont
 
