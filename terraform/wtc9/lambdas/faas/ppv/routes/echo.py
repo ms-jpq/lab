@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from logging import getLogger
 from typing import Any
 
 from . import app
@@ -6,4 +7,6 @@ from . import app
 
 @app.route("/echo", method=["DELETE", "GET", "HEAD", "POST", "PUT"])
 def route() -> Mapping[str, Any]:
-    return app.current_event.raw_event
+    event = app.current_event.raw_event
+    getLogger().info("%s", event)
+    return event

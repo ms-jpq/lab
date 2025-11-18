@@ -15,8 +15,7 @@ from opentelemetry.propagate import extract
 
 from .. import _
 from ..telemetry import flush_otlp
-from .routes import app, TRACER
-
+from .routes import TRACER, app
 
 
 @flush_otlp

@@ -63,6 +63,7 @@ with nullcontext():
         format="%(message)s",
         level=INFO,
         handlers=(StreamHandler(), LoggingHandler()),
+        force=True,
     )
 
 
