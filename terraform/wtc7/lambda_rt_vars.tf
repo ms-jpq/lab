@@ -5,6 +5,7 @@ variable "otlp_endpoint" {
 
 locals {
   # https://docs.aws.amazon.com/powertools/python/latest/#lambda-layer
+  # https://github.com/open-telemetry/opentelemetry-lambda/blob/main/python/src/otel/otel_sdk/requirements.txt
   lambda_rt   = "python3.13"
   lambda_arch = "arm64"
   lambda_layers = [
