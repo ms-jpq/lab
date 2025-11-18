@@ -1,10 +1,10 @@
-from collections.abc import Iterator
-from contextlib import contextmanager, nullcontext
+from collections.abc import Callable, Iterator
+from contextlib import AbstractContextManager, contextmanager, nullcontext
 from logging import INFO, captureWarnings, getLogger
 from os import environ
 from pathlib import PurePath
 
-from opentelemetry.context import Context, attach, detach
+from opentelemetry.context import Context, attach, detach, get_current
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
 from opentelemetry.sdk.resources import (
@@ -57,13 +57,18 @@ with nullcontext():
     BotocoreInstrumentor().instrument()  # type:ignore
 
 
-@contextmanager
-def with_context(ctx: Context) -> Iterator[None]:
-    token = attach(ctx)
-    try:
-        yield
-    finally:
-        detach(token)
+def with_context() -> Callable[[], AbstractContextManager[Context]]:
+    ctx = get_current()
+
+    @contextmanager
+    def cont() -> Iterator[Context]:
+        token = attach(ctx)
+        try:
+            yield ctx
+        finally:
+            detach(token)
+
+    return cont
 
 
 __ = True
