@@ -10,12 +10,8 @@ resource "aws_apigatewayv2_api" "faas" {
 }
 
 locals {
-  dns_ttl = 60
-  api_gateway_webhooks = {
-    "/twilio/error"          = "x-twilio-signature"
-    "/twilio/status/message" = "x-twilio-signature"
-    "/twilio/status/voice"   = "x-twilio-signature"
-  }
+  dns_ttl              = 60
+  api_gateway_webhooks = ["/twilio/error", "/twilio/status/message", "/twilio/status/voice"]
   api_gateway_routes = merge(
     {
       "$default" = {
@@ -23,9 +19,9 @@ locals {
       }
     },
     {
-      for key, val in local.api_gateway_webhooks : "ANY ${key}" =>
+      for key in local.api_gateway_webhooks : "ANY ${key}" =>
       {
-        integration = aws_apigatewayv2_integration.sink[key]
+        integration = aws_apigatewayv2_integration.sink
         authorizer  = aws_apigatewayv2_authorizer.okta.id
       }
     }

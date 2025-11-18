@@ -1,5 +1,5 @@
 from base64 import b64decode
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, MutableMapping
 from contextlib import nullcontext
 from functools import cache
 from hashlib import sha256
@@ -83,17 +83,27 @@ def _auth(event: APIGatewayAuthorizerEventV2) -> bool:
         return False
 
 
+def _inject_signature(
+    event: APIGatewayAuthorizerEventV2, carrier: MutableMapping[str, Any]
+) -> None:
+    if event.raw_path.startswith("/twilio/"):
+        carrier.setdefault("signature", "")
+
+
 @flush_otlp
 @event_source(data_class=APIGatewayAuthorizerEventV2)
 def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, Any]:
     context: dict[str, Any] = {}
-    with TRACER.start_as_current_span("auth") as span:
-        set_baggage("request_id", event.request_context.request_id)
-        inject(context)
+    with TRACER.start_as_current_span("auth"):
+        with TRACER.start_as_current_span("route verdict") as span:
+            authorized = _auth(event)
+            span.set_status(StatusCode.OK if authorized else StatusCode.ERROR)
 
-        authorized = _auth(event)
+        _inject_signature(event, carrier=context)
+        ctx = set_baggage("request_id", event.request_context.request_id)
+        inject(context, context=ctx)
+
         rsp = APIGatewayAuthorizerResponseV2(authorize=authorized, context=context)
-        span.set_status(StatusCode.OK if authorized else StatusCode.ERROR)
         return rsp.asdict()
 
 

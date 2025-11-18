@@ -7,7 +7,6 @@ resource "aws_sqs_queue" "drain" {
 }
 
 resource "aws_apigatewayv2_integration" "sink" {
-  for_each            = local.api_gateway_webhooks
   api_id              = aws_apigatewayv2_api.faas.id
   credentials_arn     = aws_iam_role.api_gateway_sqs.arn
   integration_subtype = "SQS-SendMessage"
@@ -22,6 +21,10 @@ resource "aws_apigatewayv2_integration" "sink" {
         DataType    = "String"
         StringValue = "$${context.authorizer.traceparent}"
       }
+      Signature = {
+        DataType    = "String"
+        StringValue = "$${context.authorizer.signature}"
+      }
       Method = {
         DataType    = "String"
         StringValue = "$${context.httpMethod}"
@@ -29,10 +32,6 @@ resource "aws_apigatewayv2_integration" "sink" {
       RawURL = {
         DataType    = "String"
         StringValue = "$${request.header.x-forwarded-proto}://$${context.domainName}$${request.path}"
-      }
-      Signature = {
-        DataType    = "String"
-        StringValue = "$${request.header.${each.value}}"
       }
     })
   }
