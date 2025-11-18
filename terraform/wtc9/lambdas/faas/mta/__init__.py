@@ -19,10 +19,8 @@ from boto3 import client  # pyright:ignore
 from botocore.config import Config  # pyright:ignore
 from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
 
-from .tel import __, flush_otlp, with_context
-
-assert __
-
+from .. import _
+from ..telemetry import flush_otlp, with_context
 from .fax import Mail, parse, send
 from .gist import TRACER, register, traceback
 

@@ -1,1 +1,0 @@
-../../../wtc9/lambdas/faas/telemetry.py
