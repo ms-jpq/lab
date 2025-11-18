@@ -75,14 +75,17 @@ def main(event: S3Event, _: LambdaContext) -> None:
 
     def step(record: S3EventRecord) -> None:
         with w_ctx(), _fetching(msg=record.s3) as fp:
-            with TRACER.start_as_current_span("parse mail"):
+            with TRACER.start_as_current_span("parse mail") as span:
                 io = BytesIO(fp.read())
                 mail = parse(io)
+                headers = {
+                    key: linesep.join(mail.headers.get_all(key, ""))
+                    for key in mail.headers.keys()
+                }
+                getLogger().info("%s", headers)
+                span.add_event("parsed", attributes=headers)
 
-            headers = {
-                key: mail.headers.get_all(key, "") for key in mail.headers.keys()
-            }
-            with TRACER.start_as_current_span("run sieve", attributes=headers) as span:
+            with TRACER.start_as_current_span("run sieve") as span:
                 try:
                     ss(mail)
                 except StopAsyncIteration as exn:
