@@ -104,6 +104,7 @@ def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, A
                 span.add_event(
                     "das.ist.verboten",
                     attributes={
+                        "host": event.request_context.domain_name,
                         "path": event.raw_path,
                         "query": event.raw_query_string,
                         **{f"header-{k}": v for k, v in event.headers.items()},
