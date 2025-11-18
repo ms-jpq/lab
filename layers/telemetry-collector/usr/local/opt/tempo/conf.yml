@@ -1,7 +1,6 @@
 # https://grafana.com/docs/tempo/latest/configuration/
 ---
 stream_over_http_enabled: true
-http_api_prefix: /tempo
 server:
   http_listen_port: 3200
   grpc_listen_port: 9096
