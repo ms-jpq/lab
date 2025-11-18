@@ -44,11 +44,11 @@ def _authorized_users() -> Mapping[str, str]:
     return {k: v for k, v in cont()}
 
 
-def _basic_auth(event: APIGatewayAuthorizerEventV2) -> bool:
+def _basic_auth(event: APIGatewayAuthorizerEventV2) -> bool | None:
     auth = event.headers.get("authorization", "")
     _, sep, rhs = auth.partition(" ")
     if sep != " ":
-        return False
+        return None
 
     try:
         decoded = b64decode(rhs).decode()
@@ -65,7 +65,7 @@ def _basic_auth(event: APIGatewayAuthorizerEventV2) -> bool:
     return compare_digest(_hmac(rhs), digest)
 
 
-def _auth(event: APIGatewayAuthorizerEventV2) -> bool:
+def _auth(event: APIGatewayAuthorizerEventV2) -> bool | None:
     if event.raw_path in {"/echo"}:
         return True
 
@@ -115,6 +115,9 @@ def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, A
         _inject_signature(event, carrier=context)
         ctx = set_baggage("request_id", event.request_context.request_id)
         inject(context, context=ctx)
+
+        if authorized is None:
+            return {"errorMessage": "Unauthorized"}
 
         rsp = APIGatewayAuthorizerResponseV2(authorize=authorized, context=context)
         return rsp.asdict()
