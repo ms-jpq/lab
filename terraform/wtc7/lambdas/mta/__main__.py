@@ -13,7 +13,7 @@ from email.message import EmailMessage
 from email.policy import SMTP, SMTPUTF8
 from email.utils import formataddr, getaddresses, parseaddr, unquote
 from itertools import islice, takewhile
-from logging import DEBUG, basicConfig, captureWarnings, getLogger
+from logging import getLogger
 from os import environ, linesep
 from smtplib import SMTP_SSL
 from sys import stdin
@@ -196,7 +196,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    captureWarnings(True)
-    basicConfig(format="%(message)s", level=DEBUG)
-
     main()
