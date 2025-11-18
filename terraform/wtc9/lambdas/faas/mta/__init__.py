@@ -1,6 +1,6 @@
 from collections.abc import Callable, Iterator
 from concurrent.futures import Executor, ThreadPoolExecutor, as_completed
-from contextlib import contextmanager, nullcontext
+from contextlib import closing, contextmanager, nullcontext
 from importlib import reload
 from io import BytesIO
 from logging import getLogger
@@ -95,9 +95,10 @@ def main(event: S3Event, _: LambdaContext) -> None:
 
     def step(record: S3EventRecord) -> None:
         with w_ctx(), _fetching(msg=record.s3) as fp:
-            io = BytesIO(fp.read())
-            mail = _parse_mail(io)
+            with closing(fp):
+                io = BytesIO(fp.read())
 
+            mail = _parse_mail(io)
             with TRACER.start_as_current_span("run sieve") as span:
                 go = False
                 try:
