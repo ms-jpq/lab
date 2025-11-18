@@ -47,7 +47,7 @@ resource "aws_apigatewayv2_stage" "one_wtc" {
   dynamic "route_settings" {
     for_each = local.api_gateway_routes
     content {
-      route_key              = route_settings.key
+      route_key              = aws_apigatewayv2_route.umbrella[route_settings.key].route_key
       throttling_burst_limit = 6
       throttling_rate_limit  = 2
     }
