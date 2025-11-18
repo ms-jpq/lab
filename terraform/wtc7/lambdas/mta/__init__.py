@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from concurrent.futures import Executor, ThreadPoolExecutor, as_completed
 from contextlib import contextmanager, nullcontext
 from importlib import reload
@@ -7,7 +7,7 @@ from logging import getLogger
 from os import environ, linesep
 from pprint import pformat
 from smtplib import SMTPDataError
-from typing import BinaryIO
+from typing import BinaryIO, cast
 
 from aws_lambda_powertools.utilities.data_classes import S3Event, event_source
 from aws_lambda_powertools.utilities.data_classes.s3_event import (
@@ -23,8 +23,10 @@ from .tel import __, flush_otlp, with_context
 
 assert __
 
-from .__main__ import parse, send
+from .fax import Mail, parse, send
 from .gist import TRACER, register, traceback
+
+_Sieve = Callable[[Mail], None]
 
 with nullcontext():
     TIMEOUT = 6.9
@@ -61,63 +63,71 @@ def _pool() -> Iterator[Executor]:
 _cold_start = True
 
 
+def _load_sieve() -> _Sieve:
+    global _cold_start
+    with TRACER.start_as_current_span("load sieve"):
+        s = sieve if _cold_start else reload(sieve)
+        _cold_start = False
+
+    return cast(_Sieve, s.sieve)
+
+
+def _parse_mail(io: BytesIO) -> Mail:
+    with TRACER.start_as_current_span("parse mail") as span:
+        mail = parse(io)
+        span.add_event("parsed")
+        headers = {
+            key: (
+                "".join(values)
+                if len(values := tuple(map(str, mail.headers.get_all(key, "")))) == 1
+                else values
+            )
+            for key in sorted(mail.headers.keys(), key=lambda x: x.casefold())
+        }
+        span.add_event("parsed.headers", attributes=headers)
+
+    return mail
+
+
 @flush_otlp
 @event_source(data_class=S3Event)
 def main(event: S3Event, _: LambdaContext) -> None:
-    global _cold_start
-
-    s = sieve if _cold_start else reload(sieve)
-    _cold_start = False
     w_ctx = with_context()
-
-    with TRACER.start_as_current_span("load sieve"):
-        ss = s.sieve
+    ss = _load_sieve()
 
     def step(record: S3EventRecord) -> None:
         with w_ctx(), _fetching(msg=record.s3) as fp:
-            with TRACER.start_as_current_span("parse mail") as span:
-                io = BytesIO(fp.read())
-                mail = parse(io)
-                span.add_event("parsed")
-                headers = {
-                    key: (
-                        "".join(values)
-                        if len(values := tuple(map(str, mail.headers.get_all(key, ""))))
-                        == 1
-                        else values
-                    )
-                    for key in sorted(mail.headers.keys(), key=lambda x: x.casefold())
-                }
-                span.add_event("parsed.headers", attributes=headers)
+            io = BytesIO(fp.read())
+            mail = _parse_mail(io)
 
-            with TRACER.start_as_current_span("run sieve") as span:
-                try:
-                    ss(mail)
-                except StopAsyncIteration as exn:
-                    go = False
-                    if tb := traceback(sieve, exn=exn):
-                        span.add_event("rejected", attributes={"traceback": tb})
-                else:
-                    go = True
-                    span.add_event("accepted")
-
-            if go:
-                with TRACER.start_as_current_span("send") as span:
-                    try:
-                        send(
-                            mail,
-                            mail_from=environ["MAIL_FROM"],
-                            mail_to=environ["MAIL_TO"],
-                            mail_srv=environ["MAIL_SRV"],
-                            mail_user=environ["MAIL_USER"],
-                            mail_pass=environ["MAIL_PASS"],
-                            timeout=TIMEOUT,
-                        )
-                    except SMTPDataError as e:
-                        data = pformat(record._data)
-                        span.add_event("error.data", attributes={"data": data})
-                        getLogger().error("%s", data, exc_info=e)
-                        raise e
+        with TRACER.start_as_current_span("run sieve") as span:
+            go = False
+            try:
+                ss(mail)
+            except StopAsyncIteration as exn:
+                if tb := traceback(sieve, exn=exn):
+                    span.add_event("rejected", attributes={"traceback": tb})
+            else:
+                go = True
+                span.add_event("accepted")
+            finally:
+                if go:
+                    with TRACER.start_as_current_span("send") as span:
+                        try:
+                            send(
+                                mail,
+                                mail_from=environ["MAIL_FROM"],
+                                mail_to=environ["MAIL_TO"],
+                                mail_srv=environ["MAIL_SRV"],
+                                mail_user=environ["MAIL_USER"],
+                                mail_pass=environ["MAIL_PASS"],
+                                timeout=TIMEOUT,
+                            )
+                        except SMTPDataError as e:
+                            data = pformat(record._data)
+                            span.add_event("error.data", attributes={"data": data})
+                            getLogger().error("%s", data, exc_info=e)
+                            raise e
 
     def cont() -> Iterator[Exception]:
         with _pool() as pool:

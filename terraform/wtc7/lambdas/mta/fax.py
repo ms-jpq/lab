@@ -1,4 +1,3 @@
-from argparse import ArgumentParser, Namespace
 from collections.abc import Iterator, Sequence
 from contextlib import suppress
 from dataclasses import dataclass
@@ -14,9 +13,8 @@ from email.policy import SMTP, SMTPUTF8
 from email.utils import formataddr, getaddresses, parseaddr, unquote
 from itertools import islice, takewhile
 from logging import getLogger
-from os import environ, linesep
+from os import linesep
 from smtplib import SMTP_SSL
-from sys import stdin
 from typing import BinaryIO, Literal
 
 from opentelemetry.trace import get_current_span
@@ -29,7 +27,7 @@ class _Rewrite:
 
 
 @dataclass
-class _Mail:
+class Mail:
     headers: EmailMessage
     body: bytes
 
@@ -39,16 +37,16 @@ _LS = linesep.encode()
 _MISSING_BODY_DEFECTS = (MultipartInvariantViolationDefect, StartBoundaryNotFoundDefect)
 
 
-def _parse(fp: BinaryIO) -> _Mail:
+def _parse(fp: BinaryIO) -> Mail:
     lines = takewhile(lambda x: x not in {_NL, _LS}, iter(fp.readline, b""))
     headers = b"".join(lines)
     parsed = message_from_bytes(headers, policy=SMTPUTF8)
     assert isinstance(parsed, EmailMessage)
     body = fp.read()
-    return _Mail(headers=parsed, body=body)
+    return Mail(headers=parsed, body=body)
 
 
-def parse(fp: BinaryIO) -> _Mail:
+def parse(fp: BinaryIO) -> Mail:
     mail = _parse(fp)
 
     for err in mail.headers.defects:
@@ -61,7 +59,7 @@ def parse(fp: BinaryIO) -> _Mail:
     return mail
 
 
-def _unparse(mail: _Mail) -> bytes:
+def _unparse(mail: Mail) -> bytes:
     head = mail.headers.as_bytes(policy=SMTP)
     return head + mail.body
 
@@ -138,7 +136,7 @@ def _parse_addrs(addrs: str) -> Sequence[str]:
 
 
 def send(
-    mail: _Mail,
+    mail: Mail,
     mail_from: str,
     mail_to: str,
     mail_srv: str,
@@ -154,51 +152,3 @@ def send(
         client.login(mail_user, mail_pass)
         client.sendmail(from_addr=mail_from, to_addrs=to_addrs, msg=msg)
     getLogger().info("%s", f"-->> {to_addrs}")
-
-
-def _parse_args() -> Namespace:
-    parser = ArgumentParser()
-    parser.add_argument("-s", "--mail-srv", required=True)
-    parser.add_argument(
-        "-f",
-        "--mail-from",
-        required=not (env := environ.get("TF_VAR_mail_from")),
-        default=env,
-    )
-    parser.add_argument("-t", "--mail-to", required=True)
-    parser.add_argument(
-        "-u",
-        "--mail-user",
-        required=not (env := environ.get("TF_VAR_mail_user")),
-        default=env,
-    )
-    parser.add_argument(
-        "-p",
-        "--mail-pass",
-        required=not (env := environ.get("TF_VAR_mail_pass")),
-        default=env,
-    )
-    parser.add_argument("--timeout", type=float, default=5)
-    return parser.parse_args()
-
-
-def main() -> None:
-    args = _parse_args()
-
-    if stdin.isatty():
-        exit(2)
-
-    mail = parse(stdin.buffer)
-    send(
-        mail,
-        mail_from=args.mail_from,
-        mail_to=args.mail_to,
-        mail_srv=args.mail_srv,
-        mail_user=args.mail_user,
-        mail_pass=args.mail_pass,
-        timeout=args.timeout,
-    )
-
-
-if __name__ == "__main__":
-    main()
