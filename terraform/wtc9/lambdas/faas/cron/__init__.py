@@ -1,3 +1,5 @@
+from contextlib import nullcontext
+
 from aws_lambda_powertools.utilities.data_classes import (
     EventBridgeEvent,
     event_source,
@@ -13,4 +15,5 @@ def main(event: EventBridgeEvent, _: LambdaContext) -> None:
     return
 
 
-AwsLambdaInstrumentor().instrument()
+with nullcontext():
+    AwsLambdaInstrumentor().instrument()

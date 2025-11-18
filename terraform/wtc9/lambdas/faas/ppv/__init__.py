@@ -31,4 +31,5 @@ def _extract(event: Mapping[str, Any]) -> Context:
     return extract(event["requestContext"]["authorizer"].get("lambda") or {})
 
 
-AwsLambdaInstrumentor().instrument(event_context_extractor=_extract)
+with nullcontext():
+    AwsLambdaInstrumentor().instrument(event_context_extractor=_extract)

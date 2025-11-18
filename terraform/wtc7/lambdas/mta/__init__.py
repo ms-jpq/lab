@@ -122,4 +122,5 @@ def main(event: S3Event, _: LambdaContext) -> None:
         raise exn from err
 
 
-AwsLambdaInstrumentor().instrument()
+with nullcontext():
+    AwsLambdaInstrumentor().instrument()

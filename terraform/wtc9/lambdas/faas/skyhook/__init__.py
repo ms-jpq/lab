@@ -92,4 +92,5 @@ def main(event: SQSEvent, ctx: LambdaContext) -> PartialItemFailureResponse:
     )
 
 
-AwsLambdaInstrumentor().instrument()
+with nullcontext():
+    AwsLambdaInstrumentor().instrument()

@@ -95,4 +95,5 @@ def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, A
         return rsp.asdict()
 
 
-AwsLambdaInstrumentor().instrument()
+with nullcontext():
+    AwsLambdaInstrumentor().instrument()
