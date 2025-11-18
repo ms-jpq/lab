@@ -76,8 +76,9 @@ resource "aws_lambda_function_event_invoke_config" "mta" {
 }
 
 resource "aws_s3_bucket_notification" "maildir" {
-  bucket = data.aws_s3_bucket.maildir.bucket
-  region = data.aws_s3_bucket.maildir.region
+  depends_on = [aws_lambda_permission.faas["mta"]]
+  bucket     = data.aws_s3_bucket.maildir.bucket
+  region     = data.aws_s3_bucket.maildir.region
 
   lambda_function {
     events              = ["s3:ObjectCreated:*"]

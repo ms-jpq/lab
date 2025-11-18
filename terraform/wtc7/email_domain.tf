@@ -76,7 +76,7 @@ resource "aws_sesv2_email_identity" "mda" {
 
 output "email" {
   value = {
-    accounts  = [for id in aws_sesv2_email_identity.mda : id.email_identity],
-    domain    = data.aws_route53_zone.limited_void.name,
+    accounts = [for id in aws_sesv2_email_identity.mda : id.email_identity],
+    domain   = data.aws_route53_zone.limited_void.name,
   }
 }
