@@ -80,7 +80,7 @@ def main(event: S3Event, _: LambdaContext) -> None:
                 mail = parse(io)
                 span.add_event("parsed")
                 headers = {
-                    key: linesep.join(mail.headers.get_all(key, "")).strip()
+                    key: tuple(map(str, mail.headers.get_all(key, "")))
                     for key in mail.headers.keys()
                 }
                 span.add_event("parsed.headers", attributes=headers)
