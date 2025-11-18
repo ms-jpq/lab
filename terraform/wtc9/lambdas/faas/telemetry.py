@@ -2,7 +2,7 @@ from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import AbstractContextManager, contextmanager, nullcontext
 from functools import wraps
-from logging import INFO, captureWarnings, getLogger
+from logging import INFO, basicConfig, captureWarnings
 from os import environ
 from pathlib import PurePath
 from typing import Any
@@ -59,8 +59,11 @@ with nullcontext():
     _lp.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter()))
     set_logger_provider(_lp)
 
-    getLogger().addHandler(LoggingHandler(logger_provider=_lp))
-    getLogger().setLevel(INFO)
+    basicConfig(
+        format="%(message)s",
+        level=INFO,
+        handlers=(LoggingHandler(logger_provider=_lp),),
+    )
 
 
 with nullcontext():
