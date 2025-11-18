@@ -53,17 +53,17 @@ locals {
 }
 
 resource "aws_route53_record" "dkim" {
-  for_each = toset([for i in range(local.dkim_tokens_len) : tostring(i)])
-  name     = "${local.dkim_tokens[tonumber(each.key)]}._domainkey.${aws_sesv2_email_identity.mta.email_identity}"
-  records  = ["${local.dkim_tokens[tonumber(each.key)]}.dkim.amazonses.com"]
-  ttl      = local.dns_ttl
-  type     = "CNAME"
-  zone_id  = data.aws_route53_zone.limited_void.zone_id
+  count   = local.dkim_tokens_len
+  name    = "${local.dkim_tokens[count.index]}._domainkey.${aws_sesv2_email_identity.mta.email_identity}"
+  records = ["${local.dkim_tokens[count.index]}.dkim.amazonses.com"]
+  ttl     = local.dns_ttl
+  type    = "CNAME"
+  zone_id = data.aws_route53_zone.limited_void.zone_id
 
   lifecycle {
     precondition {
       condition     = length(local.dkim_tokens) == local.dkim_tokens_len
-      error_message = "expected ${local.dkim_tokens_len} dkim records"
+      error_message = "expected ${local.dkim_tokens_len} dkim records, but received ${length(local.dkim_tokens)}"
     }
   }
 }
