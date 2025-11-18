@@ -1,7 +1,7 @@
 from collections import defaultdict
 from collections.abc import Mapping, MutableSet, Sequence, Set
 from datetime import datetime, timedelta, timezone
-from functools import cache, partial
+from functools import cache
 from http import HTTPStatus
 from json import loads
 from logging import getLogger
@@ -15,8 +15,11 @@ from aws_lambda_powertools.event_handler.middlewares import (
 )
 
 from ... import executor, suppress_exn
+from ...telemetry import with_context
 from ...twilio import parse_params, verify
 from . import app, compute_once, current_raw_uri, dynamodb
+
+_Routed = Sequence[tuple[str, Sequence[str]]]
 
 
 @cache
@@ -108,9 +111,7 @@ def _retrieve_reply_to(dst: str, route_to: str) -> str | None:
     return None
 
 
-def _messages(
-    src: str, dst: str, body: str, route_to: str
-) -> Sequence[tuple[str, Sequence[str]]]:
+def _messages(src: str, dst: str, body: str, route_to: str) -> _Routed:
     prefix_1, prefix_2 = ">>> ", "<<< "
     instruction = body.startswith((prefix_1, prefix_2)) and len(body.splitlines()) == 1
     question = body == "???"
@@ -185,6 +186,7 @@ def _messages(
 @app.post("/twilio/message", middlewares=[_auth])
 def message() -> Response[str]:
     root = Element("Response")
+    w_ctx = with_context()
 
     match _current_params():
         case {"From": src, "To": dst, "Body": body}:
@@ -192,9 +194,12 @@ def message() -> Response[str]:
             dst is always a twilio number
             """
 
-            fn = partial(_messages, src, dst, body)
+            def cont(route_to: str) -> _Routed:
+                with w_ctx():
+                    return _messages(src, dst=dst, body=body, route_to=route_to)
+
             seen: Mapping[str, MutableSet[int]] = defaultdict(set)
-            for pairs in executor().map(fn, _routes()):
+            for pairs in executor().map(cont, _routes()):
                 for tel, msgs in pairs:
                     acc = seen[tel]
                     for msg in msgs:
