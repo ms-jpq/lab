@@ -86,8 +86,12 @@ def _auth(event: APIGatewayAuthorizerEventV2) -> bool:
 def _inject_signature(
     event: APIGatewayAuthorizerEventV2, carrier: MutableMapping[str, Any]
 ) -> None:
+    signature = ""
+
     if event.raw_path.startswith("/twilio/"):
-        carrier.setdefault("signature", "")
+        signature = event.headers.get("x-twilio-signature", "")
+
+    carrier.setdefault("signature", signature)
 
 
 @flush_otlp
