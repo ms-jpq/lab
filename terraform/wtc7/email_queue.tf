@@ -6,16 +6,6 @@ resource "aws_s3_bucket" "maildir" {
   }
 }
 
-resource "aws_s3_bucket_notification" "maildir" {
-  bucket = aws_s3_bucket.maildir.id
-  region = aws_s3_bucket.maildir.region
-
-  lambda_function {
-    events              = ["s3:ObjectCreated:*"]
-    lambda_function_arn = aws_lambda_permission.mta.function_name
-  }
-}
-
 resource "aws_s3_bucket_lifecycle_configuration" "maildir" {
   bucket = aws_s3_bucket.maildir.id
   region = aws_s3_bucket.maildir.region

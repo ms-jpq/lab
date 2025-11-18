@@ -1,8 +1,3 @@
-variable "email_alert" {
-  sensitive = true
-  type      = string
-}
-
 resource "aws_sns_topic" "siphon" {
   region = aws_dynamodb_table.mango.region
 }
