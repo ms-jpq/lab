@@ -98,34 +98,34 @@ def main(event: S3Event, _: LambdaContext) -> None:
             io = BytesIO(fp.read())
             mail = _parse_mail(io)
 
-        with TRACER.start_as_current_span("run sieve") as span:
-            go = False
-            try:
-                ss(mail)
-            except StopAsyncIteration as exn:
-                if tb := traceback(sieve, exn=exn):
-                    span.add_event("rejected", attributes={"traceback": tb})
-            else:
-                go = True
-                span.add_event("accepted")
-            finally:
-                if go:
-                    with TRACER.start_as_current_span("send") as span:
-                        try:
-                            send(
-                                mail,
-                                mail_from=environ["MAIL_FROM"],
-                                mail_to=environ["MAIL_TO"],
-                                mail_srv=environ["MAIL_SRV"],
-                                mail_user=environ["MAIL_USER"],
-                                mail_pass=environ["MAIL_PASS"],
-                                timeout=TIMEOUT,
-                            )
-                        except SMTPDataError as e:
-                            data = pformat(record._data)
-                            span.add_event("error.data", attributes={"data": data})
-                            getLogger().error("%s", data, exc_info=e)
-                            raise e
+            with TRACER.start_as_current_span("run sieve") as span:
+                go = False
+                try:
+                    ss(mail)
+                except StopAsyncIteration as exn:
+                    if tb := traceback(sieve, exn=exn):
+                        span.add_event("rejected", attributes={"traceback": tb})
+                else:
+                    go = True
+                    span.add_event("accepted")
+                finally:
+                    if go:
+                        with TRACER.start_as_current_span("send") as span:
+                            try:
+                                send(
+                                    mail,
+                                    mail_from=environ["MAIL_FROM"],
+                                    mail_to=environ["MAIL_TO"],
+                                    mail_srv=environ["MAIL_SRV"],
+                                    mail_user=environ["MAIL_USER"],
+                                    mail_pass=environ["MAIL_PASS"],
+                                    timeout=TIMEOUT,
+                                )
+                            except SMTPDataError as e:
+                                data = pformat(record._data)
+                                span.add_event("error.data", attributes={"data": data})
+                                getLogger().error("%s", data, exc_info=e)
+                                raise e
 
     def cont() -> Iterator[Exception]:
         with _pool() as pool:
