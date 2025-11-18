@@ -2,7 +2,7 @@ from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import AbstractContextManager, contextmanager, nullcontext
 from functools import wraps
-from logging import INFO, basicConfig, captureWarnings
+from logging import INFO, StreamHandler, basicConfig, captureWarnings
 from os import environ
 from pathlib import PurePath
 from typing import Any
@@ -62,7 +62,7 @@ with nullcontext():
     basicConfig(
         format="%(message)s",
         level=INFO,
-        handlers=(LoggingHandler(logger_provider=_lp),),
+        handlers=(StreamHandler(), LoggingHandler()),
     )
 
 
