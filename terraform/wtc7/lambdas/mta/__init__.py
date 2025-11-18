@@ -79,7 +79,9 @@ def main(event: S3Event, _: LambdaContext) -> None:
                 io = BytesIO(fp.read())
                 mail = parse(io)
 
-            headers = {key: mail.headers.get_all(key, "") for key in mail.headers}
+            headers = {
+                key: mail.headers.get_all(key, "") for key in mail.headers.keys()
+            }
             with TRACER.start_as_current_span("run sieve", attributes=headers) as span:
                 try:
                     ss(mail)
