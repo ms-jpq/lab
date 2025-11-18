@@ -75,7 +75,7 @@ with nullcontext():
 
 
 with nullcontext():
-    RequestsInstrumentor().instrument()  # type:ignore
+    RequestsInstrumentor().instrument()
     BotocoreInstrumentor().instrument()  # type:ignore
 
 
