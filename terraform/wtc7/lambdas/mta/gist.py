@@ -71,12 +71,12 @@ def register(name: str, uri: str, timeout: float) -> None:
 
                 def exec_module(self, module: ModuleType) -> None:
                     nonlocal cache
-                    with lock:
+                    with TRACER.start_as_current_span("clear cache"), lock:
                         cache = ""
-                    module.__file__ = self.get_filename(fullname)
+                        module.__file__ = self.get_filename(fullname)
 
                     assert (compiled := self.get_code(fullname))
-                    with TRACER.start_as_current_span("exec code"):
+                    with TRACER.start_as_current_span("exec code"), lock:
                         exec(compiled, module.__dict__)
 
             loader = LazyLoader.factory(cast(Loader, _Loader))
