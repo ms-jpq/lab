@@ -89,7 +89,7 @@ def with_context() -> Callable[[], AbstractContextManager[Context]]:
 
 def flush_otlp(f: Callable[..., Any]) -> Callable[..., Any]:
     @wraps(f)
-    def cont(*__args, **__kwargs) -> Any:
+    def cont(*__args: Any, **__kwargs: Any) -> Any:
         try:
             return f(*__args, **__kwargs)
         finally:
