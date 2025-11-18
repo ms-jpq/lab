@@ -22,13 +22,8 @@ variable "mail_filter" {
 }
 
 locals {
-  dns_ttl    = 60
-  mail_alert = var.mail_to[0]
   timeouts = {
     s3_days = 1,
     lambda  = 6
-  }
-  retries = {
-    lambda = 1
   }
 }

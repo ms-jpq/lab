@@ -1,3 +1,15 @@
+data "aws_iam_policy_document" "allow_lambda" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    effect  = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+  }
+}
+
 data "aws_iam_policy_document" "allow_cloudwatch" {
   for_each = local.lambda_functions
   statement {

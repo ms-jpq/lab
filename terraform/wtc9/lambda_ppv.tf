@@ -1,8 +1,3 @@
-variable "email_alert" {
-  sensitive = true
-  type      = string
-}
-
 resource "aws_dynamodb_table" "mango" {
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "ID"
@@ -17,17 +12,6 @@ resource "aws_dynamodb_table" "mango" {
     attribute_name = "TTL"
     enabled        = true
   }
-}
-
-resource "aws_sns_topic" "siphon" {
-  region = aws_dynamodb_table.mango.region
-}
-
-resource "aws_sns_topic_subscription" "siphon" {
-  endpoint  = var.email_alert
-  protocol  = "email"
-  region    = aws_sns_topic.siphon.region
-  topic_arn = aws_sns_topic.siphon.arn
 }
 
 data "aws_iam_policy_document" "skycrane" {

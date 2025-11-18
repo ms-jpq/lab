@@ -6,10 +6,6 @@ resource "aws_s3_bucket" "maildir" {
   }
 }
 
-resource "aws_sns_topic" "sink" {
-  region = aws_s3_bucket.maildir.region
-}
-
 resource "aws_s3_bucket_notification" "maildir" {
   bucket = aws_s3_bucket.maildir.id
   region = aws_s3_bucket.maildir.region
@@ -41,11 +37,4 @@ resource "aws_s3_bucket_lifecycle_configuration" "maildir" {
       days = local.timeouts.s3_days
     }
   }
-}
-
-resource "aws_sns_topic_subscription" "sink" {
-  endpoint  = local.mail_alert
-  protocol  = "email"
-  region    = aws_sns_topic.sink.region
-  topic_arn = aws_sns_topic.sink.arn
 }

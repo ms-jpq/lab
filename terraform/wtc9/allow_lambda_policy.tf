@@ -1,1 +1,0 @@
-../wtc7/allow_lambda_policy.tf

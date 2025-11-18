@@ -19,3 +19,21 @@ resource "aws_ses_receipt_rule" "maildir" {
     position    = 1
   }
 }
+
+data "aws_iam_policy_document" "maildir" {
+  statement {
+    actions   = ["s3:PutObject"]
+    resources = [aws_s3_bucket.maildir.arn, "${aws_s3_bucket.maildir.arn}/*"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["ses.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "maildir" {
+  bucket = aws_s3_bucket.maildir.id
+  policy = data.aws_iam_policy_document.maildir.json
+  region = aws_s3_bucket.maildir.region
+}
