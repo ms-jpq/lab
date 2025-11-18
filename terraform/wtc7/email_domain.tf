@@ -61,7 +61,7 @@ resource "aws_route53_record" "dkim" {
   zone_id  = data.aws_route53_zone.limited_void.zone_id
 
   lifecycle {
-    postcondition {
+    precondition {
       condition     = length(local.dkim_tokens) == local.dkim_tokens_len
       error_message = "expected ${local.dkim_tokens_len} dkim records"
     }
