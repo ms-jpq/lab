@@ -67,7 +67,8 @@ def register(name: str, uri: str, timeout: float) -> None:
 
                 def get_code(self, fullname: str) -> CodeType | None:
                     source = self.get_source(fullname)
-                    return InspectLoader.source_to_code(source)
+                    with TRACER.start_as_current_span("compile code"):
+                        return InspectLoader.source_to_code(source)
 
                 def exec_module(self, module: ModuleType) -> None:
                     nonlocal cache
@@ -76,7 +77,7 @@ def register(name: str, uri: str, timeout: float) -> None:
                     module.__file__ = self.get_filename(fullname)
 
                     assert (compiled := self.get_code(fullname))
-                    with TRACER.start_as_current_span("compile src"):
+                    with TRACER.start_as_current_span("exec code"):
                         exec(compiled, module.__dict__)
 
             loader = LazyLoader.factory(cast(Loader, _Loader))
