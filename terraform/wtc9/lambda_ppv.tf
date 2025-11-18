@@ -69,7 +69,6 @@ resource "aws_lambda_function" "ppv" {
     variables = merge(
       local.lambda_envs,
       {
-        ENV_CHAN_NAME        = aws_sns_topic.siphon.arn
         ENV_DOMAIN           = var.vps_domain
         ENV_TBL_NAME         = aws_dynamodb_table.mango.name
         ENV_TWILIO_REDIRECTS = jsonencode(var.twilio_redirects)

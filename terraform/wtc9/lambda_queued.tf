@@ -80,6 +80,7 @@ resource "aws_lambda_function" "skyhook" {
     variables = merge(
       local.lambda_envs,
       {
+        ENV_CHAN_NAME    = aws_sns_topic.siphon.arn
         ENV_TWILIO_TOKEN = var.twilio_token
       }
     )
