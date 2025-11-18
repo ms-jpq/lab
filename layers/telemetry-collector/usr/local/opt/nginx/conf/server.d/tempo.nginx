@@ -1,0 +1,7 @@
+location /tempo {
+  return 307 /tempo/;
+}
+
+location /tempo/ {
+  proxy_pass http://127.0.0.53:3200;
+}

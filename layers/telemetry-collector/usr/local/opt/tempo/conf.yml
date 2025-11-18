@@ -4,13 +4,14 @@ stream_over_http_enabled: true
 http_api_prefix: /tempo
 server:
   http_listen_port: 3200
+  grpc_listen_port: 9096
   log_level: warn
 
 distributor:
   receivers:
     otlp:
       protocols:
-        grpc:
+        http:
           endpoint: 127.0.0.53:4317
 
 metrics_generator:
