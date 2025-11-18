@@ -1,39 +1,36 @@
 from collections.abc import Sequence
 from contextlib import nullcontext
-from http.client import HTTPResponse
 from importlib.abc import InspectLoader, Loader, MetaPathFinder, SourceLoader
 from importlib.machinery import ModuleSpec
 from importlib.util import LazyLoader, spec_from_loader
 from inspect import getsourcelines
-from logging import getLogger
 from pathlib import PurePath
 from sys import meta_path
 from threading import Lock
 from types import CodeType, ModuleType
 from typing import cast
 from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
-from urllib.request import build_opener
 from uuid import uuid4
 
 from opentelemetry.trace import get_tracer
+from requests import Session
 
 with nullcontext():
     TRACER = get_tracer("mta")
     _NS = PurePath(uuid4().hex)
-    _OPENER = build_opener()
 
 
 def register(name: str, uri: str, timeout: float) -> None:
     scheme, netloc, path, query, frag = urlsplit(uri)
     qs = parse_qs(query)
+    session = Session()
 
-    def get() -> bytes:
+    def get() -> str:
         nxt_qs = urlencode({**qs, uuid4().hex: (uuid4().hex,)})
         nxt_uri = urlunsplit((scheme, netloc, path, nxt_qs, frag))
 
-        with _OPENER.open(nxt_uri, timeout=timeout) as req:
-            assert isinstance(req, HTTPResponse)
-            return req.read()
+        with session.get(nxt_uri, timeout=timeout) as rsp:
+            return rsp.text
 
     class _Finder(MetaPathFinder):
         def find_spec(
@@ -58,8 +55,7 @@ def register(name: str, uri: str, timeout: float) -> None:
                     nonlocal cache
                     with TRACER.start_as_current_span("get src"), lock:
                         if not cache:
-                            src = get()
-                            cache = src.decode()
+                            cache = get()
 
                         return cache
 
