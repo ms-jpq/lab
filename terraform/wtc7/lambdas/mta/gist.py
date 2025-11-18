@@ -101,4 +101,4 @@ def log(mod: ModuleType, exn: Exception, ctx: int = 6) -> None:
             f"{'*' if idx == lineno else ' '}{str(idx).rjust(width, '0')} {line}"
             for idx, line in enumerate(lines[lo:hi], start=lo + 1)
         )
-        get_current_span().add_event("rejected", attributes={"traceback": py})
+        get_current_span().set_attribute("traceback", py)
