@@ -9,7 +9,7 @@ from urllib.parse import urlsplit, urlunsplit
 
 from aws_lambda_powertools.event_handler.api_gateway import Response
 
-from . import app
+from . import TRACER, app
 
 with nullcontext():
     _ARCHIVE = "archive.is"
@@ -36,26 +36,28 @@ def _mappings() -> Mapping[str, str]:
 
 @app.get("/owncloud/.+")
 def route() -> Response[str]:
-    raw = (
-        app.current_event.path.removeprefix("/owncloud/")
-        + "?"
-        + app.current_event.raw_query_string
-    )
-    subbed = sub(r"(\w+):/", r"\1://", raw)
+    with TRACER.start_as_current_span("redirect") as span:
+        raw = (
+            app.current_event.path.removeprefix("/owncloud/")
+            + "?"
+            + app.current_event.raw_query_string
+        )
+        subbed = sub(r"(\w+):/", r"\1://", raw)
 
-    try:
-        url = urlsplit(subbed)
-    except ValueError as e:
-        return Response(status_code=HTTPStatus.BAD_REQUEST, body=str(e))
+        try:
+            url = urlsplit(subbed)
+        except ValueError as e:
+            return Response(status_code=HTTPStatus.BAD_REQUEST, body=str(e))
 
-    if newloc := _mappings().get(url.netloc):
-        split = (url.scheme, newloc, url.path, url.query, url.fragment)
-    else:
-        split = ("https", _ARCHIVE, "/" + urlunsplit(url), "", "")
+        if newloc := _mappings().get(url.netloc):
+            split = (url.scheme, newloc, url.path, url.query, url.fragment)
+        else:
+            split = ("https", _ARCHIVE, "/" + urlunsplit(url), "", "")
 
-    location = urlunsplit(split)
-    return Response(
-        status_code=HTTPStatus.TEMPORARY_REDIRECT,
-        headers={"Location": location},
-        body=location,
-    )
+        location = urlunsplit(split)
+        span.add_event("redirect.to", attributes={"location": location})
+        return Response(
+            status_code=HTTPStatus.TEMPORARY_REDIRECT,
+            headers={"Location": location},
+            body=location,
+        )
