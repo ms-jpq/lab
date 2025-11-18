@@ -51,8 +51,9 @@ def _process(record: SQSRecord) -> bool:
         case _:
             return False
 
-    if not verify(uri, params=params, signature=signature):
-        return False
+    with TRACER.start_as_current_span("verify hmac"):
+        if not verify(uri, params=params, signature=signature):
+            return False
 
     match params:
         case {"PayloadType": "application/json", "Payload": str(payload)}:
