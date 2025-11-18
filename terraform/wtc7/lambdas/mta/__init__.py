@@ -78,11 +78,12 @@ def main(event: S3Event, _: LambdaContext) -> None:
             with TRACER.start_as_current_span("parse mail") as span:
                 io = BytesIO(fp.read())
                 mail = parse(io)
+                span.add_event("parsed")
                 headers = {
                     key: linesep.join(mail.headers.get_all(key, "")).strip()
                     for key in mail.headers.keys()
                 }
-                span.add_event("parsed", attributes=headers)
+                span.add_event("parsed.headers", attributes=headers)
 
             with TRACER.start_as_current_span("run sieve") as span:
                 try:
