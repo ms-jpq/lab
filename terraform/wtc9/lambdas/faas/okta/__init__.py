@@ -21,6 +21,7 @@ from opentelemetry.trace import get_tracer
 from opentelemetry.trace.status import StatusCode
 
 from .. import _
+from ..telemetry import flush_otlp
 
 with nullcontext():
     TRACER = get_tracer(__name__)
@@ -82,6 +83,7 @@ def _auth(event: APIGatewayAuthorizerEventV2) -> bool:
         return False
 
 
+@flush_otlp
 @event_source(data_class=APIGatewayAuthorizerEventV2)
 def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, Any]:
     context: dict[str, Any] = {}

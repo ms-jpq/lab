@@ -8,8 +8,10 @@ from aws_lambda_powertools.utilities.typing import LambdaContext
 from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
 
 from .. import _
+from ..telemetry import flush_otlp
 
 
+@flush_otlp
 @event_source(data_class=EventBridgeEvent)
 def main(event: EventBridgeEvent, _: LambdaContext) -> None:
     return

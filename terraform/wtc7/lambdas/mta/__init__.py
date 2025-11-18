@@ -17,10 +17,9 @@ from aws_lambda_powertools.utilities.data_classes.s3_event import (
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client  # pyright:ignore
 from botocore.config import Config  # pyright:ignore
-from opentelemetry.context import get_current
 from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
 
-from .tel import __, with_context
+from .tel import __, flush_otlp, with_context
 
 assert __
 
@@ -62,6 +61,7 @@ def _pool() -> Iterator[Executor]:
 _cold_start = True
 
 
+@flush_otlp
 @event_source(data_class=S3Event)
 def main(event: S3Event, _: LambdaContext) -> None:
     global _cold_start

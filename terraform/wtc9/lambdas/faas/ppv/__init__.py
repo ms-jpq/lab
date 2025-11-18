@@ -15,12 +15,14 @@ from opentelemetry.propagate import extract
 from opentelemetry.trace import get_tracer
 
 from .. import _
+from ..telemetry import flush_otlp
 from .routes import app
 
 with nullcontext():
     TRACER = get_tracer(__name__)
 
 
+@flush_otlp
 @event_source(data_class=APIGatewayProxyEventV2)
 def main(event: APIGatewayProxyEventV2, ctx: LambdaContext) -> Mapping[str, Any]:
     with TRACER.start_as_current_span("router"):
