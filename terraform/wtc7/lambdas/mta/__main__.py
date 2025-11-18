@@ -100,8 +100,7 @@ def _redirect(msg: EmailMessage, src: str) -> Iterator[tuple[str, _Rewrite]]:
         "message-id": _Rewrite(act="uniq", val=""),
     }
 
-    for hdr, spec in mod.items():
-        yield hdr, spec
+    yield from mod.items()
 
 
 def _rewrite(msg: EmailMessage, rewrites: Iterator[tuple[str, _Rewrite]]) -> None:
