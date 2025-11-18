@@ -4,7 +4,6 @@ from datetime import datetime, timedelta, timezone
 from functools import cache
 from http import HTTPStatus
 from json import loads
-from logging import getLogger
 from os import environ
 from xml.etree.ElementTree import Element, SubElement, indent, tostring
 
@@ -129,10 +128,10 @@ def _messages(src: str, dst: str, body: str, route_to: str) -> _Routed:
 
     elif route_to == src:
         span.add_event(
-            "received privileged instruction", attributes={"route_to": route_to}
+            "received.privileged.instruction", attributes={"route_to": route_to}
         )
         if question:
-            span.add_event("received question for reply destination")
+            span.add_event("received.question")
 
             if prev_reply_to := _retrieve_reply_to(dst=dst, route_to=route_to):
                 _upsert_reply_to(dst=dst, route_to=route_to, reply_to=prev_reply_to)
@@ -141,15 +140,14 @@ def _messages(src: str, dst: str, body: str, route_to: str) -> _Routed:
         elif instruction:
             set_reply_to = body.removeprefix(prefix_1).removeprefix(prefix_2)
             span.add_event(
-                "received next number for reply destination",
-                attributes={"next": set_reply_to},
+                "received.next.number.for.reply", attributes={"next": set_reply_to}
             )
 
             _upsert_reply_to(dst=dst, route_to=route_to, reply_to=set_reply_to)
             return ((route_to, (f"*** {set_reply_to}",)),)
         elif prev_reply_to := _retrieve_reply_to(dst=dst, route_to=route_to):
             span.add_event(
-                "found previous reply destination",
+                "found.previous.number.for.reply",
                 attributes={"previous": prev_reply_to},
             )
 
@@ -157,20 +155,20 @@ def _messages(src: str, dst: str, body: str, route_to: str) -> _Routed:
 
             return ((route_to, (prefix_2 + prev_reply_to,)), (prev_reply_to, (body,)))
         else:
-            span.add_event("did not find previous reply destination")
+            span.add_event("not.found.previous.number.for.reply")
 
             others = tuple(prefix_1 + tel for tel in (_routes() - {route_to}))
             return ((route_to, others),)
     elif src in _routes() and (question or instruction):
         span.add_event(
-            "received instruction from another privileged #",
+            "received.instruction.from.another.privileged.number",
             attributes={"other_number": src},
         )
 
         return ()
     else:
         span.add_event(
-            "received text from an arbitrary #",
+            "received.text.from.arbitrary.number",
             attributes={"arbitrary_number": route_to},
         )
 
