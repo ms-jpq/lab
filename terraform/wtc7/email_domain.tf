@@ -46,8 +46,13 @@ resource "aws_route53_record" "spf" {
   zone_id = data.aws_route53_zone.limited_void.zone_id
 }
 
+
+resource "terraform_data" "dkim" {
+  input = concat([for attr in aws_sesv2_email_identity.mta.dkim_signing_attributes : attr.tokens]...)
+}
+
 resource "aws_route53_record" "dkim" {
-  for_each = toset(concat([for attr in aws_sesv2_email_identity.mta.dkim_signing_attributes : attr.tokens]...))
+  for_each = toset(terraform_data.dkim.output)
   name     = "${each.key}._domainkey.${aws_sesv2_email_identity.mta.email_identity}"
   records  = ["${each.key}.dkim.amazonses.com"]
   ttl      = local.dns_ttl
