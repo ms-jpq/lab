@@ -79,19 +79,19 @@ def main(event: S3Event, _: LambdaContext) -> None:
                 io = BytesIO(fp.read())
                 mail = parse(io)
 
-            with TRACER.start_as_current_span("run sieve") as span:
-                attrs = {"headers": mail.headers.as_string(maxheaderlen=2**16)}
+            with TRACER.start_as_current_span(
+                "run sieve",
+                attributes={"headers": mail.headers.as_string(maxheaderlen=2**16)},
+            ) as span:
                 try:
                     ss(mail)
                 except StopAsyncIteration as exn:
                     go = False
                     if tb := traceback(sieve, exn=exn):
-                        span.add_event(
-                            "rejected", attributes={**attrs, "traceback": tb}
-                        )
+                        span.add_event("rejected", attributes={"traceback": tb})
                 else:
                     go = True
-                    span.add_event("accepted", attributes=attrs)
+                    span.add_event("accepted")
 
             if go:
                 with TRACER.start_as_current_span("send"):
