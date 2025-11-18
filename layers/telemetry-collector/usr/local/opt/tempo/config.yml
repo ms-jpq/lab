@@ -1,0 +1,28 @@
+# https://grafana.com/docs/tempo/latest/configuration/
+---
+stream_over_http_enabled: true
+http_api_prefix: /tempo
+server:
+  http_listen_port: 3200
+  log_level: warn
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 127.0.0.53:4317
+
+metrics_generator:
+  storage:
+    path: /var/lib/local/tempo/generator/wal
+  traces_storage:
+    path: /var/lib/local/tempo/generator/traces
+
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /var/lib/local/tempo/wal
+    local:
+      path: /var/lib/local/tempo/blocks
