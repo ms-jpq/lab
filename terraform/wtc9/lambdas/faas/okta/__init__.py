@@ -106,7 +106,7 @@ def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, A
                     attributes={
                         "path": event.raw_path,
                         "query": event.raw_query_string,
-                        **{f"header-{k}": v for k, v in event.headers},
+                        **{f"header-{k}": v for k, v in event.headers.items()},
                     },
                 )
             span.set_status(StatusCode.OK if authorized else StatusCode.ERROR)
