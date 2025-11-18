@@ -8,8 +8,13 @@ from uuid import uuid4
 
 from aws_lambda_powertools.event_handler import APIGatewayHttpResolver
 from boto3 import client  # pyright:ignore
+from opentelemetry.trace import get_tracer
 
 from ... import B3_CONF, dump_json
+from .. import __name__ as name
+
+with nullcontext():
+    TRACER = get_tracer(name)
 
 with nullcontext():
     _T = TypeVar("_T")

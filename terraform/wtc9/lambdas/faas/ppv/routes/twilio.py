@@ -17,8 +17,7 @@ from aws_lambda_powertools.event_handler.middlewares import (
 from ... import executor, suppress_exn
 from ...telemetry import with_context
 from ...twilio import parse_params, verify
-from .. import TRACER
-from . import app, compute_once, current_raw_uri, dynamodb
+from . import TRACER, app, compute_once, current_raw_uri, dynamodb
 
 _Routed = Sequence[tuple[str, Sequence[str]]]
 

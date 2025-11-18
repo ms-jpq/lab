@@ -99,7 +99,7 @@ def _inject_signature(
 def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, Any]:
     context: dict[str, Any] = {}
     with TRACER.start_as_current_span("auth"):
-        with TRACER.start_as_current_span("route verdict") as span:
+        with TRACER.start_as_current_span("auth verdict") as span:
             authorized = _auth(event)
             span.set_status(StatusCode.OK if authorized else StatusCode.ERROR)
 

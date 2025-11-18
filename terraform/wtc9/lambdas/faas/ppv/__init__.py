@@ -12,14 +12,11 @@ from aws_lambda_powertools.utilities.typing import LambdaContext
 from opentelemetry.context.context import Context
 from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
 from opentelemetry.propagate import extract
-from opentelemetry.trace import get_tracer
 
 from .. import _
 from ..telemetry import flush_otlp
-from .routes import app
+from .routes import app, TRACER
 
-with nullcontext():
-    TRACER = get_tracer(__name__)
 
 
 @flush_otlp
