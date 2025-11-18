@@ -46,7 +46,9 @@ exporters:
     endpoint: http://127.0.0.53:3100/otlp
   &prometheus otlphttp/metrics:
     endpoint: http://127.0.0.53:55000
-  &jaeger otlphttp/traces:
+  &tempo otlphttp/traces:
+    endpoint: http://127.0.0.53:4317
+  &jaeger otlphttp/jaeger:
     endpoint: http://127.0.0.53:44318
 service:
   telemetry:
@@ -78,4 +80,5 @@ service:
       receivers:
         - *recv
       exporters:
+        - *tempo
         - *jaeger
