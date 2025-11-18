@@ -15,4 +15,4 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["mypy", "types-PyYAML", "black", "isort"]
+dev = ["mypy", "types-PyYAML", "types-requests", "black", "isort"]
