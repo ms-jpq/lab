@@ -86,7 +86,7 @@ def main(event: S3Event, _: LambdaContext) -> None:
                         == 1
                         else values
                     )
-                    for key in mail.headers.keys()
+                    for key in sorted(mail.headers.keys(), key=lambda x: x.casefold())
                 }
                 span.add_event("parsed.headers", attributes=headers)
 
