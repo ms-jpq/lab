@@ -208,8 +208,7 @@ def message() -> Response[str]:
                 for tel, msgs in pairs:
                     acc = seen[tel]
                     for msg in msgs:
-                        key = hash(msg)
-                        if not key in acc:
+                        if not (key := hash(msg)) in acc:
                             SubElement(root, "Message", attrib={"to": tel}).text = msg
                             acc.add(key)
 
