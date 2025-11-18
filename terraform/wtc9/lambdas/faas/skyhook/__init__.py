@@ -78,11 +78,8 @@ def _handler(span: Span, record: SQSRecord) -> None:
         s.add_link(span.get_span_context())
         span.add_link(s.get_span_context())
 
-        ok = False
-        try:
-            ok = _process(record)
-        finally:
-            span.set_status(StatusCode.OK if ok else StatusCode.ERROR)
+        ok = _process(record)
+        span.set_status(StatusCode.OK if ok else StatusCode.ERROR)
 
 
 @flush_otlp

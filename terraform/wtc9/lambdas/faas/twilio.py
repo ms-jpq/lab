@@ -14,7 +14,7 @@ def _auth_key() -> bytes:
 
 
 def parse_params(body: str | None) -> dict[str, str]:
-    return dict(parse_qsl(body))
+    return dict(parse_qsl(body, keep_blank_values=True))
 
 
 def verify(uri: str, params: Mapping[str, str], signature: str) -> bool:
