@@ -41,14 +41,15 @@ def _current_params() -> dict[str, str]:
 def _auth(
     app: APIGatewayHttpResolver, next_middleware: NextMiddleware
 ) -> Response[None]:
-    event = app.current_event
-    if not (signature := event.headers.get("x-twilio-signature")):
-        return Response(status_code=HTTPStatus.UNAUTHORIZED)
+    with TRACER.start_as_current_span("hmac middleware"):
+        event = app.current_event
+        if not (signature := event.headers.get("x-twilio-signature")):
+            return Response(status_code=HTTPStatus.UNAUTHORIZED)
 
-    if not verify(current_raw_uri(), params=_current_params(), signature=signature):
-        return Response(status_code=HTTPStatus.FORBIDDEN)
+        if not verify(current_raw_uri(), params=_current_params(), signature=signature):
+            return Response(status_code=HTTPStatus.FORBIDDEN)
 
-    return next_middleware.__call__(app)
+        return next_middleware.__call__(app)
 
 
 def _xml_ok(el: Element) -> Response[str]:
