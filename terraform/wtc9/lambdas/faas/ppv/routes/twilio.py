@@ -13,6 +13,7 @@ from aws_lambda_powertools.event_handler.api_gateway import Response
 from aws_lambda_powertools.event_handler.middlewares import (
     NextMiddleware,
 )
+from opentelemetry.trace import get_current_span
 
 from ... import executor, suppress_exn
 from ...telemetry import with_context
@@ -55,7 +56,7 @@ def _auth(
 def _xml_ok(el: Element) -> Response[str]:
     indent(el)
     body = tostring(el, encoding="unicode", xml_declaration=True)
-    getLogger().info("%s", body)
+    get_current_span().add_event("rsp", attributes={"xml": body})
     return Response(
         status_code=HTTPStatus.OK,
         headers={"content-type": "application/xml"},
@@ -113,6 +114,7 @@ def _retrieve_reply_to(dst: str, route_to: str) -> str | None:
 
 
 def _messages(src: str, dst: str, body: str, route_to: str) -> _Routed:
+    span = get_current_span()
     prefix_1, prefix_2 = ">>> ", "<<< "
     instruction = body.startswith((prefix_1, prefix_2)) and len(body.splitlines()) == 1
     question = body == "???"
@@ -126,56 +128,50 @@ def _messages(src: str, dst: str, body: str, route_to: str) -> _Routed:
         assert False
 
     elif route_to == src:
-        getLogger().info(
-            "%s",
-            f"*** route_to={route_to} received text from a privileged # ***",
+        span.add_event(
+            "received privileged instruction", attributes={"route_to": route_to}
         )
         if question:
-            getLogger().info(
-                "%s",
-                f"*** route_to={route_to} received question for reply destination ***",
-            )
+            span.add_event("received question for reply destination")
 
             if prev_reply_to := _retrieve_reply_to(dst=dst, route_to=route_to):
                 _upsert_reply_to(dst=dst, route_to=route_to, reply_to=prev_reply_to)
 
             return ((route_to, (prefix_2 + str(prev_reply_to),)),)
         elif instruction:
-            getLogger().info(
-                "%s",
-                f"*** route_to={route_to} received instruction for reply destination ***",
+            set_reply_to = body.removeprefix(prefix_1).removeprefix(prefix_2)
+            span.add_event(
+                "received next number for reply destination",
+                attributes={"next": set_reply_to},
             )
 
-            set_reply_to = body.removeprefix(prefix_1).removeprefix(prefix_2)
             _upsert_reply_to(dst=dst, route_to=route_to, reply_to=set_reply_to)
-
             return ((route_to, (f"*** {set_reply_to}",)),)
         elif prev_reply_to := _retrieve_reply_to(dst=dst, route_to=route_to):
-            getLogger().info(
-                "%s",
-                f"*** route_to={route_to} found previous reply destination ***",
+            span.add_event(
+                "found previous reply destination",
+                attributes={"previous": prev_reply_to},
             )
+
             _upsert_reply_to(dst=dst, route_to=route_to, reply_to=prev_reply_to)
 
             return ((route_to, (prefix_2 + prev_reply_to,)), (prev_reply_to, (body,)))
         else:
-            getLogger().info(
-                "%s",
-                f"*** route_to={route_to} did not find previous reply destination ***",
-            )
+            span.add_event("did not find previous reply destination")
 
             others = tuple(prefix_1 + tel for tel in (_routes() - {route_to}))
             return ((route_to, others),)
     elif src in _routes() and (question or instruction):
-        getLogger().info(
-            "%s",
-            f"*** route_to={route_to} received instruction from another privileged # ***",
+        span.add_event(
+            "received instruction from another privileged #",
+            attributes={"other_number": src},
         )
 
         return ()
     else:
-        getLogger().info(
-            "%s", f"*** route_to={route_to} received text from an arbitrary # ***"
+        span.add_event(
+            "received text from an arbitrary #",
+            attributes={"arbitrary_number": route_to},
         )
 
         reply_to = src
