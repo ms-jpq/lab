@@ -82,7 +82,6 @@ def main(event: S3Event, _: LambdaContext) -> None:
                     key: linesep.join(mail.headers.get_all(key, "")).strip()
                     for key in mail.headers.keys()
                 }
-                getLogger().info("%s", headers)
                 span.add_event("parsed", attributes=headers)
 
             with TRACER.start_as_current_span("run sieve") as span:
@@ -97,7 +96,7 @@ def main(event: S3Event, _: LambdaContext) -> None:
                     span.add_event("accepted")
 
             if go:
-                with TRACER.start_as_current_span("send"):
+                with TRACER.start_as_current_span("send") as span:
                     try:
                         send(
                             mail,
@@ -110,6 +109,7 @@ def main(event: S3Event, _: LambdaContext) -> None:
                         )
                     except SMTPDataError as e:
                         data = pformat(record._data)
+                        span.add_event("error.data", attributes={"data": data})
                         getLogger().error("%s", data, exc_info=e)
                         raise e
 

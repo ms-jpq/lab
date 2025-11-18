@@ -19,6 +19,8 @@ from smtplib import SMTP_SSL
 from sys import stdin
 from typing import BinaryIO, Literal
 
+from opentelemetry.trace import get_current_span
+
 
 @dataclass(frozen=True)
 class _Rewrite:
@@ -51,6 +53,9 @@ def parse(fp: BinaryIO) -> _Mail:
 
     for err in mail.headers.defects:
         if not isinstance(err, _MISSING_BODY_DEFECTS):
+            get_current_span().add_event(
+                "found.defect", attributes={type(err).__name__: str(err)}
+            )
             getLogger().warning("%s: %s", type(err).__name__, err)
 
     return mail
