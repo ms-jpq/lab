@@ -27,7 +27,7 @@ from ..telemetry import flush_otlp
 from ..twilio import parse_params, verify
 
 with nullcontext():
-    TRACER = get_tracer(__name__)
+    _TRACER = get_tracer(__name__)
 
 with nullcontext():
     _PROC = BatchProcessor(event_type=EventType.SQS)
@@ -51,7 +51,7 @@ def _process(record: SQSRecord) -> bool:
         case _:
             return False
 
-    with TRACER.start_as_current_span("verify hmac"):
+    with _TRACER.start_as_current_span("verify hmac"):
         if not verify(uri, params=params, signature=signature):
             return False
 
@@ -75,7 +75,7 @@ def _handler(span: Span, record: SQSRecord) -> None:
         else {}
     )
     ctx = extract(carrier)
-    with TRACER.start_as_current_span("process record", context=ctx) as s:
+    with _TRACER.start_as_current_span("process record", context=ctx) as s:
         s.add_link(span.get_span_context())
         span.add_link(s.get_span_context())
 

@@ -16,7 +16,7 @@ from opentelemetry.trace import get_tracer
 from requests import Session
 
 with nullcontext():
-    TRACER = get_tracer("mta")
+    _TRACER = get_tracer(__name__)
     _NS = PurePath(uuid4().hex)
 
 
@@ -53,7 +53,7 @@ def register(name: str, uri: str, timeout: float) -> None:
 
                 def get_source(self, fullname: str) -> str:
                     nonlocal cache
-                    with TRACER.start_as_current_span("get src"), lock:
+                    with _TRACER.start_as_current_span("get src"), lock:
                         if not cache:
                             cache = get()
 
@@ -61,17 +61,17 @@ def register(name: str, uri: str, timeout: float) -> None:
 
                 def get_code(self, fullname: str) -> CodeType | None:
                     source = self.get_source(fullname)
-                    with TRACER.start_as_current_span("compile code"):
+                    with _TRACER.start_as_current_span("compile code"):
                         return InspectLoader.source_to_code(source)
 
                 def exec_module(self, module: ModuleType) -> None:
                     nonlocal cache
-                    with TRACER.start_as_current_span("clear cache"), lock:
+                    with _TRACER.start_as_current_span("clear cache"), lock:
                         cache = ""
                         module.__file__ = self.get_filename(fullname)
 
                         assert (compiled := self.get_code(fullname))
-                        with TRACER.start_as_current_span("exec code"):
+                        with _TRACER.start_as_current_span("exec code"):
                             exec(compiled, module.__dict__)
 
             loader = LazyLoader.factory(cast(Loader, _Loader))

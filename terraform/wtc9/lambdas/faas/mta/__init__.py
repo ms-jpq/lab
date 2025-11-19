@@ -18,11 +18,12 @@ from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client  # pyright:ignore
 from botocore.config import Config  # pyright:ignore
 from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
+from opentelemetry.trace import get_tracer
 
 from .. import _
+from ..gist import register, traceback
 from ..telemetry import flush_otlp, with_context
 from .fax import Mail, parse, send
-from .gist import TRACER, register, traceback
 
 _Sieve = Callable[[Mail], None]
 
@@ -31,6 +32,7 @@ with nullcontext():
 
 
 with nullcontext():
+    _TRACER = get_tracer(__name__)
     _S3 = client(service_name="s3", config=Config(retries={"mode": "adaptive"}))
 
 
@@ -54,7 +56,7 @@ def _pool() -> Iterator[Executor]:
     try:
         yield pool
     finally:
-        with TRACER.start_as_current_span("shutdown"):
+        with _TRACER.start_as_current_span("shutdown"):
             pool.shutdown(wait=True, cancel_futures=True)
 
 
@@ -63,7 +65,7 @@ _cold_start = True
 
 def _load_sieve() -> _Sieve:
     global _cold_start
-    with TRACER.start_as_current_span("load sieve"):
+    with _TRACER.start_as_current_span("load sieve"):
         s = sieve if _cold_start else reload(sieve)
         _cold_start = False
 
@@ -71,7 +73,7 @@ def _load_sieve() -> _Sieve:
 
 
 def _parse_mail(io: BytesIO) -> Mail:
-    with TRACER.start_as_current_span("parse mail") as span:
+    with _TRACER.start_as_current_span("parse mail") as span:
         mail = parse(io)
         span.add_event("parsed")
         headers = {
@@ -99,7 +101,7 @@ def main(event: S3Event, _: LambdaContext) -> None:
                 io = BytesIO(fp.read())
 
             mail = _parse_mail(io)
-            with TRACER.start_as_current_span("run sieve") as span:
+            with _TRACER.start_as_current_span("run sieve") as span:
                 go = False
                 try:
                     ss(mail)
@@ -111,7 +113,7 @@ def main(event: S3Event, _: LambdaContext) -> None:
                     span.add_event("accepted")
                 finally:
                     if go:
-                        with TRACER.start_as_current_span("send") as span:
+                        with _TRACER.start_as_current_span("send") as span:
                             try:
                                 send(
                                     mail,
