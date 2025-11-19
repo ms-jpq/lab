@@ -10,14 +10,14 @@ variable "miniflux_key" {
 
 resource "aws_lambda_function" "cron" {
   architectures    = [local.lambda_arch]
-  filename         = data.archive_file.haskell.output_path
+  filename         = data.archive_file.nop.output_path
   function_name    = "cron"
   handler          = "faas.cron.main"
   layers           = local.lambda_layers
   region           = local.lambda_region
   role             = aws_iam_role.lambdas["cron"].arn
   runtime          = local.lambda_rt
-  source_code_hash = data.archive_file.haskell.output_base64sha256
+  source_code_hash = data.archive_file.nop.output_base64sha256
 
   environment {
     variables = merge(

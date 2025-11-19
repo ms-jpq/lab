@@ -3,6 +3,12 @@ variable "otlp_endpoint" {
   type      = string
 }
 
+data "archive_file" "nop" {
+  output_path = "${path.module}/../../var/nop.zip"
+  source_dir  = "${path.module}/lambdas/nop"
+  type        = "zip"
+}
+
 data "archive_file" "haskell" {
   output_path = "${path.module}/../../var/faas.zip"
   source_dir  = "${path.module}/lambdas"
@@ -22,7 +28,8 @@ locals {
   lambda_arch = "arm64"
   lambda_layers = [
     "arn:aws:lambda:${local.lambda_region}:017000801446:layer:AWSLambdaPowertoolsPythonV3-${replace(local.lambda_rt, ".", "")}-${local.lambda_arch}:23",
-    "arn:aws:lambda:${local.lambda_region}:184161586896:layer:opentelemetry-python-0_17_0:1"
+    "arn:aws:lambda:${local.lambda_region}:184161586896:layer:opentelemetry-python-0_17_0:1",
+    aws_lambda_layer_version.haskell.arn,
   ]
   lambda_envs = {
     OTEL_EXPORTER_OTLP_ENDPOINT = var.otlp_endpoint

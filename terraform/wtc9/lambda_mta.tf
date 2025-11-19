@@ -38,14 +38,14 @@ data "aws_iam_policy_document" "port_auth" {
 
 resource "aws_lambda_function" "mta" {
   architectures    = [local.lambda_arch]
-  filename         = data.archive_file.haskell.output_path
+  filename         = data.archive_file.nop.output_path
   function_name    = "mta"
   handler          = "faas.mta.main"
   layers           = local.lambda_layers
   region           = local.lambda_region
   role             = aws_iam_role.lambdas["mta"].arn
   runtime          = local.lambda_rt
-  source_code_hash = data.archive_file.haskell.output_base64sha256
+  source_code_hash = data.archive_file.nop.output_base64sha256
   timeout          = 6
 
   environment {
