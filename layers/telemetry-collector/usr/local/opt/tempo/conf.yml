@@ -27,6 +27,10 @@ storage:
     local:
       path: /var/lib/local/tempo/blocks
 
+# compactor:
+#   compaction:
+#     block_retention: 720h
+
 ingester:
   trace_idle_period: 1s
   max_block_duration: 1s
