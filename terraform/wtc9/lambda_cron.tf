@@ -1,3 +1,13 @@
+variable "miniflux_endpoint" {
+  sensitive = true
+  type      = string
+}
+
+variable "miniflux_key" {
+  sensitive = true
+  type      = string
+}
+
 resource "aws_lambda_function" "cron" {
   architectures    = [local.lambda_arch]
   filename         = data.archive_file.haskell.output_path
@@ -12,7 +22,10 @@ resource "aws_lambda_function" "cron" {
   environment {
     variables = merge(
       local.lambda_envs,
-      {}
+      {
+        ENV_MINIFLUX_ENDPOINT = var.miniflux_endpoint
+        ENV_MINIFLUX_KEY      = var.miniflux_key
+      }
     )
   }
 }

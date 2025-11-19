@@ -13,7 +13,7 @@ services:
         - --timeout
         - "1"
         - --
-        - localhost:8080/about
+        - localhost:8080/healthcheck
     environment:
       # HTTPS_PROXY: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
       # HTTP_PROXY: *proxy
