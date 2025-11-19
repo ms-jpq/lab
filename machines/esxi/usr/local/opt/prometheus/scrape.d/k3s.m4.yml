@@ -19,9 +19,4 @@ scrape_configs:
     static_configs:
       - targets:
           - K3S_MACH:8080
-
-  - job_name: traefik.K3S_MACH
-    static_configs:
-      - targets:
-          - K3S_MACH:9000
   # ], m5_assert([ENV_PROMETHEUS_K3S_HOSTS]))

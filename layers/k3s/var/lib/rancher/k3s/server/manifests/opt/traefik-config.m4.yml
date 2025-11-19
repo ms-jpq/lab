@@ -27,5 +27,16 @@ spec:
         expose:
           default: false
     metrics:
-      prometheus:
-        entryPoint: traefik
+      otlp:
+        enabled: true
+        http: &otlp-http
+          enabled: true
+          endpoint: m5_assert([ENV_OTLP_ENDPOINT])
+          headers:
+            authorization: >-
+              Basic m5_esyscmd(printf -- %s 'm5_assert([ENV_OTLP_PASSWORD])' | jq --raw-input --join-output '"otlp:\(.)" | @base64')
+    tracing:
+      otlp:
+        enabled: true
+        http:
+          <<: *otlp-http
