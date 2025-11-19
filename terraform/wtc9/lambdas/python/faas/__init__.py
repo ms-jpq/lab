@@ -7,6 +7,7 @@ from logging import getLogger
 from typing import Any
 
 from botocore.config import Config
+from opentelemetry.trace import get_current_span
 
 from .telemetry import __
 
@@ -27,6 +28,7 @@ def suppress_exn() -> Iterator[None]:
     try:
         yield None
     except Exception as e:
+        get_current_span().record_exception(e)
         getLogger().error("%s", e)
 
 
