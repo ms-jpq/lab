@@ -6,7 +6,7 @@ from importlib.util import LazyLoader, spec_from_loader
 from inspect import getsourcelines
 from pathlib import PurePath
 from sys import meta_path
-from threading import Lock
+from threading import RLock
 from types import CodeType, ModuleType
 from typing import cast
 from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
@@ -42,7 +42,7 @@ def register(name: str, uri: str, timeout: float) -> None:
             if fullname != name:
                 return None
 
-            lock, cache = Lock(), ""
+            lock, cache = RLock(), ""
 
             class _Loader(SourceLoader):
                 def get_filename(self, fullname: str) -> str:
@@ -70,9 +70,9 @@ def register(name: str, uri: str, timeout: float) -> None:
                         cache = ""
                         module.__file__ = self.get_filename(fullname)
 
-                    assert (compiled := self.get_code(fullname))
-                    with TRACER.start_as_current_span("exec code"), lock:
-                        exec(compiled, module.__dict__)
+                        assert (compiled := self.get_code(fullname))
+                        with TRACER.start_as_current_span("exec code"):
+                            exec(compiled, module.__dict__)
 
             loader = LazyLoader.factory(cast(Loader, _Loader))
             spec = spec_from_loader(fullname, loader=loader())
