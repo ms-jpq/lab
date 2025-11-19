@@ -26,9 +26,9 @@ def main(event: APIGatewayProxyEventV2, ctx: LambdaContext) -> Mapping[str, Any]
         return app.resolve(event.raw_event, context=ctx)
 
 
-def _extract(event: Mapping[str, Any]) -> Context:
-    return extract(event["requestContext"]["authorizer"].get("lambda") or {})
-
-
 with nullcontext():
+
+    def _extract(event: Mapping[str, Any]) -> Context:
+        return extract(event["requestContext"]["authorizer"].get("lambda") or {})
+
     AwsLambdaInstrumentor().instrument(event_context_extractor=_extract)
