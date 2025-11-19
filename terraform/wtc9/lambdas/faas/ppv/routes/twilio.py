@@ -12,6 +12,7 @@ from aws_lambda_powertools.event_handler.api_gateway import Response
 from aws_lambda_powertools.event_handler.middlewares import (
     NextMiddleware,
 )
+from opentelemetry.context import get_current
 from opentelemetry.trace import get_current_span
 
 from ... import executor, suppress_exn
@@ -180,8 +181,7 @@ def _messages(src: str, dst: str, body: str, route_to: str) -> _Routed:
 
 @app.post("/twilio/message", middlewares=[_auth])
 def message() -> Response[str]:
-    root = Element("Response")
-    w_ctx = with_context()
+    ctx, root = get_current(), Element("Response")
 
     match _current_params():
         case {"From": src, "To": dst, "Body": body}:
@@ -191,7 +191,7 @@ def message() -> Response[str]:
 
             def cont(route_to: str) -> _Routed:
                 with (
-                    w_ctx(),
+                    with_context(ctx),
                     TRACER.start_as_current_span(
                         "calc routing", attributes={"src": src, "dst": dst}
                     ),

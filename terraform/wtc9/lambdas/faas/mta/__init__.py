@@ -1,6 +1,7 @@
 from collections.abc import Callable, Iterator
 from concurrent.futures import Executor, ThreadPoolExecutor, as_completed
 from contextlib import closing, contextmanager, nullcontext
+from functools import partial
 from importlib import reload
 from io import BytesIO
 from logging import getLogger
@@ -17,6 +18,7 @@ from aws_lambda_powertools.utilities.data_classes.s3_event import (
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client  # pyright:ignore
 from botocore.config import Config  # pyright:ignore
+from opentelemetry.context import Context, get_current
 from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
 from opentelemetry.trace import get_tracer
 
@@ -89,56 +91,58 @@ def _parse_mail(io: BytesIO) -> Mail:
     return mail
 
 
+def step(ss: _Sieve, ctx: Context, record: S3EventRecord) -> None:
+    with with_context(ctx), _fetching(msg=record.s3) as fp:
+        with closing(fp):
+            io = BytesIO(fp.read())
+
+        mail = _parse_mail(io)
+        with _TRACER.start_as_current_span("run sieve") as span:
+            go = False
+            try:
+                ss(mail)
+            except StopAsyncIteration as exn:
+                if tb := traceback(sieve, exn=exn):
+                    span.add_event("rejected", attributes={"traceback": tb})
+            else:
+                go = True
+                span.add_event("accepted")
+            finally:
+                span.end()
+
+                if go:
+                    with _TRACER.start_as_current_span("send") as span:
+                        try:
+                            send(
+                                mail,
+                                mail_from=environ["MAIL_FROM"],
+                                mail_to=environ["MAIL_TO"],
+                                mail_srv=environ["MAIL_SRV"],
+                                mail_user=environ["MAIL_USER"],
+                                mail_pass=environ["MAIL_PASS"],
+                                timeout=TIMEOUT,
+                            )
+                        except SMTPDataError as e:
+                            data = pformat(record._data)
+                            span.add_event("error.data", attributes={"data": data})
+                            getLogger().error("%s", data, exc_info=e)
+                            raise e
+
+
 @flush_otlp
 @event_source(data_class=S3Event)
 def main(event: S3Event, _: LambdaContext) -> None:
-    ss = _load_sieve()
-    w_ctx = with_context()
-
-    def step(record: S3EventRecord) -> None:
-        with w_ctx(), _fetching(msg=record.s3) as fp:
-            with closing(fp):
-                io = BytesIO(fp.read())
-
-            mail = _parse_mail(io)
-            with _TRACER.start_as_current_span("run sieve") as span:
-                go = False
-                try:
-                    ss(mail)
-                except StopAsyncIteration as exn:
-                    if tb := traceback(sieve, exn=exn):
-                        span.add_event("rejected", attributes={"traceback": tb})
-                else:
-                    go = True
-                    span.add_event("accepted")
-                finally:
-                    if go:
-                        with _TRACER.start_as_current_span("send") as span:
-                            try:
-                                send(
-                                    mail,
-                                    mail_from=environ["MAIL_FROM"],
-                                    mail_to=environ["MAIL_TO"],
-                                    mail_srv=environ["MAIL_SRV"],
-                                    mail_user=environ["MAIL_USER"],
-                                    mail_pass=environ["MAIL_PASS"],
-                                    timeout=TIMEOUT,
-                                )
-                            except SMTPDataError as e:
-                                data = pformat(record._data)
-                                span.add_event("error.data", attributes={"data": data})
-                                getLogger().error("%s", data, exc_info=e)
-                                raise e
+    ctx, ss = get_current(), _load_sieve()
+    proc = partial(step, ss, ctx)
 
     def cont() -> Iterator[Exception]:
         with _pool() as pool:
-            futs = map(lambda x: pool.submit(step, x), event.records)
+            futs = map(lambda x: pool.submit(proc, x), event.records)
             for fut in as_completed(futs):
-                if exn := fut.exception():
-                    if isinstance(exn, Exception):
-                        yield exn
-                    else:
-                        raise exn
+                if isinstance(exn := fut.exception(), Exception):
+                    yield exn
+                elif exn:
+                    raise exn
 
     if errs := tuple(cont()):
         err, *__ = errs

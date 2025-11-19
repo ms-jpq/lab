@@ -1,6 +1,6 @@
 from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import AbstractContextManager, contextmanager, nullcontext
+from contextlib import contextmanager, nullcontext
 from functools import wraps
 from logging import INFO, StreamHandler, basicConfig, captureWarnings
 from os import environ
@@ -8,7 +8,7 @@ from pathlib import PurePath
 from typing import Any
 
 from opentelemetry._logs import set_logger_provider
-from opentelemetry.context import Context, attach, detach, get_current
+from opentelemetry.context import Context, attach, detach
 from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
@@ -79,18 +79,13 @@ with nullcontext():
     BotocoreInstrumentor().instrument()  # type:ignore
 
 
-def with_context() -> Callable[[], AbstractContextManager[Context]]:
-    ctx = get_current()
-
-    @contextmanager
-    def cont() -> Iterator[Context]:
-        token = attach(ctx)
-        try:
-            yield ctx
-        finally:
-            detach(token)
-
-    return cont
+@contextmanager
+def with_context(ctx: Context) -> Iterator[Context]:
+    token = attach(ctx)
+    try:
+        yield ctx
+    finally:
+        detach(token)
 
 
 def flush_otlp(f: Callable[..., Any]) -> Callable[..., Any]:
