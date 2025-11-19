@@ -8,12 +8,3 @@ location /k3s/ {
   proxy_ssl_certificate     /var/lib/rancher/k3s/server/tls/client-admin.crt;
   proxy_ssl_certificate_key /var/lib/rancher/k3s/server/tls/client-admin.key;
 }
-
-location /k3s.state {
-  return 307 /k3s.state/;
-}
-
-location /k3s.state/ {
-  proxy_set_header Host "kube-state-metrics";
-  proxy_pass       http://127.0.0.1:8008/;
-}

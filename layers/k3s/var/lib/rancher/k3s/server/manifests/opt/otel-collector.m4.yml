@@ -22,12 +22,25 @@ spec:
         enabled: true
       kubeletMetrics:
         enabled: true
+      kubernetesEvents:
+        enabled: true
+      # clusterMetrics:
+      #   enabled: true
     config:
       extensions:
         health_check:
           endpoint: "[[::]]:13133"
       receivers:
         jaeger: null
+        &pc prometheus/cluster:
+          config:
+            scrape_configs:
+              - job_name: cluster-metrics
+                scrape_interval: 10s
+                static_configs:
+                  - targets:
+                      - kube-state-metrics.kube-state-metrics.svc.cluster.local:8080
+                      # - metrics-server.kube-system.svc.cluster.local:8080
       processors:
         &meta transform:
           log_statements:
@@ -48,6 +61,7 @@ spec:
           logs:
             level: warn
         pipelines:
+          traces: null
           logs:
             receivers:
               - filelog
@@ -55,5 +69,9 @@ spec:
               - *meta
             exporters:
               - *out
-          metrics: null
-          traces: null
+          metrics:
+            receivers:
+              - *pc
+              - prometheus
+            exporters:
+              - *out
