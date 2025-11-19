@@ -32,9 +32,3 @@ locals {
     ppv  = [{ principal = "apigateway.amazonaws.com", source_arn = "${aws_apigatewayv2_api.faas.execution_arn}/*" }]
   }
 }
-
-data "archive_file" "haskell" {
-  output_path = "${path.module}/../../var/faas.zip"
-  source_dir  = "${path.module}/lambdas"
-  type        = "zip"
-}

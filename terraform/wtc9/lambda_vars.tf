@@ -3,6 +3,18 @@ variable "otlp_endpoint" {
   type      = string
 }
 
+data "archive_file" "haskell" {
+  output_path = "${path.module}/../../var/faas.zip"
+  source_dir  = "${path.module}/lambdas"
+  type        = "zip"
+}
+
+resource "aws_lambda_layer_version" "haskell" {
+  filename   = data.archive_file.haskell.output_path
+  layer_name = "faas"
+  region     = local.lambda_region
+}
+
 locals {
   # https://docs.aws.amazon.com/powertools/python/latest/#lambda-layer
   # https://github.com/open-telemetry/opentelemetry-lambda/blob/main/python/src/otel/otel_sdk/requirements.txt
