@@ -2,12 +2,13 @@
   "ENV_CERTBOT_SITES": [
     "ENV_TLD",
     "cups.pfsense.w-0.pfsense.ENV_TLD",
-    "freenas.eno1.pfsense.ENV_TLD",
-    "pfsense.w-0.pfsense.ENV_TLD",
     "plex.ENV_TLD",
-    "registry.ENV_TLD"
+    "registry.ENV_TLD",
+    "m5_for([MACH], [MACH.ENV_TLD,], ENV_MACHINES)"
   ],
-  "ENV_CNAMES": [],
+  "ENV_CNAMES": [
+    "m5_for([SITE], [SITE=ENV_MACHINE.w-0.ENV_MACHINE.home.arpa,], ENV_CERTBOT_SITES)"
+  ],
   "ENV_DDNS_TYPE": "nat",
   "ENV_HOST_ALLOW_LIST": ["freenas.eno1.pfsense.home.arpa@tcp*32400"],
   "ENV_HOST_FORWARD_LIST": ["freenas.eno1.pfsense.home.arpa@tcp*32400:32400"],
@@ -17,9 +18,10 @@
     "droplet.w-0.droplet",
     "droplet.w-0.droplet/mail.html",
     "esxi.enp1s0.opnsense",
-    "esxi.enp1s0.opnsense/vm.html",
     "esxi.enp1s0.opnsense/grafana",
+    "esxi.enp1s0.opnsense/jaeger",
     "esxi.enp1s0.opnsense/journald/tail.html",
+    "esxi.enp1s0.opnsense/vm.html",
     "freenas.eno1.pfsense/bt",
     "freenas.eno1.pfsense/rclone",
     "freenas.eno1.pfsense/webdav",

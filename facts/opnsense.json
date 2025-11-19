@@ -1,15 +1,13 @@
 {
   "ENV_CERTBOT_SITES": [
-    "droplet.w-0.droplet.ENV_TLD",
-    "esxi.enp1s0.opnsense.ENV_TLD",
-    "nuc.enp1s0.opnsense.ENV_TLD",
-    "opnsense.w-0.opnsense.ENV_TLD",
-    "orthanc.enp1s0.opnsense.ENV_TLD",
     "otlp.ENV_TLD",
     "s3.ENV_TLD",
-    "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN_ZONE,], ENV_INDEX)"
+    "m5_for([MACH], [MACH.ENV_TLD,], ENV_MACHINES)",
+    "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_TLD,], ENV_INDEX)"
   ],
-  "ENV_CNAMES": [],
+  "ENV_CNAMES": [
+    "m5_for([SITE], [SITE=ENV_MACHINE.w-0.ENV_MACHINE.home.arpa,], ENV_CERTBOT_SITES)"
+  ],
   "ENV_HOST_ALLOW_LIST": [
     "esxi.enp1s0.opnsense.home.arpa@tcp*postgresql",
     "XBOX.enp1s0.opnsense.home.arpa@tcp*3074",
