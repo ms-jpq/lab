@@ -53,9 +53,12 @@ resource "aws_cloudwatch_log_group" "lambdas" {
 }
 
 resource "aws_lambda_permission" "faas" {
-  for_each      = local.lambda_permissions
+  for_each = merge([
+    for key, val in local.lambda_permissions :
+    { for idx, v in val : "${key}-${idx}" => merge({ fn = key }, v) }
+  ]...)
   action        = "lambda:InvokeFunction"
-  function_name = each.key
+  function_name = each.value.fn
   principal     = each.value.principal
   region        = local.lambda_region
   source_arn    = each.value.source_arn

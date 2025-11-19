@@ -1,40 +1,18 @@
-variable "vps_domain" {
-  type = string
-}
-
-variable "faas_domain" {
-  type = string
-}
-
-variable "twilio_redirects" {
-  sensitive = true
-  type      = list(string)
-}
-
-variable "twilio_token" {
+variable "otlp_endpoint" {
   sensitive = true
   type      = string
 }
 
 locals {
-  lambda_region = aws_apigatewayv2_api.faas.region
-  lambda_functions = {
-    cron    = { policies = [] }
-    mta     = { policies = [data.aws_iam_policy_document.port_auth] }
-    okta    = { policies = [] }
-    ppv     = { policies = [data.aws_iam_policy_document.skycrane] }
-    skyhook = { policies = [data.aws_iam_policy_document.skyhook] }
+  # https://docs.aws.amazon.com/powertools/python/latest/#lambda-layer
+  # https://github.com/open-telemetry/opentelemetry-lambda/blob/main/python/src/otel/otel_sdk/requirements.txt
+  lambda_rt   = "python3.13"
+  lambda_arch = "arm64"
+  lambda_layers = [
+    "arn:aws:lambda:${local.lambda_region}:017000801446:layer:AWSLambdaPowertoolsPythonV3-${replace(local.lambda_rt, ".", "")}-${local.lambda_arch}:23",
+    "arn:aws:lambda:${local.lambda_region}:184161586896:layer:opentelemetry-python-0_17_0:1"
+  ]
+  lambda_envs = {
+    OTEL_EXPORTER_OTLP_ENDPOINT = var.otlp_endpoint
   }
-  lambda_permissions = {
-    cron = { principal = "events.amazonaws.com", source_arn = aws_scheduler_schedule.cron.arn }
-    mta  = { principal = "s3.amazonaws.com", source_arn = data.aws_s3_bucket.maildir.arn }
-    okta = { principal = "apigateway.amazonaws.com", source_arn = "${aws_apigatewayv2_api.faas.execution_arn}/*" }
-    ppv  = { principal = "apigateway.amazonaws.com", source_arn = "${aws_apigatewayv2_api.faas.execution_arn}/*" }
-  }
-}
-
-data "archive_file" "haskell" {
-  output_path = "${path.module}/../../var/faas.zip"
-  source_dir  = "${path.module}/lambdas"
-  type        = "zip"
 }

@@ -30,20 +30,13 @@ resource "aws_lambda_function" "cron" {
   }
 }
 
-resource "aws_iam_role" "cron" {
-  assume_role_policy = data.aws_iam_policy_document.allow_event_bridge.json
+resource "aws_cloudwatch_event_rule" "cron" {
+  region              = aws_lambda_function.cron.region
+  schedule_expression = "rate(1 hour)"
 }
 
-resource "aws_scheduler_schedule" "cron" {
-  region              = aws_lambda_function.cron.region
-  schedule_expression = "rate(1 hours)"
-
-  flexible_time_window {
-    maximum_window_in_minutes = 15
-    mode                      = "FLEXIBLE"
-  }
-  target {
-    arn      = aws_lambda_function.cron.arn
-    role_arn = aws_iam_role.cron.arn
-  }
+resource "aws_cloudwatch_event_target" "cron" {
+  arn    = aws_lambda_function.cron.arn
+  region = aws_cloudwatch_event_rule.cron.region
+  rule   = aws_cloudwatch_event_rule.cron.id
 }
