@@ -20,10 +20,9 @@ with nullcontext():
 @event_source(data_class=EventBridgeEvent)
 def main(event: EventBridgeEvent, _: LambdaContext) -> None:
     url = environ["ENV_MINIFLUX_ENDPOINT"] + "feeds/refresh"
-    with _SESSION.put(
-        url,
-        headers={"X-Auth-Token": environ["ENV_MINIFLUX_KEY"]},
-    ) as rsp:
+    headers = {"X-Auth-Token": environ["ENV_MINIFLUX_KEY"]}
+
+    with _SESSION.put(url, headers=headers) as rsp:
         assert rsp.status_code in range(200, 300), (url, rsp.status_code, rsp.content)
 
 
