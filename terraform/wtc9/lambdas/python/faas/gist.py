@@ -12,7 +12,7 @@ from typing import cast
 from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 from uuid import uuid4
 
-from opentelemetry.trace import get_tracer
+from opentelemetry.trace import get_current_span, get_tracer
 from requests import Session
 
 with nullcontext():
@@ -29,8 +29,12 @@ def register(name: str, uri: str, timeout: float) -> None:
         nxt_qs = urlencode({**qs, uuid4().hex: (uuid4().hex,)})
         nxt_uri = urlunsplit((scheme, netloc, path, nxt_qs, frag))
 
-        with session.get(nxt_uri, timeout=timeout) as rsp:
-            return rsp.text
+        try:
+            with session.get(nxt_uri, timeout=timeout) as rsp:
+                return rsp.text
+        except Exception as e:
+            get_current_span().record_exception(e)
+            return ""
 
     class _Finder(MetaPathFinder):
         def find_spec(
