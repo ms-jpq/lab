@@ -32,6 +32,11 @@ spec:
           endpoint: "[[::]]:13133"
       receivers:
         jaeger: null
+        &recv otlp:
+          protocols:
+            grpc: null
+            http:
+              endpoint: "[[::]]:4318"
         &pc prometheus/cluster:
           config:
             scrape_configs:
@@ -63,11 +68,13 @@ spec:
             level: warn
         pipelines:
           traces:
-            receivers: []
+            receivers:
+              - *recv
             exporters:
               - *out
           logs:
             receivers:
+              - *recv
               - filelog
             processors:
               - *meta
@@ -76,6 +83,7 @@ spec:
           metrics:
             receivers:
               - *pc
+              - *recv
               - prometheus
             exporters:
               - *out
