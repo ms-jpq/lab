@@ -64,7 +64,7 @@ resource "aws_lambda_function" "mta" {
 }
 
 resource "aws_lambda_function_event_invoke_config" "mta" {
-  for_each               = local.lambda_failures
+  for_each               = toset(local.lambda_failures)
   function_name          = each.value
   maximum_retry_attempts = 1
   region                 = aws_sns_topic.siphon.region
