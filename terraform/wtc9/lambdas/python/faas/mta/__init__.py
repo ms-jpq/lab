@@ -124,7 +124,7 @@ def step(ss: _Sieve, ctx: Context, record: S3EventRecord) -> None:
                             )
                         except SMTPDataError as e:
                             data = pformat(record._data)
-                            span.add_event("error.data", attributes={"data": data})
+                            span.record_exception(e, attributes={"data": data})
                             getLogger().error("%s", data, exc_info=e)
                             raise e
 
