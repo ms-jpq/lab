@@ -9,3 +9,15 @@ resource "aws_sns_topic_subscription" "siphon" {
   topic_arn = aws_sns_topic.siphon.arn
 }
 
+resource "aws_lambda_function_event_invoke_config" "siphon" {
+  for_each               = toset(local.lambda_failures)
+  function_name          = each.value
+  maximum_retry_attempts = 1
+  region                 = aws_sns_topic.siphon.region
+
+  destination_config {
+    on_failure {
+      destination = aws_sns_topic.siphon.arn
+    }
+  }
+}

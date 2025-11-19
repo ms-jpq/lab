@@ -63,19 +63,6 @@ resource "aws_lambda_function" "mta" {
   }
 }
 
-resource "aws_lambda_function_event_invoke_config" "mta" {
-  for_each               = toset(local.lambda_failures)
-  function_name          = each.value
-  maximum_retry_attempts = 1
-  region                 = aws_sns_topic.siphon.region
-
-  destination_config {
-    on_failure {
-      destination = aws_sns_topic.siphon.arn
-    }
-  }
-}
-
 resource "aws_s3_bucket_notification" "maildir" {
   depends_on = [aws_lambda_permission.faas["mta"]]
   bucket     = data.aws_s3_bucket.maildir.bucket
