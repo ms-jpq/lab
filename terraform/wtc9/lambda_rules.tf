@@ -19,8 +19,8 @@ variable "twilio_token" {
 locals {
   lambda_region = aws_apigatewayv2_api.faas.region
   lambda_functions = {
-    cron    = { policies = [] }
-    mta     = { policies = [data.aws_iam_policy_document.port_auth] }
+    cron    = { policies = [data.aws_iam_policy_document.siphon] }
+    mta     = { policies = [data.aws_iam_policy_document.siphon, data.aws_iam_policy_document.port_auth] }
     okta    = { policies = [] }
     ppv     = { policies = [data.aws_iam_policy_document.skycrane] }
     skyhook = { policies = [data.aws_iam_policy_document.skyhook] }
