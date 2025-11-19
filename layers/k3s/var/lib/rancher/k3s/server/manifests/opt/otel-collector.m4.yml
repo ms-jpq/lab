@@ -40,6 +40,7 @@ spec:
                 static_configs:
                   - targets:
                       - kube-state-metrics.kube-state-metrics.svc.cluster.local:8080
+                      # - traefik.kube-system.svc.cluster.local:9090
                       # - metrics-server.kube-system.svc.cluster.local:8080
       processors:
         &meta transform:
@@ -61,7 +62,10 @@ spec:
           logs:
             level: warn
         pipelines:
-          traces: null
+          traces:
+            receivers: []
+            exporters:
+              - *out
           logs:
             receivers:
               - filelog

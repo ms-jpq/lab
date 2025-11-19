@@ -45,7 +45,7 @@ exporters:
   &loki otlphttp/logs:
     endpoint: http://127.0.0.53:3100/otlp
   &prometheus prometheusremotewrite/metrics:
-    endpoint: http://127.0.0.53:9090/api/v1/push
+    endpoint: http://127.0.0.53:9090/prometheus/api/v1/push
   &tempo otlphttp/traces:
     endpoint: http://127.0.0.53:4317
   &jaeger otlphttp/jaeger:
