@@ -31,6 +31,7 @@ locals {
     okta = [{ principal = "apigateway.amazonaws.com", source_arn = "${aws_apigatewayv2_api.faas.execution_arn}/*" }]
     ppv  = [{ principal = "apigateway.amazonaws.com", source_arn = "${aws_apigatewayv2_api.faas.execution_arn}/*" }]
   }
+  lambda_failures = ["cron", "mta"]
 }
 
 data "archive_file" "haskell" {
