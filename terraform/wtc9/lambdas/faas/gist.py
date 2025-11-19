@@ -66,7 +66,7 @@ def register(name: str, uri: str, timeout: float) -> None:
 
                 def exec_module(self, module: ModuleType) -> None:
                     nonlocal cache
-                    with _TRACER.start_as_current_span("clear cache"), lock:
+                    with _TRACER.start_as_current_span("re-exec module"), lock:
                         cache = ""
                         module.__file__ = self.get_filename(fullname)
 
