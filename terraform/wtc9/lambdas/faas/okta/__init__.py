@@ -73,7 +73,7 @@ def _auth(event: APIGatewayAuthorizerEventV2) -> bool | None:
         if event.raw_path.startswith(route):
             return True
 
-    if event.raw_path in {}:
+    if event.raw_path in {"/miniflux"}:
         return _basic_auth(event)
 
     for route in ():
@@ -88,7 +88,10 @@ def _inject_signature(
 ) -> None:
     signature = ""
 
-    if event.raw_path.startswith("/twilio/"):
+    if event.raw_path in {"/miniflux"}:
+        signature = event.headers.get("x-miniflux-signature", "")
+
+    elif event.raw_path.startswith("/twilio/"):
         signature = event.headers.get("x-twilio-signature", "")
 
     carrier.setdefault("signature", signature)
