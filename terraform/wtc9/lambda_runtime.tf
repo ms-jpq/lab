@@ -17,8 +17,12 @@ data "archive_file" "haskell" {
 
 resource "aws_lambda_layer_version" "haskell" {
   filename   = data.archive_file.haskell.output_path
-  layer_name = "faas"
+  layer_name = "faas-${data.archive_file.haskell.output_sha256}"
   region     = local.lambda_region
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 locals {
