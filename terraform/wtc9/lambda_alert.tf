@@ -18,7 +18,10 @@ data "aws_iam_policy_document" "siphon" {
 }
 
 resource "aws_lambda_function_event_invoke_config" "siphon" {
-  for_each               = toset(local.lambda_failures)
+  for_each = toset([
+    for key, val in local.lambda_functions : key
+    if contains(val.policies, data.aws_iam_policy_document.siphon)
+  ])
   function_name          = each.value
   maximum_retry_attempts = 1
   region                 = aws_sns_topic.siphon.region
