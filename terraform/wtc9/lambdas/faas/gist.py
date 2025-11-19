@@ -72,7 +72,7 @@ def register(name: str, uri: str, timeout: float) -> None:
 
                         assert (compiled := self.get_code(fullname))
                         with _TRACER.start_as_current_span("exec code"):
-                            exec(compiled, module.__dict__)
+                            return exec(compiled, module.__dict__)
 
             loader = LazyLoader.factory(cast(Loader, _Loader))
             spec = spec_from_loader(fullname, loader=loader())
