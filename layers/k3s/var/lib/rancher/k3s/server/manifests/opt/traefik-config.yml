@@ -36,6 +36,8 @@ spec:
       otlp:
         <<: *otlp-http
     logs:
+      general:
+        format: json
       access:
         enabled: true
         otlp:
