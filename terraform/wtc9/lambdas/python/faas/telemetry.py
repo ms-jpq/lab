@@ -1,7 +1,6 @@
 from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
-from functools import cache, wraps
+from functools import wraps
 from logging import INFO, StreamHandler, basicConfig, captureWarnings
 from os import environ
 from pathlib import PurePath
@@ -16,7 +15,6 @@ from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.metrics import set_meter_provider
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
-from opentelemetry.sdk._logs._internal import ConcurrentMultiLogRecordProcessor
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
@@ -25,7 +23,7 @@ from opentelemetry.sdk.resources import (
     ResourceDetector,
     get_aggregated_resources,
 )
-from opentelemetry.sdk.trace import ConcurrentMultiSpanProcessor, TracerProvider
+from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.semconv._incubating.attributes.cloud_attributes import (
     CLOUD_PROVIDER,
@@ -62,10 +60,7 @@ with nullcontext():
 with nullcontext():
     captureWarnings(True)
 
-    _lp = LoggerProvider(
-        resource=_resource,
-        multi_log_record_processor=ConcurrentMultiLogRecordProcessor(),
-    )
+    _lp = LoggerProvider(resource=_resource)
     _lp.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter()))
     set_logger_provider(_lp)
 
@@ -78,10 +73,7 @@ with nullcontext():
 
 
 with nullcontext():
-    _tp = TracerProvider(
-        resource=_resource,
-        active_span_processor=ConcurrentMultiSpanProcessor(),
-    )
+    _tp = TracerProvider(resource=_resource)
     _tp.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
     set_tracer_provider(_tp)
 
@@ -95,11 +87,6 @@ with nullcontext():
 with nullcontext():
     RequestsInstrumentor().instrument()
     BotocoreInstrumentor().instrument()  # type:ignore
-
-
-@cache
-def _ex() -> ThreadPoolExecutor:
-    return ThreadPoolExecutor()
 
 
 def with_context(ctx: Context) -> Callable[[_F], _F]:
@@ -121,11 +108,7 @@ def entry() -> Callable[[_F], _F]:
     def cont(f: _F) -> _F:
         @wraps(f)
         def instrumented(*__args: Any, **__kwargs: Any) -> Any:
-            try:
-                return f(*__args, **__kwargs)
-            finally:
-                for p in (_tp, _lp, _mp):
-                    _ex().submit(p.force_flush)
+            return f(*__args, **__kwargs)
 
         return cast(_F, instrumented)
 
