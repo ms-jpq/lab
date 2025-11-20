@@ -15,6 +15,7 @@ receivers:
   # ], m5_assert([ENV_AWS_REGIONS]))
 
 processors:
+  &batch batch:
   &meta transform:
     log_statements:
       - >-
@@ -40,5 +41,6 @@ service:
         # ], m5_assert([ENV_AWS_REGIONS]))
       processors:
         - *meta
+        - *batch
       exporters:
         - *output

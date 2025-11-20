@@ -26,6 +26,7 @@ receivers:
       http:
         endpoint: "[::]:4318"
 processors:
+  &batch batch:
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md
   &journal-meta transform:
@@ -67,21 +68,28 @@ service:
         - *journal
       processors:
         - *journal-meta
+        - *batch
       exporters:
         - *loki
     logs/otel:
       receivers:
         - *recv
+      processors:
+        - *batch
       exporters:
         - *loki
     metrics/otel:
       receivers:
         - *recv
+      processors:
+        - *batch
       exporters:
         - *prometheus
     traces/otel:
       receivers:
         - *recv
+      processors:
+        - *batch
       exporters:
         - *tempo
         - *jaeger
