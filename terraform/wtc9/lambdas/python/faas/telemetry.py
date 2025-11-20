@@ -104,7 +104,7 @@ def flush_otlp(f: Callable[..., Any]) -> Callable[..., Any]:
         try:
             return f(*__args, **__kwargs)
         finally:
-            for p in (_tp, _lp):
+            for p in (_tp, _lp, _mp):
                 _ex.submit(p.force_flush)
 
     return cont
