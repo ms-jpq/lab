@@ -117,7 +117,11 @@ def entry() -> Callable[[_F], _F]:
     def cont(f: _F) -> _F:
         @wraps(f)
         def instrumented(*__args: Any, **__kwargs: Any) -> Any:
-            return f(*__args, **__kwargs)
+            try:
+                return f(*__args, **__kwargs)
+            finally:
+                for p in (_tp, _lp, _mp):
+                    _ex.submit(p.force_flush)
 
         return cast(_F, instrumented)
 
