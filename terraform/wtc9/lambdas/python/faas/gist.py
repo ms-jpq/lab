@@ -58,10 +58,7 @@ def register(name: str, uri: str, timeout: float) -> None:
                 def get_source(self, fullname: str) -> str:
                     nonlocal cache
                     with _TRACER.start_as_current_span("get src"), lock:
-                        if not cache:
-                            cache = get()
-
-                        return cache
+                        return (cache := cache or get())
 
                 def get_code(self, fullname: str) -> CodeType | None:
                     source = self.get_source(fullname)
