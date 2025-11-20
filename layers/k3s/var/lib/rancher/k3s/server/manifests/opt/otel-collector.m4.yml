@@ -59,6 +59,8 @@ spec:
             - >-
               [replace_pattern(resource.attributes["service.name"], "(.*)", "$1.k3s")]
             - >-
+              delete_key(resource.attributes, "service.namespace")
+            - >-
               delete_key(log.attributes, "log.file.path")
             - >-
               delete_key(log.attributes, "logtag")

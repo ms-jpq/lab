@@ -30,6 +30,8 @@ processors:
   &journal-meta transform:
     log_statements:
       - >-
+        replace_pattern(log.body["_HOSTNAME"], "\\.home\\.arpa$", "")
+      - >-
         set(resource.attributes["service.namespace"], Concat([log.body["_HOSTNAME"], "home", "arpa"], "."))
       - >-
         set(resource.attributes["service.name"], "_journald_")
