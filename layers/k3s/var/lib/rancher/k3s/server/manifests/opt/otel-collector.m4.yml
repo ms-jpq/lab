@@ -14,6 +14,8 @@ spec:
     mode: daemonset
     image:
       repository: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-k8s
+    networkPolicy:
+      enabled: true
     presets:
       logsCollection:
         enabled: true

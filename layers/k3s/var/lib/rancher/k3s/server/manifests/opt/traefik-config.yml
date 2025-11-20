@@ -31,10 +31,7 @@ spec:
         enabled: true
         http:
           enabled: true
-          endpoint: kube-state-metrics.kube-state-metrics.svc.cluster.local:8080
-          headers:
-            authorization: >-
-              Basic m5_esyscmd(printf -- %s 'm5_assert([ENV_OTLP_PASSWORD])' | jq --raw-input --join-output '"otlp:\(.)" | @base64')
+          endpoint: opentelemetry-collector-agent.opentelemetry-collector.svc.cluster.local:4318
     tracing:
       otlp:
         <<: *otlp-http
