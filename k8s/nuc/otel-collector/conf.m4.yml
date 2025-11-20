@@ -1,5 +1,7 @@
 ---
 extensions:
+  &cursor file_storage/journald:
+    directory: /var/lib/otelcol-contrib
   &auth basicauth:
     client_auth:
       username: otlp
@@ -9,6 +11,7 @@ receivers:
 
   # m5_for([AWS_REGION], [
   awscloudwatch/AWS_REGION:
+    storage: *cursor
     region: AWS_REGION
     logs:
       poll_interval: 16s
@@ -30,6 +33,7 @@ exporters:
 service:
   extensions:
     - *auth
+    - *cursor
   telemetry:
     logs:
       level: warn
