@@ -83,7 +83,7 @@ def _handler(span: Span, record: SQSRecord) -> None:
         span.set_status(StatusCode.OK if ok else StatusCode.ERROR)
 
 
-@entry
+@entry()
 @event_source(data_class=SQSEvent)
 def main(event: SQSEvent, ctx: LambdaContext) -> PartialItemFailureResponse:
     span = get_current_span()

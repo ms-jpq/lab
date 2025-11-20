@@ -102,7 +102,7 @@ def _inject_signature(
     carrier.setdefault("signature", signature)
 
 
-@entry
+@entry()
 @event_source(data_class=APIGatewayAuthorizerEventV2)
 def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, Any]:
     context: dict[str, Any] = {}

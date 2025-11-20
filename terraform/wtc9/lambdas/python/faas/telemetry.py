@@ -1,6 +1,6 @@
-from collections.abc import Callable, Iterator
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import contextmanager, nullcontext
+from contextlib import nullcontext
 from functools import wraps
 from logging import INFO, StreamHandler, basicConfig, captureWarnings
 from os import environ
@@ -14,7 +14,7 @@ from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExp
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
-from opentelemetry.metrics import Counter, set_meter_provider
+from opentelemetry.metrics import set_meter_provider
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs._internal import ConcurrentMultiLogRecordProcessor
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
@@ -38,7 +38,6 @@ from opentelemetry.semconv._incubating.attributes.faas_attributes import (
 )
 from opentelemetry.semconv.attributes.service_attributes import SERVICE_NAME
 from opentelemetry.trace import set_tracer_provider
-from opentelemetry.util.types import Attributes
 
 _F = TypeVar("_F", bound=Callable[..., Any])
 
@@ -114,16 +113,15 @@ def with_context(ctx: Context) -> Callable[[_F], _F]:
     return cont
 
 
-def entry(f: _F) -> _F:
-    @wraps(f)
-    def cont(*__args: Any, **__kwargs: Any) -> Any:
-        try:
+def entry() -> Callable[[_F], _F]:
+    def cont(f: _F) -> _F:
+        @wraps(f)
+        def instrumented(*__args: Any, **__kwargs: Any) -> Any:
             return f(*__args, **__kwargs)
-        finally:
-            for p in (_tp, _lp, _mp):
-                _ex.submit(p.force_flush)
 
-    return cast(_F, cont)
+        return cast(_F, instrumented)
+
+    return cont
 
 
 __ = True

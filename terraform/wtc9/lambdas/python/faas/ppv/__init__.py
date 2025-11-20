@@ -18,7 +18,7 @@ from ..telemetry import entry
 from .routes import TRACER, app
 
 
-@entry
+@entry()
 @event_source(data_class=APIGatewayProxyEventV2)
 def main(event: APIGatewayProxyEventV2, ctx: LambdaContext) -> Mapping[str, Any]:
     with TRACER.start_as_current_span("router") as span:

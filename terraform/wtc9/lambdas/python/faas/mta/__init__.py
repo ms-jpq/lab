@@ -129,7 +129,7 @@ def step(ss: _Sieve, record: S3EventRecord) -> None:
                             raise e
 
 
-@entry
+@entry()
 @event_source(data_class=S3Event)
 def main(event: S3Event, _: LambdaContext) -> None:
     ctx, ss = get_current(), _load_sieve()

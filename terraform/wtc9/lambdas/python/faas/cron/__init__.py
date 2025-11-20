@@ -16,7 +16,7 @@ with nullcontext():
     _SESSION = Session()
 
 
-@entry
+@entry()
 @event_source(data_class=EventBridgeEvent)
 def main(event: EventBridgeEvent, _: LambdaContext) -> None:
     url = environ["ENV_MINIFLUX_ENDPOINT"] + "feeds/refresh"
