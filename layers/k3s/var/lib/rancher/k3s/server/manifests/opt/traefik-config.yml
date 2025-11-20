@@ -40,5 +40,6 @@ spec:
         format: json
       access:
         enabled: true
+        format: json
         otlp:
           <<: *otlp-http
