@@ -18,7 +18,7 @@ processors:
   &meta transform:
     log_statements:
       - >-
-        set(resource.attributes[["k8s.cluster.name"]], resource.attributes[["aws.region"]])
+        set(resource.attributes[["k8s.cluster.name"]], Concat([[resource.attributes[["aws.region"]], "aws"]], "."))
       - >-
         set(resource.attributes[["service.name"]], resource.attributes[["cloudwatch.log.group.name"]])
 exporters:

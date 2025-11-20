@@ -31,7 +31,7 @@ spec:
         enabled: true
         http:
           enabled: true
-          endpoint: opentelemetry-collector-agent.opentelemetry-collector.svc.cluster.local:4318
+          endpoint: http://opentelemetry-collector.opentelemetry-collector.svc.cluster.local:4318
     tracing:
       otlp:
         <<: *otlp-http

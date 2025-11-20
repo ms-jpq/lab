@@ -16,6 +16,8 @@ spec:
       repository: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-k8s
     networkPolicy:
       enabled: true
+    service:
+      enabled: true
     presets:
       logsCollection:
         enabled: true
@@ -53,7 +55,13 @@ spec:
         &meta transform:
           log_statements:
             - >-
-              set(resource.attributes[["k8s.cluster.name"]], "k3s.m5_assert([ENV_MACHINE])")
+              set(resource.attributes[["k8s.cluster.name"]], "m5_assert([ENV_MACHINE]).k3s")
+            - >-
+              set(resource.attributes[["k8s.namespace.name"]], Concat([[resource.attributes["k8s.namespace.name"], "k3s"]], "."))
+            - >-
+              set(resource.attributes[["service.name"]], Concat([[resource.attributes["service.name"], "k3s"]], "."))
+            - >-
+              set(resource.attributes[["service.name"]], Concat([[resource.attributes["service.name"], "k3s"]], "."))
             - >-
               delete_key(log.attributes, "log.file.path")
             - >-
