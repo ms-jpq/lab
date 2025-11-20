@@ -22,7 +22,7 @@ from opentelemetry.trace import get_tracer
 from opentelemetry.trace.status import StatusCode
 
 from .. import _
-from ..telemetry import flush_otlp
+from ..telemetry import entry
 
 with nullcontext():
     TRACER = get_tracer(__name__)
@@ -102,7 +102,7 @@ def _inject_signature(
     carrier.setdefault("signature", signature)
 
 
-@flush_otlp
+@entry
 @event_source(data_class=APIGatewayAuthorizerEventV2)
 def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, Any]:
     context: dict[str, Any] = {}

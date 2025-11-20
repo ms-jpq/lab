@@ -23,7 +23,7 @@ from opentelemetry.trace import Span, get_current_span, get_tracer
 from opentelemetry.trace.status import StatusCode
 
 from .. import B3_CONF, _, dump_json
-from ..telemetry import flush_otlp
+from ..telemetry import entry
 from ..twilio import parse_params, verify
 
 with nullcontext():
@@ -83,7 +83,7 @@ def _handler(span: Span, record: SQSRecord) -> None:
         span.set_status(StatusCode.OK if ok else StatusCode.ERROR)
 
 
-@flush_otlp
+@entry
 @event_source(data_class=SQSEvent)
 def main(event: SQSEvent, ctx: LambdaContext) -> PartialItemFailureResponse:
     span = get_current_span()

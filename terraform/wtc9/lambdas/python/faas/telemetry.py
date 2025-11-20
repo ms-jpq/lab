@@ -114,7 +114,7 @@ def with_context(ctx: Context) -> Callable[[_F], _F]:
     return cont
 
 
-def flush_otlp(f: _F) -> _F:
+def entry(f: _F) -> _F:
     @wraps(f)
     def cont(*__args: Any, **__kwargs: Any) -> Any:
         try:

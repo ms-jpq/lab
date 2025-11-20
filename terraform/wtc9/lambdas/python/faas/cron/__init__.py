@@ -10,13 +10,13 @@ from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
 from requests import Session
 
 from .. import _
-from ..telemetry import flush_otlp
+from ..telemetry import entry
 
 with nullcontext():
     _SESSION = Session()
 
 
-@flush_otlp
+@entry
 @event_source(data_class=EventBridgeEvent)
 def main(event: EventBridgeEvent, _: LambdaContext) -> None:
     url = environ["ENV_MINIFLUX_ENDPOINT"] + "feeds/refresh"

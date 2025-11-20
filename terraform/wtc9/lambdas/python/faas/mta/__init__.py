@@ -24,7 +24,7 @@ from opentelemetry.trace import get_tracer
 
 from .. import _
 from ..gist import register, traceback
-from ..telemetry import flush_otlp, with_context
+from ..telemetry import entry, with_context
 from .fax import Mail, parse, send
 
 _Sieve = Callable[[Mail], None]
@@ -129,7 +129,7 @@ def step(ss: _Sieve, record: S3EventRecord) -> None:
                             raise e
 
 
-@flush_otlp
+@entry
 @event_source(data_class=S3Event)
 def main(event: S3Event, _: LambdaContext) -> None:
     ctx, ss = get_current(), _load_sieve()

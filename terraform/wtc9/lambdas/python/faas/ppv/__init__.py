@@ -14,11 +14,11 @@ from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
 from opentelemetry.propagate import extract
 
 from .. import _
-from ..telemetry import flush_otlp
+from ..telemetry import entry
 from .routes import TRACER, app
 
 
-@flush_otlp
+@entry
 @event_source(data_class=APIGatewayProxyEventV2)
 def main(event: APIGatewayProxyEventV2, ctx: LambdaContext) -> Mapping[str, Any]:
     with TRACER.start_as_current_span("router") as span:
