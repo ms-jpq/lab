@@ -30,7 +30,7 @@ with nullcontext():
     _SEC = uuid4().hex.encode()
 
 with nullcontext():
-    _hits = METER.create_counter("hits")
+    _av = METER.create_counter("auth.verdict")
 
 
 def _hmac(msg: str) -> str:
@@ -106,31 +106,30 @@ def _inject_signature(
 @event_source(data_class=APIGatewayAuthorizerEventV2)
 def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, Any]:
     context: dict[str, Any] = {}
-    with TRACER.start_as_current_span("auth"):
-        with TRACER.start_as_current_span("auth verdict") as span:
-            if not (authorized := _auth(event)):
-                span.add_event(
-                    "das.ist.verboten",
-                    attributes={
-                        "host": event.request_context.domain_name,
-                        "path": event.raw_path,
-                        "query": event.raw_query_string,
-                        **{f"header-{k}": v for k, v in event.headers.items()},
-                    },
-                )
-            span.set_status(StatusCode.OK if authorized else StatusCode.ERROR)
-            _hits.add(1, attributes={"auth.verdict": bool(authorized)})
+    with TRACER.start_as_current_span("auth verdict") as span:
+        if not (authorized := _auth(event)):
+            span.add_event(
+                "das.ist.verboten",
+                attributes={
+                    "host": event.request_context.domain_name,
+                    "path": event.raw_path,
+                    "query": event.raw_query_string,
+                    **{f"header-{k}": v for k, v in event.headers.items()},
+                },
+            )
+        span.set_status(StatusCode.OK if authorized else StatusCode.ERROR)
+        _av.add(1, attributes={"verdict": bool(authorized)})
 
-        with nullcontext():
-            _inject_signature(event, carrier=context)
-            ctx = set_baggage("request_id", event.request_context.request_id)
-            inject(context, context=ctx)
+    with nullcontext():
+        _inject_signature(event, carrier=context)
+        ctx = set_baggage("request_id", event.request_context.request_id)
+        inject(context, context=ctx)
 
-        if authorized is None:
-            return {"errorMessage": "Unauthorized"}
+    if authorized is None:
+        return {"errorMessage": "Unauthorized"}
 
-        rsp = APIGatewayAuthorizerResponseV2(authorize=authorized, context=context)
-        return rsp.asdict()
+    rsp = APIGatewayAuthorizerResponseV2(authorize=authorized, context=context)
+    return rsp.asdict()
 
 
 with nullcontext():
