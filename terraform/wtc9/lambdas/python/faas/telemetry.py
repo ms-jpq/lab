@@ -10,6 +10,7 @@ from typing import Any
 from opentelemetry._logs import set_logger_provider
 from opentelemetry.context import Context, attach, detach
 from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
+from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
@@ -17,6 +18,7 @@ from opentelemetry.metrics import set_meter_provider
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import (
     Resource,
     ResourceDetector,
@@ -76,7 +78,10 @@ with nullcontext():
     set_tracer_provider(_tp)
 
 with nullcontext():
-    _mp = MeterProvider(resource=_resource)
+    _mp = MeterProvider(
+        resource=_resource,
+        metric_readers=(PeriodicExportingMetricReader(OTLPMetricExporter()),),
+    )
     set_meter_provider(_mp)
 
 with nullcontext():
