@@ -189,12 +189,10 @@ def message() -> Response[str]:
             dst is always a twilio number
             """
 
+            @with_context(ctx)
             def cont(route_to: str) -> _Routed:
-                with (
-                    with_context(ctx),
-                    TRACER.start_as_current_span(
-                        "calc routing", attributes={"src": src, "dst": dst}
-                    ),
+                with TRACER.start_as_current_span(
+                    "calc routing", attributes={"src": src, "dst": dst}
                 ):
                     return _messages(src, dst=dst, body=body, route_to=route_to)
 

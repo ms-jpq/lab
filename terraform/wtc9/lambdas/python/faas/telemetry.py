@@ -5,7 +5,7 @@ from functools import wraps
 from logging import INFO, StreamHandler, basicConfig, captureWarnings
 from os import environ
 from pathlib import PurePath
-from typing import Any
+from typing import Any, TypeVar, cast
 
 from opentelemetry._logs import set_logger_provider
 from opentelemetry.context import Context, attach, detach
@@ -14,7 +14,7 @@ from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExp
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
-from opentelemetry.metrics import set_meter_provider
+from opentelemetry.metrics import Counter, set_meter_provider
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs._internal import ConcurrentMultiLogRecordProcessor
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
@@ -38,6 +38,9 @@ from opentelemetry.semconv._incubating.attributes.faas_attributes import (
 )
 from opentelemetry.semconv.attributes.service_attributes import SERVICE_NAME
 from opentelemetry.trace import set_tracer_provider
+from opentelemetry.util.types import Attributes
+
+_F = TypeVar("_F", bound=Callable[..., Any])
 
 with nullcontext():
 
@@ -96,16 +99,36 @@ with nullcontext():
     BotocoreInstrumentor().instrument()  # type:ignore
 
 
-@contextmanager
-def with_context(ctx: Context) -> Iterator[Context]:
-    token = attach(ctx)
-    try:
-        yield ctx
-    finally:
-        detach(token)
+def with_context(ctx: Context) -> Callable[[_F], _F]:
+    def cont(f: _F) -> _F:
+        @wraps(f)
+        def instrumented(*__args: Any, **__kwargs: Any) -> Any:
+            token = attach(ctx)
+            try:
+                return f(*__args, **__kwargs)
+            finally:
+                detach(token)
+
+        return cast(_F, instrumented)
+
+    return cont
 
 
-def flush_otlp(f: Callable[..., Any]) -> Callable[..., Any]:
+def with_meter(m: Counter, attributes: Attributes = None) -> Callable[[_F], _F]:
+    def cont(f: _F) -> _F:
+        attrs = {"fn.name": f.__name__, **(attributes or {})}
+
+        @wraps(f)
+        def instrumented(*__args: Any, **__kwargs: Any) -> Any:
+            m.add(1, attributes=attrs)
+            return f(*__args, **__kwargs)
+
+        return cast(_F, instrumented)
+
+    return cont
+
+
+def flush_otlp(f: _F) -> _F:
     @wraps(f)
     def cont(*__args: Any, **__kwargs: Any) -> Any:
         try:
@@ -114,7 +137,7 @@ def flush_otlp(f: Callable[..., Any]) -> Callable[..., Any]:
             for p in (_tp, _lp, _mp):
                 _ex.submit(p.force_flush)
 
-    return cont
+    return cast(_F, cont)
 
 
 __ = True

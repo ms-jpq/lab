@@ -16,16 +16,21 @@ from aws_lambda_powertools.utilities.data_classes.api_gateway_authorizer_event i
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from opentelemetry.baggage import set_baggage
 from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
+from opentelemetry.metrics import get_meter
 from opentelemetry.propagate import inject
 from opentelemetry.trace import get_tracer
 from opentelemetry.trace.status import StatusCode
 
 from .. import _
-from ..telemetry import flush_otlp
+from ..telemetry import flush_otlp, with_meter
 
 with nullcontext():
     TRACER = get_tracer(__name__)
+    METER = get_meter(__name__)
     _SEC = uuid4().hex.encode()
+
+with nullcontext():
+    _COUNTER = METER.create_counter("hits")
 
 
 def _hmac(msg: str) -> str:
@@ -98,6 +103,7 @@ def _inject_signature(
 
 
 @flush_otlp
+@with_meter(_COUNTER)
 @event_source(data_class=APIGatewayAuthorizerEventV2)
 def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, Any]:
     context: dict[str, Any] = {}

@@ -18,7 +18,7 @@ from aws_lambda_powertools.utilities.data_classes.s3_event import (
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client  # pyright:ignore
 from botocore.config import Config  # pyright:ignore
-from opentelemetry.context import Context, get_current
+from opentelemetry.context import get_current
 from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
 from opentelemetry.trace import get_tracer
 
@@ -91,8 +91,8 @@ def _parse_mail(io: BytesIO) -> Mail:
     return mail
 
 
-def step(ss: _Sieve, ctx: Context, record: S3EventRecord) -> None:
-    with with_context(ctx), _fetching(msg=record.s3) as fp:
+def step(ss: _Sieve, record: S3EventRecord) -> None:
+    with _fetching(msg=record.s3) as fp:
         with closing(fp):
             io = BytesIO(fp.read())
 
@@ -133,7 +133,7 @@ def step(ss: _Sieve, ctx: Context, record: S3EventRecord) -> None:
 @event_source(data_class=S3Event)
 def main(event: S3Event, _: LambdaContext) -> None:
     ctx, ss = get_current(), _load_sieve()
-    proc = partial(step, ss, ctx)
+    proc = with_context(ctx)(partial(step, ss))
 
     def cont() -> Iterator[Exception]:
         with _pool() as pool:
