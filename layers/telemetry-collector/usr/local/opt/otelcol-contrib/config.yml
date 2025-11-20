@@ -31,7 +31,7 @@ processors:
   &journal-meta transform:
     log_statements:
       - >-
-        set(log.body["_HOSTNAME"], TrimSuffix(log.body["_HOSTNAME"], ".home.arpa"))
+        replace_pattern(log.body["_HOSTNAME"], "\\.home\\.arpa$", "")
       - >-
         set(resource.attributes["service.namespace"], log.body["_HOSTNAME"])
       - >-
