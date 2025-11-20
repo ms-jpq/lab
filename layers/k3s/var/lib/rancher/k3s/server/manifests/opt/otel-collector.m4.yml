@@ -56,7 +56,7 @@ spec:
             - >-
               set(resource.attributes[["k8s.cluster.name"]], "m5_assert([ENV_MACHINE])")
             - >-
-              replace_pattern(resource.attributes[["service.name"]], "(.*)", "$$1.k8s")
+              set(resource.attributes[["service.name"]], "k8s.kys")
             - >-
               delete_key(resource.attributes, "service.namespace")
             - >-
