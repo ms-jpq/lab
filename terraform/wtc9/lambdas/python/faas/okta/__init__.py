@@ -22,7 +22,7 @@ from opentelemetry.trace import get_tracer
 from opentelemetry.trace.status import StatusCode
 
 from .. import _
-from ..telemetry import flush_otlp, with_meter
+from ..telemetry import flush_otlp
 
 with nullcontext():
     TRACER = get_tracer(__name__)
@@ -30,7 +30,7 @@ with nullcontext():
     _SEC = uuid4().hex.encode()
 
 with nullcontext():
-    _COUNTER = METER.create_counter("hits")
+    _hits = METER.create_counter("hits")
 
 
 def _hmac(msg: str) -> str:
@@ -103,7 +103,6 @@ def _inject_signature(
 
 
 @flush_otlp
-@with_meter(_COUNTER)
 @event_source(data_class=APIGatewayAuthorizerEventV2)
 def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, Any]:
     context: dict[str, Any] = {}
@@ -120,6 +119,7 @@ def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, A
                     },
                 )
             span.set_status(StatusCode.OK if authorized else StatusCode.ERROR)
+            _hits.add(1, attributes={"auth.verdict": bool(authorized)})
 
         with nullcontext():
             _inject_signature(event, carrier=context)

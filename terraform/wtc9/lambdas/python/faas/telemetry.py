@@ -114,20 +114,6 @@ def with_context(ctx: Context) -> Callable[[_F], _F]:
     return cont
 
 
-def with_meter(m: Counter, attributes: Attributes = None) -> Callable[[_F], _F]:
-    def cont(f: _F) -> _F:
-        attrs = {"fn.name": f.__name__, **(attributes or {})}
-
-        @wraps(f)
-        def instrumented(*__args: Any, **__kwargs: Any) -> Any:
-            m.add(1, attributes=attrs)
-            return f(*__args, **__kwargs)
-
-        return cast(_F, instrumented)
-
-    return cont
-
-
 def flush_otlp(f: _F) -> _F:
     @wraps(f)
     def cont(*__args: Any, **__kwargs: Any) -> Any:
