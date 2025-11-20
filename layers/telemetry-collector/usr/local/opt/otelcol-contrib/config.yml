@@ -32,7 +32,7 @@ processors:
       - >-
         replace_pattern(log.body["_HOSTNAME"], "\\.home\\.arpa$", "")
       - >-
-        set(resource.attributes["service.namespace"], Concat([log.body["_HOSTNAME"], "home", "arpa"], "."))
+        set(resource.attributes["service.namespace"], log.body["_HOSTNAME"])
       - >-
         set(resource.attributes["service.name"], "_journald_")
       - >-
