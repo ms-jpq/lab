@@ -30,7 +30,7 @@ processors:
   &journal-meta transform:
     log_statements:
       - >-
-        set(resource.attributes["service.namespace"], log.body["_HOSTNAME"])
+        set(resource.attributes["service.namespace"], Concat([log.body["_HOSTNAME"], "home", "arpa"], "."))
       - >-
         set(resource.attributes["service.name"], "_journald_")
       - >-
@@ -44,8 +44,8 @@ processors:
 exporters:
   &loki otlphttp/logs:
     endpoint: http://127.0.0.53:3100/otlp
-  &prometheus prometheusremotewrite/metrics:
-    endpoint: http://127.0.0.53:9090/prometheus/api/v1/push
+  &prometheus prometheus/metrics:
+    endpoint: 127.0.0.53:6318
   &tempo otlphttp/traces:
     endpoint: http://127.0.0.53:4317
   &jaeger otlphttp/jaeger:
