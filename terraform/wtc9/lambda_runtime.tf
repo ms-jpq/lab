@@ -37,5 +37,9 @@ locals {
   ]
   lambda_envs = {
     OTEL_EXPORTER_OTLP_ENDPOINT = var.otlp_endpoint
+    OTEL_BLRP_SCHEDULE_DELAY    = 1000
+    OTEL_BSP_SCHEDULE_DELAY     = 1000
+    OTEL_METRIC_EXPORT_INTERVAL = 1000
+
   }
 }
