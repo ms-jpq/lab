@@ -23,7 +23,7 @@ data "aws_s3_bucket" "maildir" {
   region = local.lambda_region
 }
 
-data "aws_iam_policy_document" "port_auth" {
+data "aws_iam_policy_document" "mta" {
   statement {
     actions   = ["sns:Publish"]
     effect    = "Allow"

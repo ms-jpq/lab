@@ -13,8 +13,10 @@ from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
+from opentelemetry.metrics import set_meter_provider
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.resources import (
     Resource,
     ResourceDetector,
@@ -73,6 +75,9 @@ with nullcontext():
     _tp.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
     set_tracer_provider(_tp)
 
+with nullcontext():
+    _mp = MeterProvider(resource=_resource)
+    set_meter_provider(_mp)
 
 with nullcontext():
     RequestsInstrumentor().instrument()

@@ -20,7 +20,7 @@ locals {
   lambda_region = aws_apigatewayv2_api.faas.region
   lambda_functions = {
     cron    = { policies = [data.aws_iam_policy_document.siphon] }
-    mta     = { policies = [data.aws_iam_policy_document.siphon, data.aws_iam_policy_document.port_auth] }
+    mta     = { policies = [data.aws_iam_policy_document.siphon, data.aws_iam_policy_document.mta] }
     okta    = { policies = [] }
     ppv     = { policies = [data.aws_iam_policy_document.skycrane] }
     skyhook = { policies = [data.aws_iam_policy_document.skyhook] }
