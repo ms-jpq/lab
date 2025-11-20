@@ -54,7 +54,9 @@ spec:
         &meta transform:
           log_statements:
             - >-
-              [replace_pattern(resource.attributes["service.name"], "(.*)", "$1.k3s")]
+              set(resource.attributes[["k8s.cluster.name"]], "m5_assert([ENV_MACHINE])")
+            - >-
+              delete_key(resource.attributes, "service.name")
             - >-
               delete_key(resource.attributes, "service.namespace")
             - >-

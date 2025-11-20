@@ -18,9 +18,9 @@ processors:
   &meta transform:
     log_statements:
       - >-
-        set(resource.attributes[["k8s.cluster.name"]], Concat([[resource.attributes[["aws.region"]], "aws"]], "."))
+        [set(resource.attributes["k8s.cluster.name"], Concat([resource.attributes["aws.region"], "aws"], "."))]
       - >-
-        set(resource.attributes[["service.name"]], resource.attributes[["cloudwatch.log.group.name"]])
+        [set(resource.attributes["service.name"], resource.attributes["cloudwatch.log.group.name"])]
 exporters:
   &output otlphttp:
     endpoint: m5_assert([ENV_OTLP_ENDPOINT])
