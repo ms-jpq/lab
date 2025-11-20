@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
-from functools import wraps
+from functools import cache, wraps
 from logging import INFO, StreamHandler, basicConfig, captureWarnings
 from os import environ
 from pathlib import PurePath
@@ -57,7 +57,6 @@ with nullcontext():
             )
 
     _resource = get_aggregated_resources(detectors=[_detector()])
-    _ex = ThreadPoolExecutor()
 
 
 with nullcontext():
@@ -98,6 +97,11 @@ with nullcontext():
     BotocoreInstrumentor().instrument()  # type:ignore
 
 
+@cache
+def _ex() -> ThreadPoolExecutor:
+    return ThreadPoolExecutor()
+
+
 def with_context(ctx: Context) -> Callable[[_F], _F]:
     def cont(f: _F) -> _F:
         @wraps(f)
@@ -121,7 +125,7 @@ def entry() -> Callable[[_F], _F]:
                 return f(*__args, **__kwargs)
             finally:
                 for p in (_tp, _lp, _mp):
-                    _ex.submit(p.force_flush)
+                    _ex().submit(p.force_flush)
 
         return cast(_F, instrumented)
 
