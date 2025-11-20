@@ -16,6 +16,7 @@ from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.metrics import set_meter_provider
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+from opentelemetry.sdk._logs._internal import ConcurrentMultiLogRecordProcessor
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
@@ -24,7 +25,7 @@ from opentelemetry.sdk.resources import (
     ResourceDetector,
     get_aggregated_resources,
 )
-from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace import ConcurrentMultiSpanProcessor, TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.semconv._incubating.attributes.cloud_attributes import (
     CLOUD_PROVIDER,
@@ -60,7 +61,10 @@ with nullcontext():
 with nullcontext():
     captureWarnings(True)
 
-    _lp = LoggerProvider(resource=_resource)
+    _lp = LoggerProvider(
+        resource=_resource,
+        multi_log_record_processor=ConcurrentMultiLogRecordProcessor(),
+    )
     _lp.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter()))
     set_logger_provider(_lp)
 
@@ -73,7 +77,10 @@ with nullcontext():
 
 
 with nullcontext():
-    _tp = TracerProvider(resource=_resource)
+    _tp = TracerProvider(
+        resource=_resource,
+        active_span_processor=ConcurrentMultiSpanProcessor(),
+    )
     _tp.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
     set_tracer_provider(_tp)
 
