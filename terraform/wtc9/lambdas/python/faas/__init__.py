@@ -9,9 +9,6 @@ from typing import Any
 from botocore.config import Config
 from opentelemetry.trace import get_current_span
 
-from .telemetry import __
-
-assert __
 _ = True
 
 with nullcontext():

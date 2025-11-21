@@ -19,7 +19,6 @@ from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client  # pyright:ignore
 from botocore.config import Config  # pyright:ignore
 from opentelemetry.context import get_current
-from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
 from opentelemetry.trace import get_tracer
 
 from .. import _
@@ -129,8 +128,8 @@ def step(ss: _Sieve, record: S3EventRecord) -> None:
                             raise e
 
 
-@entry()
 @event_source(data_class=S3Event)
+@entry()
 def main(event: S3Event, _: LambdaContext) -> None:
     ctx, ss = get_current(), _load_sieve()
     proc = with_context(ctx)(partial(step, ss))
@@ -150,7 +149,3 @@ def main(event: S3Event, _: LambdaContext) -> None:
         exn = ExceptionGroup(name, errs)
         getLogger().exception("%s", exn)
         raise exn from err
-
-
-with nullcontext():
-    AwsLambdaInstrumentor().instrument()

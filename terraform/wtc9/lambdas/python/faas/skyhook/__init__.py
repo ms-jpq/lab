@@ -17,7 +17,6 @@ from aws_lambda_powertools.utilities.data_classes import (
 )
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from boto3 import client  # pyright:ignore
-from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
 from opentelemetry.propagate import extract
 from opentelemetry.trace import Span, get_current_span, get_tracer
 from opentelemetry.trace.status import StatusCode
@@ -83,8 +82,8 @@ def _handler(span: Span, record: SQSRecord) -> None:
         span.set_status(StatusCode.OK if ok else StatusCode.ERROR)
 
 
-@entry()
 @event_source(data_class=SQSEvent)
+@entry()
 def main(event: SQSEvent, ctx: LambdaContext) -> PartialItemFailureResponse:
     span = get_current_span()
     return process_partial_response(
@@ -93,7 +92,3 @@ def main(event: SQSEvent, ctx: LambdaContext) -> PartialItemFailureResponse:
         context=ctx,
         record_handler=partial(_handler, span),
     )
-
-
-with nullcontext():
-    AwsLambdaInstrumentor().instrument()

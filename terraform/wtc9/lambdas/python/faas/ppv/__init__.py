@@ -1,5 +1,4 @@
 from collections.abc import Mapping
-from contextlib import nullcontext
 from typing import Any
 
 from aws_lambda_powertools.utilities.data_classes import (
@@ -18,17 +17,13 @@ from ..telemetry import entry
 from .routes import TRACER, app
 
 
-@entry()
+def _extract(event: Mapping[str, Any]) -> Context:
+    return extract(event["requestContext"]["authorizer"].get("lambda") or {})
+
+
 @event_source(data_class=APIGatewayProxyEventV2)
+@entry(event_context_extractor=_extract)
 def main(event: APIGatewayProxyEventV2, ctx: LambdaContext) -> Mapping[str, Any]:
     with TRACER.start_as_current_span("router") as span:
         span.add_event("routing", attributes={"path": event.path})
         return app.resolve(event.raw_event, context=ctx)
-
-
-with nullcontext():
-
-    def _extract(event: Mapping[str, Any]) -> Context:
-        return extract(event["requestContext"]["authorizer"].get("lambda") or {})
-
-    AwsLambdaInstrumentor().instrument(event_context_extractor=_extract)

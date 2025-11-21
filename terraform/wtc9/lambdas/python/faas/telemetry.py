@@ -1,11 +1,14 @@
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
-from functools import wraps
+from functools import cache, wraps
 from logging import INFO, StreamHandler, basicConfig, captureWarnings
 from os import environ
 from pathlib import PurePath
 from typing import Any, TypeVar, cast
 
+from aws_lambda_powertools.utilities.data_classes.common import DictWrapper
+from aws_lambda_powertools.utilities.typing.lambda_context import LambdaContext
 from opentelemetry._logs import set_logger_provider
 from opentelemetry.context import Context, attach, detach
 from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
@@ -14,6 +17,7 @@ from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExport
 from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.metrics import set_meter_provider
+from opentelemetry.propagate import extract
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.metrics import MeterProvider
@@ -35,9 +39,11 @@ from opentelemetry.semconv._incubating.attributes.faas_attributes import (
     FAAS_VERSION,
 )
 from opentelemetry.semconv.attributes.service_attributes import SERVICE_NAME
-from opentelemetry.trace import set_tracer_provider
+from opentelemetry.trace import get_tracer, set_tracer_provider
 
 _F = TypeVar("_F", bound=Callable[..., Any])
+_D = TypeVar("_D", bound=DictWrapper)
+_M = TypeVar("_M", bound=Callable[[DictWrapper, LambdaContext], Any])
 
 with nullcontext():
 
@@ -104,15 +110,41 @@ def with_context(ctx: Context) -> Callable[[_F], _F]:
     return cont
 
 
-def entry() -> Callable[[_F], _F]:
+def with_span() -> Callable[[_F], _F]:
     def cont(f: _F) -> _F:
         @wraps(f)
         def instrumented(*__args: Any, **__kwargs: Any) -> Any:
-            return f(*__args, **__kwargs)
+            name = ".".join((f.__module__, f.__name__))
+            with get_tracer(f.__module__).start_as_current_span(name):
+                return f(*__args, **__kwargs)
 
         return cast(_F, instrumented)
 
     return cont
 
 
-__ = True
+@cache
+def _executor() -> ThreadPoolExecutor:
+    return ThreadPoolExecutor()
+
+
+def entry(
+    event_context_extractor: Callable[[_D], Context] | None = None,
+) -> Callable[[_M], _M]:
+    def cont(f: _F) -> _F:
+        @wraps(f)
+        def instrumented(event: _D, context: LambdaContext) -> Any:
+            ctx = (
+                event_context_extractor(event)
+                if event_context_extractor
+                else extract(event.raw_event.get("headers", {}))
+            )
+            r = with_context(ctx)(with_span()(f))
+            try:
+                return r(event, context)
+            finally:
+                tuple(_executor().map(lambda x: x.force_flush(), (_tp, _mp, _lp)))
+
+        return cast(_F, instrumented)
+
+    return cont
