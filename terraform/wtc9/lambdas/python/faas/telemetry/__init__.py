@@ -12,6 +12,7 @@ from opentelemetry.context import Context, attach, detach
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
+from opentelemetry.propagate import extract
 from opentelemetry.sdk.resources import (
     Resource,
     ResourceDetector,
