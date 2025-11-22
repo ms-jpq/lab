@@ -12,8 +12,6 @@ from opentelemetry.context import Context, attach, detach
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
-from opentelemetry.propagate import extract, set_global_textmap
-from opentelemetry.propagators.aws.aws_xray_propagator import AwsXRayLambdaPropagator
 from opentelemetry.sdk.resources import (
     Resource,
     ResourceDetector,
@@ -57,15 +55,11 @@ with nullcontext():
 
     _resource = get_aggregated_resources(detectors=[_detector()])
 
-with nullcontext():
-    set_global_textmap(AwsXRayLambdaPropagator())
-
 
 with nullcontext():
     _tp = TracerProvider(resource=_resource)
     _tp.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
     set_tracer_provider(_tp)
-
 
 with nullcontext():
     RequestsInstrumentor().instrument()
