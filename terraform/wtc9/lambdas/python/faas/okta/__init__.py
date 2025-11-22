@@ -15,7 +15,6 @@ from aws_lambda_powertools.utilities.data_classes.api_gateway_authorizer_event i
 )
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from opentelemetry.baggage import set_baggage
-from opentelemetry.metrics import get_meter
 from opentelemetry.propagate import inject
 from opentelemetry.trace import get_tracer
 from opentelemetry.trace.status import StatusCode
@@ -25,11 +24,7 @@ from ..telemetry import entry
 
 with nullcontext():
     TRACER = get_tracer(__name__)
-    METER = get_meter(__name__)
     _SEC = uuid4().hex.encode()
-
-with nullcontext():
-    _av = METER.create_counter("auth.verdict")
 
 
 def _hmac(msg: str) -> str:
@@ -117,7 +112,6 @@ def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, A
                 },
             )
         span.set_status(StatusCode.OK if authorized else StatusCode.ERROR)
-        _av.add(1, attributes={"verdict": bool(authorized)})
 
     with nullcontext():
         _inject_signature(event, carrier=context)

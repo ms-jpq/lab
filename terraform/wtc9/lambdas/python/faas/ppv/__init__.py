@@ -9,7 +9,6 @@ from aws_lambda_powertools.utilities.data_classes.api_gateway_proxy_event import
 )
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from opentelemetry.context.context import Context
-from opentelemetry.instrumentation.aws_lambda import AwsLambdaInstrumentor
 from opentelemetry.propagate import extract
 
 from .. import _

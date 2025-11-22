@@ -1,27 +1,19 @@
 from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
-from functools import cache, wraps
-from logging import INFO, StreamHandler, basicConfig, captureWarnings
+from functools import wraps
+from logging import INFO, basicConfig, captureWarnings
 from os import environ
 from pathlib import PurePath
 from typing import Any, TypeVar, cast
 
 from aws_lambda_powertools.utilities.data_classes.common import DictWrapper
 from aws_lambda_powertools.utilities.typing.lambda_context import LambdaContext
-from opentelemetry._logs import set_logger_provider
 from opentelemetry.context import Context, attach, detach
-from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
-from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
-from opentelemetry.metrics import set_meter_provider
-from opentelemetry.propagate import extract
-from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
-from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
-from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+from opentelemetry.propagate import extract, set_global_textmap
+from opentelemetry.propagators.aws.aws_xray_propagator import AwsXRayLambdaPropagator
 from opentelemetry.sdk.resources import (
     Resource,
     ResourceDetector,
@@ -42,8 +34,11 @@ from opentelemetry.semconv.attributes.service_attributes import SERVICE_NAME
 from opentelemetry.trace import get_tracer, set_tracer_provider
 
 _F = TypeVar("_F", bound=Callable[..., Any])
-_D = TypeVar("_D", bound=DictWrapper)
-_M = TypeVar("_M", bound=Callable[[DictWrapper, LambdaContext], Any])
+_M = TypeVar("_M", bound=Callable[[Any, LambdaContext], Any])
+
+with nullcontext():
+    captureWarnings(True)
+    basicConfig(format="%(message)s", level=INFO, force=True)
 
 with nullcontext():
 
@@ -62,20 +57,8 @@ with nullcontext():
 
     _resource = get_aggregated_resources(detectors=[_detector()])
 
-
 with nullcontext():
-    captureWarnings(True)
-
-    _lp = LoggerProvider(resource=_resource)
-    _lp.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter()))
-    set_logger_provider(_lp)
-
-    basicConfig(
-        format="%(message)s",
-        level=INFO,
-        handlers=(StreamHandler(), LoggingHandler()),
-        force=True,
-    )
+    set_global_textmap(AwsXRayLambdaPropagator())
 
 
 with nullcontext():
@@ -83,12 +66,6 @@ with nullcontext():
     _tp.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
     set_tracer_provider(_tp)
 
-with nullcontext():
-    _mp = MeterProvider(
-        resource=_resource,
-        metric_readers=(PeriodicExportingMetricReader(OTLPMetricExporter()),),
-    )
-    set_meter_provider(_mp)
 
 with nullcontext():
     RequestsInstrumentor().instrument()
@@ -123,17 +100,12 @@ def with_span() -> Callable[[_F], _F]:
     return cont
 
 
-@cache
-def _executor() -> ThreadPoolExecutor:
-    return ThreadPoolExecutor()
-
-
 def entry(
-    event_context_extractor: Callable[[_D], Context] | None = None,
+    event_context_extractor: Callable[[DictWrapper], Context] | None = None,
 ) -> Callable[[_M], _M]:
     def cont(f: _F) -> _F:
         @wraps(f)
-        def instrumented(event: _D, context: LambdaContext) -> Any:
+        def instrumented(event: DictWrapper, context: LambdaContext) -> Any:
             ctx = (
                 event_context_extractor(event)
                 if event_context_extractor
@@ -143,7 +115,7 @@ def entry(
             try:
                 return r(event, context)
             finally:
-                tuple(_executor().map(lambda x: x.force_flush(), (_tp, _mp, _lp)))
+                _tp.force_flush()
 
         return cast(_F, instrumented)
 
