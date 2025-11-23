@@ -1,8 +1,5 @@
 from contextlib import nullcontext
-from functools import cache, partial
-from hashlib import sha1
-from json import loads
-from os import environ
+from functools import partial
 
 from aws_lambda_powertools.utilities.batch import (
     BatchProcessor,
@@ -16,70 +13,22 @@ from aws_lambda_powertools.utilities.data_classes import (
     event_source,
 )
 from aws_lambda_powertools.utilities.typing import LambdaContext
-from boto3 import client  # pyright:ignore
-from opentelemetry.propagate import extract
 from opentelemetry.trace import Span, get_current_span, get_tracer
-from opentelemetry.trace.status import StatusCode
 
-from .. import B3_CONF, _, dump_json
+from .. import _
 from ..telemetry import entry
-from ..twilio import parse_params, verify
 
 with nullcontext():
-    _TRACER = get_tracer(__name__)
+    TRACER = get_tracer(__name__)
+
+from .twilio import proc_twilio
 
 with nullcontext():
     _PROC = BatchProcessor(event_type=EventType.SQS)
-    _sns = client(service_name="sns", config=B3_CONF)
-
-
-@cache
-def _channel() -> str:
-    return environ["ENV_CHAN_NAME"]
-
-
-def _process(record: SQSRecord) -> bool:
-    match record.raw_event:
-        case {
-            "messageAttributes": {
-                "RawURL": {"stringValue": str(uri)},
-                "Signature": {"stringValue": str(signature)},
-            }
-        }:
-            params = parse_params(record.body)
-        case _:
-            return False
-
-    with _TRACER.start_as_current_span("verify hmac"):
-        if not verify(uri, params=params, signature=signature):
-            return False
-
-    match params:
-        case {"PayloadType": "application/json", "Payload": str(payload)}:
-            params["Payload"] = loads(payload)
-        case _:
-            return False
-
-    json = dump_json(params)
-    hashed = sha1(json.encode()).hexdigest()
-
-    _sns.publish(TopicArn=_channel(), Subject=f"/twilio/error - {hashed}", Message=json)
-    return True
 
 
 def _handler(span: Span, record: SQSRecord) -> None:
-    carrier = (
-        {"traceparent": parent.string_value}
-        if (parent := record.message_attributes["TraceParent"])
-        else {}
-    )
-    ctx = extract(carrier)
-    with _TRACER.start_as_current_span("process record", context=ctx) as s:
-        s.add_link(span.get_span_context())
-        span.add_link(s.get_span_context())
-
-        ok = _process(record)
-        span.set_status(StatusCode.OK if ok else StatusCode.ERROR)
+    proc_twilio(span, record=record)
 
 
 @event_source(data_class=SQSEvent)
