@@ -31,10 +31,10 @@ with nullcontext():
 
 def _handler(span: Span, record: SQSRecord) -> None:
     match record.event_source:
-        case "s3s":
+        case "aws:s3s":
             pass
             proc_mta(span, event=record.decoded_nested_s3_event)
-        case "sqs":
+        case "aws:sqs":
             proc_twilio(span, record=record)
         case _:
             assert False, record.raw_event
