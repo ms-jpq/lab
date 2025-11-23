@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from contextlib import nullcontext
 from functools import wraps
+from itertools import permutations
 from logging import INFO, basicConfig, captureWarnings
 from os import environ
 from pathlib import PurePath
@@ -30,7 +31,7 @@ from opentelemetry.semconv._incubating.attributes.faas_attributes import (
     FAAS_VERSION,
 )
 from opentelemetry.semconv.attributes.service_attributes import SERVICE_NAME
-from opentelemetry.trace import get_tracer, set_tracer_provider
+from opentelemetry.trace import Span, get_tracer, set_tracer_provider
 
 _F = TypeVar("_F", bound=Callable[..., Any])
 _M = TypeVar("_M", bound=Callable[[Any, LambdaContext], Any])
@@ -93,6 +94,11 @@ def with_span() -> Callable[[_F], _F]:
         return cast(_F, instrumented)
 
     return cont
+
+
+def add_mutual_links(*spans: Span) -> None:
+    for l, r in permutations(spans, 2):
+        l.add_link(r.get_span_context())
 
 
 def entry(

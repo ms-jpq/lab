@@ -1,5 +1,4 @@
 from contextlib import nullcontext
-from functools import partial
 
 from aws_lambda_powertools.utilities.batch import (
     BatchProcessor,
@@ -15,11 +14,11 @@ from aws_lambda_powertools.utilities.data_classes import (
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from opentelemetry.context import Context, get_current
 from opentelemetry.propagate import extract
-from opentelemetry.trace import Span, get_current_span, get_tracer
+from opentelemetry.trace import get_tracer
 from opentelemetry.trace.status import StatusCode
 
 from .. import _
-from ..telemetry import entry, with_context
+from ..telemetry import add_mutual_links, entry, with_context
 
 with nullcontext():
     TRACER = get_tracer(__name__)
@@ -35,30 +34,32 @@ with nullcontext():
 
 def _context(record: SQSRecord) -> Context | None:
     if not (parent := record.message_attributes["TraceParent"]):
-        return None
+        return get_current()
 
     carrier = {"traceparent": parent.string_value}
     return extract(carrier)
 
 
-def _handler(span: Span, record: SQSRecord) -> None:
-    if not record.message_attributes:
-        with TRACER.start_as_current_span("mta"):
-            proc_mta(event=record.decoded_nested_s3_event)
-    else:
-        ctx = _context(record)
-        with TRACER.start_as_current_span("webhook", context=ctx) as s:
-            s.add_link(span.get_span_context())
-            span.add_link(s.get_span_context())
-            ok = proc_twilio(record)
-            s.set_status(StatusCode.OK if ok else StatusCode.ERROR)
+def _handler(record: SQSRecord) -> None:
+    with TRACER.start_as_current_span(
+        "process record", attributes=record.attributes.raw_event
+    ) as rs:
+        if not record.message_attributes:
+            with TRACER.start_as_current_span("mta"):
+                proc_mta(event=record.decoded_nested_s3_event)
+        else:
+            ctx = _context(record)
+            with TRACER.start_as_current_span("webhook", context=ctx) as s:
+                add_mutual_links(rs, s)
+                ok = proc_twilio(record)
+                s.set_status(StatusCode.OK if ok else StatusCode.ERROR)
 
 
 @event_source(data_class=SQSEvent)
 @entry()
 def main(event: SQSEvent, ctx: LambdaContext) -> PartialItemFailureResponse:
-    context, span = get_current(), get_current_span()
-    proc = with_context(context)(partial(_handler, span))
+    context = get_current()
+    proc = with_context(context)(_handler)
     return process_partial_response(
         processor=_PROC,
         event=event.raw_event,
