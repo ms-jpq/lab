@@ -36,6 +36,6 @@ locals {
     aws_lambda_layer_version.haskell.arn,
   ]
   lambda_envs = {
-    OTEL_EXPORTER_OTLP_ENDPOINT = var.otlp_endpoint
+    OTEL_EXP_OTLP_ENDPOINT = var.otlp_endpoint
   }
 }
