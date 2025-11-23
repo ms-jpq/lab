@@ -23,7 +23,7 @@ resource "aws_lambda_function_event_invoke_config" "siphon" {
     if contains(val.policies, data.aws_iam_policy_document.siphon)
   ])
   function_name          = each.value
-  maximum_retry_attempts = 1
+  maximum_retry_attempts = 0
   region                 = aws_sns_topic.siphon.region
 
   destination_config {

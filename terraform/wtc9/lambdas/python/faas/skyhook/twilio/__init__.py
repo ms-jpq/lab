@@ -1,23 +1,11 @@
-from contextlib import nullcontext
-from functools import cache
 from hashlib import sha1
 from json import loads
-from os import environ
 
 from aws_lambda_powertools.utilities.data_classes import SQSRecord
-from boto3 import client
 
-from ... import B3_CONF, _, dump_json
+from ... import SNS, _, chan, dump_json
 from ...twilio import parse_params, verify
 from .. import TRACER
-
-with nullcontext():
-    _sns = client(service_name="sns", config=B3_CONF)
-
-
-@cache
-def _channel() -> str:
-    return environ["ENV_CHAN_NAME"]
 
 
 def proc_twilio(record: SQSRecord) -> bool:
@@ -45,5 +33,5 @@ def proc_twilio(record: SQSRecord) -> bool:
     json = dump_json(params)
     hashed = sha1(json.encode()).hexdigest()
 
-    _sns.publish(TopicArn=_channel(), Subject=f"/twilio/error - {hashed}", Message=json)
+    SNS.publish(TopicArn=chan(), Subject=f"/twilio/error - {hashed}", Message=json)
     return True
