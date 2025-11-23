@@ -22,7 +22,7 @@ locals {
     cron    = { policies = [data.aws_iam_policy_document.siphon] }
     okta    = { policies = [] }
     ppv     = { policies = [data.aws_iam_policy_document.skycrane] }
-    skyhook = { policies = [data.aws_iam_policy_document.skyhook] }
+    skyhook = { policies = [data.aws_iam_policy_document.siphon, data.aws_iam_policy_document.skyhook] }
   }
   lambda_permissions = {
     cron = [{ principal = "events.amazonaws.com", source_arn = aws_cloudwatch_event_rule.cron.arn }]

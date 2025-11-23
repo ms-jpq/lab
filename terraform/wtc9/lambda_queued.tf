@@ -59,11 +59,6 @@ resource "aws_sqs_queue_redrive_policy" "pipe" {
 
 data "aws_iam_policy_document" "skyhook" {
   statement {
-    actions   = ["sns:Publish"]
-    effect    = "Allow"
-    resources = [aws_sns_topic.siphon.arn]
-  }
-  statement {
     actions   = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes"]
     effect    = "Allow"
     resources = [aws_sqs_queue.sink.arn]
