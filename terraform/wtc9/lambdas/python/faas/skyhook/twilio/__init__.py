@@ -6,10 +6,6 @@ from os import environ
 
 from aws_lambda_powertools.utilities.data_classes import SQSRecord
 from boto3 import client
-from opentelemetry.context import Context
-from opentelemetry.propagate import extract
-from opentelemetry.trace import Span
-from opentelemetry.trace.status import StatusCode
 
 from ... import B3_CONF, _, dump_json
 from ...twilio import parse_params, verify
@@ -24,15 +20,11 @@ def _channel() -> str:
     return environ["ENV_CHAN_NAME"]
 
 
-def _context(record: SQSRecord) -> Context | None:
-    if not (parent := record.message_attributes["TraceParent"]):
-        return None
-
-    carrier = {"traceparent": parent.string_value}
-    return extract(carrier)
 
 
-def _proc(record: SQSRecord) -> bool:
+
+
+def proc_twilio( record: SQSRecord) -> bool:
     match record.raw_event:
         case {
             "messageAttributes": {
@@ -60,12 +52,3 @@ def _proc(record: SQSRecord) -> bool:
     _sns.publish(TopicArn=_channel(), Subject=f"/twilio/error - {hashed}", Message=json)
     return True
 
-
-def proc_twilio(span: Span, record: SQSRecord) -> None:
-    ctx = _context(record)
-    with TRACER.start_as_current_span("process record", context=ctx) as s:
-        s.add_link(span.get_span_context())
-        span.add_link(s.get_span_context())
-
-        ok = _proc(record)
-        span.set_status(StatusCode.OK if ok else StatusCode.ERROR)

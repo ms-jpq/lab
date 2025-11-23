@@ -13,8 +13,10 @@ from aws_lambda_powertools.utilities.data_classes import (
     event_source,
 )
 from aws_lambda_powertools.utilities.typing import LambdaContext
-from opentelemetry.context import get_current
+from opentelemetry.context import Context, get_current
+from opentelemetry.propagate import extract
 from opentelemetry.trace import Span, get_current_span, get_tracer
+from opentelemetry.trace.status import StatusCode
 
 from .. import _
 from ..telemetry import entry, with_context
@@ -29,13 +31,28 @@ with nullcontext():
     _PROC = BatchProcessor(event_type=EventType.SQS)
 
 
+def _context(record: SQSRecord) -> Context | None:
+    if not (parent := record.message_attributes["TraceParent"]):
+        return None
+
+    carrier = {"traceparent": parent.string_value}
+    return extract(carrier)
+
+
 def _handler(span: Span, record: SQSRecord) -> None:
     match record.event_source:
         case "aws:s3s":
-            pass
-            proc_mta(span, event=record.decoded_nested_s3_event)
+            with TRACER.start_as_current_span("mta"):
+                proc_mta(event=record.decoded_nested_s3_event)
+
         case "aws:sqs":
-            proc_twilio(span, record=record)
+            ctx = _context(record)
+            with TRACER.start_as_current_span("process record", context=ctx) as s:
+                s.add_link(span.get_span_context())
+                span.add_link(s.get_span_context())
+                ok = proc_twilio(record)
+                span.set_status(StatusCode.OK if ok else StatusCode.ERROR)
+
         case _:
             assert False, record.raw_event
 

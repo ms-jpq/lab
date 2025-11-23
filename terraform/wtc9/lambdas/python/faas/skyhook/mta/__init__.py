@@ -71,7 +71,7 @@ def _parse_mail(io: BytesIO) -> Mail:
     return mail
 
 
-def proc_mta(span: Span, event: S3Event) -> None:
+def proc_mta(event: S3Event) -> None:
     ss = _load_sieve()
     with _fetching(msg=event.record.s3) as fp:
         with closing(fp):
