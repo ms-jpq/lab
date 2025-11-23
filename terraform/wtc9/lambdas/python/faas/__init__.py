@@ -12,6 +12,8 @@ from boto3 import client
 from botocore.config import Config
 from opentelemetry.trace import get_current_span
 
+from .telemetry import NAME
+
 _F = TypeVar("_F", bound=Callable[..., Any])
 _ = True
 
@@ -49,7 +51,7 @@ def report_exception() -> Callable[[_F], _F]:
                 f(*__args, **__kwargs)
             except Exception as e:
                 with suppress_exn():
-                    title = str(type(e))
+                    title = " ".join((NAME, type(e).__name__))
                     body = "".join(format_exception(e))
                     SNS.publish(TopicArn=chan(), Subject=title, Message=body)
                 raise

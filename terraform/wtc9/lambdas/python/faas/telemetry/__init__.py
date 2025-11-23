@@ -36,6 +36,10 @@ from opentelemetry.trace import Span, get_tracer, set_tracer_provider
 _F = TypeVar("_F", bound=Callable[..., Any])
 _M = TypeVar("_M", bound=Callable[[Any, LambdaContext], Any])
 
+
+with nullcontext():
+    NAME = environ["AWS_LAMBDA_FUNCTION_NAME"]
+
 with nullcontext():
     captureWarnings(True)
     basicConfig(format="%(message)s", level=INFO, force=True)
@@ -49,7 +53,7 @@ with nullcontext():
                     CLOUD_PROVIDER: "aws",
                     CLOUD_REGION: environ["AWS_REGION"],
                     FAAS_INSTANCE: environ["AWS_LAMBDA_LOG_STREAM_NAME"],
-                    FAAS_NAME: environ["AWS_LAMBDA_FUNCTION_NAME"],
+                    FAAS_NAME: NAME,
                     FAAS_VERSION: environ["AWS_LAMBDA_FUNCTION_VERSION"],
                     SERVICE_NAME: PurePath(__file__).parent.parent.name,
                 }
