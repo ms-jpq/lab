@@ -59,14 +59,19 @@ resource "aws_sqs_queue_redrive_policy" "pipe" {
 
 data "aws_iam_policy_document" "skyhook" {
   statement {
+    actions   = ["sns:Publish"]
+    effect    = "Allow"
+    resources = [aws_sns_topic.siphon.arn]
+  }
+  statement {
     actions   = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes"]
     effect    = "Allow"
     resources = [aws_sqs_queue.sink.arn]
   }
   statement {
-    actions   = ["sns:Publish"]
+    actions   = ["s3:GetObject", "s3:DeleteObject", "s3:ListBucket"]
     effect    = "Allow"
-    resources = [aws_sns_topic.siphon.arn]
+    resources = ["${data.aws_s3_bucket.maildir.arn}/*"]
   }
 }
 
