@@ -49,7 +49,7 @@ def _handler(span: Span, record: SQSRecord) -> None:
             s.add_link(span.get_span_context())
             span.add_link(s.get_span_context())
             ok = proc_twilio(record)
-            span.set_status(StatusCode.OK if ok else StatusCode.ERROR)
+            s.set_status(StatusCode.OK if ok else StatusCode.ERROR)
 
 
 @event_source(data_class=SQSEvent)
