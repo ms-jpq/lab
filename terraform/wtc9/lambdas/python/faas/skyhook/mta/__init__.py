@@ -1,29 +1,21 @@
 from collections.abc import Callable, Iterator
-from concurrent.futures import Executor, ThreadPoolExecutor, as_completed
 from contextlib import closing, contextmanager, nullcontext
-from functools import partial
 from importlib import reload
 from io import BytesIO
 from logging import getLogger
-from os import environ, linesep
+from os import environ
 from pprint import pformat
 from smtplib import SMTPDataError
 from typing import BinaryIO, cast
 
-from aws_lambda_powertools.utilities.data_classes import S3Event, event_source
-from aws_lambda_powertools.utilities.data_classes.s3_event import (
-    S3EventRecord,
-    S3Message,
-)
-from aws_lambda_powertools.utilities.typing import LambdaContext
+from aws_lambda_powertools.utilities.data_classes import S3Event
+from aws_lambda_powertools.utilities.data_classes.s3_event import S3Message
 from boto3 import client  # pyright:ignore
 from botocore.config import Config  # pyright:ignore
-from opentelemetry.context import get_current
-from opentelemetry.trace import get_tracer
+from opentelemetry.trace import Span
 
-from .. import _
-from ..gist import register, traceback
-from ..telemetry import entry, with_context
+from ...gist import register, traceback
+from .. import TRACER
 from .fax import Mail, parse, send
 
 _Sieve = Callable[[Mail], None]
@@ -33,7 +25,6 @@ with nullcontext():
 
 
 with nullcontext():
-    _TRACER = get_tracer(__name__)
     _S3 = client(service_name="s3", config=Config(retries={"mode": "adaptive"}))
 
 
@@ -51,22 +42,12 @@ def _fetching(msg: S3Message) -> Iterator[BinaryIO]:
     _S3.delete_object(**kw)
 
 
-@contextmanager
-def _pool() -> Iterator[Executor]:
-    pool = ThreadPoolExecutor()
-    try:
-        yield pool
-    finally:
-        with _TRACER.start_as_current_span("shutdown"):
-            pool.shutdown(wait=True, cancel_futures=True)
-
-
 _cold_start = True
 
 
 def _load_sieve() -> _Sieve:
     global _cold_start
-    with _TRACER.start_as_current_span("load sieve"):
+    with TRACER.start_as_current_span("load sieve"):
         s = sieve if _cold_start else reload(sieve)
         _cold_start = False
 
@@ -74,7 +55,7 @@ def _load_sieve() -> _Sieve:
 
 
 def _parse_mail(io: BytesIO) -> Mail:
-    with _TRACER.start_as_current_span("parse mail") as span:
+    with TRACER.start_as_current_span("parse mail") as span:
         mail = parse(io)
         span.add_event("parsed")
         headers = {
@@ -90,13 +71,14 @@ def _parse_mail(io: BytesIO) -> Mail:
     return mail
 
 
-def step(ss: _Sieve, record: S3EventRecord) -> None:
-    with _fetching(msg=record.s3) as fp:
+def proc_mta(span: Span, event: S3Event) -> None:
+    ss = _load_sieve()
+    with _fetching(msg=event.record.s3) as fp:
         with closing(fp):
             io = BytesIO(fp.read())
 
         mail = _parse_mail(io)
-        with _TRACER.start_as_current_span("run sieve") as span:
+        with TRACER.start_as_current_span("run sieve") as span:
             go = False
             try:
                 ss(mail)
@@ -110,7 +92,7 @@ def step(ss: _Sieve, record: S3EventRecord) -> None:
                 span.end()
 
                 if go:
-                    with _TRACER.start_as_current_span("send") as span:
+                    with TRACER.start_as_current_span("send") as span:
                         try:
                             send(
                                 mail,
@@ -122,30 +104,7 @@ def step(ss: _Sieve, record: S3EventRecord) -> None:
                                 timeout=TIMEOUT,
                             )
                         except SMTPDataError as e:
-                            data = pformat(record._data)
+                            data = pformat(event._data)
                             span.record_exception(e, attributes={"data": data})
                             getLogger().error("%s", data, exc_info=e)
                             raise e
-
-
-@event_source(data_class=S3Event)
-@entry()
-def main(event: S3Event, _: LambdaContext) -> None:
-    ctx, ss = get_current(), _load_sieve()
-    proc = with_context(ctx)(partial(step, ss))
-
-    def cont() -> Iterator[Exception]:
-        with _pool() as pool:
-            futs = map(lambda x: pool.submit(proc, x), event.records)
-            for fut in as_completed(futs):
-                if isinstance(exn := fut.exception(), Exception):
-                    yield exn
-                elif exn:
-                    raise exn
-
-    if errs := tuple(cont()):
-        err, *__ = errs
-        name = linesep.join(f"{type(err)!r} :: {err!r}" for err in errs)
-        exn = ExceptionGroup(name, errs)
-        getLogger().exception("%s", exn)
-        raise exn from err
