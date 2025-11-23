@@ -92,6 +92,14 @@ resource "aws_lambda_function" "skyhook" {
       {
         ENV_CHAN_NAME    = aws_sns_topic.siphon.arn
         ENV_TWILIO_TOKEN = var.twilio_token
+      },
+      {
+        MAIL_FROM = var.mail_from
+        MAIL_TO   = join(", ", var.mail_to)
+        MAIL_SRV  = local.mail_srv
+        MAIL_USER = var.mail_user
+        MAIL_PASS = var.mail_pass
+        MAIL_FILT = var.mail_filter
       }
     )
   }

@@ -50,7 +50,7 @@ with nullcontext():
                     FAAS_INSTANCE: environ["AWS_LAMBDA_LOG_STREAM_NAME"],
                     FAAS_NAME: environ["AWS_LAMBDA_FUNCTION_NAME"],
                     FAAS_VERSION: environ["AWS_LAMBDA_FUNCTION_VERSION"],
-                    SERVICE_NAME: PurePath(__file__).parent.name,
+                    SERVICE_NAME: PurePath(__file__).parent.parent.name,
                 }
             )
 
