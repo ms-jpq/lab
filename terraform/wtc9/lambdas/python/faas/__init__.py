@@ -5,6 +5,8 @@ from functools import cache, wraps
 from json import dumps
 from logging import getLogger
 from os import environ
+from os.path import sep
+from pathlib import PurePath
 from traceback import format_exception
 from typing import Any, TypeVar, cast
 
@@ -19,9 +21,10 @@ _ = True
 
 with nullcontext():
     B3_CONF = Config(retries={"mode": "adaptive"})
+    SNS = client(service_name="sns", config=B3_CONF)
 
 with nullcontext():
-    SNS = client(service_name="sns", config=B3_CONF)
+    _FQN = PurePath(sep, "aws", "lambda", NAME).as_posix()
 
 
 @cache
@@ -51,7 +54,7 @@ def report_exception() -> Callable[[_F], _F]:
                 f(*__args, **__kwargs)
             except Exception as e:
                 with suppress_exn():
-                    title = " ".join((NAME, type(e).__name__))
+                    title = " ".join((_FQN, type(e).__name__))
                     body = "".join(format_exception(e))
                     SNS.publish(TopicArn=chan(), Subject=title, Message=body)
                 raise
