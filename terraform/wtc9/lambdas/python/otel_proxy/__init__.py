@@ -2,7 +2,7 @@ from contextlib import contextmanager, nullcontext
 from functools import cache
 from http import HTTPStatus
 from http.client import HTTPMessage
-from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from logging import INFO, basicConfig, captureWarnings, getLogger
 from os import environ, linesep
 from queue import SimpleQueue
@@ -12,7 +12,7 @@ from socketserver import TCPServer
 from requests import Session
 from typing_extensions import Iterator
 
-_Q = SimpleQueue[tuple[str, HTTPMessage, bytes]]
+_Q = SimpleQueue[tuple[str, HTTPMessage, bytes] | None]
 
 
 with nullcontext():
@@ -30,7 +30,7 @@ def _otel_httpbased() -> str:
 
 
 @cache
-def _queue() -> _Q:
+def queue() -> _Q:
     return _Q()
 
 
@@ -76,12 +76,12 @@ class _Handler(BaseHTTPRequestHandler):
             assert isinstance(self.headers, HTTPMessage)
             body = _read_body(self)
             req = (self.path, self.headers, body)
-            _queue().put_nowait(req)
+            queue().put_nowait(req)
 
 
 def loop() -> None:
-    while True:
-        path, headers, body = _queue().get()
+    while row := queue().get():
+        path, headers, body = row
         try:
             url = _otel_httpbased() + path
             h = {k: v for k, v in headers.items()}
@@ -91,5 +91,6 @@ def loop() -> None:
             getLogger().error("%s", e)
 
 
-def srv() -> HTTPServer:
-    return _Server(("", 4318), _Handler)
+def srv() -> None:
+    srv = _Server(("", 4318), _Handler)
+    srv.serve_forever()
