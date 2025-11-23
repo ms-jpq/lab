@@ -17,7 +17,7 @@ from opentelemetry.propagate import extract
 from opentelemetry.trace import get_tracer
 from opentelemetry.trace.status import StatusCode
 
-from .. import _
+from .. import _, report_exception
 from ..telemetry import add_mutual_links, entry, with_context
 
 with nullcontext():
@@ -59,7 +59,7 @@ def _handler(record: SQSRecord) -> None:
 @entry()
 def main(event: SQSEvent, ctx: LambdaContext) -> PartialItemFailureResponse:
     context = get_current()
-    proc = with_context(context)(_handler)
+    proc = report_exception()(with_context(context)(_handler))
     return process_partial_response(
         processor=_PROC,
         event=event.raw_event,
