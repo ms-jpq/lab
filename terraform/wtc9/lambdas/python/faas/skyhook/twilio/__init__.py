@@ -20,11 +20,7 @@ def _channel() -> str:
     return environ["ENV_CHAN_NAME"]
 
 
-
-
-
-
-def proc_twilio( record: SQSRecord) -> bool:
+def proc_twilio(record: SQSRecord) -> bool:
     match record.raw_event:
         case {
             "messageAttributes": {
@@ -51,4 +47,3 @@ def proc_twilio( record: SQSRecord) -> bool:
 
     _sns.publish(TopicArn=_channel(), Subject=f"/twilio/error - {hashed}", Message=json)
     return True
-

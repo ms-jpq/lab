@@ -28,7 +28,9 @@ from .mta import proc_mta
 from .twilio import proc_twilio
 
 with nullcontext():
-    _PROC = BatchProcessor(event_type=EventType.SQS)
+    _PROC = BatchProcessor(
+        raise_on_entire_batch_failure=False, event_type=EventType.SQS
+    )
 
 
 def _context(record: SQSRecord) -> Context | None:
