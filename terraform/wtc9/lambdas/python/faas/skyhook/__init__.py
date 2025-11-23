@@ -45,7 +45,7 @@ def _handler(span: Span, record: SQSRecord) -> None:
             proc_mta(event=record.decoded_nested_s3_event)
     else:
         ctx = _context(record)
-        with TRACER.start_as_current_span("process record", context=ctx) as s:
+        with TRACER.start_as_current_span("webhook", context=ctx) as s:
             s.add_link(span.get_span_context())
             span.add_link(s.get_span_context())
             ok = proc_twilio(record)
