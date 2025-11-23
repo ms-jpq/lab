@@ -30,8 +30,8 @@ resource "aws_sqs_queue_policy" "maildir" {
 }
 
 resource "aws_s3_bucket_notification" "maildir" {
-  bucket     = data.aws_s3_bucket.maildir.bucket
-  region     = aws_sqs_queue_policy.maildir.region
+  bucket = data.aws_s3_bucket.maildir.bucket
+  region = aws_sqs_queue_policy.maildir.region
 
   queue {
     events    = ["s3:ObjectCreated:*"]
