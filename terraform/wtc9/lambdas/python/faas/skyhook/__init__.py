@@ -40,21 +40,16 @@ def _context(record: SQSRecord) -> Context | None:
 
 
 def _handler(span: Span, record: SQSRecord) -> None:
-    match record.event_source:
-        case "aws:s3s":
-            with TRACER.start_as_current_span("mta"):
-                proc_mta(event=record.decoded_nested_s3_event)
-
-        case "aws:sqs":
-            ctx = _context(record)
-            with TRACER.start_as_current_span("process record", context=ctx) as s:
-                s.add_link(span.get_span_context())
-                span.add_link(s.get_span_context())
-                ok = proc_twilio(record)
-                span.set_status(StatusCode.OK if ok else StatusCode.ERROR)
-
-        case _:
-            assert False, record.raw_event
+    if not record.message_attributes:
+        with TRACER.start_as_current_span("mta"):
+            proc_mta(event=record.decoded_nested_s3_event)
+    else:
+        ctx = _context(record)
+        with TRACER.start_as_current_span("process record", context=ctx) as s:
+            s.add_link(span.get_span_context())
+            span.add_link(s.get_span_context())
+            ok = proc_twilio(record)
+            span.set_status(StatusCode.OK if ok else StatusCode.ERROR)
 
 
 @event_source(data_class=SQSEvent)
