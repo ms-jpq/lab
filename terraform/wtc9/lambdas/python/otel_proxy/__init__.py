@@ -33,19 +33,17 @@ def _otel_httpbased() -> SplitResult:
 def _responding(self: BaseHTTPRequestHandler) -> Iterator[None]:
     try:
         yield None
-    except Exception as e1:
-        try:
-            self.send_response(HTTPStatus.INTERNAL_SERVER_ERROR)
-        except Exception as e2:
-            name = linesep.join(map(str, (e1, e2)))
-            raise ExceptionGroup(name, (e1, e2)) from e1
-        else:
-            raise e1
+    except Exception:
+        self.send_response(HTTPStatus.INTERNAL_SERVER_ERROR)
+        raise
     else:
         self.send_response(HTTPStatus.OK)
     finally:
         self.send_header("content-length", "0")
+        self.send_header("connection", "keep-alive")
         self.end_headers()
+
+    assert not self.close_connection
 
 
 def _proxy(path: str, headers: HTTPMessage, body: bytes) -> None:
