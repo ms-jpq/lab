@@ -52,20 +52,14 @@ def _responding(self: BaseHTTPRequestHandler) -> Iterator[None]:
         self.end_headers()
 
 
-def _read_body(self: BaseHTTPRequestHandler) -> bytes:
-    if length := self.headers.get("content-length"):
-        return self.rfile.read(int(length))
-    else:
-        return b""
-
-
 class _Handler(BaseHTTPRequestHandler):
     def log_request(self, code: int | str = "-", size: int | str = "-") -> None: ...
 
     def do_POST(self) -> None:
         with _responding(self):
             assert isinstance(self.headers, HTTPMessage)
-            body = _read_body(self)
+            assert (length := self.headers.get("content-length"))
+            body = self.rfile.read(int(length))
             req = (self.path, self.headers, body)
             assert body
             queue().put_nowait(req)
@@ -78,19 +72,10 @@ def loop() -> None:
         path, headers, body = row
         try:
             url = urlunsplit(split) + path
-            h = {
-                k: v
-                for k, v in ((k.casefold(), v) for k, v in headers.items())
-                if k not in {"host", "content-length"}
-            }
-            getLogger().info("%s", h)
-            with SESSION.post(url, headers=h, auth=auth, data=body, timeout=2.0) as r:
-                getLogger().info(
-                    "%s", (r.request.url, r.request.headers, r.request.body)
-                )
+            h = {"content-type": headers["content-type"]}
 
+            with SESSION.post(url, headers=h, auth=auth, data=body) as r:
                 assert r.status_code == HTTPStatus.OK, (r.status_code, r.text)
-                getLogger().info("%s", (r.headers, r.text))
         except Exception as e:
             getLogger().error("%s", e)
 
