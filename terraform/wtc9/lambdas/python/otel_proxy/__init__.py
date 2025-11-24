@@ -48,7 +48,7 @@ def _responding(self: BaseHTTPRequestHandler) -> Iterator[None]:
 
 
 def _proxy(path: str, headers: HTTPMessage, body: bytes) -> None:
-    with spanning("<>"):
+    with spanning("<> "):
         try:
             split = _otel_httpbased()
             url = urlunsplit(split) + path

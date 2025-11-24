@@ -10,5 +10,5 @@ def spanning(name: str) -> Iterator[None]:
     try:
         yield None
     finally:
-        s = (monotonic() - t0) / 1000.0
-        getLogger().info("%s", f"{name} {s:.2f}ms")
+        s = (monotonic() - t0) * 1000.0
+        getLogger().info("%s", f"{name} {s:.3f}ms")
