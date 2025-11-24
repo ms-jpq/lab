@@ -4,4 +4,4 @@ set -o pipefail
 
 cd -- "${0%/*}/../python"
 
-exec -- python3 -m otel_proxy
+exec -- python3 -u -m otel_proxy
