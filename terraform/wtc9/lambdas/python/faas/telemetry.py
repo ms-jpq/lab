@@ -64,7 +64,8 @@ with nullcontext():
 
 with nullcontext():
     _tp = TracerProvider(
-        resource=_resource, active_span_processor=ConcurrentMultiSpanProcessor(),
+        resource=_resource,
+        active_span_processor=ConcurrentMultiSpanProcessor(),
     )
     _tp.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
     set_tracer_provider(_tp)

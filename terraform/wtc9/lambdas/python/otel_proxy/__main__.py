@@ -27,7 +27,7 @@ def _loop(srv: HTTPServer) -> None:
             with SESSION.get(
                 f"{_API}/event/next", headers={"Lambda-Extension-Identifier": id}
             ) as r:
-                assert r.status_code == HTTPStatus.OK, r.status_code
+                assert r.status_code == HTTPStatus.OK, (r.status_code, r.text)
                 match json := r.json():
                     case {"eventType": "INVOKE"}:
                         pass
