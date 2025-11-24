@@ -7,7 +7,7 @@ from logging import getLogger
 from os import environ
 from signal import Signals, signal
 
-from . import SESSION, loop, queue, srv
+from . import SESSION, srv
 
 with nullcontext():
     _API = f"http://{environ['AWS_LAMBDA_RUNTIME_API']}/2020-01-01/extension"
@@ -29,7 +29,7 @@ def _loop(srv: HTTPServer) -> None:
             assert r.status_code == HTTPStatus.OK, r.status_code
             match json := r.json():
                 case {"eventType": "SHUTDOWN"}:
-                    queue().put_nowait(None)
+                    srv.shutdown()
                 case _:
                     getLogger().info("%s", json)
 
@@ -40,16 +40,15 @@ def _loop(srv: HTTPServer) -> None:
 
 
 def main() -> None:
-    server = srv()
-    signal(Signals.SIGTERM, lambda _, __: queue().put_nowait(None))
-
     with ThreadPoolExecutor() as ex:
+        server = srv(ex)
+        signal(Signals.SIGTERM, lambda _, __: server.shutdown())
+
         futs = tuple(
             ex.submit(f)
             for f in (
                 partial(_loop, server),
                 partial(server.serve_forever, 0.06),
-                partial(loop, ex),
             )
         )
         for f in as_completed(futs):

@@ -1,19 +1,15 @@
 from concurrent.futures import Executor
 from contextlib import contextmanager, nullcontext
-from functools import cache
+from functools import cache, partial
 from http import HTTPStatus
 from http.client import HTTPMessage
 from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from logging import INFO, basicConfig, captureWarnings, getLogger
 from os import environ, linesep
-from queue import SimpleQueue
+from typing import Iterator, Type
 from urllib.parse import SplitResult, urlsplit, urlunsplit
 
 from requests import Session
-from typing_extensions import Iterator
-
-_Q = SimpleQueue[tuple[str, HTTPMessage, bytes] | None]
-
 
 with nullcontext():
     captureWarnings(True)
@@ -28,11 +24,6 @@ with nullcontext():
 def _otel_httpbased() -> SplitResult:
     env = environ["OTEL_EXP_OTLP_ENDPOINT"]
     return urlsplit(env)
-
-
-@cache
-def queue() -> _Q:
-    return _Q()
 
 
 @contextmanager
@@ -53,19 +44,6 @@ def _responding(self: BaseHTTPRequestHandler) -> Iterator[None]:
         self.end_headers()
 
 
-class _Handler(BaseHTTPRequestHandler):
-    def log_request(self, code: int | str = "-", size: int | str = "-") -> None: ...
-
-    def do_POST(self) -> None:
-        with _responding(self):
-            assert isinstance(self.headers, HTTPMessage)
-            assert (length := self.headers.get("content-length"))
-            body = self.rfile.read(int(length))
-            req = (self.path, self.headers, body)
-            assert body
-            queue().put_nowait(req)
-
-
 def _proxy(path: str, headers: HTTPMessage, body: bytes) -> None:
     try:
         split = _otel_httpbased()
@@ -79,13 +57,21 @@ def _proxy(path: str, headers: HTTPMessage, body: bytes) -> None:
         getLogger().error("%s", e)
 
 
-def loop(ex: Executor) -> None:
-    q = queue()
-    while row := q.get():
-        ex.submit(_proxy, *row)
+def _handler(ex: Executor) -> Type[BaseHTTPRequestHandler]:
+    class Handler(BaseHTTPRequestHandler):
+        def log_request(self, code: int | str = "-", size: int | str = "-") -> None: ...
 
-    assert q.empty(), q.get_nowait()
+        def do_POST(self) -> None:
+            with _responding(self):
+                assert isinstance(self.headers, HTTPMessage)
+                assert (length := self.headers.get("content-length"))
+                assert (body := self.rfile.read(int(length)))
+
+                p = partial(_proxy, path=self.path, headers=self.headers, body=body)
+                ex.submit(p)
+
+    return Handler
 
 
-def srv() -> HTTPServer:
-    return ThreadingHTTPServer(("localhost", 4318), _Handler)
+def srv(ex: Executor) -> HTTPServer:
+    return ThreadingHTTPServer(("localhost", 4318), _handler(ex))
