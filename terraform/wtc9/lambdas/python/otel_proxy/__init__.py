@@ -67,12 +67,14 @@ def _handler(ex: Executor) -> Type[BaseHTTPRequestHandler]:
         def log_request(self, code: int | str = "-", size: int | str = "-") -> None: ...
 
         def do_POST(self) -> None:
-            with spanning(">>>"), _responding(self):
-                assert isinstance(self.headers, HTTPMessage)
-                assert (length := self.headers.get("content-length"))
-                assert (body := self.rfile.read(int(length)))
+            with spanning(">>>"):
+                with _responding(self):
+                    assert isinstance(self.headers, HTTPMessage)
+                    assert (length := self.headers.get("content-length"))
+                    assert (body := self.rfile.read(int(length)))
 
-                p = partial(_proxy, path=self.path, headers=self.headers, body=body)
+                    p = partial(_proxy, path=self.path, headers=self.headers, body=body)
+
                 ex.submit(p)
 
     return Handler
