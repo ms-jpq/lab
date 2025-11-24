@@ -16,22 +16,25 @@ with nullcontext():
 def _loop(srv: HTTPServer) -> None:
     with SESSION.post(
         f"{_API}/register",
-        json={"events": ["SHUTDOWN"]},
+        json={"events": ["INVOKE", "SHUTDOWN"]},
         headers={"Lambda-Extension-Name": "otlp.sh"},
     ) as r:
-        assert r.status_code == HTTPStatus.OK, (r.status_code, r.json())
+        assert r.status_code == HTTPStatus.OK, (r.status_code, r.text)
         id = r.headers["Lambda-Extension-Identifier"]
 
     try:
-        with SESSION.get(
-            f"{_API}/event/next", headers={"Lambda-Extension-Identifier": id}
-        ) as r:
-            assert r.status_code == HTTPStatus.OK, r.status_code
-            match json := r.json():
-                case {"eventType": "SHUTDOWN"}:
-                    srv.shutdown()
-                case _:
-                    getLogger().info("%s", json)
+        while True:
+            with SESSION.get(
+                f"{_API}/event/next", headers={"Lambda-Extension-Identifier": id}
+            ) as r:
+                assert r.status_code == HTTPStatus.OK, r.status_code
+                match json := r.json():
+                    case {"eventType": "INVOKE"}:
+                        pass
+                    case {"eventType": "SHUTDOWN"}:
+                        break
+                    case _:
+                        getLogger().info("%s", json)
 
     except Exception as e:
         getLogger().error("%s", e)
