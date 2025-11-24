@@ -19,7 +19,7 @@ from opentelemetry.sdk.resources import (
     ResourceDetector,
     get_aggregated_resources,
 )
-from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace import ConcurrentMultiSpanProcessor, TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.semconv._incubating.attributes.cloud_attributes import (
     CLOUD_PROVIDER,
@@ -63,7 +63,9 @@ with nullcontext():
 
 
 with nullcontext():
-    _tp = TracerProvider(resource=_resource)
+    _tp = TracerProvider(
+        resource=_resource, active_span_processor=ConcurrentMultiSpanProcessor(),
+    )
     _tp.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
     set_tracer_provider(_tp)
 
