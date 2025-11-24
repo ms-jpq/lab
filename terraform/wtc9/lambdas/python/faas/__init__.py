@@ -7,6 +7,7 @@ from logging import getLogger
 from os import environ
 from os.path import sep
 from pathlib import PurePath
+from sys import setswitchinterval
 from traceback import format_exception
 from typing import Any, TypeVar, cast
 
@@ -18,6 +19,9 @@ from .telemetry import NAME
 
 _F = TypeVar("_F", bound=Callable[..., Any])
 _ = True
+
+with nullcontext():
+    setswitchinterval(0.001)
 
 with nullcontext():
     B3_CONF = Config(retries={"mode": "adaptive"})
