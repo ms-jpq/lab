@@ -6,10 +6,12 @@ from http.server import HTTPServer
 from logging import getLogger
 from os import environ
 from signal import Signals, signal
+from sys import setswitchinterval
 
 from . import SESSION, srv
 
 with nullcontext():
+    setswitchinterval(0.001)
     _API = f"http://{environ['AWS_LAMBDA_RUNTIME_API']}/2020-01-01/extension"
 
 
