@@ -1,5 +1,6 @@
 {
   "ENV_CERTBOT_SITES": [
+    "ENV_TLD",
     "otlp.ENV_TLD",
     "s3.ENV_TLD",
     "m5_for([MACH], [MACH.ENV_TLD,], ENV_MACHINES)",
@@ -19,6 +20,17 @@
     "XBOX.enp1s0.opnsense.home.arpa@udp*3074:3074"
   ],
   "ENV_INDEX": [
+    "droplet.w-0.droplet",
+    "droplet.w-0.droplet/mail.html",
+    "esxi.enp1s0.opnsense",
+    "esxi.enp1s0.opnsense/grafana",
+    "esxi.enp1s0.opnsense/jaeger",
+    "esxi.enp1s0.opnsense/journald/tail.html",
+    "esxi.enp1s0.opnsense/vm.html",
+    "nuc.enp1s0.opnsense",
+    "opnsense.w-0.opnsense",
+    "orthanc.enp1s0.opnsense",
+    "plex/management",
     "cat",
     "chat",
     "minio",
@@ -51,6 +63,6 @@
     "s3.*"
   ],
   "ENV_WAN_IF": "enp2s0",
-  "ENV_WG_PEERS": ["pfsense"],
+  "ENV_WG_PEERS": ["pfsense", "freenas"],
   "ENV_WG_SERVER_NAME": "ENV_DOMAIN"
 }
