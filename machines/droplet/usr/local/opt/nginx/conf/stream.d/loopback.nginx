@@ -3,9 +3,3 @@ server {
   listen     [::1]:1194 reuseport;
   proxy_pass unix:/run/local/nginx/gateway-http.sock;
 }
-
-server {
-  listen     6379 reuseport;
-  listen     [::]:6379 reuseport;
-  proxy_pass localhost:30845;
-}
