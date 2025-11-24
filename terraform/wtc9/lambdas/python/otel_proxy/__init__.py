@@ -90,6 +90,8 @@ def loop() -> None:
         except Exception as e:
             getLogger().error("%s", e)
 
+    assert queue().empty(), queue().get_nowait()
+
 
 def srv() -> None:
     srv = _Server(("", 4318), _Handler)
