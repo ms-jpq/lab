@@ -33,6 +33,8 @@ from opentelemetry.semconv._incubating.attributes.faas_attributes import (
 from opentelemetry.semconv.attributes.service_attributes import SERVICE_NAME
 from opentelemetry.trace import Span, get_tracer, set_tracer_provider
 
+from .spanner import spanning
+
 _F = TypeVar("_F", bound=Callable[..., Any])
 _M = TypeVar("_M", bound=Callable[[Any, LambdaContext], Any])
 
@@ -123,7 +125,8 @@ def entry(
             try:
                 return r(event, context)
             finally:
-                _tp.force_flush()
+                with spanning("<<<"):
+                    _tp.force_flush()
 
         return cast(_F, instrumented)
 

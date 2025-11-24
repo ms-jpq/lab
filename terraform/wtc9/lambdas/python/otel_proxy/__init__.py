@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from concurrent.futures import Executor
 from contextlib import contextmanager, nullcontext
 from functools import cache, partial
@@ -6,11 +7,12 @@ from http.client import HTTPMessage
 from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from logging import INFO, basicConfig, captureWarnings, getLogger
 from os import environ, linesep
-from time import monotonic
-from typing import Iterator, Type
+from typing import Type
 from urllib.parse import SplitResult, urlsplit, urlunsplit
 
 from requests import Session
+
+from .spanning import spanning
 
 with nullcontext():
     captureWarnings(True)
@@ -25,16 +27,6 @@ with nullcontext():
 def _otel_httpbased() -> SplitResult:
     env = environ["OTEL_EXP_OTLP_ENDPOINT"]
     return urlsplit(env)
-
-
-@contextmanager
-def _span(name: str) -> Iterator[None]:
-    t0 = monotonic()
-    try:
-        yield None
-    finally:
-        s = monotonic() - t0
-        getLogger().info("%s", f"{name} {s:.2f}")
 
 
 @contextmanager
@@ -56,7 +48,7 @@ def _responding(self: BaseHTTPRequestHandler) -> Iterator[None]:
 
 
 def _proxy(path: str, headers: HTTPMessage, body: bytes) -> None:
-    with _span("<>"):
+    with spanning("<>"):
         try:
             split = _otel_httpbased()
             url = urlunsplit(split) + path
@@ -75,7 +67,7 @@ def _handler(ex: Executor) -> Type[BaseHTTPRequestHandler]:
         def log_request(self, code: int | str = "-", size: int | str = "-") -> None: ...
 
         def do_POST(self) -> None:
-            with _span(">>>"), _responding(self):
+            with spanning(">>>"), _responding(self):
                 assert isinstance(self.headers, HTTPMessage)
                 assert (length := self.headers.get("content-length"))
                 assert (body := self.rfile.read(int(length)))
