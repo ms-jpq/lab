@@ -9,6 +9,7 @@ from signal import Signals, signal
 from sys import setswitchinterval
 
 from . import SESSION, srv
+from .spanning import spanning
 
 with nullcontext():
     setswitchinterval(0.001)
@@ -45,7 +46,7 @@ def _loop(srv: HTTPServer) -> None:
 
 
 def main() -> None:
-    try:
+    with spanning("***"):
         with ThreadPoolExecutor(max_workers=64) as ex:
             server = srv(ex)
             signal(Signals.SIGTERM, lambda _, __: server.shutdown())
@@ -59,8 +60,6 @@ def main() -> None:
             )
             for f in as_completed(futs):
                 f.result()
-    finally:
-        getLogger().info("%s", "*** ***")
 
 
 if __name__ == "__main__":
