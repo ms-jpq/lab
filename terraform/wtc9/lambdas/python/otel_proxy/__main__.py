@@ -45,20 +45,22 @@ def _loop(srv: HTTPServer) -> None:
 
 
 def main() -> None:
-    with ThreadPoolExecutor() as ex:
-        server = srv(ex)
-        signal(Signals.SIGTERM, lambda _, __: server.shutdown())
+    try:
+        with ThreadPoolExecutor() as ex:
+            server = srv(ex)
+            signal(Signals.SIGTERM, lambda _, __: server.shutdown())
 
-        futs = tuple(
-            ex.submit(f)
-            for f in (
-                partial(_loop, server),
-                partial(server.serve_forever, 0.06),
+            futs = tuple(
+                ex.submit(f)
+                for f in (
+                    partial(_loop, server),
+                    partial(server.serve_forever, 0.06),
+                )
             )
-        )
-        for f in as_completed(futs):
-            f.result()
-    getLogger().info("%s", "*** ***")
+            for f in as_completed(futs):
+                f.result()
+    finally:
+        getLogger().info("%s", "*** ***")
 
 
 if __name__ == "__main__":
