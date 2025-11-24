@@ -6,7 +6,7 @@ from http import HTTPStatus
 from http.client import HTTPMessage
 from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from logging import INFO, basicConfig, captureWarnings, getLogger
-from os import environ, linesep
+from os import environ
 from typing import Type
 from urllib.parse import SplitResult, urlsplit, urlunsplit
 
