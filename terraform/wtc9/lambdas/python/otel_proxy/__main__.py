@@ -5,6 +5,7 @@ from http import HTTPStatus
 from http.server import HTTPServer
 from logging import getLogger
 from os import environ
+from signal import Signals, signal
 
 from . import SESSION, loop, queue, srv
 
@@ -15,7 +16,7 @@ with nullcontext():
 def _loop(srv: HTTPServer) -> None:
     with SESSION.post(
         f"{_API}/register",
-        json={"events": ["INVOKE", "SHUTDOWN"]},
+        json={"events": ["SHUTDOWN"]},
         headers={"Lambda-Extension-Name": "otlp.sh"},
     ) as r:
         assert r.status_code == HTTPStatus.OK, (r.status_code, r.json())
@@ -40,6 +41,8 @@ def _loop(srv: HTTPServer) -> None:
 
 def main() -> None:
     server = srv()
+    signal(Signals.SIGTERM, lambda _, __: queue().put_nowait(None))
+
     with ThreadPoolExecutor() as ex:
         futs = tuple(
             ex.submit(f)
