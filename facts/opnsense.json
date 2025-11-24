@@ -4,7 +4,7 @@
     "otlp.ENV_TLD",
     "s3.ENV_TLD",
     "m5_for([MACH], [MACH.ENV_TLD,], ENV_MACHINES)",
-    "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_TLD,], ENV_INDEX)"
+    "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_TLD,], ENV_SITES)"
   ],
   "ENV_CNAMES": [
     "m5_for([SITE], [SITE=ENV_MACHINE.w-0.ENV_MACHINE.home.arpa,], ENV_CERTBOT_SITES)"
@@ -31,15 +31,7 @@
     "opnsense.w-0.opnsense",
     "orthanc.enp1s0.opnsense",
     "plex/management",
-    "cat",
-    "chat",
-    "minio",
-    "ollama",
-    "pdf",
-    "pocket",
-    "redis",
-    "rss",
-    "sql"
+    "ENV_SITES"
   ],
   "ENV_IOT_IFS": [],
   "ENV_LAN_IFS": ["enp1s0"],
@@ -61,6 +53,17 @@
     "pocket.*",
     "rss.*",
     "s3.*"
+  ],
+  "ENV_SITES": [
+    "cat",
+    "chat",
+    "minio",
+    "ollama",
+    "pdf",
+    "pocket",
+    "redis",
+    "rss",
+    "sql"
   ],
   "ENV_WAN_IF": "enp2s0",
   "ENV_WG_PEERS": ["pfsense", "freenas"],
