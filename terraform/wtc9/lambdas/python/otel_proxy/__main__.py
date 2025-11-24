@@ -38,7 +38,11 @@ def main() -> None:
     with ThreadPoolExecutor() as ex:
         futs = tuple(
             ex.submit(f)
-            for f in (partial(_loop, server), lambda: server.serve_forever(0.06), loop)
+            for f in (
+                partial(_loop, server),
+                partial(server.serve_forever, 0.06),
+                partial(loop, ex),
+            )
         )
         for f in as_completed(futs):
             f.result()
