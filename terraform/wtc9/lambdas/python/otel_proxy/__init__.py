@@ -28,6 +28,16 @@ def _otel_httpbased() -> SplitResult:
 
 
 @contextmanager
+def _span(name: str) -> Iterator[None]:
+    t0 = monotonic()
+    try:
+        yield None
+    finally:
+        s = monotonic() - t0
+        getLogger().info("%s", f"{name} {s:.2f}")
+
+
+@contextmanager
 def _responding(self: BaseHTTPRequestHandler) -> Iterator[None]:
     try:
         yield None
@@ -46,21 +56,18 @@ def _responding(self: BaseHTTPRequestHandler) -> Iterator[None]:
 
 
 def _proxy(path: str, headers: HTTPMessage, body: bytes) -> None:
-    t0 = monotonic()
-    try:
-        split = _otel_httpbased()
-        url = urlunsplit(split) + path
-        h = {"content-type": headers["content-type"]}
+    with _span("<>"):
+        try:
+            split = _otel_httpbased()
+            url = urlunsplit(split) + path
+            h = {"content-type": headers["content-type"]}
 
-        with SESSION.post(url, headers=h, data=body) as r:
-            assert r.status_code == HTTPStatus.OK, (r.status_code, r.text)
-    except Exception as e:
-        getLogger().error("%s", e)
-    else:
-        getLogger().info("%s", f"--> {path}")
-    finally:
-        s = monotonic() - t0
-        getLogger().info("%s", f"<> {s:.2f}")
+            with SESSION.post(url, headers=h, data=body) as r:
+                assert r.status_code == HTTPStatus.OK, (r.status_code, r.text)
+        except Exception as e:
+            getLogger().error("%s", e)
+        else:
+            getLogger().info("%s", f"--> {path}")
 
 
 def _handler(ex: Executor) -> Type[BaseHTTPRequestHandler]:
@@ -68,7 +75,7 @@ def _handler(ex: Executor) -> Type[BaseHTTPRequestHandler]:
         def log_request(self, code: int | str = "-", size: int | str = "-") -> None: ...
 
         def do_POST(self) -> None:
-            with _responding(self):
+            with _span(">>>"), _responding(self):
                 assert isinstance(self.headers, HTTPMessage)
                 assert (length := self.headers.get("content-length"))
                 assert (body := self.rfile.read(int(length)))
