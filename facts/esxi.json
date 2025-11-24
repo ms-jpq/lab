@@ -4,8 +4,7 @@
     "esxi.enp1s0.opnsense.home.arpa",
     "nuc.enp1s0.opnsense.home.arpa",
     "opnsense.w-0.opnsense.home.arpa",
-    "orthanc.enp1s0.opnsense.home.arpa",
-    "pfsense.w-0.pfsense.home.arpa"
+    "orthanc.enp1s0.opnsense.home.arpa"
   ],
   "ENV_MACVLAN_IFS": ["enp7s0"],
   "ENV_NFS_EXPORTS": [],
@@ -15,6 +14,7 @@
   "ENV_PG_CLUSTERS": ["16/miniflux", "16/wallabag", "16/lobechat"],
   "ENV_PROMETHEUS_HOSTS": [
     "ENV_JOURNAL_HOSTS",
+    "pfsense.w-0.pfsense.home.arpa",
     "freenas.eno1.pfsense.home.arpa"
   ],
   "ENV_PROMETHEUS_K3S_HOSTS": [
