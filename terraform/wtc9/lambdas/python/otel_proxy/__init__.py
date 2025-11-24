@@ -6,6 +6,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from logging import INFO, basicConfig, captureWarnings, getLogger
 from os import environ, linesep
 from queue import SimpleQueue
+from urllib.parse import SplitResult, urlsplit, urlunsplit
 
 from requests import Session
 from typing_extensions import Iterator
@@ -23,8 +24,9 @@ with nullcontext():
 
 
 @cache
-def _otel_httpbased() -> str:
-    return environ["OTEL_EXP_OTLP_ENDPOINT"]
+def _otel_httpbased() -> SplitResult:
+    env = environ["OTEL_EXP_OTLP_ENDPOINT"]
+    return urlsplit(env)
 
 
 @cache
@@ -67,12 +69,16 @@ class _Handler(BaseHTTPRequestHandler):
 
 
 def loop() -> None:
+    split = _otel_httpbased()
+    auth = (split.username or "", split.password or "")
     while row := queue().get():
         path, headers, body = row
         try:
-            url = _otel_httpbased() + path
+            url = urlunsplit(split) + path
             h = {k: v for k, v in headers.items()}
-            with SESSION.post(url, headers=h, data=body) as r:
+            with SESSION.post(
+                url, headers=h, auth=auth, data=body
+            ) as r:
                 assert r.status_code == HTTPStatus.OK, (r.status_code, r.json())
         except Exception as e:
             getLogger().error("%s", e)
