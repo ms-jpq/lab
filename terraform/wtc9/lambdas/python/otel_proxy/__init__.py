@@ -39,9 +39,10 @@ def _responding(self: BaseHTTPRequestHandler) -> Iterator[None]:
     else:
         self.send_response(HTTPStatus.OK)
     finally:
-        self.send_header("content-length", "0")
-        self.send_header("connection", "keep-alive")
+        for k, v in {"content-length": "0", "connection": "keep-alive"}.items():
+            self.send_header(k, v)
         self.end_headers()
+        self.wfile.flush()
 
     assert not self.close_connection
 
@@ -66,13 +67,12 @@ def _handler(ex: Executor) -> Type[BaseHTTPRequestHandler]:
         def log_request(self, code: int | str = "-", size: int | str = "-") -> None: ...
 
         def do_POST(self) -> None:
-            with spanning(">>>"):
-                with _responding(self):
-                    assert isinstance(self.headers, HTTPMessage)
-                    assert (length := self.headers.get("content-length"))
-                    assert (body := self.rfile.read(int(length)))
+            with spanning(">>>"), _responding(self):
+                assert isinstance(self.headers, HTTPMessage)
+                assert (length := self.headers.get("content-length"))
+                assert (body := self.rfile.read(int(length)))
 
-                    p = partial(_proxy, path=self.path, headers=self.headers, body=body)
+                p = partial(_proxy, path=self.path, headers=self.headers, body=body)
 
                 ex.submit(p)
 
