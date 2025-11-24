@@ -22,8 +22,8 @@ def _loop(srv: HTTPServer) -> None:
         assert r.status_code == HTTPStatus.OK, (r.status_code, r.text)
         id = r.headers["Lambda-Extension-Identifier"]
 
-    try:
-        while True:
+    while True:
+        try:
             with SESSION.get(
                 f"{_API}/event/next", headers={"Lambda-Extension-Identifier": id}
             ) as r:
@@ -36,10 +36,10 @@ def _loop(srv: HTTPServer) -> None:
                     case _:
                         getLogger().info("%s", json)
 
-    except Exception as e:
-        getLogger().error("%s", e)
-    finally:
-        srv.shutdown()
+        except Exception as e:
+            getLogger().error("%s", e)
+
+    srv.shutdown()
 
 
 def main() -> None:
