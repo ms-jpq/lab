@@ -58,6 +58,7 @@ def main() -> None:
         )
         for f in as_completed(futs):
             f.result()
+    getLogger().info("%s", "*** ***")
 
 
 if __name__ == "__main__":
