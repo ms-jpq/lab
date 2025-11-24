@@ -44,6 +44,7 @@ def _responding(self: BaseHTTPRequestHandler) -> Iterator[None]:
     else:
         self.send_response(HTTPStatus.OK)
     finally:
+        self.send_header("content-length", "0")
         self.end_headers()
 
 
