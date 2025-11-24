@@ -9,7 +9,6 @@ from os import environ
 from . import SESSION, loop, queue, srv
 
 with nullcontext():
-
     _API = f"http://{environ['AWS_LAMBDA_RUNTIME_API']}/2020-01-01/extension"
 
 

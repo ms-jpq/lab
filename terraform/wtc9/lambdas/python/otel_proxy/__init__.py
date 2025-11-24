@@ -1,3 +1,4 @@
+from concurrent.futures import Executor
 from contextlib import contextmanager, nullcontext
 from functools import cache
 from http import HTTPStatus
@@ -65,19 +66,23 @@ class _Handler(BaseHTTPRequestHandler):
             queue().put_nowait(req)
 
 
-def loop() -> None:
-    q, split = queue(), _otel_httpbased()
-    auth = (split.username or "", split.password or "")
-    while row := q.get():
-        path, headers, body = row
-        try:
-            url = urlunsplit(split) + path
-            h = {"content-type": headers["content-type"]}
+def _proxy(path: str, headers: HTTPMessage, body: bytes) -> None:
+    try:
+        split = _otel_httpbased()
+        auth = (split.username or "", split.password or "")
+        url = urlunsplit(split) + path
+        h = {"content-type": headers["content-type"]}
 
-            with SESSION.post(url, headers=h, auth=auth, data=body) as r:
-                assert r.status_code == HTTPStatus.OK, (r.status_code, r.text)
-        except Exception as e:
-            getLogger().error("%s", e)
+        with SESSION.post(url, headers=h, auth=auth, data=body) as r:
+            assert r.status_code == HTTPStatus.OK, (r.status_code, r.text)
+    except Exception as e:
+        getLogger().error("%s", e)
+
+
+def loop(ex: Executor) -> None:
+    q = queue()
+    while row := q.get():
+        ex.submit(_proxy, *row)
 
     assert q.empty(), q.get_nowait()
 
