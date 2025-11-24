@@ -46,7 +46,7 @@ def _loop(srv: HTTPServer) -> None:
 
 def main() -> None:
     try:
-        with ThreadPoolExecutor() as ex:
+        with ThreadPoolExecutor(max_workers=64) as ex:
             server = srv(ex)
             signal(Signals.SIGTERM, lambda _, __: server.shutdown())
 
