@@ -47,14 +47,15 @@ def _responding(self: BaseHTTPRequestHandler) -> Iterator[None]:
 def _proxy(path: str, headers: HTTPMessage, body: bytes) -> None:
     try:
         split = _otel_httpbased()
-        auth = (split.username or "", split.password or "")
         url = urlunsplit(split) + path
         h = {"content-type": headers["content-type"]}
 
-        with SESSION.post(url, headers=h, auth=auth, data=body) as r:
+        with SESSION.post(url, headers=h, data=body) as r:
             assert r.status_code == HTTPStatus.OK, (r.status_code, r.text)
     except Exception as e:
         getLogger().error("%s", e)
+    else:
+        getLogger().info("%s", f"--> {path}")
 
 
 def _handler(ex: Executor) -> Type[BaseHTTPRequestHandler]:
