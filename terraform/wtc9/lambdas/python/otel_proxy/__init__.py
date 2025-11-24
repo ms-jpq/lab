@@ -6,6 +6,7 @@ from http.client import HTTPMessage
 from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from logging import INFO, basicConfig, captureWarnings, getLogger
 from os import environ, linesep
+from time import monotonic
 from typing import Iterator, Type
 from urllib.parse import SplitResult, urlsplit, urlunsplit
 
@@ -45,6 +46,7 @@ def _responding(self: BaseHTTPRequestHandler) -> Iterator[None]:
 
 
 def _proxy(path: str, headers: HTTPMessage, body: bytes) -> None:
+    t0 = monotonic()
     try:
         split = _otel_httpbased()
         url = urlunsplit(split) + path
@@ -56,6 +58,9 @@ def _proxy(path: str, headers: HTTPMessage, body: bytes) -> None:
         getLogger().error("%s", e)
     else:
         getLogger().info("%s", f"--> {path}")
+    finally:
+        s = monotonic() - t0
+        getLogger().info("%s", f"<> {s:.2f}")
 
 
 def _handler(ex: Executor) -> Type[BaseHTTPRequestHandler]:
