@@ -2,12 +2,10 @@ from contextlib import contextmanager, nullcontext
 from functools import cache
 from http import HTTPStatus
 from http.client import HTTPMessage
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from logging import INFO, basicConfig, captureWarnings, getLogger
 from os import environ, linesep
 from queue import SimpleQueue
-from socket import IPPROTO_IPV6, IPV6_V6ONLY, AddressFamily, getfqdn
-from socketserver import TCPServer
 
 from requests import Session
 from typing_extensions import Iterator
@@ -34,19 +32,6 @@ def queue() -> _Q:
     return _Q()
 
 
-class _Server(ThreadingHTTPServer):
-    address_family = AddressFamily.AF_INET6
-    allow_reuse_address = True
-    allow_reuse_port = True
-
-    def server_bind(self) -> None:
-        self.socket.setsockopt(IPPROTO_IPV6, IPV6_V6ONLY, 0)
-        TCPServer.server_bind(self)
-        _, server_port, *_ = self.socket.getsockname()
-        self.server_name = getfqdn()
-        self.server_port = server_port
-
-
 @contextmanager
 def _responding(self: BaseHTTPRequestHandler) -> Iterator[None]:
     try:
@@ -61,6 +46,8 @@ def _responding(self: BaseHTTPRequestHandler) -> Iterator[None]:
             raise e1
     else:
         self.send_response(HTTPStatus.OK)
+    finally:
+        self.end_headers()
 
 
 def _read_body(self: BaseHTTPRequestHandler) -> bytes:
@@ -85,14 +72,13 @@ def loop() -> None:
         try:
             url = _otel_httpbased() + path
             h = {k: v for k, v in headers.items()}
-            with SESSION.post(url, headers=h, data=body):
-                pass
+            with SESSION.post(url, headers=h, data=body) as r:
+                assert r.status_code == HTTPStatus.OK, (r.status_code, r.json())
         except Exception as e:
             getLogger().error("%s", e)
 
     assert queue().empty(), queue().get_nowait()
 
 
-def srv() -> None:
-    srv = _Server(("", 4318), _Handler)
-    srv.serve_forever()
+def srv() -> HTTPServer:
+    return ThreadingHTTPServer(("localhost", 4318), _Handler)
