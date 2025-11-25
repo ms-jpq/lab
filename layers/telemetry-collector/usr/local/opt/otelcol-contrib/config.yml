@@ -21,6 +21,10 @@ receivers:
         field: body.__SEQNUM
       - type: remove
         field: body.__SEQNUM_ID
+      - type: regex_replace
+        field: body._HOSTNAME
+        regex: "\\.home\\.arpa$"
+        replace_with: ""
   &recv otlp:
     protocols:
       http:
@@ -31,8 +35,6 @@ processors:
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md
   &journal-meta transform:
     log_statements:
-      - >-
-        replace_pattern(log.body["_HOSTNAME"], "\\.home\\.arpa$", "")
       - >-
         set(resource.attributes["service.namespace"], log.body["_HOSTNAME"])
       - >-
