@@ -2,7 +2,7 @@ from collections.abc import Callable
 from contextlib import nullcontext
 from functools import wraps
 from itertools import permutations
-from logging import INFO, basicConfig, captureWarnings
+from logging import INFO, basicConfig, captureWarnings, getLogger
 from os import environ
 from pathlib import PurePath
 from typing import Any, TypeVar, cast
@@ -19,7 +19,7 @@ from opentelemetry.sdk.resources import (
     ResourceDetector,
     get_aggregated_resources,
 )
-from opentelemetry.sdk.trace import ConcurrentMultiSpanProcessor, TracerProvider
+from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.semconv._incubating.attributes.cloud_attributes import (
     CLOUD_PROVIDER,
@@ -65,10 +65,7 @@ with nullcontext():
 
 
 with nullcontext():
-    _tp = TracerProvider(
-        resource=_resource,
-        active_span_processor=ConcurrentMultiSpanProcessor(),
-    )
+    _tp = TracerProvider(resource=_resource)
     _tp.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
     set_tracer_provider(_tp)
 
@@ -126,7 +123,10 @@ def entry(
                 return r(event, context)
             finally:
                 with spanning("<<<"):
-                    _tp.force_flush()
+                    try:
+                        _tp.force_flush()
+                    except Exception as e:
+                        getLogger().error("%s", e)
 
         return cast(_F, instrumented)
 
