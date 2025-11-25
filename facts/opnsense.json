@@ -52,15 +52,7 @@
     "rss.*",
     "s3.*"
   ],
-  "ENV_SITES": [
-    "minio",
-    "ollama",
-    "pdf",
-    "pocket",
-    "redis",
-    "rss",
-    "sql"
-  ],
+  "ENV_SITES": ["minio", "ollama", "pdf", "pocket", "redis", "rss", "sql"],
   "ENV_WAN_IF": "enp2s0",
   "ENV_WG_PEERS": ["pfsense", "freenas"],
   "ENV_WG_SERVER_NAME": "ENV_DOMAIN"

@@ -9,7 +9,10 @@ x-k8s:
       headers:
         customResponseHeaders:
           Content-Security-Policy: >-
-            default-src 'self' https://registry.npmmirror.com/ https://cdn.jsdelivr.net data: blob: 'unsafe-inline' 'unsafe-eval' *.m5_assert([ENV_DOMAIN]); img-src * data:; media-src * data:;
+            default-src 'self' https://registry.npmmirror.com/ https://cdn.jsdelivr.net data: blob: 'unsafe-inline' 'unsafe-eval';
+            img-src * data:;
+            media-src * data:;
+            connect-src 'self' https://registry.npmmirror.com/ https://cdn.jsdelivr.net;
 
 services:
   lobe-chat:
