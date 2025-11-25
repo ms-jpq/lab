@@ -4,9 +4,10 @@ server {
   include     /usr/local/opt/nginx/conf/auth.nginx;
 
   location / {
-    include          /usr/local/opt/nginx/conf/auth2.nginx;
-    proxy_set_header Accept-Encoding "";
-    include          /usr/local/opt/nginx/conf/http.d/proxy_params.nginx;
-    proxy_pass       http://127.0.0.1:8008/;
+    include           /usr/local/opt/nginx/conf/auth2.nginx;
+    proxy_set_header  Accept-Encoding "";
+    proxy_pass_header Content-Security-Policy;
+    include           /usr/local/opt/nginx/conf/http.d/proxy_params.nginx;
+    proxy_pass        http://127.0.0.1:8008/;
   }
 }
