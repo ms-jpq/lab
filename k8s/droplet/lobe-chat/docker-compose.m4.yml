@@ -10,8 +10,8 @@ x-k8s:
         customResponseHeaders:
           Content-Security-Policy: >-
             default-src 'self' https://registry.npmmirror.com/ https://cdn.jsdelivr.net data: blob: 'unsafe-inline' 'unsafe-eval';
-            img-src * data:;
-            media-src * data:;
+            img-src * data: blob:;
+            media-src * data: blob:;
             connect-src 'self' https://registry.npmmirror.com/ https://cdn.jsdelivr.net;
 
 services:
