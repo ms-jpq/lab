@@ -37,6 +37,7 @@ services:
       BROWSERLESS_URL: http://browserless:3000
       DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg/${COMPOSE_PROJECT_NAME}
       DEEPSEEK_API_KEY:
+      ENABLE_PROXY_DNS: 1
       FEATURE_FLAGS: -check_updates,-clerk_sign_up,-welcome_suggest,-market
       GOOGLE_API_KEY:
       HOSTNAME: "::"
