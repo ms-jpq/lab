@@ -2,5 +2,5 @@ proxy_hide_header Content-Security-Policy;
 proxy_hide_header Referrer-Policy;
 proxy_hide_header X-Content-Type-Options;
 add_header        Content-Security-Policy $x_content_security_policy always;
-add_header        Referrer-Policy "no-referrer" always;
+add_header        Referrer-Policy "same-origin" always;
 add_header        X-Content-Type-Options "nosniff" always;
