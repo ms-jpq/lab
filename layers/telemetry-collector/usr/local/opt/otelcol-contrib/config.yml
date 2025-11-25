@@ -25,6 +25,9 @@ receivers:
         field: body._HOSTNAME
         regex: "\\.home\\.arpa$"
         replace_with: ""
+      - type: copy
+        from: body._HOSTNAME
+        to: resource.service.namespace
   &recv otlp:
     protocols:
       http:
@@ -35,8 +38,6 @@ processors:
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md
   &journal-meta transform:
     log_statements:
-      - >-
-        set(resource.attributes["service.namespace"], log.body["_HOSTNAME"])
       - >-
         set(resource.attributes["service.name"], "_journald_")
       - >-
