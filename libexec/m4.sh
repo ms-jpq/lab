@@ -11,7 +11,9 @@ readarray -t -- DEFS < "$ENV"
 
 ACC=()
 for D in "${DEFS[@]}"; do
-  ACC+=("-D$D")
+  if [[ -n $D ]]; then
+    ACC+=("-D$D")
+  fi
 done
 
 exec -- ./layers/_/usr/local/libexec/m4.sh "${ACC[@]}" "$@" -- "$SRC" > "$DST"
