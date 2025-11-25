@@ -45,8 +45,6 @@
   "ENV_OVPN_SERVER_NAME": "ENV_WG_SERVER_NAME",
   "ENV_OVPN_TCP_CLIENT_PORT": 1194,
   "ENV_PUBLIC_SITES": [
-    "cat.*",
-    "chat.*",
     "minio.*",
     "ollama.*",
     "otlp.*",
@@ -55,8 +53,6 @@
     "s3.*"
   ],
   "ENV_SITES": [
-    "cat",
-    "chat",
     "minio",
     "ollama",
     "pdf",
