@@ -12,6 +12,7 @@ receivers:
     retry_on_failure:
       enabled: true
     storage: *cursor
+    # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/operators/README.md#what-operators-are-available
     operators:
       - type: remove
         field: body.__CURSOR
@@ -27,7 +28,7 @@ receivers:
         replace_with: ""
       - type: copy
         from: body._HOSTNAME
-        to: resource.service.namespace
+        to: resource["service.namespace"]
   &recv otlp:
     protocols:
       http:
