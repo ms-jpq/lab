@@ -1,5 +1,4 @@
 {
   "ENV_NPROC": "8",
-  "ENV_OTLP_ENDPOINT": "http://esxi.enp1s0.opnsense.home.arpa:4318",
   "ENV_OTLP_PASSWORD": ""
 }
