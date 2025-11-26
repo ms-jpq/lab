@@ -72,8 +72,8 @@ spec:
               - filelog
             processors:
               - memory_limiter
-              - batch
               - *meta
+              - batch
             exporters:
               - *out
           metrics:
