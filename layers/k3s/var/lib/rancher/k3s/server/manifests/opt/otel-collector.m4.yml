@@ -71,8 +71,8 @@ spec:
               - *recv
               - filelog
             processors:
-              - memory_limiter
               - *meta
+              - memory_limiter
               - batch
             exporters:
               - *out
