@@ -1,3 +1,5 @@
 {
-  "ENV_MACVLAN_IFS": "eth0"
+  "ENV_EXTERNAL_NAMES": ["otlp:ENV_OTLP_DOMAIN"],
+  "ENV_MACVLAN_IFS": "eth0",
+  "ENV_OTLP_ENDPOINT": ["https://otlp.external-names.svc.cluster.local"]
 }
