@@ -29,6 +29,9 @@ receivers:
       - type: copy
         from: body._HOSTNAME
         to: resource["service.namespace"]
+      - type: regex_replace
+        regex_name: ansi_control_sequences
+        field: body.MESSAGE
   &recv otlp:
     protocols:
       http:
