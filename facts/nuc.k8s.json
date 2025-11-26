@@ -1,4 +1,3 @@
 {
-  "ENV_NPROC": "8",
-  "ENV_OTLP_PASSWORD": ""
+  "ENV_NPROC": "8"
 }
