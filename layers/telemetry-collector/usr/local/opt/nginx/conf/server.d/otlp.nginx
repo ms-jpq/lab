@@ -1,0 +1,7 @@
+location /otlp {
+  return 307 /otlp/;
+}
+
+location /otlp/ {
+  proxy_pass http://127.0.0.53:4318/;
+}

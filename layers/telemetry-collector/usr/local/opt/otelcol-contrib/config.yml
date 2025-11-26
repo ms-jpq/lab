@@ -35,7 +35,7 @@ receivers:
   &recv otlp:
     protocols:
       http:
-        endpoint: "[::]:4318"
+        endpoint: 127.0.0.53:4318
 processors:
   &batch batch:
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md

@@ -6,7 +6,7 @@ server {
   add_header Alt-Svc 'h3=":$server_port"';
   include    /usr/local/opt/nginx/conf/auth.nginx;
 
-  # access_log syslog:server=unix:/dev/log,nohostname standard;
+  # access_log syslog:server=unix:/dev/log,nohostname;
   location / {
     include           /usr/local/opt/nginx/conf/auth2.nginx;
     proxy_pass_header Content-Security-Policy;
