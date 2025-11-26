@@ -47,7 +47,7 @@ spec:
         &meta transform:
           log_statements:
             - >-
-              [set(resource.attributes["service.name"], "k3s.k8s")]
+              [set(resource.attributes["service.name"], "cluster.local")]
             - >-
               [set(resource.attributes["k8s.cluster.name"], resource.attributes["k8s.node.name"])]
             - >-
