@@ -1,6 +1,6 @@
 {
   "ENV_EXTERNAL_NAMES": [],
-  "ENV_OTLP_PASSWORD": "",
   "ENV_MACVLAN_IFS": "eth0",
-  "ENV_OTLP_ENDPOINT": ["http://esxi.enp1s0.opnsense.home.arpa:4318"]
+  "ENV_OTLP_ENDPOINT": ["http://esxi.enp1s0.opnsense.home.arpa:4318"],
+  "ENV_OTLP_PASSWORD": ""
 }
