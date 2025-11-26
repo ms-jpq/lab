@@ -29,16 +29,27 @@ receivers:
       - type: copy
         from: body._HOSTNAME
         to: resource["service.namespace"]
-      - type: copy
-        from: body._SYSTEMD_UNIT
-        to: resource["service.name"]
   &recv otlp:
     protocols:
       http:
         endpoint: 127.0.0.53:4318
 processors:
   &batch batch:
+  # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md
+  &journal-meta transform:
+    flatten_data: true
+    log_statements:
+      - >-
+        set(resource.attributes["service.name"], "_journald_")
+      - >-
+        set(resource.attributes["service.name"], log.body["SYSLOG_IDENTIFIER"])
+      - >-
+        set(resource.attributes["service.name"], log.body["_KERNEL_SUBSYSTEM"])
+      - >-
+        set(resource.attributes["service.name"], log.body["_SYSTEMD_SLICE"])
+      - >-
+        set(resource.attributes["service.name"], log.body["_SYSTEMD_UNIT"]) where not IsMatch(log.body["_SYSTEMD_UNIT"], "\\.(slice|scope)$")
 exporters:
   &loki otlphttp/logs:
     endpoint: http://127.0.0.53:3100/otlp
@@ -61,6 +72,7 @@ service:
       receivers:
         - *journal
       processors:
+        - *journal-meta
         - *batch
       exporters:
         - *loki
