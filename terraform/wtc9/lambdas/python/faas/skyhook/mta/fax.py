@@ -68,8 +68,7 @@ def _decode(name: str) -> Iterator[str]:
     with suppress(HeaderParseError):
         for lhs, rhs in decode_header(name):
             if isinstance(lhs, bytes) and isinstance(rhs, str):
-                with suppress(UnicodeDecodeError):
-                    yield lhs.decode(rhs)
+                yield lhs.decode(rhs, errors="backslashreplace")
             elif isinstance(lhs, str):
                 yield lhs
             else:
