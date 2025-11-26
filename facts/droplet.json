@@ -24,6 +24,7 @@
     "twitter.ENV_DOMAIN",
     "youtube.ENV_DOMAIN"
   ],
+  "ENV_EXTERNAL_NAMES": [],
   "ENV_INDEX": [],
   "ENV_MACHINES": [],
   "ENV_MAIL": "me@ENV_DOMAIN",
