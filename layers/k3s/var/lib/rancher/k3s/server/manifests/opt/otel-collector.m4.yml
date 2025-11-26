@@ -24,6 +24,8 @@ spec:
         includeCollectorLogs: true
       kubernetesAttributes:
         enabled: true
+    command:
+      extraArgs: []
     config:
       extensions:
         health_check:
