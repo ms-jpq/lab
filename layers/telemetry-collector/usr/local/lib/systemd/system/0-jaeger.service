@@ -8,4 +8,5 @@ ProtectHome    = yes
 PrivateTmp     = yes
 StateDirectory = local/%J
 
+Environment    = OTEL_TRACES_EXPORTER=none
 ExecStart      = jaeger --config /usr/local/opt/%J/conf.yml

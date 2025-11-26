@@ -37,6 +37,12 @@ spec:
             grpc: null
             http:
               endpoint: "[[::]]:4318"
+        &ship filelog:
+          operators:
+            - type: container
+            - type: regex_replace
+              regex_name: ansi_control_sequences
+              field: body
       processors:
         &meta transform:
           log_statements:
@@ -69,7 +75,7 @@ spec:
           logs:
             receivers:
               - *recv
-              - filelog
+              - *ship
             processors:
               - *meta
               - memory_limiter
