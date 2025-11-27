@@ -12,13 +12,12 @@ from aws_lambda_powertools.utilities.data_classes import S3Event
 from aws_lambda_powertools.utilities.data_classes.s3_event import S3Message
 from boto3 import client  # pyright:ignore
 from botocore.config import Config  # pyright:ignore
-from opentelemetry.trace import Span
 
 from ...gist import register, traceback
 from .. import TRACER
 from .fax import Mail, parse, send
 
-_Sieve = Callable[[Mail], None]
+Sieve = Callable[[Mail], None]
 
 with nullcontext():
     TIMEOUT = 6.9
@@ -45,13 +44,13 @@ def _fetching(msg: S3Message) -> Iterator[BinaryIO]:
 _cold_start = True
 
 
-def _load_sieve() -> _Sieve:
+def load_sieve() -> Sieve:
     global _cold_start
     with TRACER.start_as_current_span("load sieve"):
         s = sieve if _cold_start else reload(sieve)
         _cold_start = False
 
-    return cast(_Sieve, s.sieve)
+    return cast(Sieve, s.sieve)
 
 
 def _parse_mail(io: BytesIO) -> Mail:
@@ -71,8 +70,7 @@ def _parse_mail(io: BytesIO) -> Mail:
     return mail
 
 
-def proc_mta(event: S3Event) -> None:
-    ss = _load_sieve()
+def proc_mta(ss: Sieve, event: S3Event) -> None:
     with _fetching(msg=event.record.s3) as fp:
         with closing(fp):
             io = BytesIO(fp.read())

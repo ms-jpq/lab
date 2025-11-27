@@ -1,4 +1,5 @@
 from contextlib import nullcontext
+from functools import partial
 
 from aws_lambda_powertools.utilities.batch import (
     BatchProcessor,
@@ -23,7 +24,7 @@ from ..telemetry import add_mutual_links, entry, with_context
 with nullcontext():
     TRACER = get_tracer(__name__)
 
-from .mta import proc_mta
+from .mta import Sieve, load_sieve, proc_mta
 from .twilio import proc_twilio
 
 with nullcontext():
@@ -40,13 +41,13 @@ def _context(record: SQSRecord) -> Context | None:
     return extract(carrier)
 
 
-def _handler(record: SQSRecord) -> None:
+def _handler(ss: Sieve, record: SQSRecord) -> None:
     with TRACER.start_as_current_span(
         "process record", attributes=record.attributes.raw_event
     ) as rs:
         if not record.message_attributes:
             with TRACER.start_as_current_span("mta"):
-                proc_mta(event=record.decoded_nested_s3_event)
+                proc_mta(ss, event=record.decoded_nested_s3_event)
         else:
             ctx = _context(record)
             with TRACER.start_as_current_span("webhook", context=ctx) as s:
@@ -59,7 +60,9 @@ def _handler(record: SQSRecord) -> None:
 @entry()
 def main(event: SQSEvent, ctx: LambdaContext) -> PartialItemFailureResponse:
     context = get_current()
-    proc = report_exception()(with_context(context)(_handler))
+    ss = load_sieve()
+    proc = report_exception()(with_context(context)(partial(_handler, ss)))
+
     return process_partial_response(
         processor=_PROC,
         event=event.raw_event,
