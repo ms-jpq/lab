@@ -70,24 +70,22 @@ with nullcontext():
 
 
 with nullcontext():
-    _tp = TracerProvider(resource=_resource)
-    _tp.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(session=SESSION)))
-    set_tracer_provider(_tp)
-
-
-with nullcontext():
-    RequestsInstrumentor().instrument()
-    BotocoreInstrumentor().instrument()  # type:ignore
-
-
-with nullcontext():
 
     def _warm() -> None:
         uri = f"{environ['OTEL_EXPORTER_OTLP_ENDPOINT']}/v1/traces"
         with SESSION.post(uri, data=dumps({})) as r:
             assert r.ok, (r.status_code, r.content)
 
+    _tp = TracerProvider(resource=_resource)
+    _tp.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(session=SESSION)))
+    set_tracer_provider(_tp)
+
     Thread(target=_warm).start()
+
+
+with nullcontext():
+    RequestsInstrumentor().instrument()
+    BotocoreInstrumentor().instrument()  # type:ignore
 
 
 def with_context(ctx: Context) -> Callable[[_F], _F]:
