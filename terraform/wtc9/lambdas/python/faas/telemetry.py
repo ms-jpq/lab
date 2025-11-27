@@ -25,10 +25,6 @@ from opentelemetry.semconv._incubating.attributes.cloud_attributes import (
     CLOUD_PROVIDER,
     CLOUD_REGION,
 )
-from opentelemetry.semconv._incubating.attributes.faas_attributes import (
-    FAAS_NAME,
-    FAAS_VERSION,
-)
 from opentelemetry.semconv.attributes.service_attributes import SERVICE_NAME
 from opentelemetry.trace import Span, get_tracer, set_tracer_provider
 
@@ -38,7 +34,7 @@ _F = TypeVar("_F", bound=Callable[..., Any])
 _M = TypeVar("_M", bound=Callable[[Any, LambdaContext], Any])
 
 
-from . import NAME, SESSION
+from . import SESSION
 
 with nullcontext():
     captureWarnings(True)
@@ -54,8 +50,6 @@ with nullcontext():
                     "service.instance.id": environ["AWS_LAMBDA_LOG_STREAM_NAME"],
                     CLOUD_PROVIDER: "aws",
                     CLOUD_REGION: environ["AWS_REGION"],
-                    FAAS_NAME: NAME,
-                    FAAS_VERSION: environ["AWS_LAMBDA_FUNCTION_VERSION"],
                     SERVICE_NAME: PurePath(__file__).parent.name,
                 }
             )

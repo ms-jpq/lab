@@ -20,8 +20,6 @@ _ = True
 
 with nullcontext():
     SESSION = Session()
-    NAME = environ["AWS_LAMBDA_FUNCTION_NAME"]
-
 
 with nullcontext():
     setswitchinterval(0.001)
@@ -31,7 +29,9 @@ with nullcontext():
     SNS = client(service_name="sns", config=B3_CONF)
 
 with nullcontext():
-    _FQN = PurePath(sep, "aws", "lambda", NAME).as_posix()
+    _FQN = PurePath(
+        sep, "aws", "lambda", environ["AWS_LAMBDA_FUNCTION_NAME"]
+    ).as_posix()
 
 
 @cache
