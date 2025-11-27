@@ -14,8 +14,8 @@ def _miniflux() -> None:
     url = environ["ENV_MINIFLUX_ENDPOINT"] + "feeds/refresh"
     headers = {"X-Auth-Token": environ["ENV_MINIFLUX_KEY"]}
 
-    with SESSION.put(url, headers=headers) as rsp:
-        assert rsp.status_code in range(200, 300), (url, rsp.status_code, rsp.content)
+    with SESSION.put(url, headers=headers) as r:
+        assert r.ok, (url, r.status_code, r.content)
 
 
 @event_source(data_class=EventBridgeEvent)

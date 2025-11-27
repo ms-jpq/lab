@@ -55,7 +55,7 @@ def _proxy(path: str, headers: HTTPMessage, body: bytes) -> None:
             h = {"content-type": headers["content-type"]}
 
             with SESSION.post(url, headers=h, data=body) as r:
-                assert r.status_code == HTTPStatus.OK, (r.status_code, r.text)
+                assert r.ok, (url, r.status_code, r.content)
         except Exception as e:
             getLogger().error("%s", e)
         else:

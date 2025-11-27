@@ -22,7 +22,7 @@ def _loop(srv: HTTPServer) -> None:
         json={"events": ["INVOKE", "SHUTDOWN"]},
         headers={"Lambda-Extension-Name": "otlp.sh"},
     ) as r:
-        assert r.status_code == HTTPStatus.OK, (r.status_code, r.text)
+        assert r.ok, (url, r.status_code, r.content)
         id = r.headers["Lambda-Extension-Identifier"]
 
     while True:
@@ -30,7 +30,7 @@ def _loop(srv: HTTPServer) -> None:
             with SESSION.get(
                 f"{_API}/event/next", headers={"Lambda-Extension-Identifier": id}
             ) as r:
-                assert r.status_code == HTTPStatus.OK, (r.status_code, r.text)
+                assert r.ok, (url, r.status_code, r.content)
                 match json := r.json():
                     case {"eventType": "INVOKE"}:
                         pass
