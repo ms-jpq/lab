@@ -7,6 +7,9 @@ services:
     environment:
       AWS_ACCESS_KEY_ID:
       AWS_SECRET_ACCESS_KEY:
+    command:
+      - --config=/etc/otelcol-contrib/config.yaml
+      - --feature-gates=transform.flatten.logs
     volumes:
       - ./conf.yml:/etc/otelcol-contrib/config.yaml:ro
       - data:/var/lib/otelcol-contrib
