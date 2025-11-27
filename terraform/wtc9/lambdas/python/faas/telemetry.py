@@ -103,7 +103,7 @@ def add_mutual_links(*spans: Span) -> None:
 
 def entry(
     kind: SpanKind,
-    event_context_extractor: Callable[[DictWrapper], Context] | None = None,
+    event_context_extractor: Callable[[Any], Context] | None = None,
 ) -> Callable[[_M], _M]:
     def cont(f: _F) -> _F:
         @wraps(f)
