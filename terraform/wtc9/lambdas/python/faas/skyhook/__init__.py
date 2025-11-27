@@ -44,7 +44,7 @@ def _handler(ss: Sieve, record: SQSRecord) -> None:
                 proc_mta(ss, event=record.decoded_nested_s3_event)
         else:
             ctx = _context(record)
-            with TRACER.start_as_current_span("webhook", context=ctx) as s:
+            with TRACER.start_as_current_span("twilio error", context=ctx) as s:
                 add_mutual_links(rs, s)
                 ok = proc_twilio(record)
                 s.set_status(StatusCode.OK if ok else StatusCode.ERROR)
