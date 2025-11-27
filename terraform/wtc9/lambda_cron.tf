@@ -31,12 +31,15 @@ resource "aws_lambda_function" "cron" {
 }
 
 resource "aws_cloudwatch_event_rule" "cron" {
+  for_each            = local.lambda_cron_jobs
   region              = aws_lambda_function.cron.region
-  schedule_expression = "rate(1 hour)"
+  schedule_expression = each.value.schedule
 }
 
 resource "aws_cloudwatch_event_target" "cron" {
-  arn    = aws_lambda_function.cron.arn
-  region = aws_cloudwatch_event_rule.cron.region
-  rule   = aws_cloudwatch_event_rule.cron.id
+  for_each = local.lambda_cron_jobs
+  arn      = aws_lambda_function.cron.arn
+  region   = aws_cloudwatch_event_rule.cron[each.key].region
+  rule     = aws_cloudwatch_event_rule.cron[each.key].id
+  input    = jsonencode(each.value.input)
 }
