@@ -2,11 +2,9 @@ from collections.abc import Callable
 from contextlib import nullcontext
 from functools import wraps
 from itertools import permutations
-from json import dumps
 from logging import INFO, basicConfig, captureWarnings, getLogger
 from os import environ
 from pathlib import PurePath
-from threading import Thread
 from typing import Any, TypeVar, cast
 
 from aws_lambda_powertools.utilities.data_classes.common import DictWrapper
@@ -70,17 +68,9 @@ with nullcontext():
 
 
 with nullcontext():
-
-    def _warm() -> None:
-        uri = f"{environ['OTEL_EXPORTER_OTLP_ENDPOINT']}/v1/traces"
-        with SESSION.post(uri, data=dumps({})) as r:
-            assert r.ok, (r.status_code, r.content)
-
     _tp = TracerProvider(resource=_resource)
     _tp.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(session=SESSION)))
     set_tracer_provider(_tp)
-
-    Thread(target=_warm).start()
 
 
 with nullcontext():
