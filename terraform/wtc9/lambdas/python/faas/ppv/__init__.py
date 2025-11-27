@@ -16,8 +16,8 @@ from ..telemetry import entry
 from .routes import TRACER, app
 
 
-def _extract(event: Mapping[str, Any]) -> Context:
-    return extract(event["requestContext"]["authorizer"].get("lambda") or {})
+def _extract(event: APIGatewayProxyEventV2) -> Context:
+    return extract(event.request_context.authorizer.get_lambda)
 
 
 @event_source(data_class=APIGatewayProxyEventV2)
