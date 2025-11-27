@@ -17,7 +17,7 @@ from ...gist import register, traceback
 from .. import TRACER
 from .fax import Mail, parse, send
 
-Sieve = Callable[[Mail], None]
+Sieve = Callable[[], Callable[[Mail], None]]
 
 with nullcontext():
     TIMEOUT = 6.9
@@ -50,7 +50,7 @@ def load_sieve() -> Sieve:
         s = sieve if _cold_start else reload(sieve)
         _cold_start = False
 
-    return cast(Sieve, s.sieve)
+    return cast(Sieve, lambda: s.sieve)
 
 
 def _parse_mail(io: BytesIO) -> Mail:
@@ -79,7 +79,7 @@ def proc_mta(ss: Sieve, event: S3Event) -> None:
         with TRACER.start_as_current_span("run sieve") as span:
             go = False
             try:
-                ss(mail)
+                ss()(mail)
             except StopAsyncIteration as exn:
                 if tb := traceback(sieve, exn=exn):
                     span.add_event("rejected", attributes={"traceback": tb})
