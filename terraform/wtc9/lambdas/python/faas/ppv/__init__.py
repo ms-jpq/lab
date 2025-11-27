@@ -10,6 +10,7 @@ from aws_lambda_powertools.utilities.data_classes.api_gateway_proxy_event import
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from opentelemetry.context.context import Context
 from opentelemetry.propagate import extract
+from opentelemetry.trace import SpanKind
 
 from .. import _
 from ..telemetry import entry
@@ -21,7 +22,7 @@ def _extract(event: APIGatewayProxyEventV2) -> Context:
 
 
 @event_source(data_class=APIGatewayProxyEventV2)
-@entry(event_context_extractor=_extract)
+@entry(kind=SpanKind.SERVER, event_context_extractor=_extract)
 def main(event: APIGatewayProxyEventV2, ctx: LambdaContext) -> Mapping[str, Any]:
     with TRACER.start_as_current_span("router") as span:
         span.add_event("routing", attributes={"path": event.path})

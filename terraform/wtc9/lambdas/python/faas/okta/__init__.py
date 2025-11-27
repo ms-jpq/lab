@@ -16,7 +16,7 @@ from aws_lambda_powertools.utilities.data_classes.api_gateway_authorizer_event i
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from opentelemetry.baggage import set_baggage
 from opentelemetry.propagate import inject
-from opentelemetry.trace import get_tracer
+from opentelemetry.trace import SpanKind, get_tracer
 from opentelemetry.trace.status import StatusCode
 
 from .. import _
@@ -97,7 +97,7 @@ def _inject_signature(
 
 
 @event_source(data_class=APIGatewayAuthorizerEventV2)
-@entry()
+@entry(kind=SpanKind.SERVER)
 def main(event: APIGatewayAuthorizerEventV2, _: LambdaContext) -> Mapping[str, Any]:
     context: dict[str, Any] = {}
     with TRACER.start_as_current_span("auth verdict") as span:

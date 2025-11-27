@@ -26,7 +26,7 @@ from opentelemetry.semconv._incubating.attributes.cloud_attributes import (
     CLOUD_REGION,
 )
 from opentelemetry.semconv.attributes.service_attributes import SERVICE_NAME
-from opentelemetry.trace import Span, get_tracer, set_tracer_provider
+from opentelemetry.trace import Span, SpanKind, get_tracer, set_tracer_provider
 
 from .spanner import spanning
 
@@ -83,12 +83,12 @@ def with_context(ctx: Context) -> Callable[[_F], _F]:
     return cont
 
 
-def with_span() -> Callable[[_F], _F]:
+def with_span(kind: SpanKind) -> Callable[[_F], _F]:
     def cont(f: _F) -> _F:
         @wraps(f)
         def instrumented(*__args: Any, **__kwargs: Any) -> Any:
             name = ".".join((f.__module__, f.__name__))
-            with get_tracer(f.__module__).start_as_current_span(name):
+            with get_tracer(f.__module__).start_as_current_span(name, kind=kind):
                 return f(*__args, **__kwargs)
 
         return cast(_F, instrumented)
@@ -102,6 +102,7 @@ def add_mutual_links(*spans: Span) -> None:
 
 
 def entry(
+    kind: SpanKind,
     event_context_extractor: Callable[[DictWrapper], Context] | None = None,
 ) -> Callable[[_M], _M]:
     def cont(f: _F) -> _F:
@@ -112,7 +113,7 @@ def entry(
                 if event_context_extractor
                 else extract(event.raw_event.get("headers", {}))
             )
-            r = with_context(ctx)(with_span()(f))
+            r = with_context(ctx)(with_span(kind=kind)(f))
             try:
                 return r(event, context)
             finally:

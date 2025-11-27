@@ -13,7 +13,7 @@ from aws_lambda_powertools.utilities.data_classes import (
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from opentelemetry.context import Context, get_current
 from opentelemetry.propagate import extract
-from opentelemetry.trace import get_tracer
+from opentelemetry.trace import SpanKind, get_tracer
 from opentelemetry.trace.status import StatusCode
 
 from .. import _, report_exception
@@ -51,7 +51,7 @@ def _handler(ss: Sieve, record: SQSRecord) -> None:
 
 
 @event_source(data_class=SQSEvent)
-@entry()
+@entry(kind=SpanKind.CONSUMER)
 def main(event: SQSEvent, ctx: LambdaContext) -> PartialItemFailureResponse:
     context, ss = get_current(), load_sieve()
 
