@@ -1,5 +1,4 @@
 from collections.abc import Callable, Iterator
-from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager, nullcontext
 from functools import cache, wraps
 from json import dumps
@@ -38,11 +37,6 @@ with nullcontext():
 @cache
 def chan() -> str:
     return environ["ENV_CHAN_NAME"]
-
-
-@cache
-def executor() -> ThreadPoolExecutor:
-    return ThreadPoolExecutor()
 
 
 @contextmanager

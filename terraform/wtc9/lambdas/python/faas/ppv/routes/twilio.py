@@ -1,8 +1,10 @@
 from collections import defaultdict
 from collections.abc import Mapping, MutableSet, Sequence, Set
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from functools import cache
 from http import HTTPStatus
+from itertools import chain
 from json import loads
 from os import environ
 from xml.etree.ElementTree import Element, SubElement, indent, tostring
@@ -15,7 +17,7 @@ from aws_lambda_powertools.event_handler.middlewares import (
 from opentelemetry.context import get_current
 from opentelemetry.trace import get_current_span
 
-from ... import executor, suppress_exn
+from ... import suppress_exn
 from ...telemetry import with_context
 from ...twilio import parse_params, verify
 from . import TRACER, app, compute_once, current_raw_uri, dynamodb
@@ -196,14 +198,16 @@ def message() -> Response[str]:
                 ):
                     return _messages(src, dst=dst, body=body, route_to=route_to)
 
+            with ThreadPoolExecutor() as ex:
+                mapped = ex.map(cont, _routes())
+
             seen: Mapping[str, MutableSet[int]] = defaultdict(set)
-            for pairs in executor().map(cont, _routes()):
-                for tel, msgs in pairs:
-                    acc = seen[tel]
-                    for msg in msgs:
-                        if not (key := hash(msg)) in acc:
-                            SubElement(root, "Message", attrib={"to": tel}).text = msg
-                            acc.add(key)
+            for tel, msgs in chain.from_iterable(mapped):
+                acc = seen[tel]
+                for msg in msgs:
+                    if not (key := hash(msg)) in acc:
+                        SubElement(root, "Message", attrib={"to": tel}).text = msg
+                        acc.add(key)
 
             return _xml_ok(root)
         case _:

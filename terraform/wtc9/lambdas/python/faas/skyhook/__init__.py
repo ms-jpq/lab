@@ -1,12 +1,10 @@
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
-from functools import partial
 
-from aws_lambda_powertools.utilities.batch import (
-    BatchProcessor,
-    EventType,
-    process_partial_response,
+from aws_lambda_powertools.utilities.batch.types import (
+    PartialItemFailureResponse,
+    PartialItemFailures,
 )
-from aws_lambda_powertools.utilities.batch.types import PartialItemFailureResponse
 from aws_lambda_powertools.utilities.data_classes import (
     SQSEvent,
     SQSRecord,
@@ -27,11 +25,6 @@ with nullcontext():
 from .mta import Sieve, load_sieve, proc_mta
 from .twilio import proc_twilio
 
-with nullcontext():
-    _PROC = BatchProcessor(
-        raise_on_entire_batch_failure=False, event_type=EventType.SQS
-    )
-
 
 def _context(record: SQSRecord) -> Context | None:
     if not (parent := record.message_attributes["TraceParent"]):
@@ -41,6 +34,7 @@ def _context(record: SQSRecord) -> Context | None:
     return extract(carrier)
 
 
+@report_exception()
 def _handler(ss: Sieve, record: SQSRecord) -> None:
     with TRACER.start_as_current_span(
         "process record", attributes=record.attributes.raw_event
@@ -59,13 +53,16 @@ def _handler(ss: Sieve, record: SQSRecord) -> None:
 @event_source(data_class=SQSEvent)
 @entry()
 def main(event: SQSEvent, ctx: LambdaContext) -> PartialItemFailureResponse:
-    context = get_current()
-    ss = load_sieve()
-    proc = report_exception()(with_context(context)(partial(_handler, ss)))
+    context, ss = get_current(), load_sieve()
 
-    return process_partial_response(
-        processor=_PROC,
-        event=event.raw_event,
-        context=ctx,
-        record_handler=proc,
-    )
+    @with_context(context)
+    def cont(record: SQSRecord) -> PartialItemFailures | None:
+        try:
+            _handler(ss, record=record)
+        except Exception:
+            return {"itemIdentifier": record.message_id}
+
+    with ThreadPoolExecutor() as ex:
+        mapped = ex.map(cont, event.records)
+
+    return {"batchItemFailures": [m for m in mapped if m]}
