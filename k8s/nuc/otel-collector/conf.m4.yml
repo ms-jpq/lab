@@ -25,6 +25,8 @@ processors:
       - >-
         [set(resource.attributes["k8s.cluster.name"], Concat([resource.attributes["aws.region"], "aws"], "."))]
       - >-
+        [set(resource.attributes["k8s.namespace.name"], resource.attributes["cloudwatch.log.group.name"])]
+      - >-
         [set(resource.attributes["service.name"], resource.attributes["cloudwatch.log.group.name"])]
       - >-
         [set(resource.attributes["service.instance.id"], resource.attributes["cloudwatch.log.stream"])]
