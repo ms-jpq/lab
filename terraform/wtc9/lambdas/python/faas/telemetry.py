@@ -26,7 +26,6 @@ from opentelemetry.semconv._incubating.attributes.cloud_attributes import (
     CLOUD_REGION,
 )
 from opentelemetry.semconv._incubating.attributes.faas_attributes import (
-    FAAS_INSTANCE,
     FAAS_NAME,
     FAAS_VERSION,
 )
@@ -47,17 +46,14 @@ with nullcontext():
 
 with nullcontext():
 
-    _instance = environ["AWS_LAMBDA_LOG_STREAM_NAME"]
-
     class _detector(ResourceDetector):
 
         def detect(self) -> Resource:
             return Resource(
                 {
-                    "service.instance.id": _instance,
+                    "service.instance.id": environ["AWS_LAMBDA_LOG_STREAM_NAME"],
                     CLOUD_PROVIDER: "aws",
                     CLOUD_REGION: environ["AWS_REGION"],
-                    FAAS_INSTANCE: _instance,
                     FAAS_NAME: NAME,
                     FAAS_VERSION: environ["AWS_LAMBDA_FUNCTION_VERSION"],
                     SERVICE_NAME: PurePath(__file__).parent.name,
