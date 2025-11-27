@@ -13,7 +13,7 @@ from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 from uuid import uuid4
 
 from opentelemetry.trace import get_current_span, get_tracer
-from requests import Session
+from . import SESSION
 
 with nullcontext():
     _TRACER = get_tracer(__name__)
@@ -23,14 +23,13 @@ with nullcontext():
 def register(name: str, uri: str, timeout: float) -> None:
     scheme, netloc, path, query, frag = urlsplit(uri)
     qs = parse_qs(query)
-    session = Session()
 
     def get() -> str:
         nxt_qs = urlencode({**qs, uuid4().hex: (uuid4().hex,)})
         nxt_uri = urlunsplit((scheme, netloc, path, nxt_qs, frag))
 
         try:
-            with session.get(nxt_uri, timeout=timeout) as rsp:
+            with SESSION.get(nxt_uri, timeout=timeout) as rsp:
                 return rsp.text
         except Exception as e:
             get_current_span().record_exception(e)

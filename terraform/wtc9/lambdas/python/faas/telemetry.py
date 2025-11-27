@@ -39,8 +39,7 @@ _F = TypeVar("_F", bound=Callable[..., Any])
 _M = TypeVar("_M", bound=Callable[[Any, LambdaContext], Any])
 
 
-with nullcontext():
-    NAME = environ["AWS_LAMBDA_FUNCTION_NAME"]
+from . import NAME, SESSION
 
 with nullcontext():
     captureWarnings(True)
@@ -66,7 +65,7 @@ with nullcontext():
 
 with nullcontext():
     _tp = TracerProvider(resource=_resource)
-    _tp.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+    _tp.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(session=SESSION)))
     set_tracer_provider(_tp)
 
 with nullcontext():

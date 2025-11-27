@@ -14,11 +14,15 @@ from typing import Any, TypeVar, cast
 from boto3 import client
 from botocore.config import Config
 from opentelemetry.trace import get_current_span
-
-from .telemetry import NAME
+from requests import Session
 
 _F = TypeVar("_F", bound=Callable[..., Any])
 _ = True
+
+with nullcontext():
+    SESSION = Session()
+    NAME = environ["AWS_LAMBDA_FUNCTION_NAME"]
+
 
 with nullcontext():
     setswitchinterval(0.001)
