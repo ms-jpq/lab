@@ -72,6 +72,7 @@ def _parse_mail(io: BytesIO) -> Mail:
 
 def proc_mta(ss: Sieve, event: S3Event) -> None:
     with _fetching(msg=event.record.s3) as fp:
+        s = ss()
         with closing(fp):
             io = BytesIO(fp.read())
 
@@ -79,7 +80,7 @@ def proc_mta(ss: Sieve, event: S3Event) -> None:
         with TRACER.start_as_current_span("run sieve") as span:
             go = False
             try:
-                ss()(mail)
+                s(mail)
             except StopAsyncIteration as exn:
                 if tb := traceback(sieve, exn=exn):
                     span.add_event("rejected", attributes={"traceback": tb})
