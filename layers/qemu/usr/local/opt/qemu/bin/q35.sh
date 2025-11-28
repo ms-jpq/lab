@@ -245,12 +245,9 @@ done
 
 if ((${#USBS[@]})); then
   ID='xhci'
-  ARGV+=(
-    -usb
-    -device "qemu-xhci,id=$ID"
-  )
+  ARGV+=(-device "qemu-xhci,id=$ID")
   for USB in "${USBS[@]}"; do
-    ARGV+=(-device "$USB")
+    ARGV+=(-device "usb-host,bus=$ID.0,$USB")
   done
 fi
 
