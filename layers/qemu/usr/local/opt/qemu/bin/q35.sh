@@ -238,6 +238,8 @@ for IDX in "${!CDS[@]}"; do
   )
 done
 
+ARGV+=(-device qemu-xhci)
+
 for VF in "${VFIO[@]}"; do
   ARGV+=(-device "vfio-pci-nohotplug,host=$VF")
 done
