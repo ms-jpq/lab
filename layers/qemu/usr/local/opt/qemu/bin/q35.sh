@@ -3,7 +3,7 @@
 set -o pipefail
 
 # TODO: smbios
-LONG_OPTS='name:,cpu:,cpu-flags:,mem:,qmp:,monitor:,boot:,tpm:,vnc:,bridge:,iscsi:,drive:,macvtap:,vfio:,mdev:,disc:'
+LONG_OPTS='name:,cpu:,cpu-flags:,mem:,qmp:,monitor:,boot:,tpm:,vnc:,bridge:,iscsi:,drive:,macvtap:,usb,vfio:,mdev:,disc:'
 GO="$(getopt --options='' --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
@@ -11,6 +11,7 @@ NAME="$(uuidgen)"
 CPU_FLAGS=()
 TAPS=()
 DRIVES=()
+USBS=()
 VFIO=()
 MDEVS=()
 CDS=()
@@ -82,6 +83,10 @@ while (($#)); do
     ;;
   --macvtap)
     TAPS+=("$2")
+    shift -- 2
+    ;;
+  --usb)
+    USBS+=("$2")
     shift -- 2
     ;;
   --vfio)
@@ -238,7 +243,12 @@ for IDX in "${!CDS[@]}"; do
   )
 done
 
-ARGV+=(-device qemu-xhci)
+if ((${#USBS[@]})); then
+  ARGV+=(-device qemu-xhci)
+fi
+for USB in "${USBS[@]}"; do
+  ARGV+=(-device "$USB")
+done
 
 for VF in "${VFIO[@]}"; do
   ARGV+=(-device "vfio-pci-nohotplug,host=$VF")
