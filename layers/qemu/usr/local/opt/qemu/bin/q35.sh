@@ -244,11 +244,11 @@ for IDX in "${!CDS[@]}"; do
 done
 
 if ((${#USBS[@]})); then
-  ARGV+=(-device qemu-xhci)
+  ARGV+=(-usb)
+  for USB in "${USBS[@]}"; do
+    ARGV+=(-device "$USB")
+  done
 fi
-for USB in "${USBS[@]}"; do
-  ARGV+=(-device "$USB")
-done
 
 for VF in "${VFIO[@]}"; do
   ARGV+=(-device "vfio-pci-nohotplug,host=$VF")
