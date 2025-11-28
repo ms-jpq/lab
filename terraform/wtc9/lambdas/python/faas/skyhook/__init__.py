@@ -61,6 +61,8 @@ def main(event: SQSEvent, ctx: LambdaContext) -> PartialItemFailureResponse:
             _handler(ss, record=record)
         except Exception:
             return {"itemIdentifier": record.message_id}
+        else:
+            return None
 
     with ThreadPoolExecutor() as ex:
         mapped = ex.map(cont, event.records)
