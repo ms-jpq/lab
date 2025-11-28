@@ -3,7 +3,7 @@
 set -o pipefail
 
 # TODO: smbios
-LONG_OPTS='name:,cpu:,cpu-flags:,mem:,qmp:,monitor:,boot:,tpm:,vnc:,bridge:,iscsi:,drive:,macvtap:,usb:,vfio:,mdev:,disc:'
+LONG_OPTS='name:,cpu:,cpu-flags:,mem:,qmp:,monitor:,boot:,tpm:,vnc:,bridge:,iscsi:,drive:,macvtap:,vfio:,mdev:,usb:,disc:'
 GO="$(getopt --options='' --longoptions="$LONG_OPTS" --name="$0" -- "$@")"
 eval -- set -- "$GO"
 
@@ -11,9 +11,9 @@ NAME="$(uuidgen)"
 CPU_FLAGS=()
 TAPS=()
 DRIVES=()
-USBS=()
 VFIO=()
 MDEVS=()
+USBS=()
 CDS=()
 while (($#)); do
   case "$1" in
@@ -85,16 +85,16 @@ while (($#)); do
     TAPS+=("$2")
     shift -- 2
     ;;
-  --usb)
-    USBS+=("$2")
-    shift -- 2
-    ;;
   --vfio)
     VFIO+=("$2")
     shift -- 2
     ;;
   --mdev)
     MDEVS+=("$2")
+    shift -- 2
+    ;;
+  --usb)
+    USBS+=("$2")
     shift -- 2
     ;;
   --disc)
@@ -234,13 +234,13 @@ for IDX in "${!DRIVES[@]}"; do
   )
 done
 
-for IDX in "${!CDS[@]}"; do
-  CD="${CDS[$IDX]}"
-  ID="cd$IDX"
-  ARGV+=(
-    -blockdev "${BLKOPTS}file.driver=file,read-only=on,node-name=$ID,file.filename=$CD"
-    -device "virtio-blk-pci-non-transitional,drive=$ID"
-  )
+for VF in "${VFIO[@]}"; do
+  ARGV+=(-device "vfio-pci-nohotplug,host=$VF")
+done
+
+for MDEV in "${MDEVS[@]}"; do
+  # display=on,ramfb=on,x-igd-opregion=on
+  ARGV+=(-device "vfio-pci-nohotplug,sysfsdev=$MDEV")
 done
 
 if ((${#USBS[@]})); then
@@ -250,13 +250,13 @@ if ((${#USBS[@]})); then
   done
 fi
 
-for VF in "${VFIO[@]}"; do
-  ARGV+=(-device "vfio-pci-nohotplug,host=$VF")
-done
-
-for MDEV in "${MDEVS[@]}"; do
-  # display=on,ramfb=on,x-igd-opregion=on
-  ARGV+=(-device "vfio-pci-nohotplug,sysfsdev=$MDEV")
+for IDX in "${!CDS[@]}"; do
+  CD="${CDS[$IDX]}"
+  ID="cd$IDX"
+  ARGV+=(
+    -blockdev "${BLKOPTS}file.driver=file,read-only=on,node-name=$ID,file.filename=$CD"
+    -device "virtio-blk-pci-non-transitional,drive=$ID"
+  )
 done
 
 ARGV+=("$@")
