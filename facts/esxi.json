@@ -29,7 +29,6 @@
     "time-machine-hao"
   ],
   "ENV_TABBY_MODEL": "CodeLlama-7B",
-  "ENV_VFIO_PCI_DEVICE_IDS": ["01:00.0[,]multifunction=on", "01:00.1"],
   "ENV_WEB_EXPORTS": "ENV_NFS_EXPORTS",
   "ENV_ZFS_MEM": 30
 }
