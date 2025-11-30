@@ -13,6 +13,7 @@ from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 from uuid import uuid4
 
 from opentelemetry.trace import get_current_span, get_tracer
+
 from . import SESSION
 
 with nullcontext():
