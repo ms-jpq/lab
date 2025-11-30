@@ -144,7 +144,7 @@ ARGV+=(
   -compat 'deprecated-input=crash'
   -nodefaults
   -no-user-config
-  -machine 'type=q35,smm=on,accel=kvm,kernel-irqchip=split'
+  -machine 'type=q35,smm=on,accel=kvm,kernel-irqchip=split,vmport=off'
   -cpu "$CPUF"
   -smp "$CPUS"
   -m "${MEM:-"size=8G"}"
