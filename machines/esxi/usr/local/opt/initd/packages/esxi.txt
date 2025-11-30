@@ -1,6 +1,6 @@
 # + nvidia-container-runtime
 # + nvidia-container-toolkit
+# + ollama
 + adb
 + katana
 + nvidia-cuda-toolkit
-+ ollama
