@@ -1,0 +1,11 @@
+---
+services:
+  terraform:
+    image: docker.io/mcp/grafana:latest
+    environment:
+      GRAFANA_URL:
+    command:
+      - --address=[::]:8080
+      - --transport=streamable-http
+    ports:
+      - 8080
