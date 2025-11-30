@@ -1,4 +1,4 @@
-+ cuda
+# + cuda
 + journal
 + nspawn
 + postgres
