@@ -195,18 +195,27 @@ else
   ARGV+=(-nographic)
 fi
 
-NIC='model=virtio-net-pci-non-transitional'
+NIC='virtio-net-pci-non-transitional'
 if [[ -n ${BRIDGE:-""} ]]; then
-  ARGV+=(-nic "bridge,$NIC,br=$BRIDGE")
+  ID="br0"
+  ARGV+=(
+    -netdev "bridge,id=$ID,br=$BRIDGE"
+    -device "$NIC,netdev=$ID"
+  )
 fi
 
 FD=3
-for MACVTAP in "${TAPS[@]}"; do
+for IDX in "${!TAPS[@]}"; do
+  ID="tap$IDX"
+  MACVTAP="${TAPS[$IDX]}"
   SYS="/sys/class/net/$MACVTAP"
   IFI="$(< "$SYS/ifindex")"
   MACADDR="$(< "$SYS/address")"
   exec {FD}<> "/dev/tap$IFI"
-  ARGV+=(-nic "tap,fd=$FD,$NIC,mac=$MACADDR")
+  ARGV+=(
+    -netdev "tap,id=$ID,fd=$FD"
+    -device "$NIC,netdev=$ID,mac=$MACADDR"
+  )
   ((FD++))
 done
 
