@@ -12,7 +12,7 @@ from aws_lambda_powertools.event_handler.api_gateway import Response
 from . import TRACER, app
 
 with nullcontext():
-    _ARCHIVE = "archive.is"
+    _ARCHIVE = "archive.ph"
 
 
 @cache
