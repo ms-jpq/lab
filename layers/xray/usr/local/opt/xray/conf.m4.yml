@@ -1,6 +1,7 @@
 ---
 # m4_include([layers/xray/usr/local/opt/xray/vars.m4.yml])
 _:
+  a: &stub-addr 127.0.0.53
   l: &lo localhost
   s: &s-PROTOCOL
   x: &xhttp /xhttp
@@ -102,10 +103,12 @@ server:
       protocol: blackhole
 
   inbounds:
+    # m4_pushdef([PORT], PORT_BEGIN)
     # m5_for([PROTOCOL], [
     # m5_for([TRANSPORT], [
     # m4_pushdef([TRANS], [m4_regexp(TRANSPORT, [\(^[^@]+\)], [\1])])
-    - listen: /run/local/xray/PROTOCOL+TRANSPORT.sock,0666
+    - listen: *stub-addr
+      port: "PORT"
       protocol: PROTOCOL
       settings:
         <<: *s-PROTOCOL
@@ -118,6 +121,7 @@ server:
           path: *xhttp
         wsSettings:
           path: *ws
+    # m4_pushdef([PORT], m4_incr(PORT))
     # ], TRANSPORTS)
     # ], PROTOCOLS)
 
@@ -185,7 +189,7 @@ client:
     #       - tls
     #   settings:
     #     network: *tu
-    #     address: 127.0.0.53
+    #     address: *stub-addr
     #     port: 2053
 
     # - &capture

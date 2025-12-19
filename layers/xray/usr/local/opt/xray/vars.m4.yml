@@ -1,2 +1,3 @@
+# m4_define([PORT_BEGIN], [40000])
 # m4_define([PROTOCOLS], [trojan, vless])
 # m4_define([TRANSPORTS], [ws@tcp, xhttp@tcp])
