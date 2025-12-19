@@ -1,5 +1,7 @@
 ---
 # https://github.com/iv-org/invidious/blob/master/config/config.example.yml
+host_binding: "[::]"
+
 check_tables: true
 db:
   host: pg

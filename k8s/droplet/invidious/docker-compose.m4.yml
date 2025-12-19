@@ -56,6 +56,7 @@ services:
   invidious-companion:
     image: quay.io/invidious/invidious-companion:latest
     environment:
+      HOST: "[::]"
       PROXY: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
       SERVER_SECRET_KEY:
     ports:
