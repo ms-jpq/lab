@@ -75,20 +75,22 @@ def _decode(name: str) -> Iterator[str]:
                 assert False, (lhs, rhs)
 
 
+def _get_addrs(msg: EmailMessage, header: str, max_addrs: int = 44) -> str:
+    sliced = islice(map(formataddr, getaddresses(msg.get_all(header, []))), max_addrs)
+    return ",".join(sliced)
+
+
 def _redirect(msg: EmailMessage, src: str) -> Iterator[tuple[str, _Rewrite]]:
-    max_addrs = 44
     raw_name, x_from = parseaddr(" ".join(msg.get("from", "").split()))
-    to = islice(map(formataddr, getaddresses(msg.get_all("to", []))), max_addrs)
-    cc = islice(map(formataddr, getaddresses(msg.get_all("cc", []))), max_addrs)
+    nxt_to, nxt_cc = _get_addrs(msg, header="to"), _get_addrs(msg, header="cc")
 
     name = " ".join(_decode(unquote(raw_name)))
     new_name = f'{name} faxed-by "{x_from}"'
     nxt_from = formataddr((new_name, src))
-    nxt_to, nxt_cc = ",".join(to), ",".join(cc)
 
     mod = {
         "from": _Rewrite(act="replace", val=nxt_from),
-        "to": _Rewrite(act="replace", val=nxt_to),
+        "to": _Rewrite(act="replace", val=nxt_to or nxt_cc or "root@localhost"),
         "cc": _Rewrite(act="replace", val=nxt_cc),
         "reply-to": (
             _Rewrite(act="set-default", val=x_from)
