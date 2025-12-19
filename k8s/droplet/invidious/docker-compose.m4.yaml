@@ -9,7 +9,7 @@ x-k8s:
       namespace: ${COMPOSE_PROJECT_NAME}
     spec:
       rules:
-        - host: youtube.m5_assert([ENV_DOMAIN])
+        - host: youku.m5_assert([ENV_DOMAIN])
           http:
             paths:
               - backend:
@@ -24,7 +24,7 @@ services:
   invidious:
     image: quay.io/invidious/invidious:${TAG}
     labels:
-      kompose.service.expose: youtube.${DOMAIN}
+      kompose.service.expose: youku.${DOMAIN}
     healthcheck:
       test:
         - CMD

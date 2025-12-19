@@ -1,5 +1,5 @@
 [[Server]]
-hostname = "twitter.m5_assert([ENV_DOMAIN])"
+hostname = "weibo.m5_assert([ENV_DOMAIN])"
 https    = true
 title    = "🐓"
 
@@ -13,6 +13,6 @@ proxy = "http://proxy.kompsed-hostproxy.svc.cluster.local:1080"
 hlsPlayback    = true
 infiniteScroll = true
 replaceReddit  = "old.reddit.com"
-replaceTwitter = "twitter.m5_assert([ENV_DOMAIN])"
-replaceYouTube = "youtube.m5_assert([ENV_DOMAIN])"
+replaceTwitter = "weibo.m5_assert([ENV_DOMAIN])"
+replaceYouTube = "youku.m5_assert([ENV_DOMAIN])"
 theme          = "Auto"

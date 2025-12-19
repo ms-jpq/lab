@@ -24,7 +24,7 @@ services:
     image: quay.io/redlib/redlib:latest
     labels:
       kompose.service.group: &warp redlib
-      kompose.service.expose: reddit.${DOMAIN}
+      kompose.service.expose: bbs.${DOMAIN}
     environment:
       REDLIB_AUTOPLAY_VIDEOS: on
       REDLIB_DEFAULT_AUTOPLAY_VIDEOS: on
@@ -34,7 +34,7 @@ services:
       REDLIB_DEFAULT_HIDE_HLS_NOTIFICATION: on
       REDLIB_DEFAULT_USE_HLS: off
       REDLIB_ENABLE_RSS: on
-      REDLIB_FULL_URL: https://reddit.${DOMAIN}
+      REDLIB_FULL_URL: https://bbs.${DOMAIN}
       REDLIB_REMOVE_DEFAULT_FEEDS: on
       REDLIB_ROBOTS_DISABLE_INDEXING: on
     ports:

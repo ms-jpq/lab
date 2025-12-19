@@ -3,6 +3,7 @@
   "ENV_CERTBOT_SITES": [
     "ask.ENV_DOMAIN",
     "autodiscover.ENV_DOMAIN",
+    "bbs.ENV_DOMAIN",
     "bridge.ENV_DOMAIN",
     "chat.ENV_DOMAIN",
     "dash.ENV_DOMAIN",
@@ -18,11 +19,10 @@
     "mcp-terraform.ENV_DOMAIN",
     "ollama.ENV_DOMAIN",
     "pastebin.ENV_DOMAIN",
-    "reddit.ENV_DOMAIN",
     "speedtest.ENV_DOMAIN",
     "tools.ENV_DOMAIN",
-    "twitter.ENV_DOMAIN",
-    "youtube.ENV_DOMAIN"
+    "weibo.ENV_DOMAIN",
+    "youku.ENV_DOMAIN"
   ],
   "ENV_EXTERNAL_NAMES": [],
   "ENV_INDEX": [],
@@ -42,10 +42,10 @@
     "http.*",
     "mcp-*.*",
     "pastebin.*",
-    "reddit.*",
+    "bbs.*",
     "tools.*",
-    "twitter.*",
-    "youtube.*"
+    "weibo.*",
+    "youku.*"
   ],
   "ENV_WAN_IF": "eth0",
   "ENV_WARP_TEST_URI": "http://ENV_DOMAIN/204",

@@ -13,7 +13,7 @@ invidious_companion:
     public_url: https://youtube.m5_assert([ENV_DOMAIN])/companion
 invidious_companion_key: m4_substr(m5_assert([ENV_RAND_HEX]), 0, 16)
 
-domain: youtube.m5_assert([ENV_DOMAIN])
+domain: youku.m5_assert([ENV_DOMAIN])
 external_port: 443
 https_only: true
 statistics_enabled: true

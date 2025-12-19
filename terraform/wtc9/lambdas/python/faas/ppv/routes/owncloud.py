@@ -21,15 +21,15 @@ def _mappings() -> Mapping[str, str]:
         return {}
 
     mappings: MutableMapping[str, str] = {
-        "m.youtube.com": f"youtube.{domain}",
+        "m.youtube.com": f"youku.{domain}",
         "mobile.twitter.com": f"xcancel.com",
-        "old.reddit.com": f"reddit.{domain}",
-        "reddit.com": f"reddit.{domain}",
+        "old.reddit.com": f"bbs.{domain}",
+        "reddit.com": f"bbs.{domain}",
         "www.google.ca": f"ask.{domain}",
         "www.google.com": f"ask.{domain}",
-        "www.reddit.com": f"reddit.{domain}",
+        "www.reddit.com": f"bbs.{domain}",
         "x.com": f"xcancel.com",
-        "youtube.com": f"youtube.{domain}",
+        "youtube.com": f"youku.{domain}",
     }
     return ChainMap(mappings, {v: k for k, v in mappings.items()})
 
