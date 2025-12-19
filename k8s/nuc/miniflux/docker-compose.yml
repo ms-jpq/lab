@@ -26,12 +26,12 @@ services:
       DATABASE_URL:
       HTTP_CLIENT_PROXY: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
       HTTP_CLIENT_TIMEOUT: &timeout 600
-      INVIDIOUS_INSTANCE: yoku.${DOMAIN}
+      INVIDIOUS_INSTANCE: youku.${DOMAIN}
       MEDIA_PROXY_HTTP_CLIENT_TIMEOUT: *timeout
       MEDIA_PROXY_RESOURCE_TYPES: image,audio,video
       MEDIA_PROXY_MODE: all
       RUN_MIGRATIONS: 1
       WORKER_POOL_SIZE:
-      YOUTUBE_EMBED_URL_OVERRIDE: https://yoku.${DOMAIN}/embed/
+      YOUTUBE_EMBED_URL_OVERRIDE: https://youku.${DOMAIN}/embed/
     ports:
       - 8080
