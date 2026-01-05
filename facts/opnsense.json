@@ -2,7 +2,6 @@
   "ENV_CERTBOT_SITES": [
     "ENV_TLD",
     "otlp.ENV_TLD",
-    "s3.ENV_TLD",
     "m5_for([MACH], [MACH.ENV_TLD,], ENV_MACHINES)",
     "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_TLD,], ENV_SITES)"
   ],
@@ -45,14 +44,12 @@
   "ENV_OVPN_SERVER_NAME": "ENV_WG_SERVER_NAME",
   "ENV_OVPN_TCP_CLIENT_PORT": 1194,
   "ENV_PUBLIC_SITES": [
-    "minio.*",
     "ollama.*",
     "otlp.*",
     "pocket.*",
-    "rss.*",
-    "s3.*"
+    "rss.*"
   ],
-  "ENV_SITES": ["minio", "ollama", "pdf", "pocket", "redis", "rss", "sql"],
+  "ENV_SITES": ["ollama", "pdf", "pocket", "redis", "rss", "sql"],
   "ENV_WAN_IF": "enp2s0",
   "ENV_WG_PEERS": ["pfsense", "freenas"],
   "ENV_WG_SERVER_NAME": "ENV_DOMAIN"

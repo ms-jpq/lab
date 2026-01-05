@@ -1,6 +1,5 @@
 server {
-  server_name chat.* pocket.* pdf.* redis.* pgadmin.* minio.* s3.* sql.* rss.*
-    traefik.*;
+  server_name chat.* pocket.* pdf.* redis.* pgadmin.* sql.* rss.* traefik.*;
   listen      unix:/run/local/nginx/gateway-https.sock;
   set         $x_nuc nuc.enp1s0.opnsense.home.arpa;
 
