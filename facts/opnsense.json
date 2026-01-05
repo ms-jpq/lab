@@ -43,12 +43,7 @@
   ],
   "ENV_OVPN_SERVER_NAME": "ENV_WG_SERVER_NAME",
   "ENV_OVPN_TCP_CLIENT_PORT": 1194,
-  "ENV_PUBLIC_SITES": [
-    "ollama.*",
-    "otlp.*",
-    "pocket.*",
-    "rss.*"
-  ],
+  "ENV_PUBLIC_SITES": ["ollama.*", "otlp.*", "pocket.*", "rss.*"],
   "ENV_SITES": ["ollama", "pdf", "pocket", "redis", "rss", "sql"],
   "ENV_WAN_IF": "enp2s0",
   "ENV_WG_PEERS": ["pfsense", "freenas"],
