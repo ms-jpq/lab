@@ -2,8 +2,7 @@
   "ENV_CERTBOT_SITES": [
     "ENV_TLD",
     "otlp.ENV_TLD",
-    "m5_for([MACH], [MACH.ENV_TLD,], ENV_MACHINES)",
-    "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_TLD,])"
+    "m5_for([MACH], [MACH.ENV_TLD,], ENV_MACHINES)"
   ],
   "ENV_CNAMES": [
     "m5_for([SITE], [SITE=ENV_MACHINE.w-0.ENV_MACHINE.home.arpa,], ENV_CERTBOT_SITES)"

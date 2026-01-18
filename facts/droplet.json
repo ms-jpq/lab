@@ -1,12 +1,20 @@
 {
   "ENV_BTRFS_MNTS": [],
-  "ENV_CERTBOT_SITES": ["dash.ENV_DOMAIN", "ENV_DOMAIN"],
+  "ENV_CERTBOT_SITES": [
+    "dash.ENV_DOMAIN",
+    "ENV_DOMAIN",
+    "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN,], ENV_SITES)"
+  ],
   "ENV_EXTERNAL_NAMES": [],
   "ENV_INDEX": [],
   "ENV_MACHINES": [],
   "ENV_MAIL": "me@ENV_DOMAIN",
   "ENV_OVPN_SERVER_NAME": "ENV_WG_SERVER_NAME",
-  "ENV_PUBLIC_SITES": ["*.x.*", "ENV_DOMAIN/*"],
+  "ENV_PUBLIC_SITES": [
+    "*.x.ENV_DOMAIN/*",
+    "ENV_DOMAIN/*",
+    "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN.*,], ENV_SITES)"
+  ],
   "ENV_SITES": [
     "12ft",
     "ask",
