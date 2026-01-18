@@ -1,0 +1,25 @@
+---
+services:
+  linkwarden:
+    image: ghcr.io/linkwarden/linkwarden:latest
+    labels:
+      kompose.service.expose: link.${DOMAIN}
+    environment:
+      DATABASE_URL:
+      MEILI_MASTER_KEY:
+      NEXTAUTH_SECRET:
+    ports:
+      - 3000
+    volumes:
+      - data:/data/data
+
+  meilisearch:
+    image: docker.io/getmeili/meilisearch:latest
+    environment:
+      MEILI_MASTER_KEY:
+    volumes:
+      - search:/meili_data
+
+volumes:
+  data:
+  search:
