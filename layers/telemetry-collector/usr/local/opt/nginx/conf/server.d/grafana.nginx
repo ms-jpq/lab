@@ -2,6 +2,10 @@ location /grafana {
   return 307 /grafana/;
 }
 
+location /grafana/login {
+  return 307 /grafana/;
+}
+
 location /grafana/ {
   proxy_set_header Authorization "";
   include          /usr/local/opt/nginx/conf/http.d/proxy_params.nginx;
