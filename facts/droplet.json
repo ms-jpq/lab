@@ -13,7 +13,7 @@
   "ENV_PUBLIC_SITES": [
     "*.x.ENV_DOMAIN/*",
     "ENV_DOMAIN/*",
-    "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN.*,], ENV_SITES)"
+    "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN/*,], ENV_SITES)"
   ],
   "ENV_SITES": [
     "12ft",
