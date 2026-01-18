@@ -3,7 +3,7 @@
     "ENV_TLD",
     "otlp.ENV_TLD",
     "m5_for([MACH], [MACH.ENV_TLD,], ENV_MACHINES)",
-    "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_TLD,], ENV_SITES)"
+    "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_TLD,])"
   ],
   "ENV_CNAMES": [
     "m5_for([SITE], [SITE=ENV_MACHINE.w-0.ENV_MACHINE.home.arpa,], ENV_CERTBOT_SITES)"
@@ -28,9 +28,7 @@
     "esxi.enp1s0.opnsense/vm.html",
     "nuc.enp1s0.opnsense",
     "opnsense.w-0.opnsense",
-    "orthanc.enp1s0.opnsense",
-    "plex/management",
-    "ENV_SITES"
+    "orthanc.enp1s0.opnsense"
   ],
   "ENV_IOT_IFS": [],
   "ENV_LAN_IFS": ["enp1s0"],
@@ -43,8 +41,7 @@
   ],
   "ENV_OVPN_SERVER_NAME": "ENV_WG_SERVER_NAME",
   "ENV_OVPN_TCP_CLIENT_PORT": 1194,
-  "ENV_PUBLIC_SITES": ["otlp.*", "pocket.*"],
-  "ENV_SITES": ["pdf", "pocket", "redis", "sql"],
+  "ENV_PUBLIC_SITES": ["otlp.*"],
   "ENV_WAN_IF": "enp2s0",
   "ENV_WG_PEERS": ["pfsense", "freenas"],
   "ENV_WG_SERVER_NAME": "ENV_DOMAIN"
