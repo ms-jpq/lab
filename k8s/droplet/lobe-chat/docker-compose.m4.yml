@@ -12,7 +12,7 @@ x-k8s:
             default-src 'self' https://registry.npmmirror.com/ https://cdn.jsdelivr.net data: blob: 'unsafe-inline' 'unsafe-eval';
             img-src * data: blob:;
             media-src * data: blob:;
-            connect-src 'self' https://registry.npmmirror.com/ https://cdn.jsdelivr.net;
+            connect-src 'self' https://registry.npmmirror.com/ https://cdn.jsdelivr.net https://s3.m5_assert([ENV_DOMAIN]);
 
 services:
   lobe-chat:
