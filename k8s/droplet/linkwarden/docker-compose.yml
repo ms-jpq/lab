@@ -6,7 +6,9 @@ services:
       kompose.service.expose: link.${DOMAIN}
     environment:
       DATABASE_URL:
+      DISABLE_NEW_SSO_USERS: true
       MEILI_MASTER_KEY:
+      NEXT_PUBLIC_DISABLE_REGISTRATION: true
       NEXTAUTH_SECRET:
     ports:
       - 3000
