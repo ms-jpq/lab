@@ -28,7 +28,7 @@ $(VAR)/bin: | $(VAR)
 	'$@/python3' <<< '$(PYDEPS)'
 
 ./node_modules/.bin:
-	npm install --upgrade --no-package-lock
+	npm install --ignore-scripts --upgrade --no-package-lock
 
 
 ifeq ($(HOSTTYPE), aarch64)
