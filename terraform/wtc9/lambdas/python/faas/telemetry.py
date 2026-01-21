@@ -65,7 +65,7 @@ with nullcontext():
 
 with nullcontext():
     RequestsInstrumentor().instrument()
-    BotocoreInstrumentor().instrument()  # type:ignore
+    BotocoreInstrumentor().instrument()  # type: ignore
 
 
 def with_context(ctx: Context) -> Callable[[_F], _F]:
