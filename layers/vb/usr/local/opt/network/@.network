@@ -17,6 +17,7 @@ VLAN                    = ${VLAN}
 Address                 = ${IPV4_IF}
 Address                 = ${IPV6_IF}
 
+DNSSEC                  = no
 Domains                 = ~${DOMAIN}
 DNS                     = [${IPV6_ADDR}]:3535 ${IPV4_ADDR}:3535
 MulticastDNS            = yes

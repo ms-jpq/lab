@@ -10,5 +10,6 @@ IPForward         = yes
 Address           = ${IPV6_IF}
 Address           = ${IPV4_IF}
 
+DNSSEC            = no
 Domains           = ~${DOMAIN}
 DNS               = ${IPV6_ADDR} ${IPV4_ADDR}

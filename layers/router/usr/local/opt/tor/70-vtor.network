@@ -8,6 +8,7 @@ RequiredForOnline = no
 [Network]
 Address           = ${IPV4_IF}
 
+DNSSEC            = no
 DHCP              = no
 IPv6AcceptRA      = no
 

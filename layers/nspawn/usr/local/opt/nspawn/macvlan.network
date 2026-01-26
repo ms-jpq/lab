@@ -6,6 +6,7 @@ Name                = mv-*
 RequiredForOnline   = no
 
 [Network]
+DNSSEC              = no
 DHCP                = yes
 IPv6AcceptRA        = yes
 LinkLocalAddressing = yes

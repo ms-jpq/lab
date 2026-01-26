@@ -5,6 +5,7 @@ Name            = host0
 [Network]
 IPv6AcceptRA    = no
 
+DNSSEC          = no
 DNSDefaultRoute = yes
 Domains         = ~${DOMAIN}
 DNS             = ${IPV6_ADDR} ${IPV4_ADDR}
