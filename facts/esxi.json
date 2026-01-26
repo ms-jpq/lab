@@ -16,9 +16,7 @@
     "pfsense.w-0.pfsense.home.arpa",
     "freenas.eno1.pfsense.home.arpa"
   ],
-  "ENV_PROMETHEUS_K3S_HOSTS": [
-    "droplet.w-0.droplet.home.arpa"
-  ],
+  "ENV_PROMETHEUS_K3S_HOSTS": ["droplet.w-0.droplet.home.arpa"],
   "ENV_SMB_EXPORTS": [
     "gray-bucket",
     "hao-bucket",
