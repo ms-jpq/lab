@@ -1,17 +1,14 @@
 {
   "ENV_CERTBOT_SITES": [
     "ENV_TLD",
-    "cups.pfsense.w-0.pfsense.ENV_TLD",
-    "plex.ENV_TLD",
-    "registry.ENV_TLD",
     "m5_for([MACH], [MACH.ENV_TLD,], ENV_MACHINES)"
   ],
   "ENV_CNAMES": [
     "m5_for([SITE], [SITE=ENV_MACHINE.w-0.ENV_MACHINE.home.arpa,], ENV_CERTBOT_SITES)"
   ],
   "ENV_DDNS_TYPE": "nat",
-  "ENV_HOST_ALLOW_LIST": ["freenas.eno1.pfsense.home.arpa@tcp*32400"],
-  "ENV_HOST_FORWARD_LIST": ["freenas.eno1.pfsense.home.arpa@tcp*32400:32400"],
+  "ENV_HOST_ALLOW_LIST": [],
+  "ENV_HOST_FORWARD_LIST": [],
   "ENV_INDEX": [
     "/die/die/die",
     "freenas.eno1.pfsense/bt",
@@ -21,12 +18,12 @@
     "freenas.eno1.pfsense/zfs.sh"
   ],
   "ENV_IOT_IFS": [],
-  "ENV_LAN_IFS": ["enp2s0", "enp4s0", "eno1"],
+  "ENV_LAN_IFS": ["enp1s0"],
   "ENV_MACHINES": ["freenas.eno1.pfsense", "pfsense.w-0.pfsense"],
   "ENV_OVPN_SERVER_NAME": "ENV_WG_SERVER_NAME",
-  "ENV_OVPN_TCP_CLIENT_PORT": 80,
-  "ENV_PUBLIC_SITES": ["plex.*", "registry.*"],
-  "ENV_WAN_IF": "enp1s0",
+  "ENV_OVPN_TCP_CLIENT_PORT": 1194,
+  "ENV_PUBLIC_SITES": [],
+  "ENV_WAN_IF": "enp2s0",
   "ENV_WG_PEERS": ["opnsense"],
   "ENV_WG_SERVER_NAME": "ENV_DOMAIN"
 }
