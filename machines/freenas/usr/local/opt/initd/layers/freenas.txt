@@ -1,8 +1,5 @@
 + gh-mirror
-+ intel-gvt
 + media
-+ oci-registry
-+ qemu
 + telemetry
 + vb
 + webdav
