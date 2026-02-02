@@ -1,8 +1,5 @@
 {
-  "ENV_CERTBOT_SITES": [
-    "ENV_TLD",
-    "m5_for([MACH], [MACH.ENV_TLD,], ENV_MACHINES)"
-  ],
+  "ENV_CERTBOT_SITES": ["m5_for([MACH], [MACH.ENV_TLD,], ENV_MACHINES)"],
   "ENV_CNAMES": [
     "m5_for([MACH], [MACH.ENV_TLD=ENV_MACHINE.w-0.ENV_MACHINE.home.arpa,], ENV_MACHINES)"
   ],
