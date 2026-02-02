@@ -26,7 +26,8 @@
     "esxi.enp1s0.opnsense/journald/tail.html",
     "esxi.enp1s0.opnsense/vm.html",
     "opnsense.w-0.opnsense",
-    "orthanc.enp1s0.opnsense"
+    "orthanc.enp1s0.opnsense",
+    "pfsense.w-0.pfsense"
   ],
   "ENV_IOT_IFS": [],
   "ENV_LAN_IFS": ["enp1s0"],

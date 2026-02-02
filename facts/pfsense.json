@@ -4,7 +4,7 @@
     "m5_for([MACH], [MACH.ENV_TLD,], ENV_MACHINES)"
   ],
   "ENV_CNAMES": [
-    "m5_for([SITE], [SITE=ENV_MACHINE.w-0.ENV_MACHINE.home.arpa,], ENV_CERTBOT_SITES)"
+    "m5_for([MACH], [MACH.ENV_TLD=ENV_MACHINE.w-0.ENV_MACHINE.home.arpa,], ENV_MACHINES)"
   ],
   "ENV_DDNS_TYPE": "nat",
   "ENV_HOST_ALLOW_LIST": [],

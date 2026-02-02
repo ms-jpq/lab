@@ -3,7 +3,8 @@
     "droplet.w-0.droplet.home.arpa",
     "esxi.enp1s0.opnsense.home.arpa",
     "opnsense.w-0.opnsense.home.arpa",
-    "orthanc.enp1s0.opnsense.home.arpa"
+    "orthanc.enp1s0.opnsense.home.arpa",
+    "pfsense.w-0.pfsense.home.arpa"
   ],
   "ENV_MACVLAN_IFS": ["enp7s0"],
   "ENV_NFS_EXPORTS": [],
