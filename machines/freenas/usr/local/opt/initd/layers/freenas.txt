@@ -1,6 +1,6 @@
 + gh-mirror
-+ media
 + telemetry
 + vb
 + webdav
++ wireguard
 + zfs
