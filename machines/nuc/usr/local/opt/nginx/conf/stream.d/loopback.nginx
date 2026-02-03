@@ -1,7 +1,0 @@
-server {
-  resolver   127.0.0.53:53 ipv4=off;
-  set        $x_nuc nuc.enp1s0.opnsense.home.arpa;
-  listen     6379 reuseport;
-  listen     [::]:6379 reuseport;
-  proxy_pass $x_nuc:30845;
-}
