@@ -34,6 +34,7 @@
     "minio",
     "pastebin",
     "pocket",
+    "redis",
     "rss",
     "s3",
     "speedtest",
