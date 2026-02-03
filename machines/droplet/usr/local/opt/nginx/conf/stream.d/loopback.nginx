@@ -3,3 +3,11 @@ server {
   listen     [::1]:1194 reuseport;
   proxy_pass unix:/run/local/nginx/gateway-http.sock;
 }
+
+server {
+  resolver   127.0.0.53:53 ipv4=off;
+  set        $x_self droplet.w-0.droplet.home.arpa;
+  listen     6379 reuseport;
+  listen     [::]:6379 reuseport;
+  proxy_pass $x_self:30845;
+}
