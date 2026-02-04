@@ -14,7 +14,6 @@
   "ENV_PG_CLUSTERS": ["16/miniflux", "16/wallabag", "16/lobechat"],
   "ENV_PROMETHEUS_HOSTS": [
     "ENV_JOURNAL_HOSTS",
-    "pfsense.w-0.pfsense.home.arpa",
     "freenas.eno1.pfsense.home.arpa"
   ],
   "ENV_PROMETHEUS_K3S_HOSTS": ["droplet.w-0.droplet.home.arpa"],
