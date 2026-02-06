@@ -8,11 +8,11 @@
   "ENV_HOST_FORWARD_LIST": [],
   "ENV_INDEX": [
     "/die/die/die",
-    "freenas.eno1.pfsense/bt",
-    "freenas.eno1.pfsense/rclone",
-    "freenas.eno1.pfsense/webdav",
-    "freenas.eno1.pfsense/youtube-dl",
-    "freenas.eno1.pfsense/zfs.sh"
+    "freenas.w-0.pfsense/bt",
+    "freenas.w-0.pfsense/rclone",
+    "freenas.w-0.pfsense/webdav",
+    "freenas.w-0.pfsense/youtube-dl",
+    "freenas.w-0.pfsense/zfs.sh"
   ],
   "ENV_IOT_IFS": [],
   "ENV_LAN_IFS": ["enp1s0"],
