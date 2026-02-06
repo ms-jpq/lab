@@ -9,11 +9,10 @@ ARGV=(
   rclone.sh sync
   -vv
   --use-mmap
-  # --check-first
-  # --order-by size
+  --check-first
+  --order-by size
   --exclude-if-present .noclone
   --create-empty-src-dirs
-  --fast-list
   --transfers $((NPROC * 2))
   --multi-thread-streams $((NPROC * 2))
 )
