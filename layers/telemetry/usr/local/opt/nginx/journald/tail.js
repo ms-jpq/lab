@@ -225,7 +225,7 @@ const append = (sym, root, json) => {
   i.appendChild(b2);
 
   const message = document.createTextNode(err ?? MESSAGE ?? "");
-  const msg = document.createElement("span");
+  const msg = document.createElement("pre");
   msg.appendChild(message);
   const line = err
     ? (() => {
@@ -238,10 +238,10 @@ const append = (sym, root, json) => {
   const label = document.createElement("label");
   label.appendChild(b);
   label.appendChild(i);
-  label.appendChild(line);
 
   li.appendChild(time);
   li.appendChild(label);
+  li.appendChild(line);
   root.appendChild(li);
 
   debounce(() => {

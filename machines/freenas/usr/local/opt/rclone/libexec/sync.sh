@@ -3,7 +3,6 @@
 set -o pipefail
 
 NPROC="$(nproc)"
-NPROC=2
 
 ARGV=(
   rclone.sh sync
