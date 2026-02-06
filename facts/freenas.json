@@ -13,7 +13,6 @@
     "gray",
     "hao",
     "media",
-    "misc",
     "wallpapers",
     "downloads/done"
   ],
@@ -23,7 +22,6 @@
     "gray",
     "hao",
     "media",
-    "misc",
     "wallpapers"
   ],
   "ENV_WEB_EXPORTS": ["ENV_NFS_EXPORTS", "bt", "downloads", "media"],
