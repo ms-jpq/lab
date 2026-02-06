@@ -7,7 +7,7 @@ NPROC=2
 
 ARGV=(
   rclone.sh sync
-  --verbose
+  -vv
   --check-first
   # --order-by size
   --exclude-if-present .noclone
