@@ -8,6 +8,12 @@ https://openzfs.github.io/openzfs-docs
 zpool upgrade
 ```
 
+## Add to Vdev
+
+```bash
+zpool attach -o ashift=13 -s '<pool>' '/dev/disk/by-id/...' '/dev/disk/by-id/...'
+```
+
 ## ZFS Import
 
 Ensure uniqueness
