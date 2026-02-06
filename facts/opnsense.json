@@ -30,6 +30,7 @@
     "esxi.enp1s0.opnsense/jaeger",
     "esxi.enp1s0.opnsense/journald/tail.html",
     "esxi.enp1s0.opnsense/vm.html",
+    "esxi.enp1s0.opnsense/zfs.sh",
     "freenas.enp1s0.pfsense/bt",
     "freenas.enp1s0.pfsense/rclone",
     "freenas.enp1s0.pfsense/webdav",
