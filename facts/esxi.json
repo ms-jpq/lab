@@ -2,7 +2,7 @@
   "ENV_JOURNAL_HOSTS": [
     "droplet.w-0.droplet.home.arpa",
     "esxi.enp1s0.opnsense.home.arpa",
-    "freenas.eno1.pfsense.home.arpa",
+    "freenas.enp1s0.pfsense.home.arpa",
     "opnsense.w-0.opnsense.home.arpa",
     "orthanc.enp1s0.opnsense.home.arpa",
     "pfsense.w-0.pfsense.home.arpa"
