@@ -2,6 +2,7 @@
   "ENV_JOURNAL_HOSTS": [
     "droplet.w-0.droplet.home.arpa",
     "esxi.enp1s0.opnsense.home.arpa",
+    "freenas.eno1.pfsense.home.arpa",
     "opnsense.w-0.opnsense.home.arpa",
     "orthanc.enp1s0.opnsense.home.arpa",
     "pfsense.w-0.pfsense.home.arpa"
@@ -12,10 +13,7 @@
   "ENV_NO_HWE": true,
   "ENV_NVIDIA_VERSION": "575",
   "ENV_PG_CLUSTERS": ["16/miniflux", "16/wallabag", "16/lobechat"],
-  "ENV_PROMETHEUS_HOSTS": [
-    "ENV_JOURNAL_HOSTS",
-    "freenas.eno1.pfsense.home.arpa"
-  ],
+  "ENV_PROMETHEUS_HOSTS": ["ENV_JOURNAL_HOSTS"],
   "ENV_PROMETHEUS_K3S_HOSTS": ["droplet.w-0.droplet.home.arpa"],
   "ENV_SMB_EXPORTS": [
     "gray-bucket",
