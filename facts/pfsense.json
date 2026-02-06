@@ -16,7 +16,14 @@
   ],
   "ENV_IOT_IFS": [],
   "ENV_LAN_IFS": ["enp1s0"],
-  "ENV_MACHINES": ["freenas.enp1s0.pfsense", "pfsense.w-0.pfsense"],
+  "ENV_MACHINES": [
+    "droplet.w-0.droplet",
+    "esxi.enp1s0.opnsense",
+    "freenas.enp1s0.pfsense",
+    "opnsense.w-0.opnsense",
+    "orthanc.enp1s0.opnsense",
+    "pfsense.w-0.pfsense"
+  ],
   "ENV_OVPN_SERVER_NAME": "ENV_WG_SERVER_NAME",
   "ENV_OVPN_TCP_CLIENT_PORT": 1194,
   "ENV_PUBLIC_SITES": [],
