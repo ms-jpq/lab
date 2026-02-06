@@ -9,7 +9,6 @@ ARGV=(
   rclone.sh sync
   -vv
   --use-mmap
-  --check-first
   --order-by size
   --exclude-if-present .noclone
   --create-empty-src-dirs
