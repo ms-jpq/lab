@@ -27,5 +27,7 @@
     "wallpapers"
   ],
   "ENV_WEB_EXPORTS": ["ENV_NFS_EXPORTS", "bt", "downloads", "media"],
+  "ENV_WG_PEERS": [],
+  "ENV_WG_SERVER_NAME": "ENV_DOMAIN",
   "ENV_ZFS_MEM": 30
 }
