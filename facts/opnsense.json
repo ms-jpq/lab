@@ -19,15 +19,16 @@
   ],
   "ENV_INDEX": [
     "droplet.w-0.droplet",
-    "droplet.w-0.droplet/mail.html",
     "esxi.enp1s0.opnsense",
+    "freenas.w-0.pfsense",
+    "opnsense.w-0.opnsense",
+    "orthanc.enp1s0.opnsense",
+    "pfsense.w-0.pfsense",
+    "droplet.w-0.droplet/mail.html",
     "esxi.enp1s0.opnsense/grafana",
     "esxi.enp1s0.opnsense/jaeger",
     "esxi.enp1s0.opnsense/journald/tail.html",
-    "esxi.enp1s0.opnsense/vm.html",
-    "opnsense.w-0.opnsense",
-    "orthanc.enp1s0.opnsense",
-    "pfsense.w-0.pfsense"
+    "esxi.enp1s0.opnsense/vm.html"
   ],
   "ENV_IOT_IFS": [],
   "ENV_LAN_IFS": ["enp1s0"],
