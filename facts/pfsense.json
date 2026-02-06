@@ -8,15 +8,15 @@
   "ENV_HOST_FORWARD_LIST": [],
   "ENV_INDEX": [
     "/die/die/die",
-    "freenas.w-0.pfsense/bt",
-    "freenas.w-0.pfsense/rclone",
-    "freenas.w-0.pfsense/webdav",
-    "freenas.w-0.pfsense/youtube-dl",
-    "freenas.w-0.pfsense/zfs.sh"
+    "freenas.enp1s0.pfsense/bt",
+    "freenas.enp1s0.pfsense/rclone",
+    "freenas.enp1s0.pfsense/webdav",
+    "freenas.enp1s0.pfsense/youtube-dl",
+    "freenas.enp1s0.pfsense/zfs.sh"
   ],
   "ENV_IOT_IFS": [],
   "ENV_LAN_IFS": ["enp1s0"],
-  "ENV_MACHINES": ["freenas.w-0.pfsense", "pfsense.w-0.pfsense"],
+  "ENV_MACHINES": ["freenas.enp1s0.pfsense", "pfsense.w-0.pfsense"],
   "ENV_OVPN_SERVER_NAME": "ENV_WG_SERVER_NAME",
   "ENV_OVPN_TCP_CLIENT_PORT": 1194,
   "ENV_PUBLIC_SITES": [],

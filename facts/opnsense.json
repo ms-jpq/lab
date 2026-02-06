@@ -20,7 +20,7 @@
   "ENV_INDEX": [
     "droplet.w-0.droplet",
     "esxi.enp1s0.opnsense",
-    "freenas.w-0.pfsense",
+    "freenas.enp1s0.pfsense",
     "opnsense.w-0.opnsense",
     "orthanc.enp1s0.opnsense",
     "pfsense.w-0.pfsense",
