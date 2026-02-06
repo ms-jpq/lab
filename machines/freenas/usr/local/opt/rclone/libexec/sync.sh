@@ -3,12 +3,13 @@
 set -o pipefail
 
 NPROC="$(nproc)"
+NPROC=2
 
 ARGV=(
   rclone.sh sync
   --verbose
   --check-first
-  --order-by size
+  # --order-by size
   --exclude-if-present .noclone
   --create-empty-src-dirs
   --fast-list
