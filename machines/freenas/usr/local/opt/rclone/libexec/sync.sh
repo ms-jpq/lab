@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-NPROC="$(nproc)"
+TRANSFERS=24
 
 ARGV=(
   rclone.sh sync
@@ -11,8 +11,7 @@ ARGV=(
   --order-by size
   --exclude-if-present .noclone
   --create-empty-src-dirs
-  --transfers $((NPROC * 2))
-  --multi-thread-streams $((NPROC * 2))
+  --transfers "$TRANSFERS"
 )
 
 if ! [[ -v INVOCATION_ID ]]; then
