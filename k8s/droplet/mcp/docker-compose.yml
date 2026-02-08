@@ -1,5 +1,15 @@
 ---
 services:
+  mcp:
+    image: docker.io/isokoliuk/mcp-searxng:latest
+    labels:
+      kompose.service.expose: mcp-searx.${DOMAIN}
+    environment:
+      SEARXNG_URL: http:/searxng.kompsed-searx.svc.cluster.local:8080
+      MCP_HTTP_PORT: 8080
+    ports:
+      - 8080
+
   terraform:
     image: docker.io/hashicorp/terraform-mcp-server:latest
     labels:

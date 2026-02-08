@@ -61,6 +61,7 @@ services:
       S3_ENDPOINT: &s3 https://s3.${DOMAIN}
       S3_PUBLIC_DOMAIN: *s3
       S3_SECRET_ACCESS_KEY:
+      SEARXNG_URL: http:/searxng.kompsed-searx.svc.cluster.local:8080
       XAI_API_KEY:
     ports:
       - 3210
