@@ -40,7 +40,7 @@ zfs set volsize='<...G>' '<pool>/<zvol>'
 ```
 
 ```bash
-zfs create -o mountpoint='<mount point>' '<pool>/<dataset>'
+zfs create -o mountpoint='/<mount point>' '<pool>/<dataset>'
 ```
 
 ## Encryption
