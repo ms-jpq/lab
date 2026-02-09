@@ -4,6 +4,6 @@
 /usr/local/lib/systemd/system/timers.target.wants/1-gh-mirror@ms\x2djpq.timer      ../1-gh-mirror@.timer
 /usr/local/lib/systemd/system/timers.target.wants/1-zfs-trim@black.timer           ../1-zfs-trim@.timer
 /usr/local/lib/systemd/system/timers.target.wants/zfs-scrub-monthly@gold.timer     /usr/lib/systemd/system/zfs-scrub-monthly@.timer
+/usr/local/lib/systemd/system/timers.target.wants/zfs-scrub-monthly@green.timer    /usr/lib/systemd/system/zfs-scrub-monthly@.timer
 /usr/local/lib/systemd/system/timers.target.wants/zfs-scrub-weekly@black.timer     /usr/lib/systemd/system/zfs-scrub-weekly@.timer
-/usr/local/lib/systemd/system/timers.target.wants/zfs-scrub-weekly@green.timer     /usr/lib/systemd/system/zfs-scrub-weekly@.timer
 /usr/local/lib/systemd/system/timers.target.wants/zfs-scrub-weekly@red.timer       /usr/lib/systemd/system/zfs-scrub-weekly@.timer
