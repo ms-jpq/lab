@@ -173,7 +173,7 @@ const append = (sym, root, json) => {
   const li =
     (root.childElementCount >= COUNT ? root.firstElementChild : undefined) ??
     document.createElement("li");
-  li.parentElement?.removeChild(li)
+  li.parentElement?.removeChild(li);
   li.replaceChildren();
 
   const tt =
