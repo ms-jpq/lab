@@ -18,6 +18,7 @@ resource "aws_lambda_function" "cron" {
   role             = aws_iam_role.lambdas["cron"].arn
   runtime          = local.lambda_rt
   source_code_hash = data.archive_file.nop.output_base64sha256
+  timeout          = 30
 
   environment {
     variables = merge(
