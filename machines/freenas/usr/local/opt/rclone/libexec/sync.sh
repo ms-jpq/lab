@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-TRANSFERS=24
+TRANSFERS=12
 
 ARGV=(
   rclone.sh sync
