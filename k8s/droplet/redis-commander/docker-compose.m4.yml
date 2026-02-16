@@ -30,5 +30,14 @@ services:
     volumes:
       - data:/data
 
+  # mcp:
+  #   image: docker.io/mcp/redis:latest
+  #   # labels:
+  #     # kompose.service.expose: mcp-redis.${DOMAIN}
+  #   environment:
+  #     REDIS_HOST: redis
+  #   ports:
+  #     - 8080
+
 volumes:
   data:

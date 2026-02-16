@@ -1,6 +1,6 @@
 ---
 services:
-  terraform:
+  grafana:
     image: docker.io/mcp/grafana:latest
     environment:
       GRAFANA_URL:
