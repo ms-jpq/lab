@@ -6,7 +6,7 @@ TRANSFERS=24
 
 ARGV=(
   rclone.sh sync
-  -vv
+  -v
   --use-mmap
   --order-by size
   --exclude-if-present .noclone
