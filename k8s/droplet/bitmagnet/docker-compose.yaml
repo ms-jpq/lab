@@ -5,16 +5,6 @@ services:
     cpu_shares: 128
     labels:
       kompose.service.expose: dht.${DOMAIN}
-    healthcheck:
-      test:
-        - CMD
-        - wget
-        - --quiet
-        - -O/dev/null
-        - --timeout
-        - "1"
-        - --
-        - localhost:3333
     environment:
       POSTGRES_DB: bitmagnet
       POSTGRES_USER:

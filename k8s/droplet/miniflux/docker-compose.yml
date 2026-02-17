@@ -4,16 +4,6 @@ services:
     image: ghcr.io/miniflux/miniflux:latest
     labels:
       kompose.service.expose: rss.${DOMAIN}
-    healthcheck:
-      test:
-        - CMD
-        - wget
-        - --quiet
-        - -O/dev/null
-        - --timeout
-        - "1"
-        - --
-        - localhost:8080/healthcheck
     environment:
       # HTTPS_PROXY: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
       # HTTP_PROXY: *proxy

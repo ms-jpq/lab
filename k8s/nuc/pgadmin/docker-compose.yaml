@@ -4,19 +4,6 @@ services:
     image: docker.io/dpage/pgadmin4:latest
     labels:
       kompose.service.expose: pgadmin.${DOMAIN}
-    healthcheck:
-      test:
-        - CMD
-        - curl
-        - --fail
-        - --location
-        - --no-progress-meter
-        - --output
-        - /dev/null
-        - --max-time
-        - "1"
-        - --
-        - localhost:80
     environment:
       WEBSERVER_AUTO_CREATE_USER:
       WEBSERVER_REMOTE_USER: X-Forwarded-User
@@ -29,14 +16,6 @@ services:
       POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
       POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
-    healthcheck:
-      test:
-        - CMD
-        - pg_isready
-        - --username
-        - ${COMPOSE_PROJECT_NAME}
-        - --dbname
-        - ${COMPOSE_PROJECT_NAME}
     ports:
       - 5432
     volumes:

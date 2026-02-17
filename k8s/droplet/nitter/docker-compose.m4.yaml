@@ -14,16 +14,6 @@ services:
 
   nitter:
     image: docker.io/zedeus/nitter:latest
-    # healthcheck:
-    #   test:
-    #     - CMD
-    #     - wget
-    #     - --quiet
-    #     - -O/dev/null
-    #     - --timeout
-    #     - "1"
-    #     - --
-    #     - localhost:8080
     ports:
       - 8080
     volumes:
@@ -32,12 +22,6 @@ services:
 
   redis:
     image: ghcr.io/valkey-io/valkey:latest
-    healthcheck:
-      test:
-        - CMD
-        - redis-cli
-        - incr
-        - ping
     ports:
       - 6379
     volumes:

@@ -15,12 +15,6 @@ services:
     labels:
       kompose.service.type: nodeport
       kompose.service.nodeport.port: m5_esyscmd([printf -- %s '30000 + 6379 % 2767' | bc])
-    healthcheck:
-      test:
-        - CMD
-        - redis-cli
-        - incr
-        - ping
     command:
       - redis-server
       # - --requirepass

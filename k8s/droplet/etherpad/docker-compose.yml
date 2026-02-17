@@ -4,16 +4,6 @@ services:
     image: docker.io/etherpad/etherpad:latest
     labels:
       kompose.service.expose: docs.${DOMAIN}
-    healthcheck:
-      test:
-        - CMD
-        - wget
-        - --quiet
-        - -O/dev/null
-        - --timeout
-        - "1"
-        - --
-        - localhost:9001
     environment:
       # LOGLEVEL: debug
       DB_CHARSET: utf8mb4
@@ -37,14 +27,6 @@ services:
     image: docker.io/library/postgres:latest
     labels:
       kompose.controller.type: statefulset
-    healthcheck:
-      test:
-        - CMD
-        - pg_isready
-        - --username
-        - ${COMPOSE_PROJECT_NAME}
-        - --dbname
-        - ${COMPOSE_PROJECT_NAME}
     environment:
       POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}

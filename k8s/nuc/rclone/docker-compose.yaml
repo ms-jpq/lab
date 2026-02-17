@@ -20,16 +20,6 @@ services:
       - traefik.http.services.${COMPOSE_PROJECT_NAME}2.loadbalancer.server.port=8080
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.rule=HostRegexp(`^minio\.`)
       - traefik.http.routers.${COMPOSE_PROJECT_NAME}2.service=${COMPOSE_PROJECT_NAME}2
-    healthcheck:
-      test:
-        - CMD
-        - wget
-        - --quiet
-        - -O/dev/null
-        - --timeout
-        - "1"
-        - --
-        - localhost:8080
     command:
       - serve
       - webdav

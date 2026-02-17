@@ -4,18 +4,5 @@ services:
     image: ghcr.io/corentinth/it-tools:latest
     labels:
       kompose.service.expose: tools.${DOMAIN}
-    healthcheck:
-      test:
-        - CMD
-        - curl
-        - --fail
-        - --location
-        - --no-progress-meter
-        - --output
-        - /dev/null
-        - --max-time
-        - "1"
-        - --
-        - localhost:80
     ports:
       - 80

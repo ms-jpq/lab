@@ -4,19 +4,6 @@ services:
     image: ghcr.io/librespeed/speedtest:latest
     labels:
       kompose.service.expose: speedtest.${DOMAIN}
-    healthcheck:
-      test:
-        - CMD
-        - curl
-        - --fail
-        - --location
-        - --no-progress-meter
-        - --output
-        - /dev/null
-        - --max-time
-        - "1"
-        - --
-        - localhost:8080
     ports:
       - 8080
     volumes:

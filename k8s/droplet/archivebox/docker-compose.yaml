@@ -5,19 +5,6 @@ services:
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: archive.${DOMAIN}
-    healthcheck:
-      test:
-        - CMD
-        - curl
-        - --fail
-        - --location
-        - --no-progress-meter
-        - --output
-        - /dev/null
-        - --max-time
-        - "1"
-        - --
-        - localhost:8000
     environment:
       ADMIN_PASSWORD: None
       ADMIN_USERNAME: None

@@ -4,16 +4,6 @@ services:
     image: ghcr.io/wasi-master/13ft:latest
     labels:
       kompose.service.expose: 12ft.${DOMAIN}
-    healthcheck:
-      test:
-        - CMD
-        - wget
-        - --quiet
-        - -O/dev/null
-        - --timeout
-        - "1"
-        - --
-        - localhost:5000
     environment:
       HTTP_PROXY: http://proxy.kompsed-hostproxy.svc.cluster.local:1080
     ports:

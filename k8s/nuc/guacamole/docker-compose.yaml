@@ -15,16 +15,6 @@ services:
     image: &img docker.io/guacamole/guacamole:latest
     labels:
       kompose.service.expose: rdp.${DOMAIN}
-    healthcheck:
-      test:
-        - CMD
-        - wget
-        - --quiet
-        - -O/dev/null
-        - --timeout
-        - "1"
-        - --
-        - localhost:8080
     environment:
       GUACD_HOSTNAME: guacd.${COMPOSE_PROJECT_NAME}.svc.cluster.local
       REMOTE_IP_VALVE_ENABLED: true
@@ -47,14 +37,6 @@ services:
       kompose.controller.type: statefulset
       kompose.init.containers.image: *img
       kompose.init.containers.command: '["sh", "-c", "/opt/guacamole/bin/initdb.sh --postgresql > /var/tmp/init.sql"]'
-    healthcheck:
-      test:
-        - CMD
-        - pg_isready
-        - --username
-        - ${COMPOSE_PROJECT_NAME}
-        - --dbname
-        - ${COMPOSE_PROJECT_NAME}
     environment:
       POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}

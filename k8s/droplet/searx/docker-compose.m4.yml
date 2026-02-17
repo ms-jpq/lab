@@ -36,12 +36,6 @@ services:
 
   redis:
     image: ghcr.io/valkey-io/valkey:latest
-    healthcheck:
-      test:
-        - CMD
-        - redis-cli
-        - incr
-        - ping
     ports:
       - 6379
     volumes:

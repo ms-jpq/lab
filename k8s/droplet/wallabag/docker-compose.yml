@@ -6,19 +6,6 @@ services:
       kompose.service.expose: pocket.${DOMAIN}
       kompose.init.containers.image: *img
       kompose.init.containers.command: '["sh", "-c", "/entrypoint.sh migrate || :"]'
-    # healthcheck:
-    #   test:
-    #     - CMD
-    #     - curl
-    #     - --fail
-    #     - --location
-    #     - --no-progress-meter
-    #     - --output
-    #     - /dev/null
-    #     - --max-time
-    #     - "30"
-    #     - --
-    #     - localhost:80
     environment:
       SYMFONY__ENV__DATABASE_DRIVER: pdo_pgsql
       SYMFONY__ENV__DATABASE_HOST:
@@ -35,12 +22,6 @@ services:
 
   redis:
     image: ghcr.io/valkey-io/valkey:latest
-    healthcheck:
-      test:
-        - CMD
-        - redis-cli
-        - incr
-        - ping
     ports:
       - 6379
     volumes:

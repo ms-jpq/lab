@@ -20,16 +20,6 @@ services:
     labels:
       kompose.service.expose: chat.${DOMAIN}
       traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-csp@kubernetescrd
-    # healthcheck:
-    #   test:
-    #     - CMD
-    #     - wget
-    #     - --quiet
-    #     - -O/dev/null
-    #     - --timeout
-    #     - "1"
-    #     - --
-    #     - localhost:3210
     environment:
       ANTHROPIC_API_KEY:
       APP_URL: https://chat.${DOMAIN}/
@@ -70,12 +60,6 @@ services:
 
   redis:
     image: ghcr.io/valkey-io/valkey:latest
-    healthcheck:
-      test:
-        - CMD
-        - redis-cli
-        - incr
-        - ping
     ports:
       - 6379
     volumes:
@@ -83,14 +67,6 @@ services:
 
   pg:
     image: docker.io/pgvector/pgvector:pg17
-    # healthcheck:
-    #   test:
-    #     - CMD
-    #     - pg_isready
-    #     - --username
-    #     - ${COMPOSE_PROJECT_NAME}
-    #     - --dbname
-    #     - ${COMPOSE_PROJECT_NAME}
     labels:
       kompose.controller.type: statefulset
       kompose.volume.type: hostPath

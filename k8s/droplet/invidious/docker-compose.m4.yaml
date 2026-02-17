@@ -25,16 +25,6 @@ services:
     image: quay.io/invidious/invidious:${TAG}
     labels:
       kompose.service.expose: youku.${DOMAIN}
-    healthcheck:
-      test:
-        - CMD
-        - wget
-        - --quiet
-        - -O/dev/null
-        - --timeout
-        - "1"
-        - --
-        - localhost:3000/preferences
     environment:
       INVIDIOUS_PORT: &port 3000
     ports:
@@ -70,14 +60,6 @@ services:
       POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
       POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
-    healthcheck:
-      test:
-        - CMD
-        - pg_isready
-        - --username
-        - ${COMPOSE_PROJECT_NAME}
-        - --dbname
-        - ${COMPOSE_PROJECT_NAME}
     ports:
       - 5432
     volumes:

@@ -4,15 +4,5 @@ services:
     image: docker.io/excalidraw/excalidraw:latest
     labels:
       kompose.service.expose: draw.${DOMAIN}
-    healthcheck:
-      test:
-        - CMD
-        - wget
-        - --quiet
-        - -O/dev/null
-        - --timeout
-        - "1"
-        - --
-        - localhost:80
     ports:
       - 80

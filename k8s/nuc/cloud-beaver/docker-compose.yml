@@ -6,19 +6,6 @@ services:
       kompose.controller.type: statefulset
       kompose.service.expose: sql.${DOMAIN}
       kompose.volume.type: hostPath
-    healthcheck:
-      test:
-        - CMD
-        - curl
-        - --fail
-        - --location
-        - --no-progress-meter
-        - --output
-        - /dev/null
-        - --max-time
-        - "1"
-        - --
-        - localhost:8978
     ports:
       - 8978
     volumes:
