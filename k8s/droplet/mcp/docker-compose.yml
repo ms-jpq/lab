@@ -55,7 +55,6 @@ services:
       - --allow-net
       - --allow-read=node_modules
       - --allow-write=node_modules
-      - --node-modules-dir=auto
       - jsr:@pydantic/mcp-run-python
       - streamable_http
     ports:
