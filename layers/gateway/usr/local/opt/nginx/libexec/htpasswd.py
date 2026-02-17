@@ -43,14 +43,15 @@ from stat import S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR
 from time import time
 from typing import NewType
 from urllib.parse import SplitResultBytes, parse_qs, urlsplit
+from uuid import uuid4
 
 _Method = NewType("_Method", bytes)
 _Headers = NewType("_Headers", Mapping[bytes, Sequence[bytes]])
 _Query = NewType("_Query", Mapping[bytes, Sequence[bytes]])
 _Req = tuple[_Method, bytes, SplitResultBytes, _Query, _Headers]
-
-
 _IP = IPv6Address | IPv4Address
+
+_HOST = ".".join((uuid4().hex, uuid4().hex)).encode()
 
 
 @dataclass(frozen=True)
@@ -227,7 +228,7 @@ async def _thread(th: _Th) -> None:
         async with finalize(writer):
             req = await _parse(reader)
             _, path, parsed, query, headers = req
-            host = (parsed.hostname or b"").decode()
+            host = (parsed.hostname or _HOST).decode()
 
             proto = b"".join(headers.get(b"x-forwarded-proto", ()))
             secure = proto != b"http"
