@@ -227,8 +227,7 @@ async def _thread(th: _Th) -> None:
         async with finalize(writer):
             req = await _parse(reader)
             _, path, parsed, query, headers = req
-            assert parsed.hostname
-            host = parsed.hostname.decode()
+            host = (parsed.hostname or b"").decode()
 
             proto = b"".join(headers.get(b"x-forwarded-proto", ()))
             secure = proto != b"http"
