@@ -3,6 +3,7 @@
 set -o pipefail
 
 TRANSFERS=8
+BWLIMIT='777K:off'
 
 ARGV=(
   rclone.sh sync
@@ -12,6 +13,7 @@ ARGV=(
   --exclude-if-present .noclone
   --create-empty-src-dirs
   --transfers "$TRANSFERS"
+  --bwlimit "$BWLIMIT"
 )
 
 if ! [[ -v INVOCATION_ID ]]; then
