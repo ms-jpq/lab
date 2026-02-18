@@ -8,6 +8,11 @@ Type            = notify
 Restart         = on-failure
 RestartSec      = 2s
 
+ProtectSystem   = strict
+ProtectHome     = yes
+PrivateTmp      = yes
+ReadWritePaths  = /media
+
 # User            = 1000
 # Group           = 1000
 CacheDirectory  = local/rclone/%i
