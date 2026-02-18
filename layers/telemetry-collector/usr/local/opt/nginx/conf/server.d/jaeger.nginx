@@ -1,7 +1,7 @@
 location /jaeger {
-  return 307 /jaeger/;
+  proxy_pass http://127.0.0.53:16686;
 }
 
-location /jaeger/ {
-  proxy_pass http://127.0.0.53:16686;
+location /api/v3/ {
+  proxy_pass http://127.0.0.53:16686/jaeger/api/v3/;
 }
