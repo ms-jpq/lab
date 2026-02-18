@@ -1,0 +1,4 @@
+[Service]
+Name = %H
+Type = _http._tcp
+Port = 80
