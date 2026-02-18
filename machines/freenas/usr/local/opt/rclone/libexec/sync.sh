@@ -10,6 +10,7 @@ ARGV=(
   -v
   --use-mmap
   --dscp LE
+  --human-readable
   --order-by size
   --exclude-if-present .noclone
   --create-empty-src-dirs
