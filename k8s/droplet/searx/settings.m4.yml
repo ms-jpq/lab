@@ -74,9 +74,9 @@ engines:
   - name: bilibili
     disabled: false
 
-  - name: yandex
-    inactive: false
-    disabled: false
+  # - name: yandex
+  #   inactive: false
+  #   disabled: false
 
 # https://kagi.com/stats?stat=leaderboard
 hostnames:
