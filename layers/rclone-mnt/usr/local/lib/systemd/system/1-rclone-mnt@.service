@@ -23,7 +23,7 @@ Environment     = WHAT=
 Environment     = ARGV=
 Environment     = WHERE=/media/%I
 Environment     = TRANSFERS=88
-Environment     = VFS_MAX_SIZE=1G
+Environment     = VFS_MAX_SIZE=8G
 Environment     = VFS_CACHE_MODE=off
 Environment     = DIR_CACHE_TIME=0
 Environment     = POLL_INTERVAL=0
@@ -36,18 +36,18 @@ ExecStartPre    = !chown -v -- 1000:1000 /media/%I
 ExecStart       = rclone mount \
                     --allow-non-empty \
                     --allow-other \
-                    --cache-dir ${CACHE_DIRECTORY} \
                     --config /dev/null \
                     --default-permissions \
-                    --transfers ${TRANSFERS} \
                     --gid 1000 \
                     --uid 1000 \
                     --use-mmap \
+                    --transfers ${TRANSFERS} \
+                    --cache-dir ${CACHE_DIRECTORY} \
+                    --dir-cache-time ${DIR_CACHE_TIME} \
+                    --poll-interval ${POLL_INTERVAL} \
                     --vfs-refresh \
                     --vfs-cache-mode ${VFS_CACHE_MODE} \
                     --vfs-cache-max-size ${VFS_MAX_SIZE} \
-                    --dir-cache-time ${DIR_CACHE_TIME} \
-                    --poll-interval ${POLL_INTERVAL} \
                     $WEBDAV $READONLY \
                     $ARGV -- ${WHAT} ${WHERE}
 ExecReload      = kill -s HUP -- ${MAINPID}
