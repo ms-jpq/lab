@@ -6,7 +6,5 @@ kubelet-arg: "node-ip=::"
 bind-address: "::"
 default-local-storage-path: /var/lib/k3s-volumes
 # etcd-arg: log-level=warn
-etcd-expose-metrics: true
 flannel-ipv6-masq: true
 prefer-bundled-bin: true
-supervisor-metrics: true
