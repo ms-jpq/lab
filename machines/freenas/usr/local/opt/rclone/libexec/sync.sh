@@ -2,18 +2,17 @@
 
 set -o pipefail
 
-TRANSFERS=8
-BWLIMIT='04:00,800K:off 00:00,off'
+export -- RCLONE_TRANSFERS=8
+# export -- BWLIMIT='04:00,800K:off 00:00,off'
 
 ARGV=(
   rclone.sh sync
   -v
   --use-mmap
+  --dscp LE
   --order-by size
   --exclude-if-present .noclone
   --create-empty-src-dirs
-  --transfers "$TRANSFERS"
-  --bwlimit "$BWLIMIT"
 )
 
 if ! [[ -v INVOCATION_ID ]]; then
