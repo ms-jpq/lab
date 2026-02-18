@@ -3,7 +3,7 @@
 set -o pipefail
 
 TRANSFERS=8
-BWLIMIT='777K:off'
+BWLIMIT='04:00,800K:off 00:00,off'
 
 ARGV=(
   rclone.sh sync
