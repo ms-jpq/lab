@@ -8,8 +8,7 @@ Type            = notify
 Restart         = on-failure
 RestartSec      = 2s
 
-# User            = 1000
-# Group           = 1000
+Group           = 1000
 CacheDirectory  = local/rclone/%i
 
 EnvironmentFile = /usr/local/etc/default/%i.rmount.env
@@ -33,7 +32,6 @@ ExecStart       = rclone mount \
                     --allow-other \
                     --config /dev/null \
                     --default-permissions \
-                    --gid 1000 \
                     --uid 1000 \
                     --use-mmap \
                     --transfers ${TRANSFERS} \
@@ -46,4 +44,4 @@ ExecStart       = rclone mount \
                     $WEBDAV $READONLY \
                     $ARGV -- ${WHAT} ${WHERE}
 ExecReload      = kill -s HUP -- ${MAINPID}
-ExecStop        = fusermount -u -- ${WHERE}
+ExecStop        = !fusermount -u -- ${WHERE}
