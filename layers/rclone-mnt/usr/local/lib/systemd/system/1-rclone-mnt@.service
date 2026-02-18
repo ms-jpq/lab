@@ -12,7 +12,7 @@ RestartSec      = 2s
 # Group           = 1000
 CacheDirectory  = local/rclone/%i
 
-EnvironmentFile = /usr/local/etc/default/%i.rclone-mnt.env
+EnvironmentFile = /usr/local/etc/default/%i.rmount.env
 
 Environment     = WHAT=
 Environment     = ARGV=
