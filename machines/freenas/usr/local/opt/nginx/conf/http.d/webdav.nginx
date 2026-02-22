@@ -1,7 +1,0 @@
-server {
-  listen [::]:80 ipv6only=off reuseport;
-
-  location / {
-    proxy_pass http://unix:/run/local/webdav/index.sock:/;
-  }
-}

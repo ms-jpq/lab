@@ -1,0 +1,4 @@
+server {
+  listen     [::]:80 ipv6only=off reuseport;
+  proxy_pass unix:/run/local/webdav/index.sock;
+}
