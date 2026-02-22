@@ -16,6 +16,7 @@
   "ENV_PROMETHEUS_HOSTS": ["ENV_JOURNAL_HOSTS"],
   "ENV_PROMETHEUS_K3S_HOSTS": ["droplet.w-0.droplet.home.arpa"],
   "ENV_SMB_EXPORTS": [
+    "freenas",
     "gray-bucket",
     "hao-bucket",
     "time-machine-gray",
