@@ -1,7 +1,4 @@
-+ elasticsearch
-+ kibana
 + nfs-kernel-server
-+ py-elasticsearch
 + samba
 + samba-vfs-modules
 + targetcli-fb

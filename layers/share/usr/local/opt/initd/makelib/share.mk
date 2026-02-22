@@ -1,6 +1,6 @@
-.PHONY: nfs samba iscsi elasticsearch clobber.samba clobber.iscsi clobber.elasticsearch
+.PHONY: nfs samba iscsi clobber.samba clobber.iscsi
 
-all: nfs samba iscsi elasticsearch
+all: nfs samba iscsi
 
 CLOBBER.FS += /etc/exports.d/* /etc/nfs.conf.d/* /etc/default/samba /var/lib/local/samba/usershares
 CLOBBER.ISCSI := /etc/rtslib-fb-target /etc/iscsi/nodes /etc/iscsi/send_targets
@@ -45,12 +45,3 @@ clobber.iscsi:
 
 clobber.samba:
 	sudo rm -v -fr -- '$(USER_SHARES)'
-
-pkg._: /etc/apt/trusted.gpg.d/elastic-search.gpg
-/etc/apt/trusted.gpg.d/elastic-search.gpg:
-	$(CURL) -- 'https://artifacts.elastic.co/GPG-KEY-elasticsearch' | sudo -- gpg --batch --dearmor --yes --output '$@'
-
-/etc/elasticsearch/jvm.options: | pkg._
-elasticsearch: /usr/local/opt/elasticsearch/jvm.options
-/usr/local/opt/elasticsearch/jvm.options: /etc/elasticsearch/jvm.options
-	sudo -- sed -E -e 's#/var/log/#/var/tmp/#' -- '$<' | sudo -- tee -- '$@' >/dev/null
