@@ -20,7 +20,7 @@ Environment     = DIR_CACHE_TIME=0
 Environment     = POLL_INTERVAL=0
 Environment     = TRANSFERS=88
 Environment     = VFS_MAX_SIZE=8G
-Environment     = VFS_READ_AHEAD=1G
+Environment     = VFS_READ_AHEAD=128M
 Environment     = VFS_CACHE_MODE=off
 Environment     = WEBDAV="--webdav-vendor nginx --webdav-pacer-min-sleep 0"
 Environment     = READONLY="--read-only --vfs-fast-fingerprint"
