@@ -47,3 +47,4 @@ ExecStart       = rclone mount \
                     $ARGV -- ${WHAT} ${WHERE}
 ExecReload      = kill -s HUP -- ${MAINPID}
 ExecStop        = !fusermount -u -- ${WHERE}
+ExecStop        = !umount --force --lazy -- ${WHERE}
