@@ -1,0 +1,10 @@
+[Unit]
+Description   = WSDD
+
+[Service]
+Restart       = on-failure
+ProtectSystem = strict
+ProtectHome   = yes
+PrivateTmp    = yes
+
+ExecStart     = wsdd

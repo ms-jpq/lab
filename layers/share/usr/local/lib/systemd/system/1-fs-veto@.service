@@ -5,6 +5,7 @@ Description      = FS Veto Service -- %f
 Type             = oneshot
 ProtectSystem    = strict
 ProtectHome      = yes
+PrivateTmp       = yes
 ReadWritePaths   = %f
 
 WorkingDirectory = %f
