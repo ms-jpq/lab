@@ -2,6 +2,14 @@ location /bt {
   return 307 /bt/;
 }
 
+location /webdav/bt {
+  return 307 /bt/;
+}
+
+location /webdav/bt/ {
+  return 307 /bt/;
+}
+
 location /bt/ {
   include          /usr/local/opt/nginx/conf/http.d/proxy_params.nginx;
   proxy_set_header Origin "";
