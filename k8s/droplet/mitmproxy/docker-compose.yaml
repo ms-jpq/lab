@@ -1,7 +1,7 @@
 ---
 services:
   mitmproxy:
-    image: docker.io/mitmproxy/mitmproxy:latest
+    image: ghcr.io/mitmproxy/mitmproxy:latest
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8081

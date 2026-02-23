@@ -91,6 +91,7 @@ hostnames:
     - ^bbs(\.[[^.]]+){1,}
     - ^community(\.[[^.]]+){1,}
     - ^developer(\.[[^.]]+){1,}
+    - ^discuss(\.[[^.]]+){1,}
     - ^docs?(\.[[^.]]+){1,}
     - ^forums?(\.[[^.]]+){1,}
     # m5_esyscmd([./k8s/droplet/searx/proc.sed -- ./k8s/droplet/searx/domains/more.txt])
