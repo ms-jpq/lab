@@ -1,0 +1,18 @@
+# https://github.com/keel-hq/keel/blob/master/chart/keel/values.yaml
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: &chart keel
+  namespace: kube-system
+spec:
+  chart: *chart
+  createNamespace: true
+  repo: https://charts.keel.sh
+  targetNamespace: *chart
+  valuesContent: |-
+    image:
+      repository: docker.io/keelhq/keel
+      tag: 0.20.0
+    polling:
+      defaultSchedule: "@every 8h"
