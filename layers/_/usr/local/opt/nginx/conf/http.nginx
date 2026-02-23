@@ -20,6 +20,7 @@ proxy_buffers             8 512k;
 proxy_busy_buffers_size   512k;
 proxy_http_version        1.1;
 proxy_read_timeout        28d;
+proxy_request_buffering   off;
 proxy_temp_path           /var/tmp/proxy;
 resolver                  127.0.0.53;
 root                      /run/local/nginx/www;
