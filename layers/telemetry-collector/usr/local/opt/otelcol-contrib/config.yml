@@ -54,13 +54,13 @@ processors:
       - >-
         set(resource.attributes["service.name"], log.body["_SYSTEMD_UNIT"]) where not IsMatch(log.body["_SYSTEMD_UNIT"], "\\.(slice|scope)$")
 exporters:
-  &loki otlphttp/logs:
+  &loki otlp_http/logs:
     endpoint: http://127.0.0.53:3100/otlp
   &prometheus prometheus/metrics:
     endpoint: 127.0.0.53:6318
-  &tempo otlphttp/traces:
+  &tempo otlp_http/traces:
     endpoint: http://127.0.0.53:4317
-  &jaeger otlphttp/jaeger:
+  &jaeger otlp_http/jaeger:
     endpoint: http://127.0.0.53:44318
 service:
   telemetry:

@@ -31,7 +31,7 @@ processors:
       - >-
         [set(resource.attributes["service.instance.id"], resource.attributes["cloudwatch.log.stream"])]
 exporters:
-  &output otlphttp:
+  &output otlp_http:
     endpoint: m5_assert([ENV_OTLP_ENDPOINT])
     auth:
       authenticator: *auth

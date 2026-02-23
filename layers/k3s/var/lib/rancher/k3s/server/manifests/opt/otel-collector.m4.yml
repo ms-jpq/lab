@@ -57,7 +57,7 @@ spec:
             - >-
               delete_key(log.attributes, "logtag")
       exporters:
-        &out otlphttp:
+        &out otlp_http:
           endpoint: m5_assert([ENV_OTLP_ENDPOINT])
           headers:
             authorization: >-
