@@ -7,7 +7,7 @@ services:
     cap_add:
       - NET_ADMIN
     volumes:
-      - data:/var/lib/cloudflare-warp
+      - data1:/var/lib/cloudflare-warp
 
   bluewarp:
     image: docker.io/caomingjun/warp:latest
@@ -16,7 +16,7 @@ services:
     cap_add:
       - NET_ADMIN
     volumes:
-      - data:/var/lib/cloudflare-warp
+      - data2:/var/lib/cloudflare-warp
 
   redlib:
     image: quay.io/redlib/redlib:latest
@@ -53,4 +53,5 @@ services:
       - 8080
 
 volumes:
-  data:
+  data1:
+  data2:
