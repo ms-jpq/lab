@@ -49,3 +49,5 @@ ExecStart         = k3s server \
                     --resolv-conf ${RUNTIME_DIRECTORY}/resolv.conf \
                     --node-name ${K3S_NODE_NAME} \
                     --config ${K3S_CONFIG_FILE}
+
+ExecStopPost      = /usr/local/opt/k3s/libexec/down.nft

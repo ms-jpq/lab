@@ -1,0 +1,8 @@
+#!/usr/bin/env -S -- nft --file
+
+delete table ip6 mangle
+delete table ip  mangle
+delete table ip6 nat
+delete table ip  nat
+delete table ip6 filter
+delete table ip  filter
