@@ -46,34 +46,34 @@ services:
     ports:
       - 8080
 
-  python:
-    image: docker.io/denoland/deno:latest
-    labels:
-      kompose.service.expose: mcp-python.${DOMAIN}
-    command:
-      - run
-      - --allow-net
-      - --allow-read=node_modules
-      - --allow-write=node_modules
-      - --node-modules-dir=auto
-      - --
-      - jsr:@pydantic/mcp-run-python
-      - streamable_http
-    ports:
-      - 3001
-
-  r:
-    image: ghcr.io/finite-sample/rmcp/rmcp-ci:latest
-    labels:
-      kompose.service.expose: mcp-r.${DOMAIN}
-    entrypoint:
-      - rmcp
-    command:
-      - serve-http
-      - --host
-      - "::"
-    ports:
-      - 8000
+  # python:
+  #   image: docker.io/denoland/deno:latest
+  #   labels:
+  #     kompose.service.expose: mcp-python.${DOMAIN}
+  #   command:
+  #     - run
+  #     - --allow-net
+  #     - --allow-read=node_modules
+  #     - --allow-write=node_modules
+  #     - --node-modules-dir=auto
+  #     - --
+  #     - jsr:@pydantic/mcp-run-python
+  #     - streamable_http
+  #   ports:
+  #     - 3001
+  #
+  # r:
+  #   image: ghcr.io/finite-sample/rmcp/rmcp-ci:latest
+  #   labels:
+  #     kompose.service.expose: mcp-r.${DOMAIN}
+  #   entrypoint:
+  #     - rmcp
+  #   command:
+  #     - serve-http
+  #     - --host
+  #     - "::"
+  #   ports:
+  #     - 8000
 
   # playwright:
   #   image: mcr.microsoft.com/playwright/mcp:latest
