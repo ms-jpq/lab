@@ -1,8 +1,0 @@
----
-services:
-  httpbin:
-    image: docker.io/kennethreitz/httpbin:latest
-    labels:
-      kompose.service.expose: http.${DOMAIN}
-    ports:
-      - 80

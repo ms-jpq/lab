@@ -1,7 +1,7 @@
 ---
 services:
   stirling-pdf:
-    image: docker.io/frooodle/s-pdf:latest
+    image: docker.stirlingpdf.com/stirlingtools/stirling-pdf:latest
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: pdf.${DOMAIN}

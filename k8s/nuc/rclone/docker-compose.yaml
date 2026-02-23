@@ -1,20 +1,7 @@
 ---
 services:
   rclone:
-    image: docker.io/andrewgaul/s3proxy:latest
-    labels:
-      - traefik.enable=true
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=HostRegexp(`^s3\.`)
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.service=${COMPOSE_PROJECT_NAME}
-    environment:
-      S3PROXY_CREDENTIAL:
-      S3PROXY_IDENTITY:
-    volumes:
-      - /var/lib/local/rclone:/data
-
-  dav:
-    image: docker.io/rclone/rclone:latest
+    image: ghcr.io/rclone/rclone:latest
     labels:
       - traefik.enable=true
       - traefik.http.services.${COMPOSE_PROJECT_NAME}2.loadbalancer.server.port=8080
