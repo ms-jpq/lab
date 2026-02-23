@@ -62,11 +62,17 @@ services:
       - 3001
 
   r:
-    image: ghcr.io/finite-sample/rmcp/rmcp-base:latest
+    image: ghcr.io/finite-sample/rmcp/rmcp-ci:latest
     labels:
       kompose.service.expose: mcp-r.${DOMAIN}
+    entrypoint:
+      - rmcp
+    command:
+      - serve-http
+      - --host
+      - "::"
     ports:
-      - 8080
+      - 8000
 
   # playwright:
   #   image: mcr.microsoft.com/playwright/mcp:latest
