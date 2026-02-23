@@ -62,7 +62,7 @@ services:
       - 3001
 
   r:
-    image: ghcr.io/finite-sample/rmcp-base:latest
+    image: ghcr.io/finite-sample/rmcp/rmcp-base:latest
     labels:
       kompose.service.expose: mcp-r.${DOMAIN}
     ports:
