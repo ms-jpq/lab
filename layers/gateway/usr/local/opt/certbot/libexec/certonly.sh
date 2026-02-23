@@ -4,6 +4,7 @@ set -o pipefail
 
 CONF=/var/lib/local/certbot
 LOG=/var/cache/local/certbot/logs
+ACME='/run/local/nginx/acme'
 
 mkdir -v -p -- "$LOG"
 
@@ -19,7 +20,7 @@ CERTBOT=(
   --expand
   --work-dir /var/tmp
   --webroot
-  --webroot-path /run/local/nginx/acme
+  --webroot-path "$ACME"
   --config-dir "$CONF"
   --logs-dir "$LOG"
   --email "$USER@$HOSTNAME"
@@ -31,4 +32,5 @@ for SITE in "${SITES[@]}"; do
   fi
 done
 
+mkdir -p -- "$ACME/.well-known"
 PYTHONPATH=/opt/python3/certbot exec -- "${CERTBOT[@]}"

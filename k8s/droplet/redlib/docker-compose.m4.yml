@@ -69,7 +69,7 @@ services:
     healthcheck:
       test:
         - CMD
-        - /usr/bin/true
+        - /bin/true
     environment:
       <<: *env
       PORT: "9090"
