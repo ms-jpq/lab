@@ -1,0 +1,55 @@
+---
+services:
+  redwarp:
+    image: docker.io/caomingjun/warp:latest
+    labels:
+      kompose.service.group: &redwarp redlib
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - data:/var/lib/cloudflare-warp
+
+  bluewarp:
+    image: docker.io/caomingjun/warp:latest
+    labels:
+      kompose.service.group: &bluewarp bluelib
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - data:/var/lib/cloudflare-warp
+
+  redlib:
+    image: quay.io/redlib/redlib:latest
+    labels:
+      kompose.service.group: *redwarp
+      kompose.service.expose: bbs.${DOMAIN}
+    environment: &env
+      REDLIB_AUTOPLAY_VIDEOS: on
+      REDLIB_DEFAULT_AUTOPLAY_VIDEOS: on
+      REDLIB_DEFAULT_BLUR_NSFW: on
+      REDLIB_DEFAULT_COMMENT_SORT: top
+      REDLIB_DEFAULT_DISABLE_VISIT_REDDIT_CONFIRMATION: on
+      REDLIB_DEFAULT_HIDE_HLS_NOTIFICATION: on
+      REDLIB_DEFAULT_USE_HLS: on
+      REDLIB_ENABLE_RSS: on
+      REDLIB_FULL_URL: https://bbs.${DOMAIN}
+      REDLIB_REMOVE_DEFAULT_FEEDS: on
+      REDLIB_ROBOTS_DISABLE_INDEXING: on
+    ports:
+      - 8080
+    volumes:
+      - ./redlib.toml:/redlib.toml:ro
+
+  bluelib:
+    image: quay.io/redlib/redlib:latest
+    labels:
+      kompose.service.group: *bluewarp
+      kompose.service.expose: forum.${DOMAIN}
+    environment:
+      <<: *env
+      REDLIB_FULL_URL: https://forum.${DOMAIN}
+    ports:
+      - 8080
+
+volumes:
+  data:
