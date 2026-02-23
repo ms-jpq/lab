@@ -1,6 +1,6 @@
 ---
 services:
-  mcp:
+  searx:
     image: docker.io/isokoliuk/mcp-searxng:latest
     labels:
       kompose.service.expose: mcp-searx.${DOMAIN}
