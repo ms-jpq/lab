@@ -61,6 +61,13 @@ services:
     ports:
       - 3001
 
+  r:
+    image: ghcr.io/finite-sample/rmcp-base:latest
+    labels:
+      kompose.service.expose: mcp-r.${DOMAIN}
+    ports:
+      - 8080
+
   # playwright:
   #   image: mcr.microsoft.com/playwright/mcp:latest
   #   labels:
@@ -76,9 +83,3 @@ services:
   #     - 8080
 
   # TODO: https://github.com/teabranch/open-responses-server
-  # r:
-  #   image: ghcr.io/finite-sample/rmcp:latest
-  #   labels:
-  #     kompose.service.expose: mcp-r.${DOMAIN}
-  #   ports:
-  #     - 8080
