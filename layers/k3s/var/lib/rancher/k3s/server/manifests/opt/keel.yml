@@ -10,4 +10,7 @@ spec:
   createNamespace: true
   repo: https://charts.keel.sh
   targetNamespace: *chart
-  valuesContent: ""
+  valuesContent: |-
+    image:
+      repository: docker.io/keelhq/keel
+      tag: latest
