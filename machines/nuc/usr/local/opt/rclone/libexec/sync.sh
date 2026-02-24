@@ -8,14 +8,16 @@ ARGV=(
   rclone.sh sync
   -v
   --use-mmap
-  --order-by size
-  --exclude-if-present .noclone
+  --order-by 'size,mixed,75'
   --create-empty-src-dirs
   --transfers "$TRANSFERS"
+  --
+  jotta_src:
+  jotta_dst:
 )
 
 if ! [[ -v INVOCATION_ID ]]; then
   ARGV+=(--dry-run)
 fi
 
-exec -- "${ARGV[@]}" -- /media "$@"
+exec -- "${ARGV[@]}"
