@@ -16,30 +16,27 @@ x-k8s:
 
 services:
   lobe-chat:
-    image: docker.io/lobehub/lobe-chat-database:latest
+    image: docker.io/lobehub/lobehub:latest
     labels:
       kompose.service.expose: chat.${DOMAIN}
       traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-csp@kubernetescrd
     environment:
       ANTHROPIC_API_KEY:
-      APP_URL: https://chat.${DOMAIN}/
+      APP_URL: https://chat.${DOMAIN}
       AUTH_AUTH0_ID:
       AUTH_AUTH0_ISSUER:
       AUTH_AUTH0_SECRET:
+      AUTH_SECRET:
+      AUTH_SSO_PROVIDERS: auth0
       BROWSERLESS_TOKEN:
       BROWSERLESS_URL: http://browserless:3000
       DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg/${COMPOSE_PROJECT_NAME}
       DEEPSEEK_API_KEY:
       ENABLE_PROXY_DNS: 1
-      FEATURE_FLAGS: -check_updates,-clerk_sign_up,-welcome_suggest,-market
+      FEATURE_FLAGS: -check_updates,-clerk_sign_up,-welcome_suggest,-changelog,-market
       GOOGLE_API_KEY:
       HOSTNAME: "::"
       KEY_VAULTS_SECRET:
-      NEXT_AUTH_SECRET:
-      NEXT_AUTH_SSO_PROVIDERS: auth0
-      NEXT_PUBLIC_SERVICE_MODE: server
-      NEXTAUTH_URL: https://chat.${DOMAIN}/api/auth
-      NEXTAUTH_URL_INTERNAL: http://lobe-chat.kompsed-lobe-chat.svc.cluster.local:3210/api/auth
       OLLAMA_MODEL_LIST:
       OLLAMA_PROXY_URL:
       OPENAI_API_KEY:
