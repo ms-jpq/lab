@@ -8,7 +8,7 @@ ARGV=(
   rclone.sh sync
   -v
   --use-mmap
-  --order-by 'size,mixed,75'
+  --order-by 'size,mixed'
   --create-empty-src-dirs
   --transfers "$TRANSFERS"
   --
