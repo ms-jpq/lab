@@ -12,8 +12,8 @@ ARGV=(
   --create-empty-src-dirs
   --transfers "$TRANSFERS"
   --
-  jotta_src:
-  jotta_dst:
+  jotta-src:
+  jotta-dst:
 )
 
 if ! [[ -v INVOCATION_ID ]]; then
