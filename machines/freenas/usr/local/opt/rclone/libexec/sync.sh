@@ -11,7 +11,7 @@ ARGV=(
   --use-mmap
   --dscp LE
   --human-readable
-  --order-by size
+  --order-by 'size,mixed,75'
   --exclude-if-present .noclone
   --create-empty-src-dirs
 )
