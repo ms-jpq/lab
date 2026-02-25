@@ -64,7 +64,7 @@ services:
       - data:/data
 
   pg:
-    image: docker.io/pgvector/pgvector:pg17-trixie
+    image: docker.io/pgvector/pgvector:pg18-trixie
     labels:
       kompose.controller.type: statefulset
       kompose.volume.type: hostPath
