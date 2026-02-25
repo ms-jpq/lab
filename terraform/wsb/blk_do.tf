@@ -4,9 +4,6 @@ resource "digitalocean_volume" "iscsi" {
   name                    = "iscsi-${each.key}"
   region                  = local.do_regions.tor[0]
   size                    = each.value.size
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 output "do_volume" {
