@@ -26,6 +26,7 @@ services:
       AUTH_AUTH0_ID:
       AUTH_AUTH0_ISSUER:
       AUTH_AUTH0_SECRET:
+      AUTH_DISABLE_EMAIL_PASSWORD: 1
       AUTH_SECRET:
       AUTH_SSO_PROVIDERS: auth0
       BROWSERLESS_TOKEN:
@@ -33,7 +34,7 @@ services:
       DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg/${COMPOSE_PROJECT_NAME}
       DEEPSEEK_API_KEY:
       ENABLE_PROXY_DNS: 1
-      FEATURE_FLAGS: -check_updates,-clerk_sign_up,-welcome_suggest,-changelog,-market
+      FEATURE_FLAGS: -welcome_suggest,-changelog,-market
       GOOGLE_API_KEY:
       HOSTNAME: "::"
       KEY_VAULTS_SECRET:
