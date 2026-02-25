@@ -75,7 +75,7 @@ services:
     ports:
       - 5432
     volumes:
-      - /var/lib/local/lobe-chat:/var/lib/postgresql/data
+      - /var/lib/local/lobe-chat:/var/lib/postgresql
 
 volumes:
   data:
