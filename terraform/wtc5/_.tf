@@ -13,10 +13,6 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6"
     }
-    digitalocean = {
-      source  = "digitalocean/digitalocean"
-      version = "~> 2"
-    }
   }
 }
 
