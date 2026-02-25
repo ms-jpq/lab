@@ -19,7 +19,7 @@ services:
       - data2:/var/lib/cloudflare-warp
 
   redlib:
-    image: quay.io/redlib/redlib:latest
+    image: &img quay.io/redlib/redlib:latest
     labels:
       kompose.service.group: *redwarp
       kompose.service.expose: bbs.${DOMAIN}
@@ -41,7 +41,7 @@ services:
       - ./redlib.toml:/redlib.toml:ro
 
   bluelib:
-    image: quay.io/redlib/redlib:latest
+    image: *img
     labels:
       kompose.service.group: *bluewarp
       kompose.service.expose: forum.${DOMAIN}
