@@ -85,7 +85,6 @@ services:
   browserless:
     image: ghcr.io/browserless/chromium:latest
     environment:
-      ALLOW_FILE_PROTOCOL: false
       HOST: "::"
       MAX_MEMORY_PERCENT: 80
       TOKEN: ${BROWSERLESS_TOKEN}
