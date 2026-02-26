@@ -85,6 +85,7 @@ services:
   browserless:
     image: ghcr.io/browserless/chromium:latest
     environment:
+      DEFAULT_LAUNCH_ARGS: '["--proxy-server=http://proxy.kompsed-hostproxy.svc.cluster.local:1080"]'
       HOST: "::"
       MAX_MEMORY_PERCENT: 80
       TOKEN: ${BROWSERLESS_TOKEN}
