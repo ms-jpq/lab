@@ -21,6 +21,7 @@ services:
       kompose.service.expose: chat.${DOMAIN}
       traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-csp@kubernetescrd
     environment:
+      # AUTH_ALLOWED_EMAILS:
       ANTHROPIC_API_KEY:
       APP_URL: https://chat.${DOMAIN}
       AUTH_AUTH0_ID:
@@ -30,8 +31,8 @@ services:
       AUTH_SECRET:
       AUTH_SSO_PROVIDERS: auth0
       BROWSERLESS_BLOCK_ADS: 1
-      BROWSERLESS_TOKEN:
       BROWSERLESS_STEALTH_MODE: 1
+      BROWSERLESS_TOKEN:
       BROWSERLESS_URL: http://browserless.${COMPOSE_PROJECT_NAME}.svc.cluster.local:3000
       CRAWLER_IMPLS: browserless,naive
       DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg.${COMPOSE_PROJECT_NAME}.svc.cluster.local/${COMPOSE_PROJECT_NAME}
