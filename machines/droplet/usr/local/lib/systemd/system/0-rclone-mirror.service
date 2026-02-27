@@ -1,0 +1,21 @@
+[Unit]
+Description         = Rclone Mirror Service
+After               = network-online.target
+RequiresMountsFor   = /media %S/local/rclone
+
+ConditionPathExists = %S/local/rclone/rclone.conf
+ConditionPathExists = /usr/local/opt/rclone/libexec/sync.sh
+
+[Service]
+Type                = oneshot
+Restart             = on-failure
+IOAccounting        = yes
+IPAccounting        = yes
+
+ProtectSystem       = strict
+ProtectHome         = yes
+PrivateTmp          = yes
+ReadWritePaths      = %T %V
+StateDirectory      = local/rclone
+
+ExecStart           = /usr/local/opt/rclone/libexec/sync.sh

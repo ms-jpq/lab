@@ -3,7 +3,6 @@
 set -o pipefail
 
 export -- RCLONE_TRANSFERS=8
-# export -- BWLIMIT='04:00,800K:off 00:00,off'
 
 ARGV=(
   rclone.sh sync

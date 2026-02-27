@@ -2,15 +2,17 @@
 
 set -o pipefail
 
-TRANSFERS=8
+export -- RCLONE_TRANSFERS=8
 
 ARGV=(
   rclone.sh sync
   -v
   --use-mmap
+  --dscp LE
+  --human-readable
   --order-by 'size,mixed'
+  --exclude-if-present .noclone
   --create-empty-src-dirs
-  --transfers "$TRANSFERS"
   --
   jotta-src:
   jotta-dst:

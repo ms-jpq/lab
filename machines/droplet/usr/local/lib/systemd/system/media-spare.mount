@@ -1,0 +1,7 @@
+[Unit]
+Description = Mount -- %f
+
+[Mount]
+Options     = noatime,discard
+Where       = %f
+What        = /dev/sdb
