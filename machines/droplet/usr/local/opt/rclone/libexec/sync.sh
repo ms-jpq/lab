@@ -13,6 +13,7 @@ ARGV=(
   --order-by 'size,mixed'
   --exclude-if-present .noclone
   --create-empty-src-dirs
+  --cache-dir /media/spare
   --
   jotta-src:
   jotta-dst:
