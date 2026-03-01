@@ -13,7 +13,7 @@ ARGV=(
   --order-by 'size,mixed'
   --exclude-if-present .noclone
   --create-empty-src-dirs
-  --filter .Trash-0/
+  --exclude '.Trash-0/*'
 )
 
 if ! [[ -v INVOCATION_ID ]]; then
