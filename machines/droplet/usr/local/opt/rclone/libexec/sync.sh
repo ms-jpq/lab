@@ -3,13 +3,13 @@
 set -o pipefail
 
 CACHE_DIRECTORY='/media/spare'
-export -- RCLONE_TRANSFERS=8
+export -- RCLONE_TRANSFERS=2
 
 ARGV=(
   rclone.sh sync
   -v
   --human-readable
-  --order-by 'size,mixed'
+  --order-by 'size,descending'
   --exclude-if-present .noclone
   --create-empty-src-dirs
   --cache-dir "$CACHE_DIRECTORY/cache"
