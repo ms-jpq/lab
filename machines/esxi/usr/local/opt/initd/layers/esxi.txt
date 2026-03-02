@@ -1,7 +1,6 @@
 # + cuda
 + journal
 + nspawn
-+ postgres
 + qemu
 + rclone-mnt
 + share

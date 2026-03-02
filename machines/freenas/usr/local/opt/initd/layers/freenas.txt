@@ -1,4 +1,5 @@
 + gh-mirror
++ postgres
 + telemetry
 + vb
 + webdav

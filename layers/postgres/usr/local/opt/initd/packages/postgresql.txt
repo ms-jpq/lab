@@ -1,2 +1,2 @@
 + pgbouncer
-+ postgresql-16
++ postgresql-18
