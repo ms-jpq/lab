@@ -32,5 +32,4 @@ for SITE in "${SITES[@]}"; do
   fi
 done
 
-mkdir -p -- "$ACME/.well-known"
 PYTHONPATH=/opt/python3/certbot exec -- "${CERTBOT[@]}"
