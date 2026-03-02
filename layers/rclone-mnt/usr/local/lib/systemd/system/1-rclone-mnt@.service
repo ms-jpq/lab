@@ -34,7 +34,6 @@ ExecStart       = rclone mount \
                     --config /dev/null \
                     --default-permissions \
                     --uid 1000 \
-                    --use-mmap \
                     --transfers ${TRANSFERS} \
                     --cache-dir ${CACHE_DIRECTORY} \
                     --dir-cache-time ${DIR_CACHE_TIME} \

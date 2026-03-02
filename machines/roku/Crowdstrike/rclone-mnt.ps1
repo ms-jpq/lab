@@ -18,7 +18,6 @@ $argv = @(
     '--poll-interval=88s'
     '--read-only'
     '--transfers=88'
-    '--use-mmap',
     '--vfs-refresh',
     '--vfs-fast-fingerprint',
     '--vfs-cache-mode=full'

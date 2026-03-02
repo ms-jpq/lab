@@ -7,8 +7,6 @@ export -- RCLONE_TRANSFERS=8
 ARGV=(
   rclone.sh sync
   -v
-  --use-mmap
-  --dscp LE
   --human-readable
   --order-by 'size,mixed'
   --exclude-if-present .noclone
