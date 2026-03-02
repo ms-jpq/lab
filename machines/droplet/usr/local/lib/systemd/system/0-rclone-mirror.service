@@ -15,7 +15,7 @@ IPAccounting        = yes
 ProtectSystem       = strict
 ProtectHome         = yes
 PrivateTmp          = yes
-ReadWritePaths      = %T %V
+ReadWritePaths      = %T %V /media/spare
 CacheDirectory      = local/rclone
 StateDirectory      = local/rclone
 

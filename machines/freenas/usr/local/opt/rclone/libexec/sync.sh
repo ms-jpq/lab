@@ -11,11 +11,11 @@ ARGV=(
   --dscp LE
   --human-readable
   --order-by 'size,mixed'
+  --cache-dir "$CACHE_DIRECTORY/cache"
+  --temp-dir "$CACHE_DIRECTORY/temp"
   --exclude-if-present .noclone
   --create-empty-src-dirs
   --exclude '.Trash-0/*'
-  --cache-dir "$CACHE_DIRECTORY/cache"
-  --temp-dir "$CACHE_DIRECTORY/temp"
 )
 
 if ! [[ -v INVOCATION_ID ]]; then

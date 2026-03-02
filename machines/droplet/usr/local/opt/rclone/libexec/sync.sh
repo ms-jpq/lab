@@ -2,6 +2,7 @@
 
 set -o pipefail
 
+CACHE_DIRECTORY='/media/spare'
 export -- RCLONE_TRANSFERS=8
 
 ARGV=(
@@ -11,7 +12,8 @@ ARGV=(
   --order-by 'size,mixed'
   --exclude-if-present .noclone
   --create-empty-src-dirs
-  --cache-dir /media/spare
+  --cache-dir "$CACHE_DIRECTORY/cache"
+  --temp-dir "$CACHE_DIRECTORY/temp"
   --
   jotta-src:
   jotta-dst:
