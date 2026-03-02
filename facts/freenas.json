@@ -10,7 +10,6 @@
   "ENV_PG_CLUSTERS": ["18/miniflux", "18/wallabag"],
   "ENV_RCLONE_LOCAL": ["gray", "hao", "media", "wallpapers", "downloads/done"],
   "ENV_RCLONE_REMOTE": "jotta-archive:",
-  "ENV_SMB_EXPORTS": ["downloads", "gray", "hao", "media", "wallpapers"],
   "ENV_WEB_EXPORTS": ["ENV_NFS_EXPORTS", "bt", "downloads", "media"],
   "ENV_WG_PEERS": [],
   "ENV_WG_SERVER_NAME": "ENV_DOMAIN",
