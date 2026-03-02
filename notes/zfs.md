@@ -61,9 +61,9 @@ zfs clone '<snapshot>' '<filesystem>'
 
 ### Promotion
 
-Inverse relationship between `<original>` and `<cloned-filesystem>` (space preserving)
+Inverse relationship between `<original@snapshot>` and `<cloned-filesystem>` (space preserving)
 
-Makes it possible to destroy `<original>`
+Makes it possible to destroy `<original@snapshot>`
 
 ```bash
 # WARNING: doing so re-homes the original snapshot trail
