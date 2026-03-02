@@ -16,6 +16,7 @@ ProtectSystem       = strict
 ProtectHome         = yes
 PrivateTmp          = yes
 ReadWritePaths      = %T %V
+CacheDirectory      = local/rclone
 StateDirectory      = local/rclone
 
 ExecStart           = /usr/local/opt/rclone/libexec/sync.sh

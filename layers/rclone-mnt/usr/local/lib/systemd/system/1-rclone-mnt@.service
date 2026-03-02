@@ -35,7 +35,8 @@ ExecStart       = rclone mount \
                     --default-permissions \
                     --uid 1000 \
                     --transfers ${TRANSFERS} \
-                    --cache-dir ${CACHE_DIRECTORY} \
+                    --cache-dir ${CACHE_DIRECTORY}/cache \
+                    --temp-dir ${CACHE_DIRECTORY}/temp \
                     --dir-cache-time ${DIR_CACHE_TIME} \
                     --poll-interval ${POLL_INTERVAL} \
                     --vfs-refresh \

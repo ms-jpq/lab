@@ -2,6 +2,7 @@
 
 set -o pipefail
 
+CACHE_DIRECTORY='/var/cache/local/rclone'
 export -- RCLONE_TRANSFERS=8
 
 ARGV=(
@@ -13,6 +14,8 @@ ARGV=(
   --exclude-if-present .noclone
   --create-empty-src-dirs
   --exclude '.Trash-0/*'
+  --cache-dir "$CACHE_DIRECTORY/cache"
+  --temp-dir "$CACHE_DIRECTORY/temp"
 )
 
 if ! [[ -v INVOCATION_ID ]]; then
