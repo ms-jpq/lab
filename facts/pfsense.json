@@ -4,8 +4,10 @@
     "m5_for([MACH], [MACH.ENV_TLD=ENV_MACHINE.w-0.ENV_MACHINE.home.arpa,], ENV_MACHINES)"
   ],
   "ENV_DDNS_TYPE": "nat",
-  "ENV_HOST_ALLOW_LIST": [],
-  "ENV_HOST_FORWARD_LIST": [],
+  "ENV_HOST_ALLOW_LIST": ["freenas.enp1s0.pfsense.home.arpa@tcp*postgresql"],
+  "ENV_HOST_FORWARD_LIST": [
+    "freenas.enp1s0.pfsense.home.arpa@tcp*postgresql:postgresql"
+  ],
   "ENV_INDEX": ["/die/die/die"],
   "ENV_IOT_IFS": [],
   "ENV_LAN_IFS": ["enp1s0"],

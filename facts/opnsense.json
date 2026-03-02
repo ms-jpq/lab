@@ -8,12 +8,10 @@
     "m5_for([SITE], [SITE=ENV_MACHINE.w-0.ENV_MACHINE.home.arpa,], ENV_CERTBOT_SITES)"
   ],
   "ENV_HOST_ALLOW_LIST": [
-    "esxi.enp1s0.opnsense.home.arpa@tcp*postgresql",
     "XBOX.enp1s0.opnsense.home.arpa@tcp*3074",
     "XBOX.enp1s0.opnsense.home.arpa@udp*3074"
   ],
   "ENV_HOST_FORWARD_LIST": [
-    "esxi.enp1s0.opnsense.home.arpa@tcp*postgresql:postgresql",
     "XBOX.enp1s0.opnsense.home.arpa@tcp*3074:3074",
     "XBOX.enp1s0.opnsense.home.arpa@udp*3074:3074"
   ],
