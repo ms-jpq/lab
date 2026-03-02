@@ -1,18 +1,8 @@
 {
-  "ENV_JOURNAL_HOSTS": [
-    "droplet.w-0.droplet.home.arpa",
-    "esxi.enp1s0.opnsense.home.arpa",
-    "freenas.enp1s0.pfsense.home.arpa",
-    "opnsense.w-0.opnsense.home.arpa",
-    "orthanc.enp1s0.opnsense.home.arpa",
-    "pfsense.w-0.pfsense.home.arpa"
-  ],
   "ENV_MACVLAN_IFS": ["enp7s0"],
   "ENV_NFS_EXPORTS": [],
   "ENV_NFS_MNTS": [],
   "ENV_NO_HWE": true,
-  "ENV_PROMETHEUS_HOSTS": ["ENV_JOURNAL_HOSTS"],
-  "ENV_PROMETHEUS_K3S_HOSTS": ["droplet.w-0.droplet.home.arpa"],
   "ENV_SMB_EXPORTS": [
     "freenas",
     "gray-bucket",
@@ -21,7 +11,6 @@
     "time-machine-gray-m4",
     "time-machine-hao"
   ],
-  "ENV_TABBY_MODEL": "CodeLlama-7B",
   "ENV_VFIO_PCI_IDS": ["10de:2504", "10de:228e"],
   "ENV_WEB_EXPORTS": "ENV_NFS_EXPORTS",
   "ENV_ZFS_MEM": 30

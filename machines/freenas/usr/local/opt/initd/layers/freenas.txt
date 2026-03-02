@@ -1,6 +1,8 @@
 + gh-mirror
++ journal
 + postgres
 + telemetry
++ telemetry-collector
 + vb
 + webdav
 + wireguard

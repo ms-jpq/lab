@@ -3,3 +3,4 @@
 + loki
 + otelcol-contrib
 + prometheus
++ tempo

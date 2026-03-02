@@ -1,12 +1,9 @@
 # + cuda
-+ journal
 + nspawn
 + qemu
 + rclone-mnt
 + share
 + telemetry
-+ telemetry-collector
-+ tvheadend
 + vb
 + vfio
 + zfs
