@@ -11,7 +11,7 @@ distributor:
     otlp:
       protocols:
         http:
-          endpoint: 127.0.0.53:4317
+          endpoint: 127.0.0.53:44318
 
 metrics_generator:
   storage:

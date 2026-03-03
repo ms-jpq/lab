@@ -18,7 +18,7 @@ receivers:
   &recv otlp:
     protocols:
       http:
-        endpoint: 127.0.0.53:44318
+        endpoint: 127.0.0.53:44319
 processors:
   &batch batch:
 exporters:

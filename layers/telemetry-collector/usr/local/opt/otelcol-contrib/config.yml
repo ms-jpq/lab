@@ -34,6 +34,8 @@ receivers:
         field: body.MESSAGE
   &recv otlp:
     protocols:
+      grpc:
+        endpoint: "[::]:4317"
       http:
         endpoint: "[::]:4318"
 processors:
@@ -59,9 +61,9 @@ exporters:
   &prometheus prometheus/metrics:
     endpoint: 127.0.0.53:6318
   &tempo otlp_http/traces:
-    endpoint: http://127.0.0.53:4317
-  &jaeger otlp_http/jaeger:
     endpoint: http://127.0.0.53:44318
+  &jaeger otlp_http/jaeger:
+    endpoint: http://127.0.0.53:44319
 service:
   telemetry:
     metrics:
