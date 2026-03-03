@@ -46,5 +46,7 @@ printf -- '%s\n' "${SED[@]}" > "$SCRIPT"
 
 if ! diff --brief -- "$OLD" "$NEW"; then
   mv -v -f -- "$NEW" "$OLD"
-  nft --file "$OLD"
+  if [[ -s $OLD ]]; then
+    nft --file "$OLD"
+  fi
 fi

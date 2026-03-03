@@ -10,17 +10,9 @@ ProtectHome     = yes
 
 EnvironmentFile = /usr/local/etc/default/%I.tc.env
 
-Environment     = "TC_TX=diffserv4  wash rtt 10ms ethernet"
-Environment     = "TC_RX=besteffort wash rtt 5ms  ethernet"
-
 Environment     = WAN_IF=
 Environment     = IFB=%I-rx
 Environment     = QDISC=ffff:
 
-# ExecStartPre    = /usr/lib/systemd/systemd-networkd-wait-online --interface ${IFB}
-# TX
-# ExecStart       = tc qdisc  replace dev ${WAN_IF} root cake ingress nat dual-dsthost $TC_TX
-# RX
-# ExecStart       = tc qdisc  replace dev ${IFB}    root cake egress  nat dual-srchost $TC_RX
-# ExecStart       = tc qdisc  replace dev ${WAN_IF} handle ${QDISC} ingress
+ExecStartPre    = /usr/lib/systemd/systemd-networkd-wait-online --interface ${IFB}
 ExecStart       = tc filter replace dev ${WAN_IF} parent ${QDISC} matchall action mirred egress redirect dev ${IFB}
