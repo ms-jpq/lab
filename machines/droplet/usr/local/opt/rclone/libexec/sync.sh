@@ -3,7 +3,7 @@
 set -o pipefail
 
 CACHE_DIRECTORY='/media/spare'
-export -- RCLONE_TRANSFERS=16
+export -- RCLONE_TRANSFERS=8
 
 ARGV=(
   rclone.sh sync
