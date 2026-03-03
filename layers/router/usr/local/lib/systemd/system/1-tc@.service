@@ -1,8 +1,7 @@
 [Unit]
 Description     = Configure TC - TX: ${WAN_IF} - RX: %I-rx
 
-BindsTo         = sys-subsystem-net-devices-%i-rx.device
-After           = sys-subsystem-net-devices-%i-rx.device network-online.target
+After           = sys-subsystem-net-devices-%i-rx.device
 
 [Service]
 Type            = oneshot
@@ -17,4 +16,5 @@ Environment     = WAN_IF=
 Environment     = IFB=%I-rx
 Environment     = QDISC=ffff:
 
+ExecStartPre    = /usr/lib/systemd/systemd-networkd-wait-online --interface ${IFB}
 ExecStart       = tc filter replace dev ${WAN_IF} parent ${QDISC} matchall action mirred egress redirect dev ${IFB}
