@@ -38,12 +38,11 @@ fi
 PASSWORD="$(openssl rand -base64 64 | tr -d -- '\n' | tr -- '/' '-')"
 export -- PASSWORD
 
-# TODO: use :pass @ PG 16, \getenv is undefined in 14
-# --command '\getenv pass PASSWORD'
-"${PSQL[@]}" --set=role="$ROLE" <<- SQL
+"${PSQL[@]}" --set=role="$ROLE" <<- 'SQL'
+\getenv pass PASSWORD
 CREATE USER :role
 WITH
-  SUPERUSER PASSWORD '$PASSWORD';
+  SUPERUSER PASSWORD :'pass';
 SQL
 
 printf -- '%s\n' "$ROLE : $PASSWORD" | runuser --user postgres -- sponge -- "$SHADOW"
