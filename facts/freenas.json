@@ -5,6 +5,7 @@
   "ENV_FS_NTFS": "ntfs",
   "ENV_FS_TV": "media/TV",
   "ENV_FS_WALLPAPER": "wallpapers",
+  "ENV_IOT_IFS": ["w-droplet"],
   "ENV_JOURNAL_HOSTS": [
     "droplet.w-0.droplet.home.arpa",
     "esxi.enp1s0.opnsense.home.arpa",
