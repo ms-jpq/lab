@@ -1,7 +1,7 @@
 [Unit]
 Description     = Rclone Mount -- %I
 After           = network-online.target
-Before          = smb.service
+After           = smb.service
 
 [Service]
 Type            = notify
