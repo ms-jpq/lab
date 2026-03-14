@@ -10,16 +10,20 @@ ARGV=(
   -v
   --dscp LE
   --human-readable
+  --exclude-if-present .noclone
   --order-by 'size,mixed'
   --cache-dir "$CACHE_DIRECTORY/cache"
   --temp-dir "$CACHE_DIRECTORY/temp"
   --exclude-if-present .noclone
   --create-empty-src-dirs
   --exclude '.Trash-0/*'
+  --
+  /media
+  jotta-crypt:
 )
 
 if ! [[ -v INVOCATION_ID ]]; then
   ARGV+=(--dry-run)
 fi
 
-exec -- "${ARGV[@]}" -- /media "$@"
+exec -- "${ARGV[@]}"

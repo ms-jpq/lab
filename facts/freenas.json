@@ -20,7 +20,6 @@
   "ENV_PROMETHEUS_HOSTS": ["ENV_JOURNAL_HOSTS"],
   "ENV_PROMETHEUS_K3S_HOSTS": ["droplet.w-0.droplet.home.arpa"],
   "ENV_RCLONE_LOCAL": ["gray", "hao", "media", "wallpapers", "downloads/done"],
-  "ENV_RCLONE_REMOTE": "jotta-archive:",
   "ENV_WEB_EXPORTS": ["ENV_NFS_EXPORTS", "bt", "downloads", "media"],
   "ENV_WG_PEERS": [],
   "ENV_WG_SERVER_NAME": "ENV_DOMAIN",
