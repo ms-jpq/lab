@@ -1,7 +1,7 @@
 ---
 services:
   prowlarr:
-    image: ghcr.io/hotio/prowlarr:latest
+    image: lscr.io/linuxserver/prowlarr:latest
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: bt.${DOMAIN}
