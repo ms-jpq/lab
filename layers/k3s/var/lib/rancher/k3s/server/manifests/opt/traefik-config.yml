@@ -35,3 +35,13 @@ spec:
     tracing:
       otlp:
         <<: *otlp-http
+    logs:
+      general:
+        format: json
+      access:
+        enabled: true
+        format: json
+        otlp:
+          <<: *otlp-http
+    experimental:
+      otlpLogs: true
