@@ -1,8 +1,0 @@
----
-services:
-  it-tools:
-    image: ghcr.io/corentinth/it-tools:latest
-    labels:
-      kompose.service.expose: tools.${DOMAIN}
-    ports:
-      - 80

@@ -2,6 +2,7 @@
   "ENV_BTRFS_MNTS": [],
   "ENV_CERTBOT_SITES": [
     "dash.ENV_DOMAIN",
+    "redis",
     "ENV_DOMAIN",
     "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN,], ENV_SITES)"
   ],
@@ -16,7 +17,6 @@
     "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN/*,], ENV_SITES)"
   ],
   "ENV_SITES": [
-    "12ft",
     "ask",
     "bbs",
     "bridge",
@@ -35,11 +35,9 @@
     "minio",
     "pastebin",
     "pocket",
-    "redis",
     "rss",
     "s3",
     "speedtest",
-    "tools",
     "weibo",
     "youku"
   ],
