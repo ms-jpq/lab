@@ -1,1 +1,0 @@
-../Users/Administrator/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Startup/mnt.cmd
