@@ -8,6 +8,9 @@ Type            = notify
 Restart         = on-failure
 RestartSec      = 2s
 
+IOAccounting    = yes
+IPAccounting    = yes
+
 Group           = 1000
 CacheDirectory  = local/rclone/%i
 
