@@ -87,23 +87,21 @@ def proc_mta(ss: Sieve, event: S3Event) -> None:
             else:
                 go = True
                 span.add_event("accepted")
-            finally:
-                span.end()
 
-                if go:
-                    with TRACER.start_as_current_span("send") as span:
-                        try:
-                            send(
-                                mail,
-                                mail_from=environ["MAIL_FROM"],
-                                mail_to=environ["MAIL_TO"],
-                                mail_srv=environ["MAIL_SRV"],
-                                mail_user=environ["MAIL_USER"],
-                                mail_pass=environ["MAIL_PASS"],
-                                timeout=TIMEOUT,
-                            )
-                        except SMTPDataError as e:
-                            data = pformat(event._data)
-                            span.record_exception(e, attributes={"data": data})
-                            getLogger().error("%s", data, exc_info=e)
-                            raise e
+        if go:
+            with TRACER.start_as_current_span("send") as span:
+                try:
+                    send(
+                        mail,
+                        mail_from=environ["MAIL_FROM"],
+                        mail_to=environ["MAIL_TO"],
+                        mail_srv=environ["MAIL_SRV"],
+                        mail_user=environ["MAIL_USER"],
+                        mail_pass=environ["MAIL_PASS"],
+                        timeout=TIMEOUT,
+                    )
+                except SMTPDataError as e:
+                    data = pformat(event._data)
+                    span.record_exception(e, attributes={"data": data})
+                    getLogger().error("%s", data, exc_info=e)
+                    raise e
