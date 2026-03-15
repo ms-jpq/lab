@@ -33,14 +33,13 @@ spec:
           enabled: true
           endpoint: http://opentelemetry-collector.opentelemetry-collector.svc.cluster.local:4318
     tracing:
+      capturedRequestHeaders:
+        - x-real-ip
       otlp:
         <<: *otlp-http
     logs:
-      general:
-        format: json
       access:
         enabled: true
-        format: json
         otlp:
           <<: *otlp-http
     experimental:
