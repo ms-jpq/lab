@@ -16,7 +16,12 @@
   ],
   "ENV_MACVLAN_IFS": ["enp109s0", "eno1"],
   "ENV_NFS_EXPORTS": ["downloads", "media", "wallpapers"],
-  "ENV_PG_CLUSTERS": ["18/miniflux", "18/wallabag", "18/testing"],
+  "ENV_PG_CLUSTERS": [
+    "18/miniflux",
+    "18/prowlarr",
+    "18/prowlarrlog",
+    "18/wallabag"
+  ],
   "ENV_PROMETHEUS_HOSTS": ["ENV_JOURNAL_HOSTS"],
   "ENV_PROMETHEUS_K3S_HOSTS": ["droplet.w-0.droplet.home.arpa"],
   "ENV_RCLONE_LOCAL": ["gray", "hao", "media", "wallpapers", "downloads/done"],
