@@ -1,0 +1,33 @@
+---
+services:
+  rclone:
+    image: ghcr.io/rclone/rclone:latest
+    labels:
+      kompose.service.group: &svcgrp plex
+    environment: {}
+    command:
+      - mount
+      - --allow-non-empty
+      - --config=/dev/null
+      - --transfers=8
+      - --dir-cache-time=60s
+      - --poll-interval=30s
+      - --vfs-refresh
+      - --vfs-cache-mode=full
+      - --webdav-vendor=nginx
+      - --webdav-pacer-min-sleep=0
+      - --read-only
+      - --vfs-fast-fingerprint
+
+  plex:
+    image: quay.io/plexinc/pms-docker:latest
+    labels:
+      kompose.controller.type: statefulset
+      kompose.service.expose: plex.${DOMAIN}
+      kompose.service.group: *svcgrp
+      kompose.volume.type: hostPath
+    environment: {}
+    ports:
+      - 32400
+    volumes:
+      - /var/lib/local/plexmediaserver:/config
