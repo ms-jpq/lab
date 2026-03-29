@@ -3,13 +3,13 @@
 version: 1.3.6
 
 webSearch:
-  searxngApiKey: ""
-  searxngInstanceUrl: http://searxng.kompsed-searx.svc.cluster.local:8080
+  searchProvider: searxng
+  searxngInstanceUrl: "${CUSTOM_SEARXNG_INSTANCE_URL}"
 
 mcpSettings:
   allowedDomains:
     - "*.svc.cluster.local"
-    - "microsoft.com"
+    - "*.microsoft.com"
 
 mcpServers:
   searx:
@@ -26,4 +26,5 @@ mcpServers:
     url: http://terraform-proxy.kompsed-mcp.svc.cluster.local:1080/mcp
 
   microsoft-docs:
+    type: http
     url: https://learn.microsoft.com/api/mcp
