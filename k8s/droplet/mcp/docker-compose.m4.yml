@@ -42,7 +42,7 @@ services:
     command:
       - nginx
       - -g
-      - 'daemon off;'
+      - "daemon off;"
       - -c
       - /etc/nginx/nginx2.conf
     ports:
