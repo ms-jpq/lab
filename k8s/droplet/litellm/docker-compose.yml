@@ -3,14 +3,21 @@ services:
   litellm:
     image: docker.litellm.ai/berriai/litellm:main-latest
     environment:
-      ANTHROPIC_API_KEY:
-      HOST: "::"
-      OPENAI_API_KEY:
-      OPENROUTER_KEY:
-      XAI_API_KEY:
+      LANGFUSE_HOST:
+      REDIS_HOST: redis://redis:6379
     ports:
       - 3080
     volumes:
       - ./litellm_config.yml:/app/librechat.yaml:ro
 
-volumes: {}
+  redis:
+    image: ghcr.io/valkey-io/valkey:latest
+    labels:
+      kompose.controller.type: statefulset
+    ports:
+      - 6379
+    volumes:
+      - redis:/data
+
+volumes:
+  redis:
