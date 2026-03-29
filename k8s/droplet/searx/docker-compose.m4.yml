@@ -25,6 +25,7 @@ services:
       - -euxc
       - |-
         cp -v -- /srv/* /etc/searxng/
+        unset -- SEARXNG_PORT
         exec /usr/local/searxng/entrypoint.sh
     ports:
       - 8080
