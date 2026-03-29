@@ -56,7 +56,7 @@ services:
       S3_PUBLIC_DOMAIN: *s3
       S3_SECRET_ACCESS_KEY:
       SEARCH_PROVIDERS: searxng
-      SEARXNG_URL: http:/searxng.kompsed-searx.svc.cluster.local:8080
+      SEARXNG_URL: http://searxng.kompsed-searx.svc.cluster.local:8080
       XAI_API_KEY:
     ports:
       - 3210
