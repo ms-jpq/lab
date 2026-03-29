@@ -33,7 +33,7 @@ services:
     image: ghcr.io/firecrawl/playwright-service:latest
     environment:
       BLOCK_MEDIA: true
-      PROXY_SERVER: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
+      PROXY_SERVER: http://proxy.kompsed-hostproxy.svc.cluster.local:1080
     ports:
       - 3003
 
