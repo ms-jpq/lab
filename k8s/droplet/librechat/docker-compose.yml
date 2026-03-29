@@ -3,6 +3,7 @@ services:
   librechat:
     image: registry.librechat.ai/danny-avila/librechat-dev:latest
     labels:
+      kompose.controller.type: statefulset
       kompose.service.expose: chat.${DOMAIN}
     environment:
       ANTHROPIC_API_KEY:
@@ -11,7 +12,7 @@ services:
       JWT_REFRESH_SECRET:
       JWT_SECRET:
       MEILI_HOST: http://meilisearch:7700
-      MONGO_URI: mongodb://mongodb:27017/LibreChat
+      MONGO_URI: mongodb://mongodb:27017/
       NO_INDEX: true
       OPENAI_API_KEY:
       OPENROUTER_KEY:
@@ -22,6 +23,9 @@ services:
       - 3080
     volumes:
       - ./librechat.yml:/app/librechat.yaml
+      - images:/app/client/public/images
+      - logs:/app/api/logs
+      - uploads:/app/uploads
 
   mongodb:
     image: docker.io/library/mongo:8
@@ -82,7 +86,10 @@ services:
       - 8000
 
 volumes:
+  images:
+  logs:
   meilisearch:
   mongo:
   pgdata:
   redis:
+  uploads:
