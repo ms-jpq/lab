@@ -17,7 +17,6 @@ services:
       OPENROUTER_KEY:
       RAG_API_URL: http://rag-api:8000
       REDIS_URI: redis://redis:6379
-      USE_REDIS: true
       XAI_API_KEY:
     ports:
       - 3080

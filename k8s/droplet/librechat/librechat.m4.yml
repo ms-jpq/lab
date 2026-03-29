@@ -9,7 +9,6 @@ webSearch:
 mcpSettings:
   allowedDomains:
     - "*.svc.cluster.local"
-    - "*.microsoft.com"
 
 mcpServers:
   searx:
@@ -24,7 +23,3 @@ mcpServers:
   terraform:
     type: http
     url: http://terraform-proxy.kompsed-mcp.svc.cluster.local:1080/mcp
-
-  microsoft-docs:
-    type: http
-    url: https://learn.microsoft.com/api/mcp
