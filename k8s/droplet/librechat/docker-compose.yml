@@ -1,0 +1,77 @@
+---
+services:
+  librechat:
+    image: registry.librechat.ai/danny-avila/librechat-dev:latest
+    labels:
+      kompose.service.expose: chat.${DOMAIN}
+    environment:
+      DOMAIN_CLIENT: http://localhost:8000
+      DOMAIN_SERVER: http://localhost:8000
+      HOST: "::"
+      MEILI_HOST: http://meilisearch:7700
+      MONGO_URI: mongodb://mongodb:27017/LibreChat
+      JWT_SECRET:
+      JWT_REFRESH_SECRET:
+      NO_INDEX: true
+      RAG_API_URL: http://rag-api:8000
+      RAG_PORT: 8000
+    ports:
+      - 3080
+    volumes:
+      - ./librechat.yml:/app/librechat.yaml
+
+  mongodb:
+    image: docker.io/library/mongo:8
+    labels:
+      kompose.controller.type: statefulset
+    command:
+      - mongod
+      - --noauth
+      - --ipv6
+    ports:
+      - 27017
+    volumes:
+      - .mongo:/data/db
+
+  meilisearch:
+    image: docker.io/getmeili/meilisearch:v1.35.1
+    labels:
+      kompose.controller.type: statefulset
+    environment:
+      MEILI_HOST: http://meilisearch:7700
+      MEILI_NO_ANALYTICS: true
+    ports:
+      - 7700
+    volumes:
+      - meilisearch:/meili_data
+
+  pg:
+    image: docker.io/pgvector/pgvector:pg18-trixie
+    labels:
+      kompose.controller.type: statefulset
+    environment:
+      POSTGRES_DB: &pgdb ${COMPOSE_PROJECT_NAME}
+      POSTGRES_PASSWORD: &pgpass ${COMPOSE_PROJECT_NAME}
+      POSTGRES_USER: &pguser ${COMPOSE_PROJECT_NAME}
+    ports:
+      - 5432
+    volumes:
+      - pgdata:/var/lib/postgresql
+
+  rag-api:
+    image: registry.librechat.ai/danny-avila/librechat-rag-api-dev-lite:latest
+    labels:
+      kompose.controller.type: statefulset
+    environment:
+      DB_HOST: pg
+      POSTGRES_DB: *pgdb
+      POSTGRES_PASSWORD: *pgpass
+      POSTGRES_USER: *pguser
+      RAG_HOST: "::"
+    ports:
+      - 8000
+
+volumes:
+  mongo:
+  meilisearch:
+  pgdata:
