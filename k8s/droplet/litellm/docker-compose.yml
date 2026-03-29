@@ -1,0 +1,16 @@
+---
+services:
+  litellm:
+    image: docker.litellm.ai/berriai/litellm:main-latest
+    environment:
+      ANTHROPIC_API_KEY:
+      HOST: "::"
+      OPENAI_API_KEY:
+      OPENROUTER_KEY:
+      XAI_API_KEY:
+    ports:
+      - 3080
+    volumes:
+      - ./litellm_config.yml:/app/librechat.yaml:ro
+
+volumes: {}
