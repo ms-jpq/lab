@@ -18,8 +18,9 @@ services:
       OPENAI_API_KEY:
       OPENROUTER_KEY:
       RAG_API_URL: http://rag-api:8000
-      REDIS_URI: redis://redis:6379
+      REDIS_URI: redis://localhost:6379
       SEARXNG_INSTANCE_URL: http://searxng.kompsed-searx.svc.cluster.local:8080
+      USE_REDIS: true
       XAI_API_KEY:
     ports:
       - 3080
@@ -45,6 +46,7 @@ services:
   redis:
     image: ghcr.io/valkey-io/valkey:latest
     labels:
+      kompose.controller.type: statefulset
       kompose.service.group: *librechat
     ports:
       - 6379
