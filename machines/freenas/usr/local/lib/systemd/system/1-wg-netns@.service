@@ -6,6 +6,7 @@ After               = network-online.target
 
 BindsTo             = 1-netns@%i.service
 After               = 1-netns@%i.service
+PropagatesStopTo    = 1-netns@%i.service
 
 ConditionPathExists = %t/netns/%I
 
