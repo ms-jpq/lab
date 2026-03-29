@@ -5,16 +5,17 @@ services:
     labels:
       kompose.service.expose: chat.${DOMAIN}
     environment:
-      DOMAIN_CLIENT: http://localhost:8000
-      DOMAIN_SERVER: http://localhost:8000
+      ANTHROPIC_API_KEY:
       HOST: "::"
+      JWT_REFRESH_SECRET:
+      JWT_SECRET:
       MEILI_HOST: http://meilisearch:7700
       MONGO_URI: mongodb://mongodb:27017/LibreChat
-      JWT_SECRET:
-      JWT_REFRESH_SECRET:
       NO_INDEX: true
+      OPENAI_API_KEY:
+      OPENROUTER_KEY:
       RAG_API_URL: http://rag-api:8000
-      RAG_PORT: 8000
+      XAI_API_KEY:
     ports:
       - 3080
     volumes:
