@@ -15,7 +15,7 @@ x-k8s:
             connect-src 'self' https://registry.npmmirror.com/ https://cdn.jsdelivr.net https://s3.m5_assert([ENV_DOMAIN]);
 
 services:
-  lobe-chat:
+  lobehub:
     image: docker.io/lobehub/lobehub:latest
     labels:
       kompose.service.expose: chat.${DOMAIN}
