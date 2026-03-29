@@ -12,14 +12,20 @@ x-k8s:
             - namespaceSelector:
                 matchLabels:
                   kubernetes.io/metadata.name: kompsed-PROXY_NS
-  # ], librechat)
+  # ], mcp, librechat)
 
 services:
   firecrawl:
     image: ghcr.io/firecrawl/firecrawl:latest
+    labels:
+      kompose.service.group: &firecrawl firecrawl
     environment:
-      ENV: local
       HOST: "::"
+      NUQ_DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg.${COMPOSE_PROJECT_NAME}.svc.cluster.local/postgres
+      NUQ_RABBITMQ_URL: amqp://rabbitmq:5672
+      PLAYWRIGHT_MICROSERVICE_URL: http://playwright:3003/scrape
+      REDIS_URL: redis://localhost:6379
+      SEARXNG_ENDPOINT: http://searxng.kompsed-searx.svc.cluster.local:8080
     ports:
       - 3002
 
@@ -27,13 +33,14 @@ services:
     image: ghcr.io/firecrawl/playwright-service:latest
     environment:
       BLOCK_MEDIA: true
-      PORT: 3000
       PROXY_SERVER: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
     ports:
-      - 3000
+      - 3003
 
   redis:
     image: ghcr.io/valkey-io/valkey:latest
+    labels:
+      kompose.service.group: *firecrawl
     ports:
       - 6379
     volumes:
@@ -41,18 +48,21 @@ services:
 
   rabbitmq:
     image: docker.io/library/rabbitmq:management
-    environment:
-      RABBITMQ_DEFAULT_USER: ${COMPOSE_PROJECT_NAME}
-      RABBITMQ_DEFAULT_PASS: ${COMPOSE_PROJECT_NAME}
+    labels:
+      kompose.controller.type: statefulset
     ports:
       - 5672
     volumes:
       - rabbitmq:/var/lib/rabbitmq
 
   pg:
-    image: docker.io/library/postgres:latest
+    image: ghcr.io/firecrawl/nuq-postgres:latest
     labels:
       kompose.controller.type: statefulset
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
     ports:
       - 5432
     volumes:

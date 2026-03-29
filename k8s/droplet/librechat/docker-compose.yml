@@ -5,19 +5,21 @@ services:
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: chat.${DOMAIN}
+      kompose.service.group: &librechat librechat
     environment:
       ANTHROPIC_API_KEY:
-      CUSTOM_SEARXNG_INSTANCE_URL: http://searxng.kompsed-searx.svc.cluster.local:8080
+      FIRECRAWL_API_URL: http://firecrawl.kompsed-firecrawl.svc.cluster.local:3002
       HOST: "::"
       JWT_REFRESH_SECRET:
       JWT_SECRET:
       MEILI_HOST: http://meilisearch:7700
-      MONGO_URI: mongodb://mongodb:27017/
+      MONGO_URI: mongodb://mongo:27017/
       NO_INDEX: true
       OPENAI_API_KEY:
       OPENROUTER_KEY:
       RAG_API_URL: http://rag-api:8000
       REDIS_URI: redis://redis:6379
+      SEARXNG_INSTANCE_URL: http://searxng.kompsed-searx.svc.cluster.local:8080
       XAI_API_KEY:
     ports:
       - 3080
@@ -27,7 +29,7 @@ services:
       - logs:/app/api/logs
       - uploads:/app/uploads
 
-  mongodb:
+  mongo:
     image: docker.io/library/mongo:8
     labels:
       kompose.controller.type: statefulset
@@ -38,10 +40,12 @@ services:
     ports:
       - 27017
     volumes:
-      - .mongo:/data/db
+      - /var/lib/local/librechat:/data/db
 
   redis:
     image: ghcr.io/valkey-io/valkey:latest
+    labels:
+      kompose.service.group: *librechat
     ports:
       - 6379
     volumes:
@@ -89,7 +93,6 @@ volumes:
   images:
   logs:
   meilisearch:
-  mongo:
   pgdata:
   redis:
   uploads:
