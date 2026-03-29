@@ -3,6 +3,7 @@
 version: 1.3.6
 
 webSearch:
+  searxngApiKey: ""
   searxngInstanceUrl: http://searxng.kompsed-searx.svc.cluster.local:8080
 
 mcpServers:
@@ -11,6 +12,9 @@ mcpServers:
   context7:
     url: http://context7.kompsed-mcp.svc.cluster.local:8080/mcp
   dockerhub:
-    url: http://dockerhub.kompsed-mcp.svc.cluster.local:8080/mcp
+    url: http://dockerhub.kompsed-mcp.svc.cluster.local:3000/mcp
   terraform:
-    url: http://terraform-proxy.kompsed-mcp.svc.cluster.local:8080/mcp
+    url: http://terraform-proxy.kompsed-mcp.svc.cluster.local:1080/mcp
+
+  microsoft-docs:
+    url: https://learn.microsoft.com/api/mcp
