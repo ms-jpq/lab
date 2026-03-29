@@ -15,6 +15,7 @@ services:
     image: &img docker.io/guacamole/guacamole:latest
     labels:
       kompose.service.expose: rdp.${DOMAIN}
+      traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-auth@kubernetescrd
     environment:
       GUACD_HOSTNAME: guacd.${COMPOSE_PROJECT_NAME}.svc.cluster.local
       REMOTE_IP_VALVE_ENABLED: true
