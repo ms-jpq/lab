@@ -8,6 +8,7 @@ services:
       kompose.service.group: &librechat librechat
     environment:
       ANTHROPIC_API_KEY:
+      FIRECRAWL_API_KEY: ""
       FIRECRAWL_API_URL: http://firecrawl.kompsed-firecrawl.svc.cluster.local:3002
       HOST: "::"
       JWT_REFRESH_SECRET:

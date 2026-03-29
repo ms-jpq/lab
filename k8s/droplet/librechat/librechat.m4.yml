@@ -3,8 +3,10 @@
 version: 1.3.6
 
 webSearch:
+  firecrawlApiKey: "${FIRECRAWL_API_KEY}"
+  firecrawlApiUrl: "${FIRECRAWL_API_URL}"
+
   searchProvider: searxng
-  firecrawlApiUrl: '${FIRECRAWL_API_URL}'
   searxngInstanceUrl: "${SEARXNG_INSTANCE_URL}"
 
 mcpSettings:
