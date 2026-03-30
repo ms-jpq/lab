@@ -2,7 +2,6 @@
   "ENV_BTRFS_MNTS": [],
   "ENV_CERTBOT_SITES": [
     "dash.ENV_DOMAIN",
-    "redis",
     "ENV_DOMAIN",
     "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN,], ENV_SITES)"
   ],
