@@ -16,5 +16,6 @@ CacheDirectory    = local/%J
 
 Environment       = HOSTNAME=%H.home.arpa
 
-ExecStartPre      = !chown -v www-data:www-data -- %t/local/nginx/acme
+ExecStartPre      = !mkdir -p -- %t/local/nginx/acme/.well-known/acme-challenge
+ExecStartPre      = !chown -v -R -- www-data:www-data %t/local/nginx/acme
 ExecStart         = /usr/local/opt/certbot/libexec/certonly.sh
