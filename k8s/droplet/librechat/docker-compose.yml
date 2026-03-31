@@ -8,8 +8,6 @@ services:
       kompose.service.group: &librechat librechat
     environment:
       ANTHROPIC_API_KEY:
-      FIRECRAWL_API_KEY: ""
-      FIRECRAWL_API_URL: http://firecrawl.kompsed-firecrawl.svc.cluster.local:3002
       HOST: "::"
       JWT_REFRESH_SECRET:
       JWT_SECRET:
@@ -20,13 +18,12 @@ services:
       OPENROUTER_KEY:
       RAG_API_URL: http://rag-api:8000
       REDIS_URI: redis://localhost:6379
-      SEARXNG_INSTANCE_URL: http://searxng.kompsed-searx.svc.cluster.local:8080
       USE_REDIS: true
       XAI_API_KEY:
     ports:
       - 3080
     volumes:
-      - ./librechat.yml:/app/librechat.yaml
+      - ./librechat.yml:/app/librechat.yaml:ro
       - images:/app/client/public/images
       - logs:/app/api/logs
       - uploads:/app/uploads
@@ -35,6 +32,7 @@ services:
     image: docker.io/library/mongo:8
     labels:
       kompose.controller.type: statefulset
+      kompose.volume.type: hostPath
     command:
       - mongod
       - --noauth
@@ -42,7 +40,7 @@ services:
     ports:
       - 27017
     volumes:
-      - /var/lib/local/librechat:/data/db
+      - /var/lib/local/librechat/mongo:/data/db
 
   redis:
     image: ghcr.io/valkey-io/valkey:latest
