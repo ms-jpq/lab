@@ -80,7 +80,7 @@ services:
     ports:
       - 5432
     volumes:
-      - /var/lib/local/lobe-chat:/var/lib/postgresql
+      - /var/lib/local/lobehub:/var/lib/postgresql
 
   browserless:
     image: ghcr.io/browserless/chromium:latest
