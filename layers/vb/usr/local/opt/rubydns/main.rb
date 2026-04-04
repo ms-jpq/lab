@@ -92,7 +92,7 @@ def io_read(conn:, len:)
   size = 0
   while size < len
     io_wait(read: conn)
-    conn.recv(len - size) => String | nil => buf
+    conn.recvmsg(len - size) => String | nil => buf
     break if buf.nil? || buf.empty?
 
     size += buf.bytesize
@@ -109,7 +109,7 @@ def io_write(conn:, buf:)
   size = 0
   while size < buf.bytesize
     io_wait(write: conn)
-    conn.send(buf[size..]) => Integer => n
+    conn.sendmsg(buf[size..]) => Integer => n
     size += n
   end
 end

@@ -68,7 +68,6 @@ rancher.com
 reddit.com
 rottentomatoes.com
 rtings.com
-rubyapi.org
 rust-lang.org
 serverfault.com
 slashdot.org
