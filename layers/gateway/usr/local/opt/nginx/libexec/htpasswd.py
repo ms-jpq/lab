@@ -257,22 +257,18 @@ async def _handle(
                 if authorized:
                     break
 
-    w = BytesIO()
+    buf = BytesIO()
     if not authorized:
-        if location:
-            w.write(b"HTTP/1.0 307 Temporary Redirect\r\n")
-        else:
-            w.write(b"HTTP/1.0 401 Unauthorized\r\n")
+        if not location:
+            buf.write(b"HTTP/1.0 401 Unauthorized\r\n")
             for accept in headers.get(b"accept", ()):
                 if b"html" in accept:
                     break
             else:
-                w.write(b'WWW-Authenticate: Basic realm="-"\r\n')
+                buf.write(b'WWW-Authenticate: Basic realm="-"\r\n')
     else:
-        if location:
-            w.write(b"HTTP/1.0 307 Temporary Redirect\r\n")
-        else:
-            w.write(b"HTTP/1.0 204 No Content\r\n")
+        if not location:
+            buf.write(b"HTTP/1.0 204 No Content\r\n")
 
         if user:
             cookie = _write_auth_cookies(
@@ -284,23 +280,24 @@ async def _handle(
                 secure=secure,
                 user=user,
             )
-            w.write(str(cookie).encode())
-            w.write(b"\r\n")
+            buf.write(str(cookie).encode())
+            buf.write(b"\r\n")
 
     if location:
+        buf.write(b"HTTP/1.0 307 Temporary Redirect\r\n")
         for header in (b"Location: ", b"X-Original-URL: "):
-            w.write(header)
-            w.write(location)
-            w.write(b"\r\n")
+            buf.write(header)
+            buf.write(location)
+            buf.write(b"\r\n")
 
     if user:
         with suppress(UnicodeError):
-            w.write(b"X-Auth-User: ")
-            w.write(user)
-            w.write(b"\r\n")
+            buf.write(b"X-Auth-User: ")
+            buf.write(user)
+            buf.write(b"\r\n")
 
-    w.write(b"\r\n")
-    return w
+    buf.write(b"\r\n")
+    return buf
 
 
 async def _thread(th: _Th) -> None:
