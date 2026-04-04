@@ -268,7 +268,18 @@ async def _handle(
         for header in (b"Location: ", b"X-Original-URL: "):
             _write_header(buf, header, location)
 
-    elif user and authorized:
+    elif authorized:
+        _write_header(buf, b"HTTP/1.0 204 No Content")
+
+    else:
+        _write_header(buf, b"HTTP/1.0 401 Unauthorized")
+        for accept in headers.get(b"accept", ()):
+            if b"html" in accept:
+                break
+        else:
+            _write_header(buf, b'WWW-Authenticate: Basic realm="-"')
+
+    if user:
         cookie = _auth_cookies(
             domain_parts=th.domain_parts,
             name=cname,
@@ -278,17 +289,8 @@ async def _handle(
             secure=secure,
             user=user,
         )
-        _write_header(buf, b"HTTP/1.0 204 No Content")
         _write_header(buf, b"X-Auth-User: ", user)
         _write_header(buf, str(cookie).encode())
-
-    else:
-        _write_header(buf, b"HTTP/1.0 401 Unauthorized")
-        for accept in headers.get(b"accept", ()):
-            if b"html" in accept:
-                break
-        else:
-            _write_header(buf, b'WWW-Authenticate: Basic realm="-"')
 
     _write_header(buf)
     return buf
