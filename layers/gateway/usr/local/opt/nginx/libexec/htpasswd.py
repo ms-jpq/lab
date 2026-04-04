@@ -208,24 +208,22 @@ async def finalize(writer: StreamWriter) -> AsyncIterator[None]:
             await writer.wait_closed()
 
 
+def _write_header(io: BytesIO | StreamWriter, *parts: bytes) -> None:
+    io.writelines(parts)
+    io.write(b"\r\n")
+
+
 async def _subrequest(sock: Path, credentials: bytes, ip: _IP) -> bool:
     addr = ip.exploded.encode()
     reader, writer = await open_unix_connection(sock)
     async with finalize(writer):
-        writer.write(b"GET / HTTP/1.0\r\nAuthorization: Basic ")
-        writer.write(credentials)
-        writer.write(b"\r\n")
-        writer.write(b"X-Real-IP: ")
-        writer.write(addr)
-        writer.write(b"\r\n\r\n")
+        _write_header(writer, b"GET / HTTP/1.0")
+        _write_header(writer, b"Authorization: Basic ", credentials)
+        _write_header(writer, b"X-Real-IP: ", addr)
+        _write_header(writer)
         _, line = await gather(writer.drain(), anext(reader))
         _, status, *_ = line.strip().split()
         return int(status) in range(200, 300)
-
-
-def _write_header(io: BytesIO, *parts: bytes) -> None:
-    io.writelines(parts)
-    io.write(b"\r\n")
 
 
 async def _handle(
