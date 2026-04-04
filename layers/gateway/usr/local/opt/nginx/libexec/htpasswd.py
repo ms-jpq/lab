@@ -287,19 +287,17 @@ async def _handle(
         else:
             _write_header(buf, b'WWW-Authenticate: Basic realm="-"')
 
-    if user:
-        _write_header(buf, b"X-Auth-User: ", user)
-        if authorized:
-            cookie = _auth_cookies(
-                domain_parts=th.domain_parts,
-                name=cname,
-                ttl=th.cookie_ttl,
-                secret=th.hmac_secret,
-                host=host,
-                secure=secure,
-                user=user,
-            )
-            _write_header(buf, str(cookie).encode())
+    if authorized and user:
+        cookie = _auth_cookies(
+            domain_parts=th.domain_parts,
+            name=cname,
+            ttl=th.cookie_ttl,
+            secret=th.hmac_secret,
+            host=host,
+            secure=secure,
+            user=user,
+        )
+        _write_header(buf, str(cookie).encode())
 
     _write_header(buf)
     buf.seek(0)
