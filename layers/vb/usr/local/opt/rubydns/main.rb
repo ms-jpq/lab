@@ -13,6 +13,7 @@ require('socket')
 require('timeout')
 
 UDP_SIZE = Resolv::DNS::UDPSize * 32
+HOME = Resolv::DNS::Name.create('home.arpa.')
 TIMEOUT = 6
 
 def parse_args
@@ -52,10 +53,13 @@ def bind(rx:)
 
   loop do
     return (
+      if rx.socktype in Socket::SOCK_STREAM
+        sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, true)
+      end
+
       rx.bind.tap do |sock|
         case sock.local_address.socktype
         in Socket::SOCK_STREAM
-          sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, true)
           sock.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, true)
           sock.listen(Socket::SOMAXCONN)
         in Socket::SOCK_DGRAM
@@ -116,7 +120,7 @@ def recv_tcp(log:, sock:, &blk)
 
   Thread.new do
     io_read(conn:, len: 2)&.unpack1('n') => Integer | nil => len
-    return if len.nil?
+    next if len.nil?
 
     io_read(conn:, len:) => String | nil => req
     blk.call(req&.freeze) => String => rsp
@@ -216,11 +220,10 @@ end
 def xform(log:, msg:)
   [log, msg] => [Logger, String]
   dns = Resolv::DNS::Message.decode(msg)
-  home = Resolv::DNS::Name.create('home.arpa.')
 
   dns.answer.reject! do |name, ttl, resource|
     [name, ttl, resource] => [Resolv::DNS::Name, Integer, Resolv::DNS::Resource]
-    next unless name.subdomain_of?(home) && resource.respond_to?(:address)
+    next unless name.subdomain_of?(HOME) && resource.respond_to?(:address)
 
     !IPAddr.new(resource.address.to_s).private?
   end
