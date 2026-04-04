@@ -12,7 +12,7 @@ from asyncio import (
     run,
     wait_for,
 )
-from base64 import urlsafe_b64decode, urlsafe_b64encode
+from base64 import b64decode, b64encode
 from collections.abc import (
     AsyncIterator,
     Callable,
@@ -28,7 +28,6 @@ from dataclasses import dataclass
 from fnmatch import translate
 from functools import lru_cache
 from hmac import compare_digest, digest
-from html import escape
 from http.cookies import CookieError, Morsel, SimpleCookie
 from io import BytesIO
 from ipaddress import IPv4Address, IPv6Address, IPv6Interface, IPv6Network, ip_interface
@@ -40,6 +39,7 @@ from posixpath import commonpath, normpath, sep
 from re import compile
 from socket import SOMAXCONN, AddressFamily, SocketKind, fromfd, socket
 from stat import S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR
+from string import whitespace
 from time import time
 from typing import NewType
 from urllib.parse import SplitResultBytes, parse_qs, urlsplit
@@ -52,6 +52,7 @@ _Req = tuple[_Method, bytes, SplitResultBytes, _Query, _Headers]
 _IP = IPv6Address | IPv4Address
 
 _HOST = ".".join((uuid4().hex, uuid4().hex)).encode()
+_WS = whitespace.encode()
 
 
 @dataclass(frozen=True)
@@ -84,7 +85,7 @@ def _fnmatch(patterns: frozenset[str]) -> Callable[[str], bool]:
 
 async def _parse(reader: StreamReader) -> _Req:
     line = await anext(reader)
-    method, path, _ = line.strip().split()
+    method, path, _ = line.strip().split(maxsplit=2)
 
     headers: MutableMapping[bytes, MutableSequence[bytes]] = {}
     async for line in reader:
@@ -129,24 +130,28 @@ def _auth_headers(headers: _Headers) -> Iterator[tuple[bytes, bytes]]:
         lhs, sep, rhs = auth.partition(b" ")
         if sep and lhs.lower() in {b"basic", b"bearer"}:
             with suppress(ValueError):
-                user, _, _ = urlsafe_b64decode(rhs).partition(b":")
-                yield user, rhs
+                user, _, _ = b64decode(rhs).partition(b":")
+                yield _sanitize_ws(user), rhs
 
 
 def _encode(secret: bytes, plain: bytes) -> bytes:
     sig = digest(key=secret, msg=plain, digest=_ALGORITHM)
-    crip = urlsafe_b64encode(plain) + b"." + urlsafe_b64encode(sig)
+    crip = b64encode(plain) + b"." + b64encode(sig)
     return crip
 
 
 def _decode(secret: bytes, crip: bytes) -> bytes:
-    bplain, bsig = crip.split(b".")
-    plain, sig = urlsafe_b64decode(bplain), urlsafe_b64decode(bsig)
+    bplain, _, bsig = crip.partition(b".")
+    plain, sig = b64decode(bplain), b64decode(bsig)
     expected = digest(key=secret, msg=plain, digest=_ALGORITHM)
     if not compare_digest(sig, expected):
         raise ValueError()
     else:
         return plain
+
+
+def _sanitize_ws(b: bytes) -> bytes:
+    return b.translate(None, _WS)
 
 
 def _read_auth_cookies(headers: _Headers, name: str, secret: bytes) -> bool:
@@ -216,7 +221,7 @@ async def _subrequest(sock: Path, credentials: bytes, ip: _IP) -> bool:
         writer.write(b"\r\n\r\n")
         _, line = await gather(writer.drain(), anext(reader))
         _, status, *_ = line.strip().split()
-        return int(status) in range(200, 299)
+        return int(status) in range(200, 300)
 
 
 async def _thread(th: _Th) -> None:
@@ -236,10 +241,10 @@ async def _thread(th: _Th) -> None:
 
             user = None
             if commonpath((th.authn_path, path)) == th.authn_path:
-                location = b"".join(query.get(b"redirect", ()))
-                user = b"".join(query.get(b"username", ()))
+                location = _sanitize_ws(b"".join(query.get(b"redirect", ())))
+                user = _sanitize_ws(b"".join(query.get(b"username", ())))
                 passwd = b"".join(query.get(b"password", ()))
-                auth = urlsafe_b64encode(user + b":" + passwd)
+                auth = b64encode(user + b":" + passwd)
                 ip = _ip(headers, max_ipv6_prefix=th.max_ipv6_prefix)
                 authorized = await _subrequest(
                     sock=th.remote_sock, credentials=auth, ip=ip
@@ -299,9 +304,8 @@ async def _thread(th: _Th) -> None:
 
             if user:
                 with suppress(UnicodeError):
-                    esc = escape(user.decode()).encode()
                     w.write(b"X-Auth-User: ")
-                    w.write(esc)
+                    w.write(user)
                     w.write(b"\r\n")
 
             w.write(b"\r\n")
