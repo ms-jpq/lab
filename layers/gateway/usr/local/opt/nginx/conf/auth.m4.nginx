@@ -13,6 +13,7 @@ location /-_-auth-_- {
   # ])
   proxy_pass_request_body off;
   proxy_pass              http://unix:/run/local/nginx/auth/proxy.sock:/;
+  AUTH_CONF
 }
 
 location /-_-auth-_-/-_- {
