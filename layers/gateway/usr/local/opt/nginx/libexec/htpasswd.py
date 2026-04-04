@@ -170,7 +170,7 @@ def _read_auth_cookies(headers: _Headers, name: str, secret: bytes) -> bool:
         return False
 
 
-def _write_auth_cookies(
+def _auth_cookies(
     domain_parts: int,
     name: str,
     ttl: float,
@@ -267,8 +267,21 @@ async def _handle(
         _write_header(buf, b"HTTP/1.0 307 Temporary Redirect")
         for header in (b"Location: ", b"X-Original-URL: "):
             _write_header(buf, header, location)
-    elif authorized:
+
+    elif user and authorized:
+        cookie = _auth_cookies(
+            domain_parts=th.domain_parts,
+            name=cname,
+            ttl=th.cookie_ttl,
+            secret=th.hmac_secret,
+            host=host,
+            secure=secure,
+            user=user,
+        )
         _write_header(buf, b"HTTP/1.0 204 No Content")
+        _write_header(buf, b"X-Auth-User: ", user)
+        _write_header(buf, str(cookie).encode())
+
     else:
         _write_header(buf, b"HTTP/1.0 401 Unauthorized")
         for accept in headers.get(b"accept", ()):
@@ -276,21 +289,6 @@ async def _handle(
                 break
         else:
             _write_header(buf, b'WWW-Authenticate: Basic realm="-"')
-
-    if user:
-        _write_header(buf, b"X-Auth-User: ", user)
-
-        if authorized:
-            cookie = _write_auth_cookies(
-                domain_parts=th.domain_parts,
-                name=cname,
-                ttl=th.cookie_ttl,
-                secret=th.hmac_secret,
-                host=host,
-                secure=secure,
-                user=user,
-            )
-            _write_header(buf, str(cookie).encode())
 
     _write_header(buf)
     return buf
