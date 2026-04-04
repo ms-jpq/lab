@@ -47,8 +47,7 @@ from uuid import uuid4
 
 _Method = NewType("_Method", bytes)
 _Headers = NewType("_Headers", Mapping[bytes, Sequence[bytes]])
-_Query = NewType("_Query", Mapping[bytes, Sequence[bytes]])
-_Req = tuple[_Method, bytes, SplitResultBytes, _Query, _Headers]
+_Req = tuple[_Method, bytes, SplitResultBytes, _Headers]
 _IP = IPv6Address | IPv4Address
 
 _HOST = ".".join((uuid4().hex, uuid4().hex)).encode()
@@ -83,7 +82,7 @@ def _fnmatch(patterns: frozenset[str]) -> Callable[[str], bool]:
     return cont
 
 
-async def _parse(reader: StreamReader) -> _Req:
+async def _parse_headers(reader: StreamReader) -> _Req:
     line = await anext(reader)
     method, path, _ = line.strip().split(maxsplit=2)
 
@@ -99,8 +98,16 @@ async def _parse(reader: StreamReader) -> _Req:
     host = b"".join(headers.get(b"host", ()))
     parsed = urlsplit(b"ssh://" + host + path)
     ps = normpath(parsed.path)
-    query = parse_qs(parsed.query)
-    return _Method(method.upper()), ps, parsed, _Query(query), _Headers(headers)
+    return _Method(method.upper()), ps, parsed, _Headers(headers)
+
+
+async def _read_body(headers: _Headers, reader: StreamReader) -> bytes:
+    for content_len in headers.get(b"content-length", ()):
+        with suppress(ValueError):
+            length = int(content_len, 10)
+            return await reader.read(length)
+    else:
+        return b""
 
 
 def _ip(headers: _Headers, max_ipv6_prefix: int) -> _IP:
@@ -126,7 +133,7 @@ def _path(headers: _Headers) -> str:
 
 
 def _auth_headers(headers: _Headers) -> Iterator[tuple[bytes, bytes]]:
-    for auth in headers.get(b"authorization", []):
+    for auth in headers.get(b"authorization", ()):
         lhs, sep, rhs = auth.partition(b" ")
         if sep and lhs.lower() in {b"basic", b"bearer"}:
             with suppress(ValueError):
@@ -229,8 +236,8 @@ async def _subrequest(sock: Path, credentials: bytes, ip: _IP) -> bool:
 async def _handle(
     th: _Th, match: Callable[[str], bool], reader: StreamReader
 ) -> Iterator[bytes]:
-    req = await _parse(reader)
-    _, path, parsed, query, headers = req
+    req = await _parse_headers(reader)
+    _, path, parsed, headers = req
     host = (parsed.hostname or _HOST).decode()
 
     proto = b"".join(headers.get(b"x-forwarded-proto", ()))
@@ -239,6 +246,8 @@ async def _handle(
 
     user = None
     if commonpath((th.authn_path, path)) == th.authn_path:
+        body = await _read_body(headers, reader=reader)
+        query = parse_qs(body)
         location = _sanitize_ws(b"".join(query.get(b"redirect", ())))
         user = _sanitize_ws(b"".join(query.get(b"username", ())))
         passwd = b"".join(query.get(b"password", ()))
@@ -263,7 +272,7 @@ async def _handle(
     buf = BytesIO()
 
     if location:
-        _write_header(buf, b"HTTP/1.0 307 Temporary Redirect")
+        _write_header(buf, b"HTTP/1.0 303 See Other")
         for header in (b"Location: ", b"X-Original-URL: "):
             _write_header(buf, header, location)
 
