@@ -52,22 +52,22 @@ def bind(rx:)
   rx => Addrinfo
 
   loop do
-    return (
-      if rx.socktype in Socket::SOCK_STREAM
-        sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, true)
-      end
+    sock = Socket.new(rx.pfamily, rx.socktype)
 
-      rx.bind.tap do |sock|
-        case sock.local_address.socktype
-        in Socket::SOCK_STREAM
-          sock.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, true)
-          sock.listen(Socket::SOMAXCONN)
-        in Socket::SOCK_DGRAM
-          set_timeout(sock:)
-        end
-      end
-    )
+    case rx.socktype
+    in Socket::SOCK_STREAM
+      sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, true)
+      sock.bind(rx)
+      sock.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, true)
+      sock.listen(Socket::SOMAXCONN)
+    in Socket::SOCK_DGRAM
+      sock.bind(rx)
+    end
+
+    set_timeout(sock:)
+    return sock
   rescue Errno::EADDRNOTAVAIL
+    sock&.close
     sleep(1)
   end
 end
@@ -88,11 +88,11 @@ def io_read(conn:, len:)
   [conn, len] => [Socket | nil, Integer | nil]
   return if conn.nil? || len.nil?
 
-  io_wait(read: conn)
   acc = []
   size = 0
   while size < len
-    conn.read(len - size) => String | nil => buf
+    io_wait(read: conn)
+    conn.recv(len - size) => String | nil => buf
     break if buf.nil? || buf.empty?
 
     size += buf.bytesize
@@ -106,10 +106,10 @@ def io_write(conn:, buf:)
   [conn, buf] => [Socket | nil, String | nil]
   return if conn.nil? || buf.nil?
 
-  io_wait(write: conn)
   size = 0
   while size < buf.bytesize
-    conn.write(buf[size..]) => Integer => n
+    io_wait(write: conn)
+    conn.send(buf[size..]) => Integer => n
     size += n
   end
 end
@@ -130,7 +130,7 @@ def recv_tcp(log:, sock:, &blk)
     io_write(conn:, buf: rsp)
   rescue Timeout::Error => e
     log.debug(e)
-  rescue IOError, Errno::ECONNREFUSED => e
+  rescue SystemCallError => e
     log.error(e)
   ensure
     conn&.close
@@ -149,7 +149,7 @@ def recv_udp(log:, sock:, &blk)
     sock.send(rsp, 0, ai)
   rescue Timeout::Error => e
     log.debug(e)
-  rescue IOError, Errno::ECONNREFUSED => e
+  rescue SystemCallError => e
     log.error(e)
   end
 end
@@ -177,6 +177,7 @@ def send_tcp(tx:, req:)
   [req.bytesize].pack('n') => String => len
   conn = tx.connect
 
+  set_timeout(sock: conn)
   io_write(conn:, buf: len)
   io_write(conn:, buf: req)
   io_read(conn:, len: 2)&.unpack1('n') => Integer | nil => len
@@ -212,8 +213,21 @@ def do_send(log:, tx:, req:)
   end
 end
 
-def failed(req:)
-  req => String | nil
+def failed(log:, req:)
+  log => Logger
+  case req
+  in '' | nil
+    ''
+  else
+    dns = Resolv::DNS::Message.decode(req)
+    rsp = Resolv::DNS::Message.new(dns.id)
+    rsp.qr = 1
+    rsp.opcode = dns.opcode
+    rsp.rcode = Resolv::DNS::RCode::ServFail
+    dns.question.each { rsp.add_question(_1, _2) }
+    rsp.encode
+  end
+rescue Resolv::DNS::DecodeError
   ''
 end
 
@@ -249,11 +263,11 @@ def main
         rx => Addrinfo
         do_recv(log:, rx:) do |req|
           req => String | nil
-          next failed(req:) if req.nil?
+          next failed(log:, req:) if req.nil?
 
           snd.fetch(rx.socktype).sample => Addrinfo => tx
           do_send(log:, tx:, req:) => String | nil => msg
-          next failed(req:) if msg.nil?
+          next failed(log:, req:) if msg.nil?
 
           xform(log:, msg:) => String => rsp
           rsp
