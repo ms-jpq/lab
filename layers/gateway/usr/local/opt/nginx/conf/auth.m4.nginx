@@ -3,20 +3,22 @@ auth_request /-_-auth-_-;
 
 location /-_-auth-_- {
   internal                ;
+  # m4_define([AUTH_CONF], [
   auth_request            off;
   proxy_set_header        Authorization $modified_auth;
   proxy_set_header        Content-Length "";
   proxy_set_header        Host $host;
   proxy_set_header        X-Real-IP $remote_addr;
   proxy_set_header        X-Forwarded-Uri $request_uri;
+  # ])
   proxy_pass_request_body off;
   proxy_pass              http://unix:/run/local/nginx/auth/proxy.sock:/;
+}
 
-  location /-_-auth-_-/-_- {
-    proxy_intercept_errors  on;
-    proxy_pass_request_body on;
-    proxy_pass              http://unix:/run/local/nginx/auth/proxy.sock:/-_-;
-  }
+location /-_-auth-_-/-_- {
+  proxy_intercept_errors on;
+  proxy_pass             http://unix:/run/local/nginx/auth/proxy.sock:/-_-;
+  AUTH_CONF
 }
 
 location /die/die/die {
