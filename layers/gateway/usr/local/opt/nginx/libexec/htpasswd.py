@@ -130,7 +130,7 @@ def _auth_headers(headers: _Headers) -> Iterator[tuple[bytes, bytes]]:
         lhs, sep, rhs = auth.partition(b" ")
         if sep and lhs.lower() in {b"basic", b"bearer"}:
             with suppress(ValueError):
-                user, _, _ = b64decode(rhs).partition(b":")
+                user, _, _ = b64decode(rhs, validate=True).partition(b":")
                 yield _sanitize_ws(user), rhs
 
 
@@ -142,7 +142,7 @@ def _encode(secret: bytes, plain: bytes) -> bytes:
 
 def _decode(secret: bytes, crip: bytes) -> bytes:
     bplain, _, bsig = crip.partition(b".")
-    plain, sig = b64decode(bplain), b64decode(bsig)
+    plain, sig = b64decode(bplain, validate=True), b64decode(bsig, validate=True)
     expected = digest(key=secret, msg=plain, digest=_ALGORITHM)
     if not compare_digest(sig, expected):
         raise ValueError()
@@ -162,7 +162,7 @@ def _read_auth_cookies(headers: _Headers, name: str, secret: bytes) -> bool:
                 crip = morsel.value.encode()
                 with suppress(ValueError):
                     plain = _decode(secret, crip=crip).decode()
-                    _, _, exp = plain.partition(":")
+                    _, _, exp = plain.rpartition(":")
                     d = int(exp) - time()
                     if d >= 0:
                         return True
@@ -179,14 +179,13 @@ def _write_auth_cookies(
     secure: bool,
     user: bytes,
 ) -> Morsel[str]:
-    domain = ".".join(host.split(".")[-domain_parts:])
     now = time()
     plain = user + b":" + str(int(now + ttl)).encode()
     crip = _encode(secret, plain=plain)
     cookie = SimpleCookie()
     cookie[name] = crip.decode()
     morsel = cookie[name]
-    morsel["domain"] = domain
+    morsel["domain"] = ".".join(host.split(".")[-domain_parts:])
     morsel["expires"] = int(now + ttl)
     morsel["httponly"] = True
     morsel["max-age"] = int(ttl)
@@ -224,6 +223,86 @@ async def _subrequest(sock: Path, credentials: bytes, ip: _IP) -> bool:
         return int(status) in range(200, 300)
 
 
+async def _handle(
+    th: _Th, match: Callable[[str], bool], reader: StreamReader
+) -> BytesIO:
+    req = await _parse(reader)
+    _, path, parsed, query, headers = req
+    host = (parsed.hostname or _HOST).decode()
+
+    proto = b"".join(headers.get(b"x-forwarded-proto", ()))
+    secure = proto != b"http"
+    cname = "__Secure-" + th.cookie_name if secure else th.cookie_name
+
+    user = None
+    if commonpath((th.authn_path, path)) == th.authn_path:
+        location = _sanitize_ws(b"".join(query.get(b"redirect", ())))
+        user = _sanitize_ws(b"".join(query.get(b"username", ())))
+        passwd = b"".join(query.get(b"password", ()))
+        auth = b64encode(user + b":" + passwd)
+        ip = _ip(headers, max_ipv6_prefix=th.max_ipv6_prefix)
+        authorized = await _subrequest(sock=th.remote_sock, credentials=auth, ip=ip)
+    else:
+        location = None
+        path_info = host + _path(headers)
+        authorized = match(path_info)
+        if not authorized:
+            authorized = _read_auth_cookies(headers, name=cname, secret=th.hmac_secret)
+        if not authorized:
+            ip = _ip(headers, max_ipv6_prefix=th.max_ipv6_prefix)
+            for user, auth in _auth_headers(headers):
+                authorized = await _subrequest(
+                    sock=th.remote_sock, credentials=auth, ip=ip
+                )
+                if authorized:
+                    break
+
+    w = BytesIO()
+    if not authorized:
+        if location:
+            w.write(b"HTTP/1.0 307 Temporary Redirect\r\n")
+        else:
+            w.write(b"HTTP/1.0 401 Unauthorized\r\n")
+            for accept in headers.get(b"accept", ()):
+                if b"html" in accept:
+                    break
+            else:
+                w.write(b'WWW-Authenticate: Basic realm="-"\r\n')
+    else:
+        if location:
+            w.write(b"HTTP/1.0 307 Temporary Redirect\r\n")
+        else:
+            w.write(b"HTTP/1.0 204 No Content\r\n")
+
+        if user:
+            cookie = _write_auth_cookies(
+                domain_parts=th.domain_parts,
+                name=cname,
+                ttl=th.cookie_ttl,
+                secret=th.hmac_secret,
+                host=host,
+                secure=secure,
+                user=user,
+            )
+            w.write(str(cookie).encode())
+            w.write(b"\r\n")
+
+    if location:
+        for header in (b"Location: ", b"X-Original-URL: "):
+            w.write(header)
+            w.write(location)
+            w.write(b"\r\n")
+
+    if user:
+        with suppress(UnicodeError):
+            w.write(b"X-Auth-User: ")
+            w.write(user)
+            w.write(b"\r\n")
+
+    w.write(b"\r\n")
+    return w
+
+
 async def _thread(th: _Th) -> None:
     sock = fromfd(th.fd, family=AddressFamily.AF_UNIX, type=SocketKind.SOCK_STREAM)
     loop = get_running_loop()
@@ -231,85 +310,8 @@ async def _thread(th: _Th) -> None:
 
     async def cont(reader: StreamReader, writer: StreamWriter) -> None:
         async with finalize(writer):
-            req = await _parse(reader)
-            _, path, parsed, query, headers = req
-            host = (parsed.hostname or _HOST).decode()
-
-            proto = b"".join(headers.get(b"x-forwarded-proto", ()))
-            secure = proto != b"http"
-            cname = "__Secure-" + th.cookie_name if secure else th.cookie_name
-
-            user = None
-            if commonpath((th.authn_path, path)) == th.authn_path:
-                location = _sanitize_ws(b"".join(query.get(b"redirect", ())))
-                user = _sanitize_ws(b"".join(query.get(b"username", ())))
-                passwd = b"".join(query.get(b"password", ()))
-                auth = b64encode(user + b":" + passwd)
-                ip = _ip(headers, max_ipv6_prefix=th.max_ipv6_prefix)
-                authorized = await _subrequest(
-                    sock=th.remote_sock, credentials=auth, ip=ip
-                )
-            else:
-                location = None
-                path_info = host + _path(headers)
-                authorized = match(path_info)
-                if not authorized:
-                    authorized = _read_auth_cookies(
-                        headers, name=cname, secret=th.hmac_secret
-                    )
-                if not authorized:
-                    ip = _ip(headers, max_ipv6_prefix=th.max_ipv6_prefix)
-                    for user, auth in _auth_headers(headers):
-                        authorized = await _subrequest(
-                            sock=th.remote_sock, credentials=auth, ip=ip
-                        )
-                        if authorized:
-                            break
-
-            w = BytesIO()
-            if not authorized:
-                if location:
-                    w.write(b"HTTP/1.0 307 Temporary Redirect\r\n")
-                else:
-                    w.write(b"HTTP/1.0 401 Unauthorized\r\n")
-                    for accept in headers.get(b"accept", ()):
-                        if b"html" in accept:
-                            break
-                    else:
-                        w.write(b'WWW-Authenticate: Basic realm="-"\r\n')
-            else:
-                if location:
-                    w.write(b"HTTP/1.0 307 Temporary Redirect\r\n")
-                else:
-                    w.write(b"HTTP/1.0 204 No Content\r\n")
-
-                if user:
-                    cookie = _write_auth_cookies(
-                        domain_parts=th.domain_parts,
-                        name=cname,
-                        ttl=th.cookie_ttl,
-                        secret=th.hmac_secret,
-                        host=host,
-                        secure=secure,
-                        user=user,
-                    )
-                    w.write(str(cookie).encode())
-                    w.write(b"\r\n")
-
-            if location:
-                for header in (b"Location: ", b"X-Original-URL: "):
-                    w.write(header)
-                    w.write(location)
-                    w.write(b"\r\n")
-
-            if user:
-                with suppress(UnicodeError):
-                    w.write(b"X-Auth-User: ")
-                    w.write(user)
-                    w.write(b"\r\n")
-
-            w.write(b"\r\n")
-            buf = w.getbuffer()
+            io = await _handle(th, match=match, reader=reader)
+            buf = io.getbuffer()
             writer.write(buf)
 
     async def handler(reader: StreamReader, writer: StreamWriter) -> None:
@@ -317,8 +319,8 @@ async def _thread(th: _Th) -> None:
             await wait_for(cont(reader, writer), timeout=th.timeout)
 
     def factory() -> StreamReaderProtocol:
-        reader = StreamReader(loop=loop)
-        protocol = StreamReaderProtocol(reader, client_connected_cb=handler, loop=loop)
+        reader = StreamReader()
+        protocol = StreamReaderProtocol(reader, client_connected_cb=handler)
         return protocol
 
     server = await loop.create_unix_server(factory, backlog=SOMAXCONN, sock=sock)
@@ -337,7 +339,7 @@ def _parse_args() -> Namespace:
     parser.add_argument("--domain_parts", type=int, default=2)
     parser.add_argument("--cookie-name", default="htpasswd")
     parser.add_argument("--cookie-ttl", type=float, required=True)
-    parser.add_argument("--allow-list", type=Path, nargs="*")
+    parser.add_argument("--allow-list", type=Path, nargs="*", default=())
     parser.add_argument("--hmac-secret", required=True)
     parser.add_argument("--authn-path", type=PurePosixPath, required=True)
     parser.add_argument("--nprocs", type=int, default=cpu_count())
