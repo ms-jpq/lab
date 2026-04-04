@@ -228,7 +228,7 @@ async def _subrequest(sock: Path, credentials: bytes, ip: _IP) -> bool:
 
 async def _handle(
     th: _Th, match: Callable[[str], bool], reader: StreamReader
-) -> BytesIO:
+) -> Iterator[bytes]:
     req = await _parse(reader)
     _, path, parsed, query, headers = req
     host = (parsed.hostname or _HOST).decode()
@@ -293,6 +293,7 @@ async def _handle(
             _write_header(buf, str(cookie).encode())
 
     _write_header(buf)
+    buf.seek(0)
     return buf
 
 
@@ -304,8 +305,7 @@ async def _thread(th: _Th) -> None:
     async def cont(reader: StreamReader, writer: StreamWriter) -> None:
         async with finalize(writer):
             io = await _handle(th, match=match, reader=reader)
-            buf = io.getbuffer()
-            writer.write(buf)
+            writer.writelines(io)
 
     async def handler(reader: StreamReader, writer: StreamWriter) -> None:
         with suppress(TimeoutError):
