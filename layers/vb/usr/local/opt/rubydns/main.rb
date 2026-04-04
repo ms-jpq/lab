@@ -12,7 +12,7 @@ require('resolv')
 require('socket')
 require('timeout')
 
-UDP_SIZE = Resolv::DNS::UDPSize * 32
+UDP_SIZE = Resolv::DNS::UDPSize * 12
 HOME = Resolv::DNS::Name.create('home.arpa.')
 TIMEOUT = 6
 
@@ -66,7 +66,7 @@ def bind(rx:)
 
     set_timeout(sock:)
     return sock
-  rescue Errno::EADDRNOTAVAIL
+  rescue Errno::EADDRNOTAVAIL, Errno::EADDRINUSE
     sock&.close
     sleep(1)
   end
@@ -99,7 +99,8 @@ def io_read(conn:, len:)
     acc << buf
   end
 
-  acc.join('').freeze
+  read = acc.join('').freeze
+  read.bytesize == len ? read : nil
 end
 
 def io_write(conn:, buf:)
@@ -130,7 +131,7 @@ def recv_tcp(log:, sock:, &blk)
     io_write(conn:, buf: rsp)
   rescue Timeout::Error => e
     log.debug(e)
-  rescue SystemCallError => e
+  rescue StandardError => e
     log.error(e)
   ensure
     conn&.close
@@ -142,16 +143,14 @@ def recv_udp(log:, sock:, &blk)
   io_wait(read: sock)
   sock.recvfrom(UDP_SIZE) => [String => req, Addrinfo => addr]
 
-  Thread.new do
-    ai = Socket.sockaddr_in(addr.ip_port, addr.ip_address)
-    blk.call(req&.freeze) => String => rsp
-    io_wait(write: sock)
-    sock.send(rsp, 0, ai)
-  rescue Timeout::Error => e
-    log.debug(e)
-  rescue SystemCallError => e
-    log.error(e)
-  end
+  ai = Socket.sockaddr_in(addr.ip_port, addr.ip_address)
+  blk.call(req&.freeze) => String => rsp
+  io_wait(write: sock)
+  sock.send(rsp, 0, ai)
+rescue Timeout::Error => e
+  log.debug(e)
+rescue StandardError => e
+  log.error(e)
 end
 
 def do_recv(log:, rx:, &blk)
@@ -165,10 +164,6 @@ def do_recv(log:, rx:, &blk)
     in Socket::SOCK_DGRAM
       recv_udp(log:, sock:, &blk)
     end
-  rescue Timeout::Error => e
-    log.debug(e)
-  rescue IOError, Errno::ECONNREFUSED => e
-    log.error(e)
   end
 end
 
@@ -215,6 +210,7 @@ end
 
 def failed(log:, req:)
   log => Logger
+
   case req
   in '' | nil
     ''
@@ -259,8 +255,8 @@ def main
 
   threads =
     recv.map do |rx|
+      rx => Addrinfo
       Thread.new do
-        rx => Addrinfo
         do_recv(log:, rx:) do |req|
           req => String | nil
           next failed(log:, req:) if req.nil?
