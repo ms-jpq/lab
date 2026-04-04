@@ -263,13 +263,13 @@ async def _handle(
                     break
 
     buf = BytesIO()
-    if location:
+    if authorized:
+        _write_header(buf, b"HTTP/1.0 204 No Content")
+
+    elif location:
         _write_header(buf, b"HTTP/1.0 307 Temporary Redirect")
         for header in (b"Location: ", b"X-Original-URL: "):
             _write_header(buf, header, location)
-
-    elif authorized:
-        _write_header(buf, b"HTTP/1.0 204 No Content")
 
     else:
         _write_header(buf, b"HTTP/1.0 401 Unauthorized")
