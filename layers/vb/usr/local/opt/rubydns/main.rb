@@ -58,7 +58,6 @@ def bind(rx:)
           sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, true)
           sock.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, true)
           sock.listen(Socket::SOMAXCONN)
-          set_timeout(sock:)
         in Socket::SOCK_DGRAM
           set_timeout(sock:)
         end
