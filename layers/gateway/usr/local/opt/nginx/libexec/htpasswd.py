@@ -223,6 +223,11 @@ async def _subrequest(sock: Path, credentials: bytes, ip: _IP) -> bool:
         return int(status) in range(200, 300)
 
 
+def _write_header(io: BytesIO, *parts: bytes) -> None:
+    io.writelines(parts)
+    io.write(b"\r\n")
+
+
 async def _handle(
     th: _Th, match: Callable[[str], bool], reader: StreamReader
 ) -> BytesIO:
@@ -258,19 +263,24 @@ async def _handle(
                     break
 
     buf = BytesIO()
-    if not authorized:
-        if not location:
-            buf.write(b"HTTP/1.0 401 Unauthorized\r\n")
-            for accept in headers.get(b"accept", ()):
-                if b"html" in accept:
-                    break
-            else:
-                buf.write(b'WWW-Authenticate: Basic realm="-"\r\n')
+    if location:
+        _write_header(buf, b"HTTP/1.0 307 Temporary Redirect")
+        for header in (b"Location: ", b"X-Original-URL: "):
+            _write_header(buf, header, location)
+    elif authorized:
+        _write_header(buf, b"HTTP/1.0 204 No Content")
     else:
-        if not location:
-            buf.write(b"HTTP/1.0 204 No Content\r\n")
+        _write_header(buf, b"HTTP/1.0 401 Unauthorized")
+        for accept in headers.get(b"accept", ()):
+            if b"html" in accept:
+                break
+        else:
+            _write_header(buf, b'WWW-Authenticate: Basic realm="-"')
 
-        if user:
+    if user:
+        _write_header(buf, b"X-Auth-User: ", user)
+
+        if authorized:
             cookie = _write_auth_cookies(
                 domain_parts=th.domain_parts,
                 name=cname,
@@ -280,23 +290,9 @@ async def _handle(
                 secure=secure,
                 user=user,
             )
-            buf.write(str(cookie).encode())
-            buf.write(b"\r\n")
+            _write_header(buf, str(cookie).encode())
 
-    if location:
-        buf.write(b"HTTP/1.0 307 Temporary Redirect\r\n")
-        for header in (b"Location: ", b"X-Original-URL: "):
-            buf.write(header)
-            buf.write(location)
-            buf.write(b"\r\n")
-
-    if user:
-        with suppress(UnicodeError):
-            buf.write(b"X-Auth-User: ")
-            buf.write(user)
-            buf.write(b"\r\n")
-
-    buf.write(b"\r\n")
+    _write_header(buf)
     return buf
 
 
