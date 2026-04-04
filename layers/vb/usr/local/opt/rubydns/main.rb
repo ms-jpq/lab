@@ -51,12 +51,14 @@ def bind(rx:)
   rx => Addrinfo
 
   loop do
-    return(
+    return (
       rx.bind.tap do |sock|
         case sock.local_address.socktype
         in Socket::SOCK_STREAM
-          sock.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
+          sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, true)
+          sock.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, true)
           sock.listen(Socket::SOMAXCONN)
+          set_timeout(sock:)
         in Socket::SOCK_DGRAM
           set_timeout(sock:)
         end
@@ -68,9 +70,8 @@ def bind(rx:)
 end
 
 def io_wait(read: nil, write: nil, timeout: TIMEOUT)
-  ios = [read, write]
   unblocked =
-    case ios
+    case [read, write]
     in [Socket, nil]
       read.wait_readable(timeout)
     in [nil, Socket]
@@ -88,8 +89,8 @@ def io_read(conn:, len:)
   acc = []
   size = 0
   while size < len
-    conn.read(len - size) => String => buf
-    break if buf.empty?
+    conn.read(len - size) => String | nil => buf
+    break if buf.nil? || buf.empty?
 
     size += buf.bytesize
     acc << buf
@@ -171,8 +172,8 @@ end
 def send_tcp(tx:, req:)
   [tx, req] => [Addrinfo, String]
   [req.bytesize].pack('n') => String => len
-
   conn = tx.connect
+
   io_write(conn:, buf: len)
   io_write(conn:, buf: req)
   io_read(conn:, len: 2)&.unpack1('n') => Integer | nil => len
@@ -209,7 +210,8 @@ def do_send(log:, tx:, req:)
 end
 
 def failed(req:)
-  req => String
+  req => String | nil
+  ''
 end
 
 def xform(log:, msg:)
@@ -217,11 +219,11 @@ def xform(log:, msg:)
   dns = Resolv::DNS::Message.decode(msg)
   home = Resolv::DNS::Name.create('home.arpa.')
 
-  dns.answer.reject! do
-    [_1, _2, _3] => [Resolv::DNS::Name, Integer, Resolv::DNS::Resource]
-    next unless _1.subdomain_of?(home) && _3.respond_to?(:address)
+  dns.answer.reject! do |name, ttl, resource|
+    [name, ttl, resource] => [Resolv::DNS::Name, Integer, Resolv::DNS::Resource]
+    next unless name.subdomain_of?(home) && resource.respond_to?(:address)
 
-    !IPAddr.new(_3.address.to_s).private?
+    !IPAddr.new(resource.address.to_s).private?
   end
   dns.encode => String => rsp
   rsp
@@ -245,11 +247,11 @@ def main
         rx => Addrinfo
         do_recv(log:, rx:) do |req|
           req => String | nil
-          next '' if req.nil?
+          next failed(req:) if req.nil?
 
           snd.fetch(rx.socktype).sample => Addrinfo => tx
           do_send(log:, tx:, req:) => String | nil => msg
-          next '' if msg.nil?
+          next failed(req:) if msg.nil?
 
           xform(log:, msg:) => String => rsp
           rsp
