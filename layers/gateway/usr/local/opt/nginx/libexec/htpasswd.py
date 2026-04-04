@@ -263,24 +263,14 @@ async def _handle(
                     break
 
     buf = BytesIO()
-    if authorized:
-        _write_header(buf, b"HTTP/1.0 204 No Content")
-        if user:
-            cookie = _auth_cookies(
-                domain_parts=th.domain_parts,
-                name=cname,
-                ttl=th.cookie_ttl,
-                secret=th.hmac_secret,
-                host=host,
-                secure=secure,
-                user=user,
-            )
-            _write_header(buf, str(cookie).encode())
 
-    elif location:
+    if location:
         _write_header(buf, b"HTTP/1.0 307 Temporary Redirect")
         for header in (b"Location: ", b"X-Original-URL: "):
             _write_header(buf, header, location)
+
+    elif authorized:
+        _write_header(buf, b"HTTP/1.0 204 No Content")
 
     else:
         _write_header(buf, b"HTTP/1.0 401 Unauthorized")
@@ -292,6 +282,17 @@ async def _handle(
 
     if user:
         _write_header(buf, b"X-Auth-User: ", user)
+        if authorized:
+            cookie = _auth_cookies(
+                domain_parts=th.domain_parts,
+                name=cname,
+                ttl=th.cookie_ttl,
+                secret=th.hmac_secret,
+                host=host,
+                secure=secure,
+                user=user,
+            )
+            _write_header(buf, str(cookie).encode())
 
     _write_header(buf)
     return buf
