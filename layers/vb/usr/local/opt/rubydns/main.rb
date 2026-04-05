@@ -99,8 +99,7 @@ def io_read(conn:, len:)
     acc << buf
   end
 
-  read = acc.join('').freeze
-  read.bytesize == len ? read : nil
+  acc.join('').freeze
 end
 
 def io_write(conn:, buf:)
@@ -143,14 +142,16 @@ def recv_udp(log:, sock:, &blk)
   io_wait(read: sock)
   sock.recvfrom(UDP_SIZE) => [String => req, Addrinfo => addr]
 
-  ai = Socket.sockaddr_in(addr.ip_port, addr.ip_address)
-  blk.call(req&.freeze) => String => rsp
-  io_wait(write: sock)
-  sock.send(rsp, 0, ai)
-rescue Timeout::Error => e
-  log.debug(e)
-rescue StandardError => e
-  log.error(e)
+  Thread.new do
+    ai = Socket.sockaddr_in(addr.ip_port, addr.ip_address)
+    blk.call(req&.freeze) => String => rsp
+    io_wait(write: sock)
+    sock.send(rsp, 0, ai)
+  rescue Timeout::Error => e
+    log.debug(e)
+  rescue SystemCallError => e
+    log.error(e)
+  end
 end
 
 def do_recv(log:, rx:, &blk)
@@ -164,6 +165,8 @@ def do_recv(log:, rx:, &blk)
     in Socket::SOCK_DGRAM
       recv_udp(log:, sock:, &blk)
     end
+  rescue StandardError => e
+    log.error(e)
   end
 end
 
