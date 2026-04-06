@@ -60,11 +60,11 @@ if ! [[ -v UNDER ]]; then
   TEE=(tee)
   PAR=0
   if ((DIFF)); then
-    ARGV+=(--diff)
+    ARGV=(--diff)
     PAR=1
     TEE=(diffnav)
   elif ((EX)); then
-    ARGV+=(--exec)
+    ARGV=(--exec)
   else
     ARGV=()
   fi
