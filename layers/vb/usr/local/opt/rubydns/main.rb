@@ -139,7 +139,6 @@ end
 
 def recv_udp(log:, sock:, &blk)
   [log, sock, blk] => [Logger, Socket, Proc]
-  io_wait(read: sock)
   sock.recvfrom(UDP_SIZE) => [String => req, Addrinfo => addr]
 
   Thread.new do
