@@ -34,7 +34,7 @@ SEEN=(
 
 WG_IDS=()
 WG_LINES=()
-DNSMAQ_HOSTS=()
+DNSMASQ_HOSTS=()
 
 export -- DOMAIN IPV6 IPV4 SERVER_PUBLIC_KEY SERVER_NAME CLIENT_PRIVATE_KEY CLIENT_SHARED_KEY
 # shellcheck disable=SC2154
@@ -69,7 +69,7 @@ for PEER in "${PEERS[@]}"; do
       SEEN["$IPV6"]="$ID"
       SEEN["$IPV4"]="$ID"
       WG_IDS+=("$ID")
-      DNSMAQ_HOSTS+=("${IPV4%%/*} $PEER.wg" "${IPV6%%/*} $PEER.wg")
+      DNSMASQ_HOSTS+=("${IPV4%%/*} $PEER.wg" "${IPV6%%/*} $PEER.wg")
 
       if [[ ! -f $CLIENT_PRIVATE_KEY ]]; then
         wg genkey | sponge -- "$CLIENT_PRIVATE_KEY"
@@ -104,7 +104,7 @@ for PEER in "${PEERS[@]}"; do
 done
 
 IFS=$'\n'
-sponge -- "$DNSMASQD" <<< "${DNSMAQ_HOSTS[*]}"
+sponge -- "$DNSMASQD" <<< "${DNSMASQ_HOSTS[*]}"
 IFS=','
 /usr/local/libexec/m4.sh -D"ENV_IFACE=$IFACE" -D"ENV_SERVER_KEY=$SERVER_PRIVATE_KEY" -D"ENV_PEER=${WG_LINES[*]}" "$SELF/@.netdev" | sponge -- "$NETDEV"
 /usr/local/libexec/m4.sh -D"ENV_TITLE=$IFACE" -D"ENV_PEER=${WG_IDS[*]}" "$SELF/index.html" | sponge -- "$CACHE/index.html"

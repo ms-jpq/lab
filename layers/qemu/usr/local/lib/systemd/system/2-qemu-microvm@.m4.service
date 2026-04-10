@@ -40,7 +40,7 @@ EnvironmentFile     = -%S/local/qemu/%I/qemu.env
 Environment         = MACHINE=%i
 Environment         = FS=%S/local/qemu
 Environment         = ROOT=%S/local/qemu/%I
-Environment         = DNSMAQ_CONF=%t/local/dnsmasq/v-%I/conf.d
+Environment         = DNSMASQ_CONF=%t/local/dnsmasq/v-%I/conf.d
 Environment         = HOSTS=%t/local/dnsmasq/v-%I/hosts.d
 Environment         = DOMAIN=v-%I.%H.home.arpa
 
@@ -63,7 +63,7 @@ Environment         = RAW=%C/local/qemu/cloudimg.raw
 Environment         = HOSTNAME=%H
 
 ExecStartPre        = /usr/local/opt/qemu/libexec/cloud-init.sh ${MACHINE} ${CLOUD_INIT}
-ExecStartPost       = /usr/local/opt/qemu/libexec/nss.sh ${MACHINE} ${DNSMAQ_CONF} ${HOSTS} ${DOMAIN}
+ExecStartPost       = /usr/local/opt/qemu/libexec/nss.sh ${MACHINE} ${DNSMASQ_CONF} ${HOSTS} ${DOMAIN}
 
 ExecStartPre        = touch -- "${ROOT}/.#fs.lck"
 ExecStopPost        = rm -v -rf -- "${ROOT}/.#fs.lck"
