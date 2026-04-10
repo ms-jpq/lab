@@ -14,7 +14,7 @@ readarray -t -d ',' -- CLUSTERS <<< "$PG_CLUSTERS"
 
 mkdir -v -p -- "$WANTS"
 for CLUSTER in "${CLUSTERS[@]}"; do
-  CLUSTER="$(systemd-escape -- "${CLUSTER//[[:space:]]/''}")"
+  CLUSTER="$(systemd-escape -- "${CLUSTER//[[:space:]]/}")"
   VERSION="${CLUSTER%%'-'*}"
   NAME="${CLUSTER#*'-'}"
   ln -v -snf -- /usr/lib/systemd/system/postgresql@.service "$WANTS/postgresql@$VERSION-$NAME.service"
