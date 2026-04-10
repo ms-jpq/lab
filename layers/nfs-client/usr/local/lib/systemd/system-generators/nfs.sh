@@ -11,7 +11,7 @@ readarray -t -- MOUNTS <<< "$NFS_MNTS"
 
 mkdir -v -p -- "$WANTS"
 for MOUNT in "${MOUNTS[@]}"; do
-  MOUNT="${MOUNT//[[:space:]]/''}"
+  MOUNT="${MOUNT//[[:space:]]/}"
   if [[ -z $MOUNT ]]; then
     continue
   fi

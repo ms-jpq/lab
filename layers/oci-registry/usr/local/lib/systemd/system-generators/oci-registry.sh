@@ -12,7 +12,7 @@ readarray -t -- REGISTRIES <<< "$OCI_REGISTRIES"
 
 mkdir -v -p -- "$WANTS" "$TIMERS"
 for REGISTRY in "${REGISTRIES[@]}"; do
-  REGISTRY="${REGISTRY//[[:space:]]/''}"
+  REGISTRY="${REGISTRY//[[:space:]]/}"
   if [[ -z $REGISTRY ]]; then
     continue
   fi
