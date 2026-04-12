@@ -6,6 +6,7 @@ general_settings:
   forward_llm_provider_auth_headers: true
 
 litellm_settings:
+  forward_llm_provider_auth_headers: true
   use_redis_transaction_buffer: true
   cache: true
   json_logs: false
