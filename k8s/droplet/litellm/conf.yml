@@ -1,0 +1,16 @@
+# https://docs.litellm.ai/docs/proxy/configs
+---
+general_settings:
+  database_url: os.environ/DATABASE_URL
+
+litellm_settings:
+  use_redis_transaction_buffer: true
+  cache: true
+  cache_params:
+    type: redis
+    host: os.environ/REDIS_HOST
+
+model_list:
+  - model_name: "*"
+    litellm_params:
+      model: "*"
