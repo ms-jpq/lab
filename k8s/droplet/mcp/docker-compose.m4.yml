@@ -140,4 +140,11 @@ services:
   #   ports:
   #     - 8080
 
+  kubernetes:
+    image: ghcr.io/containers/kubernetes-mcp-server:latest
+    command:
+      - --port=8080
+    ports:
+      - 8080
+
   # TODO: https://github.com/teabranch/open-responses-server
