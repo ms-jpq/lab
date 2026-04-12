@@ -1,9 +1,21 @@
 ---
+x-k8s:
+  - apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+      name: auth
+      namespace: ${COMPOSE_PROJECT_NAME}
+    spec:
+      headers:
+        customRequestHeaders:
+          Authorization: Bearer sk-litellm-llmlite
+
 services:
   litellm:
     image: docker.litellm.ai/berriai/litellm:main-latest
     labels:
       kompose.service.expose: litellm.${DOMAIN}
+      traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-auth@kubernetescrd
     environment:
       DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg.${COMPOSE_PROJECT_NAME}.svc.cluster.local/${COMPOSE_PROJECT_NAME}
       REDIS_HOST: redis.${COMPOSE_PROJECT_NAME}.svc.cluster.local
