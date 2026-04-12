@@ -8,6 +8,7 @@ general_settings:
 litellm_settings:
   use_redis_transaction_buffer: true
   cache: true
+  json_logs: false
   cache_params:
     type: redis
     host: os.environ/REDIS_HOST
