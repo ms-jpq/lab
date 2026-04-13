@@ -1,15 +1,20 @@
 #!/usr/bin/env -S -- PYTHONSAFEPATH= python3
 
 from collections.abc import Iterable, Iterator
+from contextlib import nullcontext
 from functools import cache
 from ipaddress import IPv6Address, IPv6Interface, IPv6Network
+from logging import INFO, basicConfig, captureWarnings, getLogger
 from os import environ
 from pathlib import Path, PurePath
 from re import RegexFlag, compile
 from subprocess import check_call
-from sys import stderr
 from time import time
 from typing import Literal
+
+with nullcontext():
+    captureWarnings(True)
+    basicConfig(format="%(message)s", level=INFO)
 
 _LifeTime = Literal["forever"] | int
 
@@ -88,7 +93,7 @@ def _dns() -> Iterator[IPv6Address]:
 
 
 def _run(*argv: str | PurePath) -> None:
-    print(argv, file=stderr)
+    getLogger().info("%s", f"{argv}")
     check_call(argv)
 
 
