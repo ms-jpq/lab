@@ -4,7 +4,6 @@ archlinux.org
 arstechnica.com
 arxiv.org
 askubuntu.com
-baeldung.com
 blogspot.com
 burnaby.ca
 canadiancontent.net
