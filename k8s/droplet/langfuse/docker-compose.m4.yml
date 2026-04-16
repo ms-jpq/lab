@@ -33,13 +33,13 @@ services:
       LANGFUSE_INIT_ORG_ID: ${COMPOSE_PROJECT_NAME}
       LANGFUSE_INIT_USER_NAME: ${LANGFUSE_INIT_USER_EMAIL}
       LANGFUSE_INIT_USER_PASSWORD:
-      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: ${COMPOSE_PROJECT_NAME}
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID:
       LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
-      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://s3.${COMPOSE_PROJECT_NAME}.svc.cluster.local:8080
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: https://s3.${DOMAIN}
       LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: true
       LANGFUSE_S3_EVENT_UPLOAD_PREFIX: ""
       LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
-      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: ${COMPOSE_PROJECT_NAME}
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY:
       NEXTAUTH_SECRET:
       NEXTAUTH_URL: https://langfuse.${DOMAIN}
       REDIS_AUTH: &redispw ${COMPOSE_PROJECT_NAME}
@@ -56,29 +56,6 @@ services:
       <<: *langfuse-env
     ports:
       - 3030
-
-  s3:
-    image: ghcr.io/rclone/rclone:latest
-    labels:
-      kompose.controller.type: statefulset
-      kompose.volume.type: hostPath
-    environment:
-      RCLONE_AUTH_KEY: '"${COMPOSE_PROJECT_NAME},${COMPOSE_PROJECT_NAME}"'
-    command:
-      - serve
-      - s3
-      - --config=/dev/null
-      - --dir-cache-time=0
-      - --poll-interval=0
-      - --addr=:8080
-      - --baseurl=/
-      - -v
-      - --
-      - /data
-    ports:
-      - 8080
-    volumes:
-      - /var/lib/local/langfuse/rclone:/data/langfuse
 
   clickhouse:
     image: docker.io/clickhouse/clickhouse-server:latest
