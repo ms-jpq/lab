@@ -6,7 +6,7 @@ services:
       kompose.service.expose: litellm.${DOMAIN}
     environment:
       DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg.${COMPOSE_PROJECT_NAME}.svc.cluster.local/${COMPOSE_PROJECT_NAME}
-      LANGFUSE_OTEL_HOST:
+      LANGFUSE_OTEL_HOST: http://langfuse-worker.kompsed-langfuse.svc.cluster.local:3000
       LANGFUSE_PUBLIC_KEY:
       LANGFUSE_SECRET_KEY:
       LITELLM_MASTER_KEY:
