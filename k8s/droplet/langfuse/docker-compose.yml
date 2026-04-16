@@ -1,34 +1,49 @@
 ---
 services:
   langfuse-web:
-    image: ghcr.io/langfuse/langfuse:3
+    image: ghcr.io/langfuse/langfuse:latest
     labels:
       kompose.service.expose: langfuse.${DOMAIN}
     environment: &langfuse-env
+      AUTH_DISABLE_SIGNUP: true
       CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse.${COMPOSE_PROJECT_NAME}.svc.cluster.local:9000
       CLICKHOUSE_URL: http://clickhouse.${COMPOSE_PROJECT_NAME}.svc.cluster.local:8123
       DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg.${COMPOSE_PROJECT_NAME}.svc.cluster.local/${COMPOSE_PROJECT_NAME}
-      ENCRYPTION_KEY: ${LANGFUSE_ENCRYPTION_KEY}
-      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      ENCRYPTION_KEY:
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: &s3keyid ${COMPOSE_PROJECT_NAME}
       LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
-      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://minio.minio.svc.cluster.local:9000
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://versitygw.${COMPOSE_PROJECT_NAME}.svc.cluster.local:7070
       LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: true
       LANGFUSE_S3_EVENT_UPLOAD_PREFIX: events/
       LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
-      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
-      NEXTAUTH_SECRET: ${LANGFUSE_NEXTAUTH_SECRET}
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: &s3key ${COMPOSE_PROJECT_NAME}
+      NEXTAUTH_SECRET:
       NEXTAUTH_URL: https://langfuse.${DOMAIN}
       REDIS_HOST: redis.${COMPOSE_PROJECT_NAME}.svc.cluster.local
       REDIS_PORT: 6379
-      SALT: ${LANGFUSE_SALT}
+      SALT:
       TELEMETRY_ENABLED: false
     ports:
       - 3000
 
   langfuse-worker:
-    image: ghcr.io/langfuse/langfuse-worker:3
+    image: ghcr.io/langfuse/langfuse-worker:latest
     environment:
       <<: *langfuse-env
+
+  versitygw:
+    image: ghcr.io/versity/versitygw:latest
+    labels:
+      kompose.controller.type: statefulset
+      kompose.volume.type: hostPath
+    environment:
+      ROOT_ACCESS_KEY: *s3keyid
+      ROOT_SECRET_KEY: *s3key
+      VGW_BACKEND: posix
+    ports:
+      - 7070
+    volumes:
+      - /var/lib/local/langfuse/versitygw:/data
 
   clickhouse:
     image: docker.io/clickhouse/clickhouse-server:latest
@@ -42,6 +57,7 @@ services:
       - 9000
     volumes:
       - /var/lib/local/langfuse/clickhouse:/var/lib/clickhouse
+      - logs:/var/log/clickhouse-server
 
   pg:
     image: docker.io/library/postgres:18
@@ -66,3 +82,4 @@ services:
 
 volumes:
   data:
+  logs:
