@@ -7,7 +7,7 @@ server {
     auth_basic           "-";
     auth_basic_user_file /var/lib/local/nginx/otlp.htpasswd;
     proxy_set_header     Authorization
-      "Basic m5_esyscmd(printf -- %s 'SALT=ENV_MAIL[]freenas' | b3sum | cut -d ' ' -f 1 | jq --raw-input --join-output '"8080:\(.)" | @base64')";
+      "Basic m5_esyscmd(printf -- %s 'SALT=ENV_MAIL[]freenas' | b3sum | cut -d ' ' -f 1 | jq -e --raw-input --join-output '"8080:\(.)" | @base64')";
     include              /usr/local/opt/nginx/conf/http.d/proxy_params.nginx;
     proxy_pass           http://$x_freenas:8080/otlp$request_uri;
   }
