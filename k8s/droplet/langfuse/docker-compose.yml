@@ -6,10 +6,14 @@ services:
       kompose.service.expose: langfuse.${DOMAIN}
     environment: &langfuse-env
       AUTH_DISABLE_SIGNUP: true
+      CLICKHOUSE_CLUSTER_ENABLED: false
       CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse.${COMPOSE_PROJECT_NAME}.svc.cluster.local:9000
-      CLICKHOUSE_URL: http://clickhouse.${COMPOSE_PROJECT_NAME}.svc.cluster.local:8123
+      CLICKHOUSE_PASSWORD: &chpw ${COMPOSE_PROJECT_NAME}
+      CLICKHOUSE_URL: clickhouse://clickhouse.${COMPOSE_PROJECT_NAME}.svc.cluster.local:9000
+      CLICKHOUSE_USER: &chusr ${COMPOSE_PROJECT_NAME}
       DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg.${COMPOSE_PROJECT_NAME}.svc.cluster.local/${COMPOSE_PROJECT_NAME}
       ENCRYPTION_KEY:
+      HOSTNAME: "::"
       LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: &s3keyid ${COMPOSE_PROJECT_NAME}
       LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
       LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://versitygw.${COMPOSE_PROJECT_NAME}.svc.cluster.local:7070
@@ -18,9 +22,8 @@ services:
       LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
       LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: &s3key ${COMPOSE_PROJECT_NAME}
       NEXTAUTH_SECRET:
-      CLICKHOUSE_USER: &chusr ${COMPOSE_PROJECT_NAME}
-      CLICKHOUSE_PASSWORD: &chpw ${COMPOSE_PROJECT_NAME}
       NEXTAUTH_URL: https://langfuse.${DOMAIN}
+      REDIS_AUTH: &redispw ${COMPOSE_PROJECT_NAME}
       REDIS_HOST: redis.${COMPOSE_PROJECT_NAME}.svc.cluster.local
       REDIS_PORT: 6379
       SALT:
@@ -81,6 +84,9 @@ services:
     image: ghcr.io/valkey-io/valkey:latest
     ports:
       - 6379
+    command:
+      - --requirepass
+      - *redispw
     volumes:
       - data:/data
 
