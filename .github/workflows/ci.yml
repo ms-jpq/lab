@@ -25,6 +25,10 @@ jobs:
           python-version: ">= 0"
 
       - run: |-
+          sudo -- apt update
+          sudo -- apt install --yes -- b3sum
+
+      - run: |-
           sudo -- touch -- /.dockerenv
 
       - run: |-

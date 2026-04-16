@@ -9,6 +9,7 @@ RUN apt-get update && \
   jq \
   m4 \
   make \
+  b3sum \
   rsync \
   sudo
 
