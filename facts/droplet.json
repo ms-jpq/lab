@@ -25,6 +25,7 @@
     "forum",
     "http",
     "irc",
+    "langfuse",
     "litellm",
     "mcp-context7",
     "mcp-dockerhub",
