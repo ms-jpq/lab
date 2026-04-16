@@ -72,6 +72,7 @@ services:
       - --poll-interval=0
       - --addr=:8080
       - --baseurl=/
+      - -v
       - --
       - /data
     ports:
