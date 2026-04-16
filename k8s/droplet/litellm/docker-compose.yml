@@ -36,6 +36,7 @@ services:
     image: docker.litellm.ai/berriai/litellm:main-latest
     environment:
       DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg.${COMPOSE_PROJECT_NAME}.svc.cluster.local/${COMPOSE_PROJECT_NAME}
+      LITELLM_MASTER_KEY:
       REDIS_HOST: redis.${COMPOSE_PROJECT_NAME}.svc.cluster.local
       REDIS_PORT: 6379
       STORE_MODEL_IN_DB: "True"
