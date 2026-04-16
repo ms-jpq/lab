@@ -1,4 +1,19 @@
 ---
+x-k8s:
+  # m5_for([PROXY_NS], [
+  - apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata:
+      name: addn-policy-PROXY_NS
+      namespace: ${COMPOSE_PROJECT_NAME}
+    spec:
+      ingress:
+        - from:
+            - namespaceSelector:
+                matchLabels:
+                  kubernetes.io/metadata.name: kompsed-PROXY_NS
+  # ], litellm)
+
 services:
   langfuse-web:
     image: ghcr.io/langfuse/langfuse:latest
@@ -39,6 +54,8 @@ services:
     image: ghcr.io/langfuse/langfuse-worker:latest
     environment:
       <<: *langfuse-env
+    ports:
+      - 3030
 
   versitygw:
     image: ghcr.io/versity/versitygw:latest

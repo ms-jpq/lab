@@ -4,6 +4,8 @@ general_settings:
   database_url: os.environ/DATABASE_URL
   forward_client_headers_to_llm_api: true
   forward_llm_provider_auth_headers: true
+  store_model_in_db: true
+  store_prompts_in_spend_logs: true
 
 litellm_settings:
   callbacks: ["langfuse_otel"]
