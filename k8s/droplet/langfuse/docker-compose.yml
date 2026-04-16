@@ -18,6 +18,8 @@ services:
       LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
       LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: &s3key ${COMPOSE_PROJECT_NAME}
       NEXTAUTH_SECRET:
+      CLICKHOUSE_USER: &chusr ${COMPOSE_PROJECT_NAME}
+      CLICKHOUSE_PASSWORD: &chpw ${COMPOSE_PROJECT_NAME}
       NEXTAUTH_URL: https://langfuse.${DOMAIN}
       REDIS_HOST: redis.${COMPOSE_PROJECT_NAME}.svc.cluster.local
       REDIS_PORT: 6379
@@ -39,7 +41,9 @@ services:
     environment:
       ROOT_ACCESS_KEY: *s3keyid
       ROOT_SECRET_KEY: *s3key
-      VGW_BACKEND: posix
+    command:
+      - posix
+      - /data
     ports:
       - 7070
     volumes:
@@ -51,13 +55,13 @@ services:
       kompose.controller.type: statefulset
       kompose.volume.type: hostPath
     environment:
-      CLICKHOUSE_SKIP_USER_SETUP: "1"
+      CLICKHOUSE_USER: *chusr
+      CLICKHOUSE_PASSWORD: *chpw
     ports:
       - 8123
       - 9000
     volumes:
       - /var/lib/local/langfuse/clickhouse:/var/lib/clickhouse
-      - logs:/var/log/clickhouse-server
 
   pg:
     image: docker.io/library/postgres:18
@@ -82,4 +86,3 @@ services:
 
 volumes:
   data:
-  logs:
