@@ -1,39 +1,9 @@
 ---
-x-k8s:
-  - apiVersion: traefik.io/v1alpha1
-    kind: Middleware
-    metadata:
-      name: auth
-      namespace: ${COMPOSE_PROJECT_NAME}
-    spec:
-      headers:
-        customRequestHeaders:
-          Authorization: Bearer sk-litellm-llmlite
-  - apiVersion: traefik.io/v1alpha1
-    kind: IngressRoute
-    metadata:
-      name: litellm
-      namespace: ${COMPOSE_PROJECT_NAME}
-    spec:
-      entryPoints:
-        - websecure
-      routes:
-        - match: Host(`litellm.${DOMAIN}`) && PathPrefix(`/v1/messages`)
-          kind: Rule
-          services:
-            - name: litellm
-              port: 4000
-          middlewares:
-            - name: auth
-        - match: Host(`litellm.${DOMAIN}`)
-          kind: Rule
-          services:
-            - name: litellm
-              port: 4000
-
 services:
   litellm:
     image: docker.litellm.ai/berriai/litellm:main-latest
+    labels:
+      kompose.service.expose: litellm.${DOMAIN}
     environment:
       DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg.${COMPOSE_PROJECT_NAME}.svc.cluster.local/${COMPOSE_PROJECT_NAME}
       LITELLM_MASTER_KEY:
