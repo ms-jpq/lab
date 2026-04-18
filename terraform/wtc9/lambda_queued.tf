@@ -64,9 +64,14 @@ data "aws_iam_policy_document" "skyhook" {
     resources = [aws_sqs_queue.sink.arn]
   }
   statement {
-    actions   = ["s3:GetObject", "s3:DeleteObject", "s3:ListBucket"]
+    actions   = ["s3:GetObject", "s3:DeleteObject"]
     effect    = "Allow"
     resources = ["${data.aws_s3_bucket.maildir.arn}/*"]
+  }
+  statement {
+    actions   = ["s3:ListBucket"]
+    effect    = "Allow"
+    resources = [data.aws_s3_bucket.maildir.arn]
   }
 }
 
