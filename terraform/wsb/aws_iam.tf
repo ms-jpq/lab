@@ -92,7 +92,7 @@ resource "local_sensitive_file" "s2" {
       user => { prefix = "cw", data = aws_iam_access_key.iam["cloudwatch-ro-${user}"] }
     }
   )
-  filename = "${path.module}/../../facts/${each.value.prefix}.${each.key}.env.ini"
+  filename = "${path.module}/../../.facts/${each.value.prefix}.${each.key}.env.ini"
   content  = <<-INI
   [${each.key}]
   aws_access_key_id = ${each.value.data.id}
@@ -105,7 +105,7 @@ resource "local_sensitive_file" "smtp" {
     for user in local.smtp_users :
     user => aws_iam_access_key.iam["smtp-${user}"]
   }
-  filename = "${path.module}/../../facts/smtp.${each.key}.env.netrc"
+  filename = "${path.module}/../../.facts/smtp.${each.key}.env.netrc"
   content  = <<-NETRC
   machine ${local.mail_srv}
     login ${each.value.id}

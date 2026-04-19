@@ -43,7 +43,7 @@ JQ
 
   FD_INNER=('(' -type f -or -type l ')')
   mkdir -p -- "$TMP"
-  RAND_HEX="$(find "$DIR" "${FD_INNER[@]}" -print0 | xargs -0 --no-run-if-empty -- cat -- "./facts/$SRC.k8s.env" | b3sum --length 64 -- | cut -d ' ' -f 1)"
+  RAND_HEX="$(find "$DIR" "${FD_INNER[@]}" -print0 | xargs -0 --no-run-if-empty -- cat -- "./.facts/$SRC.k8s.env" | b3sum --length 64 -- | cut -d ' ' -f 1)"
   for F in "$DIR"/*; do
     B="$TMP/${F##*/}"
     case "$F" in
@@ -92,7 +92,7 @@ else
 
   gmake k8s
 
-  ./libexec/facts.sh "$MACHINE" "./facts/$SRC.k8s".{json,env} > "$DEFS"
+  ./libexec/facts.sh "$MACHINE" "./.facts/$SRC.k8s".{json,env} > "$DEFS"
 
   printf -- '%s\n' ">>> $COMPOSE" >&2
   printf -- '%s\0' "${FILES[@]}" | RECURSION=1 xargs -r -0 -I % -P 0 -- "$0" "$SRC" "$DST" %

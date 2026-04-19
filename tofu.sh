@@ -6,7 +6,7 @@ BASE="${0%/*}"
 
 set -a
 # shellcheck disable=SC1091
-source -- "$BASE/facts/.env"
+source -- "$BASE/.facts/.env"
 set +a
 
 NAME="$1"

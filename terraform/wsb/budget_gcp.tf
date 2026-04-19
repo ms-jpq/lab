@@ -1,6 +1,6 @@
 provider "google" {
   alias       = "dalaran"
-  credentials = "${path.module}/../../facts/gcp.dalaran.env.json"
+  credentials = "${path.module}/../../.facts/gcp.dalaran.env.json"
   project     = "dalaran-3"
 }
 

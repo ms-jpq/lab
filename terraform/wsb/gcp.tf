@@ -1,13 +1,13 @@
 provider "google" {
   alias       = "kalimdor"
-  credentials = "${path.module}/../../facts/gcp.kalimdor.env.json"
+  credentials = "${path.module}/../../.facts/gcp.kalimdor.env.json"
   project     = "kalimdor-3"
   region      = "northamerica-northeast2"
 }
 
 provider "google" {
   alias       = "lordaeron"
-  credentials = "${path.module}/../../facts/gcp.lordaeron.env.json"
+  credentials = "${path.module}/../../.facts/gcp.lordaeron.env.json"
   project     = "lordaeron-2"
   region      = "us-west1"
 }

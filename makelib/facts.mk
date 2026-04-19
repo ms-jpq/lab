@@ -26,7 +26,7 @@ $(VAR)/sh: | $(VAR)
 	fi
 
 FACT_MACHINES := $(shell ./libexec/inventory.sh --action ls --inventory '$(INVENTORY)')
-FACTS := $(shell shopt -u failglob && printf -- '%s ' ./facts/example*.env)
+FACTS := $(shell shopt -u failglob && printf -- '%s ' ./.facts/example*.env)
 
 facts: $(INVENTORY)
 $(INVENTORY): | ./libexec/inventory.sh

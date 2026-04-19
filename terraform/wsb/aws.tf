@@ -1,6 +1,6 @@
 locals {
   aws_profile     = "sudo"
-  aws_credentials = "${path.module}/../../facts/aws.${local.aws_profile}.env.ini"
+  aws_credentials = "${path.module}/../../.facts/aws.${local.aws_profile}.env.ini"
 }
 
 provider "aws" {

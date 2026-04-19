@@ -42,7 +42,7 @@ if (($#)); then
   PRUNE=()
 fi
 
-CTL=(env -- KUBECONFIG="${0%/*}/facts/$SRC.kubeconfig.yml.env" kubectl --insecure-skip-tls-verify)
+CTL=(env -- KUBECONFIG="${0%/*}/.facts/$SRC.kubeconfig.yml.env" kubectl --insecure-skip-tls-verify)
 cat -- "$DST"/*.yml | if ((DIFF)); then
   "${CTL[@]}" diff --filename - | delta
 else

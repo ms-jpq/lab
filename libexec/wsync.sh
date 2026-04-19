@@ -48,7 +48,7 @@ for MACHINE in "${MACHINES[@]}"; do
 
   mkdir -p -- "$FS"
   find "$FS" -mindepth 1 -delete
-  ./libexec/facts.sh "$MACHINE" "facts/$MACHINE".{json,env} > "$DEFS"
+  ./libexec/facts.sh "$MACHINE" ".facts/$MACHINE".{json,env} > "$DEFS"
 
   RAND_HEX="$(find "$SRC" "${FD_INNER[@]}" -print0 | xargs -0 --no-run-if-empty -- cat -- "$DEFS" | b3sum --length 64 -- | cut -d ' ' -f 1)"
   for F in "$SRC"/**/*; do

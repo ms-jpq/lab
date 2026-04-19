@@ -75,7 +75,7 @@ resource "google_service_account_key" "fel" {
 resource "local_sensitive_file" "nathrezim" {
   for_each       = google_service_account_key.fel
   content_base64 = each.value.private_key
-  filename       = "${path.module}/../../facts/gcp.${each.key}.env.json"
+  filename       = "${path.module}/../../.facts/gcp.${each.key}.env.json"
 }
 
 locals {

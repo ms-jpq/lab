@@ -28,7 +28,7 @@ resource "aws_iam_access_key" "pgp" {
 
 resource "local_sensitive_file" "sponge" {
   for_each = aws_iam_access_key.pgp
-  filename = "${path.module}/../../facts/aws.${each.key}.env.ini"
+  filename = "${path.module}/../../.facts/aws.${each.key}.env.ini"
   content  = <<-INI
   [${each.key}]
   aws_access_key_id = ${each.value.id}

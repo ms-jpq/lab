@@ -19,7 +19,7 @@ terraform {
     key                      = "wtc8.json"
     profile                  = "sudo"
     region                   = "ca-west-1"
-    shared_credentials_files = ["../../facts/aws.sudo.env.ini"]
+    shared_credentials_files = ["../../.facts/aws.sudo.env.ini"]
     use_lockfile             = true
   }
 }
