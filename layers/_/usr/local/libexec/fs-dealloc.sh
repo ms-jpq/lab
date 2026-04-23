@@ -33,7 +33,7 @@ zfs)
   MOUNT="$(zfs get -H -o value -- mountpoint "$ZFS")"
   case "$MOUNT" in
   '' | '-' | legacy)
-    set -x
+    set -v
     printf -- '%q\n' "$ZFS - $MOUNT" >&2
     exit 1
     ;;
@@ -42,7 +42,7 @@ zfs)
 
   for SAFE in "${NO_DIE[@]}"; do
     if [[ $MOUNT == "${SAFE%'/'}" ]]; then
-      set -x
+      set -v
       exit 1
     fi
   done

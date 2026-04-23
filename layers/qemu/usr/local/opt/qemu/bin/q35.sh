@@ -55,7 +55,7 @@ while (($#)); do
       BIOS="$2"
       ;;
     *)
-      set -x
+      set -v
       exit 1
       ;;
     esac

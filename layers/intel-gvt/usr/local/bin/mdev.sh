@@ -41,7 +41,7 @@ down)
   printf -- '%s' 1 > "$SYSFS/$UUID/remove"
   ;;
 *)
-  set -x
+  set -v
   exit 2
   ;;
 esac
