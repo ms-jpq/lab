@@ -26,29 +26,29 @@ services:
     ports:
       - 8080
 
-  firecrawl:
-    image: ghcr.io/firecrawl/firecrawl-mcp-server:latest
-    labels:
-      kompose.service.group: &firecrawl firecrawl-proxy
-    environment:
-      FIRECRAWL_API_URL: http://firecrawl.kompsed-firecrawl.svc.cluster.local:3002
-      HTTP_STREAMABLE_SERVER: true
+  # firecrawl:
+  #   image: ghcr.io/firecrawl/firecrawl-mcp-server:latest
+  #   labels:
+  #     kompose.service.group: &firecrawl firecrawl-proxy
+  #   environment:
+  #     FIRECRAWL_API_URL: http://firecrawl.kompsed-firecrawl.svc.cluster.local:3002
+  #     HTTP_STREAMABLE_SERVER: true
 
-  firecrawl-proxy:
-    image: docker.io/library/nginx:latest
-    labels:
-      kompose.service.expose: mcp-firecrawl.${DOMAIN}
-      kompose.service.group: *firecrawl
-    command:
-      - nginx
-      - -g
-      - "daemon off;"
-      - -c
-      - /etc/nginx/nginx2.conf
-    ports:
-      - 1080
-    volumes:
-      - ./firecrawl.nginx:/etc/nginx/nginx2.conf:ro
+  # firecrawl-proxy:
+  #   image: docker.io/library/nginx:latest
+  #   labels:
+  #     kompose.service.expose: mcp-firecrawl.${DOMAIN}
+  #     kompose.service.group: *firecrawl
+  #   command:
+  #     - nginx
+  #     - -g
+  #     - "daemon off;"
+  #     - -c
+  #     - /etc/nginx/nginx2.conf
+  #   ports:
+  #     - 1080
+  #   volumes:
+  #     - ./firecrawl.nginx:/etc/nginx/nginx2.conf:ro
 
   terraform:
     image: docker.io/hashicorp/terraform-mcp-server:latest

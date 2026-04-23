@@ -7,9 +7,9 @@ mcpSettings:
     - "*.svc.cluster.local"
 
 mcpServers:
-  firecrawl:
-    type: http
-    url: http://firecrawl-proxy.kompsed-mcp.svc.cluster.local:1080/mcp
+  # firecrawl:
+  #   type: http
+  #   url: http://firecrawl-proxy.kompsed-mcp.svc.cluster.local:1080/mcp
   searx:
     type: http
     url: http://searx.kompsed-mcp.svc.cluster.local:8080/mcp
