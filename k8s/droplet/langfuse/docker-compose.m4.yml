@@ -19,6 +19,10 @@ services:
     image: ghcr.io/langfuse/langfuse:latest
     labels:
       kompose.service.expose: langfuse.${DOMAIN}
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     environment: &langfuse-env
       AUTH_DISABLE_SIGNUP: true
       CLICKHOUSE_CLUSTER_ENABLED: false
@@ -52,6 +56,10 @@ services:
 
   langfuse-worker:
     image: ghcr.io/langfuse/langfuse-worker:latest
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     environment:
       <<: *langfuse-env
     ports:
@@ -62,6 +70,10 @@ services:
     labels:
       kompose.controller.type: statefulset
       kompose.volume.type: hostPath
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     environment:
       CLICKHOUSE_USER: *chusr
       CLICKHOUSE_PASSWORD: *chpw

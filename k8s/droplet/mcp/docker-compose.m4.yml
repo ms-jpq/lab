@@ -26,19 +26,6 @@ services:
     ports:
       - 8080
 
-  time:
-    image: docker.io/supercorp/supergateway:uvx
-    labels:
-      kompose.service.expose: mcp-time.${DOMAIN}
-    environment:
-      TZ: America/New_York
-    command:
-      - --outputTransport=streamableHttp
-      - --stdio
-      - uvx mcp-server-time
-    ports:
-      - 8000
-
   firecrawl:
     image: ghcr.io/firecrawl/firecrawl-mcp-server:latest
     labels:

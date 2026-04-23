@@ -19,6 +19,10 @@ services:
     image: ghcr.io/firecrawl/firecrawl:latest
     labels:
       kompose.service.group: &firecrawl firecrawl
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     environment:
       HOST: "::"
       NUQ_DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg.${COMPOSE_PROJECT_NAME}.svc.cluster.local/postgres

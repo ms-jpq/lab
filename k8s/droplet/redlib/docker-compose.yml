@@ -6,6 +6,10 @@ services:
       kompose.service.group: &redwarp redlib
     cap_add:
       - NET_ADMIN
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     volumes:
       - data1:/var/lib/cloudflare-warp
 
@@ -15,6 +19,10 @@ services:
       kompose.service.group: &bluewarp bluelib
     cap_add:
       - NET_ADMIN
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     volumes:
       - data2:/var/lib/cloudflare-warp
 
