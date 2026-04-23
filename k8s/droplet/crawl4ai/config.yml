@@ -1,0 +1,13 @@
+# https://github.com/unclecode/crawl4ai/blob/main/deploy/docker/config.yml
+---
+crawler:
+  browser:
+    extra_args:
+      - --no-sandbox
+      - --disable-dev-shm-usage
+      - --disable-gpu
+      - --disable-software-rasterizer
+      - --disable-web-security
+      - --allow-insecure-localhost
+      - --ignore-certificate-errors
+      - --proxy-server=socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080

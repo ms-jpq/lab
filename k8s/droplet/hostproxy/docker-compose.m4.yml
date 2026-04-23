@@ -12,7 +12,7 @@ x-k8s:
             - namespaceSelector:
                 matchLabels:
                   kubernetes.io/metadata.name: kompsed-PROXY_NS
-  # ], 13feet, invidious, rss-bridge, searx, redlib, firecrawl, mcp, librechat, lobehub)
+  # ], 13feet, invidious, rss-bridge, searx, redlib, firecrawl, crawl4ai, mcp, librechat, lobehub)
 
 services:
   proxy:
