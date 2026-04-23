@@ -10,9 +10,9 @@ mcpServers:
   firecrawl:
     type: http
     url: http://firecrawl-proxy.kompsed-mcp.svc.cluster.local:1080/mcp
-  time:
-    type: http
-    url: http://time.kompsed-mcp.svc.cluster.local:8000/mcp
+  crawl4ai:
+    type: sse
+    url: http://crawl4ai.kompsed-crawl4ai.svc.cluster.local:11235/mcp/sse
   context7:
     type: http
     url: http://context7.kompsed-mcp.svc.cluster.local:8080/mcp
