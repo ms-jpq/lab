@@ -99,6 +99,7 @@ hostnames:
     - ^docs?(\.[[^.]]+){1,}
     - ^forums?(\.[[^.]]+){1,}
     - ^git(\.[[^.]]+){1,}
+    - ^wiki(\.[[^.]]+){1,}
     # m5_esyscmd([./k8s/droplet/searx/proc.sed -- ./k8s/droplet/searx/domains/more.txt])
   low_priority:
     # m5_esyscmd([./k8s/droplet/searx/proc.sed -- ./k8s/droplet/searx/domains/ew.txt])

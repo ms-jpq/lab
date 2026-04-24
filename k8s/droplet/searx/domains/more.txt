@@ -42,6 +42,7 @@ linux.org
 linuxcontainers.org
 lobste.rs
 lua.org
+man7.org
 mastodon.social
 mathoverflow.com
 mayoclinic.org
