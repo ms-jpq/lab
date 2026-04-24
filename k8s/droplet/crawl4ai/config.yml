@@ -2,6 +2,8 @@
 ---
 crawler:
   browser:
+    kwargs:
+      enable_stealth: true
     extra_args:
       - --no-sandbox
       - --disable-dev-shm-usage
