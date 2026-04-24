@@ -1,5 +1,3 @@
-archive.org
-archive.ph
 archlinux.org
 arstechnica.com
 arxiv.org
@@ -19,7 +17,6 @@ css-tricks.com
 debian.org
 dictionary.com
 discourse.group
-docs.ruby-lang.org
 fandom.com
 freedesktop.org
 gc.ca

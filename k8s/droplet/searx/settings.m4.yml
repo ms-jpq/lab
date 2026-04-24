@@ -65,6 +65,9 @@ engines:
   - name: brave
     disabled: false
 
+  - name: aol
+    disabled: false
+
   # - name: baidu
   #   disabled: false
   #
@@ -88,12 +91,14 @@ hostnames:
     '^([[^.]]+\.)*reddit\.com$': *reddit
     '^([[^.]]+\.)*redditmedia\.com$': *reddit
   high_priority:
+    - ^archive(\.[[^.]]+){1,}
     - ^bbs(\.[[^.]]+){1,}
     - ^community(\.[[^.]]+){1,}
     - ^developer(\.[[^.]]+){1,}
     - ^discuss(\.[[^.]]+){1,}
     - ^docs?(\.[[^.]]+){1,}
     - ^forums?(\.[[^.]]+){1,}
+    - ^git(\.[[^.]]+){1,}
     # m5_esyscmd([./k8s/droplet/searx/proc.sed -- ./k8s/droplet/searx/domains/more.txt])
   low_priority:
     # m5_esyscmd([./k8s/droplet/searx/proc.sed -- ./k8s/droplet/searx/domains/ew.txt])
