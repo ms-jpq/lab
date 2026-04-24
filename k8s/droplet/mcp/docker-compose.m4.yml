@@ -26,48 +26,6 @@ services:
     ports:
       - 8080
 
-  # firecrawl:
-  #   image: ghcr.io/firecrawl/firecrawl-mcp-server:latest
-  #   labels:
-  #     kompose.service.group: &firecrawl firecrawl-proxy
-  #   environment:
-  #     FIRECRAWL_API_URL: http://firecrawl.kompsed-firecrawl.svc.cluster.local:3002
-  #     HTTP_STREAMABLE_SERVER: true
-
-  # firecrawl-proxy:
-  #   image: docker.io/library/nginx:latest
-  #   labels:
-  #     kompose.service.expose: mcp-firecrawl.${DOMAIN}
-  #     kompose.service.group: *firecrawl
-  #   command:
-  #     - nginx
-  #     - -g
-  #     - "daemon off;"
-  #     - -c
-  #     - /etc/nginx/nginx2.conf
-  #   ports:
-  #     - 1080
-  #   volumes:
-  #     - ./firecrawl.nginx:/etc/nginx/nginx2.conf:ro
-
-  terraform:
-    image: docker.io/hashicorp/terraform-mcp-server:latest
-    labels:
-      kompose.service.group: &terraform terraform-proxy
-    environment:
-      MCP_CORS_MODE: disabled
-      TRANSPORT_MODE: streamable-http
-
-  terraform-proxy:
-    image: docker.io/library/nginx:latest
-    labels:
-      kompose.service.expose: mcp-terraform.${DOMAIN}
-      kompose.service.group: *terraform
-    ports:
-      - 1080
-    volumes:
-      - ./terraform.nginx:/etc/nginx/nginx.conf:ro
-
   dockerhub:
     image: docker.io/mcp/dockerhub:latest
     labels:
@@ -133,5 +91,3 @@ services:
       - --port=8080
     ports:
       - 8080
-
-  # TODO: https://github.com/teabranch/open-responses-server
