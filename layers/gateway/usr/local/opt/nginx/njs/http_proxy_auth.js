@@ -128,7 +128,7 @@ const decodeCookieValue = (value) => {
 }
 
 /** @param {NginxHTTPRequest} o */
-const readAuthCookie = (o) => {
+const hasValidAuthCookie = (o) => {
   const header = o.headersIn["Cookie"]
   if (!header) {
     return false
@@ -149,7 +149,7 @@ const readAuthCookie = (o) => {
       return false
     }
     const exp = Number(userExp[1])
-    return Number.isFinite(exp) && exp - Date.now() / 1000 >= 0
+    return Number.isFinite(exp) && exp - Date.now() > 0
   })
 }
 
@@ -160,12 +160,12 @@ const readAuthCookie = (o) => {
 const buildCookie = (o, user) => {
   const host = o.variables.host ?? ""
   const secure = isSecure(o)
-  const exp = Math.floor(Date.now() / 1000) + COOKIE_TTL
+  const exp = Math.round(Date.now() + COOKIE_TTL * 1000)
 
   const parts = [
     `${cookieName(secure)}=${encodeCookieValue(`${user}:${exp}`)}`,
     `Domain=${host.split(".").slice(-DOMAIN_PARTS).join(".")}`,
-    `Expires=${new Date(exp * 1000).toUTCString()}`,
+    `Expires=${new Date(exp).toUTCString()}`,
     `Max-Age=${COOKIE_TTL}`,
     "Path=/",
     "SameSite=Strict",
@@ -221,7 +221,7 @@ export default {
       (o.variables.is_args ?? "") +
       (o.variables.args ?? "")
 
-    if (matchAllow(uri) || readAuthCookie(o)) {
+    if (matchAllow(uri) || hasValidAuthCookie(o)) {
       return r.return(204)
     }
 
