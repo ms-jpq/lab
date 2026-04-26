@@ -2,19 +2,19 @@
 
 const PREFIX = Buffer.from("SSH-")
 
-/** @param {NginxStreamRequest} session */
-const detect = (session) => {
-  let len = 0
-  const acc = Buffer.alloc(PREFIX.length)
+export default {
+  /** @param {NginxStreamRequest} session */
+  detect: (session) => {
+    let acc = Buffer.alloc(0)
 
-  session.on("upstream", (data) => {
-    len += data.copy(acc, len, 0, PREFIX.length - len)
+    session.on("upstream", (data) => {
+      acc = Buffer.concat([acc, data])
 
-    if (len >= PREFIX.length) {
-      session.variables.x_ssh_detect = acc.equals(PREFIX) ? "ssh" : "ovpn"
-      session.done()
-    }
-  })
+      if (acc.length >= PREFIX.length) {
+        const isSsh = acc.subarray(0, PREFIX.length).equals(PREFIX)
+        session.variables.x_ssh_detect = isSsh ? "ssh" : "ovpn"
+        session.done()
+      }
+    })
+  },
 }
-
-export default { detect }
