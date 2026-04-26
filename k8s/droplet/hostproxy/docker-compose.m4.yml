@@ -41,7 +41,7 @@ services:
       - source: conf
         target: /etc/nginx/nginx.conf
     volumes:
-      - /run/haproxy:/run/haproxy:ro
+      - /run/local/nginx:/run/local/nginx:ro
 
 configs:
   conf:

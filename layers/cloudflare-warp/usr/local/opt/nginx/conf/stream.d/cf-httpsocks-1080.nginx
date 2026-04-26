@@ -1,0 +1,9 @@
+server {
+  listen     [::]:1080 ipv6only=off reuseport;
+  proxy_pass 127.0.0.1:40000;
+}
+
+server {
+  listen     unix:/run/local/nginx/httpsocks-1080.sock;
+  proxy_pass 127.0.0.1:40000;
+}
