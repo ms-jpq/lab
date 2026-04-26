@@ -51,6 +51,27 @@ const ALLOW_RES = (() => {
 /** @param {string} host_path */
 const matchAllow = (host_path) => ALLOW_RES.some((re) => re.test(host_path))
 
+/** @param {Buffer} plain */
+const digest = (plain) =>
+  Buffer.from(cr.createHmac(ALGORITHM, HMAC_SECRET).update(plain).digest())
+
+/**
+ * @param {string} s
+ * @param {string} sep
+ * @param {boolean} [last]
+ * @returns {[string, string] | undefined}
+ */
+const partition = (s, sep, last) => {
+  const i = last ? s.lastIndexOf(sep) : s.indexOf(sep)
+  return i < 0 ? undefined : [s.slice(0, i), s.slice(i + sep.length)]
+}
+
+/** @param {string} s */
+const removeWs = (s) => s.replace(/\s+/g, "")
+
+/** @param {string | string[] | undefined} v */
+const firstString = (v) => (typeof v === "string" ? v : "")
+
 /**
  * @param {NginxHTTPRequest} r
  * @returns {NginxHTTPRequest}
@@ -59,16 +80,6 @@ const origin = (r) => (r.parent ? origin(r.parent) : r)
 
 /** @param {NginxHTTPRequest} o */
 const isSecure = (o) => (o.variables.scheme ?? "").toLowerCase() !== "http"
-
-/** @param {Buffer} plain */
-const digest = (plain) =>
-  Buffer.from(cr.createHmac(ALGORITHM, HMAC_SECRET).update(plain).digest())
-
-/** @param {string} s */
-const removeWs = (s) => s.replace(/\s+/g, "")
-
-/** @param {string | string[] | undefined} v */
-const firstString = (v) => (typeof v === "string" ? v : "")
 
 /**
  * @param {Buffer} a
@@ -99,12 +110,12 @@ const encodeCookieValue = (data) => {
 
 /** @param {string} value */
 const decodeCookieValue = (value) => {
-  const dot = value.indexOf(".")
-  if (dot < 0) {
+  const sigPlain = partition(value, ".")
+  if (!sigPlain) {
     return undefined
   }
-  const sig = Buffer.from(value.slice(0, dot), "base64")
-  const plain = Buffer.from(value.slice(dot + 1), "base64")
+  const sig = Buffer.from(sigPlain[0], "base64")
+  const plain = Buffer.from(sigPlain[1], "base64")
   return timingSafeEqual(sig, digest(plain)) ? plain.toString() : undefined
 }
 
@@ -117,22 +128,19 @@ const readAuthCookie = (o) => {
 
   const name = cookieName(isSecure(o))
   return header.split(";").some((part) => {
-    const eq = part.indexOf("=")
-    if (eq < 0) {
+    const nameValue = partition(part, "=")
+    if (!nameValue || nameValue[0].trim() !== name) {
       return false
     }
-    if (part.slice(0, eq).trim() !== name) {
-      return false
-    }
-    const plain = decodeCookieValue(part.slice(eq + 1).trim())
+    const plain = decodeCookieValue(nameValue[1].trim())
     if (plain === undefined) {
       return false
     }
-    const sep = plain.lastIndexOf(":")
-    if (sep < 0) {
+    const userExp = partition(plain, ":", true)
+    if (!userExp) {
       return false
     }
-    const exp = Number(plain.slice(sep + 1))
+    const exp = Number(userExp[1])
     return Number.isFinite(exp) && exp - Date.now() / 1000 >= 0
   })
 }
@@ -169,20 +177,15 @@ const parseAuth = (o) => {
     return undefined
   }
 
-  const sep = header.indexOf(" ")
-  if (sep < 0) {
+  const schemeCreds = partition(header, " ")
+  if (!schemeCreds || schemeCreds[0].toLowerCase() !== "basic") {
     return undefined
   }
-
-  const scheme = header.slice(0, sep).toLowerCase()
-  if (scheme !== "basic") {
-    return undefined
-  }
-  const creds = header.slice(sep + 1).trim()
+  const creds = schemeCreds[1].trim()
 
   const decoded = Buffer.from(creds, "base64").toString()
-  const colon = decoded.indexOf(":")
-  const user = removeWs(colon < 0 ? decoded : decoded.slice(0, colon))
+  const userPass = partition(decoded, ":")
+  const user = removeWs(userPass ? userPass[0] : decoded)
   return { user, creds }
 }
 
@@ -248,13 +251,10 @@ export default {
 
     r.headersOut["Set-Cookie"] = [buildCookie(o, username)]
 
-    const redirect = removeWs(firstString(params.redirect))
-    if (redirect) {
-      r.headersOut["Location"] = redirect
-      r.headersOut["X-Original-URL"] = redirect
-      return r.return(303)
-    }
+    const redirect = removeWs(firstString(params.redirect)) || "/"
+    r.headersOut["Location"] = redirect
+    r.headersOut["X-Original-URL"] = redirect
 
-    return r.return(204)
+    return r.return(303)
   },
 }
