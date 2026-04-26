@@ -1,82 +1,82 @@
-globalThis.requestIdleCallback ??= (cb) => setTimeout(cb);
-globalThis.cancelIdleCallback ??= clearTimeout;
+globalThis.requestIdleCallback ??= (cb) => setTimeout(cb)
+globalThis.cancelIdleCallback ??= clearTimeout
 
-const CURSOR = "cursor";
+const CURSOR = "cursor"
 
-const origin = globalThis.location?.origin ?? "http://localhost:8080";
-const params = new URLSearchParams(globalThis.location?.search);
-const COUNT = 888;
+const origin = globalThis.location?.origin ?? "http://localhost:8080"
+const params = new URLSearchParams(globalThis.location?.search)
+const COUNT = 888
 
 /**
  * @param {string} uri
  * @param {string | undefined}  cursor
  */
 const raw_stream = async function* (uri, cursor) {
-  const abortion = new AbortController();
-  const headers = cursor ? { Range: `entries=${cursor}` } : undefined;
+  const abortion = new AbortController()
+  const headers = cursor ? { Range: `entries=${cursor}` } : undefined
   const resp = await fetch(uri, {
     headers: { Accept: "application/json", ...headers },
     signal: abortion.signal,
-  });
-  const stream = resp.body?.pipeThrough(new TextDecoderStream());
-  const reader = stream?.getReader();
+  })
+  const stream = resp.body?.pipeThrough(new TextDecoderStream())
+  const reader = stream?.getReader()
   try {
     if (reader) {
       while (true) {
-        const { value, done } = await reader.read();
+        const { value, done } = await reader.read()
         if (done || !value) {
-          break;
+          break
         }
-        yield value;
+        yield value
       }
     }
   } finally {
-    abortion.abort();
-    console.info(".");
+    abortion.abort()
+    console.info(".")
   }
-};
+}
 
 const init_cursor = async () => {
   if (params.size) {
-    return globalThis?.localStorage.getItem(CURSOR) ?? undefined;
+    return globalThis?.localStorage.getItem(CURSOR) ?? undefined
   }
   while (true) {
     try {
-      const resp = await fetch(origin + "/journal-cursor.sh/");
-      return await resp.text();
+      const resp = await fetch(origin + "/journal-cursor.sh/")
+      return await resp.text()
     } catch (e) {
-      await new Promise((resolve) => setTimeout(resolve, 188));
-      console.error(e);
+      await new Promise((resolve) => setTimeout(resolve, 188))
+      console.error(e)
     }
   }
-};
+}
 
 const parse_ansi = (() => {
   const ansiPattern =
     "[\\u001B\\u009B][[\\]()#;?]*" +
     "(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*" +
     "|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)" +
-    "|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-ntqry=><~]))";
-  const ansi = new RegExp(ansiPattern, "ug");
+    "|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-ntqry=><~]))"
+  const ansi = new RegExp(ansiPattern, "ug")
 
   /**
    * @param {number[]} codes
    */
   return (codes) => {
     try {
-      const str = String.fromCharCode(...codes);
-      return str.replace(ansi, "");
+      const str = String.fromCharCode(...codes)
+      return str.replace(ansi, "")
     } catch {
-      return JSON.stringify(codes);
+      return JSON.stringify(codes)
     }
-  };
-})();
+  }
+})()
 
 const stream = (() => {
-  const t = 60;
+  const t = 60
   /** @type {string[]} */
-  const acc = [];
-  let timeout = t;
+  const acc = []
+  let timeout = t
 
   /**
    * @param {symbol} sym
@@ -84,61 +84,61 @@ const stream = (() => {
    * @returns {AsyncIterableIterator<Record<string, string>>}
    */
   return async function* (sym, uri) {
-    let cursor = await init_cursor();
+    let cursor = await init_cursor()
     if (cursor) {
-      yield { [sym]: cursor };
+      yield { [sym]: cursor }
     }
-    console.info({ cursor });
+    console.info({ cursor })
     while (true) {
-      const t0 = performance.now();
+      const t0 = performance.now()
       try {
         loop: for await (const tokens of raw_stream(uri, cursor)) {
           for (const token of tokens) {
             if (token === "\n") {
-              const json = JSON.parse(acc.join(""));
+              const json = JSON.parse(acc.join(""))
               for (const [key, value] of Object.entries(json)) {
                 if (Array.isArray(value)) {
-                  json[key] = parse_ansi(value);
+                  json[key] = parse_ansi(value)
                 }
               }
-              yield json;
-              const c = json.__CURSOR;
-              acc.length = 0;
-              timeout = t;
+              yield json
+              const c = json.__CURSOR
+              acc.length = 0
+              timeout = t
               if (c) {
-                cursor = c;
+                cursor = c
                 if (params.size) {
-                  globalThis?.localStorage.setItem(CURSOR, c);
+                  globalThis?.localStorage.setItem(CURSOR, c)
                 }
               }
               if (performance.now() - t0 > 60 * 1000) {
-                break loop;
+                break loop
               }
             } else {
-              acc.push(token);
+              acc.push(token)
             }
           }
         }
       } catch (err) {
-        yield { [sym]: err };
-        await new Promise((resolve) => setTimeout(resolve, timeout));
-        timeout = timeout * 1.6;
+        yield { [sym]: err }
+        await new Promise((resolve) => setTimeout(resolve, timeout))
+        timeout = timeout * 1.6
       } finally {
-        acc.length = 0;
+        acc.length = 0
       }
     }
-  };
-})();
+  }
+})()
 
 const debounce = ((handle) => {
   /**
    * @param {() => void} exec
    */
   return (exec) => {
-    cancelIdleCallback(handle);
-    handle = requestIdleCallback(exec);
-  };
-})(NaN);
+    cancelIdleCallback(handle)
+    handle = requestIdleCallback(exec)
+  }
+})(NaN)
 
 /**
  * @param {symbol} sym
@@ -146,7 +146,7 @@ const debounce = ((handle) => {
  * @param {Record<string, string>} json
  */
 const append = (sym, root, json) => {
-  const s = /** @type {string} */ (/** @type {unknown} */ (sym));
+  const s = /** @type {string} */ (/** @type {unknown} */ (sym))
   const {
     [s]: err,
     CONTAINER_NAME,
@@ -156,7 +156,7 @@ const append = (sym, root, json) => {
     _KERNEL_SUBSYSTEM,
     _SYSTEMD_UNIT,
     __REALTIME_TIMESTAMP,
-  } = json;
+  } = json
 
   if (
     _SYSTEMD_UNIT === "ssh.service" &&
@@ -164,17 +164,17 @@ const append = (sym, root, json) => {
       MESSAGE?.includes(s),
     )
   ) {
-    return;
+    return
   }
 
   const ts = __REALTIME_TIMESTAMP
     ? new Date(Number(__REALTIME_TIMESTAMP) / 1000)
-    : new Date();
+    : new Date()
   const li =
     (root.childElementCount >= COUNT ? root.firstElementChild : undefined) ??
-    document.createElement("li");
-  li.parentElement?.removeChild(li);
-  li.replaceChildren();
+    document.createElement("li")
+  li.parentElement?.removeChild(li)
+  li.replaceChildren()
 
   const tt =
     ts.getFullYear().toString().slice(2) +
@@ -187,82 +187,82 @@ const append = (sym, root, json) => {
     ":" +
     ts.getMinutes().toString().padStart(2, "0") +
     ":" +
-    ts.getSeconds().toString().padStart(2, "0");
-  const time = document.createElement("time");
-  time.setAttribute("datetime", ts.toLocaleTimeString());
-  time.appendChild(document.createTextNode(tt));
+    ts.getSeconds().toString().padStart(2, "0")
+  const time = document.createElement("time")
+  time.setAttribute("datetime", ts.toLocaleTimeString())
+  time.appendChild(document.createTextNode(tt))
 
   const id = document.createTextNode(
     err?.constructor?.name ??
       [
         ...(function* () {
           if (_HOSTNAME) {
-            yield `@${_HOSTNAME}`;
+            yield `@${_HOSTNAME}`
           }
           if (_KERNEL_SUBSYSTEM) {
-            yield `*${_KERNEL_SUBSYSTEM}*`;
+            yield `*${_KERNEL_SUBSYSTEM}*`
           }
           if (_SYSTEMD_UNIT) {
-            yield `[${SYSLOG_IDENTIFIER ?? _SYSTEMD_UNIT}]`;
+            yield `[${SYSLOG_IDENTIFIER ?? _SYSTEMD_UNIT}]`
           }
         })(),
       ].join(" "),
-  );
-  const b = document.createElement("b");
-  b.appendChild(id);
+  )
+  const b = document.createElement("b")
+  b.appendChild(id)
 
   const ie = document.createTextNode(
     [
       ...(function* () {
         if (CONTAINER_NAME) {
-          yield CONTAINER_NAME;
+          yield CONTAINER_NAME
         }
       })(),
     ].join(" "),
-  );
-  const i = document.createElement("i");
-  const b2 = document.createElement("b");
-  b2.appendChild(ie);
-  i.appendChild(b2);
+  )
+  const i = document.createElement("i")
+  const b2 = document.createElement("b")
+  b2.appendChild(ie)
+  i.appendChild(b2)
 
-  const message = document.createTextNode(err ?? MESSAGE ?? "");
-  const msg = document.createElement("pre");
-  msg.appendChild(message);
+  const message = document.createTextNode(err ?? MESSAGE ?? "")
+  const msg = document.createElement("pre")
+  msg.appendChild(message)
   const line = err
     ? (() => {
-        const em = document.createElement("em");
-        em.appendChild(msg);
-        return em;
+        const em = document.createElement("em")
+        em.appendChild(msg)
+        return em
       })()
-    : msg;
+    : msg
 
-  const label = document.createElement("label");
-  label.appendChild(b);
-  label.appendChild(i);
+  const label = document.createElement("label")
+  label.appendChild(b)
+  label.appendChild(i)
 
-  li.appendChild(time);
-  li.appendChild(label);
-  li.appendChild(line);
-  root.appendChild(li);
+  li.appendChild(time)
+  li.appendChild(label)
+  li.appendChild(line)
+  root.appendChild(li)
 
   debounce(() => {
-    const eof = document.querySelector("input")?.checked;
+    const eof = document.querySelector("input")?.checked
     if (eof) {
-      li.scrollIntoView({ block: "end" });
+      li.scrollIntoView({ block: "end" })
     }
-  });
-};
+  })
+}
 
-(async () => {
-  const uri = origin + `/entries?follow&${params}`;
-  const sym = Symbol();
-  const root = globalThis?.document?.querySelector("ol");
+;(async () => {
+  const uri = origin + `/entries?follow&${params}`
+  const sym = Symbol()
+  const root = globalThis?.document?.querySelector("ol")
 
   for await (const json of stream(sym, uri)) {
     if (!root) {
-      console.log(json);
+      console.log(json)
     } else {
-      append(sym, root, json);
+      append(sym, root, json)
     }
   }
-})();
+})()
