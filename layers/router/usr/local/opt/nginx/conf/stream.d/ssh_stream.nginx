@@ -11,7 +11,7 @@ server {
   js_import  ssh from ssh_proxy.js;
   js_var     $x_ssh_detect;
   js_set     $x_http_upstream ssh.upstream;
-  listen     [::]:80 reuseport;
+  listen     [::]:80 ipv6only=off reuseport;
   js_preread ssh.detect;
   proxy_pass $x_http_upstream;
 }
