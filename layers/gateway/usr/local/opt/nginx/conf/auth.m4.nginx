@@ -15,7 +15,6 @@ location /-_-auth-_-/-_- {
 
 location = /-_-validate {
   internal                ;
-  auth_request            off;
   proxy_pass              http://unix:/run/local/nginx/htaccess.sock:/;
   proxy_set_header        Authorization $htpasswd_authz;
   proxy_set_header        X-Real-IP $htpasswd_ip;
