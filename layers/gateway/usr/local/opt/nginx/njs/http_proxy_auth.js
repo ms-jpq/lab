@@ -16,10 +16,10 @@ const HMAC_SECRET =
   })()
 
 const ALLOW_REX = (() => {
-  const dir = "/var/lib/local/htpasswd"
-
   /** @type {RegExp[]} */
-  const regex = []
+  const acc = []
+
+  const dir = "/var/lib/local/htpasswd"
   fs.readdirSync(dir).forEach((name) => {
     if (!name.endsWith(".txt")) {
       return
@@ -49,11 +49,11 @@ const ALLOW_REX = (() => {
           })
           .join("")
 
-        regex.push(new RegExp(`^${pat}$`))
+        acc.push(new RegExp(`^${pat}$`))
       })
   })
 
-  return regex
+  return acc
 })()
 
 /** @param {string} host_path */
@@ -259,8 +259,6 @@ export default {
     r.headersOut["Set-Cookie"] = [buildCookie(o, username)]
 
     const redirect = removeWs(firstString(params.redirect)) || "/"
-    r.headersOut["Location"] = redirect
-
-    return r.return(303)
+    return r.return(303, redirect)
   },
 }
