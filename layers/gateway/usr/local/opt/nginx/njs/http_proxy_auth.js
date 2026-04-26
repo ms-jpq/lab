@@ -204,10 +204,13 @@ export default {
   /** @param {NginxHTTPRequest} r */
   gate: async (r) => {
     const o = origin(r)
-    const host = o.headersIn["Host"] ?? ""
-    const uri = o.variables.request_uri ?? "/"
+    const uri =
+      (o.variables.host ?? "") +
+      (o.variables.uri ?? "/") +
+      (o.variables.is_args ?? "") +
+      (o.variables.args ?? "")
 
-    if (matchAllow(host + uri) || readAuthCookie(o)) {
+    if (matchAllow(uri) || readAuthCookie(o)) {
       return r.return(204)
     }
 
@@ -226,6 +229,14 @@ export default {
   /** @param {NginxHTTPRequest} r */
   login: async (r) => {
     const o = origin(r)
+
+    const want = `${o.variables.scheme}://${o.variables.host}`
+    const orig = o.headersIn["Origin"] ?? ""
+    const ref = o.headersIn["Referer"] ?? ""
+    if (orig !== want && !ref.startsWith(want + "/")) {
+      return r.return(403)
+    }
+
     const params = qs.parse(r.requestText ?? "")
     const username = removeWs(firstString(params.username))
 
