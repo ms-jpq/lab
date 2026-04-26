@@ -47,11 +47,11 @@ const matchAllow = (host_path) => ALLOW_RES.some((re) => re.test(host_path));
  */
 const origin = (r) => (r.parent ? origin(r.parent) : r);
 
-/** @param {Buffer} buf */
-const b64encode = (buf) => buf.toString("base64");
+/** @param {NginxHTTPRequest} o */
+const isSecure = (o) => (o.variables.scheme ?? "").toLowerCase() !== "http";
 
-/** @param {string} s */
-const b64decode = (s) => Buffer.from(s, "base64");
+/** @param {string} raw */
+const maskIp = (raw) => (raw === "unix:" ? "::" : raw);
 
 /** @param {Buffer} plain */
 const digest = (plain) =>
@@ -81,9 +81,9 @@ const cookieName = (secure) =>
 
 /** @param {string} data */
 const encodeCookieValue = (data) => {
-  const buf = Buffer.from(data, "utf8");
-  const sig = b64encode(digest(buf));
-  const plain = b64encode(buf);
+  const buf = Buffer.from(data);
+  const sig = digest(buf).toString("base64");
+  const plain = buf.toString("base64");
   return `${sig}.${plain}`;
 };
 
@@ -93,23 +93,19 @@ const decodeCookieValue = (value) => {
   if (dot < 0) {
     return undefined;
   }
-  const sig = b64decode(value.slice(0, dot));
-  const plain = b64decode(value.slice(dot + 1));
-  return timingSafeEqual(sig, digest(plain))
-    ? plain.toString("utf8")
-    : undefined;
+  const sig = Buffer.from(value.slice(0, dot), "base64");
+  const plain = Buffer.from(value.slice(dot + 1), "base64");
+  return timingSafeEqual(sig, digest(plain)) ? plain.toString() : undefined;
 };
 
-/**
- * @param {NginxHeadersIn} headersIn
- * @param {boolean} secure
- */
-const readAuthCookie = (headersIn, secure) => {
-  const header = headersIn["Cookie"];
+/** @param {NginxHTTPRequest} o */
+const readAuthCookie = (o) => {
+  const header = o.headersIn["Cookie"];
   if (!header) {
     return false;
   }
-  const name = cookieName(secure);
+
+  const name = cookieName(isSecure(o));
   for (const part of header.split(";")) {
     const eq = part.indexOf("=");
     if (eq < 0) {
@@ -145,8 +141,9 @@ const readAuthCookie = (headersIn, secure) => {
 const buildCookie = (o, user) => {
   const host = o.headersIn["Host"] ?? "";
   const secure = isSecure(o);
+
   const parts = function* () {
-    const exp = Math.round(Date.now() / 1000) + COOKIE_TTL;
+    const exp = Math.floor(Date.now() / 1000) + COOKIE_TTL;
     yield `${cookieName(secure)}=${encodeCookieValue(`${user}:${exp}`)}`;
     yield `Domain=${host.split(".").slice(-DOMAIN_PARTS).join(".")}`;
     yield `Expires=${new Date(exp * 1000).toUTCString()}`;
@@ -163,9 +160,9 @@ const buildCookie = (o, user) => {
   return [...parts()].join("; ");
 };
 
-/** @param {NginxHeadersIn} headersIn */
-const parseAuth = (headersIn) => {
-  const header = headersIn["Authorization"];
+/** @param {NginxHTTPRequest} o */
+const parseAuth = (o) => {
+  const header = o.headersIn["Authorization"];
   if (!header) {
     return undefined;
   }
@@ -181,7 +178,7 @@ const parseAuth = (headersIn) => {
   }
   const creds = header.slice(sep + 1).trim();
 
-  const decoded = b64decode(creds).toString("utf8");
+  const decoded = Buffer.from(creds, "base64").toString();
   const colon = decoded.indexOf(":");
   const user = removeWs(colon < 0 ? decoded : decoded.slice(0, colon));
   return { user, creds };
@@ -190,51 +187,30 @@ const parseAuth = (headersIn) => {
 /**
  * @param {NginxHTTPRequest} r
  * @param {string} creds
- * @param {string} ip
+ * @param {NginxHTTPRequest} o
  */
-const validate = async (r, creds, ip) => {
+const validateWithSubRequest = async (r, creds, o) => {
+  const ip = o.remoteAddress ?? "";
   r.variables.htpasswd_authz = `Basic ${creds}`;
-  r.variables.htpasswd_ip = ip;
+  r.variables.htpasswd_ip = maskIp(ip);
 
   const reply = await r.subrequest(SUBREQ, { method: "GET" });
   return reply.status >= 200 && reply.status < 300;
 };
-
-/** @param {NginxHTTPRequest} o */
-const isSecure = (o) => (o.variables.scheme ?? "").toLowerCase() !== "http";
-
-/** @param {string | undefined} raw */
-const maskIp = (raw) => {
-  if (!raw) {
-    return "";
-  }
-  if (raw === "unix:") {
-    return "::";
-  }
-  return raw;
-};
-
-/** @param {NginxHTTPRequest} o */
-const clientIp = (o) =>
-  maskIp(o.remoteAddress ?? o.headersIn["X-Real-IP"] ?? "");
 
 export default {
   /** @param {NginxHTTPRequest} r */
   gate: async (r) => {
     const o = origin(r);
     const host = o.headersIn["Host"] ?? "";
-    const secure = isSecure(o);
     const uri = o.variables.request_uri ?? "/";
 
-    const ok = await (async () => {
-      if (matchAllow(host + uri) || readAuthCookie(o.headersIn, secure)) {
-        return true;
-      }
-      const parsed = parseAuth(o.headersIn);
-      return parsed && (await validate(r, parsed.creds, clientIp(o)));
-    })();
+    if (matchAllow(host + uri) || readAuthCookie(o)) {
+      return r.return(204);
+    }
 
-    if (ok) {
+    const parsed = parseAuth(o);
+    if (parsed && (await validateWithSubRequest(r, parsed.creds, o))) {
       return r.return(204);
     }
 
@@ -244,20 +220,16 @@ export default {
     }
     return r.return(401);
   },
+
   /** @param {NginxHTTPRequest} r */
   login: async (r) => {
     const o = origin(r);
     const params = new URLSearchParams(r.requestText ?? "");
     const username = removeWs(params.get("username") ?? "");
 
-    const creds = (() => {
-      const password = params.get("password") ?? "";
-      return b64encode(Buffer.from(`${username}:${password}`, "utf8"));
-    })();
-    const ip = clientIp(o);
-    const ok = await validate(r, creds, ip);
-
-    if (!ok) {
+    const password = params.get("password") ?? "";
+    const creds = Buffer.from(`${username}:${password}`).toString("base64");
+    if (!(await validateWithSubRequest(r, creds, o))) {
       return r.return(401);
     }
 
