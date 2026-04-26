@@ -5,9 +5,6 @@ const EVENT = "upstream"
 
 export default {
   /** @param {NginxStreamRequest} session */
-  upstream: (session) => session.variables.x_ssh_detect,
-
-  /** @param {NginxStreamRequest} session */
   detect: (session) => {
     let acc = Buffer.alloc(0)
 
