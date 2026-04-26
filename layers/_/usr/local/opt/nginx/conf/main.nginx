@@ -33,4 +33,5 @@ mail {
   include                  /usr/local/opt/nginx/conf/mail.d/*.nginx;
 }
 
+include                 /usr/local/opt/nginx/conf/conf.d/*.nginx;
 include                 /run/local/nginx/conf/conf.d/*.nginx;

@@ -2,28 +2,36 @@
 
 import cr from "crypto";
 import fs from "fs";
+import qs from "querystring";
 
 const ALGORITHM = "sha256";
 const SUBREQ = "/-_-validate";
-
-/**
- * @param {string} key
- * @param {string} dflt
- */
-const envStr = (key, dflt) => process.env[key] ?? dflt;
-
-/**
- * @param {string} key
- * @param {number} dflt
- */
-const envInt = (key, dflt) => Number(process.env[key] ?? dflt);
-
-const COOKIE_NAME = envStr("HTPASSWD_COOKIE_NAME", "htpasswd");
-const COOKIE_TTL = envInt("HTPASSWD_COOKIE_TTL", 1209600);
-const DOMAIN_PARTS = envInt("HTPASSWD_DOMAIN_PARTS", 2);
-const HMAC_SECRET = envStr("HTPASSWD_SECRET", "");
+const COOKIE_NAME = process.env.HTPASSWD_COOKIE_NAME ?? "htpasswd";
+const COOKIE_TTL = Number(process.env.HTPASSWD_COOKIE_TTL ?? 1209600);
+const DOMAIN_PARTS = Number(process.env.HTPASSWD_DOMAIN_PARTS ?? 2);
+const HMAC_SECRET = process.env.HTPASSWD_SECRET ?? "";
 
 const ALLOW_RES = (() => {
+  /** @param {string} pat */
+  const globToRegex = (pat) => {
+    const body = pat
+      .split("")
+      .map((c) => {
+        switch (true) {
+          case c === "*":
+            return ".*";
+          case c === "?":
+            return ".";
+          case /[.+^${}()|[\]\\]/.test(c):
+            return "\\" + c;
+          default:
+            return c;
+        }
+      })
+      .join("");
+    return new RegExp(`^${body}$`);
+  };
+
   const dir = process.env.HTPASSWD_ALLOW_LIST;
   if (!dir) {
     return [];
@@ -35,7 +43,7 @@ const ALLOW_RES = (() => {
     .flatMap((name) => fs.readFileSync(`${dir}/${name}`, "utf8").split("\n"))
     .map((line) => line.trim())
     .filter((line) => line.length)
-    .map((l) => new RegExp(`^${l}$`));
+    .map(globToRegex);
 })();
 
 /** @param {string} host_path */
@@ -50,15 +58,15 @@ const origin = (r) => (r.parent ? origin(r.parent) : r);
 /** @param {NginxHTTPRequest} o */
 const isSecure = (o) => (o.variables.scheme ?? "").toLowerCase() !== "http";
 
-/** @param {string} raw */
-const maskIp = (raw) => (raw === "unix:" ? "::" : raw);
-
 /** @param {Buffer} plain */
 const digest = (plain) =>
   Buffer.from(cr.createHmac(ALGORITHM, HMAC_SECRET).update(plain).digest());
 
 /** @param {string} s */
 const removeWs = (s) => s.replace(/\s+/g, "");
+
+/** @param {string | string[] | undefined} v */
+const firstString = (v) => (typeof v === "string" ? v : "");
 
 /**
  * @param {Buffer} a
@@ -106,32 +114,25 @@ const readAuthCookie = (o) => {
   }
 
   const name = cookieName(isSecure(o));
-  for (const part of header.split(";")) {
+  return header.split(";").some((part) => {
     const eq = part.indexOf("=");
     if (eq < 0) {
-      continue;
+      return false;
     }
-    const cName = part.slice(0, eq).trim();
-    if (cName !== name) {
-      continue;
+    if (part.slice(0, eq).trim() !== name) {
+      return false;
     }
-
-    const cValue = part.slice(eq + 1).trim();
-    const plain = decodeCookieValue(cValue);
+    const plain = decodeCookieValue(part.slice(eq + 1).trim());
     if (plain === undefined) {
-      continue;
+      return false;
     }
     const sep = plain.lastIndexOf(":");
     if (sep < 0) {
-      continue;
+      return false;
     }
-
     const exp = Number(plain.slice(sep + 1));
-    if (Number.isFinite(exp) && exp - Date.now() / 1000 >= 0) {
-      return true;
-    }
-  }
-  return false;
+    return Number.isFinite(exp) && exp - Date.now() / 1000 >= 0;
+  });
 };
 
 /**
@@ -139,25 +140,24 @@ const readAuthCookie = (o) => {
  * @param {string} user
  */
 const buildCookie = (o, user) => {
-  const host = o.headersIn["Host"] ?? "";
+  const host = o.variables.host ?? "";
   const secure = isSecure(o);
+  const exp = Math.floor(Date.now() / 1000) + COOKIE_TTL;
 
-  const parts = function* () {
-    const exp = Math.floor(Date.now() / 1000) + COOKIE_TTL;
-    yield `${cookieName(secure)}=${encodeCookieValue(`${user}:${exp}`)}`;
-    yield `Domain=${host.split(".").slice(-DOMAIN_PARTS).join(".")}`;
-    yield `Expires=${new Date(exp * 1000).toUTCString()}`;
-    yield `Max-Age=${COOKIE_TTL}`;
-    yield "Path=/";
-    yield "SameSite=Strict";
-    if (secure) {
-      yield "Secure";
-    }
-    yield "HttpOnly";
-    return;
-  };
+  const parts = [
+    `${cookieName(secure)}=${encodeCookieValue(`${user}:${exp}`)}`,
+    `Domain=${host.split(".").slice(-DOMAIN_PARTS).join(".")}`,
+    `Expires=${new Date(exp * 1000).toUTCString()}`,
+    `Max-Age=${COOKIE_TTL}`,
+    "Path=/",
+    "SameSite=Strict",
+    "HttpOnly",
+  ];
+  if (secure) {
+    parts.push("Secure");
+  }
 
-  return [...parts()].join("; ");
+  return parts.join("; ");
 };
 
 /** @param {NginxHTTPRequest} o */
@@ -189,10 +189,10 @@ const parseAuth = (o) => {
  * @param {string} creds
  * @param {NginxHTTPRequest} o
  */
-const validateWithSubRequest = async (r, creds, o) => {
+const validate = async (r, creds, o) => {
   const ip = o.remoteAddress ?? "";
   r.variables.htpasswd_authz = `Basic ${creds}`;
-  r.variables.htpasswd_ip = maskIp(ip);
+  r.variables.htpasswd_ip = ip === "unix:" ? "::" : ip;
 
   const reply = await r.subrequest(SUBREQ, { method: "GET" });
   return reply.status >= 200 && reply.status < 300;
@@ -210,7 +210,7 @@ export default {
     }
 
     const parsed = parseAuth(o);
-    if (parsed && (await validateWithSubRequest(r, parsed.creds, o))) {
+    if (parsed && (await validate(r, parsed.creds, o))) {
       return r.return(204);
     }
 
@@ -224,18 +224,18 @@ export default {
   /** @param {NginxHTTPRequest} r */
   login: async (r) => {
     const o = origin(r);
-    const params = new URLSearchParams(r.requestText ?? "");
-    const username = removeWs(params.get("username") ?? "");
+    const params = qs.parse(r.requestText ?? "");
+    const username = removeWs(firstString(params.username));
 
-    const password = params.get("password") ?? "";
+    const password = firstString(params.password);
     const creds = Buffer.from(`${username}:${password}`).toString("base64");
-    if (!(await validateWithSubRequest(r, creds, o))) {
+    if (!(await validate(r, creds, o))) {
       return r.return(401);
     }
 
     r.headersOut["Set-Cookie"] = [buildCookie(o, username)];
 
-    const redirect = removeWs(params.get("redirect") ?? "");
+    const redirect = removeWs(firstString(params.redirect));
     if (redirect) {
       r.headersOut["Location"] = redirect;
       r.headersOut["X-Original-URL"] = redirect;

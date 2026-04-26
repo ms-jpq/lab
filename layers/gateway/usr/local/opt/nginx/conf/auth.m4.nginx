@@ -1,25 +1,25 @@
+include      /usr/local/opt/nginx/conf/js_import.nginx;
 include      /usr/local/opt/nginx/conf/http.d/security2.nginx;
 auth_request /-_-auth-_-;
 
 location /-_-auth-_- {
-  internal                ;
-  # m4_define([AUTH_CONF], [
-  auth_request            off;
-  proxy_set_header        Host $host;
-  proxy_set_header        X-Real-IP $remote_addr;
-  proxy_set_header        X-Forwarded-Uri $request_uri;
-  # ])
-  proxy_set_header        Authorization $modified_auth;
-  proxy_set_header        Content-Length "";
-  proxy_pass_request_body off;
-  proxy_pass              http://unix:/run/local/nginx/auth/proxy.sock:/;
-  AUTH_CONF
+  internal     ;
+  auth_request off;
+  js_content   htpasswd.gate;
 }
 
 location /-_-auth-_-/-_- {
-  proxy_intercept_errors on;
-  proxy_pass             http://unix:/run/local/nginx/auth/proxy.sock:/-_-;
-  AUTH_CONF
+  auth_request off;
+  js_content   htpasswd.login;
+}
+
+location = /-_-validate {
+  internal                ;
+  auth_request            off;
+  proxy_pass              http://unix:/run/local/nginx/htaccess.sock:/;
+  proxy_set_header        Authorization $htpasswd_authz;
+  proxy_set_header        X-Real-IP $htpasswd_ip;
+  proxy_pass_request_body off;
 }
 
 location /die/die/die {

@@ -1,0 +1,4 @@
+js_path   "/usr/local/opt/nginx/njs";
+js_import htpasswd from http_proxy_auth.js;
+js_var    $htpasswd_authz '';
+js_var    $htpasswd_ip '';

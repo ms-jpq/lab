@@ -1,1 +1,3 @@
++ libnginx-mod-http-js
++ libnginx-mod-stream-js
 + nginx-extras
