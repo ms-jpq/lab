@@ -6,50 +6,58 @@ import qs from "querystring"
 
 const ALGORITHM = "sha256"
 const SUBREQ = "/-_-validate"
-const COOKIE_NAME = process.env.HTPASSWD_COOKIE_NAME ?? "htpasswd"
-const COOKIE_TTL = Number(process.env.HTPASSWD_COOKIE_TTL ?? 1209600)
-const DOMAIN_PARTS = Number(process.env.HTPASSWD_DOMAIN_PARTS ?? 2)
-const HMAC_SECRET = process.env.HTPASSWD_SECRET
+const COOKIE_NAME = "htpasswd"
+const COOKIE_TTL = 60 * 60 * 24 * 7 * 2
+const DOMAIN_PARTS = 2
+const HMAC_SECRET =
+  process.env.HTPASSWD_SECRET ||
+  (() => {
+    throw new Error()
+  })()
 
-if (!HMAC_SECRET) throw new Error()
+const ALLOW_REX = (() => {
+  const dir = "/var/lib/local/htpasswd"
 
-const ALLOW_RES = (() => {
-  /** @param {string} pat */
-  const globToRegex = (pat) => {
-    const body = pat
-      .split("")
-      .map((c) => {
-        switch (true) {
-          case c === "*":
-            return ".*"
-          case c === "?":
-            return "."
-          case /[.+^${}()|[\]\\]/.test(c):
-            return "\\" + c
-          default:
-            return c
+  /** @type {RegExp[]} */
+  const regex = []
+  fs.readdirSync(dir).forEach((name) => {
+    if (!name.endsWith(".txt")) {
+      return
+    }
+
+    fs.readFileSync(`${dir}/${name}`, "utf8")
+      .split("\n")
+      .forEach((raw) => {
+        const line = raw.trim()
+        if (!line) {
+          return
         }
+
+        const pat = line
+          .split("")
+          .map((c) => {
+            switch (true) {
+              case c === "*":
+                return ".*"
+              case c === "?":
+                return "."
+              case /[.+^${}()|[\]\\]/.test(c):
+                return "\\" + c
+              default:
+                return c
+            }
+          })
+          .join("")
+
+        regex.push(new RegExp(`^${pat}$`))
       })
-      .join("")
-    return new RegExp(`^${body}$`)
-  }
+  })
 
-  const dir = process.env.HTPASSWD_ALLOW_LIST
-  if (!dir) {
-    return []
-  }
-
-  return fs
-    .readdirSync(dir)
-    .filter((name) => name.endsWith(".txt"))
-    .flatMap((name) => fs.readFileSync(`${dir}/${name}`, "utf8").split("\n"))
-    .map((line) => line.trim())
-    .filter((line) => line.length)
-    .map(globToRegex)
+  return regex
 })()
 
 /** @param {string} host_path */
-const matchAllow = (host_path) => ALLOW_RES.some((re) => re.test(host_path))
+const matchAllow = (host_path) => ALLOW_REX.some((re) => re.test(host_path))
 
 /** @param {Buffer} plain */
 const digest = (plain) =>

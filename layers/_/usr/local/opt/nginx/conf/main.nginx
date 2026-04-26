@@ -7,6 +7,7 @@ worker_shutdown_timeout 28d;
 # TODO: ubuntu 26.04
 # quic_bpf                on;
 include                 /etc/nginx/modules-enabled/*.conf;
+include                 /usr/local/opt/nginx/conf/env.d/*.nginx;
 
 events {
 }
