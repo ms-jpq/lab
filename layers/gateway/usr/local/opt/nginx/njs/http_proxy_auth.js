@@ -242,9 +242,8 @@ export default {
     const o = origin(r)
 
     const want = `${o.variables.scheme}://${o.variables.host}`
-    const orig = o.headersIn["Origin"] ?? ""
     const ref = o.headersIn["Referer"] ?? ""
-    if (orig !== want && !ref.startsWith(want + "/")) {
+    if (o.headersIn["Origin"] !== want && !ref.startsWith(want + "/")) {
       return r.return(403)
     }
 
@@ -261,7 +260,6 @@ export default {
 
     const redirect = removeWs(firstString(params.redirect)) || "/"
     r.headersOut["Location"] = redirect
-    r.headersOut["X-Original-URL"] = redirect
 
     return r.return(303)
   },
