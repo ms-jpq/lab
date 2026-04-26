@@ -26,19 +26,10 @@ services:
     ports:
       - 8080
 
-  dockerhub:
-    image: docker.io/mcp/dockerhub:latest
-    labels:
-      kompose.service.expose: mcp-dockerhub.${DOMAIN}
+  kubernetes:
+    image: ghcr.io/containers/kubernetes-mcp-server:latest
     command:
-      - --transport=http
-    ports:
-      - 3000
-
-  context7:
-    image: docker.io/mcp/context7:latest
-    labels:
-      kompose.service.expose: mcp-context7.${DOMAIN}
+      - --port=8080
     ports:
       - 8080
 
@@ -84,10 +75,3 @@ services:
   #     - --port=8080
   #   ports:
   #     - 8080
-
-  kubernetes:
-    image: ghcr.io/containers/kubernetes-mcp-server:latest
-    command:
-      - --port=8080
-    ports:
-      - 8080

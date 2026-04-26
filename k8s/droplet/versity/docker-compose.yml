@@ -14,6 +14,7 @@ services:
       ROOT_ACCESS_KEY:
       ROOT_SECRET_KEY:
       VGW_CORS_ALLOW_ORIGIN: "*"
+      VGW_IAM_DIR: /iam
       VGW_WEBUI_GATEWAYS: https://s3.${DOMAIN}
       VGW_WEBUI_S3_PREFIX: /ui
     command:
@@ -22,4 +23,5 @@ services:
     ports:
       - 7070
     volumes:
-      - /var/lib/local/versity:/data
+      - /var/lib/local/versity/data:/data
+      - /var/lib/local/versity/iam:/iam
