@@ -1,0 +1,25 @@
+---
+services:
+  versity:
+    image: ghcr.io/versity/versitygw:latest
+    labels:
+      kompose.controller.type: statefulset
+      kompose.service.expose: s3.${DOMAIN}
+      kompose.volume.type: hostPath
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    environment:
+      ROOT_ACCESS_KEY:
+      ROOT_SECRET_KEY:
+      VGW_CORS_ALLOW_ORIGIN: "*"
+      VGW_WEBUI_GATEWAYS: https://s3.${DOMAIN}
+      VGW_WEBUI_S3_PREFIX: /ui
+    command:
+      - posix
+      - /data
+    ports:
+      - 7070
+    volumes:
+      - /var/lib/local/versity:/data
