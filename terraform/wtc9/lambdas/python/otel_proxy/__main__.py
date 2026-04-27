@@ -1,7 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import nullcontext
 from functools import partial
-from http import HTTPStatus
 from http.server import HTTPServer
 from logging import getLogger
 from os import environ
@@ -45,21 +44,21 @@ def _loop(srv: HTTPServer) -> None:
     srv.shutdown()
 
 
+@spanning("***")
 def main() -> None:
-    with spanning("***"):
-        with ThreadPoolExecutor(max_workers=64) as ex:
-            server = srv(ex)
-            signal(Signals.SIGTERM, lambda _, __: server.shutdown())
+    with ThreadPoolExecutor(max_workers=64) as ex:
+        server = srv(ex)
+        signal(Signals.SIGTERM, lambda _, __: server.shutdown())
 
-            futs = tuple(
-                ex.submit(f)
-                for f in (
-                    partial(_loop, server),
-                    partial(server.serve_forever, 0.06),
-                )
+        futs = tuple(
+            ex.submit(f)
+            for f in (
+                partial(_loop, server),
+                partial(server.serve_forever, 0.06),
             )
-            for f in as_completed(futs):
-                f.result()
+        )
+        for f in as_completed(futs):
+            f.result()
 
 
 if __name__ == "__main__":

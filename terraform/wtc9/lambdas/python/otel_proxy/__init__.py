@@ -47,34 +47,34 @@ def _responding(self: BaseHTTPRequestHandler) -> Generator[None]:
     assert not self.close_connection
 
 
+@spanning("<> ")
 def _proxy(path: str, headers: HTTPMessage, body: bytes) -> None:
-    with spanning("<> "):
-        try:
-            split = _otel_httpbased()
-            url = urlunsplit(split) + path
-            h = {"content-type": headers["content-type"]}
+    try:
+        split = _otel_httpbased()
+        url = urlunsplit(split) + path
+        h = {"content-type": headers["content-type"]}
 
-            with SESSION.post(url, headers=h, data=body) as r:
-                assert r.ok, (url, r.status_code, r.content)
-        except Exception as e:
-            getLogger().error("%s", e)
-        else:
-            getLogger().info("%s", f"--> {path}")
+        with SESSION.post(url, headers=h, data=body) as r:
+            assert r.ok, (url, r.status_code, r.content)
+    except Exception as e:
+        getLogger().error("%s", e)
+    else:
+        getLogger().info("%s", f"--> {path}")
 
 
 def _handler(ex: Executor) -> Type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
         def log_request(self, code: int | str = "-", size: int | str = "-") -> None: ...
 
+        @spanning(">>>")
         def do_POST(self) -> None:
-            with spanning(">>>"):
-                with _responding(self):
-                    assert isinstance(self.headers, HTTPMessage)
-                    assert (length := self.headers.get("content-length"))
-                    assert (body := self.rfile.read(int(length)))
+            with _responding(self):
+                assert isinstance(self.headers, HTTPMessage)
+                assert (length := self.headers.get("content-length"))
+                assert (body := self.rfile.read(int(length)))
 
-                p = partial(_proxy, path=self.path, headers=self.headers, body=body)
-                ex.submit(p)
+            p = partial(_proxy, path=self.path, headers=self.headers, body=body)
+            ex.submit(p)
 
     return Handler
 
