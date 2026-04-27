@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import Generator
 from concurrent.futures import Executor
 from contextlib import contextmanager, nullcontext
 from functools import cache, partial
@@ -30,7 +30,7 @@ def _otel_httpbased() -> SplitResult:
 
 
 @contextmanager
-def _responding(self: BaseHTTPRequestHandler) -> Iterator[None]:
+def _responding(self: BaseHTTPRequestHandler) -> Generator[None]:
     try:
         yield None
     except Exception:

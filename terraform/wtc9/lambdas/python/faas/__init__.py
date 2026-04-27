@@ -1,4 +1,4 @@
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Generator
 from contextlib import contextmanager, nullcontext
 from functools import cache, wraps
 from json import dumps
@@ -40,7 +40,7 @@ def chan() -> str:
 
 
 @contextmanager
-def suppress_exn() -> Iterator[None]:
+def suppress_exn() -> Generator[None]:
     try:
         yield None
     except Exception as e:

@@ -1,4 +1,4 @@
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Generator
 from contextlib import closing, contextmanager, nullcontext
 from importlib import reload
 from io import BytesIO
@@ -34,7 +34,7 @@ with nullcontext():
 
 
 @contextmanager
-def _fetching(msg: S3Message) -> Iterator[BinaryIO]:
+def _fetching(msg: S3Message) -> Generator[BinaryIO]:
     kw = {"Bucket": msg.bucket.name, "Key": msg.get_object.key}
     rsp = _S3.get_object(**kw)
     yield rsp["Body"]

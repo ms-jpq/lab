@@ -1,5 +1,5 @@
 from argparse import ArgumentParser, Namespace
-from collections.abc import Iterator
+from collections.abc import Generator, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager, suppress
 from datetime import datetime, timedelta, timezone
@@ -78,7 +78,7 @@ def _trans(index: str, st: Stat) -> Dict[str, Any]:
 
 
 @contextmanager
-def _ex() -> Iterator[ThreadPoolExecutor]:
+def _ex() -> Generator[ThreadPoolExecutor]:
     with ThreadPoolExecutor() as ex:
         try:
             yield ex
