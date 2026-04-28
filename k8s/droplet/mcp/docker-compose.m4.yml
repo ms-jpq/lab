@@ -40,11 +40,11 @@ services:
       - "--allowed-hosts=*"
       - --isolated
       - --proxy-server=socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
-      - --output-dir=/tmp/playwright-mcp
+      - --output-dir=/tmp/playwright-home
     ports:
       - 8080
     volumes:
-      - output:/tmp/playwright-mcp
+      - playwright:/tmp/playwright-home
 
   kubernetes:
     image: ghcr.io/containers/kubernetes-mcp-server:latest
@@ -83,4 +83,4 @@ services:
   #     - 8000
 
 volumes:
-  output:
+  playwright:
