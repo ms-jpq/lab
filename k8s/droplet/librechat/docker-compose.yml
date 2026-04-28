@@ -9,14 +9,17 @@ services:
     environment:
       ANTHROPIC_API_KEY:
       HOST: "::"
+      HTTP_PROXY: &proxy http://proxy.kompsed-hostproxy.svc.cluster.local:1080
+      HTTPS_PROXY: *proxy
       JWT_REFRESH_SECRET:
       JWT_SECRET:
-      MEILI_HOST: http://meilisearch:7700
-      MONGO_URI: mongodb://mongo:27017/
+      MEILI_HOST: http://meilisearch.kompsed-librechat.svc.cluster.local:7700
+      MONGO_URI: mongodb://mongo.kompsed-librechat.svc.cluster.local:27017/
       NO_INDEX: true
+      NO_PROXY: localhost,127.0.0.1,::1,.svc.cluster.local
       OPENAI_API_KEY:
       OPENROUTER_KEY:
-      RAG_API_URL: http://rag-api:8000
+      RAG_API_URL: http://rag-api.kompsed-librechat.svc.cluster.local:8000
       REDIS_URI: redis://localhost:6379
       USE_REDIS: true
       XAI_API_KEY:
