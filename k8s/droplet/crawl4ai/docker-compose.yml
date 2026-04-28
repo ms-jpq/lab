@@ -12,7 +12,7 @@ services:
       - sh
       - -euxc
       - |-
-        sed -i -e 's|0\.0\.0\.0:11235|[[::]]:11235|' -- /app/supervisord.conf
+        sed -i -e 's|0\.0\.0\.0:11235|[::]:11235|' -- /app/supervisord.conf
         exec supervisord -c supervisord.conf
     ports:
       - 11235
