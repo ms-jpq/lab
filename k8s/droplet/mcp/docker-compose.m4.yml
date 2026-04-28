@@ -26,6 +26,21 @@ services:
     ports:
       - 8080
 
+  playwright:
+    image: mcr.microsoft.com/playwright/mcp:latest
+    labels:
+      kompose.service.expose: mcp-playwright.${DOMAIN}
+    command:
+      - "--host=::"
+      - --port=8080
+      - "--allowed-hosts=*"
+      - --isolated
+      - --output-dir=/tmp/playwright-mcp
+    ports:
+      - 8080
+    volumes:
+      - output:/tmp/playwright-mcp
+
   kubernetes:
     image: ghcr.io/containers/kubernetes-mcp-server:latest
     command:
@@ -62,14 +77,5 @@ services:
   #   ports:
   #     - 8000
 
-  playwright:
-    image: mcr.microsoft.com/playwright/mcp:latest
-    labels:
-      kompose.service.expose: mcp-playwright.${DOMAIN}
-    command:
-      - "--host=::"
-      - --port=8080
-      - "--allowed-hosts=*"
-      - --isolated
-    ports:
-      - 8080
+volumes:
+  output:
