@@ -5,7 +5,6 @@ services:
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: chat.${DOMAIN}
-      kompose.service.group: &librechat librechat
     environment:
       ANTHROPIC_API_KEY:
       HOST: "::"
@@ -20,7 +19,7 @@ services:
       OPENAI_API_KEY:
       OPENROUTER_KEY:
       RAG_API_URL: http://rag-api.kompsed-librechat.svc.cluster.local:8000
-      REDIS_URI: redis://localhost:6379
+      REDIS_URI: redis://redis.kompsed-librechat.svc.cluster.local:6379
       USE_REDIS: true
       XAI_API_KEY:
     ports:
@@ -49,7 +48,6 @@ services:
     image: ghcr.io/valkey-io/valkey:latest
     labels:
       kompose.controller.type: statefulset
-      kompose.service.group: *librechat
     ports:
       - 6379
     volumes:
