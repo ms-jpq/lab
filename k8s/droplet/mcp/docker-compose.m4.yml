@@ -62,16 +62,14 @@ services:
   #   ports:
   #     - 8000
 
-  # playwright:
-  #   image: mcr.microsoft.com/playwright/mcp:latest
-  #   labels:
-  #     kompose.service.expose: mcp-playwright.${DOMAIN}
-  #   command:
-  #     - cli.js
-  #     - --headless
-  #     - --browser
-  #     - chromium
-  #     - --no-sandbox
-  #     - --port=8080
-  #   ports:
-  #     - 8080
+  playwright:
+    image: mcr.microsoft.com/playwright/mcp:latest
+    labels:
+      kompose.service.expose: mcp-playwright.${DOMAIN}
+    command:
+      - "--host=::"
+      - --port=8080
+      - "--allowed-hosts=*"
+      - --isolated
+    ports:
+      - 8080

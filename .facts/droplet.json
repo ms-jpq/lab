@@ -28,6 +28,7 @@
     "irc",
     "langfuse",
     "litellm",
+    "mcp-playwright",
     "mcp-searx",
     "pastebin",
     "pocket",
