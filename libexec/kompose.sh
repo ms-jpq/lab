@@ -27,6 +27,12 @@ sort_by(.kind != "Namespace")[]
   else
     .metadata.annotations += $keel
     | (. | lens).spec.initContainers?.[]?.env ?= ((. | lens).spec.containers[].env // [])
+    | (. | lens).spec.containers |= map(.resources.requests.memory //= "1Mi")
+    | if ((. | lens).spec.initContainers // []) | length > 0 then
+        (. | lens).spec.initContainers |= map(.resources.requests.memory //= "1Mi")
+      else
+        .
+      end
     | if ([((. | lens).spec.volumes // [])[].configMap // empty] | length) > 0 then
         (. | lens).metadata.annotations."jq.hash" = $hash
       else
