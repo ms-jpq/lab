@@ -21,6 +21,12 @@ if [[ -v RECURSION ]]; then
 def lens: .spec | .template // .jobTemplate.spec.template;
 
 sort_by(.kind != "Namespace")[]
+| if .kind == "Service" then
+    .spec.ipFamilyPolicy //= "PreferDualStack"
+    | .spec.ipFamilies //= ["IPv6", "IPv4"]
+  else
+    .
+  end
 | (.kind | IN(["DaemonSet", "Deployment", "StatefulSet", "CronJob"][])) as $pods
 | if $pods | not then
     .
@@ -70,6 +76,7 @@ JQ
     -- "$TMP/.env"
     ./var/bin/kompose convert
     --stdout
+    --with-kompose-annotation=false
     --generate-network-policies
     --service-group-mode label
     --namespace "$NAMESPACE"

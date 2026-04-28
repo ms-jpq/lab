@@ -18,7 +18,7 @@ services:
   searx:
     image: docker.io/isokoliuk/mcp-searxng:latest
     labels:
-      kompose.service.expose: mcp-searx.${DOMAIN}
+      kompose.service.expose: searx.mcp.${DOMAIN}
     environment:
       MCP_HTTP_PORT: 8080
       SEARXNG_URL: http://searxng.kompsed-searx.svc.cluster.local:8080
@@ -29,7 +29,7 @@ services:
   playwright:
     image: mcr.microsoft.com/playwright/mcp:latest
     labels:
-      kompose.service.expose: mcp-playwright.${DOMAIN}
+      kompose.service.expose: playwright.mcp.${DOMAIN}
     deploy:
       resources:
         limits:
