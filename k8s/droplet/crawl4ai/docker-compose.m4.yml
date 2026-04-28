@@ -19,16 +19,16 @@ services:
     image: docker.io/unclecode/crawl4ai:latest
     labels:
       kompose.service.expose: crawl4ai.${DOMAIN}
+    deploy:
+      resources:
+        limits:
+          memory: 4G
     entrypoint:
       - sh
       - -euxc
       - |-
         sed -i -e 's|0\.0\.0\.0:11235|[[::]]:11235|' -- /app/supervisord.conf
         exec supervisord -c supervisord.conf
-    deploy:
-      resources:
-        limits:
-          memory: 4G
     ports:
       - 11235
     volumes:

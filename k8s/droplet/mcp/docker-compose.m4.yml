@@ -30,6 +30,10 @@ services:
     image: mcr.microsoft.com/playwright/mcp:latest
     labels:
       kompose.service.expose: mcp-playwright.${DOMAIN}
+    deploy:
+      resources:
+        limits:
+          memory: 4G
     command:
       - "--host=::"
       - --port=8080
@@ -37,10 +41,6 @@ services:
       - --isolated
       - --proxy-server=socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
       - --output-dir=/tmp/playwright-mcp
-    deploy:
-      resources:
-        limits:
-          memory: 4G
     ports:
       - 8080
     volumes:
