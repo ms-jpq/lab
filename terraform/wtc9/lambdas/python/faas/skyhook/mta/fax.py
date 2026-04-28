@@ -15,7 +15,7 @@ from itertools import islice, takewhile
 from logging import getLogger
 from os import linesep
 from smtplib import SMTP_SSL
-from typing import BinaryIO, Literal
+from typing import IO, Literal
 
 from opentelemetry.trace import get_current_span
 
@@ -37,7 +37,7 @@ _LS = linesep.encode()
 _MISSING_BODY_DEFECTS = (MultipartInvariantViolationDefect, StartBoundaryNotFoundDefect)
 
 
-def _parse(fp: BinaryIO) -> Mail:
+def _parse(fp: IO[bytes]) -> Mail:
     lines = takewhile(lambda x: x not in {_NL, _LS}, iter(fp.readline, b""))
     headers = b"".join(lines)
     parsed = message_from_bytes(headers, policy=SMTPUTF8)
@@ -46,7 +46,7 @@ def _parse(fp: BinaryIO) -> Mail:
     return Mail(headers=parsed, body=body)
 
 
-def parse(fp: BinaryIO) -> Mail:
+def parse(fp: IO[bytes]) -> Mail:
     mail = _parse(fp)
 
     for err in mail.headers.defects:

@@ -1,12 +1,11 @@
 from collections.abc import Callable, Generator
 from contextlib import closing, contextmanager, nullcontext
 from importlib import reload
-from io import BytesIO
 from logging import getLogger
 from os import environ
 from pprint import pformat
 from smtplib import SMTPDataError
-from typing import BinaryIO, cast
+from typing import IO, cast
 
 from aws_lambda_powertools.utilities.data_classes import S3Event
 from aws_lambda_powertools.utilities.data_classes.s3_event import S3Message
@@ -34,11 +33,17 @@ with nullcontext():
 
 
 @contextmanager
-def _fetching(msg: S3Message) -> Generator[BinaryIO]:
+def _fetching(msg: S3Message) -> Generator[IO[bytes] | None]:
     kw = {"Bucket": msg.bucket.name, "Key": msg.get_object.key}
-    rsp = _S3.get_object(**kw)
-    yield rsp["Body"]
-    _S3.delete_object(**kw)
+    try:
+        rsp = _S3.get_object(**kw)
+    except _S3.exceptions.NoSuchKey:
+        yield None
+    else:
+        with closing(cast(IO[bytes], rsp["Body"])) as fp:
+            yield fp
+
+        _S3.delete_object(**kw)
 
 
 _cold_start = True
@@ -53,7 +58,7 @@ def load_sieve() -> Sieve:
     return cast(Sieve, lambda: s.sieve)
 
 
-def _parse_mail(io: BytesIO) -> Mail:
+def _parse_mail(io: IO[bytes]) -> Mail:
     with TRACER.start_as_current_span("parse mail") as span:
         mail = parse(io)
         span.add_event("parsed")
@@ -71,12 +76,13 @@ def _parse_mail(io: BytesIO) -> Mail:
 
 
 def proc_mta(ss: Sieve, event: S3Event) -> None:
-    with _fetching(msg=event.record.s3) as fp:
-        s = ss()
-        with closing(fp):
-            io = BytesIO(fp.read())
+    with _fetching(msg=event.record.s3) as io:
+        if io is None:
+            return
 
+        s = ss()
         mail = _parse_mail(io)
+
         with TRACER.start_as_current_span("run sieve") as span:
             go = False
             try:

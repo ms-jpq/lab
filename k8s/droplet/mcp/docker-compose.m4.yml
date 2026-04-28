@@ -41,6 +41,7 @@ services:
       PLAYWRIGHT_MCP_OUTPUT_DIR: /tmp/playwright-home
       PLAYWRIGHT_MCP_PORT: 8080
       PLAYWRIGHT_MCP_PROXY_SERVER: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
+      PLAYWRIGHT_MCP_SANDBOX: true
       PLAYWRIGHT_MCP_SNAPSHOT_MODE: none
     ports:
       - 8080
