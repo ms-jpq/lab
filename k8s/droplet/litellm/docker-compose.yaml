@@ -12,7 +12,7 @@ services:
       LITELLM_MASTER_KEY:
       REDIS_HOST: redis.${COMPOSE_PROJECT_NAME}.svc.cluster.local
       REDIS_PORT: 6379
-      STORE_MODEL_IN_DB: "True"
+      STORE_MODEL_IN_DB: true
       UI_USERNAME:
     command:
       - --config
