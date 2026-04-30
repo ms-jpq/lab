@@ -1,0 +1,29 @@
+---
+services:
+  bifrost:
+    image: docker.io/maximhq/bifrost:latest
+    labels:
+      kompose.service.expose: bifrost.${DOMAIN}
+    environment:
+      APP_HOST: "::"
+      APP_PORT: "8080"
+      BIFROST_ADMIN_PASSWORD:
+      BIFROST_ADMIN_USERNAME:
+    ports:
+      - 8080
+    volumes:
+      - ./config.json:/app/data/config.json:ro
+
+  pg:
+    image: docker.io/library/postgres:18
+    labels:
+      kompose.controller.type: statefulset
+      kompose.volume.type: hostPath
+    environment:
+      POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
+    ports:
+      - 5432
+    volumes:
+      - /var/lib/local/bifrost:/var/lib/postgresql

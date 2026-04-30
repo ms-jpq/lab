@@ -1,0 +1,38 @@
+{
+  "$schema": "https://www.getbifrost.ai/schema",
+  "client": {
+    "allow_direct_keys": true
+  },
+  "config_store": {
+    "config": {
+      "db_name": "bifrost",
+      "host": "pg.kompsed-bifrost.svc.cluster.local",
+      "password": "bifrost",
+      "port": "5432",
+      "ssl_mode": "disable",
+      "user": "bifrost"
+    },
+    "enabled": true,
+    "type": "postgres"
+  },
+  "governance": {
+    "auth_config": {
+      "admin_password": "env.BIFROST_ADMIN_PASSWORD",
+      "admin_username": "env.BIFROST_ADMIN_USERNAME",
+      "disable_auth_on_inference": true,
+      "is_enabled": true
+    }
+  },
+  "logs_store": {
+    "config": {
+      "db_name": "bifrost",
+      "host": "pg.kompsed-bifrost.svc.cluster.local",
+      "password": "bifrost",
+      "port": "5432",
+      "ssl_mode": "disable",
+      "user": "bifrost"
+    },
+    "enabled": true,
+    "type": "postgres"
+  }
+}
