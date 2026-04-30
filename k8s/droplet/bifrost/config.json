@@ -34,5 +34,20 @@
     },
     "enabled": true,
     "type": "postgres"
-  }
+  },
+  "plugins": [
+    {
+      "config": {
+        "collector_url": "http://langfuse-web.kompsed-langfuse.svc.cluster.local:3000/api/public/otel",
+        "headers": {
+          "Authorization": "env.LANGFUSE_AUTH"
+        },
+        "protocol": "http",
+        "service_name": "bifrost",
+        "trace_type": "genai_extension"
+      },
+      "enabled": true,
+      "name": "otel"
+    }
+  ]
 }

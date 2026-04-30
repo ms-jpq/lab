@@ -9,6 +9,7 @@ services:
       APP_PORT: "8080"
       BIFROST_ADMIN_PASSWORD:
       BIFROST_ADMIN_USERNAME:
+      LANGFUSE_AUTH:
     ports:
       - 8080
     volumes:
