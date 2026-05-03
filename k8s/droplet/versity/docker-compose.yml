@@ -27,7 +27,7 @@ services:
       - /var/lib/local/versity/iam:/iam
 
   versity-prune:
-    image: docker.io/library/busybox:latest
+    image: docker.io/library/ubuntu:latest
     labels:
       kompose.cronjob.backoff_limit: 0
       kompose.cronjob.concurrency_policy: Forbid
@@ -42,17 +42,17 @@ services:
       - (
       - -type
       - f
-      - -a
+      - -and
       - -mtime
       - "+30"
       - )
-      - -o
+      - -or
       - (
       - -type
       - d
-      - -a
+      - -and
       - -empty
-      - -a
+      - -and
       - -mtime
       - "+30"
       - )
