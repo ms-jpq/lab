@@ -39,14 +39,23 @@ services:
       - -mindepth
       - "2"
       - (
+      - (
       - -type
       - f
+      - -a
       - -mtime
       - "+30"
+      - )
       - -o
+      - (
       - -type
       - d
+      - -a
       - -empty
+      - -a
+      - -mtime
+      - "+30"
+      - )
       - )
       - -print
       - -delete
