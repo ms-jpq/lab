@@ -1,0 +1,8 @@
+<clickhouse>
+  <asynchronous_metric_log remove="1" />
+  <latency_log remove="1" />
+  <metric_log remove="1" />
+  <opentelemetry_span_log remove="1" />
+  <text_log remove="1" />
+  <trace_log remove="1" />
+</clickhouse>
