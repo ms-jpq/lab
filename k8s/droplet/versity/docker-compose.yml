@@ -33,31 +33,7 @@ services:
       kompose.cronjob.concurrency_policy: Forbid
       kompose.cronjob.schedule: 0 0 * * *
       kompose.volume.type: hostPath
-    command:
-      - find
-      - /data
-      - -mindepth
-      - "2"
-      - (
-      - (
-      - -type
-      - f
-      - -and
-      - -mtime
-      - "+30"
-      - )
-      - -or
-      - (
-      - -type
-      - d
-      - -and
-      - -empty
-      - -and
-      - -mtime
-      - "+30"
-      - )
-      - )
-      - -print
-      - -delete
+    # prettier-ignore
+    command: [find, /data, -mindepth, "2", (, (, -type, f, -and, -mtime, "+30", ), -or, (, -type, d, -and, -empty, -and, -mtime, "+30", ), ), -print, -delete]
     volumes:
       - /var/lib/local/versity/data:/data
