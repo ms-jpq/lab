@@ -82,7 +82,7 @@ services:
       - 9000
     configs:
       - source: clickhouse
-        target: /etc/clickhouse-server/config.d/99-no-logs.xml
+        target: /etc/clickhouse-server/config.d/99-overrides.xml
     volumes:
       - /var/lib/local/langfuse/clickhouse:/var/lib/clickhouse
 
@@ -112,7 +112,7 @@ services:
 
 configs:
   clickhouse:
-    file: ./99-no-logs.xml
+    file: ./clickhouse.xml
 
 volumes:
   data:

@@ -1,4 +1,9 @@
 <clickhouse>
+  <logger>
+    <log>/dev/null</log>
+    <errorlog>/dev/null</errorlog>
+    <console>1</console>
+  </logger>
   <asynchronous_metric_log remove="1" />
   <latency_log remove="1" />
   <metric_log remove="1" />
