@@ -2,7 +2,7 @@
   <logger>
     <log>/dev/null</log>
     <errorlog>/dev/null</errorlog>
-    <console>1</console>
+    <console>true</console>
   </logger>
 
   <asynchronous_insert_log remove="1" />
