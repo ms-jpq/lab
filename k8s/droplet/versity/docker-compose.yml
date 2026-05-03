@@ -31,9 +31,10 @@ services:
     labels:
       kompose.cronjob.backoff_limit: 0
       kompose.cronjob.concurrency_policy: Forbid
-      kompose.cronjob.schedule: 0 0 * * *
+      kompose.cronjob.schedule: "0 0 * * *"
       kompose.volume.type: hostPath
+    restart: no
     # prettier-ignore
-    command: [find, /data, -mindepth, "2", (, (, -type, f, -and, -mtime, "+30", ), -or, (, -type, d, -and, -empty, -and, -mtime, "+30", ), ), -print, -delete]
+    command: [find, /data, -mindepth, "2", -mtime, "+30", "(", -type, f, -or, "(", -type, d, -empty, ")", ")", -print, -delete]
     volumes:
       - /var/lib/local/versity/data:/data
