@@ -25,3 +25,23 @@ services:
     volumes:
       - /var/lib/local/versity/data:/data
       - /var/lib/local/versity/iam:/iam
+
+  versity-prune:
+    image: docker.io/library/busybox:latest
+    labels:
+      kompose.cronjob.backoff_limit: 0
+      kompose.cronjob.concurrency_policy: Forbid
+      kompose.cronjob.schedule: 0 4 * * *
+      kompose.volume.type: hostPath
+    command:
+      - find
+      - /data
+      - -mindepth
+      - "2"
+      - -type
+      - f
+      - -mtime
+      - "+30"
+      - -delete
+    volumes:
+      - /var/lib/local/versity/data:/data
