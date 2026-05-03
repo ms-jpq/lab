@@ -38,10 +38,16 @@ services:
       - /data
       - -mindepth
       - "2"
+      - (
       - -type
       - f
       - -mtime
       - "+30"
+      - -o
+      - -type
+      - d
+      - -empty
+      - )
       - -print
       - -delete
     volumes:
