@@ -4,6 +4,7 @@
     "ENV_DOMAIN",
     "dash.ENV_DOMAIN",
     "irc.ENV_DOMAIN",
+    "redis.ENV_DOMAIN",
     "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN,], ENV_SITES)"
   ],
   "ENV_EXTERNAL_NAMES": [],
