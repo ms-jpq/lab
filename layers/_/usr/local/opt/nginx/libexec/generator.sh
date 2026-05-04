@@ -15,6 +15,6 @@ done | xargs --no-run-if-empty --null -I '%' --max-procs 0 -- env -- '%' "$TMP" 
 
 if ! diff --recursive --brief -- "$TMP" "$RUN"; then
   rm -rf -- "$RUN/ssl/"*
-  rsync --recursive --perms --owner --group -- "$TMP/" "$RUN/"
+  rsync --recursive --perms -- "$TMP/" "$RUN/"
   systemctl try-reload-or-restart -- nginx.service
 fi
