@@ -257,10 +257,7 @@ export default {
       return r.return(401)
     }
 
-    r.headersOut["Set-Cookie"] = [
-      buildCookie(o, username, DOMAIN_PARTS),
-      buildCookie(o, username, Infinity),
-    ]
+    r.headersOut["Set-Cookie"] = [buildCookie(o, username, DOMAIN_PARTS)]
 
     const redirect = removeWs(firstString(params.redirect)) || "/"
     return r.return(303, redirect)

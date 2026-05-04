@@ -1,10 +1,8 @@
 server {
   server_name ~^.*$;
   listen      unix:/run/local/nginx/gateway-https.sock;
-  include     /usr/local/opt/nginx/conf/auth.nginx;
 
   location / {
-    include           /usr/local/opt/nginx/conf/auth2.nginx;
     proxy_set_header  Accept-Encoding "";
     proxy_pass_header Content-Security-Policy;
     include           /usr/local/opt/nginx/conf/http.d/proxy_params.nginx;
