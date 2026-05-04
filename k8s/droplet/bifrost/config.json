@@ -45,10 +45,7 @@
   "plugins": [
     {
       "config": {
-        "collector_url": "http://langfuse-web.kompsed-langfuse.svc.cluster.local:3000/api/public/otel/v1/traces",
-        "headers": {
-          "Authorization": "env.LANGFUSE_AUTH"
-        },
+        "collector_url": "http://opentelemetry-collector.opentelemetry-collector.svc.cluster.local:4318",
         "protocol": "http",
         "service_name": "bifrost",
         "trace_type": "genai_extension"
