@@ -53,6 +53,33 @@ sort_by(.kind != "Namespace")[]
   end
 JQ
 
+  read -r -d '' -- JQ_NETPOL <<- 'JQ' || true
+(.["x-networkpolicy"] // [])[]
+| {
+    apiVersion: "networking.k8s.io/v1",
+    kind: "NetworkPolicy",
+    metadata: {
+      name: ("addn-policy-" + .),
+      namespace: "${COMPOSE_PROJECT_NAME}"
+    },
+    spec: {
+      ingress: [
+        {
+          from: [
+            {
+              namespaceSelector: {
+                matchLabels: {
+                  "kubernetes.io/metadata.name": ("kompsed-" + .)
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+JQ
+
   FD_INNER=('(' -type f -or -type l ')')
   mkdir -p -- "$TMP"
   RAND_HEX="$(find "$DIR" "${FD_INNER[@]}" -print0 | xargs -0 --no-run-if-empty -- cat -- "./.facts/$SRC.k8s.env" | b3sum --length 64 -- | cut -d ' ' -f 1)"
@@ -85,6 +112,7 @@ JQ
   {
     "${CONV[@]}" | ./libexec/yq.sh --sort-keys --slurp --arg namespace "$NAMESPACE" --argjson keel "$KEEL" --arg hash "$HASHED" "$JQ"
     cat -- ./k8s/networkpolicy.k8s.yml | K8S_NAMESPACE="$NAMESPACE" envsubst
+    ./libexec/yq.sh --sort-keys "$JQ_NETPOL" < "$FILE_IN" | COMPOSE_PROJECT_NAME="$NAMESPACE" envsubst
     ./libexec/yq.sh --sort-keys '(.["x-k8s"] // [])[]' < "$FILE_IN" | COMPOSE_PROJECT_NAME="$NAMESPACE" envsubst
   } > "$YAML"
 else
