@@ -38,7 +38,7 @@
   "plugins": [
     {
       "config": {
-        "collector_url": "http://langfuse-web.kompsed-langfuse.svc.cluster.local:3000/api/public/otel",
+        "collector_url": "http://langfuse-web.kompsed-langfuse.svc.cluster.local:3000/api/public/otel/v1/traces",
         "headers": {
           "Authorization": "env.LANGFUSE_AUTH"
         },
