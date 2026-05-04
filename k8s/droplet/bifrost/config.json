@@ -45,7 +45,7 @@
   "plugins": [
     {
       "config": {
-        "collector_url": "http://opentelemetry-collector.opentelemetry-collector.svc.cluster.local:4318",
+        "collector_url": "http://opentelemetry-collector.opentelemetry-collector.svc.cluster.local:4318/v1/traces",
         "protocol": "http",
         "service_name": "bifrost",
         "trace_type": "genai_extension"
