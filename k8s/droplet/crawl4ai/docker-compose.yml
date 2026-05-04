@@ -5,8 +5,8 @@ x-networkpolicy:
 services:
   crawl4ai:
     image: docker.io/unclecode/crawl4ai:latest
-    labels:
-      kompose.service.expose: crawl4ai.${DOMAIN}
+    # labels:
+    #   kompose.service.expose: crawl4ai.${DOMAIN}
     deploy:
       resources:
         limits:
