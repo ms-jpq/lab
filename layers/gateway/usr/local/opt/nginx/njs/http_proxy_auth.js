@@ -156,15 +156,16 @@ const hasValidAuthCookie = (o) => {
 /**
  * @param {NginxHTTPRequest} o
  * @param {string} user
+ * @param {number} parts
  */
-const buildCookie = (o, user) => {
+const buildCookie = (o, user, parts) => {
   const host = o.variables.host ?? ""
   const secure = isSecure(o)
   const exp = Math.round(Date.now() + COOKIE_TTL * 1000)
 
-  const parts = [
+  const morsels = [
     `${cookieName(secure)}=${encodeCookieValue(`${user}:${exp}`)}`,
-    `Domain=${host.split(".").slice(-DOMAIN_PARTS).join(".")}`,
+    `Domain=${host.split(".").slice(-parts).join(".")}`,
     `Expires=${new Date(exp).toUTCString()}`,
     `Max-Age=${COOKIE_TTL}`,
     "Path=/",
@@ -172,10 +173,10 @@ const buildCookie = (o, user) => {
     "HttpOnly",
   ]
   if (secure) {
-    parts.push("Secure")
+    morsels.push("Secure")
   }
 
-  return parts.join("; ")
+  return morsels.join("; ")
 }
 
 /** @param {NginxHTTPRequest} o */
@@ -256,7 +257,10 @@ export default {
       return r.return(401)
     }
 
-    r.headersOut["Set-Cookie"] = [buildCookie(o, username)]
+    r.headersOut["Set-Cookie"] = [
+      buildCookie(o, username, DOMAIN_PARTS),
+      buildCookie(o, username, Infinity),
+    ]
 
     const redirect = removeWs(firstString(params.redirect)) || "/"
     return r.return(303, redirect)
