@@ -5,12 +5,12 @@
   },
   "config_store": {
     "config": {
-      "db_name": "bifrost",
+      "db_name": "kompsed-bifrost",
       "host": "pg.kompsed-bifrost.svc.cluster.local",
-      "password": "bifrost",
+      "password": "kompsed-bifrost",
       "port": "5432",
       "ssl_mode": "disable",
-      "user": "bifrost"
+      "user": "kompsed-bifrost"
     },
     "enabled": true,
     "type": "postgres"
