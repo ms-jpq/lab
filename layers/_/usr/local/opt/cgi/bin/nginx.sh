@@ -12,8 +12,6 @@ Content-Type: text/plain; charset=utf-8
 
 EOF
 
-GIXY='/opt/python3/gixy'
-
 while read -r LINE; do
   LINE="${LINE%$'\r'}"
   if [[ -z $LINE ]]; then
@@ -24,6 +22,5 @@ done
 
 printf -- '\n\n'
 
-PYTHONPATH="$GIXY" /usr/local/libexec/hr-run.sh "$GIXY/bin/gixy" -- /usr/local/opt/nginx/conf/main.nginx
 /usr/local/libexec/hr-run.sh curl --fail --location --unix /run/local/nginx/cgi.sock --no-progress-meter -- localhost/nginx
 /usr/local/libexec/hr-run.sh nginx -c /usr/local/opt/nginx/conf/main.nginx -T

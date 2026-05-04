@@ -1,0 +1,15 @@
+server {
+  listen     [::]:80 ipv6only=off reuseport;
+  proxy_pass unix:/run/local/nginx/gateway-http.sock;
+}
+
+server {
+  listen     [::]:6379 ipv6only=off reuseport;
+  proxy_pass 127.0.0.1:30001;
+}
+
+server {
+  listen         [::]:6697 ipv6only=off ssl reuseport;
+  proxy_protocol on;
+  proxy_pass     127.0.0.1:30003;
+}

@@ -1,0 +1,24 @@
+---
+services:
+  soju:
+    image: codeberg.org/emersion/soju:latest
+    labels:
+      kompose.service.expose: irc.${DOMAIN}
+    ports:
+      - 80
+    volumes:
+      - ./soju.conf:/soju-config:ro
+
+  pg:
+    image: docker.io/library/postgres:18
+    labels:
+      kompose.controller.type: statefulset
+      kompose.volume.type: hostPath
+    environment:
+      POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
+    ports:
+      - 5432
+    volumes:
+      - /var/lib/local/soju:/var/lib/postgresql

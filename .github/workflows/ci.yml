@@ -27,6 +27,7 @@ jobs:
       - run: |-
           sudo -- apt update
           sudo -- apt install --yes -- b3sum
+          sudo -- apt purge --yes -- firefox
 
       - run: |-
           sudo -- touch -- /.dockerenv
