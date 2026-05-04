@@ -3,18 +3,6 @@
   "client": {
     "allow_direct_keys": true
   },
-  "config_store": {
-    "config": {
-      "db_name": "kompsed-bifrost",
-      "host": "pg.kompsed-bifrost.svc.cluster.local",
-      "password": "kompsed-bifrost",
-      "port": "5432",
-      "ssl_mode": "disable",
-      "user": "kompsed-bifrost"
-    },
-    "enabled": true,
-    "type": "postgres"
-  },
   "governance": {
     "auth_config": {
       "admin_password": "env.BIFROST_ADMIN_PASSWORD",
@@ -49,5 +37,19 @@
       "enabled": true,
       "name": "otel"
     }
-  ]
+  ],
+  "providers": {
+    "anthropic": {
+      "proxy_config": {
+        "type": "socks5",
+        "url": "socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080"
+      }
+    },
+    "openai": {
+      "proxy_config": {
+        "type": "socks5",
+        "url": "socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080"
+      }
+    }
+  }
 }
