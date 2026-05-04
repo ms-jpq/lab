@@ -1,16 +1,16 @@
 [[Unit]]
-Description         = Bing Wallpapers Service
-After               = network-online.target
-RequiresMountsFor   = /media
-ConditionPathExists = /usr/local/opt/bing/libexec/pull.sh
+Description               = Bing Wallpapers Service
+After                     = network-online.target
+RequiresMountsFor         = /media
+ConditionFileIsExecutable = /usr/local/opt/bing/libexec/pull.sh
 
 [[Service]]
-Type                = oneshot
+Type                      = oneshot
 
-ProtectSystem       = strict
-ProtectHome         = yes
-PrivateTmp          = yes
-ReadWritePaths      = %T %V /media/ENV_FS_WALLPAPER
+ProtectSystem             = strict
+ProtectHome               = yes
+PrivateTmp                = yes
+ReadWritePaths            = %T %V /media/ENV_FS_WALLPAPER
 
-Environment         = DIR=/media/ENV_FS_WALLPAPER
-ExecStart           = /usr/local/opt/bing/libexec/pull.sh ${DIR}
+Environment               = DIR=/media/ENV_FS_WALLPAPER
+ExecStart                 = /usr/local/opt/bing/libexec/pull.sh ${DIR}

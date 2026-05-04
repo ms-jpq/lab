@@ -1,19 +1,19 @@
 [Unit]
-Description         = Rclone S3
-After               = network-online.target
-RequiresMountsFor   = /media %S/local/rclone
+Description               = Rclone S3
+After                     = network-online.target
+RequiresMountsFor         = /media %S/local/rclone
 
-ConditionPathExists = /usr/local/libexec/rclone
+ConditionFileIsExecutable = /usr/local/libexec/rclone
 
 [Service]
-Type                = notify
-ProtectSystem       = strict
-ProtectHome         = yes
-PrivateTmp          = yes
-ReadWritePaths      = %T %V
+Type                      = notify
+ProtectSystem             = strict
+ProtectHome               = yes
+PrivateTmp                = yes
+ReadWritePaths            = %T %V
 
-User                = 1000
-Group               = www-data
+User                      = 1000
+Group                     = www-data
 
-Environment         = SOCK=%t/local/s3.sock
-ExecStart           = rclone serve s3 --config=/dev/null --dir-cache-time=0 --poll-interval=0 --addr=${SOCK} --baseurl=/s3 -- /media
+Environment               = SOCK=%t/local/s3.sock
+ExecStart                 = rclone serve s3 --config=/dev/null --dir-cache-time=0 --poll-interval=0 --addr=${SOCK} --baseurl=/s3 -- /media

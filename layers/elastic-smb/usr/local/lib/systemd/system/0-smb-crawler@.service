@@ -1,18 +1,18 @@
 [Unit]
-Description         = ElasticSearch Crawler
+Description               = ElasticSearch Crawler
 
-BindsTo             = elasticsearch.service
-After               = elasticsearch.service
+BindsTo                   = elasticsearch.service
+After                     = elasticsearch.service
 
-ConditionPathExists = /usr/local/opt/crawler/libexec/main.sh
+ConditionFileIsExecutable = /usr/local/opt/crawler/libexec/main.sh
 
 [Service]
-Type                = oneshot
-Restart             = on-failure
+Type                      = oneshot
+Restart                   = on-failure
 
-ProtectSystem       = strict
-ProtectHome         = yes
-PrivateTmp          = yes
-ReadWritePaths      = %T %V
+ProtectSystem             = strict
+ProtectHome               = yes
+PrivateTmp                = yes
+ReadWritePaths            = %T %V
 
-ExecStart           = /usr/local/opt/crawler/libexec/main.sh %f
+ExecStart                 = /usr/local/opt/crawler/libexec/main.sh %f

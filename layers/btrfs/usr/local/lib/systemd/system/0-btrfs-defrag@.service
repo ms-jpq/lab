@@ -1,8 +1,8 @@
 [Unit]
-Description         = Btrfs Defragment Service
-RequiresMountsFor   = %f
-ConditionPathExists = /usr/local/opt/btrfs/libexec/defrag.sh
+Description               = Btrfs Defragment Service
+RequiresMountsFor         = %f
+ConditionFileIsExecutable = /usr/local/opt/btrfs/libexec/defrag.sh
 
 [Service]
-Type                = oneshot
-ExecStart           = /usr/local/opt/btrfs/libexec/defrag.sh %f
+Type                      = oneshot
+ExecStart                 = /usr/local/opt/btrfs/libexec/defrag.sh %f

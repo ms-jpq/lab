@@ -1,26 +1,26 @@
 [[Unit]]
-Description         = Rclone Mirror Service
-After               = network-online.target
-RequiresMountsFor   = /media %S/local/rclone
+Description               = Rclone Mirror Service
+After                     = network-online.target
+RequiresMountsFor         = /media %S/local/rclone
 
-ConditionPathExists = %S/local/rclone/rclone.conf
-ConditionPathExists = /usr/local/opt/rclone/libexec/sync.sh
+ConditionPathExists       = %S/local/rclone/rclone.conf
+ConditionFileIsExecutable = /usr/local/opt/rclone/libexec/sync.sh
 
 [[Service]]
-Type                = oneshot
-IOAccounting        = yes
-IPAccounting        = yes
+Type                      = oneshot
+IOAccounting              = yes
+IPAccounting              = yes
 
-ProtectSystem       = strict
-ProtectHome         = yes
-PrivateTmp          = yes
-ReadWritePaths      = %T %V
-StateDirectory      = local/rclone
+ProtectSystem             = strict
+ProtectHome               = yes
+PrivateTmp                = yes
+ReadWritePaths            = %T %V
+StateDirectory            = local/rclone
 
-TemporaryFileSystem = /media:ro
+TemporaryFileSystem       = /media:ro
 
 # m5_for([PATH], [
-BindReadOnlyPaths   = /media/PATH:/media/PATH
+BindReadOnlyPaths         = /media/PATH:/media/PATH
 # ], m5_assert([ENV_RCLONE_LOCAL]))
 
-ExecStart           = /usr/local/opt/rclone/libexec/sync.sh
+ExecStart                 = /usr/local/opt/rclone/libexec/sync.sh
