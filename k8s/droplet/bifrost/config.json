@@ -21,6 +21,7 @@
       "user": "kompsed-bifrost"
     },
     "enabled": true,
+    "retention_days": 30,
     "type": "postgres"
   },
   "mcp": {
@@ -35,7 +36,7 @@
         "connection_string": "http://crawl4ai.kompsed-crawl4ai.svc.cluster.local:11235/mcp/sse",
         "connection_type": "sse",
         "name": "crawl4ai",
-        "tools_to_execute": ["md"]
+        "tools_to_execute": ["crawl", "execute_js", "html", "md"]
       },
       {
         "connection_string": "http://playwright.kompsed-mcp.svc.cluster.local:8080/mcp",
