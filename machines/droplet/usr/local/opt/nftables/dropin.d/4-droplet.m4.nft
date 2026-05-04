@@ -8,6 +8,7 @@ add element inet user external_ports {
   tcp . http,
   tcp . https,
   tcp . imap2,
+  tcp . ircs-u,
   tcp . smtp,
   udp . 60000-61000, # mosh
   udp . https,
