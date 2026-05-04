@@ -29,7 +29,7 @@ services:
   #   # labels:
   #     # kompose.service.expose: mcp-redis.${DOMAIN}
   #   environment:
-  #     REDIS_HOST: redis
+  #     REDIS_HOST: redis.${COMPOSE_PROJECT_NAME}.svc.cluster.local
   #   ports:
   #     - 8080
 
