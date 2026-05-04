@@ -28,17 +28,20 @@
       {
         "connection_string": "http://searx.kompsed-mcp.svc.cluster.local:8080/mcp",
         "connection_type": "http",
-        "name": "searx"
+        "name": "searx",
+        "tools_to_execute": ["searxng_web_search"]
       },
       {
         "connection_string": "http://crawl4ai.kompsed-crawl4ai.svc.cluster.local:11235/mcp/sse",
         "connection_type": "sse",
-        "name": "crawl4ai"
+        "name": "crawl4ai",
+        "tools_to_execute": ["*"]
       },
       {
         "connection_string": "http://playwright.kompsed-mcp.svc.cluster.local:8080/mcp",
         "connection_type": "http",
-        "name": "playwright"
+        "name": "playwright",
+        "tools_to_execute": ["*"]
       }
     ]
   },
