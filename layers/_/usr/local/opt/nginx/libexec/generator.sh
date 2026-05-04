@@ -12,6 +12,7 @@ for EXEC in "${0%/*}/../generators"/*; do
     printf -- '%s\0' "$EXEC"
   fi
 done | xargs --no-run-if-empty --null -I '%' --max-procs 0 -- env -- '%' "$TMP" "$WWW"
+install --directory --owner=www-data --group=www-data -- "$TMP/acme/.well-known/acme-challenge"
 
 if ! diff --recursive --brief -- "$TMP" "$RUN"; then
   rm -rf -- "$RUN/ssl/"*
