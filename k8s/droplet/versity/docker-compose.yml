@@ -35,6 +35,6 @@ services:
       kompose.volume.type: hostPath
     restart: no
     # prettier-ignore
-    command: [find, /data, -mindepth, "2", -mtime, "+30", "(", -type, f, -or, "(", -type, d, -empty, ")", ")", -print, -delete]
+    command: [find, /data, -mindepth, "2", -mtime, "+30", (, -type, f, -or, (, -type, d, -empty, ), ), -print, -delete]
     volumes:
       - /var/lib/local/versity/data:/data
