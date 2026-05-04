@@ -23,6 +23,9 @@
     "enabled": true,
     "type": "postgres"
   },
+  "mcp": {
+    "client_configs": []
+  },
   "plugins": [
     {
       "config": {
