@@ -7,8 +7,8 @@ BASE="${0%/*}"
 RUN="$1"
 NFT="$BASE/../forwar.d"
 SCRIPT="$RUN/tr.sed"
-OLD="$RUN/old.conf"
-NEW="$RUN/new.conf"
+OLD="$RUN/old.nft"
+NEW="$RUN/new.nft"
 
 LS="$("$BASE"/resolv-ip.sh)"
 readarray -t -- LINES <<< "$LS"
@@ -40,8 +40,8 @@ done
 printf -- '%s\n' "${SED[@]}" > "$SCRIPT"
 
 {
-  cat -- "$NFT/0-flush.conf"
-  sed --regexp-extended --quiet --file "$SCRIPT" "$NFT/1-elements.conf"
+  cat -- "$NFT/0-flush.nft"
+  sed --regexp-extended --quiet --file "$SCRIPT" "$NFT/1-elements.nft"
 } > "$NEW"
 
 if ! diff --brief -- "$OLD" "$NEW"; then
