@@ -24,7 +24,23 @@
     "type": "postgres"
   },
   "mcp": {
-    "client_configs": []
+    "client_configs": [
+      {
+        "connection_string": "http://searx.kompsed-mcp.svc.cluster.local:8080/mcp",
+        "connection_type": "http",
+        "name": "searx"
+      },
+      {
+        "connection_string": "http://crawl4ai.kompsed-crawl4ai.svc.cluster.local:11235/mcp/sse",
+        "connection_type": "sse",
+        "name": "crawl4ai"
+      },
+      {
+        "connection_string": "http://playwright.kompsed-mcp.svc.cluster.local:8080/mcp",
+        "connection_type": "http",
+        "name": "playwright"
+      }
+    ]
   },
   "plugins": [
     {
