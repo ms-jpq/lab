@@ -26,3 +26,7 @@
 
 /msg NickServ IDENTIFY '<nick>' '<pass>'
 ```
+
+```bash
+/msg NickServ REGISTER '<pass>' '<email>'
+```
