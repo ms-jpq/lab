@@ -10,7 +10,6 @@ add element inet user external_ports {
   tcp . imap2,
   tcp . ircs-u,
   tcp . smtp,
-  tcp . 6969,
   udp . 60000-61000, # mosh
   udp . https,
 }

@@ -32,8 +32,7 @@ services:
     image: ghcr.io/containers/kubernetes-mcp-server:latest
     labels:
       jq.mixin: '{"serviceAccountName": "k8s-mcp"}'
-      kompose.service.nodeport.port: 30000
-      kompose.service.type: nodeport
+      kompose.service.expose: k8s.mcp.${DOMAIN}
     command:
       - --port=8080
       - --read-only

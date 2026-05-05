@@ -4,11 +4,6 @@ server {
 }
 
 server {
-  listen     [::]:6969 ipv6only=off reuseport;
-  proxy_pass 127.0.0.1:30000;
-}
-
-server {
   listen     [::]:6379 ipv6only=off reuseport;
   proxy_pass 127.0.0.1:30001;
 }

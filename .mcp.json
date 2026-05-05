@@ -3,13 +3,16 @@
     "grafana": {
       "command": "mcp-grafana",
       "env": {
-        "GRAFANA_EXTRA_HEADERS": "{\"Authorization\": \"${GRAFANA_AUTH}\"}",
+        "GRAFANA_EXTRA_HEADERS": "{\"Authorization\": \"Basic ${GRAFANA_TOKEN}\"}",
         "GRAFANA_URL": "http://freenas.enp1s0.pfsense.home.arpa:8080/grafana"
       }
     },
     "kubernetes": {
+      "headers": {
+        "Authorization": "Basic ${K8S_TOKEN}"
+      },
       "type": "http",
-      "url": "http://droplet.w-0.droplet.home.arpa:6969/mcp"
+      "url": "https://k8s.mcp.${MCP_DOMAIN}/mcp"
     }
   }
 }

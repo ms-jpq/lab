@@ -3,7 +3,7 @@
   "ENV_CERTBOT_SITES": [
     "ENV_DOMAIN",
     "dash.ENV_DOMAIN",
-    "irc.ENV_DOMAIN",
+    "k8s.mcp.ENV_DOMAIN",
     "redis.ENV_DOMAIN",
     "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN,], ENV_SITES)"
   ],
