@@ -32,9 +32,11 @@ CAT=(
 
 if [[ -f $JOURNAL ]]; then
   F="$(mktemp)"
-  journalctl --output json --reverse --lines 0 --merge --cursor-file "$F" > /dev/null
-  CURSOR="$(< "$F")"
-  CAT+=(--header "Range: entries=$CURSOR")
+  journalctl --file "$JOURNAL" --reverse --lines 0 --cursor-file "$F" > /dev/null
+  if [[ -s $F ]]; then
+    CURSOR="$(< "$F")"
+    CAT+=(--header "Range: entries=$CURSOR")
+  fi
 fi
 CAT+=(-- "http://$REMOTE:8080/entries?follow")
 
