@@ -63,7 +63,7 @@ imap)
     --no-progress-meter
     --user "$USERNAME:$AUTH_PASS"
     --header "X-Real-IP: $CLIENT_IP"
-    --unix-socket /run/local/nginx/direct_auth.sock
+    --unix-socket /run/local/nginx/htaccess.sock
     -- localhost
   )
 
