@@ -3,14 +3,15 @@ name    = "lab"
 version = "0"
 
 dependencies = [
-  "s3cmd@https://github.com/s3tools/s3cmd/archive/heads/master.tar.gz",
   "aws-lambda-powertools",
   "elasticsearch",
+  "mcp-grafana",
   "opentelemetry-exporter-otlp-proto-http",
   "opentelemetry-instrumentation-aws-lambda",
   "opentelemetry-instrumentation-botocore",
   "opentelemetry-instrumentation-requests",
   "opentelemetry-sdk",
+  "s3cmd@https://github.com/s3tools/s3cmd/archive/heads/master.tar.gz",
   "twilio",
 ]
 
