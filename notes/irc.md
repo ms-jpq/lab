@@ -21,4 +21,8 @@
 
 ```bash
 /msg NickServ SENDPASS '<nick>'
+
+/msg NickServ SETPASS '<nick>' '<one-time-key>' '<pass>'
+
+/msg NickServ IDENTIFY '<nick>' '<pass>'
 ```
