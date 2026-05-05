@@ -5,6 +5,8 @@ events {
 }
 
 http {
+  access_log off;
+
   server {
     listen [::]:80 ipv6only=off reuseport;
 
