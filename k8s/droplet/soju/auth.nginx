@@ -1,0 +1,27 @@
+user      root;
+error_log stderr;
+
+events {
+}
+
+http {
+  server {
+    listen [::]:80 ipv6only=off reuseport;
+
+    location = / {
+      auth_request /-_-validate;
+      error_page   401 403 = @denied;
+      return       200;
+    }
+
+    location = /-_-validate {
+      internal                ;
+      proxy_pass              http://unix:/run/local/nginx/htaccess.sock:/;
+      proxy_pass_request_body off;
+    }
+
+    location @denied {
+      return 403;
+    }
+  }
+}

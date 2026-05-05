@@ -10,6 +10,19 @@ services:
     volumes:
       - ./soju.conf:/soju-config:ro
 
+  auth:
+    image: docker.io/library/nginx:latest
+    labels:
+      kompose.controller.type: statefulset
+      kompose.volume.type: hostPath
+    ports:
+      - 80
+    configs:
+      - source: auth_conf
+        target: /etc/nginx/nginx.conf
+    volumes:
+      - /run/local/nginx:/run/local/nginx:ro
+
   pg:
     image: docker.io/library/postgres:18
     labels:
@@ -23,3 +36,7 @@ services:
       - 5432
     volumes:
       - /var/lib/local/soju:/var/lib/postgresql
+
+configs:
+  auth_conf:
+    file: ./auth.nginx
