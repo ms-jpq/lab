@@ -1,9 +1,11 @@
 # IRC
 
-```bash
-/bouncer network create -name '<network>' -addr ircs://irc.libera.chat:6697 -nick '<name>' -username '<name>' -realname '<name>'
+## Join
 
-/bouncer sasl set-plain -network '<network>' '<name>' '<pass>'
+```bash
+/bouncer network create -name '<network>' -addr ircs://irc.libera.chat:6697 -nick '<nick>' -username '<name>' -realname '<name>'
+
+/bouncer sasl set-plain -network '<network>' '<nick>' '<pass>'
 
 /bouncer network update '<network>' -enabled false
 /bouncer network update '<network>' -enabled true
@@ -11,7 +13,12 @@
 /bouncer sasl status -network '<network>'
 ```
 
+## Reset
+
 ```bash
 /bouncer sasl reset -network '<network>'
 ```
 
+```bash
+/msg NickServ SENDPASS '<nick>'
+```
