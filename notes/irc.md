@@ -11,3 +11,7 @@
 /bouncer sasl status -network '<network>'
 ```
 
+```bash
+/bouncer sasl reset -network '<network>'
+```
+
