@@ -64,6 +64,12 @@
         "type": "socks5",
         "url": "socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080"
       }
+    },
+    "xai": {
+      "proxy_config": {
+        "type": "socks5",
+        "url": "socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080"
+      }
     }
   }
 }
