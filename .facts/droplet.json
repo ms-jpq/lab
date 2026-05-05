@@ -18,6 +18,7 @@
     "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN/*,], ENV_SITES)"
   ],
   "ENV_SITES": [
+    "api.spotify",
     "ask",
     "bbs",
     "bifrost",
@@ -34,6 +35,7 @@
     "rss",
     "s3",
     "speedtest",
+    "spotify",
     "weibo",
     "youku"
   ],
