@@ -8,9 +8,8 @@ services:
       - sh
       - -c
       - >-
-        sed -i -E -e 's#tcp://0\.0\.0\.0:#tcp://[::]:#'
-        /app/apps/client/scripts/run/serve.sh &&
-        exec /app/apps/client/scripts/run/run_dev.sh
+        sed -i -E -e 's#tcp://0\.0\.0\.0:#tcp://[::]:#' /app/apps/client/scripts/run/serve.sh &&
+        exec /app/apps/client/scripts/run/run.sh
     environment:
       API_ENDPOINT: &api https://api.spotify.${DOMAIN}
     ports:
