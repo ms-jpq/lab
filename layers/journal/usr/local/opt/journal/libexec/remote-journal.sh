@@ -35,7 +35,7 @@ if [[ -f $JOURNAL ]]; then
   journalctl --file "$JOURNAL" --reverse --lines 0 --cursor-file "$F" > /dev/null
   if [[ -s $F ]]; then
     CURSOR="$(< "$F")"
-    CAT+=(--header "Range: entries=$CURSOR")
+    CAT+=(--header "Range: entries=$CURSOR:1:")
   fi
 fi
 CAT+=(-- "http://$REMOTE:8080/entries?follow")
