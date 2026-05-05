@@ -22,7 +22,7 @@ Environment         = KEY=%C/local/self-signed/%I/ssl.key
 Environment         = CERTBOT_KEY=%C/local/self-signed/%I/privkey.pem
 Environment         = CERTBOT_PEM=%C/local/self-signed/%I/fullchain.pem
 
-ExecStart           = openssl req -x509 -newkey rsa:4096 -days 6969 -nodes -subj /CN=%H -out ${CRT} -keyout ${KEY}
+ExecStart           = openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -days 6969 -nodes -subj /CN=%H -out ${CRT} -keyout ${KEY}
 ExecStart           = dd oflag=append conv=notrunc if=${CRT} of=${PEM}
 ExecStart           = dd oflag=append conv=notrunc if=${KEY} of=${PEM}
 ExecStart           = ln -snfv -- ${KEY} ${CERTBOT_KEY}

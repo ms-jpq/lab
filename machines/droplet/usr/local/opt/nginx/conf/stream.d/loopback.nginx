@@ -10,6 +10,6 @@ server {
 
 server {
   listen         [::]:6697 ipv6only=off ssl reuseport;
-  proxy_pass     127.0.0.1:30003;
+  proxy_pass     127.0.0.1:30002;
   proxy_protocol on;
 }
