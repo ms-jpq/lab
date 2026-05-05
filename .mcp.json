@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "kubernetes": {
+      "type": "http",
+      "url": "http://droplet.w-0.droplet.home.arpa:6969/mcp"
+    }
+  }
+}
