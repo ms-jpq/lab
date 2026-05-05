@@ -15,8 +15,8 @@ CERTBOT=(
   /opt/python3/certbot/bin/certbot
   certonly
   --non-interactive --agree-tos
+  --cert-name "$HOSTNAME"
   --keep-until-expiring
-  --renew-with-new-domains
   --expand
   --work-dir /var/tmp
   --webroot
