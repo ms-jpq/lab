@@ -5,10 +5,6 @@ events {
 }
 
 stream {
-  proxy_half_close       on;
-  proxy_socket_keepalive on;
-  proxy_timeout          28d;
-
   server {
     listen     [::]:1080 ipv6only=off reuseport;
     proxy_pass unix:/run/local/nginx/httpsocks-1080.sock;
