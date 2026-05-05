@@ -1,6 +1,5 @@
 + cloudflare-warp
 + gateway
-+ irc
 + k3s
 + mail
 + telemetry

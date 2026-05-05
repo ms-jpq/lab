@@ -9,7 +9,6 @@
 + gateway
 + gh-mirror
 + intel-gvt
-+ irc
 + journal
 + k3s
 + mail
