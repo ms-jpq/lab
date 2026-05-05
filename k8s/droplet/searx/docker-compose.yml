@@ -1,6 +1,6 @@
 ---
 x-networkpolicy:
-  - mcp
+  - bifrost
 
 services:
   searxng:
@@ -30,6 +30,15 @@ services:
       - 6379
     volumes:
       - data:/data
+
+  mcp:
+    image: docker.io/isokoliuk/mcp-searxng:latest
+    environment:
+      MCP_HTTP_PORT: 8080
+      SEARXNG_URL: http://searxng.${COMPOSE_PROJECT_NAME}.svc.cluster.local:8080
+      URL_READER_HTTP_PROXY: http://proxy.kompsed-hostproxy.svc.cluster.local:1080
+    ports:
+      - 8080
 
 volumes:
   cache:

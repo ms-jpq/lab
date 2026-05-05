@@ -12,7 +12,7 @@ mcpServers:
     url: http://bifrost.kompsed-bifrost.svc.cluster.local:8080/mcp
   kubernetes:
     type: http
-    url: http://kubernetes.kompsed-mcp.svc.cluster.local:8080/mcp
+    url: http://mcp.kompsed-k8s-mcp.svc.cluster.local:8080/mcp
 
 memory:
   disabled: true

@@ -1,0 +1,39 @@
+---
+x-networkpolicy:
+  - bifrost
+  - librechat
+
+x-k8s:
+  - apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      labels:
+        io.kompose.service: &sa k8s-mcp
+      name: *sa
+      namespace: ${COMPOSE_PROJECT_NAME}
+
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      labels:
+        io.kompose.service: *sa
+      name: *sa
+      namespace: default
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: admin
+    subjects:
+      - kind: ServiceAccount
+        name: *sa
+        namespace: ${COMPOSE_PROJECT_NAME}
+
+services:
+  mcp:
+    image: ghcr.io/containers/kubernetes-mcp-server:latest
+    labels:
+      jq.mixin: '{"serviceAccountName": "k8s-mcp"}'
+    command:
+      - --port=8080
+    ports:
+      - 8080

@@ -27,7 +27,7 @@
   "mcp": {
     "client_configs": [
       {
-        "connection_string": "http://searx.kompsed-mcp.svc.cluster.local:8080/mcp",
+        "connection_string": "http://mcp.kompsed-searx.svc.cluster.local:8080/mcp",
         "connection_type": "http",
         "name": "searx",
         "tools_to_execute": ["searxng_web_search"]
