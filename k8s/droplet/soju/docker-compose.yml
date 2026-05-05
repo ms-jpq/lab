@@ -3,9 +3,10 @@ services:
   soju:
     image: codeberg.org/emersion/soju:latest
     labels:
-      kompose.service.expose: irc.${DOMAIN}
+      kompose.service.nodeport.port: 30002
+      kompose.service.type: nodeport
     ports:
-      - 80
+      - 6667
     volumes:
       - ./soju.conf:/soju-config:ro
 
