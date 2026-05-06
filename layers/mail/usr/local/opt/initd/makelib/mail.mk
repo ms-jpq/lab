@@ -17,6 +17,5 @@ mail: /usr/local/opt/apache2/apache2.conf
 CHASQUID_DOMAIN_DIR := /usr/local/opt/chasquid/domains/$(shell sed -E -e 's/^DOMAIN_NAME="([^"]+)"/\1/' -- /usr/local/etc/default/sieve.sh.cgi.env)
 
 mail: $(CHASQUID_DOMAIN_DIR)
-
 $(CHASQUID_DOMAIN_DIR):
 	sudo -- mkdir -p -- '$@'
