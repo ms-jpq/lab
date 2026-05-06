@@ -23,6 +23,15 @@ services:
     volumes:
       - /run/local/nginx:/run/local/nginx:ro
 
+  adminer:
+    image: docker.io/library/adminer:latest
+    labels:
+      kompose.service.expose: debug.${DOMAIN}
+    environment:
+      ADMINER_DEFAULT_SERVER: pg
+    ports:
+      - 8080
+
   pg:
     image: docker.io/library/postgres:18
     labels:
