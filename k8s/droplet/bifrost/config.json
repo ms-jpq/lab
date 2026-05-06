@@ -41,7 +41,35 @@
       {
         "connection_string": "http://playwright.kompsed-mcp.svc.cluster.local:8080/mcp",
         "connection_type": "http",
-        "name": "playwright"
+        "name": "playwright",
+        "tools_to_execute": [
+          "browser_click",
+          "browser_close",
+          "browser_console_messages",
+          "browser_drag",
+          "browser_drop",
+          "browser_evaluate",
+          "browser_fill_form",
+          "browser_handle_dialog",
+          "browser_hover",
+          "browser_navigate",
+          "browser_navigate_back",
+          "browser_network_request",
+          "browser_network_requests",
+          "browser_press_key",
+          "browser_resize",
+          "browser_select_option",
+          "browser_snapshot",
+          "browser_tabs",
+          "browser_type",
+          "browser_wait_for"
+        ]
+      },
+      {
+        "connection_string": "http://time.kompsed-mcp.svc.cluster.local:8000/mcp",
+        "connection_type": "http",
+        "name": "time",
+        "tools_to_execute": ["get_current_time"]
       }
     ]
   },

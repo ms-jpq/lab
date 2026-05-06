@@ -6,8 +6,6 @@ x-networkpolicy:
 services:
   playwright:
     image: mcr.microsoft.com/playwright/mcp:latest
-    # labels:
-    #   kompose.service.expose: playwright.mcp.${DOMAIN}
     deploy:
       resources:
         limits:
@@ -25,6 +23,15 @@ services:
       - 8080
     volumes:
       - playwright:/tmp/playwright-home
+
+  time:
+    image: docker.io/supercorp/supergateway:uvx
+    command:
+      - --outputTransport=streamableHttp
+      - --stdio
+      - uvx mcp-server-time
+    ports:
+      - 8000
 
   # python:
   #   image: docker.io/denoland/deno:latest
