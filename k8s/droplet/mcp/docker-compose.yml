@@ -27,15 +27,18 @@ services:
       - playwright:/tmp/playwright-home
 
   time:
-    image: docker.io/supercorp/supergateway:uvx
+    image: python:latest
     deploy:
       resources:
         limits:
-          memory: 256MB
+          memory: 250M
+    entrypoint:
+      - sh
     command:
-      - --outputTransport=streamableHttp
-      - --stdio
-      - uvx mcp-server-time
+      - -euxc
+      - |-
+        pip install --no-cache-dir mcp-proxy mcp-server-time
+        exec mcp-proxy --pass-environment --stateless --host=:: --port=8000 -- mcp-server-time
     ports:
       - 8000
 

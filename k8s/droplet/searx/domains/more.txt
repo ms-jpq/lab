@@ -21,6 +21,7 @@ fandom.com
 freedesktop.org
 gc.ca
 genius.com
+ghcr.io
 gitbook.io
 github.com
 github.io

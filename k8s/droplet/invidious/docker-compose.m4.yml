@@ -48,7 +48,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: 1G
     environment:
       HOST: "[::]"
       PROXY: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080

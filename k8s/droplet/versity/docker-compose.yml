@@ -9,7 +9,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 500M
     environment:
       ROOT_ACCESS_KEY:
       ROOT_SECRET_KEY:

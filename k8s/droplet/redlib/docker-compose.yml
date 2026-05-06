@@ -9,7 +9,7 @@ services:
   #   deploy:
   #     resources:
   #       limits:
-  #         memory: 512M
+  #         memory: 500M
   #   volumes:
   #     - data1:/var/lib/cloudflare-warp
   #
@@ -22,7 +22,7 @@ services:
   #   deploy:
   #     resources:
   #       limits:
-  #         memory: 512M
+  #         memory: 500M
   #   volumes:
   #     - data2:/var/lib/cloudflare-warp
 

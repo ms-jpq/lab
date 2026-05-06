@@ -6,9 +6,9 @@ services:
       kompose.service.expose: spotify.${DOMAIN}
     entrypoint:
       - sh
-      - -c
-      - >-
-        sed -i -E -e 's#tcp://0\.0\.0\.0:#tcp://[::]:#' /app/apps/client/scripts/run/serve.sh &&
+      - -euxc
+      - |-
+        sed -i -E -e 's#tcp://0\.0\.0\.0:#tcp://[::]:#' /app/apps/client/scripts/run/serve.sh
         exec /app/apps/client/scripts/run/run.sh
     environment:
       API_ENDPOINT: &api https://api.spotify.${DOMAIN}
