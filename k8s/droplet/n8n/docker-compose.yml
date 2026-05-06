@@ -1,0 +1,50 @@
+---
+x-networkpolicy:
+  - bifrost
+
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    labels:
+      kompose.service.expose: n8n.${DOMAIN}
+    environment:
+      DB_POSTGRESDB_DATABASE: ${COMPOSE_PROJECT_NAME}
+      DB_POSTGRESDB_HOST: pg.${COMPOSE_PROJECT_NAME}.svc.cluster.local
+      DB_POSTGRESDB_PASSWORD: ${COMPOSE_PROJECT_NAME}
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_USER: ${COMPOSE_PROJECT_NAME}
+      DB_TYPE: postgresdb
+      N8N_EDITOR_BASE_URL: https://n8n.${DOMAIN}/
+      N8N_ENCRYPTION_KEY:
+      N8N_HOST: n8n.${DOMAIN}
+      N8N_PROTOCOL: https
+      N8N_PROXY_HOPS: 1
+      N8N_RUNNERS_AUTH_TOKEN: &runnerpw ${COMPOSE_PROJECT_NAME}
+      N8N_RUNNERS_BROKER_LISTEN_ADDRESS: "::"
+      N8N_RUNNERS_BROKER_PORT: 5679
+      N8N_RUNNERS_ENABLED: true
+      N8N_RUNNERS_MODE: external
+      WEBHOOK_URL: https://n8n.${DOMAIN}/
+    ports:
+      - 5678
+      - 5679
+
+  runner:
+    image: docker.n8n.io/n8nio/runners:latest
+    environment:
+      N8N_RUNNERS_AUTH_TOKEN: *runnerpw
+      N8N_RUNNERS_TASK_BROKER_URI: http://n8n.${COMPOSE_PROJECT_NAME}.svc.cluster.local:5679
+
+  pg:
+    image: docker.io/library/postgres:18
+    labels:
+      kompose.controller.type: statefulset
+      kompose.volume.type: hostPath
+    environment:
+      POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
+    ports:
+      - 5432
+    volumes:
+      - /var/lib/local/n8n/postgresql:/var/lib/postgresql

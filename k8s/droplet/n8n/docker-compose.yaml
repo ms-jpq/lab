@@ -1,9 +1,0 @@
----
-services:
-  n8n:
-    image: docker.n8n.io/n8nio/n8n:latest
-    labels:
-      kompose.service.expose: n8n.${DOMAIN}
-    environment: {}
-    ports:
-      - 5678

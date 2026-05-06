@@ -13,6 +13,13 @@
       },
       "type": "http",
       "url": "https://k8s.mcp.${MCP_DOMAIN}/mcp"
+    },
+    "n8n": {
+      "headers": {
+        "Authorization": "Bearer ${N8N_TOKEN}"
+      },
+      "type": "http",
+      "url": "https://n8n.${MCP_DOMAIN}/mcp-server/http"
     }
   }
 }
