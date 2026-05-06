@@ -1,5 +1,6 @@
 <clickhouse>
   <logger>
+    <level>warning</level>
     <log>/dev/null</log>
     <errorlog>/dev/null</errorlog>
     <console>true</console>
