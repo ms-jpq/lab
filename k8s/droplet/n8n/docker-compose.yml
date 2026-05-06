@@ -4,7 +4,7 @@ x-networkpolicy:
 
 services:
   n8n:
-    image: docker.n8n.io/n8nio/n8n:latest
+    image: ghcr.io/n8n-io/n8n:latest
     labels:
       kompose.service.expose: n8n.${DOMAIN}
     environment:
@@ -30,7 +30,7 @@ services:
       - 5679
 
   runner:
-    image: docker.n8n.io/n8nio/runners:latest
+    image: ghcr.io/n8n-io/runners:latest
     environment:
       N8N_RUNNERS_AUTH_TOKEN: *runnerpw
       N8N_RUNNERS_TASK_BROKER_URI: http://n8n.${COMPOSE_PROJECT_NAME}.svc.cluster.local:5679

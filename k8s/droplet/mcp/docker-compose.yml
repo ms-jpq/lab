@@ -28,6 +28,10 @@ services:
 
   time:
     image: docker.io/supercorp/supergateway:uvx
+    deploy:
+      resources:
+        limits:
+          memory: 256MB
     command:
       - --outputTransport=streamableHttp
       - --stdio
