@@ -6,6 +6,8 @@ x-networkpolicy:
 services:
   playwright:
     image: mcr.microsoft.com/playwright/mcp:latest
+    labels:
+      kompose.service.expose: playwright.mcp.${DOMAIN}
     deploy:
       resources:
         limits:
