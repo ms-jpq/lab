@@ -1,8 +1,5 @@
 {
   "$schema": "https://www.getbifrost.ai/schema",
-  "client": {
-    "allow_direct_keys": true
-  },
   "governance": {
     "auth_config": {
       "admin_password": "env.BIFROST_ADMIN_PASSWORD",
@@ -10,19 +7,6 @@
       "disable_auth_on_inference": true,
       "is_enabled": true
     }
-  },
-  "logs_store": {
-    "config": {
-      "db_name": "kompsed-bifrost",
-      "host": "pg.kompsed-bifrost.svc.cluster.local",
-      "password": "kompsed-bifrost",
-      "port": "5432",
-      "ssl_mode": "disable",
-      "user": "kompsed-bifrost"
-    },
-    "enabled": true,
-    "retention_days": 30,
-    "type": "postgres"
   },
   "mcp": {
     "client_configs": [
@@ -45,32 +29,5 @@
         "tools_to_execute": ["get_current_time"]
       }
     ]
-  },
-  "plugins": [],
-  "providers": {
-    "anthropic": {
-      "proxy_config": {
-        "type": "socks5",
-        "url": "socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080"
-      }
-    },
-    "openai": {
-      "proxy_config": {
-        "type": "socks5",
-        "url": "socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080"
-      }
-    },
-    "openrouter": {
-      "proxy_config": {
-        "type": "socks5",
-        "url": "socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080"
-      }
-    },
-    "xai": {
-      "proxy_config": {
-        "type": "socks5",
-        "url": "socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080"
-      }
-    }
   }
 }
