@@ -31,7 +31,7 @@ services:
     labels:
       kompose.cronjob.backoff_limit: 0
       kompose.cronjob.concurrency_policy: Forbid
-      kompose.cronjob.schedule: "0 0 * * *"
+      kompose.cronjob.schedule: "@daily"
       kompose.volume.type: hostPath
     restart: no
     # prettier-ignore
