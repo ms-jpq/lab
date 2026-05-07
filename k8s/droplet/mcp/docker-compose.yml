@@ -53,9 +53,9 @@ services:
       - |-
         pip install -- mcp-proxy mcp-youtube-transcript
         exec mcp-proxy --pass-environment --host=:: --port=8080 --transport=streamablehttp -- mcp-youtube-transcript
-    # environment:
-    #   HTTP_PROXY: http://proxy.kompsed-hostproxy.svc.cluster.local:1080
-    #   HTTPS_PROXY: http://proxy.kompsed-hostproxy.svc.cluster.local:1080
+    environment:
+      HTTP_PROXY: http://proxy.kompsed-hostproxy.svc.cluster.local:1080
+      HTTPS_PROXY: http://proxy.kompsed-hostproxy.svc.cluster.local:1080
 
 volumes:
   pip-cache:
