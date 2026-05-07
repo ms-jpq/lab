@@ -6,8 +6,9 @@ services:
       kompose.controller.type: statefulset
       kompose.service.expose: chat.${DOMAIN}
     environment:
+      # ANTHROPIC_REVERSE_PROXY: http://bifrost.kompsed-bifrost.svc.cluster.local:8080/anthropic/v1/messages
+      # OPENAI_REVERSE_PROXY: http://bifrost.kompsed-bifrost.svc.cluster.local:8080/openai/v1
       ANTHROPIC_API_KEY:
-      ANTHROPIC_REVERSE_PROXY: http://bifrost.kompsed-bifrost.svc.cluster.local:8080/anthropic/v1/messages
       HOST: "::"
       JWT_REFRESH_SECRET:
       JWT_SECRET:
@@ -15,7 +16,6 @@ services:
       MONGO_URI: mongodb://mongo.kompsed-librechat.svc.cluster.local:27017/
       NO_INDEX: true
       OPENAI_API_KEY:
-      OPENAI_REVERSE_PROXY: http://bifrost.kompsed-bifrost.svc.cluster.local:8080/openai/v1
       OPENROUTER_KEY:
       RAG_API_URL: http://rag-api.kompsed-librechat.svc.cluster.local:8000
       REDIS_URI: redis://redis.kompsed-librechat.svc.cluster.local:6379
