@@ -26,7 +26,7 @@ services:
     volumes:
       - playwright:/tmp/playwright-home
 
-  time: &pip
+  time: &fastmcp
     image: python:latest
     deploy:
       resources:
@@ -37,15 +37,18 @@ services:
     command:
       - -euxc
       - |-
-        pip install -- mcp-proxy mcp-server-time
-        exec mcp-proxy --pass-environment --host=:: --port=8080 --transport=streamablehttp -- mcp-server-time
+        pip install -- fastmcp mcp-server-time
+        tee -- /tmp/mcp.json <<- 'JSON'
+        {"mcpServers": {"time": {"command": "mcp-server-time"}}}
+        JSON
+        exec fastmcp run /tmp/mcp.json --transport http --host ''
     ports:
-      - 8080
+      - 8000
     volumes:
       - pip-cache:/root/.cache/pip
 
   youtube-transcript:
-    <<: *pip
+    <<: *fastmcp
     labels:
       kompose.service.expose: youtube.mcp.${DOMAIN}
     environment:
@@ -54,8 +57,11 @@ services:
     command:
       - -euxc
       - |-
-        pip install -- mcp-proxy mcp-youtube-transcript
-        exec mcp-proxy --pass-environment --host=:: --port=8080 --transport=streamablehttp -- mcp-youtube-transcript
+        pip install -- fastmcp mcp-youtube-transcript
+        tee -- /tmp/mcp.json <<- 'JSON'
+        {"mcpServers": {"youtube": {"command": "mcp-youtube-transcript"}}}
+        JSON
+        exec fastmcp run /tmp/mcp.json --transport http --host ''
 
 volumes:
   pip-cache:
