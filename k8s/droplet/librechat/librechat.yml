@@ -16,7 +16,7 @@ mcpServers:
   playwright:
     type: http
     url: http://playwright.kompsed-mcp.svc.cluster.local:8080/mcp
-  youtube-transcript:
+  youtube:
     type: http
     url: http://youtube-transcript.kompsed-mcp.svc.cluster.local:8080/mcp
 
