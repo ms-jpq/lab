@@ -52,8 +52,8 @@ services:
     labels:
       kompose.service.expose: youtube.mcp.${DOMAIN}
     environment:
-      HTTP_PROXY: http://proxy.kompsed-hostproxy.svc.cluster.local:1080
-      HTTPS_PROXY: http://proxy.kompsed-hostproxy.svc.cluster.local:1080
+      HTTP_PROXY: &proxy http://proxy.kompsed-hostproxy.svc.cluster.local:1080
+      HTTPS_PROXY: *proxy
     command:
       - -euxc
       - |-
