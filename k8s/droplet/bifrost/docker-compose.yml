@@ -6,7 +6,7 @@ services:
   bifrost:
     image: docker.io/maximhq/bifrost:latest
     labels:
-      kompose.service.expose: bifrost.${DOMAIN}
+      kompose.service.expose: mcp.${DOMAIN}
     environment:
       APP_HOST: "::"
       APP_PORT: "8080"
