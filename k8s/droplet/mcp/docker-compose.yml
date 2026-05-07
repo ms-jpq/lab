@@ -26,7 +26,7 @@ services:
     volumes:
       - playwright:/tmp/playwright-home
 
-  time:
+  time: &pip
     image: python:latest
     deploy:
       resources:
@@ -37,10 +37,26 @@ services:
     command:
       - -euxc
       - |-
-        pip install --no-cache-dir mcp-proxy mcp-server-time
-        exec mcp-proxy --pass-environment --stateless --host=:: --port=8000 -- mcp-server-time
+        pip install -- mcp-proxy mcp-server-time
+        exec mcp-proxy --pass-environment --host=:: --port=8080 --transport=streamablehttp -- mcp-server-time
     ports:
-      - 8000
+      - 8080
+    volumes:
+      - pip-cache:/root/.cache/pip
+
+  youtube-transcript:
+    <<: *pip
+    labels:
+      kompose.service.expose: youtube.mcp.${DOMAIN}
+    command:
+      - -euxc
+      - |-
+        pip install -- mcp-proxy mcp-youtube-transcript
+        exec mcp-proxy --pass-environment --host=:: --port=8080 --transport=streamablehttp -- mcp-youtube-transcript
+    # environment:
+    #   HTTP_PROXY: http://proxy.kompsed-hostproxy.svc.cluster.local:1080
+    #   HTTPS_PROXY: http://proxy.kompsed-hostproxy.svc.cluster.local:1080
 
 volumes:
+  pip-cache:
   playwright:
