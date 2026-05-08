@@ -24,14 +24,29 @@ services:
     volumes:
       - data:/data
 
-  # mcp:
-  #   image: docker.io/mcp/redis:latest
-  #   # labels:
-  #     # kompose.service.expose: mcp-redis.${DOMAIN}
-  #   environment:
-  #     REDIS_HOST: redis.${COMPOSE_PROJECT_NAME}.svc.cluster.local
-  #   ports:
-  #     - 8080
+  mcp:
+    image: python:latest
+    labels:
+      kompose.service.expose: redis.mcp.${DOMAIN}
+    deploy:
+      resources:
+        limits:
+          memory: 250M
+    entrypoint:
+      - sh
+    command:
+      - -euxc
+      - |-
+        pip install -- fastmcp redis-mcp-server
+        tee -- /tmp/mcp.json <<- 'JSON'
+        {"mcpServers": {"redis": {"command": "redis-mcp-server", "args": ["--url", "redis://redis.${COMPOSE_PROJECT_NAME}.svc.cluster.local:6379"]}}}
+        JSON
+        exec fastmcp run /tmp/mcp.json --transport http --host ''
+    ports:
+      - 8000
+    volumes:
+      - pip-cache:/root/.cache/pip
 
 volumes:
   data:
+  pip-cache:
