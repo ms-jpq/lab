@@ -101,26 +101,6 @@ services:
     volumes:
       - /var/lib/local/servarr/lidarr:/config
 
-  readarr:
-    image: lscr.io/linuxserver/readarr:latest
-    labels:
-      kompose.controller.type: statefulset
-      kompose.service.expose: readarr.servarr.${DOMAIN}
-      kompose.volume.type: hostPath
-    environment:
-      READARR__AUTH__METHOD: External
-      READARR__LOG__DBENABLED: false
-      READARR__POSTGRES__HOST: *pg-host
-      READARR__POSTGRES__MAINDB: readarr
-      READARR__POSTGRES__PASSWORD: *pg-creds
-      READARR__POSTGRES__PORT: *pg-port
-      READARR__POSTGRES__USER: *pg-creds
-      READARR__SERVER__BINDADDRESS: "::"
-    ports:
-      - 8787
-    volumes:
-      - /var/lib/local/servarr/readarr:/config
-
   bazarr:
     image: lscr.io/linuxserver/bazarr:latest
     labels:

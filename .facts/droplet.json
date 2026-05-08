@@ -17,7 +17,6 @@
     "lidarr.servarr",
     "prowlarr.servarr",
     "radarr.servarr",
-    "readarr.servarr",
     "redis",
     "servarr",
     "sonarr.servarr"

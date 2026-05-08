@@ -2,5 +2,4 @@ CREATE DATABASE "bazarr";
 CREATE DATABASE "lidarr";
 CREATE DATABASE "prowlarr";
 CREATE DATABASE "radarr";
-CREATE DATABASE "readarr";
 CREATE DATABASE "sonarr";
