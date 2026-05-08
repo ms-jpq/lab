@@ -1,6 +1,7 @@
 + gh-mirror
 + journal
 + postgres
++ ssh-fwd
 + telemetry
 + telemetry-collector
 + vb

@@ -4,3 +4,6 @@ Description  = NetNS Proxy -- %t/local/ns-proxy/%I-%J.sock
 [Socket]
 RemoveOnStop = yes
 ListenStream = %t/local/ns-proxy/%I-%J.sock
+
+SocketUser   = www-data
+SocketGroup  = www-data

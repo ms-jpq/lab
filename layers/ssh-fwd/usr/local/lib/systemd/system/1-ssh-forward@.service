@@ -11,6 +11,12 @@ ProtectSystem             = strict
 ProtectHome               = yes
 PrivateTmp                = yes
 
+User                      = www-data
+Group                     = www-data
+
+RuntimeDirectory          = local/ssh-fwd/%I
+StateDirectory            = local/ssh-fwd/%I
+
 IPAccounting              = yes
 
 EnvironmentFile           = /usr/local/etc/default/%I.sshfwd.env
@@ -20,4 +26,6 @@ Environment               = PORT=22
 Environment               = IDENTITY=%I
 Environment               = ARGV=
 
-ExecStart                 = /usr/local/opt/ssh-fwd/libexec/connect.sh ${TARGET} ${PORT} ${IDENTITY} $ARGV
+ExecStartPre              = +chown -- ${USER}:${GROUP} %S/local/ssh-fwd/${IDENTITY}
+ExecStartPre              = +chmod -- 0400 %S/local/ssh-fwd/${IDENTITY}
+ExecStart                 = /usr/local/opt/ssh-fwd/libexec/connect.sh ${TARGET} ${PORT} %S/local/ssh-fwd/${IDENTITY} $ARGV
