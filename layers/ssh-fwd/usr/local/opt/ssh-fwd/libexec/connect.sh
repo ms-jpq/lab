@@ -10,7 +10,6 @@ shift -- 3
 # shellcheck disable=SC2154
 SSH=(
   ssh
-  -N
   -F /dev/null
   -o BatchMode=yes
   -o ConnectTimeout=9
