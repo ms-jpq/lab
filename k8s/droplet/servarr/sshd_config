@@ -1,2 +1,3 @@
-GatewayPorts yes
 AllowStreamLocalForwarding yes
+AllowTcpForwarding yes
+GatewayPorts yes
