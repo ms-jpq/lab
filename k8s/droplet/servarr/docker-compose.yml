@@ -33,6 +33,11 @@ x-k8s:
         - ports:
             - port: 2222
               protocol: TCP
+        - from:
+            - podSelector: {}
+          ports:
+            - port: 8080
+              protocol: TCP
 
 services:
   index:
@@ -44,6 +49,7 @@ services:
     volumes:
       - ./index.html:/usr/share/nginx/html/index.html:ro
 
+  # openssh-server.kompsed-servarr.svc.cluster.local
   openssh-server:
     image: lscr.io/linuxserver/openssh-server:latest
     labels:

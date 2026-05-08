@@ -27,8 +27,9 @@ SSH=(
   -o RequestTTY=no
   -o ServerAliveCountMax=6
   -o ServerAliveInterval=1
+  -o StrictHostKeyChecking=accept-new
   -o Tunnel=no
-  -o UserKnownHostsFile="$STATE_DIRECTORY/known_hosts.txt"
+  -o UserKnownHostsFile=/dev/null
   -p "$PORT"
   -i "$IDENTITY"
   "$@"
