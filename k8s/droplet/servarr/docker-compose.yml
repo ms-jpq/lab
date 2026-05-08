@@ -59,21 +59,13 @@ services:
     labels:
       kompose.service.nodeport.port: 30022
       kompose.service.type: nodeport
-    entrypoint:
-      - sh
-    command:
-      - -euxc
-      - |-
-        mkdir -p -- /config/sshd/sshd_config.d
-        cp -v -- /mnt/forward.conf /config/sshd/sshd_config.d/forward.conf
-        exec /init
     environment:
       PUBLIC_KEY_DIR: /srv
     ports:
       - 2222
     volumes:
       - ./authorized_keys:/srv/authorized_keys:ro
-      - ./sshd_config:/mnt/forward.conf:ro
+      - ./sshd_config:/config/sshd/sshd_config.d/forward.conf:ro
 
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
