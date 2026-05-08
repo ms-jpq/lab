@@ -11,19 +11,24 @@ shift -- 3
 SSH=(
   ssh
   -N
-  -T
   -F /dev/null
   -o BatchMode=yes
-  -o ClearAllForwardings=yes
-  -o ConnectTimeout=10
+  -o ConnectTimeout=9
   -o ExitOnForwardFailure=yes
+  -o ForwardAgent=no
+  -o ForwardX11=no
   -o GlobalKnownHostsFile=/dev/null
+  -o GSSAPIAuthentication=no
+  -o HostbasedAuthentication=no
   -o IdentitiesOnly=yes
-  -o LogLevel=INFO
+  -o KbdInteractiveAuthentication=no
+  -o PasswordAuthentication=no
+  -o PermitLocalCommand=no
+  -o RequestTTY=no
   -o ServerAliveCountMax=6
   -o ServerAliveInterval=1
-  -o StrictHostKeyChecking=no
-  -o UserKnownHostsFile=/dev/null
+  -o Tunnel=no
+  -o UserKnownHostsFile="$STATE_DIRECTORY/known_hosts.txt"
   -p "$PORT"
   -i "$IDENTITY"
   "$@"
