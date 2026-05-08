@@ -1,0 +1,160 @@
+---
+# https://wiki.servarr.com/lidarr/environment-variables
+# https://wiki.servarr.com/prowlarr/environment-variables
+# https://wiki.servarr.com/radarr/environment-variables
+# https://wiki.servarr.com/readarr/environment-variables
+# https://wiki.servarr.com/sonarr/environment-variables
+# https://wiki.bazarr.media/Additional-Configuration/PostgreSQL-Database/
+
+x-pg:
+  creds: &pg-creds ${COMPOSE_PROJECT_NAME}
+  host: &pg-host pg.${COMPOSE_PROJECT_NAME}.svc.cluster.local
+  port: &pg-port 5432
+
+services:
+  index:
+    image: docker.io/library/nginx:latest
+    labels:
+      kompose.service.expose: servarr.${DOMAIN}
+    ports:
+      - 80
+    volumes:
+      - ./index.html:/usr/share/nginx/html/index.html:ro
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    labels:
+      kompose.controller.type: statefulset
+      kompose.service.expose: prowlarr.servarr.${DOMAIN}
+      kompose.volume.type: hostPath
+    environment:
+      PROWLARR__AUTH__METHOD: External
+      PROWLARR__LOG__DBENABLED: false
+      PROWLARR__POSTGRES__HOST: *pg-host
+      PROWLARR__POSTGRES__MAINDB: prowlarr
+      PROWLARR__POSTGRES__PASSWORD: *pg-creds
+      PROWLARR__POSTGRES__PORT: *pg-port
+      PROWLARR__POSTGRES__USER: *pg-creds
+      PROWLARR__SERVER__BINDADDRESS: "::"
+    ports:
+      - 9696
+    volumes:
+      - /var/lib/local/servarr/prowlarr:/config
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    labels:
+      kompose.controller.type: statefulset
+      kompose.service.expose: sonarr.servarr.${DOMAIN}
+      kompose.volume.type: hostPath
+    environment:
+      SONARR__AUTH__METHOD: External
+      SONARR__LOG__DBENABLED: false
+      SONARR__POSTGRES__HOST: *pg-host
+      SONARR__POSTGRES__MAINDB: sonarr
+      SONARR__POSTGRES__PASSWORD: *pg-creds
+      SONARR__POSTGRES__PORT: *pg-port
+      SONARR__POSTGRES__USER: *pg-creds
+      SONARR__SERVER__BINDADDRESS: "::"
+    ports:
+      - 8989
+    volumes:
+      - /var/lib/local/servarr/sonarr:/config
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    labels:
+      kompose.controller.type: statefulset
+      kompose.service.expose: radarr.servarr.${DOMAIN}
+      kompose.volume.type: hostPath
+    environment:
+      RADARR__AUTH__METHOD: External
+      RADARR__LOG__DBENABLED: false
+      RADARR__POSTGRES__HOST: *pg-host
+      RADARR__POSTGRES__MAINDB: radarr
+      RADARR__POSTGRES__PASSWORD: *pg-creds
+      RADARR__POSTGRES__PORT: *pg-port
+      RADARR__POSTGRES__USER: *pg-creds
+      RADARR__SERVER__BINDADDRESS: "::"
+    ports:
+      - 7878
+    volumes:
+      - /var/lib/local/servarr/radarr:/config
+
+  lidarr:
+    image: lscr.io/linuxserver/lidarr:latest
+    labels:
+      kompose.controller.type: statefulset
+      kompose.service.expose: lidarr.servarr.${DOMAIN}
+      kompose.volume.type: hostPath
+    environment:
+      LIDARR__AUTH__METHOD: External
+      LIDARR__LOG__DBENABLED: false
+      LIDARR__POSTGRES__HOST: *pg-host
+      LIDARR__POSTGRES__MAINDB: lidarr
+      LIDARR__POSTGRES__PASSWORD: *pg-creds
+      LIDARR__POSTGRES__PORT: *pg-port
+      LIDARR__POSTGRES__USER: *pg-creds
+      LIDARR__SERVER__BINDADDRESS: "::"
+    ports:
+      - 8686
+    volumes:
+      - /var/lib/local/servarr/lidarr:/config
+
+  readarr:
+    image: lscr.io/linuxserver/readarr:latest
+    labels:
+      kompose.controller.type: statefulset
+      kompose.service.expose: readarr.servarr.${DOMAIN}
+      kompose.volume.type: hostPath
+    environment:
+      READARR__AUTH__METHOD: External
+      READARR__LOG__DBENABLED: false
+      READARR__POSTGRES__HOST: *pg-host
+      READARR__POSTGRES__MAINDB: readarr
+      READARR__POSTGRES__PASSWORD: *pg-creds
+      READARR__POSTGRES__PORT: *pg-port
+      READARR__POSTGRES__USER: *pg-creds
+      READARR__SERVER__BINDADDRESS: "::"
+    ports:
+      - 8787
+    volumes:
+      - /var/lib/local/servarr/readarr:/config
+
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    labels:
+      kompose.controller.type: statefulset
+      kompose.service.expose: bazarr.servarr.${DOMAIN}
+      kompose.volume.type: hostPath
+    environment:
+      POSTGRES_DATABASE: bazarr
+      POSTGRES_ENABLED: true
+      POSTGRES_HOST: *pg-host
+      POSTGRES_PASSWORD: *pg-creds
+      POSTGRES_PORT: *pg-port
+      POSTGRES_USERNAME: *pg-creds
+    ports:
+      - 6767
+    volumes:
+      - /var/lib/local/servarr/bazarr:/config
+
+  pg:
+    image: docker.io/library/postgres:18
+    labels:
+      kompose.controller.type: statefulset
+      kompose.volume.type: hostPath
+    environment:
+      POSTGRES_PASSWORD: *pg-creds
+      POSTGRES_USER: *pg-creds
+    ports:
+      - *pg-port
+    configs:
+      - source: init
+        target: /docker-entrypoint-initdb.d/init.sql
+    volumes:
+      - /var/lib/local/servarr/postgresql:/var/lib/postgresql
+
+configs:
+  init:
+    file: ./init.sql

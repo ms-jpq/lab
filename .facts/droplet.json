@@ -2,17 +2,26 @@
   "ENV_BTRFS_MNTS": [],
   "ENV_CERTBOT_SITES": [
     "ENV_DOMAIN",
-    "debug.ENV_DOMAIN",
-    "dash.ENV_DOMAIN",
-    "k8s.mcp.ENV_DOMAIN",
-    "redis.ENV_DOMAIN",
-    "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN,], ENV_SITES)"
+    "m5_for([SUB_DOMAIN], [SUB_DOMAIN.ENV_DOMAIN,], ENV_PRIVATE_SITES, ENV_SITES)"
   ],
   "ENV_EXTERNAL_NAMES": [],
   "ENV_INDEX": [],
   "ENV_MACHINES": [],
   "ENV_MAIL": "me@ENV_DOMAIN",
   "ENV_OVPN_SERVER_NAME": "ENV_WG_SERVER_NAME",
+  "ENV_PRIVATE_SITES": [
+    "bazarr.servarr",
+    "dash",
+    "debug",
+    "k8s.mcp",
+    "lidarr.servarr",
+    "prowlarr.servarr",
+    "radarr.servarr",
+    "readarr.servarr",
+    "redis",
+    "servarr",
+    "sonarr.servarr"
+  ],
   "ENV_PUBLIC_SITES": [
     "*.x.ENV_DOMAIN/*",
     "ENV_DOMAIN/*",
