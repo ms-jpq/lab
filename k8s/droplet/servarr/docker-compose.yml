@@ -13,10 +13,26 @@ x-k8s:
       namespace: ${COMPOSE_PROJECT_NAME}
     spec:
       selector:
-        io.kompose.service: openssh-server
+        io.kompose.service: &service openssh-server
       ports:
         - port: 8080
           targetPort: 8080
+
+  - apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata:
+      name: openssh-server-ingress
+      namespace: ${COMPOSE_PROJECT_NAME}
+    spec:
+      podSelector:
+        matchLabels:
+          io.kompose.service: *service
+      policyTypes:
+        - Ingress
+      ingress:
+        - ports:
+            - port: 2222
+              protocol: TCP
 
 services:
   index:
