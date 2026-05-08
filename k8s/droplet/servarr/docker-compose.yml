@@ -118,6 +118,15 @@ services:
     volumes:
       - /var/lib/local/servarr/bazarr:/config
 
+  # http://byparr.kompsed-servarr.svc.cluster.local:8191/
+  byparr:
+    image: ghcr.io/thephaseless/byparr:latest
+    environment:
+      HOST: "::"
+      PROXY_SERVER: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
+    ports:
+      - 8191
+
   pg:
     image: docker.io/library/postgres:18
     labels:
