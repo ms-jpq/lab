@@ -24,6 +24,7 @@
 + rclone-mnt
 + router
 + share
++ ssh-fwd
 + telemetry
 + telemetry-collector
 + tv

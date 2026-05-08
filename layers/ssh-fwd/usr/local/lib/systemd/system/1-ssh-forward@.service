@@ -1,0 +1,23 @@
+[Unit]
+Description               = SSH Forward -- %I
+ConditionFileIsExecutable = /usr/local/opt/ssh-fwd/libexec/connect.sh
+
+After                     = network-online.target
+Wants                     = network-online.target
+
+[Service]
+Restart                   = on-failure
+ProtectSystem             = strict
+ProtectHome               = yes
+PrivateTmp                = yes
+
+IPAccounting              = yes
+
+EnvironmentFile           = /usr/local/etc/default/%I.sshfwd.env
+
+Environment               = TARGET=localhost
+Environment               = PORT=22
+Environment               = IDENTITY=%I
+Environment               = ARGV=
+
+ExecStart                 = /usr/local/opt/ssh-fwd/libexec/connect.sh ${TARGET} ${PORT} ${IDENTITY} $ARGV
