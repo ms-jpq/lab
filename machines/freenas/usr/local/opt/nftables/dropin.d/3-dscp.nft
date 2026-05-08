@@ -10,9 +10,9 @@ table inet user {
   }
 
   chain postmangle {
-    meta l4proto . th sport @bulk_ports mark set mark | $BULK counter comment "Mark bulk ports"
+    meta l4proto . th sport @bulk_ports mark set mark | $BULK comment "Mark bulk ports"
 
-    mark & $BULK == $BULK ip  dscp set cs1 counter
-    mark & $BULK == $BULK ip6 dscp set cs1 counter
+    mark & $BULK == $BULK ip  dscp set cs1
+    mark & $BULK == $BULK ip6 dscp set cs1
   }
 }
