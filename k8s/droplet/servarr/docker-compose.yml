@@ -114,6 +114,7 @@ services:
       - 8989
     volumes:
       - /var/lib/local/servarr/sonarr:/config
+      - /var/lib/local/servarr/media:/media
 
   radarr:
     image: lscr.io/linuxserver/radarr:latest
@@ -134,6 +135,7 @@ services:
       - 7878
     volumes:
       - /var/lib/local/servarr/radarr:/config
+      - /var/lib/local/servarr/media:/media
 
   lidarr:
     image: lscr.io/linuxserver/lidarr:latest
@@ -154,6 +156,7 @@ services:
       - 8686
     volumes:
       - /var/lib/local/servarr/lidarr:/config
+      - /var/lib/local/servarr/media:/media
 
   bazarr:
     image: lscr.io/linuxserver/bazarr:latest
@@ -172,6 +175,7 @@ services:
       - 6767
     volumes:
       - /var/lib/local/servarr/bazarr:/config
+      - /var/lib/local/servarr/media:/media
 
   # http://byparr.kompsed-servarr.svc.cluster.local:8191/
   byparr:
