@@ -7,6 +7,8 @@ Wants                     = network-online.target
 
 [Service]
 Restart                   = on-failure
+RestartSec                = 9
+
 ProtectSystem             = strict
 ProtectHome               = yes
 PrivateTmp                = yes
@@ -14,7 +16,6 @@ PrivateTmp                = yes
 User                      = www-data
 Group                     = www-data
 
-RuntimeDirectory          = local/ssh-fwd/%I
 StateDirectory            = local/ssh-fwd/%I
 
 IPAccounting              = yes

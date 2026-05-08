@@ -16,17 +16,14 @@ SSH=(
   -o BatchMode=yes
   -o ClearAllForwardings=yes
   -o ConnectTimeout=10
-  -o ControlMaster=auto
-  -o ControlPath="$RUNTIME_DIRECTORY/%C"
-  -o ControlPersist=60
   -o ExitOnForwardFailure=yes
   -o GlobalKnownHostsFile=/dev/null
   -o IdentitiesOnly=yes
   -o LogLevel=INFO
   -o ServerAliveCountMax=6
   -o ServerAliveInterval=1
-  -o StrictHostKeyChecking=accept-new
-  -o UserKnownHostsFile="$STATE_DIRECTORY/known_hosts.txt"
+  -o StrictHostKeyChecking=no
+  -o UserKnownHostsFile=/dev/null
   -p "$PORT"
   -i "$IDENTITY"
   "$@"

@@ -50,11 +50,12 @@ services:
       kompose.service.nodeport.port: 30022
       kompose.service.type: nodeport
     environment:
-      PUBLIC_KEY_FILE: /srv/authorized_keys
+      PUBLIC_KEY_DIR: /srv
     ports:
       - 2222
     volumes:
       - ./authorized_keys:/srv/authorized_keys:ro
+      - ./sshd_config:/config/sshd/sshd_config.d/forward.conf:ro
 
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest

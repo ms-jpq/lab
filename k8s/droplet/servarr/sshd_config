@@ -1,0 +1,2 @@
+GatewayPorts yes
+AllowStreamLocalForwarding yes
