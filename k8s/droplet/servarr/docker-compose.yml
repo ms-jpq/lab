@@ -40,11 +40,24 @@ services:
     volumes:
       - /var/lib/local/servarr/prowlarr:/config
 
+  rclone:
+    image: ghcr.io/rclone/rclone:latest
+    labels:
+      kompose.service.group: &svcgrp media
+    command:
+      - serve
+      - http
+      - --
+      - /media
+    volumes:
+      - &vol-media /var/lib/local/servarr/media:/media
+
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: sonarr.servarr.${DOMAIN}
+      kompose.service.group: *svcgrp
       kompose.volume.type: hostPath
     environment:
       SONARR__AUTH__METHOD: External
@@ -59,12 +72,14 @@ services:
       - 8989
     volumes:
       - /var/lib/local/servarr/sonarr:/config
+      - *vol-media
 
   radarr:
     image: lscr.io/linuxserver/radarr:latest
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: radarr.servarr.${DOMAIN}
+      kompose.service.group: *svcgrp
       kompose.volume.type: hostPath
     environment:
       RADARR__AUTH__METHOD: External
@@ -79,12 +94,14 @@ services:
       - 7878
     volumes:
       - /var/lib/local/servarr/radarr:/config
+      - *vol-media
 
   lidarr:
     image: lscr.io/linuxserver/lidarr:latest
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: lidarr.servarr.${DOMAIN}
+      kompose.service.group: *svcgrp
       kompose.volume.type: hostPath
     environment:
       LIDARR__AUTH__METHOD: External
@@ -99,12 +116,14 @@ services:
       - 8686
     volumes:
       - /var/lib/local/servarr/lidarr:/config
+      - *vol-media
 
   bazarr:
     image: lscr.io/linuxserver/bazarr:latest
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: bazarr.servarr.${DOMAIN}
+      kompose.service.group: *svcgrp
       kompose.volume.type: hostPath
     environment:
       POSTGRES_DATABASE: bazarr
@@ -117,6 +136,7 @@ services:
       - 6767
     volumes:
       - /var/lib/local/servarr/bazarr:/config
+      - *vol-media
 
   # http://byparr.kompsed-servarr.svc.cluster.local:8191/
   byparr:
