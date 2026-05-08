@@ -1,6 +1,5 @@
 #
 
-add element inet user internal_ports { tcp . 30000-32767 }
 add element inet user external_ports { tcp . 6443, tcp . 10250 }
 
 table inet user {
@@ -16,12 +15,19 @@ table inet user {
     elements = { tcp . 8008, tcp . 9000 }
   }
 
+  set k3s_nodeports {
+    type  inet_proto . inet_service
+    flags interval
+    elements = { tcp . 30000-32767, udp . 30000-32767 }
+  }
+
   chain preraw {
     iifname @external_ifs meta l4proto . th dport @k3s_lbs counter reject comment "Forbid k8s load balancers"
   }
 
   chain forward {
-    iifname @k3s_ifs ip  saddr @internal_v4 mark set mark | 0xb00b0000 comment "Allow k3s IP4 traffic"
-    iifname @k3s_ifs ip6 saddr @internal_v6 mark set mark | 0xb00b0000 comment "Allow k3s IP6 traffic"
+    iifname @k3s_ifs ip   saddr @internal_v4                                          mark set mark | 0xb00b0000 comment "Allow k3s IP4 traffic"
+    iifname @k3s_ifs ip6  saddr @internal_v6                                          mark set mark | 0xb00b0000 comment "Allow k3s IP6 traffic"
+    iifname @internal_ifs ct original protocol . ct original proto-dst @k3s_nodeports mark set mark | 0xb00b0000 comment "Allow k3s nodeport traffic"
   }
 }
