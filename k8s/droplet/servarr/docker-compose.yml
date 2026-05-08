@@ -6,12 +6,17 @@
 # https://wiki.bazarr.media/Additional-Configuration/PostgreSQL-Database/
 
 x-k8s:
+  # openssh-server-fwd.kompsed-servarr.svc.cluster.local
   - apiVersion: v1
     kind: Service
     metadata:
       name: openssh-server-fwd
       namespace: ${COMPOSE_PROJECT_NAME}
     spec:
+      ipFamilyPolicy: PreferDualStack
+      ipFamilies:
+        - IPv6
+        - IPv4
       selector:
         io.kompose.service: &service openssh-server
       ports:
@@ -49,7 +54,6 @@ services:
     volumes:
       - ./index.html:/usr/share/nginx/html/index.html:ro
 
-  # openssh-server.kompsed-servarr.svc.cluster.local
   openssh-server:
     image: lscr.io/linuxserver/openssh-server:latest
     labels:
