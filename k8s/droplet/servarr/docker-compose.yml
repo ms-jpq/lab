@@ -34,7 +34,7 @@ services:
       PROWLARR__POSTGRES__PASSWORD: *pg-creds
       PROWLARR__POSTGRES__PORT: *pg-port
       PROWLARR__POSTGRES__USER: *pg-creds
-      PROWLARR__SERVER__BINDADDRESS: "::"
+      PROWLARR__SERVER__BINDADDRESS: ""
     ports:
       - 9696
     volumes:
@@ -54,7 +54,7 @@ services:
       SONARR__POSTGRES__PASSWORD: *pg-creds
       SONARR__POSTGRES__PORT: *pg-port
       SONARR__POSTGRES__USER: *pg-creds
-      SONARR__SERVER__BINDADDRESS: "::"
+      SONARR__SERVER__BINDADDRESS: ""
     ports:
       - 8989
     volumes:
@@ -74,7 +74,7 @@ services:
       RADARR__POSTGRES__PASSWORD: *pg-creds
       RADARR__POSTGRES__PORT: *pg-port
       RADARR__POSTGRES__USER: *pg-creds
-      RADARR__SERVER__BINDADDRESS: "::"
+      RADARR__SERVER__BINDADDRESS: ""
     ports:
       - 7878
     volumes:
@@ -94,7 +94,7 @@ services:
       LIDARR__POSTGRES__PASSWORD: *pg-creds
       LIDARR__POSTGRES__PORT: *pg-port
       LIDARR__POSTGRES__USER: *pg-creds
-      LIDARR__SERVER__BINDADDRESS: "::"
+      LIDARR__SERVER__BINDADDRESS: ""
     ports:
       - 8686
     volumes:
@@ -122,7 +122,7 @@ services:
   byparr:
     image: ghcr.io/thephaseless/byparr:latest
     environment:
-      HOST: "::"
+      HOST: ""
       PROXY_SERVER: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
     ports:
       - 8191
