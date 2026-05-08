@@ -90,7 +90,7 @@ JQ
       ./libexec/m4.sh "$F" "${B//'.m4'/''}" "$DEFS" -D"ENV_RAND_HEX=$RAND_HEX"
       ;;
     *)
-      cp -fr -- "$F" "$B"
+      cp -fr --dereference -- "$F" "$B"
       ;;
     esac
   done
