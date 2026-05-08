@@ -123,7 +123,7 @@ services:
     image: ghcr.io/thephaseless/byparr:latest
     environment:
       HOST: ""
-      PROXY_SERVER: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
+      # PROXY_SERVER: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
     ports:
       - 8191
 
