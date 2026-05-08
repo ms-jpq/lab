@@ -18,9 +18,9 @@ table inet user {
   }
 
   chain forward {
-    iifname "lo"                                                  mark set mark | $MARK_ACCEPT comment "Allow local traffic"
-    iifname @internal_ifs iifname != @isolated_ifs                mark set mark | $MARK_ACCEPT comment "Allow internal iface traffic"
-    iifname @isolated_ifs oifname    @external_ifs                mark set mark | $MARK_ACCEPT comment "Allow isolated iface to external iface traffic"
+    iifname "lo"                                                                       mark set mark | $MARK_ACCEPT comment "Allow local traffic"
+    iifname @internal_ifs iifname != @isolated_ifs                                     mark set mark | $MARK_ACCEPT comment "Allow internal iface traffic"
+    iifname @isolated_ifs oifname    @external_ifs                                     mark set mark | $MARK_ACCEPT comment "Allow isolated iface to external iface traffic"
     iifname @isolated_ifs ct original protocol . ct original proto-dst @isolated_ports mark set mark | $MARK_ACCEPT comment "Allow whitelisted isolated ports"
 
     ct original protocol . ct original proto-dst . ct original ip  daddr @pass_v4 mark set mark | $MARK_ACCEPT comment "Pass IPv4"
