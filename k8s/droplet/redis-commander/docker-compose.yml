@@ -1,4 +1,7 @@
 ---
+x-networkpolicy:
+  - librechat
+
 services:
   redis-commander:
     image: ghcr.io/joeferner/redis-commander:latest
