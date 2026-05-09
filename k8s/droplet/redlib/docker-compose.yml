@@ -54,7 +54,6 @@ services:
       kompose.service.expose: forum.${DOMAIN}
     environment:
       <<: *env
-      REDLIB_DEFAULT_FRONT_PAGE: all
       REDLIB_FULL_URL: https://forum.${DOMAIN}
     ports:
       - 8080
