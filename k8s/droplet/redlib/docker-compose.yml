@@ -1,33 +1,7 @@
 ---
 services:
-  # redwarp:
-  #   image: docker.io/caomingjun/warp:latest
-  #   labels:
-  #     kompose.service.group: &redwarp redlib
-  #   cap_add:
-  #     - NET_ADMIN
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         memory: 500M
-  #   volumes:
-  #     - data1:/var/lib/cloudflare-warp
-  #
-  # bluewarp:
-  #   image: docker.io/caomingjun/warp:latest
-  #   labels:
-  #     kompose.service.group: &bluewarp bluelib
-  #   cap_add:
-  #     - NET_ADMIN
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         memory: 500M
-  #   volumes:
-  #     - data2:/var/lib/cloudflare-warp
-
   redlib:
-    image: &img ghcr.io/silvenga/redlib:latest
+    image: &img ghcr.io/redlib/redlib:latest
     labels:
       kompose.service.expose: bbs.${DOMAIN}
     environment: &env
