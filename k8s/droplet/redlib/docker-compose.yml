@@ -1,7 +1,7 @@
 ---
 services:
   redlib:
-    image: &img ghcr.io/redlib/redlib:latest
+    image: &img ghcr.io/silvenga/redlib:latest
     labels:
       kompose.service.expose: bbs.${DOMAIN}
     environment: &env
