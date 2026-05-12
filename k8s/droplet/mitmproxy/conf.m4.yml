@@ -1,0 +1,7 @@
+# https://docs.mitmproxy.org/stable/concepts/options/
+---
+mode:
+  - upstream:http://proxy.kompsed-hostproxy.svc.cluster.local:1080
+proxyauth: m5_assert([ENV_MINIFLUX_USERNAME]):m5_assert([ENV_MINIFLUX_PASSWORD])
+web_host: "*"
+web_password: kompsed-mitmproxy

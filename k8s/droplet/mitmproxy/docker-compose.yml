@@ -50,13 +50,7 @@ services:
       traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-auth@kubernetescrd
     command:
       - mitmweb
-      - --web-host
-      - "*"
-      - --set
-      - web_password=${COMPOSE_PROJECT_NAME}
-      - --proxyauth
-      - ${PROXY_USERNAME}:${PROXY_PASSWORD}
-      - --mode
-      - upstream:http://proxy.kompsed-hostproxy.svc.cluster.local:1080
     ports:
       - 8081
+    volumes:
+      - ./conf.yml:/home/mitmproxy/.mitmproxy/config.yaml:ro
