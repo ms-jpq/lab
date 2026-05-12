@@ -1,24 +1,26 @@
 ---
 x-k8s:
-  - apiVersion: networking.k8s.io/v1
-    kind: Ingress
+  - apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
     metadata:
       labels:
         io.kompose.service: &companion invidious-companion
       name: *companion
       namespace: ${COMPOSE_PROJECT_NAME}
     spec:
+      parentRefs:
+        - name: traefik-gateway
+          namespace: kube-system
+      hostnames:
+        - youku.m5_assert([ENV_DOMAIN])
       rules:
-        - host: youku.m5_assert([ENV_DOMAIN])
-          http:
-            paths:
-              - backend:
-                  service:
-                    name: *companion
-                    port:
-                      number: 8282
-                path: /companion
-                pathType: Prefix
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /companion
+          backendRefs:
+            - name: *companion
+              port: 8282
 
 services:
   invidious:

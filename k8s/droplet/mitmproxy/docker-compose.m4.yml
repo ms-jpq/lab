@@ -1,14 +1,28 @@
 ---
 x-k8s:
-  - apiVersion: traefik.io/v1alpha1
-    kind: Middleware
+  - apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
     metadata:
-      name: auth
+      labels:
+        io.kompose.service: &mitm mitmproxy
+      name: *mitm
       namespace: ${COMPOSE_PROJECT_NAME}
     spec:
-      headers:
-        customRequestHeaders:
-          Authorization: Bearer ${COMPOSE_PROJECT_NAME}
+      parentRefs:
+        - name: traefik-gateway
+          namespace: kube-system
+      hostnames:
+        - mitm.m5_assert([ENV_DOMAIN])
+      rules:
+        - filters:
+            - type: RequestHeaderModifier
+              requestHeaderModifier:
+                set:
+                  - name: Authorization
+                    value: Bearer ${COMPOSE_PROJECT_NAME}
+          backendRefs:
+            - name: *mitm
+              port: 8081
 
   - apiVersion: v1
     kind: Service
@@ -45,9 +59,6 @@ x-k8s:
 services:
   mitmproxy:
     image: ghcr.io/mitmproxy/mitmproxy:latest
-    labels:
-      kompose.service.expose: mitm.${DOMAIN}
-      traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-auth@kubernetescrd
     command:
       - mitmweb
     ports:

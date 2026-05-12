@@ -1,21 +1,32 @@
 ---
 x-k8s:
-  - apiVersion: traefik.io/v1alpha1
-    kind: Middleware
+  - apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
     metadata:
-      name: auth
+      labels:
+        io.kompose.service: &svc guacamole
+      name: *svc
       namespace: ${COMPOSE_PROJECT_NAME}
     spec:
-      headers:
-        customRequestHeaders:
-          Authorization: Basic Z3VhY2FkbWluOmd1YWNhZG1pbg==
+      parentRefs:
+        - name: traefik-gateway
+          namespace: kube-system
+      hostnames:
+        - rdp.m5_assert([ENV_DOMAIN])
+      rules:
+        - filters:
+            - type: RequestHeaderModifier
+              requestHeaderModifier:
+                set:
+                  - name: Authorization
+                    value: Basic Z3VhY2FkbWluOmd1YWNhZG1pbg==
+          backendRefs:
+            - name: *svc
+              port: 8080
 
 services:
   guacamole:
     image: &img docker.io/guacamole/guacamole:latest
-    labels:
-      kompose.service.expose: rdp.${DOMAIN}
-      traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-auth@kubernetescrd
     environment:
       GUACD_HOSTNAME: guacd.${COMPOSE_PROJECT_NAME}.svc.cluster.local
       REMOTE_IP_VALVE_ENABLED: true

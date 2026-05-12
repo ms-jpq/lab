@@ -1,4 +1,4 @@
-# https://github.com/traefik/traefik-helm-chart/blob/master/traefik/VALUES.md
+# https://github.com/traefik/traefik-helm-chart/blob/master/traefik/values.yaml
 ---
 apiVersion: helm.cattle.io/v1
 kind: HelmChartConfig
@@ -9,6 +9,14 @@ spec:
   valuesContent: |-
     additionalArguments:
       - --serverstransport.insecureskipverify=true
+    providers:
+      kubernetesGateway:
+        enabled: true
+    gateway:
+      listeners:
+        web:
+          namespacePolicy:
+            from: All
     ingressRoute:
       dashboard:
         enabled: true

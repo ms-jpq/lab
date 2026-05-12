@@ -1,15 +1,32 @@
 ---
 x-k8s:
-  - apiVersion: traefik.io/v1alpha1
-    kind: Middleware
+  - apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
     metadata:
-      name: root-redirect
+      labels:
+        io.kompose.service: &server server
+      name: api
       namespace: ${COMPOSE_PROJECT_NAME}
     spec:
-      redirectRegex:
-        regex: ^https?://api\.spotify\.([^/]+)/?$
-        replacement: https://spotify.$1
-        permanent: true
+      parentRefs:
+        - name: traefik-gateway
+          namespace: kube-system
+      hostnames:
+        - api.spotify.m5_assert([ENV_DOMAIN])
+      rules:
+        - matches:
+            - path:
+                type: Exact
+                value: /
+          filters:
+            - type: RequestRedirect
+              requestRedirect:
+                scheme: https
+                hostname: spotify.m5_assert([ENV_DOMAIN])
+                statusCode: 301
+        - backendRefs:
+            - name: *server
+              port: 8080
 
 services:
   web:
@@ -29,9 +46,6 @@ services:
 
   server:
     image: ghcr.io/yooooomi/your_spotify_server:latest
-    labels:
-      kompose.service.expose: api.spotify.${DOMAIN}
-      traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-root-redirect@kubernetescrd
     environment:
       API_ENDPOINT: https://api.spotify.${DOMAIN}
       CLIENT_ENDPOINT: *api
