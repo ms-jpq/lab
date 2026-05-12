@@ -36,7 +36,7 @@ services:
       API_ENDPOINT: https://api.spotify.${DOMAIN}
       CLIENT_ENDPOINT: *api
       CORS: https://spotify.${DOMAIN}
-      MONGO_ENDPOINT: mongodb://mongo.${COMPOSE_PROJECT_NAME}.svc.cluster.local:27017/${COMPOSE_PROJECT_NAME}
+      MONGO_ENDPOINT: mongodb://mongo.${COMPOSE_PROJECT_NAME}.svc.cluster.local:27017/
       SPOTIFY_PUBLIC:
       SPOTIFY_SECRET:
     ports:
