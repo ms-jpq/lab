@@ -28,7 +28,8 @@ Environment     = VFS_CACHE_MODE=off
 Environment     = WEBDAV="--webdav-vendor nginx --webdav-pacer-min-sleep 0"
 Environment     = READONLY="--read-only --vfs-fast-fingerprint"
 
-ExecStartPre    = !umount --force --lazy -- ${WHERE}
+ExecStop        = -!fusermount -u -- ${WHERE}
+ExecStartPre    = -!umount --force --lazy -- ${WHERE}
 ExecStartPre    = !mkdir -v -p -- /media/%I
 ExecStartPre    = !chown -v -- 1000:1000 /media/%I
 ExecStart       = rclone mount \
@@ -49,5 +50,5 @@ ExecStart       = rclone mount \
                     $WEBDAV $READONLY \
                     $ARGV -- ${WHAT} ${WHERE}
 ExecReload      = kill -s HUP -- ${MAINPID}
-ExecStop        = !fusermount -u -- ${WHERE}
-ExecStop        = !umount --force --lazy -- ${WHERE}
+ExecStop        = -!fusermount -u -- ${WHERE}
+ExecStop        = -!umount --force --lazy -- ${WHERE}
