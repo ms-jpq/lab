@@ -7,15 +7,16 @@ services:
       kompose.service.expose: chat.${DOMAIN}
     environment:
       # ANTHROPIC_REVERSE_PROXY: http://bifrost.komposed-bifrost.svc.cluster.local:8080/anthropic/v1/messages
+      # OPENAI_API_KEY:
       # OPENAI_REVERSE_PROXY: http://bifrost.komposed-bifrost.svc.cluster.local:8080/openai/v1
       ANTHROPIC_API_KEY:
+      ANTHROPIC_MODELS: claude-opus-4-7
       HOST: "::"
       JWT_REFRESH_SECRET:
       JWT_SECRET:
       MEILI_HOST: http://meilisearch.komposed-librechat.svc.cluster.local:7700
       MONGO_URI: mongodb://mongo.komposed-librechat.svc.cluster.local:27017/
       NO_INDEX: true
-      OPENAI_API_KEY:
       OPENROUTER_KEY:
       RAG_API_URL: http://rag-api.komposed-librechat.svc.cluster.local:8000
       REDIS_URI: redis://redis.komposed-librechat.svc.cluster.local:6379
