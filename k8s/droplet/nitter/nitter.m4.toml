@@ -7,7 +7,7 @@ title    = "🐓"
 redisHost = "redis"
 
 [[Config]]
-proxy = "http://proxy.kompsed-hostproxy.svc.cluster.local:1080"
+proxy = "http://proxy.komposed-hostproxy.svc.cluster.local:1080"
 
 [[Preferences]]
 hlsPlayback    = true

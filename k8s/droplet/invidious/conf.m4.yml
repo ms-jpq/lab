@@ -6,7 +6,7 @@ check_tables: true
 db:
   host: pg
   port: 5432
-  dbname: &stack kompsed-invidious
+  dbname: &stack komposed-invidious
   user: *stack
   password: *stack
 # signature_server: invidious-sig-helper:12999
@@ -41,7 +41,7 @@ default_user_preferences:
     - reddit
 
 http_proxy:
-  host: proxy.kompsed-hostproxy.svc.cluster.local
+  host: proxy.komposed-hostproxy.svc.cluster.local
   password:
   port: 1080
   user:

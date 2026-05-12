@@ -36,7 +36,7 @@ services:
     environment:
       MCP_HTTP_PORT: 8080
       SEARXNG_URL: http://searxng.${COMPOSE_PROJECT_NAME}.svc.cluster.local:8080
-      URL_READER_HTTP_PROXY: http://proxy.kompsed-hostproxy.svc.cluster.local:1080
+      URL_READER_HTTP_PROXY: http://proxy.komposed-hostproxy.svc.cluster.local:1080
     ports:
       - 8080
 

@@ -5,7 +5,7 @@ services:
     labels:
       kompose.service.expose: bbs.${DOMAIN}
     environment: &env
-      ALL_PROXY: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
+      ALL_PROXY: socks5://proxy.komposed-hostproxy.svc.cluster.local:1080
       REDLIB_AUTOPLAY_VIDEOS: on
       REDLIB_DEFAULT_AUTOPLAY_VIDEOS: on
       REDLIB_DEFAULT_BLUR_NSFW: on

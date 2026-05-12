@@ -12,7 +12,7 @@ if [[ -v RECURSION ]]; then
   FILE="$1"
   DIR="${FILE%/*}"
   DIRBASE="${DIR##*/}"
-  NAMESPACE="kompsed-$DIRBASE"
+  NAMESPACE="komposed-$DIRBASE"
   TMP="$DST/$NAMESPACE"
   YAML="$TMP.yml"
   KEEL="$(< ./k8s/keel.json)"
@@ -69,7 +69,7 @@ JQ
             {
               namespaceSelector: {
                 matchLabels: {
-                  "kubernetes.io/metadata.name": ("kompsed-" + .)
+                  "kubernetes.io/metadata.name": ("komposed-" + .)
                 }
               }
             }

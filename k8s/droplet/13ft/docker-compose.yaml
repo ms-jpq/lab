@@ -5,6 +5,6 @@ services:
     labels:
       kompose.service.expose: 12ft.${DOMAIN}
     environment:
-      HTTP_PROXY: http://proxy.kompsed-hostproxy.svc.cluster.local:1080
+      HTTP_PROXY: http://proxy.komposed-hostproxy.svc.cluster.local:1080
     ports:
       - 5000

@@ -6,7 +6,7 @@ services:
     labels:
       kompose.service.expose: rss.${DOMAIN}
     environment:
-      # HTTPS_PROXY: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
+      # HTTPS_PROXY: socks5://proxy.komposed-hostproxy.svc.cluster.local:1080
       # HTTP_PROXY: *proxy
       ADMIN_PASSWORD:
       ADMIN_USERNAME:
@@ -15,7 +15,7 @@ services:
       CLEANUP_ARCHIVE_UNREAD_DAYS: -1
       CREATE_ADMIN: 1
       DATABASE_URL:
-      HTTP_CLIENT_PROXY: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
+      HTTP_CLIENT_PROXY: socks5://proxy.komposed-hostproxy.svc.cluster.local:1080
       HTTP_CLIENT_TIMEOUT: &timeout 600
       INVIDIOUS_INSTANCE: youku.${DOMAIN}
       MEDIA_PROXY_HTTP_CLIENT_TIMEOUT: *timeout

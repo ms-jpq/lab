@@ -9,4 +9,4 @@ crawler:
       - --disable-gpu
       - --disable-software-rasterizer
       - --disable-web-security
-      - --proxy-server=socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
+      - --proxy-server=socks5://proxy.komposed-hostproxy.svc.cluster.local:1080

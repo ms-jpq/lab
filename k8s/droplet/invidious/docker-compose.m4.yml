@@ -51,7 +51,7 @@ services:
           memory: 1G
     environment:
       HOST: "[::]"
-      PROXY: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
+      PROXY: socks5://proxy.komposed-hostproxy.svc.cluster.local:1080
       SERVER_SECRET_KEY:
     ports:
       - 8282

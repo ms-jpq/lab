@@ -6,7 +6,7 @@
 # https://wiki.bazarr.media/Additional-Configuration/PostgreSQL-Database/
 
 x-k8s:
-  # openssh-server-fwd.kompsed-servarr.svc.cluster.local
+  # openssh-server-fwd.komposed-servarr.svc.cluster.local
   - apiVersion: v1
     kind: Service
     metadata:
@@ -169,12 +169,12 @@ services:
       - /var/lib/local/servarr/bazarr:/config
       - /var/lib/local/servarr/media:/media
 
-  # http://byparr.kompsed-servarr.svc.cluster.local:8191/
+  # http://byparr.komposed-servarr.svc.cluster.local:8191/
   byparr:
     image: ghcr.io/thephaseless/byparr:latest
     environment:
       HOST: ""
-      # PROXY_SERVER: socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
+      # PROXY_SERVER: socks5://proxy.komposed-hostproxy.svc.cluster.local:1080
     ports:
       - 8191
 

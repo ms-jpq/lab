@@ -9,19 +9,19 @@ mcpSettings:
 mcpServers:
   bifrost:
     type: http
-    url: http://bifrost.kompsed-bifrost.svc.cluster.local:8080/mcp
+    url: http://bifrost.komposed-bifrost.svc.cluster.local:8080/mcp
   kubernetes:
     type: http
-    url: http://mcp.kompsed-k8s-mcp.svc.cluster.local:8080/mcp
+    url: http://mcp.komposed-k8s-mcp.svc.cluster.local:8080/mcp
   playwright:
     type: http
-    url: http://playwright.kompsed-mcp.svc.cluster.local:8080/mcp
+    url: http://playwright.komposed-mcp.svc.cluster.local:8080/mcp
   redis:
     type: http
-    url: http://mcp.kompsed-redis-commander.svc.cluster.local:8000/mcp
+    url: http://mcp.komposed-redis-commander.svc.cluster.local:8000/mcp
   youtube:
     type: http
-    url: http://youtube-transcript.kompsed-mcp.svc.cluster.local:8080/mcp
+    url: http://youtube-transcript.komposed-mcp.svc.cluster.local:8080/mcp
 
 memory:
   disabled: true

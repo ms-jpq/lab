@@ -9,7 +9,7 @@ services:
       ADMIN_PASSWORD: None
       ADMIN_USERNAME: None
       ALLOWED_HOSTS: "*"
-      HTTP_PROXY: http://proxy.kompsed-hostproxy.svc.cluster.local:1080
+      HTTP_PROXY: http://proxy.komposed-hostproxy.svc.cluster.local:1080
       MEDIA_MAX_SIZE: 50m
       PGID: 1000
       PUBLIC_ADD_VIEW: True

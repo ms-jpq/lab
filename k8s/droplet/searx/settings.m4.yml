@@ -19,7 +19,7 @@ outgoing:
   extra_proxy_timeout: 1
   proxies:
     all://:
-      - socks5://proxy.kompsed-hostproxy.svc.cluster.local:1080
+      - socks5://proxy.komposed-hostproxy.svc.cluster.local:1080
 
 search:
   autocomplete: google
