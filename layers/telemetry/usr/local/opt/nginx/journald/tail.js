@@ -19,16 +19,9 @@ const raw_stream = async function* (uri, cursor) {
     signal: abortion.signal,
   })
   const stream = resp.body?.pipeThrough(new TextDecoderStream())
-  const reader = stream?.getReader()
   try {
-    if (reader) {
-      while (true) {
-        const { value, done } = await reader.read()
-        if (done || !value) {
-          break
-        }
-        yield value
-      }
+    for await (const read of stream ?? []) {
+      yield read
     }
   } finally {
     abortion.abort()
@@ -74,6 +67,7 @@ const parse_ansi = (() => {
 
 const stream = (() => {
   const t = 60
+  const t_max = 60 * 1000
   /** @type {string[]} */
   const acc = []
   let timeout = t
@@ -122,7 +116,7 @@ const stream = (() => {
       } catch (err) {
         yield { [sym]: err }
         await new Promise((resolve) => setTimeout(resolve, timeout))
-        timeout = timeout * 1.6
+        timeout = Math.min(timeout * 1.6, t_max)
       } finally {
         acc.length = 0
       }
@@ -173,7 +167,7 @@ const append = (sym, root, json) => {
   const li =
     (root.childElementCount >= COUNT ? root.firstElementChild : undefined) ??
     document.createElement("li")
-  li.parentElement?.removeChild(li)
+  li.remove()
   li.replaceChildren()
 
   const tt =
