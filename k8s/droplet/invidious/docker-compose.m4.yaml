@@ -52,7 +52,7 @@ services:
         limits:
           memory: 1G
     environment:
-      HOST: "[::]"
+      HOST: "::"
       PROXY: socks5://proxy.komposed-hostproxy.svc.cluster.local:1080
       SERVER_SECRET_KEY:
     ports:

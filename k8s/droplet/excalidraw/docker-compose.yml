@@ -6,3 +6,10 @@ services:
       kompose.service.expose: draw.${DOMAIN}
     ports:
       - 80
+
+  # mcp:
+  #   image: https://github.com/excalidraw/excalidraw-mcp
+  #   labels:
+  #     kompose.service.expose: excalidraw.mcp.${DOMAIN}
+  #   ports:
+  #     - 3000
