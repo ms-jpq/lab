@@ -15,6 +15,7 @@
     "debug",
     "k8s.mcp",
     "lidarr.servarr",
+    "mitm",
     "prowlarr.servarr",
     "radarr.servarr",
     "redis",

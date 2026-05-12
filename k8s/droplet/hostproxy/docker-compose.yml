@@ -5,6 +5,7 @@ x-networkpolicy:
   - invidious
   - librechat
   - mcp
+  - mitmproxy
   - redlib
   - rss-bridge
   - searx

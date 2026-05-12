@@ -1,0 +1,56 @@
+---
+x-k8s:
+  - apiVersion: traefik.io/v1alpha1
+    kind: Middleware
+    metadata:
+      name: auth
+      namespace: ${COMPOSE_PROJECT_NAME}
+    spec:
+      headers:
+        customRequestHeaders:
+          Authorization: Bearer mitmproxy
+
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: mitmproxy-np
+      namespace: ${COMPOSE_PROJECT_NAME}
+    spec:
+      type: NodePort
+      selector:
+        io.kompose.service: mitmproxy
+      ports:
+        - port: 8080
+          targetPort: 8080
+          nodePort: 30003
+
+  - apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata:
+      name: nodeport
+      namespace: ${COMPOSE_PROJECT_NAME}
+    spec:
+      podSelector:
+        matchLabels:
+          io.kompose.service: mitmproxy
+      ingress:
+        - ports:
+            - protocol: TCP
+              port: 8080
+
+services:
+  mitmproxy:
+    image: ghcr.io/mitmproxy/mitmproxy:latest
+    labels:
+      kompose.service.expose: mitm.${DOMAIN}
+      traefik.ingress.kubernetes.io/router.middlewares: ${COMPOSE_PROJECT_NAME}-auth@kubernetescrd
+    command:
+      - mitmweb
+      - --web-host
+      - "*"
+      - --set
+      - web_password=mitmproxy
+      - --mode
+      - upstream:http://proxy.kompsed-hostproxy.svc.cluster.local:1080
+    ports:
+      - 8081

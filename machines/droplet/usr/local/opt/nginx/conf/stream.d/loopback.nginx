@@ -13,3 +13,8 @@ server {
   proxy_pass     127.0.0.1:30002;
   proxy_protocol on;
 }
+
+server {
+  listen     [::]:8888 ipv6only=off ssl reuseport;
+  proxy_pass 127.0.0.1:30003;
+}
