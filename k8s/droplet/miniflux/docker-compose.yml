@@ -1,5 +1,6 @@
 ---
 services:
+  # https://miniflux.app/docs/keyboard_shortcuts.html
   miniflux:
     image: ghcr.io/miniflux/miniflux:latest
     labels:
