@@ -2,10 +2,6 @@
 extensions:
   &cursor file_storage/journald:
     directory: /var/lib/otelcol-contrib
-  &auth basicauth:
-    client_auth:
-      username: otlp
-      password: m5_assert([ENV_OTLP_PASSWORD])
 receivers:
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/awscloudwatchreceiver/README.md
 
@@ -32,12 +28,9 @@ processors:
         [set(resource.attributes["service.instance.id"], resource.attributes["cloudwatch.log.stream"])]
 exporters:
   &output otlp_http:
-    endpoint: m5_assert([ENV_OTLP_ENDPOINT])
-    auth:
-      authenticator: *auth
+    endpoint: http://opentelemetry-collector.opentelemetry-collector.svc.cluster.local:4318
 service:
   extensions:
-    - *auth
     - *cursor
   telemetry:
     logs:
