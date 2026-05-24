@@ -1,0 +1,16 @@
+---
+services:
+  hister:
+    image: ghcr.io/asciimoo/hister:latest-root
+    labels:
+      kompose.controller.type: statefulset
+      kompose.volume.type: hostPath
+      kompose.service.expose: kai.${DOMAIN}
+    environment:
+      HISTER__SERVER__BASE_URL: https://kai.${DOMAIN}
+      HTTPS_PROXY: &proxy http://proxy.komposed-hostproxy.svc.cluster.local:1080
+      HTTP_PROXY: *proxy
+    ports:
+      - 4433
+    volumes:
+      - /var/lib/local/${COMPOSE_PROJECT_NAME}:/hister/data

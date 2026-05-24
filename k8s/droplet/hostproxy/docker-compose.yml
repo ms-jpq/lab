@@ -1,15 +1,22 @@
 ---
 x-networkpolicy:
+  - 13ft
+  - archivebox
   - bifrost
+  - changedetection
   - crawl4ai
+  - hister
   - invidious
   - librechat
   - mcp
+  - miniflux
   - mitmproxy
+  - nitter
   - redlib
   - rss-bridge
   - searx
   - servarr
+  - teddit
 
 services:
   proxy:

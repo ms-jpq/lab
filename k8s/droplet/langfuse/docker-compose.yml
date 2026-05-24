@@ -10,7 +10,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 2G
     environment: &langfuse-env
       AUTH_DISABLE_SIGNUP: true
       CLICKHOUSE_CLUSTER_ENABLED: false
