@@ -1,7 +1,7 @@
 ---
 services:
   hister:
-    image: ghcr.io/asciimoo/hister:latest-root
+    image: ghcr.io/asciimoo/hister:latest
     labels:
       kompose.controller.type: statefulset
       kompose.volume.type: hostPath
@@ -11,9 +11,9 @@ services:
       - --config
       - &conf /srv/config.yml
     environment:
-      HTTP_PROXY: &proxy http://proxy.komposed-hostproxy.svc.cluster.local:1080
-      HTTPS_PROXY: *proxy
-      HISTER_PORT: &port 8080
+      HISTER__SERVER__ADDRESS: "[::]:4433"
+      HISTER__SERVER__BASE_URL: https://hister.${DOMAIN}
+      HISTER_PORT: &port 4433
     ports:
       - *port
     configs:

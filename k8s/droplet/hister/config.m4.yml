@@ -3,6 +3,4 @@ app:
   redirect_on_no_results: true
 
 server:
-  address: "[[::]]:8080"
-  base_url: "https://hister.m5_assert([ENV_DOMAIN])"
   database: "host=pg.komposed-hister.svc.cluster.local port=5432 user=komposed-hister password=komposed-hister dbname=komposed-hister sslmode=disable"
