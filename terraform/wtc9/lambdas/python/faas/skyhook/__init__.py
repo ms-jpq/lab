@@ -1,4 +1,4 @@
-from concurrent.futures import ThreadPoolExecutor
+from asyncio import gather, run, to_thread
 from contextlib import nullcontext
 
 from aws_lambda_powertools.utilities.batch.types import (
@@ -17,7 +17,7 @@ from opentelemetry.trace import SpanKind, get_tracer
 from opentelemetry.trace.status import StatusCode
 
 from .. import _, report_exception
-from ..telemetry import add_mutual_links, entry, with_context
+from ..telemetry import add_mutual_links, entry
 
 with nullcontext():
     TRACER = get_tracer(__name__)
@@ -53,18 +53,18 @@ def _handler(ss: Sieve, record: SQSRecord) -> None:
 @event_source(data_class=SQSEvent)
 @entry(kind=SpanKind.CONSUMER)
 def main(event: SQSEvent, ctx: LambdaContext) -> PartialItemFailureResponse:
-    context, ss = get_current(), load_sieve()
+    ss = load_sieve()
 
-    @with_context(context)
-    def cont(record: SQSRecord) -> PartialItemFailures | None:
+    async def cont(record: SQSRecord) -> PartialItemFailures | None:
         try:
-            _handler(ss, record=record)
+            await to_thread(_handler, ss, record)
         except Exception:
             return {"itemIdentifier": record.message_id}
         else:
             return None
 
-    with ThreadPoolExecutor() as ex:
-        mapped = ex.map(cont, event.records)
+    async def proc() -> PartialItemFailureResponse:
+        mapped = await gather(*(cont(record) for record in event.records))
+        return {"batchItemFailures": [m for m in mapped if m]}
 
-    return {"batchItemFailures": [m for m in mapped if m]}
+    return run(proc())

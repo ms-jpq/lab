@@ -1,6 +1,6 @@
+from asyncio import gather, to_thread
 from collections import defaultdict
-from collections.abc import Mapping, MutableSet, Sequence, Set
-from concurrent.futures import ThreadPoolExecutor
+from collections.abc import Awaitable, Callable, Mapping, MutableSet, Sequence, Set
 from datetime import datetime, timedelta, timezone
 from functools import cache
 from http import HTTPStatus
@@ -11,14 +11,9 @@ from xml.etree.ElementTree import Element, SubElement, indent, tostring
 
 from aws_lambda_powertools.event_handler import APIGatewayHttpResolver
 from aws_lambda_powertools.event_handler.api_gateway import Response
-from aws_lambda_powertools.event_handler.middlewares import (
-    NextMiddleware,
-)
-from opentelemetry.context import get_current
 from opentelemetry.trace import get_current_span
 
 from ... import suppress_exn
-from ...telemetry import with_context
 from ...twilio import parse_params, verify
 from . import TRACER, app, compute_once, current_raw_uri, dynamodb
 
@@ -41,8 +36,9 @@ def _current_params() -> dict[str, str]:
     return parse_params(app.current_event.decoded_body)
 
 
-def _auth(
-    app: APIGatewayHttpResolver, next_middleware: NextMiddleware
+async def _auth(
+    app: APIGatewayHttpResolver,
+    next_middleware: Callable[[APIGatewayHttpResolver], Awaitable[Response[None]]],
 ) -> Response[None]:
     with TRACER.start_as_current_span("hmac middleware"):
         event = app.current_event
@@ -52,7 +48,7 @@ def _auth(
         if not verify(current_raw_uri(), params=_current_params(), signature=signature):
             return Response(status_code=HTTPStatus.FORBIDDEN)
 
-        return next_middleware.__call__(app)
+        return await next_middleware(app)
 
 
 def _xml_ok(el: Element) -> Response[str]:
@@ -67,7 +63,7 @@ def _xml_ok(el: Element) -> Response[str]:
 
 
 @app.post("/twilio/voice", middlewares=[_auth])
-def voice() -> Response[str]:
+async def voice() -> Response[str]:
     root = Element("Response")
     dial = SubElement(root, "Dial")
 
@@ -87,11 +83,12 @@ def _id(dst: str, route_to: str) -> str:
     return id
 
 
-def _upsert_reply_to(dst: str, route_to: str, reply_to: str) -> None:
+async def _upsert_reply_to(dst: str, route_to: str, reply_to: str) -> None:
     id = _id(dst, route_to=route_to)
     ttl = int((datetime.now(tz=timezone.utc) + timedelta(hours=8)).timestamp())
     with suppress_exn():
-        dynamodb.put_item(
+        await to_thread(
+            dynamodb.put_item,
             TableName=_table(),
             Item={
                 "ID": {"S": id},
@@ -101,10 +98,11 @@ def _upsert_reply_to(dst: str, route_to: str, reply_to: str) -> None:
         )
 
 
-def _retrieve_reply_to(dst: str, route_to: str) -> str | None:
+async def _retrieve_reply_to(dst: str, route_to: str) -> str | None:
     id = _id(dst, route_to=route_to)
     with suppress_exn():
-        rsp = dynamodb.get_item(
+        rsp = await to_thread(
+            dynamodb.get_item,
             TableName=_table(),
             Key={"ID": {"S": id}},
         )
@@ -115,7 +113,7 @@ def _retrieve_reply_to(dst: str, route_to: str) -> str | None:
     return None
 
 
-def _messages(src: str, dst: str, body: str, route_to: str) -> _Routed:
+async def _messages(src: str, dst: str, body: str, route_to: str) -> _Routed:
     span = get_current_span()
     prefix_1, prefix_2 = ">>> ", "<<< "
     instruction = body.startswith((prefix_1, prefix_2)) and len(body.splitlines()) == 1
@@ -136,8 +134,10 @@ def _messages(src: str, dst: str, body: str, route_to: str) -> _Routed:
         if question:
             span.add_event("received.question")
 
-            if prev_reply_to := _retrieve_reply_to(dst=dst, route_to=route_to):
-                _upsert_reply_to(dst=dst, route_to=route_to, reply_to=prev_reply_to)
+            if prev_reply_to := await _retrieve_reply_to(dst=dst, route_to=route_to):
+                await _upsert_reply_to(
+                    dst=dst, route_to=route_to, reply_to=prev_reply_to
+                )
 
             return ((route_to, (prefix_2 + str(prev_reply_to),)),)
         elif instruction:
@@ -146,15 +146,15 @@ def _messages(src: str, dst: str, body: str, route_to: str) -> _Routed:
                 "received.next.number.for.reply", attributes={"next": set_reply_to}
             )
 
-            _upsert_reply_to(dst=dst, route_to=route_to, reply_to=set_reply_to)
+            await _upsert_reply_to(dst=dst, route_to=route_to, reply_to=set_reply_to)
             return ((route_to, (f"*** {set_reply_to}",)),)
-        elif prev_reply_to := _retrieve_reply_to(dst=dst, route_to=route_to):
+        elif prev_reply_to := await _retrieve_reply_to(dst=dst, route_to=route_to):
             span.add_event(
                 "found.previous.number.for.reply",
                 attributes={"previous": prev_reply_to},
             )
 
-            _upsert_reply_to(dst=dst, route_to=route_to, reply_to=prev_reply_to)
+            await _upsert_reply_to(dst=dst, route_to=route_to, reply_to=prev_reply_to)
 
             return ((route_to, (prefix_2 + prev_reply_to,)), (prev_reply_to, (body,)))
         else:
@@ -176,14 +176,14 @@ def _messages(src: str, dst: str, body: str, route_to: str) -> _Routed:
         )
 
         reply_to = src
-        _upsert_reply_to(dst=dst, route_to=route_to, reply_to=reply_to)
+        await _upsert_reply_to(dst=dst, route_to=route_to, reply_to=reply_to)
 
         return ((route_to, (prefix_1 + reply_to, body)),)
 
 
 @app.post("/twilio/message", middlewares=[_auth])
-def message() -> Response[str]:
-    ctx, root = get_current(), Element("Response")
+async def message() -> Response[str]:
+    root = Element("Response")
 
     match _current_params():
         case {"From": src, "To": dst, "Body": body}:
@@ -191,15 +191,13 @@ def message() -> Response[str]:
             dst is always a twilio number
             """
 
-            @with_context(ctx)
-            def cont(route_to: str) -> _Routed:
+            async def cont(route_to: str) -> _Routed:
                 with TRACER.start_as_current_span(
                     "calc routing", attributes={"src": src, "dst": dst}
                 ):
-                    return _messages(src, dst=dst, body=body, route_to=route_to)
+                    return await _messages(src, dst=dst, body=body, route_to=route_to)
 
-            with ThreadPoolExecutor() as ex:
-                mapped = ex.map(cont, _routes())
+            mapped = await gather(*(cont(route_to) for route_to in _routes()))
 
             seen: Mapping[str, MutableSet[int]] = defaultdict(set)
             for tel, msgs in chain.from_iterable(mapped):

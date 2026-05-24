@@ -30,7 +30,7 @@ locals {
   # https://github.com/open-telemetry/opentelemetry-lambda/blob/main/python/src/otel/otel_sdk/requirements.txt
   lambda_rt                = "python3.14"
   lambda_arch              = "arm64"
-  lambda_powertool_version = 27
+  lambda_powertool_version = 33
   lambda_layers = [
     "arn:aws:lambda:${local.lambda_region}:017000801446:layer:AWSLambdaPowertoolsPythonV3-${replace(local.lambda_rt, ".", "")}-${local.lambda_arch}:${local.lambda_powertool_version}",
     "arn:aws:lambda:${local.lambda_region}:184161586896:layer:opentelemetry-python-0_17_0:1",

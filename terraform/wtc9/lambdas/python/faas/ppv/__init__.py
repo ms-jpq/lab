@@ -1,3 +1,4 @@
+from asyncio import run
 from collections.abc import Mapping
 from typing import Any
 
@@ -26,4 +27,4 @@ def _extract(event: APIGatewayProxyEventV2) -> Context:
 def main(event: APIGatewayProxyEventV2, ctx: LambdaContext) -> Mapping[str, Any]:
     with TRACER.start_as_current_span("router") as span:
         span.add_event("routing", attributes={"path": event.path})
-        return app.resolve(event.raw_event, context=ctx)
+        return run(app.resolve_async(event.raw_event, context=ctx))

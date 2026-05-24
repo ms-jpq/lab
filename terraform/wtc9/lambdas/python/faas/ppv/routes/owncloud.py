@@ -35,7 +35,7 @@ def _mappings() -> Mapping[str, str]:
 
 
 @app.get("/owncloud/.+")
-def route() -> Response[str]:
+async def route() -> Response[str]:
     with TRACER.start_as_current_span("redirect") as span:
         raw = (
             app.current_event.path.removeprefix("/owncloud/")
