@@ -13,6 +13,7 @@
     "bazarr.servarr",
     "dash",
     "debug",
+    "hister",
     "k8s.mcp",
     "lidarr.servarr",
     "mitm",

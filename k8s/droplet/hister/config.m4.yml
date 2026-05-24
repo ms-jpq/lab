@@ -1,8 +1,8 @@
 app:
-  search_url: 'https://ask.m5_assert([ENV_DOMAIN])/search?q={query}'
+  search_url: "https://ask.m5_assert([ENV_DOMAIN])/search?q={query}"
   redirect_on_no_results: true
 
 server:
-  address: '[[::]]:8080'
-  base_url: 'https://kagi.m5_assert([ENV_DOMAIN])'
-  database: 'host=pg.komposed-hister.svc.cluster.local port=5432 user=komposed-hister password=komposed-hister dbname=komposed-hister sslmode=disable'
+  address: "[[::]]:8080"
+  base_url: "https://hister.m5_assert([ENV_DOMAIN])"
+  database: "host=pg.komposed-hister.svc.cluster.local port=5432 user=komposed-hister password=komposed-hister dbname=komposed-hister sslmode=disable"

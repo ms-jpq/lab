@@ -5,7 +5,7 @@ services:
     labels:
       kompose.controller.type: statefulset
       kompose.volume.type: hostPath
-      kompose.service.expose: kagi.${DOMAIN}
+      kompose.service.expose: hister.${DOMAIN}
     command:
       - listen
       - --config
