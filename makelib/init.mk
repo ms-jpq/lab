@@ -45,7 +45,6 @@ V_TFLINT     = $(shell ./libexec/gh-latest.sh $(VAR) terraform-linters/tflint)
 V_TOFU       = $(patsubst v%,%,$(shell ./libexec/gh-latest.sh $(VAR) hashicorp/terraform))
 
 S5_OS = $(shell perl -CASD -wpe 's/([a-z])/\u$$1/;s/Darwin/macOS/' <<<'$(OS)')
-HADO_OS = $(shell perl -CASD -wpe 's/([a-z])/\u$$1/' <<<'$(OS)')
 
 
 $(VAR)/bin/shellcheck: | $(VAR)/bin
@@ -54,7 +53,7 @@ $(VAR)/bin/shellcheck: | $(VAR)/bin
 	chmod +x '$@'
 
 $(VAR)/bin/hadolint: | $(VAR)/bin
-	URI='https://github.com/hadolint/hadolint/releases/latest/download/hadolint-$(HADO_OS)-x86_64'
+	URI='https://github.com/hadolint/hadolint/releases/latest/download/hadolint-$(S5_OS)-x86_64'
 	$(CURL) --output '$@' -- "$$URI"
 	chmod +x '$@'
 
