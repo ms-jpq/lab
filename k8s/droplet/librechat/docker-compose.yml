@@ -6,11 +6,7 @@ services:
       kompose.controller.type: statefulset
       kompose.service.expose: chat.${DOMAIN}
     environment:
-      # ANTHROPIC_REVERSE_PROXY: http://bifrost.komposed-bifrost.svc.cluster.local:8080/anthropic/v1/messages
-      # OPENAI_API_KEY:
-      # OPENAI_REVERSE_PROXY: http://bifrost.komposed-bifrost.svc.cluster.local:8080/openai/v1
-      ANTHROPIC_API_KEY:
-      ANTHROPIC_MODELS: claude-opus-4-7
+      DEEPSEEK_API_KEY:
       HOST: "::"
       JWT_REFRESH_SECRET:
       JWT_SECRET:

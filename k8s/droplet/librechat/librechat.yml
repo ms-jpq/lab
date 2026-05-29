@@ -25,3 +25,17 @@ mcpServers:
 
 memory:
   disabled: true
+
+endpoints:
+  custom:
+    - name: "deepseek"
+      apiKey: "${DEEPSEEK_API_KEY}"
+      baseURL: "https://api.deepseek.com"
+      models:
+        default:
+          - "deepseek-v4-pro"
+          - "deepseek-v4-flash"
+        fetch: true
+      titleConvo: true
+      titleModel: "deepseek-v4-flash"
+      modelDisplayLabel: "DeepSeek"
