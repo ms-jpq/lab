@@ -19,8 +19,6 @@ metrics_generator:
     &proc_span span_metrics: {}
   storage:
     path: /var/lib/local/tempo/generator/wal
-  traces_storage:
-    path: /var/lib/local/tempo/generator/traces
 
 storage:
   trace:
@@ -30,17 +28,15 @@ storage:
     local:
       path: /var/lib/local/tempo/blocks
 
-# compactor:
-#   compaction:
-#     block_retention: 720h
-
-ingester:
-  trace_idle_period: 1s
+live_store:
+  max_trace_idle: 1s
   max_block_duration: 1s
   flush_check_period: 1s
 
 overrides:
   defaults:
+    compaction:
+      block_retention: 720h
     metrics_generator:
       processors:
         - *proc_svc
