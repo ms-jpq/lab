@@ -12,7 +12,7 @@ pkg._: /etc/apt/trusted.gpg.d/ms-jpq.gpg
 pkg: | /usr/local/bin/bat /usr/local/bin/fd
 
 /usr/local/bin/bat: | /usr/bin/batcat
-	sudo -- ln -v -snf -- '$|' '$@'
+	sudo -- ln -v -sTnf -- '$|' '$@'
 
 /usr/local/bin/fd: | /usr/bin/fdfind
-	sudo -- ln -v -snf -- '$|' '$@'
+	sudo -- ln -v -sTnf -- '$|' '$@'

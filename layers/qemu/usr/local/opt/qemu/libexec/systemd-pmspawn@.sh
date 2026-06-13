@@ -24,7 +24,7 @@ zfs)
   else
     zfs create -s -V "$SIZE" -- "$ZVOL"
   fi
-  ln -v -snf -- "/dev/zvol/$ZVOL" "$ROOT"
+  ln -v -sTnf -- "/dev/zvol/$ZVOL" "$ROOT"
   udevadm trigger
   ;;
 btrfs)

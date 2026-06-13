@@ -10,5 +10,5 @@ for ENV in /usr/local/etc/default/*.sshfwd.env; do
   BASE="${ENV##*/}"
   STEM="${BASE%".sshfwd.env"}"
   NAME=$(systemd-escape -- "$STEM")
-  ln -snf -- /usr/local/lib/systemd/system/1-ssh-forward@.service "$WANTS/1-ssh-forward@$NAME.service"
+  ln -sTnf -- /usr/local/lib/systemd/system/1-ssh-forward@.service "$WANTS/1-ssh-forward@$NAME.service"
 done

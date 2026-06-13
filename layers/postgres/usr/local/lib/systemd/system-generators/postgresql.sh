@@ -17,5 +17,5 @@ for CLUSTER in "${CLUSTERS[@]}"; do
   CLUSTER="$(systemd-escape -- "${CLUSTER//[[:space:]]/}")"
   VERSION="${CLUSTER%%'-'*}"
   NAME="${CLUSTER#*'-'}"
-  ln -v -snf -- /usr/lib/systemd/system/postgresql@.service "$WANTS/postgresql@$VERSION-$NAME.service"
+  ln -v -sTnf -- /usr/lib/systemd/system/postgresql@.service "$WANTS/postgresql@$VERSION-$NAME.service"
 done
