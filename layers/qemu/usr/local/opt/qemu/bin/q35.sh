@@ -111,7 +111,7 @@ while (($#)); do
   esac
 done
 
-if [[ -z ${CPUS:-""} ]]; then
+if [[ -z ${CPUS:-} ]]; then
   NPROCS="$(nproc)"
   CPUS="cpus=$((NPROCS / 2))"
 fi
@@ -133,7 +133,7 @@ ARGV=(
   -name "$NAME,debug-threads=on"
 )
 
-if [[ -n ${PIDFILE:-""} ]]; then
+if [[ -n ${PIDFILE:-} ]]; then
   ARGV+=(
     -pidfile "$PIDFILE"
     -daemonize
@@ -147,10 +147,10 @@ ARGV+=(
   -machine 'type=q35,smm=on,accel=kvm,kernel-irqchip=split,vmport=off'
   -cpu "$CPUF"
   -smp "$CPUS"
-  -m "${MEM:-"size=8G"}"
+  -m "${MEM:-size=8G}"
 )
 
-if [[ -n ${BIOS:-""} ]]; then
+if [[ -n ${BIOS:-} ]]; then
   ARGV+=(-bios "$BIOS")
 fi
 
@@ -160,15 +160,15 @@ ARGV+=(
   # -device 'virtio-balloon-pci-non-transitional,deflate-on-oom=on,free-page-reporting=on'
 )
 
-if [[ -n ${QMP:-""} ]]; then
+if [[ -n ${QMP:-} ]]; then
   ARGV+=(-qmp "unix:$QMP,server,nowait")
 fi
 
-if [[ -n ${MONITOR:-""} ]]; then
+if [[ -n ${MONITOR:-} ]]; then
   ARGV+=(-monitor "unix:$MONITOR,server,nowait")
 fi
 
-if [[ -n ${TPM:-""} ]]; then
+if [[ -n ${TPM:-} ]]; then
   ID1='chtp0'
   ID2='tpm0'
   ARGV+=(
@@ -183,7 +183,7 @@ ARGV+=(
   -device 'virtio-tablet-pci'
 )
 
-if [[ -n ${VNC:-""} ]]; then
+if [[ -n ${VNC:-} ]]; then
   AUD='aud0'
   ARGV+=(
     -display "vnc=unix:$VNC"
@@ -196,7 +196,7 @@ else
 fi
 
 NIC='virtio-net-pci-non-transitional'
-if [[ -n ${BRIDGE:-""} ]]; then
+if [[ -n ${BRIDGE:-} ]]; then
   ID="br0"
   ARGV+=(
     -netdev "bridge,id=$ID,br=$BRIDGE"
@@ -219,7 +219,7 @@ for IDX in "${!TAPS[@]}"; do
   ((FD++))
 done
 
-if [[ -n ${INITIATOR_NAME:-""} ]]; then
+if [[ -n ${INITIATOR_NAME:-} ]]; then
   ARGV+=(-iscsi "initiator-name=$INITIATOR_NAME")
 fi
 

@@ -48,7 +48,7 @@ IPV6_ULA="$("${0%/*}/ula48.sh")"
 for ((i = 0; ; i++)); do
   printf -v I -- '%04x' "$i"
   IPV6_NETWORK="$IPV6_ULA:$I"
-  if [[ -z ${IP6ACC["$IPV6_NETWORK"]:-""} ]]; then
+  if [[ -z ${IP6ACC["$IPV6_NETWORK"]:-} ]]; then
     break
   fi
 done

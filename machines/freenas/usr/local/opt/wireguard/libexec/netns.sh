@@ -77,7 +77,7 @@ reload() {
     done
 
     for ADDR in "${CURRENT[@]}"; do
-      if [[ -n $ADDR ]] && [[ -z ${ACC["$ADDR"]:-""} ]]; then
+      if [[ -n $ADDR ]] && [[ -z ${ACC["$ADDR"]:-} ]]; then
         ip addr del "$ADDR" dev "$WG"
       fi
     done

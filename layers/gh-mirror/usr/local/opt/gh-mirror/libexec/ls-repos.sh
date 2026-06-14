@@ -3,7 +3,7 @@
 set -o pipefail
 
 USER="$1"
-REPOS="${NEXT_URI:-"https://api.github.com/users/$USER/repos"}"
+REPOS="${NEXT_URI:-https://api.github.com/users/$USER/repos}"
 TMP="$(mktemp)"
 
 CURL=(

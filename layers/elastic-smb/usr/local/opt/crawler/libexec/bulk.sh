@@ -7,7 +7,7 @@ INDEX='test'
 
 if ! [[ -v UNDER ]]; then
   DIR="$1"
-  ES="${2:-"http://localhost:9200"}"
+  ES="${2:-http://localhost:9200}"
   PROCS="$(nproc)"
   PROCS=$((PROCS * 2))
 

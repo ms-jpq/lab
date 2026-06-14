@@ -8,4 +8,4 @@ source -- /var/lib/local/vpn/secret.env
 # shellcheck disable=2154
 nordvpn login --token "$NORD_VPN_TOKEN" || true
 # shellcheck disable=2154
-nordvpn connect "${1:-"$NORD_VPN_REGION"}"
+nordvpn connect "${1:-$NORD_VPN_REGION}"

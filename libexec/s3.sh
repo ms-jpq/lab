@@ -24,7 +24,7 @@ dir() (
   chmod -v g-rwx,o-rwx "$TMP"
 )
 
-case "${1:-""}" in
+case "${1:-}" in
 '' | s3 | ls)
   "${S3[@]}" ls --recursive --human-readable-sizes -- "$BUCKET"
   ;;

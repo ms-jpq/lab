@@ -7,7 +7,7 @@ STORE="$1/$ACCOUNT"
 NPROC=6
 
 SED=(sed -E -n)
-readarray -t -d ',' -- KILL <<< "${MIRROR_IGNORE:-""}"
+readarray -t -d ',' -- KILL <<< "${MIRROR_IGNORE:-}"
 
 for K in "${KILL[@]}"; do
   K="${K%$'\n'}"

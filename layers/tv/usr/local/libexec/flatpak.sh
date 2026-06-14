@@ -40,12 +40,12 @@ for LINE in "${DESIRED[@]}"; do
 
   case "$ACTION" in
   +)
-    if [[ -z ${PRESENT["$PKG"]:-""} ]]; then
+    if [[ -z ${PRESENT["$PKG"]:-} ]]; then
       ADD+=("$PKG")
     fi
     ;;
   -)
-    if [[ -n ${PRESENT["$PKG"]:-""} ]]; then
+    if [[ -n ${PRESENT["$PKG"]:-} ]]; then
       RM+=("$PKG")
     fi
     ;;

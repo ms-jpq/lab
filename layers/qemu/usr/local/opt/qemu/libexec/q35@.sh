@@ -21,7 +21,7 @@ zfs)
 esac
 
 ARGZ=("$@")
-if [[ -z ${ARGV:-""} ]] && ((USAGE < (10 ** 8))); then
+if [[ -z ${ARGV:-} ]] && ((USAGE < (10 ** 8))); then
   TMP="$(mktemp)"
   FIND=(find /var/cache/local/qemu -type f -name '*.iso' -exec stat --printf '%s %n\0' -- '{}' ';')
   SORT=(sort --zero-terminated --reverse --numeric-sort --key '1,1')

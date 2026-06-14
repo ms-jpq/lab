@@ -15,13 +15,13 @@ JQ=(
 
 NOW="${EPOCHREALTIME%%.*}"
 
-case "${1:-""}" in
+case "${1:-}" in
 '' | iam)
   "${AWS[@]}" iam list-access-keys | "${JQ[@]}"
   ;;
 cost)
   MONTH=31
-  DAYS="${2:-"$MONTH"}"
+  DAYS="${2:-$MONTH}"
   DELTA=$((60 * 60 * 24 * DAYS))
   BEGIN="$(date --utc --date="@$((NOW - DELTA))" -- '+%Y-%m-%d')"
   END="$(date --utc --date="@$NOW" -- '+%Y-%m-%d')"

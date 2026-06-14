@@ -7,7 +7,7 @@ LIB='/var/lib/local/qemu'
 HR='/usr/local/libexec/hr-run.sh'
 
 ARGV=("$@")
-ACTION="${1:-""}"
+ACTION="${1:-}"
 shift -- 1 || true
 
 SERVICE_PIN='.#2-qemu-q35@.service'

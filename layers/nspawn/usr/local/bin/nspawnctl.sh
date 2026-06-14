@@ -5,7 +5,7 @@ set -o pipefail
 HR='/usr/local/libexec/hr-run.sh'
 
 ARGV=("$@")
-ACTION="${1:-""}"
+ACTION="${1:-}"
 shift -- 1 || true
 
 # shellcheck disable=SC1090

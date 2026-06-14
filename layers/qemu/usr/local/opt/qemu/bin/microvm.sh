@@ -70,7 +70,7 @@ while (($#)); do
   esac
 done
 
-if [[ -z ${CPUS:-""} ]]; then
+if [[ -z ${CPUS:-} ]]; then
   NPROCS="$(nproc)"
   CPUS="cpus=$((NPROCS / 2))"
 fi
@@ -80,7 +80,7 @@ ARGV=(
   -name "$NAME,debug-threads=on"
 )
 
-if [[ -n ${PIDFILE:-""} ]]; then
+if [[ -n ${PIDFILE:-} ]]; then
   ARGV+=(
     -pidfile "$PIDFILE"
     -daemonize
@@ -96,7 +96,7 @@ ARGV+=(
   -machine 'microvm,pit=off,pic=off,isa-serial=off,rtc=on,accel=kvm'
   -cpu 'host,migratable=off'
   -smp "$CPUS"
-  -m "${MEM:-"size=1G"}"
+  -m "${MEM:-size=1G}"
 )
 
 KERNEL_COMMANDS=(
@@ -119,7 +119,7 @@ ARGV+=(
   -device 'virtio-serial-device'
   -device "virtconsole,chardev=$CON"
 )
-if [[ -n ${CONSOLE:-""} ]]; then
+if [[ -n ${CONSOLE:-} ]]; then
   ARGV+=(-chardev "socket,server=on,wait=off,id=$CON,path=$CONSOLE")
 else
   ARGV+=(-chardev "stdio,id=$CON")
@@ -127,15 +127,15 @@ fi
 
 ARGV+=(-device virtio-rng-device)
 
-if [[ -n ${QMP:-""} ]]; then
+if [[ -n ${QMP:-} ]]; then
   ARGV+=(-qmp "unix:$QMP,server,nowait")
 fi
 
-if [[ -n ${MONITOR:-""} ]]; then
+if [[ -n ${MONITOR:-} ]]; then
   ARGV+=(-monitor "unix:$MONITOR,server,nowait")
 fi
 
-if [[ -n ${BRIDGE:-""} ]]; then
+if [[ -n ${BRIDGE:-} ]]; then
   ID='br0'
   ARGV+=(
     -netdev "bridge,id=$ID,br=$BRIDGE"

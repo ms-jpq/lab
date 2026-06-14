@@ -13,7 +13,7 @@ if ! [[ -v INVOCATION_ID ]]; then
   fi
 fi
 
-SRC="/media/${1:-"downloads/done"}"
+SRC="/media/${1:-downloads/done}"
 DST='/media/media/_tmp_/'
 
 RSYNC=(
