@@ -50,7 +50,7 @@ for LINE in "${DESIRED[@]}"; do
     fi
     ;;
   *)
-    printf -- '%s%q\n' '>! ' "$LINE" >&2
+    printf -- '%s%s\n' '>! ' "${LINE@Q}" >&2
     exit 1
     ;;
   esac

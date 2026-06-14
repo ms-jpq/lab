@@ -25,10 +25,7 @@ if [[ -v UNDER ]]; then
   if ! "${UP[@]}"; then
     if "${DOWN[@]}" && ! "${UP[@]}"; then
       CODE=1
-      {
-        printf -- '%q ' "$@"
-        printf -- '\n'
-      } >&2
+      printf -- '%s\n' "${*@Q}" >&2
     fi
   fi
   exit "$CODE"

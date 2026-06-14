@@ -83,7 +83,7 @@ else
     --action
   )
   if ((EX)); then
-    printf -v ESC -- '%q ' "$@"
+    ESC="${*@Q}"
   else
     SRC="./var/tmp/machines/$MACHINE/fs"
     "${EXEC[@]}" exec <<< "$(< "$SH/libexec/essentials.sh")"

@@ -40,9 +40,9 @@ for F in /var/lib/local/postgresql/*/init.user; do
   NAME="${LINE%%' : '*}"
   PASSWD="${LINE#*' : '}"
   PASS="$(jq --exit-status --raw-input --raw-output '@uri' <<< "$PASSWD")"
-  printf -v PSQL1 -- '%q ' psql -- "postgres://$NAME:$PASS@$HOST/$NAME"
-  printf -v PSQL2 -- '%q ' psql -- "postgres://$NAME:$PASS@$FQDN/$NAME"
-  printf -- '%s\n' "postgres://$NAME:$PASSWD@$HOST/$NAME" "${PSQL1%' '*}" "${PSQL2%' '*}"
+  PSQL1=(psql -- "postgres://$NAME:$PASS@$HOST/$NAME")
+  PSQL2=(psql -- "postgres://$NAME:$PASS@$FQDN/$NAME")
+  printf -- '%s\n' "postgres://$NAME:$PASSWD@$HOST/$NAME" "${PSQL1[*]@Q}" "${PSQL2[*]@Q}"
   /usr/local/libexec/hr.sh
   printf -- '\n'
 done

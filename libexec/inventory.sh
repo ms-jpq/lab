@@ -70,19 +70,16 @@ conn() {
 
   CONN+=("${OOS[@]}" -l "$USER")
   SSH=("${CONN[@]}" -- "$HOST")
-  printf -v RSH -- '%q ' "${CONN[@]}"
-  RSY+=(--rsh "$RSH" --)
+  RSY+=(--rsh "${CONN[*]@Q}" --)
 }
 
 shell() {
-  local sh
   if [[ -v LOCAL ]]; then
     "$@"
   else
     conn
-    printf -v sh -- '%q ' "$@"
     # shellcheck disable=SC2029
-    "${SSH[@]}" "$sh"
+    "${SSH[@]}" "${*@Q}"
   fi
 }
 

@@ -7,7 +7,7 @@ cd -- "${0%/*}/.."
 MACHINE="$1"
 shift -- 1
 
-printf -- '%s=%q\n' 'ENV_MACHINE' "$MACHINE"
+printf -- '%s=%s\n' 'ENV_MACHINE' "${MACHINE@Q}"
 
 for F in "$@"; do
   if ! [[ -s $F ]]; then

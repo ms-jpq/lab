@@ -3,8 +3,7 @@
 set -o pipefail
 
 HR="${0%/*}/hr.sh"
-printf -- '%q ' "$@"
-printf -- '\n'
+printf -- '%s\n' "${*@Q}"
 "$HR" '>'
 "$@"
 "$HR" '<'
