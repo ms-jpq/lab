@@ -42,7 +42,7 @@ INVENTORY='./inventory.json'
 if [[ ${MACHINES[*]} != '*' ]]; then
   for MACHINE in "${MACHINES[@]}"; do
     if ! [[ -d "machines/$MACHINE" ]]; then
-      set -v
+      set -x
       exit 1
     fi
   done

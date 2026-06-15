@@ -22,7 +22,7 @@ case $# in
   RHS="$NAME$2"
   ;;
 *)
-  set -v
+  set -x
   exit 1
   ;;
 esac

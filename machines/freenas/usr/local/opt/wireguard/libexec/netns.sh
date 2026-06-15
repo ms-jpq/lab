@@ -126,7 +126,7 @@ down)
   down
   ;;
 *)
-  set -v
+  set -x
   exit 1
   ;;
 esac

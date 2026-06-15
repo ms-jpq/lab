@@ -23,7 +23,7 @@ for F in "$@"; do
     shift -- 1
     ;;
   *)
-    set -v
+    set -x
     exit 1
     ;;
   esac

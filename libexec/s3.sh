@@ -72,7 +72,7 @@ rmfr)
   fi
   ;;
 *)
-  set -v
+  set -x
   exit 2
   ;;
 esac

@@ -75,7 +75,7 @@ JQ
   done
   ;;
 *)
-  set -v
+  set -x
   exit 2
   ;;
 esac

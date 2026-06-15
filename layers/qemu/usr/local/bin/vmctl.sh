@@ -19,7 +19,7 @@ qmp)
   SOCK='qmp'
   ;;
 *)
-  set -v
+  set -x
   exit 2
   ;;
 esac
