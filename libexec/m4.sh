@@ -10,9 +10,12 @@ shift -- 3
 readarray -t -- DEFS < "$ENV"
 
 ACC=()
+V=''
 for D in "${DEFS[@]}"; do
   if [[ -n $D ]]; then
-    ACC+=("-D$D")
+    # facts arrive shell-quoted (env.sh emits @Q); m4 -D wants the raw value.
+    eval -- "V=${D#*=}"
+    ACC+=("-D${D%%=*}=$V")
   fi
 done
 
