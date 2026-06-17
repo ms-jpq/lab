@@ -128,7 +128,7 @@ layers/ubuntu/root/usr/local/lib/systemd/system/systemd-tmpfiles-clean.timer.d/0
 layers/ubuntu/root/usr/local/lib/systemd/timesyncd.conf.d/0-override.conf                      usr/local/lib/systemd/timesyncd.conf.d/0-override.conf
 layers/ubuntu/root/usr/local/lib/systemd/user/systemd-tmpfiles-clean.timer.d/0-override.conf   usr/local/lib/systemd/user/systemd-tmpfiles-clean.timer.d/0-override.conf
 zsh/iso/bin/c.sh                                                                               usr/local/bin/c.sh
-zsh/iso/libexec/hr.sh                                                                          usr/local/libexec/hr.sh
+layers/posix/home/.local/libexec/hr.sh                                                         usr/local/libexec/hr.sh
 
 endef
 
