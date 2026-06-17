@@ -10,11 +10,16 @@ shift -- 3
 readarray -t -- DEFS < "$ENV"
 
 ACC=()
-V=''
 for D in "${DEFS[@]}"; do
   if [[ -n $D ]]; then
-    # facts arrive shell-quoted (env.sh emits @Q); m4 -D wants the raw value.
-    eval -- "V=${D#*=}"
+    # env.sh emits scalar facts via @Q (wrapped in single quotes); m4 -D
+    # wants the raw value. Strip one surrounding pair, leaving unquoted
+    # facts (which may carry spaces or '=') untouched.
+    V="${D#*=}"
+    if [[ $V == \'*\' ]]; then
+      V="${V#\'}"
+      V="${V%\'}"
+    fi
     ACC+=("-D${D%%=*}=$V")
   fi
 done
