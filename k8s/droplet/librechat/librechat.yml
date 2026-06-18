@@ -10,6 +10,9 @@ mcpServers:
   bifrost:
     type: http
     url: http://bifrost.komposed-bifrost.svc.cluster.local:8080/mcp
+  excalidraw:
+    type: http
+    url: http://mcp.komposed-excalidraw.svc.cluster.local:8080/mcp
   kubernetes:
     type: http
     url: http://mcp.komposed-k8s-mcp.svc.cluster.local:8080/mcp

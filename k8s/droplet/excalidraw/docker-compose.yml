@@ -1,4 +1,7 @@
 ---
+x-networkpolicy:
+  - librechat
+
 services:
   excalidraw:
     image: docker.io/excalidraw/excalidraw:latest
@@ -7,9 +10,21 @@ services:
     ports:
       - 80
 
-  # mcp:
-  #   image: https://github.com/excalidraw/excalidraw-mcp
-  #   labels:
-  #     kompose.service.expose: excalidraw.mcp.${DOMAIN}
-  #   ports:
-  #     - 3000
+  mcp:
+    image: docker.io/oven/bun:latest
+    labels:
+      kompose.service.expose: litellm.${DOMAIN}
+    entrypoint:
+      - sh
+    command:
+      - -euxc
+      - |-
+        bunx degit excalidraw/excalidraw-mcp /tmp/app
+        cd -- /tmp/app
+        sed -E --in-place -e 's/0\.0\.0\.0/::/g' -- src/main.ts
+        bun install --production
+        exec bun src/main.ts
+    environment:
+      PORT: 8080
+    ports:
+      - 8080
