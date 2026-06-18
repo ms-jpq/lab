@@ -106,6 +106,7 @@ define REF_LINKS
 layers/posix/home/.config/bat/config                                                           root/.config/bat/config
 layers/posix/home/.config/bottom/bottom.toml                                                   root/.config/bottom/bottom.toml
 layers/posix/home/.config/yazi/yazi.toml                                                       root/.config/yazi/yazi.toml
+layers/posix/home/.local/libexec/hr.sh                                                         usr/local/libexec/hr.sh
 layers/posix/home/.local/opt/initd/libexec/curl-unpack.sh                                      usr/local/opt/initd/libexec/curl-unpack.sh
 layers/posix/home/.local/opt/initd/libexec/pkg.sh                                              usr/local/opt/initd/libexec/pkg.sh
 layers/posix/home/.local/opt/qemu/cloud-init                                                   usr/local/opt/qemu/cloud-init
@@ -128,7 +129,6 @@ layers/ubuntu/root/usr/local/lib/systemd/system/systemd-tmpfiles-clean.timer.d/0
 layers/ubuntu/root/usr/local/lib/systemd/timesyncd.conf.d/0-override.conf                      usr/local/lib/systemd/timesyncd.conf.d/0-override.conf
 layers/ubuntu/root/usr/local/lib/systemd/user/systemd-tmpfiles-clean.timer.d/0-override.conf   usr/local/lib/systemd/user/systemd-tmpfiles-clean.timer.d/0-override.conf
 zsh/iso/bin/c.sh                                                                               usr/local/bin/c.sh
-layers/posix/home/.local/libexec/hr.sh                                                         usr/local/libexec/hr.sh
 
 endef
 
