@@ -27,10 +27,8 @@ services:
     image: quay.io/invidious/invidious:${TAG}
     labels:
       kompose.service.expose: youku.${DOMAIN}
-    environment:
-      INVIDIOUS_PORT: &port 3000
     ports:
-      - *port
+      - 3000
     volumes:
       - ./conf.yml:/invidious/config/config.yml:ro
 

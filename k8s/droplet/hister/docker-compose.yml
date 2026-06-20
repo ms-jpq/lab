@@ -13,9 +13,8 @@ services:
     environment:
       HISTER__SERVER__ADDRESS: "[::]:4433"
       HISTER__SERVER__BASE_URL: https://hister.${DOMAIN}
-      HISTER_PORT: &port 4433
     ports:
-      - *port
+      - 4433
     configs:
       - source: config
         target: *conf

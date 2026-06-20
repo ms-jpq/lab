@@ -36,7 +36,6 @@ services:
       NEXTAUTH_URL: https://langfuse.${DOMAIN}
       REDIS_AUTH: &redispw ${COMPOSE_PROJECT_NAME}
       REDIS_HOST: redis.${COMPOSE_PROJECT_NAME}.svc.cluster.local
-      REDIS_PORT: 6379
       SALT:
       TELEMETRY_ENABLED: false
     ports:

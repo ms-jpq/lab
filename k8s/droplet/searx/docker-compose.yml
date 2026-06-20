@@ -8,8 +8,6 @@ services:
     labels:
       kompose.controller.type: statefulset
       kompose.service.expose: true
-    environment:
-      SEARXNG_PORT: &port 8080
     entrypoint:
       - sh
       - -euxc
@@ -17,7 +15,7 @@ services:
         cp -v -- /srv/* /etc/searxng/
         exec /usr/local/searxng/entrypoint.sh
     ports:
-      - *port
+      - 8080
     volumes:
       - ./favicons.toml:/srv/favicons.toml
       - ./limiter.toml:/srv/limiter.toml
