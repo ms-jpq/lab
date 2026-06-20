@@ -12,6 +12,7 @@ services:
       APP_PORT: "8080"
       BIFROST_ADMIN_PASSWORD:
       BIFROST_ADMIN_USERNAME:
+      CRAWL4AI_AUTHORIZATION:
       LOG_LEVEL: warn
     ports:
       - 8080

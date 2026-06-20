@@ -17,8 +17,12 @@
         "tools_to_execute": ["searxng_web_search"]
       },
       {
+        "auth_type": "headers",
         "connection_string": "http://crawl4ai.komposed-crawl4ai.svc.cluster.local:11235/mcp/sse",
         "connection_type": "sse",
+        "headers": {
+          "Authorization": "Bearer env.CRAWL4AI_AUTHORIZATION"
+        },
         "name": "crawl4ai",
         "tools_to_execute": ["md"]
       },
