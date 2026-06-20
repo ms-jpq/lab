@@ -37,6 +37,7 @@ imdb.com
 investopedia.com
 kernel.org
 kotlinlang.org
+kovidgoyal.net
 kubernetes.io
 learn.microsoft.com
 linux.org
