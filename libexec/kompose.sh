@@ -123,10 +123,12 @@ else
 
   if (($#)); then
     FILES=()
-    for F in "$COMPOSE/$*"/docker-compose.{yml,m4.yml}; do
-      if [[ -s $F ]]; then
-        FILES+=("$F")
-      fi
+    for NS in "$@"; do
+      for F in "$COMPOSE/$NS"/docker-compose.{yml,m4.yml}; do
+        if [[ -s $F ]]; then
+          FILES+=("$F")
+        fi
+      done
     done
   else
     FILES=("$COMPOSE"/*/docker-compose.{yml,m4.yml})
