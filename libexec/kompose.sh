@@ -32,6 +32,7 @@ sort_by(.kind != "Namespace")[]
     .
   else
     .metadata.annotations += $keel
+    | (. | lens).spec.enableServiceLinks //= false
     | (. | lens).spec.initContainers?.[]?.env ?= ((. | lens).spec.containers[].env // [])
     | (. | lens).spec.containers |= map(.resources.requests.memory //= "1Mi")
     | if ((. | lens).spec.initContainers // []) | length > 0 then
