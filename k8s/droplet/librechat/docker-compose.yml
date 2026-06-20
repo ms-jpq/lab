@@ -10,11 +10,9 @@ services:
       HOST: "::"
       JWT_REFRESH_SECRET:
       JWT_SECRET:
-      MEILI_HOST: http://meilisearch.komposed-librechat.svc.cluster.local:7700
       MONGO_URI: mongodb://mongo.komposed-librechat.svc.cluster.local:27017/
       NO_INDEX: true
       OPENROUTER_KEY:
-      RAG_API_URL: http://rag-api.komposed-librechat.svc.cluster.local:8000
       REDIS_URI: redis://redis.komposed-librechat.svc.cluster.local:6379
       USE_REDIS: true
       XAI_API_KEY:
@@ -49,48 +47,8 @@ services:
     volumes:
       - redis:/data
 
-  meilisearch:
-    image: docker.io/getmeili/meilisearch:v1.35.1
-    labels:
-      kompose.controller.type: statefulset
-    environment:
-      MEILI_HOST: http://meilisearch:7700
-      MEILI_NO_ANALYTICS: true
-    ports:
-      - 7700
-    volumes:
-      - meilisearch:/meili_data
-
-  pg:
-    image: docker.io/pgvector/pgvector:pg18-trixie
-    labels:
-      kompose.controller.type: statefulset
-    environment:
-      POSTGRES_DB: &pgdb ${COMPOSE_PROJECT_NAME}
-      POSTGRES_PASSWORD: &pgpass ${COMPOSE_PROJECT_NAME}
-      POSTGRES_USER: &pguser ${COMPOSE_PROJECT_NAME}
-    ports:
-      - 5432
-    volumes:
-      - pgdata:/var/lib/postgresql
-
-  rag-api:
-    image: registry.librechat.ai/danny-avila/librechat-rag-api-dev-lite:latest
-    labels:
-      kompose.controller.type: statefulset
-    environment:
-      DB_HOST: pg
-      POSTGRES_DB: *pgdb
-      POSTGRES_PASSWORD: *pgpass
-      POSTGRES_USER: *pguser
-      RAG_HOST: "::"
-    ports:
-      - 8000
-
 volumes:
   images:
   logs:
-  meilisearch:
-  pgdata:
   redis:
   uploads:
