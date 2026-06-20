@@ -11,12 +11,9 @@ services:
       resources:
         limits:
           memory: 4G
-    entrypoint:
-      - sh
-      - -euxc
-      - |-
-        sed -e 's|0\.0\.0\.0:11235|[::]:11235|' -- /app/supervisord.conf > /tmp/supervisord.conf
-        exec supervisord -c /tmp/supervisord.conf
+    environment:
+      GUNICORN_BIND: "[::]:11235"
+      REDIS_PASSWORD: crawl4ai
     ports:
       - 11235
     volumes:
