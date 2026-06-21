@@ -65,7 +65,7 @@ engines:
   - name: brave
     disabled: false
 
-  - name: bing
+  - name: aol
     disabled: false
 
   # - name: baidu
