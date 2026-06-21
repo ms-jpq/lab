@@ -23,7 +23,7 @@ outgoing:
 
 search:
   autocomplete: google
-  autocomplete_min: 1
+  autocomplete_min: 2
   default_lang: all
   favicon_resolver: google
   formats:
