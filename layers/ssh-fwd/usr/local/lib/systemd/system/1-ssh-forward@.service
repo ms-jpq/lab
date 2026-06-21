@@ -27,6 +27,6 @@ Environment               = PORT=22
 Environment               = IDENTITY=%I
 Environment               = ARGV=
 
-ExecStartPre              = +chown -- ${USER}:${GROUP} %S/local/ssh-fwd/${IDENTITY}
+ExecStartPre              = +chown -- ${USER}:${USER} %S/local/ssh-fwd/${IDENTITY}
 ExecStartPre              = +chmod -- 0400 %S/local/ssh-fwd/${IDENTITY}
 ExecStart                 = /usr/local/opt/ssh-fwd/libexec/connect.sh ${TARGET} ${PORT} %S/local/ssh-fwd/${IDENTITY} $ARGV
