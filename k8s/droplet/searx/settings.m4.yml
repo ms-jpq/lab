@@ -14,7 +14,7 @@ server:
   secret_key: m5_assert([ENV_RAND_HEX])
 
 outgoing:
-  request_timeout: &timeout 2.0
+  request_timeout: &timeout 4.0
   max_request_timeout: *timeout
   extra_proxy_timeout: 1
   proxies:
@@ -65,7 +65,7 @@ engines:
   - name: brave
     disabled: false
 
-  - name: aol
+  - name: bing
     disabled: false
 
   # - name: baidu
