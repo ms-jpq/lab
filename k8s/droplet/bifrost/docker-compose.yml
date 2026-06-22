@@ -23,7 +23,7 @@ services:
     image: docker.io/library/postgres:18
     labels:
       kompose.controller.type: statefulset
-      kompose.volume.type: hostPath
+      # kompose.volume.type: hostPath
     environment:
       POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
       POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
@@ -31,4 +31,7 @@ services:
     ports:
       - 5432
     volumes:
-      - /var/lib/local/bifrost:/var/lib/postgresql
+      - data:/var/lib/postgresql
+
+volumes:
+  data:
