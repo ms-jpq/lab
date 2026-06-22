@@ -4,12 +4,13 @@ version: 1.3.9
 
 mcpSettings:
   allowedDomains:
+    - "*.m5_assert([ENV_DOMAIN])"
     - "*.svc.cluster.local"
 
 mcpServers:
   crawl4ai:
     type: sse
-    url: https://crawl4ai.mcp.${DOMAIN}/mcp/sse
+    url: https://crawl4ai.mcp.m5_assert([ENV_DOMAIN])/mcp/sse
   kubernetes:
     type: http
     url: http://mcp.komposed-k8s-mcp.svc.cluster.local:8080/mcp
