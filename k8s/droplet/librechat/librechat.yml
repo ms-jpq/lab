@@ -9,7 +9,7 @@ mcpSettings:
 mcpServers:
   crawl4ai:
     type: sse
-    url: http://crawl4ai.komposed-crawl4ai.svc.cluster.local:11235/mcp/sse
+    url: https://crawl4ai.mcp.${DOMAIN}/mcp/sse
   kubernetes:
     type: http
     url: http://mcp.komposed-k8s-mcp.svc.cluster.local:8080/mcp
