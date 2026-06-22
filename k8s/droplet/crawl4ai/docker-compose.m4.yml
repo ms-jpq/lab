@@ -1,0 +1,41 @@
+---
+x-k8s:
+  - apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    metadata:
+      labels:
+        io.kompose.service: &crawl4ai crawl4ai
+      name: *crawl4ai
+      namespace: ${COMPOSE_PROJECT_NAME}
+    spec:
+      parentRefs:
+        - name: traefik-gateway
+          namespace: kube-system
+      hostnames:
+        - crawl4ai.mcp.m5_assert([ENV_DOMAIN])
+      rules:
+        - filters:
+            - type: RequestHeaderModifier
+              requestHeaderModifier:
+                set:
+                  - name: Authorization
+                    value: Bearer m5_assert([ENV_RAND_HEX])
+          backendRefs:
+            - name: *crawl4ai
+              port: 11235
+
+services:
+  crawl4ai:
+    image: docker.io/unclecode/crawl4ai:latest
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    environment:
+      CRAWL4AI_API_TOKEN: m5_assert([ENV_RAND_HEX])
+      GUNICORN_BIND: "[[::]]:11235"
+      REDIS_PASSWORD: crawl4ai
+    ports:
+      - 11235
+    volumes:
+      - ./config.yml:/app/config.yml:ro

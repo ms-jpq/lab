@@ -26,6 +26,8 @@ services:
 
   time: &fastmcp
     image: python:latest
+    labels:
+      kompose.service.expose: time.${DOMAIN}
     deploy:
       resources:
         limits:
