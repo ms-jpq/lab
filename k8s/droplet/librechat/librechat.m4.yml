@@ -25,7 +25,7 @@ mcpServers:
     url: http://time.komposed-mcp.svc.cluster.local:8000/mcp
   youtube:
     type: http
-    url: http://youtube-transcript.komposed-mcp.svc.cluster.local:8080/mcp
+    url: http://youtube-transcript.komposed-mcp.svc.cluster.local:8000/mcp
 
 memory:
   disabled: true
