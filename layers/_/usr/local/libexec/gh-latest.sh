@@ -24,10 +24,9 @@ if ! [[ -f $CACHE ]]; then
     --fail
     --location
     --no-progress-meter
-    --no-location
     --max-time 60
     --output /dev/null
-    --write-out '%{redirect_url}'
+    --write-out '%{url_effective}'
   )
   CURL+=(-- "https://github.com/$REPO/releases/latest")
 
