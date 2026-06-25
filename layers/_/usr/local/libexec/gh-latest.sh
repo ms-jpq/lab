@@ -24,23 +24,17 @@ if ! [[ -f $CACHE ]]; then
     --fail
     --location
     --no-progress-meter
+    --no-location
     --max-time 60
+    --output /dev/null
+    --write-out '%{redirect_url}'
   )
-  if [[ -v GH_TOKEN ]]; then
-    CURL+=(--oauth2-bearer "$GH_TOKEN")
-  fi
-  CURL+=(
-    -- "https://api.github.com/repos/$REPO/releases/latest"
-  )
+  CURL+=(-- "https://github.com/$REPO/releases/latest")
 
-  JQ=(
-    jq --exit-status
-    --raw-output '.tag_name'
-  )
+  URL="$("${CURL[@]}")"
+  TAG="${URL##*/}"
 
-  LINES="$("${CURL[@]}" | "${JQ[@]}")"
-  readarray -t -- TAGS <<< "$LINES"
-  printf -- '%s' "${TAGS[0]}" > "$CACHE"
+  printf -- '%s' "$TAG" > "$CACHE"
 fi
 
 exec -- cat -- "$CACHE"
