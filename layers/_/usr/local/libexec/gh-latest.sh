@@ -31,7 +31,7 @@ if ! [[ -f $CACHE ]]; then
   CURL+=(-- "https://github.com/$REPO/releases/latest")
 
   URL="$("${CURL[@]}")"
-  TAG="${URL##*/}"
+  TAG="${URL##*/releases/tag/}"
 
   printf -- '%s' "$TAG" > "$CACHE"
 fi
