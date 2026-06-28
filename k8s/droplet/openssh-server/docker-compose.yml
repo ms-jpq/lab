@@ -53,6 +53,28 @@ services:
     image: ghcr.io/rclone/rclone:latest
     labels:
       kompose.volume.type: hostPath
+      jq.mixin: |-
+        {
+          "containers": [
+            {
+              "volumeMounts": [
+                { "mountPropagation": "Bidirectional" },
+                {
+                  "mountPath": "/data",
+                  "name": "rclone-data",
+                  "mountPropagation": "Bidirectional"
+                }
+              ]
+            }
+          ],
+          "volumes": [
+            null,
+            {
+              "name": "rclone-data",
+              "hostPath": { "path": "/var/lib/local/rclone" }
+            }
+          ]
+        }
     privileged: true
     healthcheck:
       test:
@@ -86,11 +108,6 @@ services:
       - /data
     volumes:
       - /dev/fuse:/dev/fuse
-      - type: bind
-        source: /var/lib/local/rclone
-        target: /data
-        bind:
-          propagation: shared
 
   openssh-server:
     image: lscr.io/linuxserver/openssh-server:latest

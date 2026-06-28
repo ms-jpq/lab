@@ -18,6 +18,19 @@ if [[ -v RECURSION ]]; then
   KEEL="$(< ./k8s/keel.json)"
 
   read -r -d '' -- JQ <<- 'JQ' || true
+def mixin($other):
+  if . == null then
+    $other
+  elif $other == null then
+    .
+  elif type == "object" and ($other | type) == "object" then
+    reduce($other | keys_unsorted[]) as $k (.; .[$k] |= mixin($other[$k]))
+  elif type == "array" and ($other | type) == "array" then
+    [range([length, ($other | length)] | max) as $i | .[$i] | mixin($other[$i])]
+  else
+    $other
+  end;
+
 def lens: .spec | .template // .jobTemplate.spec.template;
 
 sort_by(.kind != "Namespace")[]
@@ -47,7 +60,7 @@ sort_by(.kind != "Namespace")[]
       end
     | if .metadata.annotations."jq.mixin" then
         . as $this
-        | ($this | lens).spec |= (. * ($this.metadata.annotations."jq.mixin" | fromjson))
+        | ($this | lens).spec |= mixin($this.metadata.annotations."jq.mixin" | fromjson)
       else
         .
       end
