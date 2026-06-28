@@ -1,0 +1,15 @@
+---
+services:
+  navidrome:
+    image: ghcr.io/deluan/navidrome:latest
+    labels:
+      kompose.controller.type: statefulset
+      kompose.service.expose: music.${DOMAIN}
+      kompose.volume.type: hostPath
+    environment:
+      ND_ENABLETRANSCODINGCONFIG: true
+    ports:
+      - 4533
+    volumes:
+      - /var/lib/local/navidrome:/data
+      - /var/lib/local/rclone/music:/music:ro
