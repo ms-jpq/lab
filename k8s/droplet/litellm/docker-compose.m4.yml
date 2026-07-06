@@ -1,15 +1,51 @@
 ---
+x-k8s:
+  - apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    metadata:
+      labels:
+        io.kompose.service: &litellm litellm
+      name: *litellm
+      namespace: ${COMPOSE_PROJECT_NAME}
+    spec:
+      parentRefs:
+        - name: traefik-gateway
+          namespace: kube-system
+      hostnames:
+        - litellm.m5_assert([ENV_DOMAIN])
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /v1/responses
+            - path:
+                type: PathPrefix
+                value: /v1/chat/completions
+            - path:
+                type: PathPrefix
+                value: /v1/messages
+          filters:
+            - type: RequestHeaderModifier
+              requestHeaderModifier:
+                set:
+                  - name: Authorization
+                    value: Bearer m5_assert([ENV_MINIFLUX_PASSWORD])
+          backendRefs:
+            - name: *litellm
+              port: 4000
+        - backendRefs:
+            - name: *litellm
+              port: 4000
+
 services:
   litellm:
     image: docker.litellm.ai/berriai/litellm:main-latest
-    labels:
-      kompose.service.expose: litellm.${DOMAIN}
     environment:
       DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg.${COMPOSE_PROJECT_NAME}.svc.cluster.local/${COMPOSE_PROJECT_NAME}
       LANGFUSE_OTEL_HOST: http://langfuse-web.komposed-langfuse.svc.cluster.local:3000
       LANGFUSE_PUBLIC_KEY:
       LANGFUSE_SECRET_KEY:
-      LITELLM_MASTER_KEY:
+      LITELLM_MASTER_KEY: m5_assert([ENV_MINIFLUX_PASSWORD])
       REDIS_HOST: redis.${COMPOSE_PROJECT_NAME}.svc.cluster.local
       STORE_MODEL_IN_DB: true
       UI_USERNAME:
