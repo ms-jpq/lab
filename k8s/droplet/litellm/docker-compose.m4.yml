@@ -27,9 +27,6 @@ x-k8s:
             - path:
                 type: PathPrefix
                 value: /v1/models
-            - path:
-                type: PathPrefix
-                value: /models
           filters:
             - type: RequestHeaderModifier
               requestHeaderModifier:
@@ -46,6 +43,10 @@ x-k8s:
 services:
   litellm:
     image: docker.litellm.ai/berriai/litellm:main-latest
+    deploy:
+      resources:
+        limits:
+          memory: 4G
     environment:
       DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg.${COMPOSE_PROJECT_NAME}.svc.cluster.local/${COMPOSE_PROJECT_NAME}
       LANGFUSE_OTEL_HOST: http://langfuse-web.komposed-langfuse.svc.cluster.local:3000
@@ -59,7 +60,7 @@ services:
       - --config
       - /app/config.yaml
       - --host
-      - "::"
+      - ""
       - --port
       - "4000"
     ports:
