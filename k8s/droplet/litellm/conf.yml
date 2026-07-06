@@ -16,6 +16,15 @@ litellm_settings:
     host: os.environ/REDIS_HOST
 
 model_list:
+  - model_name: zai/*
+    litellm_params:
+      model: zai/*
+  - model_name: openrouter/*
+    litellm_params:
+      model: openrouter/*
+  - model_name: deepseek/*
+    litellm_params:
+      model: deepseek/*
   - model_name: "*"
     litellm_params:
       model: "*"

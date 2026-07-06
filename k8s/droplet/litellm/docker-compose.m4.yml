@@ -23,7 +23,13 @@ x-k8s:
                 value: /v1/chat/completions
             - path:
                 type: PathPrefix
-                value: /v1/messages
+                value: /chat/completions
+            - path:
+                type: PathPrefix
+                value: /v1/models
+            - path:
+                type: PathPrefix
+                value: /models
           filters:
             - type: RequestHeaderModifier
               requestHeaderModifier:
