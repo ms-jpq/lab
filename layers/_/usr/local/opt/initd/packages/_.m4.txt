@@ -29,6 +29,7 @@
 + python3-venv
 + ripgrep
 + rsync
++ run-one
 + socat
 + ssh-import-id
 + systemd-journal-remote
