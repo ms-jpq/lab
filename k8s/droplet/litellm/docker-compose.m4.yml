@@ -54,7 +54,6 @@ services:
       LANGFUSE_SECRET_KEY:
       LITELLM_MASTER_KEY: m5_assert([ENV_MINIFLUX_PASSWORD])
       REDIS_HOST: redis.${COMPOSE_PROJECT_NAME}.svc.cluster.local
-      STORE_MODEL_IN_DB: true
       UI_USERNAME:
     command:
       - --config

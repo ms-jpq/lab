@@ -1,7 +1,7 @@
-import litellm  # type: ignore
+from litellm.integrations.custom_logger import CustomLogger  # type: ignore
 
 
-class _CodexToolFilter:
+class _CodexToolFilter(CustomLogger):
     async def async_pre_call_hook(self, user_api_key_dict, cache, data, call_type):
         tools = data.get("tools")
         if isinstance(tools, list):
@@ -14,4 +14,4 @@ class _CodexToolFilter:
         return data
 
 
-litellm.callbacks = [_CodexToolFilter()]  # type: ignore
+codex_tool_filter = _CodexToolFilter()
