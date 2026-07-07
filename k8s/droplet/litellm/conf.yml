@@ -19,19 +19,12 @@ litellm_settings:
 model_list:
   - model_name: deepseek/*
     litellm_params:
-      api_base: https://api.deepseek.com
       model: deepseek/*
       use_chat_completions_api: true
   - model_name: zai/*
     litellm_params:
-      api_base: https://api.z.ai/api/coding/paas/v4
       model: zai/*
       use_chat_completions_api: true
-    guardrails:
-      - guardrail_name: codex-tool-filter
-        litellm_params:
-          guardrail: codex_tool_filter.CodexToolFilterGuardrail
-          mode: pre_call
   - model_name: openrouter/*
     litellm_params:
       model: openrouter/*

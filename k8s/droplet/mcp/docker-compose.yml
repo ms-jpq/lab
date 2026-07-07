@@ -32,6 +32,8 @@ services:
       resources:
         limits:
           memory: 250M
+    environment:
+      FASTMCP_HTTP_HOST_ORIGIN_PROTECTION: "false"
     entrypoint:
       - sh
     command:
@@ -46,6 +48,19 @@ services:
       - 8000
     volumes:
       - pip-cache:/root/.cache/pip
+
+  crawl4ai:
+    <<: *fastmcp
+    labels:
+      kompose.service.expose: crawl4ai.mcp.${DOMAIN}
+    command:
+      - -euxc
+      - |-
+        pip install -- fastmcp
+        tee -- /tmp/mcp.json <<- 'JSON'
+        {"mcpServers": {"crawl4ai": {"url": "http://crawl4ai.komposed-crawl4ai.svc.cluster.local:11235/mcp/sse", "transport": "sse", "headers": {"Authorization": "Bearer crawl4ai"}}}}
+        JSON
+        exec fastmcp run /tmp/mcp.json --transport http --host ''
 
   youtube-transcript:
     <<: *fastmcp
@@ -62,6 +77,8 @@ services:
         {"mcpServers": {"youtube": {"command": "mcp-youtube-transcript"}}}
         JSON
         exec fastmcp run /tmp/mcp.json --transport http --host ''
+    volumes:
+      - pip-cache:/root/.cache/pip
 
 volumes:
   pip-cache:
