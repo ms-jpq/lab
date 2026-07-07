@@ -11,6 +11,7 @@ else:
 Message: TypeAlias = dict[str, object]
 
 
+# TODO: https://github.com/BerriAI/litellm/issues/27276
 def _is_function_tool(tool: object) -> bool:
     match tool:
         case {"type": "function"}:
@@ -19,7 +20,7 @@ def _is_function_tool(tool: object) -> bool:
             return False
 
 
-# https://github.com/BerriAI/litellm/issues/31553
+# TODO: https://github.com/BerriAI/litellm/issues/31553
 def _is_blank_content(content: object) -> bool:
     match content:
         case None:
@@ -45,7 +46,7 @@ def _has_tool_calls(message: object) -> bool:
             return False
 
 
-# https://github.com/BerriAI/litellm/pull/31559
+# TODO: https://github.com/BerriAI/litellm/pull/31559
 def _drop_blank_assistant_after_tool_calls(messages: object) -> object:
     if not isinstance(messages, list):
         return messages
