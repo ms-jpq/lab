@@ -19,30 +19,50 @@ def _is_function_tool(tool: object) -> bool:
             return False
 
 
-def _drop_blank_assistant_between_tool_call_and_result(messages: object) -> object:
+# https://github.com/BerriAI/litellm/issues/31553
+def _is_blank_content(content: object) -> bool:
+    match content:
+        case None:
+            return True
+        case str():
+            return content.strip() == ""
+        case list():
+            return all(
+                isinstance(part, dict)
+                and part.get("type") == "text"
+                and not (part.get("text") or "").strip()
+                for part in content
+            )
+        case _:
+            return False
+
+
+def _has_tool_calls(message: object) -> bool:
+    match message:
+        case {"tool_calls": [*tool_calls]} if tool_calls:
+            return True
+        case _:
+            return False
+
+
+# https://github.com/BerriAI/litellm/pull/31559
+def _drop_blank_assistant_after_tool_calls(messages: object) -> object:
     if not isinstance(messages, list):
         return messages
 
     normalized: list[object] = []
-    for index, message in enumerate(messages):
-        next_message = messages[index + 1] if index + 1 < len(messages) else None
+    for message in messages:
         previous = normalized[-1] if normalized else None
 
         match previous:
-            case {"role": "assistant", "tool_calls": [*tool_calls]} if tool_calls:
+            case {"role": "assistant"} if _has_tool_calls(previous):
                 match message:
                     case {
                         "role": "assistant",
-                        "content": None | "" | [],
-                    } if not message.get("tool_calls"):
-                        match next_message:
-                            case {"role": "tool", "tool_call_id": tool_call_id}:
-                                if any(
-                                    isinstance(tool_call, dict)
-                                    and tool_call.get("id") == tool_call_id
-                                    for tool_call in tool_calls
-                                ):
-                                    continue
+                    } if not _has_tool_calls(
+                        message
+                    ) and _is_blank_content(message.get("content")):
+                        continue
                     case _:
                         pass
             case _:
@@ -76,9 +96,7 @@ class _CodexToolFilter(CustomLogger):
         call_type: object,
     ) -> Message:
         if msgs := kwargs.get("messages"):
-            kwargs["messages"] = _drop_blank_assistant_between_tool_call_and_result(
-                msgs
-            )
+            kwargs["messages"] = _drop_blank_assistant_after_tool_calls(msgs)
         return kwargs
 
 
