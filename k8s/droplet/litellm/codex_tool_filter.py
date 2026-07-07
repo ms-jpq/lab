@@ -1,3 +1,6 @@
+import litellm  # type: ignore
+
+
 class _CodexToolFilter:
     async def async_pre_call_hook(self, user_api_key_dict, cache, data, call_type):
         tools = data.get("tools")
@@ -11,4 +14,4 @@ class _CodexToolFilter:
         return data
 
 
-codex_tool_filter = _CodexToolFilter()
+litellm.callbacks = [_CodexToolFilter()]  # type: ignore
