@@ -67,6 +67,7 @@ services:
       - 4000
     volumes:
       - ./conf.yml:/app/config.yaml:ro
+      - ./codex_tool_filter.py:/app/codex_tool_filter.py:ro
 
   pg:
     image: docker.io/library/postgres:18
