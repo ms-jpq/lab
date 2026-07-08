@@ -23,6 +23,24 @@ def _is_function_tool(tool: object) -> bool:
             return False
 
 
+def _extract_function_tools(tools: list[object]) -> list[object]:
+    normalized: list[object] = []
+    for tool in tools:
+        match tool:
+            case {"type": "namespace", "tools": [*nested]}:
+                normalized.extend(
+                    nested_tool
+                    for nested_tool in nested
+                    if _is_function_tool(nested_tool)
+                )
+            case _ if _is_function_tool(tool):
+                normalized.append(tool)
+            case _:
+                pass
+
+    return normalized
+
+
 class _CodexToolFilter(CustomLogger):
     async def async_pre_call_hook(
         self,
@@ -33,7 +51,7 @@ class _CodexToolFilter(CustomLogger):
     ) -> Message:
         match data.get("tools"):
             case [*tools]:
-                data["tools"] = [tool for tool in tools if _is_function_tool(tool)]
+                data["tools"] = _extract_function_tools(tools)
             case _:
                 pass
 
