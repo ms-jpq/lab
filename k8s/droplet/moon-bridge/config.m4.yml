@@ -10,6 +10,9 @@ extensions:
   codex_tool_proxy:
     enabled: true
 
+defaults:
+  max_tokens: 1048576
+
 models:
   deepseek-v4-pro:
     web_search:
@@ -17,8 +20,13 @@ models:
     extensions:
       deepseek_v4:
         enabled: true
+      codex_tool_proxy:
+        enabled: true
   "glm-5.2[1m]":
     context_window: 1000000
+    extensions:
+      codex_tool_proxy:
+        enabled: true
     max_output_tokens: 131072
     input_modalities:
       - text
