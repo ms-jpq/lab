@@ -1,12 +1,36 @@
 # https://github.com/ZhiYi-R/moon-bridge/blob/main/config.example.yml
 ---
+mode: Transform
+
 server:
   auth_token: m5_assert([ENV_MINIFLUX_PASSWORD])
+  addr: :38440
 
 extensions:
   db_sqlite:
     config:
       path: /srv/data/moonbridge.db
+
+models:
+  deepseek-v4-pro:
+    web_search:
+      support: auto
+    extensions:
+      deepseek_v4:
+        enabled: true
+  "glm-5.2[1m]":
+    context_window: 1000000
+    max_output_tokens: 131072
+    input_modalities:
+      - text
+    supports_reasoning: true
+    default_reasoning_level: high
+    supported_reasoning_levels:
+      - effort: high
+      - effort: max
+    supports_reasoning_summaries: true
+    web_search:
+      support: auto
 
 providers:
   deepseek:
@@ -14,13 +38,12 @@ providers:
     base_url: https://api.deepseek.com/anthropic
     offers:
       - model: deepseek-v4-pro
-      - model: deepseek-v4-flash
 
   zai:
     api_key: m5_assert([ENV_ZAI_API_KEY])
     base_url: https://api.z.ai/api/anthropic
     offers:
-      - model: glm-5.2
+      - model: "glm-5.2[1m]"
 
 routes:
   moonbridge:
