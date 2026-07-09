@@ -1,0 +1,10 @@
+---
+services:
+  portkey:
+    image: docker.io/portkeyai/gateway:latest
+    labels:
+      kompose.service.expose: portkey.${DOMAIN}
+    environment:
+      NODE_ENV: production
+    ports:
+      - 8787

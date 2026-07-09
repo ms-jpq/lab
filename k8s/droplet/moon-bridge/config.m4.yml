@@ -1,0 +1,28 @@
+# https://github.com/ZhiYi-R/moon-bridge/blob/main/config.example.yml
+---
+server:
+  auth_token: m5_assert([ENV_MINIFLUX_PASSWORD])
+
+extensions:
+  db_sqlite:
+    config:
+      path: /srv/data/moonbridge.db
+
+providers:
+  deepseek:
+    api_key: m5_assert([ENV_DEEPSEEK_API_KEY])
+    base_url: https://api.deepseek.com/anthropic
+    offers:
+      - model: deepseek-v4-pro
+      - model: deepseek-v4-flash
+
+  zai:
+    api_key: m5_assert([ENV_ZAI_API_KEY])
+    base_url: https://api.z.ai/api/anthropic
+    offers:
+      - model: glm-5.2
+
+routes:
+  moonbridge:
+    model: deepseek-v4-pro
+    provider: deepseek

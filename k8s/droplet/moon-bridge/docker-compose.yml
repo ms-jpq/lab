@@ -1,0 +1,30 @@
+---
+services:
+  moon-bridge:
+    image: docker.io/library/golang:latest
+    labels:
+      kompose.service.expose: moon-bridge.${DOMAIN}
+    environment:
+      GOCACHE: /srv/cache
+      GOPATH: /srv/go
+    entrypoint:
+      - bash
+    command:
+      - -euxc
+      - |-
+        if test -d /srv/src; then
+          git -C /srv/src pull --ff-only
+        else
+          git clone --depth 1 -- https://github.com/ZhiYi-R/moon-bridge /srv/src
+        fi
+        go build -o /srv/go/bin/moonbridge -- /srv/src/cmd/moonbridge
+        mkdir -p -- /srv/data
+        exec /srv/go/bin/moonbridge -config /config/config.yml
+    ports:
+      - 38440
+    volumes:
+      - cache:/srv
+      - ./config.yml:/config/config.yml:ro
+
+volumes:
+  cache:
