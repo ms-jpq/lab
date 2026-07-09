@@ -1,0 +1,20 @@
+---
+services:
+  deepseek: &proxy
+    image: docker.io/parachutes/responses-proxy:latest
+    labels:
+      kompose.service.expose: deepseek.${DOMAIN}
+    environment: &proxy-env
+      HOST_PORT: "8282"
+      RUST_LOG: info
+      BACKEND_URL: https://api.deepseek.com/v1/chat/completions
+    ports:
+      - 8282
+
+  zai:
+    <<: *proxy
+    labels:
+      kompose.service.expose: zai.${DOMAIN}
+    environment:
+      <<: *proxy-env
+      BACKEND_URL: https://api.z.ai/api/coding/paas/v4/chat/completions
