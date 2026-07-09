@@ -1,6 +1,7 @@
 + gh-mirror
 + journal
 + postgres
++ s3-repo
 + ssh-fwd
 + telemetry
 + telemetry-collector
