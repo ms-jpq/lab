@@ -13,7 +13,7 @@ services:
   mcp:
     image: docker.io/oven/bun:latest
     labels:
-      kompose.service.expose: litellm.${DOMAIN}
+      kompose.service.expose: draw.mcp.${DOMAIN}
     entrypoint:
       - sh
     command:

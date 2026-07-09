@@ -9,9 +9,6 @@ server:
 extensions:
   codex_tool_proxy:
     enabled: true
-  db_sqlite:
-    config:
-      path: /srv/data/moonbridge.db
 
 models:
   deepseek-v4-pro:
