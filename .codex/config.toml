@@ -1,0 +1,10 @@
+[mcp_servers.grafana]
+command = "mcp-grafana"
+
+[mcp_servers.grafana.env]
+GRAFANA_EXTRA_HEADERS = '{"Authorization": "Basic ${GRAFANA_TOKEN}"}'
+GRAFANA_URL           = "http://freenas.enp1s0.pfsense.home.arpa:8080/grafana"
+
+[mcp_servers.kubernetes]
+env_http_headers = { "Authorization" = "K8S_AUTHORIZATION" }
+url              = ""
