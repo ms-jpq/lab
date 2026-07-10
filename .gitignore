@@ -2,6 +2,7 @@
 *.isorted
 *.plan
 *.tfstate.backup
+.codex/config.toml
 .facts/*.env
 .facts/*.env.*
 .facts/-.json
