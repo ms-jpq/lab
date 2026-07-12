@@ -11,10 +11,10 @@ extensions:
     enabled: true
 
 defaults:
-  max_tokens: 1048576
+  max_tokens: &1M 1048576
 
 models:
-  deepseek-v4-pro:
+  deepseek/deepseek-v4-pro:
     web_search:
       support: auto
     extensions:
@@ -22,8 +22,8 @@ models:
         enabled: true
       codex_tool_proxy:
         enabled: true
-  "glm-5.2[[1m]]":
-    context_window: 1048576
+  "z-ai/glm-5.2[[1m]]":
+    context_window: *1M
     extensions:
       codex_tool_proxy:
         enabled: true
@@ -36,7 +36,6 @@ models:
       - effort: high
       - effort: max
     supports_reasoning_summaries: true
-    supports_parallel_tool_calls: true
     web_search:
       support: auto
 
@@ -45,10 +44,10 @@ providers:
     api_key: m5_assert([ENV_DEEPSEEK_API_KEY])
     base_url: https://api.deepseek.com/anthropic
     offers:
-      - model: deepseek-v4-pro
+      - model: deepseek/deepseek-v4-pro
 
   z-ai:
     api_key: m5_assert([ENV_ZAI_API_KEY])
     base_url: https://api.z.ai/api/anthropic
     offers:
-      - model: "glm-5.2[[1m]]"
+      - model: "z-ai/glm-5.2[[1m]]"
