@@ -3,7 +3,7 @@ services:
   moon-bridge:
     image: docker.io/library/golang:latest
     labels:
-      kompose.service.expose: litellm.${DOMAIN}
+      kompose.service.expose: moon-bridge.${DOMAIN}
     environment:
       GOCACHE: /srv/cache
       GOPATH: /srv/go

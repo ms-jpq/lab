@@ -19,14 +19,12 @@ litellm_settings:
 model_list:
   - model_name: deepseek/*
     litellm_params:
-      api_base: https://api.deepseek.com/beta
+      api_base: https://api.deepseek.com/anthropic
       model: deepseek/*
-      use_chat_completions_api: true
   - model_name: zai/*
     litellm_params:
-      api_base: https://api.z.ai/api/coding/paas/v4
+      api_base: https://api.z.ai/api/anthropic
       model: zai/*
-      use_chat_completions_api: true
   - model_name: openrouter/*
     litellm_params:
       model: openrouter/*

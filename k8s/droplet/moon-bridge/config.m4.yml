@@ -6,13 +6,6 @@ server:
   auth_token: m5_assert([ENV_MINIFLUX_PASSWORD])
   addr: :38440
 
-extensions:
-  codex_tool_proxy:
-    enabled: true
-
-defaults:
-  max_tokens: &1M 1048576
-
 models:
   deepseek/deepseek-v4-pro:
     web_search:
@@ -22,22 +15,6 @@ models:
         enabled: true
       codex_tool_proxy:
         enabled: true
-  "z-ai/glm-5.2":
-    context_window: *1M
-    extensions:
-      codex_tool_proxy:
-        enabled: true
-    max_output_tokens: 131072
-    input_modalities:
-      - text
-    supports_reasoning: true
-    default_reasoning_level: high
-    supported_reasoning_levels:
-      - effort: high
-      - effort: max
-    supports_reasoning_summaries: true
-    web_search:
-      support: auto
 
 providers:
   deepseek:
@@ -45,14 +22,3 @@ providers:
     base_url: https://api.deepseek.com/anthropic
     offers:
       - model: deepseek/deepseek-v4-pro
-
-  z-ai:
-    api_key: m5_assert([ENV_ZAI_API_KEY])
-    base_url: https://api.z.ai/api/anthropic
-    offers:
-      - model: "z-ai/glm-5.2"
-
-routes:
-  "z-ai/glm-5.2[[1m]]":
-    model: glm-5.2
-    provider: z-ai
