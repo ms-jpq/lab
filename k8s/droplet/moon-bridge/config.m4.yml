@@ -22,7 +22,7 @@ models:
         enabled: true
       codex_tool_proxy:
         enabled: true
-  "z-ai/glm-5.2[[1m]]":
+  "z-ai/glm-5.2":
     context_window: *1M
     extensions:
       codex_tool_proxy:
@@ -50,4 +50,9 @@ providers:
     api_key: m5_assert([ENV_ZAI_API_KEY])
     base_url: https://api.z.ai/api/anthropic
     offers:
-      - model: "z-ai/glm-5.2[[1m]]"
+      - model: "z-ai/glm-5.2"
+
+routes:
+  "z-ai/glm-5.2[[1m]]":
+    model: z-ai/glm-5.2
+    provider: z-ai
