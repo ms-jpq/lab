@@ -22,8 +22,8 @@ models:
         enabled: true
       codex_tool_proxy:
         enabled: true
-  "glm-5.2[1m]":
-    context_window: 1000000
+  "glm-5.2[[1m]]":
+    context_window: 1048576
     extensions:
       codex_tool_proxy:
         enabled: true
@@ -36,6 +36,7 @@ models:
       - effort: high
       - effort: max
     supports_reasoning_summaries: true
+    supports_parallel_tool_calls: true
     web_search:
       support: auto
 
@@ -46,13 +47,8 @@ providers:
     offers:
       - model: deepseek-v4-pro
 
-  zai:
+  z-ai:
     api_key: m5_assert([ENV_ZAI_API_KEY])
     base_url: https://api.z.ai/api/anthropic
     offers:
-      - model: "glm-5.2[1m]"
-
-routes:
-  moonbridge:
-    model: deepseek-v4-pro
-    provider: deepseek
+      - model: "glm-5.2[[1m]]"
