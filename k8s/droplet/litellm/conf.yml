@@ -23,8 +23,9 @@ model_list:
       model: deepseek/*
   - model_name: zai/*
     litellm_params:
-      api_base: https://api.z.ai/api/anthropic
+      api_base: https://api.z.ai/api/coding/paas/v4
       model: zai/*
+      use_chat_completions_api: true
   - model_name: openrouter/*
     litellm_params:
       model: openrouter/*
