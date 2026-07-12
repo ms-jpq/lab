@@ -54,5 +54,5 @@ providers:
 
 routes:
   "z-ai/glm-5.2[[1m]]":
-    model: z-ai/glm-5.2
+    model: glm-5.2
     provider: z-ai
