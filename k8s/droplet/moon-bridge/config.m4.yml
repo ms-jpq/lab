@@ -13,9 +13,6 @@ models:
   deepseek/deepseek-v4-pro:
     web_search:
       support: auto
-    extensions:
-      deepseek_v4:
-        enabled: true
 
 providers:
   deepseek:
