@@ -6,10 +6,6 @@ server:
   auth_token: m5_assert([ENV_MINIFLUX_PASSWORD])
   addr: :38440
 
-extensions:
-  codex_tool_proxy:
-    enabled: true
-
 defaults:
   max_tokens: 1048576
 
@@ -19,8 +15,6 @@ models:
       support: auto
     extensions:
       deepseek_v4:
-        enabled: true
-      codex_tool_proxy:
         enabled: true
 
 providers:
