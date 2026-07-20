@@ -5,6 +5,7 @@ services:
     image: ghcr.io/openclaw/openclaw:latest
     labels:
       kompose.controller.type: statefulset
+      kompose.service.expose: claw.${DOMAIN}
       kompose.service.group: &svcgrp openclaw
       kompose.volume.type: hostPath
       jq.mixin: |-
@@ -36,15 +37,14 @@ services:
     configs:
       - source: openclaw
         target: /home/node/.openclaw/openclaw.json
+    ports:
+      - 8080
 
   nginx:
     image: docker.io/library/nginx:latest
     labels:
       kompose.controller.type: statefulset
-      kompose.service.expose: claw.${DOMAIN}
       kompose.service.group: *svcgrp
-    ports:
-      - 8080
     volumes:
       - ./main.nginx:/etc/nginx/nginx.conf:ro
 
