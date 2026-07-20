@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openclaw.ai/schema.json",
+  "gateway": {
+    "auth": {
+      "mode": "token",
+      "token": "${OPENCLAW_GATEWAY_TOKEN}"
+    },
+    "bind": "lan",
+    "controlUi": {
+      "allowedOrigins": ["https://claw.${DOMAIN}"]
+    },
+    "mode": "local"
+  }
+}

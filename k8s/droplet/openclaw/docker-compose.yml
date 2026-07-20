@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json
+---
+services:
+  openclaw:
+    image: ghcr.io/openclaw/openclaw:latest
+    labels:
+      kompose.controller.type: statefulset
+      kompose.service.group: &svcgrp openclaw
+      kompose.volume.type: hostPath
+    environment:
+      DOMAIN:
+      OPENCLAW_DISABLE_BONJOUR: 1
+      OPENCLAW_GATEWAY_TOKEN:
+    configs:
+      - source: openclaw
+        target: /home/node/.openclaw/openclaw.json
+
+  nginx:
+    image: docker.io/library/nginx:latest
+    labels:
+      kompose.controller.type: statefulset
+      kompose.service.expose: claw.${DOMAIN}
+      kompose.service.group: *svcgrp
+    ports:
+      - 8080
+    configs:
+      - source: nginx
+        target: /etc/nginx/nginx.conf
+
+configs:
+  openclaw:
+    file: ./openclaw.json
+  nginx:
+    file: ./main.nginx
