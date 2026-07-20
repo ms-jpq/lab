@@ -7,6 +7,28 @@ services:
       kompose.controller.type: statefulset
       kompose.service.group: &svcgrp openclaw
       kompose.volume.type: hostPath
+      jq.mixin: |-
+        {
+          "containers": [
+            null,
+            {
+              "volumeMounts": [
+                {
+                  "mountPath": "/home/node/.openclaw/openclaw.json",
+                  "name": "openclaw",
+                  "subPath": "openclaw.json"
+                }
+              ]
+            }
+          ],
+          "volumes": [
+            null,
+            {
+              "name": "openclaw",
+              "configMap": { "name": "openclaw" }
+            }
+          ]
+        }
     environment:
       DOMAIN:
       OPENCLAW_DISABLE_BONJOUR: 1
@@ -23,9 +45,8 @@ services:
       kompose.service.group: *svcgrp
     ports:
       - 8080
-    configs:
-      - source: nginx
-        target: /etc/nginx/nginx.conf
+    volumes:
+      - ./main.nginx:/etc/nginx/nginx.conf:ro
 
 configs:
   openclaw:
