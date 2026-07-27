@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json
+---
+services:
+  hermes:
+    image: nousresearch/hermes-agent:latest
+    labels:
+      kompose.controller.type: statefulset
+      kompose.service.expose: claw.${DOMAIN}
+      kompose.volume.type: hostPath
+    environment:
+      API_SERVER_CORS_ORIGINS: https://claw.${DOMAIN}
+      API_SERVER_HOST: ""
+      API_SERVER_KEY:
+      DOMAIN:
+      HERMES_DASHBOARD: 1
+    ports:
+      - 8080
+    volumes:
+      - /var/lib/local/hermes:/opt/data
