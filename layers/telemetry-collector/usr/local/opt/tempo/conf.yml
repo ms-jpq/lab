@@ -33,6 +33,9 @@ live_store:
   wal:
     path: /var/lib/local/tempo/live-store/traces
 
+backend_scheduler:
+  local_work_path: /var/lib/local/tempo/backend-scheduler
+
 overrides:
   defaults:
     compaction:
