@@ -12,5 +12,6 @@ User            = 1000
 Group           = 1000
 
 StateDirectory  = local/gh-mirror/%I
+Environment     = ENV_MIRROR_IGNORE=
 EnvironmentFile = -/usr/local/etc/default/%I.gh-mirror.env
 ExecStart       = /usr/local/opt/gh-mirror/libexec/mirror.sh %S/local/gh-mirror %I
