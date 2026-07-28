@@ -29,7 +29,7 @@ DHCPv6Client                       = always
 Token                              = static:::69:420:420:69
 
 [[DHCPPrefixDelegation]]
-UplinkInterface                    = :self
+# UplinkInterface                    = :self
 Token                              = static:::69:420:420:69
 
 [[QDisc]]
