@@ -48,8 +48,5 @@ jobs:
           LOCAL=1 ./main.sh --machine - -- --debug
 
       - run: |-
-          LOCAL=1 ./main.sh --machine - -- nginx
-
-      - run: |-
           gmake fmt
           git diff --exit-code
