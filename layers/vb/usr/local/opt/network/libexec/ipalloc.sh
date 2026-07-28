@@ -7,6 +7,7 @@ RUN="$1"
 LIB="$2"
 IFACE="$3"
 IPV4_PREFIX="$4"
+IGNORE_EXTERNAL="$5"
 RECORD="$RUN/$IFACE.env"
 
 if ! [[ -v LOCKED ]]; then
@@ -16,28 +17,31 @@ fi
 
 rm -v -fr -- "$RECORD" >&2
 
-RS="$(ip --json -4 route | jq --raw-output '.[] | select(.dst | match("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}")) | .dst')"
-readarray -t -- ROUTES <<< "$RS"
-IS="$(ip --json -4 addr show | jq --raw-output '.[].addr_info[] | "\(.local)/\(.prefixlen)"')"
-readarray -t -- INETS <<< "$IS"
-
 IPV4_A="$(sed --regexp-extended --quiet -- 's/^IPV4_IF=(.+)$/\1/p' "$RUN"/*.env "$LIB"/*.env)"
 IPV6_A="$(sed --regexp-extended --quiet -- 's/^IPV6_NETWORK=(.+)$/\1/p' "$RUN"/*.env "$LIB"/*.env)"
-readarray -t -- IPV4_ALLOC <<< "$IPV4_A"
-readarray -t -- IPV6_ALLOC <<< "$IPV6_A"
-
-N=("${ROUTES[@]}" "${INETS[@]}" "${IPV4_ALLOC[@]}")
-NOPE=()
-for ROUTE in "${N[@]}"; do
-  if [[ -n $ROUTE ]]; then
-    NOPE+=("$ROUTE")
-  fi
-done
+readarray -t -- IPV4_ALLOC <(printf -- '%s' "$IPV4_A")
+readarray -t -- IPV6_ALLOC <(printf -- '%s' "$IPV6_A")
 
 declare -A -- IP6ACC=()
 for ROUTE in "${IPV6_ALLOC[@]}"; do
   if [[ -n $ROUTE ]]; then
     IP6ACC["$ROUTE"]=1
+  fi
+done
+
+N=("${IPV4_ALLOC[@]}")
+if ! ((IGNORE_EXTERNAL)); then
+  RS="$(ip --json -4 route | jq --raw-output '.[] | select(.dst | match("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}")) | .dst')"
+  readarray -t -- ROUTES <<< "$RS"
+  IS="$(ip --json -4 addr show | jq --raw-output '.[].addr_info[] | "\(.local)/\(.prefixlen)"')"
+  readarray -t -- INETS <<< "$IS"
+  N+=("${ROUTES[@]}" "${INETS[@]}")
+fi
+
+NOPE=()
+for ROUTE in "${N[@]}"; do
+  if [[ -n $ROUTE ]]; then
+    NOPE+=("$ROUTE")
   fi
 done
 

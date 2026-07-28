@@ -20,8 +20,9 @@ Environment              = LOCK=%t/local/ip
 Environment              = HOSTNAME=%H
 Environment              = IFACE=%I
 Environment              = IPV4_PREFIX=24
+Environment              = IGNORE_EXTERNAL=0
 
 EnvironmentFile          = -/usr/local/etc/default/%I.ip.env
 
-ExecStart                = /usr/local/opt/network/libexec/ipalloc.sh ${LOCK} /usr/local/opt/ip ${IFACE} ${IPV4_PREFIX}
+ExecStart                = /usr/local/opt/network/libexec/ipalloc.sh ${LOCK} /usr/local/opt/ip ${IFACE} ${IPV4_PREFIX} ${IGNORE_EXTERNAL}
 ExecStopPost             = flock -- ${LOCK} rm -v -fr -- ${LOCK}/${IFACE}.env
