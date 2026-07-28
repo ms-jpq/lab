@@ -16,8 +16,8 @@ CacheDirectory  = local/rclone/%i
 
 EnvironmentFile = /usr/local/etc/default/%i.rmount.env
 
-Environment     = WHAT=
-Environment     = ARGV=
+Environment     = ENV_RCLONE_MNT_WHAT=
+Environment     = ENV_RCLONE_MNT_ARGV=
 Environment     = WHERE=/media/%I
 Environment     = DIR_CACHE_TIME=0
 Environment     = POLL_INTERVAL=0
@@ -48,7 +48,7 @@ ExecStart       = rclone mount \
                     --vfs-cache-max-size ${VFS_MAX_SIZE} \
                     --vfs-read-ahead ${VFS_READ_AHEAD} \
                     $WEBDAV $READONLY \
-                    $ARGV -- ${WHAT} ${WHERE}
+                    $ENV_RCLONE_MNT_ARGV -- ${ENV_RCLONE_MNT_WHAT} ${WHERE}
 ExecReload      = kill -s HUP -- ${MAINPID}
 ExecStop        = -!fusermount -u -- ${WHERE}
 ExecStop        = -!umount --force --lazy -- ${WHERE}
