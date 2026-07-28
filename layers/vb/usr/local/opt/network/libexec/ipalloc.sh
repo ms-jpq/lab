@@ -19,8 +19,8 @@ rm -v -fr -- "$RECORD" >&2
 
 IPV4_A="$(sed --regexp-extended --quiet -- 's/^IPV4_IF=(.+)$/\1/p' "$RUN"/*.env "$LIB"/*.env)"
 IPV6_A="$(sed --regexp-extended --quiet -- 's/^IPV6_NETWORK=(.+)$/\1/p' "$RUN"/*.env "$LIB"/*.env)"
-readarray -t -- IPV4_ALLOC <(printf -- '%s' "$IPV4_A")
-readarray -t -- IPV6_ALLOC <(printf -- '%s' "$IPV6_A")
+readarray -t -- IPV4_ALLOC < <(printf -- '%s' "$IPV4_A")
+readarray -t -- IPV6_ALLOC < <(printf -- '%s' "$IPV6_A")
 
 declare -A -- IP6ACC=()
 for ROUTE in "${IPV6_ALLOC[@]}"; do
