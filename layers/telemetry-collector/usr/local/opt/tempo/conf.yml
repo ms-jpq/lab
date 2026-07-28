@@ -13,12 +13,13 @@ distributor:
         http:
           endpoint: 127.0.0.53:44318
 
-metrics_generator:
-  processor:
-    &proc_svc service_graphs: {}
-    &proc_span span_metrics: {}
-  storage:
-    path: /var/lib/local/tempo/generator/wal
+# TODO: https://grafana.com/docs/tempo/latest/metrics-from-traces/metrics-generator/
+# metrics_generator:
+#   processor:
+#     &proc_svc service_graphs: {}
+#     &proc_span span_metrics: {}
+#   storage:
+#     path: /var/lib/local/tempo/generator/wal
 
 storage:
   trace:
@@ -40,7 +41,7 @@ overrides:
   defaults:
     compaction:
       block_retention: 720h
-    metrics_generator:
-      processors:
-        - *proc_svc
-        - *proc_span
+    # metrics_generator:
+    #   processors:
+    #     - *proc_svc
+    #     - *proc_span
