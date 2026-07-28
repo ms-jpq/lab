@@ -2,4 +2,4 @@
 
 set -o pipefail
 
-exec -- curl --fail --location --no-progress-meter -4 -- https://checkip.amazonaws.com
+exec -- curl --fail --location --no-progress-meter -4 -- https://api64.ipify.org

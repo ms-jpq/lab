@@ -3,4 +3,4 @@
 set -o pipefail
 
 # https://github.com/ddclient/ddclient/blob/main/ddclient.in#L275
-exec -- curl --fail --location --no-progress-meter -6 -- https://api6.ipify.org
+exec -- curl --fail --location --no-progress-meter -6 -- https://api64.ipify.org
