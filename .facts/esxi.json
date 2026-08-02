@@ -2,7 +2,6 @@
   "ENV_MACVLAN_IFS": ["enp7s0"],
   "ENV_NFS_EXPORTS": [],
   "ENV_NFS_MNTS": [],
-  "ENV_NO_HWE": true,
   "ENV_SMB_EXPORTS": [
     "freenas",
     "gray-bucket",
