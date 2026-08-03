@@ -4,7 +4,7 @@ x-networkpolicy:
   - servarr
 
 x-k8s:
-  # openssh-server.komposed-openssh-server.svc.cluster.local
+  # openssh-server-fwd.komposed-openssh-server.svc.cluster.local
   - apiVersion: v1
     kind: Service
     metadata:
@@ -58,7 +58,7 @@ services:
           "containers": [
             {
               "volumeMounts": [
-                { "mountPropagation": "Bidirectional" },
+                null,
                 {
                   "mountPath": "/data",
                   "name": "rclone-data",
