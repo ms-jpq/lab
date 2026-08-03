@@ -15,6 +15,7 @@ services:
     volumes:
       - ./index.html:/usr/share/nginx/html/index.html:ro
 
+  # http://prowlarr.komposed-servarr.svc.cluster.local:9696
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
     labels:
@@ -35,6 +36,7 @@ services:
     volumes:
       - /var/lib/local/servarr/prowlarr:/config
 
+  # http://sonarr.komposed-servarr.svc.cluster.local:8989
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
     labels:
@@ -56,6 +58,7 @@ services:
       - /var/lib/local/servarr/sonarr:/config
       - /var/lib/local/servarr/media:/media
 
+  # http://radarr.komposed-servarr.svc.cluster.local:7878
   radarr:
     image: lscr.io/linuxserver/radarr:latest
     labels:
@@ -77,6 +80,7 @@ services:
       - /var/lib/local/servarr/radarr:/config
       - /var/lib/local/servarr/media:/media
 
+  # http://lidarr.komposed-servarr.svc.cluster.local:8686
   lidarr:
     image: lscr.io/linuxserver/lidarr:latest
     labels:
@@ -98,6 +102,7 @@ services:
       - /var/lib/local/servarr/lidarr:/config
       - /var/lib/local/servarr/media:/media
 
+  # http://bazarr.komposed-servarr.svc.cluster.local:6767
   bazarr:
     image: lscr.io/linuxserver/bazarr:latest
     labels:
@@ -117,7 +122,7 @@ services:
       - /var/lib/local/servarr/bazarr:/config
       - /var/lib/local/servarr/media:/media
 
-  # http://byparr.komposed-servarr.svc.cluster.local:8191/
+  # http://byparr.komposed-servarr.svc.cluster.local:8191
   byparr:
     image: ghcr.io/thephaseless/byparr:latest
     environment:
