@@ -74,7 +74,7 @@ conn() {
 }
 
 shell() {
-  if [[ -v LOCAL ]]; then
+  if [[ -n ${LOCAL:-} ]]; then
     "$@"
   else
     conn
@@ -127,7 +127,7 @@ env)
 sync)
   SRC="$1"
   DST="/"
-  if [[ -v LOCAL ]]; then
+  if [[ -n ${LOCAL:-} ]]; then
     sudo -- "${RSY[@]}" "$SRC" "$DST"
   else
     conn

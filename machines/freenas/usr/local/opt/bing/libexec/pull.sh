@@ -11,7 +11,7 @@ CURL=(
   --no-progress-meter
 )
 
-if ! [[ -v UNDER ]]; then
+if [[ -z ${UNDER:-} ]]; then
   OUT="$1"
   COUNT="${2:-7}"
   URI="https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=$COUNT"

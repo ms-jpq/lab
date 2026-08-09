@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-if ! [[ -v MAINPID ]]; then
+if [[ -z ${MAINPID:-} ]]; then
   exit
 fi
 

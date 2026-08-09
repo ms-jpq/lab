@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-if ! [[ -v INVOCATION_ID ]]; then
+if [[ -z ${INVOCATION_ID:-} ]]; then
   UNIT="${0##*/}"
   UNIT="${UNIT%.sh}"
   SVC="$UNIT.service"

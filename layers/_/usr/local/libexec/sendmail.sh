@@ -61,7 +61,7 @@ while (($#)); do
   esac
 done
 
-if ! [[ -v MX ]]; then
+if [[ -z ${MX:-} ]]; then
   MX="$(dig "$DOMAIN" MX +short | sort --numeric-sort --key 1 | sed -E -n -e 's/\.$//g' -e '1s/^[0-9]+[[:space:]]+//gp')"
 fi
 

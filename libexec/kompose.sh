@@ -8,7 +8,7 @@ DST="$2"
 DEFS="$DST/.env"
 shift -- 2
 
-if [[ -v RECURSION ]]; then
+if [[ -n ${RECURSION:-} ]]; then
   FILE="$1"
   DIR="${FILE%/*}"
   DIRBASE="${DIR##*/}"

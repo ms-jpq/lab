@@ -10,7 +10,7 @@ IPV4_PREFIX="$4"
 IGNORE_EXTERNAL="$5"
 RECORD="$RUN/$IFACE.env"
 
-if ! [[ -v LOCKED ]]; then
+if [[ -z ${LOCKED:-} ]]; then
   mkdir -v --parents -- "$RUN" >&2
   LOCKED=1 exec -- flock "$RUN" "$0" "$@"
 fi

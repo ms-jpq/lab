@@ -22,7 +22,7 @@ ARGV=(
   jotta-crypt:
 )
 
-if ! [[ -v INVOCATION_ID ]]; then
+if [[ -z ${INVOCATION_ID:-} ]]; then
   ARGV+=(--dry-run)
 fi
 

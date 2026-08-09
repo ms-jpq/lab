@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-if ! [[ -v UNDER ]]; then
+if [[ -z ${UNDER:-} ]]; then
   while true; do
     if UNDER=1 "$0" "$@"; then
       :

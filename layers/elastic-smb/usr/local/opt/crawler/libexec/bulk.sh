@@ -5,7 +5,7 @@ set -o pipefail
 CHUNK=99
 INDEX='test'
 
-if ! [[ -v UNDER ]]; then
+if [[ -z ${UNDER:-} ]]; then
   DIR="$1"
   ES="${2:-http://localhost:9200}"
   PROCS="$(nproc)"

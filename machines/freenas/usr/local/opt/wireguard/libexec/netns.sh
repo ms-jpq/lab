@@ -116,7 +116,7 @@ up)
   up
   ;;
 reload)
-  if [[ -v UNDER ]]; then
+  if [[ -n ${UNDER:-} ]]; then
     reload
   else
     UNDER=1 ip netns exec "$NETNS" "$0" "$@"

@@ -18,7 +18,7 @@ PSQL=(
   --file -
 )
 
-if [[ -v NUKE ]]; then
+if [[ -n ${NUKE:-} ]]; then
   "${PSQL[@]}" --set=role="$ROLE" <<- 'SQL'
 DROP USER IF EXISTS :role;
 SQL

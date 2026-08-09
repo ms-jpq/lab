@@ -20,7 +20,7 @@ DIE=(
   snapd
 )
 
-if ! [[ -v UNDER ]]; then
+if [[ -z ${UNDER:-} ]]; then
   "$DEALLOC" "$DST" "${SAFE[@]}"
   rm -v -fr -- "$DIR"
   if ! UNDER=1 "$0" "$@"; then

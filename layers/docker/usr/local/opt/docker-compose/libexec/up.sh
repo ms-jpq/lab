@@ -3,7 +3,7 @@
 set -o pipefail
 shopt -u failglob
 
-if [[ -v UNDER ]]; then
+if [[ -n ${UNDER:-} ]]; then
   CODE=0
   FILE="$1"
   COMPOSE=(

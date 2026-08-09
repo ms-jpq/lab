@@ -48,7 +48,7 @@ if [[ ${MACHINES[*]} != '*' ]]; then
   done
 fi
 
-if ! [[ -v UNDER ]]; then
+if [[ -z ${UNDER:-} ]]; then
   if ! ((EX)); then
     MAKE_ARGS=()
     if ((DIFF)); then
