@@ -9,7 +9,7 @@ WANTS="$RUN/local-fs.target.wants"
 # shellcheck disable=SC1091
 source -- /usr/local/etc/default/btrfs.env
 
-# shellcheck disable=SC2154
+: "${BTRFS_MNTS?}"
 readarray -t -d ',' -- MOUNTS <<< "$BTRFS_MNTS"
 
 mkdir -v -p -- "$WANTS"

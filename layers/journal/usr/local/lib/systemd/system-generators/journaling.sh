@@ -9,7 +9,7 @@ WANTS="$RUN/timers.target.wants"
 # shellcheck disable=SC1091
 source -- /usr/local/etc/default/journal.env
 
-# shellcheck disable=SC2154
+: "${JOURNAL_HOSTS?}"
 readarray -t -d ',' -- HOSTS <<< "$JOURNAL_HOSTS"
 
 mkdir -v -p -- "$WANTS"

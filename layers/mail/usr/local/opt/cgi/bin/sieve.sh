@@ -44,9 +44,9 @@ Auth-Port: 2525
 EOF
   ;;
 imap)
+  : "${DOMAIN_NAME?}"
   case "$AUTH_USER" in
   *@)
-    # shellcheck disable=SC2154
     USERNAME="$AUTH_USER$DOMAIN_NAME"
     ;;
   *@*)

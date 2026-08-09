@@ -8,7 +8,7 @@ WANTS="$RUN/multi-user.target.wants"
 
 # shellcheck disable=SC1091
 source -- /usr/local/etc/default/lan.env
-# shellcheck disable=SC2154
+: "${LAN_IFS?}"
 LAN_IFS="$(sort <<< "${LAN_IFS//' '/$'\n'}")"
 
 readarray -t -- INTERFACES <<< "$LAN_IFS"

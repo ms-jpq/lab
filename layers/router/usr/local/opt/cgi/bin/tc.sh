@@ -2,6 +2,8 @@
 
 set -o pipefail
 
+: "${WAN_IF?}"
+
 if [[ ! -t 1 ]]; then
   exec <&3 >&3
 fi
@@ -40,7 +42,6 @@ SED=(
 )
 
 declare -A -- TR=()
-# shellcheck disable=SC2154
 TR=(
   ['TX']="$WAN_IF"
   ['RX']='cake-rx'

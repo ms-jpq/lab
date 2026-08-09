@@ -3,6 +3,9 @@
 set -o pipefail
 shopt -u failglob
 
+: "${IPV4_MINADDR?}"
+: "${IPV6_NETWORK?}"
+
 MACHINE="$1"
 ROOT="$2"
 HOSTS="$3"
@@ -15,7 +18,6 @@ HOST0="$SYSTEMD_NETWORK/10-container-host0.network"
 MVLAN="$SYSTEMD_NETWORK/10-macvlan.network"
 LO64="$(/usr/local/opt/network/libexec/ip64alloc.sh <<< "$MACHINE.$HOSTNAME")"
 
-# shellcheck disable=2154
 export -- IPV4="$IPV4_MINADDR" IPV6="$IPV6_NETWORK:$LO64" LO64
 
 sponge -- "$HOSTS/nspawn" <<- EOF

@@ -10,7 +10,8 @@ shift -- 1 || true
 
 # shellcheck disable=SC1090
 source -- "${0%/*}/../libexec/${0##*/}"
-# shellcheck disable=SC2154
+: "${SERVICE_NAME?}"
+: "${LIB?}"
 SERVICE_PIN=".#$SERVICE_NAME@.service"
 CACHE="/var/cache/local/$LIB/services"
 LIB="/var/lib/local/$LIB"
@@ -31,7 +32,6 @@ sctl() {
 
 case "$ACTION" in
 '')
-  # shellcheck disable=SC2154
   mkdir -v -p -- "$LIB" >&2
   TREE=("$HR" tree --dirsfirst -F -a)
   case "$0" in

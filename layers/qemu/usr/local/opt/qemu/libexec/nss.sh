@@ -2,13 +2,14 @@
 
 set -o pipefail
 
+: "${IPV6_NETWORK?}"
+
 MACHINE="$1"
 DNSMASQ_CONF="$2"
 HOSTS="$3"
 DOMAIN="$4"
 
 LO64="$(/usr/local/opt/network/libexec/ip64alloc.sh <<< "$MACHINE")"
-# shellcheck disable=2154
 IPV6="$IPV6_NETWORK:$LO64"
 
 cp -v -- "${0%/*}/../dhcp.conf" "$DNSMASQ_CONF/dhcp.conf"

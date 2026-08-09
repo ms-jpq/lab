@@ -12,6 +12,15 @@ VAR="$6"
 SERVER_NAME="$7"
 WG_PEERS="$8"
 
+: "${IPV4_NETWORK?}"
+: "${IPV4_NETMASK?}"
+: "${IPV4_MINADDR?}"
+: "${IPV4_PREFIX?}"
+: "${IPV4_MAXADDR?}"
+: "${IPV48_NET?}"
+: "${IPV6_NETWORK?}"
+: "${IPV4_NET?}"
+
 SYSTEMD='/run/systemd/network'
 SELF="${0%/*}/.."
 SERVER_PRIVATE_KEY="$VAR/self.key"
@@ -20,13 +29,12 @@ mkdir -v --parents -- "$SYSTEMD" "$VAR" "$CACHE"
 SERVER_PUBLIC_KEY="$(wg pubkey < "$SERVER_PRIVATE_KEY")"
 rm -v --force --recursive -- "${CACHE:?}"/*
 
-# shellcheck disable=SC2086,SC2154
+# shellcheck disable=SC2086
 printf -v V4_NET -- '%02x' ${IPV4_NETWORK//./ }
-# shellcheck disable=SC2086,SC2154
+# shellcheck disable=SC2086
 printf -v V4_MASK -- '%02x' ${IPV4_NETMASK//./ }
 
 declare -A -- SEEN
-# shellcheck disable=SC2154
 SEEN=(
   ["$IPV4_MINADDR/$IPV4_PREFIX"]=1
   ["$IPV4_MAXADDR/$IPV4_PREFIX"]=1
@@ -37,7 +45,6 @@ WG_LINES=()
 DNSMASQ_HOSTS=()
 
 export -- DOMAIN IPV6 IPV4 SERVER_PUBLIC_KEY SERVER_NAME CLIENT_PRIVATE_KEY CLIENT_SHARED_KEY
-# shellcheck disable=SC2154
 MACHINE_ULA="$IPV48_NET"
 
 P="$(sort --unique --field-separator ',' <<< "$WG_PEERS")"
@@ -48,7 +55,6 @@ for PEER in "${PEERS[@]}"; do
     continue
   fi
 
-  # shellcheck disable=SC2154
   IPV6="$IPV6_NETWORK:$(b3sum --no-names --length 8 <<< "$PEER" | perl -CASD -wpe 's/(.{4})(?=.)/$1:/g')/48"
 
   for ((I = 0; ; I++)); do
@@ -95,7 +101,6 @@ for PEER in "${PEERS[@]}"; do
       } | sponge -- "$CACHE/$ID.txt"
 
       HTML_TITLE="$ID" HTML_PRE="$CONF" HTML_CODE="$QR" envsubst < "$SELF/peer.html" | sponge -- "$CACHE/$ID.html"
-      # shellcheck disable=SC2154
       IFACE="$CIFACE" IPV6_IF="$MACHINE_ULA" IPV4_IF="$IPV4_NET" envsubst < "$SELF/peer.netdev" | sponge -- "$CACHE/$ID.netdev"
       IPV6_IF="$IPV6" IPV4_IF="$IPV4" IFACE="$CIFACE" DOMAIN="$HOSTNAME.home.arpa" envsubst < "$SELF/@.network" | sponge -- "$CACHE/$ID.network"
       break

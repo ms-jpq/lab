@@ -22,12 +22,12 @@ for FILE in /run/local/dnsmasq/*/leases; do
   DOMAIN="$ETH.$HOSTNAME.home.arpa"
   # shellcheck disable=SC1090
   source -- "/run/local/ip/$ETH.env"
+  : "${IPV6_ADDR?}"
   LS="$(awk -- '$4 ~ /[^*]/ { print $4 }' "$FILE" | sort --unique)"
   awk -v "ETH=$ETH" -v "HOSTNAME=$HOSTNAME" -- "$A1" "$FILE" >> "$TMP"
   readarray -t -- LINES <<< "$LS"
   for LINE in "${LINES[@]}"; do
     if [[ -n $LINE ]]; then
-      # shellcheck disable=SC2154
       printf -- '%s\0' "@$IPV6_ADDR" +short "$LINE.$DOMAIN" AAAA
     fi
   done

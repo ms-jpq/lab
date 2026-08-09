@@ -9,7 +9,7 @@ WANTS="$RUN/multi-user.target.wants"
 # shellcheck disable=SC1091
 source -- /usr/local/etc/default/postgresql.env
 
-# shellcheck disable=SC2154
+: "${PG_CLUSTERS?}"
 readarray -t -d ',' -- CLUSTERS <<< "$PG_CLUSTERS"
 
 mkdir -v -p -- "$WANTS"

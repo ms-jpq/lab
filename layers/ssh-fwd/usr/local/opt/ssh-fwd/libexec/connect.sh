@@ -7,7 +7,6 @@ PORT="$2"
 IDENTITY="$3"
 shift -- 3
 
-# shellcheck disable=SC2154
 SSH=(
   ssh
   -F /dev/null
