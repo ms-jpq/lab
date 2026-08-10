@@ -543,7 +543,7 @@ sequenceDiagram
             par
               machine-->>machine : fork COW file systems
             and
-              machine-->>machine : provision DNS zone + network toplogy
+              machine-->>machine : provision DNS zone + network topology
             end
           end
           machine-->>machine : overlay cloud-init / sysprep with hostname, IP, SSH key, etc
@@ -551,7 +551,7 @@ sequenceDiagram
       and
         rect rgba(0, 255, 0, 0.05)
           par
-            machine-->>machine : provision DNS zone + network toplogy
+            machine-->>machine : provision DNS zone + network topology
             machine-->>machine : setup host <-> vm / container bridge
             machine-->>machine : setup firewall / ip forwarding rules
           and

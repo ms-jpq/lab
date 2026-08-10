@@ -157,7 +157,7 @@ Unfortunately, with the increasing popularization of "move fast and break things
 
 ## Why not Kubernetes?
 
-Kubernetes, born from Google's internal orchestration systems, reigns over the cloud-agnostic landscape with its widespread adoption, expansive ecosystem, and rapidly evolving feature set. However, under the stewardship of CNCF, Kubernetes has cultivated an ethos of "move fast and depreciate things", resulting in anemic support cycles which favour new capabilities over backward compatibility (the exact set of tradeoffs which makes Kubernetes hosted on public cloud attractive). For smaller operations, maintaining a Kubernetes environment can become an arduous endeavour lacking these economies of scale.
+Kubernetes, born from Google's internal orchestration systems, reigns over the cloud-agnostic landscape with its widespread adoption, expansive ecosystem, and rapidly evolving feature set. However, under the stewardship of CNCF, Kubernetes has cultivated an ethos of "move fast and deprecate things", resulting in anemic support cycles which favour new capabilities over backward compatibility (the exact set of tradeoffs which makes Kubernetes hosted on public cloud attractive). For smaller operations, maintaining a Kubernetes environment can become an arduous endeavour lacking these economies of scale.
 
 Moreover, at the runtime level, whether employing Docker or Containerd, Kubernetes delegates significant multi-tenancy responsibilities to the Linux service daemon in Systemd. When viewed through the lens of service daemons, Kubernetes makes for an expensive abstraction over Systemd, especially at the single node level.
 
@@ -195,7 +195,7 @@ sequenceDiagram
             par
               machine-->>machine : fork COW file systems
             and
-              machine-->>machine : provision DNS zone + network toplogy
+              machine-->>machine : provision DNS zone + network topology
             end
           end
           machine-->>machine : overlay cloud-init / sysprep with hostname, IP, SSH key, etc
@@ -203,7 +203,7 @@ sequenceDiagram
       and
         rect rgba(0, 255, 0, 0.05)
           par
-            machine-->>machine : provision DNS zone + network toplogy
+            machine-->>machine : provision DNS zone + network topology
             machine-->>machine : setup host <-> vm / container bridge
             machine-->>machine : setup firewall / ip forwarding rules
           and

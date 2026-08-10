@@ -9,7 +9,7 @@ gsettings set org.gnome.desktop.session idle-delay 3600
 ## Remote
 
 ```bash
-# Cant be root
+# Can't be root
 ssh '<gui-user>@<domain>'
 
 systemctl --user enable --now -- gnome-remote-desktop.service
