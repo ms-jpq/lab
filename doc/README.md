@@ -10,13 +10,13 @@ If you had 5 days vs. 5 weeks vs. 5 months vs. 5 years to think about a problem,
 
 # Design Goals
 
-- [x] 100ms max incremental builds, ~1s feedback loop
+- \[x] 100ms max incremental builds, ~1s feedback loop
 
-- [x] Idempotent deployment, ubiquitous sandboxing, quick & clean rollback
+- \[x] Idempotent deployment, ubiquitous sandboxing, quick & clean rollback
 
-- [x] Daily + continuous CI verification
+- \[x] Daily + continuous CI verification
 
-- [x] Minimum maintenance
+- \[x] Minimum maintenance
 
 ---
 
@@ -49,14 +49,17 @@ If you had 5 days vs. 5 weeks vs. 5 months vs. 5 years to think about a problem,
 Labour of ~~love?~~ **hate**.
 
 - Why the hell is there a version on everything in k8s?
+
   - Just gonna break at inconvenient time
 
 - This library is 5 years old and has 7 major versions?
 
 - Why is Ansible so slow and keeps getting slower?
+
   - Why does it have 16 levels of variable precedence?
 
 - Generalized annoyance
+
   - Lots of Microk8s scripts don't even have basic `-e` error checking?
 
   - LXD (Canonical's OpenShift) sending SIGKILL instead of SIGTERM to display daemons, thus making cleaning up impossible.
@@ -189,6 +192,7 @@ Half a decade's worth of iterations.
 # ~~Magnets~~ containers how do they work?
 
 - We live in the world of ~~containers~~ **Systemd**
+
   - cgroups
 
   - network namespace
@@ -266,23 +270,33 @@ printf -- %s "$PATH" | tr -- ':' '\n'
 
 **Q:** Why does `homebrew (x86)` install everything under `/usr/local/*`
 
-    Because it's empty
+```
+Because it's empty
+```
 
 **Q:** Does `Systemd` load configurations from `/usr/local/*`?
 
-    Yes
+```
+Yes
+```
 
 **Q:** Does `Systemd` allow service configuration overriding?
 
-    Yes, Yes
+```
+Yes, Yes
+```
 
 **Q:** Is it possible to override service mountspaces to overlay configurations from `/usr/local/*`?
 
-    Yes, yes, yes
+```
+Yes, yes, yes
+```
 
 **Q:** Put both `Systemd` and service configurations under `/usr/local/*` and make `/` immutable?
 
-    Yes, yes, yes, yes
+```
+Yes, yes, yes, yes
+```
 
 ---
 
