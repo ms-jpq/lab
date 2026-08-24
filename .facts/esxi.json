@@ -3,7 +3,6 @@
   "ENV_NFS_EXPORTS": [],
   "ENV_NFS_MNTS": [],
   "ENV_SMB_EXPORTS": [
-    "freenas",
     "gray-bucket",
     "hao-bucket",
     "time-machine-gray-m4",

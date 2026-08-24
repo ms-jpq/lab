@@ -1,7 +1,6 @@
 # + cuda
 + nspawn
 + qemu
-+ rclone-mnt
 + share
 + telemetry
 + vb
