@@ -1,4 +1,5 @@
 {
+  "ENV_MACVLAN_IFS": ["eno1"],
   "ENV_NFS_EXPORTS": [],
   "ENV_NFS_MNTS": [],
   "ENV_SMB_EXPORTS": ["freenas"]

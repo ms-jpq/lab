@@ -11,7 +11,8 @@
     "esxi.enp1s0.opnsense.home.arpa",
     "opnsense.w-0.opnsense.home.arpa",
     "orthanc.enp1s0.opnsense.home.arpa",
-    "pfsense.w-0.pfsense.home.arpa"
+    "pfsense.w-0.pfsense.home.arpa",
+    "roku.enp1s0.opnsense.home.arpa"
   ],
   "ENV_MACVLAN_IFS": ["enp109s0", "eno1"],
   "ENV_NFS_EXPORTS": ["downloads", "media", "wallpapers"],

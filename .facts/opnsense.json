@@ -36,7 +36,8 @@
     "droplet.w-0.droplet",
     "esxi.enp1s0.opnsense",
     "opnsense.w-0.opnsense",
-    "orthanc.enp1s0.opnsense"
+    "orthanc.enp1s0.opnsense",
+    "roku.enp1s0.opnsense"
   ],
   "ENV_OVPN_SERVER_NAME": "ENV_WG_SERVER_NAME",
   "ENV_OVPN_TCP_CLIENT_PORT": 1194,
