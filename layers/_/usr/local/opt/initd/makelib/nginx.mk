@@ -1,9 +1,9 @@
 .PHONY: nginx nginx.lint
 all: nginx
 
-pkg._: /etc/apt/trusted.gpg.d/nginx.gpg
-/etc/apt/trusted.gpg.d/nginx.gpg:
-	$(CURL) -- 'https://nginx.org/keys/nginx_signing.key' | sudo -- gpg --batch --dearmor --yes --output '$@'
+# pkg._: /etc/apt/trusted.gpg.d/nginx.gpg
+# /etc/apt/trusted.gpg.d/nginx.gpg:
+# 	$(CURL) -- 'https://nginx.org/keys/nginx_signing.key' | sudo -- gpg --batch --dearmor --yes --output '$@'
 
 nginx: /usr/local/opt/nginx/conf/._touch
 /usr/local/opt/nginx/conf/._touch: $(shell shopt -u failglob && printf -- '%s ' /usr/local/opt/nginx/conf/**/*.nginx /usr/local/opt/nginx/njs/**/*.js /var/lib/local/htpasswd/**/*)
