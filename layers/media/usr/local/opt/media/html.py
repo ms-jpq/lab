@@ -38,12 +38,27 @@ def _child(*, relative: PurePosixPath, endpoint: str, query: dict[str, str]) -> 
     return f"{curdir}{sep}{quote(relative.name)}{sep}{endpoint}?{urlencode(query)}"
 
 
-def _entry(*, path: PurePath, detail: EntryKind) -> str:
+def _size(size: int | None) -> str:
+    if size is None:
+        return "—"
+    if size < 1 << 10:
+        return f"{size} B"
+    if size < 1 << 20:
+        return f"{size / (1 << 10):.1f} KiB"
+    if size < 1 << 30:
+        return f"{size / (1 << 20):.1f} MiB"
+    if size < 1 << 40:
+        return f"{size / (1 << 30):.1f} GiB"
+    return f"{size / (1 << 40):.1f} TiB"
+
+
+def _entry(*, path: PurePath, detail: EntryKind, size: int | None) -> str:
     name = path.name + (sep if detail is EntryKind.DIRECTORY else "")
     return _render(
         "index-entry.html",
         href=escape(quote(name), quote=True),
         name=escape(name),
+        size=_size(size),
     )
 
 
@@ -102,11 +117,14 @@ def _stream_options(streams: tuple[Stream, ...], *, selected: str, empty: str) -
 
 def index(
     *,
-    entries: tuple[tuple[PurePath, EntryKind], ...],
+    entries: tuple[tuple[PurePath, EntryKind, int | None], ...],
 ) -> str:
     return _render(
         "index.html",
-        entries="".join(_entry(path=path, detail=detail) for path, detail in entries),
+        entries="".join(
+            _entry(path=path, detail=detail, size=size)
+            for path, detail, size in entries
+        ),
         style=_resource("style.css"),
     )
 

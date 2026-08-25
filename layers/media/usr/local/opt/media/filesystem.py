@@ -11,30 +11,33 @@ class EntryKind(StrEnum):
     FILE = "file"
 
 
+type Entry = tuple[Path, EntryKind, int | None]
+
+
 class EntriesError(Exception): ...
 
 
-def _entry_kind(*, path: Path) -> EntryKind | None:
+def _entry(*, path: Path) -> Entry | None:
     if path.is_dir():
-        return EntryKind.DIRECTORY
+        return path, EntryKind.DIRECTORY, None
     if path.is_file():
-        return EntryKind.FILE
+        return path, EntryKind.FILE, path.stat().st_size
     return None
 
 
-def _entry_order(entry: tuple[Path, EntryKind]) -> tuple[bool, str, str]:
-    path, kind = entry
+def _entry_order(entry: Entry) -> tuple[bool, str, str]:
+    path, kind, _ = entry
     return kind is EntryKind.FILE, path.name.casefold(), path.name
 
 
-def entries(*, path: Path) -> tuple[tuple[Path, EntryKind], ...]:
+def entries(*, path: Path) -> tuple[Entry, ...]:
     try:
         return tuple(
             sorted(
                 (
-                    (entry, kind)
-                    for entry in path.iterdir()
-                    if (kind := _entry_kind(path=entry)) is not None
+                    entry
+                    for child in path.iterdir()
+                    if (entry := _entry(path=child)) is not None
                 ),
                 key=_entry_order,
             )
