@@ -225,13 +225,20 @@ def _dimensions(*, data: Mapping[Any, Any]) -> tuple[int | None, int | None]:
             return None, None
 
 
-def _parse_stream(*, data: dict[str, Any]) -> Stream:
+def _default(*, data: Mapping[Any, Any]) -> bool:
+    match data:
+        case {"disposition": {"default": int(default)}}:
+            return bool(default)
+        case _:
+            return False
+
+
+def _parse_stream(*, data: dict[str, Any]) -> Stream | None:
     match data:
         case {
             "index": int(index),
             "codec_type": str(kind),
             "codec_name": str(codec),
-            "disposition": {"default": int(default)},
             **metadata,
         }:
             width, height = _dimensions(data=metadata)
@@ -239,21 +246,21 @@ def _parse_stream(*, data: dict[str, Any]) -> Stream:
                 index=str(index),
                 kind=kind,
                 codec=codec,
-                default=bool(default),
+                default=_default(data=metadata),
                 language=_language(data=metadata),
                 width=width,
                 height=height,
             )
         case _:
-            assert False
+            return None
 
 
-def _stream(*, data: object) -> Stream:
+def _stream(*, data: object) -> Stream | None:
     match data:
         case dict() as data:
             return _parse_stream(data=data)
         case _:
-            assert False
+            return None
 
 
 def _duration(*, data: Mapping[Any, Any]) -> str | None:
@@ -274,7 +281,11 @@ def _parse(*, path: Path, raw: dict[str, Any]) -> Probe:
             },
             "streams": list() as streams,
         }:
-            parsed = tuple(_stream(data=stream) for stream in streams)
+            parsed = tuple(
+                candidate
+                for stream in streams
+                if (candidate := _stream(data=stream)) is not None
+            )
             videos = tuple(stream for stream in parsed if stream.kind == "video")
             audios = tuple(stream for stream in parsed if stream.kind == "audio")
             subtitles = tuple(
