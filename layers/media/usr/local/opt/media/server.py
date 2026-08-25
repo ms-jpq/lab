@@ -6,9 +6,10 @@ from http.server import BaseHTTPRequestHandler
 from math import isfinite
 from pathlib import Path, PurePosixPath
 from posixpath import curdir, sep
+from stat import S_ISDIR, S_ISREG
 
 from .ffmpeg import Probe, ProbeError, probe
-from .filesystem import EntriesError, entries, resolve
+from .filesystem import EntriesError, Entry, entries, entry, resolve
 from .html import index as index_html
 from .html import player as player_html
 from .http import (
@@ -62,9 +63,10 @@ def _time(query: Query) -> str:
     return f"{max(0, time):.3f}" if isfinite(time) else "0"
 
 
-def _media(request: BaseHTTPRequestHandler, *, path: Path) -> Probe | None:
+def _media(request: BaseHTTPRequestHandler, *, entry: Entry) -> Probe | None:
+    path, data = entry
     try:
-        return probe(path=path)
+        return probe(path=path, modified=data.st_mtime_ns)
     except ProbeError:
         request.send_error(HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
         return None
@@ -92,11 +94,12 @@ def _player(
     request: BaseHTTPRequestHandler,
     *,
     relative: PurePosixPath,
-    path: Path,
+    entry: Entry,
     query: Query,
     head: bool,
 ) -> None:
-    if (media := _media(request, path=path)) is None:
+    path, _ = entry
+    if (media := _media(request, entry=entry)) is None:
         return
 
     if not media.videos and not media.audios:
@@ -139,43 +142,56 @@ def _player(
 def _play(
     request: BaseHTTPRequestHandler,
     *,
-    path: Path,
+    entry: Entry,
     query: Query,
     head: bool,
 ) -> None:
-    selected = _profile(query)
-    if (media := _media(request, path=path)) is None:
-        return
-
-    if (not media.videos and not media.audios) or selected is None:
+    if (selected := _profile(query)) is None:
         request.send_error(HTTPStatus.BAD_REQUEST)
         return
+
     profile, height = selected
+    if (media := _media(request, entry=entry)) is None:
+        return
+
+    if not media.videos and not media.audios:
+        request.send_error(HTTPStatus.BAD_REQUEST)
+        return
+
     if (audio := _audio(media, query)) is None:
         request.send_error(HTTPStatus.BAD_REQUEST)
         return
 
-    direct_content_type = media.direct_content_type(audio=audio)
-    if profile == _NATIVE_PROFILE and direct_content_type:
-        file(request, path=path, content_type=direct_content_type, head=head)
-        return
-    stream(
-        request,
-        command=tuple(media.command(audio=audio, height=height, time=_time(query))),
-        content_type="video/mp4" if media.videos else "audio/mp4",
-        head=head,
-    )
+    match profile, media.direct_content_type(audio=audio):
+        case _NATIVE_PROFILE, str(content_type):
+            path, data = entry
+            file(
+                request,
+                path=path,
+                size=data.st_size,
+                content_type=content_type,
+                head=head,
+            )
+        case _:
+            stream(
+                request,
+                command=tuple(
+                    media.command(audio=audio, height=height, time=_time(query))
+                ),
+                content_type="video/mp4" if media.videos else "audio/mp4",
+                head=head,
+            )
 
 
 def _subtitle(
     request: BaseHTTPRequestHandler,
     *,
-    path: Path,
+    entry: Entry,
     query: Query,
     head: bool,
 ) -> None:
     stream_index = parameter(query, name="stream", default="")
-    if (media := _media(request, path=path)) is None:
+    if (media := _media(request, entry=entry)) is None:
         return
     subtitle = next(
         (item for item in media.subtitles if item.index == stream_index), None
@@ -191,6 +207,13 @@ def _subtitle(
     )
 
 
+def _existing(*, path: Path) -> Entry | None:
+    try:
+        return entry(path=path)
+    except OSError:
+        return None
+
+
 def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> None:
     raw, query = target(request.path)
     if (resolved := resolve(root=root, raw=raw)) is None:
@@ -198,25 +221,34 @@ def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> Non
         return
     relative, path = resolved
 
-    if path.is_dir():
-        if not raw.endswith(sep):
-            redirect(request, location=f"{curdir}{sep}")
+    match _existing(path=path):
+        case source, data if S_ISDIR(data.st_mode):
+            if not raw.endswith(sep):
+                redirect(request, location=f"{curdir}{sep}")
+                return
+            _index(request, path=source, head=head)
             return
-        _index(request, path=path, head=head)
-        return
-    if path.is_file():
-        _player(request, relative=relative, path=path, query=query, head=head)
-        return
+        case source, data if S_ISREG(data.st_mode):
+            _player(
+                request,
+                relative=relative,
+                entry=(source, data),
+                query=query,
+                head=head,
+            )
+            return
+        case _:
+            pass
 
-    if not path.parent.is_file():
-        request.send_error(HTTPStatus.NOT_FOUND)
-        return
-
-    match relative.name:
-        case "play":
-            _play(request, path=path.parent, query=query, head=head)
-        case "subtitle":
-            _subtitle(request, path=path.parent, query=query, head=head)
+    match _existing(path=path.parent):
+        case source, data if S_ISREG(data.st_mode):
+            match relative.name:
+                case "play":
+                    _play(request, entry=(source, data), query=query, head=head)
+                case "subtitle":
+                    _subtitle(request, entry=(source, data), query=query, head=head)
+                case _:
+                    request.send_error(HTTPStatus.NOT_FOUND)
         case _:
             request.send_error(HTTPStatus.NOT_FOUND)
 

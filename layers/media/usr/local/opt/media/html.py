@@ -8,11 +8,12 @@ from itertools import chain
 from pathlib import PurePath, PurePosixPath
 from posixpath import curdir, sep
 from re import compile
+from stat import S_ISDIR, S_ISREG
 from string import Template
 from urllib.parse import quote, urlencode
 
 from .ffmpeg import Probe, Stream
-from .filesystem import EntryKind
+from .filesystem import Entry
 
 _PLACEHOLDER = compile(
     r"(?:<!--\s*|/\*\s*)(\$\{[_A-Za-z][_A-Za-z0-9]*\})(?:\s*-->|\s*\*/)"
@@ -52,13 +53,14 @@ def _size(size: int | None) -> str:
     return f"{size / (1 << 40):.1f} TiB"
 
 
-def _entry(*, path: PurePath, detail: EntryKind, size: int | None) -> str:
-    name = path.name + (sep if detail is EntryKind.DIRECTORY else "")
+def _entry(*, entry: Entry) -> str:
+    path, data = entry
+    name = path.name + (sep if S_ISDIR(data.st_mode) else "")
     return _render(
         "index-entry.html",
         href=escape(quote(name), quote=True),
         name=escape(name),
-        size=_size(size),
+        size=_size(data.st_size if S_ISREG(data.st_mode) else None),
     )
 
 
@@ -117,14 +119,11 @@ def _stream_options(streams: tuple[Stream, ...], *, selected: str, empty: str) -
 
 def index(
     *,
-    entries: tuple[tuple[PurePath, EntryKind, int | None], ...],
+    entries: tuple[Entry, ...],
 ) -> str:
     return _render(
         "index.html",
-        entries="".join(
-            _entry(path=path, detail=detail, size=size)
-            for path, detail, size in entries
-        ),
+        entries="".join(_entry(entry=entry) for entry in entries),
         style=_resource("style.css"),
     )
 

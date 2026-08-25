@@ -1,33 +1,30 @@
 from __future__ import annotations
 
-from enum import StrEnum
+from os import stat_result
 from pathlib import Path, PurePosixPath
 from posixpath import curdir, pardir
+from stat import S_ISDIR, S_ISREG
 from urllib.parse import unquote
 
-
-class EntryKind(StrEnum):
-    DIRECTORY = "dir"
-    FILE = "file"
-
-
-type Entry = tuple[Path, EntryKind, int | None]
+type Entry = tuple[Path, stat_result]
 
 
 class EntriesError(Exception): ...
 
 
-def _entry(*, path: Path) -> Entry | None:
-    if path.is_dir():
-        return path, EntryKind.DIRECTORY, None
-    if path.is_file():
-        return path, EntryKind.FILE, path.stat().st_size
-    return None
+def entry(*, path: Path) -> Entry | None:
+    try:
+        data = path.stat()
+    except FileNotFoundError:
+        return None
+    if not S_ISDIR(data.st_mode) and not S_ISREG(data.st_mode):
+        return None
+    return path, data
 
 
 def _entry_order(entry: Entry) -> tuple[bool, str, str]:
-    path, kind, _ = entry
-    return kind is EntryKind.FILE, path.name.casefold(), path.name
+    path, data = entry
+    return S_ISREG(data.st_mode), path.name.casefold(), path.name
 
 
 def entries(*, path: Path) -> tuple[Entry, ...]:
@@ -35,9 +32,9 @@ def entries(*, path: Path) -> tuple[Entry, ...]:
         return tuple(
             sorted(
                 (
-                    entry
+                    selected
                     for child in path.iterdir()
-                    if (entry := _entry(path=child)) is not None
+                    if (selected := entry(path=child)) is not None
                 ),
                 key=_entry_order,
             )
