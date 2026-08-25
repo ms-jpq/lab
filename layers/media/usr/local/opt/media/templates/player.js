@@ -20,6 +20,10 @@ const total_time_output = /** @type {HTMLOutputElement} */ (
   document.querySelector("#total-time")
 )
 
+const buffered_time_output = /** @type {HTMLOutputElement} */ (
+  document.querySelector("#buffered-time")
+)
+
 const subtitle = /** @type {HTMLTrackElement | null} */ (
   document.querySelector("#subtitle")
 )
@@ -105,6 +109,16 @@ const sync_position = () => {
   history.replaceState(null, "", page_url)
 }
 
+const sync_buffer = () => {
+  const { buffered, currentTime } = media
+  const duration = Array.from({ length: buffered.length }, (_, index) =>
+    buffered.start(index) <= currentTime && currentTime <= buffered.end(index)
+      ? buffered.end(index) - currentTime
+      : 0,
+  ).find(Boolean)
+  buffered_time_output.value = `Buffer ${format_time(duration)}`
+}
+
 const update_position = () => {
   const current = Number(
     source_time(media.currentTime + (transformed ? start : 0)),
@@ -173,8 +187,11 @@ const retry_stream = () => {
 
 total_time_output.value = format_time(Number(scrubber.max))
 sync_position()
+sync_buffer()
 
 media.addEventListener("timeupdate", update_position)
+media.addEventListener("timeupdate", sync_buffer)
+media.addEventListener("progress", sync_buffer)
 media.addEventListener("loadedmetadata", () => {
   if (!transformed && position > 0) {
     media.currentTime = position

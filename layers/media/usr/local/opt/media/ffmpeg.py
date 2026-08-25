@@ -74,10 +74,10 @@ class Probe:
         yield from _COMMAND_PREFIX
 
         video = next(iter(self.videos), None)
-        match video, height:
-            case Stream(), int():
+        match video:
+            case Stream():
                 yield from ("-vaapi_device", _VAAPI_DEVICE)
-            case _:
+            case None:
                 pass
         yield from ("-i", self.path, "-ss", time)
 
@@ -89,9 +89,7 @@ class Probe:
         match video, height:
             case None, _:
                 pass
-            case Stream() as video, None:
-                yield from ("-map", f"0:{video.index}", "-c:v", "copy")
-            case Stream() as video, int(height):
+            case Stream() as video, height:
                 yield from ("-map", f"0:{video.index}")
                 yield from (
                     "-c:v",
@@ -101,7 +99,11 @@ class Probe:
                     "-qp",
                     "24",
                     "-vf",
-                    f"{_scale_filter(height=height)},format=nv12,hwupload",
+                    (
+                        "format=nv12,hwupload"
+                        if height is None
+                        else f"{_scale_filter(height=height)},format=nv12,hwupload"
+                    ),
                 )
 
         yield from _COMMAND_SUFFIX
@@ -114,8 +116,8 @@ class Probe:
     ) -> tuple[str | PathLike[str], ...]:
         return (
             *_COMMAND_PREFIX,
-            "-itsoffset",
-            f"-{time}",
+            "-ss",
+            time,
             "-i",
             self.path,
             "-map",
