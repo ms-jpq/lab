@@ -25,10 +25,12 @@ from .http import (
 _NATIVE_PROFILE = "native"
 _HEIGHTS = {
     _NATIVE_PROFILE: None,
-    "720p": 720,
-    "1080p": 1080,
     "2160p": 2160,
+    "1080p": 1080,
+    "720p": 720,
 }
+
+
 def _profile(query: Query) -> tuple[str, int | None] | None:
     profile = parameter(query, name="profile", default=_NATIVE_PROFILE)
     if profile not in _HEIGHTS:
@@ -149,11 +151,7 @@ def _play(
         return
     stream(
         request,
-        command=tuple(
-            media.command(
-                audio=audio, height=height, time=_time(query)
-            )
-        ),
+        command=tuple(media.command(audio=audio, height=height, time=_time(query))),
         content_type=content_type,
         head=head,
     )

@@ -50,23 +50,19 @@ body {
 
     & > .control-sensor {
       align-self: end;
+      display: grid;
       grid-area: media;
-      height: 6rem;
-      position: relative;
       z-index: 1;
 
       & > .control-bar {
         background: Canvas;
-        bottom: 0;
         box-sizing: border-box;
         display: grid;
         gap: 0.5rem;
         grid-template-columns: auto minmax(0, 1fr) auto;
-        left: 0;
         padding: 1rem;
-        position: absolute;
-        right: 0;
         transform: translateY(100%);
+        width: 100%;
 
         & > #scrubber {
           min-width: 0;
