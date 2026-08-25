@@ -1,25 +1,26 @@
 [[Unit]]
-Description      = Media Browser
+Description         = Media Browser
 
 [[Service]]
-Restart          = on-failure
-ProtectSystem    = strict
-ProtectHome      = yes
-PrivateTmp       = yes
-NoNewPrivileges  = yes
+Restart             = on-failure
+ProtectSystem       = strict
+ProtectHome         = yes
+PrivateTmp          = yes
+NoNewPrivileges     = yes
 
-ReadWritePaths   = %t/local/media
-RuntimeDirectory = local/media
+ReadWritePaths      = %t/local/media
+RuntimeDirectory    = local/media
 
-User             = 1000
-Group            = www-data
-UMask            = 0007
+User                = 1000
+Group               = www-data
+SupplementaryGroups = render
+UMask               = 0007
 
-Environment      = MEDIA_ROOT=%t/local/media/root
+Environment         = MEDIA_ROOT=%t/local/media/root
 
-ExecStartPre     = mkdir -p -- ${RUNTIME_DIRECTORY}/root
-ExecStart        = /usr/local/opt/media/main.sh --root ${MEDIA_ROOT} --socket %t/local/media/media.sock
+ExecStartPre        = mkdir -p -- ${RUNTIME_DIRECTORY}/root
+ExecStart           = /usr/local/opt/media/main.sh --root ${MEDIA_ROOT} --socket %t/local/media/media.sock
 
 # m5_for([EXPORT], [
-BindReadOnlyPaths = /media/EXPORT:%t/local/media/root/EXPORT
+BindReadOnlyPaths   = /media/EXPORT:%t/local/media/root/EXPORT
 # ], m5_assert([ENV_MEDIA_EXPORTS]))
