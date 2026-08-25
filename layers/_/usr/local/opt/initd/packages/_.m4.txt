@@ -38,6 +38,7 @@
 + tree
 + ttyd
 + unattended-upgrades
++ ubuntu-release-upgrader-core
 + unzip
 # m4_ifelse(ENV_NO_HWE, [true], [], [
 + linux-generic-hwe-[]m5_assert([ENV_VERSION_ID])
