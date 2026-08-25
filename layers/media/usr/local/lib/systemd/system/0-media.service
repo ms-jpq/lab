@@ -1,0 +1,21 @@
+[Unit]
+Description      = Media Browser
+
+[Service]
+Restart          = on-failure
+ProtectSystem    = strict
+ProtectHome      = yes
+PrivateTmp       = yes
+NoNewPrivileges  = yes
+
+ReadOnlyPaths    = /media
+ReadWritePaths   = %t/local/media
+RuntimeDirectory = local/media
+
+User             = 1000
+Group            = www-data
+
+Environment      = ENV_MEDIA_ROOT=/media
+EnvironmentFile  = -/usr/local/etc/default/media.env
+
+ExecStart        = /usr/local/opt/media/main.py ${ENV_MEDIA_ROOT} %t/local/media/media.sock
