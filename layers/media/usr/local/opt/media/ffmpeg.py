@@ -29,12 +29,7 @@ _COMMAND_SUFFIX = (
 def _source_command(
     *, path: str | PathLike[str], time: str
 ) -> tuple[str | PathLike[str], ...]:
-    return (
-        *_COMMAND_PREFIX,
-        "-i",
-        path,
-        *(("-ss", time) if time != "0" else ()),
-    )
+    return (*_COMMAND_PREFIX, "-i", path, "-ss", time)
 
 
 def _scale_filter(*, height: int) -> str:
@@ -79,7 +74,6 @@ class Probe:
         *,
         audio: str,
         height: int | None,
-        bitrate: int | None,
         time: str,
     ) -> Iterator[str | PathLike[str]]:
         video = next(iter(self.videos), None)
@@ -90,12 +84,12 @@ class Probe:
             yield from ("-map", f"0:{audio}")
             yield from ("-c:a", "copy" if selected.codec == "aac" else "aac")
 
-        match video, height, bitrate:
-            case None, _, _:
+        match video, height:
+            case None, _:
                 pass
-            case Stream() as video, None, _:
+            case Stream() as video, None:
                 yield from ("-map", f"0:{video.index}", "-c:v", "copy")
-            case Stream() as video, int(height), int(bitrate):
+            case Stream() as video, int(height):
                 yield from ("-map", f"0:{video.index}")
                 yield from (
                     "-c:v",
@@ -106,8 +100,6 @@ class Probe:
                     "yuv420p",
                     "-vf",
                     _scale_filter(height=height),
-                    "-b:v",
-                    str(bitrate),
                 )
 
         yield from _COMMAND_SUFFIX

@@ -29,19 +29,11 @@ _HEIGHTS = {
     "1080p": 1080,
     "2160p": 2160,
 }
-_BITRATES = {
-    _NATIVE_PROFILE: None,
-    "720p": 4_000_000,
-    "1080p": 8_000_000,
-    "2160p": 16_000_000,
-}
-
-
-def _profile(query: Query) -> tuple[str, int | None, int | None] | None:
+def _profile(query: Query) -> tuple[str, int | None] | None:
     profile = parameter(query, name="profile", default=_NATIVE_PROFILE)
     if profile not in _HEIGHTS:
         return None
-    return profile, _HEIGHTS[profile], _BITRATES[profile]
+    return profile, _HEIGHTS[profile]
 
 
 def _audio(media: Probe, query: Query) -> str | None:
@@ -106,7 +98,7 @@ def _player(
     if (selected := _profile(query)) is None:
         request.send_error(HTTPStatus.BAD_REQUEST)
         return
-    profile, _, _ = selected
+    profile, _ = selected
     audio = _audio(media, query)
     subtitle = parameter(query, name="subtitle", default="")
     if audio is None or (
@@ -146,7 +138,7 @@ def _play(
     if (not media.videos and not media.audios) or selected is None:
         request.send_error(HTTPStatus.BAD_REQUEST)
         return
-    profile, height, bitrate = selected
+    profile, height = selected
     if (audio := _audio(media, query)) is None:
         request.send_error(HTTPStatus.BAD_REQUEST)
         return
@@ -159,7 +151,7 @@ def _play(
         request,
         command=tuple(
             media.command(
-                audio=audio, height=height, bitrate=bitrate, time=_time(query)
+                audio=audio, height=height, time=_time(query)
             )
         ),
         content_type=content_type,
