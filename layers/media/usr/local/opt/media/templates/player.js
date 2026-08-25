@@ -45,6 +45,13 @@ const format_time = (value = 0) => {
     : `${Math.floor(minutes / 60)}:${clock}`
 }
 
+/** @param {HTMLMediaElement | HTMLTrackElement} resource */
+const seek_source = (resource) => {
+  const source = new URL(resource.dataset.src ?? resource.src, location.href)
+  source.searchParams.set("t", time_input.value)
+  resource.src = source.toString()
+}
+
 const load_media = () => {
   if (loaded || media.dataset.src === undefined) {
     return
@@ -135,13 +142,9 @@ const seek = ({ playing = !media.paused, reset = true } = {}) => {
   }
   loaded = true
   start = target
-  const source = new URL(media.dataset.src ?? media.src, location.href)
-  source.searchParams.set("t", time_input.value)
-  media.src = source.toString()
+  seek_source(media)
   if (subtitle) {
-    const source = new URL(subtitle.dataset.src ?? subtitle.src, location.href)
-    source.searchParams.set("t", time_input.value)
-    subtitle.src = source.toString()
+    seek_source(subtitle)
   }
   media.load()
   if (playing) {
