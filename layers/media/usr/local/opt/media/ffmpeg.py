@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from functools import lru_cache
 from json import JSONDecodeError, loads
@@ -113,6 +114,18 @@ class Probe:
         )
 
 
+def _stream_metadata(*, data: dict[str, Any]) -> tuple[str, int | None, int | None]:
+    match data:
+        case {"tags": dict() as tags, "width": int(width), "height": int(height)}:
+            return str(tags.get("language", "und")), width, height
+        case {"tags": dict() as tags}:
+            return str(tags.get("language", "und")), None, None
+        case {"width": int(width), "height": int(height)}:
+            return "und", width, height
+        case _:
+            return "und", None, None
+
+
 def _parse_stream(*, data: dict[str, Any]) -> Stream:
     match data:
         case {
@@ -120,26 +133,28 @@ def _parse_stream(*, data: dict[str, Any]) -> Stream:
             "codec_type": str(kind),
             "codec_name": str(codec),
             "disposition": {"default": int(default)},
-            **rest,
+            **metadata,
         }:
-            tags = rest.get("tags")
-            width = rest.get("width")
-            height = rest.get("height")
+            language, width, height = _stream_metadata(data=metadata)
             return Stream(
                 index=str(index),
                 kind=kind,
                 codec=codec,
                 default=bool(default),
-                language=(
-                    str(tags.get("language", "und"))
-                    if isinstance(tags, dict)
-                    else "und"
-                ),
-                width=width if isinstance(width, int) else None,
-                height=height if isinstance(height, int) else None,
+                language=language,
+                width=width,
+                height=height,
             )
         case _:
             raise ValueError(data)
+
+
+def _duration(*, data: Mapping[object, object]) -> str | None:
+    match data:
+        case {"duration": str(duration)}:
+            return duration
+        case _:
+            return None
 
 
 def _parse(*, path: Path, raw: dict[str, Any]) -> Probe:
@@ -168,11 +183,7 @@ def _parse(*, path: Path, raw: dict[str, Any]) -> Probe:
                 path=path,
                 formats=frozenset(format_name.split(",")),
                 container=container,
-                duration=(
-                    duration
-                    if isinstance(duration := format.get("duration"), str)
-                    else None
-                ),
+                duration=_duration(data=format),
                 videos=videos,
                 audios=audios,
                 subtitles=subtitles,

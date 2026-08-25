@@ -89,6 +89,14 @@ def _subtitle_track(*, url: str) -> str:
     return _render("subtitle-track.html", url=escape(url, quote=True))
 
 
+def _scrubber(*, duration: str, time: str) -> str:
+    return _render(
+        "player-scrubber.html",
+        duration=escape(duration, quote=True),
+        time=escape(time, quote=True),
+    )
+
+
 def _option(*, value: str, label: str, selected: bool) -> str:
     return _render(
         "option-selected.html" if selected else "option.html",
@@ -120,12 +128,10 @@ def _stream_options(streams: tuple[Stream, ...], *, selected: str, empty: str) -
 def index(
     *,
     entries: tuple[tuple[PurePath, EntryKind], ...],
-    query: str,
 ) -> str:
     return _render(
         "index.html",
         entries="".join(_entry(path=path, detail=detail) for path, detail in entries),
-        query=escape(query),
     )
 
 
@@ -139,6 +145,7 @@ def player(
     subtitle: str,
     time: str,
     title: str,
+    transformed: bool,
 ) -> str:
     play_query = {"profile": profile, "t": time}
     if audio:
@@ -176,6 +183,11 @@ def player(
             probe.subtitles,
             selected=subtitle,
             empty="None",
+        ),
+        scrubber=(
+            _scrubber(duration=probe.duration, time=time)
+            if transformed and probe.duration
+            else ""
         ),
         summary=escape(f"{title} — {probe.duration}s" if probe.duration else title),
         script=_resource("player.js"),

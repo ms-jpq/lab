@@ -35,7 +35,7 @@ _BITRATES = {
     "1080p": 8_000_000,
     "2160p": 16_000_000,
 }
-_PROFILES = (_NATIVE_PROFILE, *_HEIGHTS)
+_PROFILES = tuple(_HEIGHTS)
 
 
 def _profile(query: Query) -> tuple[str, int | None, int | None] | None:
@@ -77,19 +77,16 @@ def _index(
     request: BaseHTTPRequestHandler,
     *,
     path: Path,
-    query: Query,
     head: bool,
 ) -> None:
-    name = parameter(query, name="q", default="")
-    needle = name.casefold()
     try:
-        selected = entries(path=path, needle=needle)
+        selected = entries(path=path)
     except EntriesError:
         request.send_error(HTTPStatus.FORBIDDEN)
         return
     html(
         request,
-        body=index_html(entries=selected, query=name),
+        body=index_html(entries=selected),
         head=head,
     )
 
@@ -118,6 +115,7 @@ def _player(
     ):
         request.send_error(HTTPStatus.BAD_REQUEST)
         return
+    transformed = profile != _NATIVE_PROFILE or not media.direct(audio=audio)
     html(
         request,
         body=player_html(
@@ -129,6 +127,7 @@ def _player(
             subtitle=subtitle,
             time=_time(query),
             title=path.name,
+            transformed=transformed,
         ),
         head=head,
     )
@@ -203,7 +202,7 @@ def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> Non
         if not raw.endswith(sep):
             redirect(request, location=f"{curdir}{sep}")
             return
-        _index(request, path=path, query=query, head=head)
+        _index(request, path=path, head=head)
         return
     if path.is_file():
         _player(request, relative=relative, path=path, query=query, head=head)

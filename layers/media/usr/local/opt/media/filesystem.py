@@ -27,7 +27,7 @@ def _entry_order(entry: tuple[Path, EntryKind]) -> tuple[bool, str, str]:
     return kind is EntryKind.FILE, path.name.casefold(), path.name
 
 
-def entries(*, path: Path, needle: str) -> tuple[tuple[Path, EntryKind], ...]:
+def entries(*, path: Path) -> tuple[tuple[Path, EntryKind], ...]:
     try:
         return tuple(
             sorted(
@@ -35,7 +35,6 @@ def entries(*, path: Path, needle: str) -> tuple[tuple[Path, EntryKind], ...]:
                     (entry, kind)
                     for entry in path.iterdir()
                     if (kind := _entry_kind(path=entry)) is not None
-                    and (not needle or needle in entry.name.casefold())
                 ),
                 key=_entry_order,
             )
