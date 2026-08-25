@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable
 from functools import cache
 from html import escape
 from importlib.resources import files
@@ -47,38 +47,6 @@ def _entry(*, path: PurePath, detail: EntryKind) -> str:
     )
 
 
-def _metadata_rows(*, probe: Probe) -> Iterator[tuple[str, str]]:
-    if probe.duration:
-        yield "Duration", probe.duration
-    yield "Container", probe.container
-
-    for stream in probe.videos + probe.audios + probe.subtitles:
-        yield (
-            f"Stream {stream.index}",
-            " ".join(
-                str(value)
-                for value in (
-                    stream.kind,
-                    stream.codec,
-                    stream.width,
-                    stream.height,
-                )
-                if value
-            ),
-        )
-
-
-def _metadata(*, probe: Probe) -> str:
-    return "".join(
-        _render(
-            "metadata-entry.html",
-            key=escape(key),
-            value=escape(value),
-        )
-        for key, value in _metadata_rows(probe=probe)
-    )
-
-
 def _player_element(*, has_video: bool, play_url: str, track: str) -> str:
     return _render(
         "player-video.html" if has_video else "player-audio.html",
@@ -91,9 +59,9 @@ def _subtitle_track(*, url: str) -> str:
     return _render("subtitle-track.html", url=escape(url, quote=True))
 
 
-def _scrubber(*, duration: str, time: str, transformed: bool) -> str:
+def _control_bar(*, duration: str, time: str, transformed: bool) -> str:
     return _render(
-        "player-scrubber.html",
+        "player-control-bar.html",
         duration=escape(duration, quote=True),
         time=escape(time, quote=True),
         transformed=str(transformed).lower(),
@@ -170,7 +138,6 @@ def player(
             selected=audio,
             empty="No audio",
         ),
-        metadata=_metadata(probe=probe),
         player=_player_element(
             has_video=bool(probe.videos),
             play_url=_child(
@@ -188,12 +155,11 @@ def player(
             selected=subtitle,
             empty="None",
         ),
-        scrubber=_scrubber(
+        control_bar=_control_bar(
             duration=probe.duration or "0",
             time=time,
             transformed=transformed,
         ),
-        summary=escape(f"{title} — {probe.duration}s" if probe.duration else title),
         script=_resource("player.js"),
         style=_resource("style.css"),
         time=escape(time, quote=True),

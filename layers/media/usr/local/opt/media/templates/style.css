@@ -1,6 +1,65 @@
 body {
   padding: 0;
   font-family: sans-serif;
+
+  &.player {
+    display: grid;
+    grid-template: "media" 100% / 100%;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+    width: 100vw;
+
+    & :is(audio, video) {
+      grid-area: media;
+      min-width: 0;
+    }
+
+    & video {
+      background: #000;
+      height: 100%;
+      object-fit: contain;
+      width: 100%;
+    }
+
+    & > .control-sensor {
+      align-self: end;
+      grid-area: media;
+      height: 6rem;
+      position: relative;
+      z-index: 1;
+
+      & > .control-bar {
+        background: Canvas;
+        bottom: 0;
+        box-sizing: border-box;
+        display: grid;
+        gap: 0.5rem;
+        grid-template-columns: auto auto minmax(0, 1fr) auto;
+        left: 0;
+        padding: 1rem;
+        position: absolute;
+        right: 0;
+        transform: translateY(100%);
+
+        & label {
+          min-width: 0;
+        }
+
+        & form {
+          display: grid;
+          gap: 0.5rem;
+          grid-column: 1 / -1;
+          grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+        }
+      }
+
+      &:hover > .control-bar,
+      &:focus-within > .control-bar {
+        transform: translateY(0);
+      }
+    }
+  }
 }
 
 ul {
@@ -9,16 +68,7 @@ ul {
 }
 
 audio,
-video {
-  width: 100%;
-}
-
+video,
 input[type="range"] {
   width: 100%;
-}
-
-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
 }

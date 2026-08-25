@@ -10,7 +10,7 @@ from os import PathLike, killpg, unlink
 from pathlib import Path
 from signal import SIGKILL, SIGTERM
 from socketserver import ThreadingMixIn, UnixStreamServer
-from subprocess import DEVNULL, PIPE, Popen
+from subprocess import DEVNULL, PIPE, Popen, TimeoutExpired
 from typing import Any, cast
 from urllib.parse import parse_qs, urlsplit
 
@@ -121,12 +121,14 @@ with nullcontext():
         with suppress(ProcessLookupError):
             killpg(process.pid, SIGTERM)
 
-        with suppress(TimeoutError):
+        with suppress(TimeoutExpired):
             process.wait(timeout=2)
 
         if process.poll() is None:
             with suppress(ProcessLookupError):
                 killpg(process.pid, SIGKILL)
+            with suppress(TimeoutExpired):
+                process.wait(timeout=2)
 
     @contextmanager
     def _output(
@@ -160,7 +162,7 @@ with nullcontext():
         if head:
             return
 
-        with suppress(BrokenPipeError, ConnectionResetError, TimeoutError):
+        with suppress(BrokenPipeError, ConnectionResetError, TimeoutExpired):
             with _output(command=command) as output:
                 for chunk in iter(output.read1, b""):
                     request.wfile.write(chunk)

@@ -18,14 +18,51 @@ if (!(scrubber instanceof HTMLInputElement)) {
   throw Error("scrubber")
 }
 
+const current_time = document.querySelector("#current-time")
+if (!(current_time instanceof HTMLOutputElement)) {
+  throw Error("current-time")
+}
+
+const total_time = document.querySelector("#total-time")
+if (!(total_time instanceof HTMLOutputElement)) {
+  throw Error("total-time")
+}
+
+const playback = document.querySelector("#playback")
+if (!(playback instanceof HTMLButtonElement)) {
+  throw Error("playback")
+}
+
 const url = new URL(location.href)
 const transformed = scrubber.dataset.transformed === "true"
 
 let offset = Number(time.value)
 let position = offset
 
+const format_time = (value = 0) => {
+  const seconds = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0
+  const minutes = Math.floor(seconds / 60)
+  const clock = `${String(minutes % 60).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`
+  return minutes < 60
+    ? `${minutes}:${clock.slice(3)}`
+    : `${Math.floor(minutes / 60)}:${clock}`
+}
+
+const play = () => {
+  if (media.paused) {
+    media.play().catch(() => {})
+  } else {
+    media.pause()
+  }
+}
+
+const update_playback = () => {
+  playback.textContent = media.paused ? "Play" : "Pause"
+}
+
 const sync = () => {
   time.value = String(position)
+  current_time.value = format_time(position)
   url.searchParams.set("t", time.value)
   history.replaceState(null, "", url)
 }
@@ -62,10 +99,17 @@ const restart = () => {
   }
 }
 
+total_time.value = format_time(Number(scrubber.max))
+sync()
+
 media.addEventListener("timeupdate", update)
+media.addEventListener("play", update_playback)
+media.addEventListener("pause", update_playback)
 media.addEventListener("loadedmetadata", () => {
   if (!transformed && position > 0) {
     media.currentTime = position
   }
 })
 scrubber.addEventListener("change", restart)
+playback.addEventListener("click", play)
+media.addEventListener("click", play)

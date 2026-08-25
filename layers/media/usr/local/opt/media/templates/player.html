@@ -8,35 +8,35 @@
       /* ${style} */
     </style>
   </head>
-  <body>
+  <body class="player">
     <!-- ${player} -->
-    <!-- ${scrubber} -->
-    <details>
-      <summary>${summary}</summary>
-      <dl><!-- ${metadata} --></dl>
-      <form method="get">
-        <input name="t" type="hidden" value="${time}" />
-        <label>
-          Profile
-          <select name="profile">
-            <!-- ${profile_options} -->
-          </select>
-        </label>
-        <label>
-          Audio
-          <select name="audio">
-            <!-- ${audio_options} -->
-          </select>
-        </label>
-        <label>
-          Subtitle
-          <select name="subtitle">
-            <!-- ${subtitle_options} -->
-          </select>
-        </label>
-        <button>Apply</button>
-      </form>
-    </details>
+    <div class="control-sensor">
+      <div class="control-bar">
+        <!-- ${control_bar} -->
+        <form method="get">
+          <input name="t" type="hidden" value="${time}" />
+          <label>
+            Profile
+            <select name="profile">
+              <!-- ${profile_options} -->
+            </select>
+          </label>
+          <label>
+            Audio
+            <select name="audio">
+              <!-- ${audio_options} -->
+            </select>
+          </label>
+          <label>
+            Subtitle
+            <select name="subtitle">
+              <!-- ${subtitle_options} -->
+            </select>
+          </label>
+          <button>Apply</button>
+        </form>
+      </div>
+    </div>
     <script>
       <!-- ${script} -->
     </script>
