@@ -55,8 +55,12 @@ def _player_element(*, has_video: bool, play_url: str, track: str) -> str:
     )
 
 
-def _subtitle_track(*, url: str) -> str:
-    return _render("subtitle-track.html", url=escape(url, quote=True))
+def _subtitle_track(*, language: str, url: str) -> str:
+    return _render(
+        "subtitle-track.html",
+        language=escape(language, quote=True),
+        url=escape(url, quote=True),
+    )
 
 
 def _control_bar(*, duration: str, time: str, transformed: bool) -> str:
@@ -124,15 +128,19 @@ def player(
         play_query["audio"] = audio
     track = ""
     if subtitle:
+        selected_subtitle = next(
+            stream for stream in probe.subtitles if stream.index == subtitle
+        )
         subtitle_query = {"stream": subtitle}
         if transformed:
             subtitle_query["t"] = time
         track = _subtitle_track(
+            language=selected_subtitle.language,
             url=_child(
                 relative=relative,
                 endpoint="subtitle",
                 query=subtitle_query,
-            )
+            ),
         )
     return _render(
         "player.html",
