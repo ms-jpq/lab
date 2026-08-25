@@ -4,16 +4,15 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from functools import lru_cache
 from json import JSONDecodeError, loads
-from os import R_OK, W_OK, PathLike, access
+from os import PathLike
 from pathlib import Path
-from subprocess import DEVNULL, CalledProcessError, TimeoutExpired, run
+from subprocess import CalledProcessError, TimeoutExpired, run
 from typing import Any, Iterator
 
 TEXT_SUBTITLES = frozenset(
     {"ass", "mov_text", "srt", "ssa", "subrip", "text", "webvtt"}
 )
 MP4_FORMATS = frozenset({"3g2", "3gp", "mj2", "mov", "mp4", "m4a"})
-_VAAPI_DEVICE = Path("/dev/dri/renderD128")
 
 _COMMAND_PREFIX = ("ffmpeg", "-v", "error", "-nostdin")
 _COMMAND_SUFFIX = (
@@ -28,50 +27,18 @@ _COMMAND_SUFFIX = (
 
 
 def _source_command(
-    *, path: PathLike[str], time: str, vaapi: bool = False
+    *, path: str | PathLike[str], time: str
 ) -> tuple[str | PathLike[str], ...]:
     return (
         *_COMMAND_PREFIX,
-        *(("-vaapi_device", _VAAPI_DEVICE) if vaapi else ()),
         "-i",
         path,
         *(("-ss", time) if time != "0" else ()),
     )
 
 
-@lru_cache
-def _vaapi_available() -> bool:
-    if not _VAAPI_DEVICE.is_char_device() or not access(_VAAPI_DEVICE, R_OK | W_OK):
-        return False
-    try:
-        run(
-            (
-                *_COMMAND_PREFIX,
-                "-vaapi_device",
-                _VAAPI_DEVICE,
-                "-f",
-                "lavfi",
-                "-i",
-                "color=c=black:s=32x32",
-                "-frames:v",
-                "1",
-                "-vf",
-                "format=nv12,hwupload",
-                "-c:v",
-                "h264_vaapi",
-                "-f",
-                "null",
-                "-",
-            ),
-            check=True,
-            stdin=DEVNULL,
-            stdout=DEVNULL,
-            stderr=DEVNULL,
-            timeout=5,
-        )
-    except (CalledProcessError, OSError, TimeoutExpired):
-        return False
-    return True
+def _scale_filter(*, height: int) -> str:
+    return f"scale=-2:min({height}\\,ih):force_original_aspect_ratio=decrease"
 
 
 @dataclass(frozen=True, slots=True)
@@ -116,13 +83,7 @@ class Probe:
         time: str,
     ) -> Iterator[str | PathLike[str]]:
         video = next(iter(self.videos), None)
-        vaapi = (
-            isinstance(video, Stream)
-            and isinstance(height, int)
-            and isinstance(bitrate, int)
-            and _vaapi_available()
-        )
-        yield from _source_command(path=self.path, time=time, vaapi=vaapi)
+        yield from _source_command(path=self.path, time=time)
 
         if audio:
             selected = next(stream for stream in self.audios if stream.index == audio)
@@ -136,28 +97,18 @@ class Probe:
                 yield from ("-map", f"0:{video.index}", "-c:v", "copy")
             case Stream() as video, int(height), int(bitrate):
                 yield from ("-map", f"0:{video.index}")
-                if vaapi:
-                    yield from (
-                        "-c:v",
-                        "h264_vaapi",
-                        "-vf",
-                        f"format=nv12,hwupload,scale_vaapi=w=-2:h=min({height}\\,ih):force_original_aspect_ratio=decrease",
-                        "-b:v",
-                        str(bitrate),
-                    )
-                else:
-                    yield from (
-                        "-c:v",
-                        "libx264",
-                        "-preset",
-                        "veryfast",
-                        "-pix_fmt",
-                        "yuv420p",
-                        "-vf",
-                        f"scale=-2:min({height}\\,ih):force_original_aspect_ratio=decrease",
-                        "-b:v",
-                        str(bitrate),
-                    )
+                yield from (
+                    "-c:v",
+                    "libx264",
+                    "-preset",
+                    "veryfast",
+                    "-pix_fmt",
+                    "yuv420p",
+                    "-vf",
+                    _scale_filter(height=height),
+                    "-b:v",
+                    str(bitrate),
+                )
 
         yield from _COMMAND_SUFFIX
 

@@ -135,7 +135,7 @@ with nullcontext():
         *, command: tuple[str | PathLike[str], ...]
     ) -> Iterator[BufferedReader]:
         with Popen(
-            command, stdin=DEVNULL, stdout=PIPE, stderr=DEVNULL, start_new_session=True
+            command, stdin=DEVNULL, stdout=PIPE, start_new_session=True
         ) as process:
             try:
                 yield cast(BufferedReader, process.stdout)
