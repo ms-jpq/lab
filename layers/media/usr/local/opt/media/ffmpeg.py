@@ -15,6 +15,7 @@ TEXT_SUBTITLES = frozenset(
 MP4_FORMATS = frozenset({"3g2", "3gp", "mj2", "mov", "mp4", "m4a"})
 
 _COMMAND_PREFIX = ("ffmpeg", "-v", "error", "-nostdin")
+_VAAPI_DEVICE = "/dev/dri/renderD128"
 _COMMAND_SUFFIX = (
     "-movflags",
     "frag_keyframe+empty_moov+default_base_moof",
@@ -27,9 +28,16 @@ _COMMAND_SUFFIX = (
 
 
 def _source_command(
-    *, path: str | PathLike[str], time: str
+    *, path: str | PathLike[str], time: str, vaapi: bool = False
 ) -> tuple[str | PathLike[str], ...]:
-    return (*_COMMAND_PREFIX, "-i", path, "-ss", time)
+    return (
+        *_COMMAND_PREFIX,
+        *(("-vaapi_device", _VAAPI_DEVICE) if vaapi else ()),
+        "-i",
+        path,
+        "-ss",
+        time,
+    )
 
 
 def _scale_filter(*, height: int) -> str:
@@ -77,7 +85,11 @@ class Probe:
         time: str,
     ) -> Iterator[str | PathLike[str]]:
         video = next(iter(self.videos), None)
-        yield from _source_command(path=self.path, time=time)
+        yield from _source_command(
+            path=self.path,
+            time=time,
+            vaapi=video is not None and height is not None,
+        )
 
         if audio:
             selected = next(stream for stream in self.audios if stream.index == audio)
@@ -93,13 +105,13 @@ class Probe:
                 yield from ("-map", f"0:{video.index}")
                 yield from (
                     "-c:v",
-                    "libx264",
-                    "-preset",
-                    "veryfast",
-                    "-pix_fmt",
-                    "yuv420p",
+                    "h264_vaapi",
+                    "-rc_mode",
+                    "CQP",
+                    "-qp",
+                    "24",
                     "-vf",
-                    _scale_filter(height=height),
+                    f"{_scale_filter(height=height)},format=nv12,hwupload",
                 )
 
         yield from _COMMAND_SUFFIX
