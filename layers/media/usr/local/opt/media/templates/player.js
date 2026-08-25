@@ -116,7 +116,7 @@ const sync_buffer = () => {
       ? buffered.end(index) - currentTime
       : 0,
   ).find(Boolean)
-  buffered_time_output.value = `Buffer ${format_time(duration)}`
+  buffered_time_output.value = `+${Math.floor(duration ?? 0)}s`
 }
 
 const update_position = () => {
