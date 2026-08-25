@@ -35,12 +35,11 @@ _BITRATES = {
     "1080p": 8_000_000,
     "2160p": 16_000_000,
 }
-_PROFILES = tuple(_HEIGHTS)
 
 
 def _profile(query: Query) -> tuple[str, int | None, int | None] | None:
     profile = parameter(query, name="profile", default=_NATIVE_PROFILE)
-    if profile not in _PROFILES:
+    if profile not in _HEIGHTS:
         return None
     return profile, _HEIGHTS[profile], _BITRATES[profile]
 
@@ -123,7 +122,7 @@ def _player(
             probe=media,
             relative=relative,
             profile=profile,
-            profiles=tuple(_PROFILES),
+            profiles=tuple(_HEIGHTS),
             subtitle=subtitle,
             time=_time(query),
             title=path.name,

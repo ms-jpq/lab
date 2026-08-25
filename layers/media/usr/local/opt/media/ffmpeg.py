@@ -26,6 +26,17 @@ _COMMAND_SUFFIX = (
 )
 
 
+def _source_command(
+    *, path: PathLike[str], time: str
+) -> tuple[str | PathLike[str], ...]:
+    return (
+        *_COMMAND_PREFIX,
+        "-i",
+        path,
+        *(("-ss", time) if time != "0" else ()),
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class Stream:
     index: str
@@ -67,11 +78,7 @@ class Probe:
         bitrate: int | None,
         time: str,
     ) -> Iterator[str | PathLike[str]]:
-        yield from _COMMAND_PREFIX
-        yield from ("-i", self.path)
-
-        if time != "0":
-            yield from ("-ss", time)
+        yield from _source_command(path=self.path, time=time)
 
         if audio:
             selected = next(stream for stream in self.audios if stream.index == audio)
@@ -108,10 +115,7 @@ class Probe:
         time: str,
     ) -> tuple[str | PathLike[str], ...]:
         return (
-            *_COMMAND_PREFIX,
-            "-i",
-            self.path,
-            *(("-ss", time) if time != "0" else ()),
+            *_source_command(path=self.path, time=time),
             "-map",
             f"0:{subtitle.index}",
             "-f",

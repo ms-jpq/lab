@@ -26,6 +26,7 @@
     "freenas.enp1s0.pfsense/grafana",
     "freenas.enp1s0.pfsense/jaeger",
     "freenas.enp1s0.pfsense/journald/tail.html",
+    "freenas.enp1s0.pfsense/media",
     "freenas.enp1s0.pfsense/webdav",
     "freenas.enp1s0.pfsense/youtube-dl",
     "freenas.enp1s0.pfsense/zfs.sh"
