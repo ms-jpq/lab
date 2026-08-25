@@ -161,21 +161,12 @@ const sync_buffer = (() => {
     buffered_time_output.value = `+${Math.floor((end ?? currentTime) - currentTime)}s`
 
     const now = performance.now()
-    if (
-      end === undefined ||
-      !Number.isFinite(previous_end) ||
-      end < previous_end
-    ) {
-      previous_end = end ?? Number.NaN
-      previous_at = now
-      loading_speed_output.value = ""
-      return
-    }
-    if (end === previous_end) {
-      return
-    }
-    loading_speed_output.value = `${(((end - previous_end) * 1_000) / (now - previous_at)).toFixed(1)}×`
-    previous_end = end
+    const speed =
+      end === undefined || !Number.isFinite(previous_end)
+        ? 0
+        : Math.max(0, ((end - previous_end) * 1_000) / (now - previous_at))
+    loading_speed_output.value = `${speed.toFixed(1)}×`
+    previous_end = end ?? Number.NaN
     previous_at = now
   }
 })()

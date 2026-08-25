@@ -35,10 +35,6 @@ def _scale_filter(*, height: int) -> str:
     return f"scale=-2:min({height}\\,ih):force_original_aspect_ratio=decrease"
 
 
-def _source(*, path: str | PathLike[str], time: str) -> tuple[str | PathLike[str], ...]:
-    return ("-ss", time, "-i", path)
-
-
 @dataclass(frozen=True, slots=True)
 class Stream:
     index: str
@@ -80,7 +76,7 @@ def _command(
             yield from ("-vaapi_device", _VAAPI_DEVICE)
         case None:
             pass
-    yield from _source(path=path, time=time)
+    yield from ("-ss", time, "-i", path)
 
     if audio:
         selected = next(stream for stream in audios if stream.index == audio)
@@ -113,9 +109,14 @@ def _subtitle_command(
 ) -> tuple[str | PathLike[str], ...]:
     return (
         *_COMMAND_PREFIX,
-        *_source(path=path, time=time),
+        "-i",
+        path,
+        "-ss",
+        time,
         "-map",
         f"0:{subtitle.index}",
+        "-output_ts_offset",
+        f"-{time}",
         "-f",
         "webvtt",
         "pipe:1",
