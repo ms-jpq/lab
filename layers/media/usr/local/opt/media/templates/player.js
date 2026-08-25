@@ -30,6 +30,7 @@ const transformed = scrubber.dataset.transformed === "true"
 let start = Number(time_input.value)
 let position = start
 let attempts = 0
+let loaded = false
 /** @type {number | undefined} */
 let retry_timer
 /** @type {number | undefined} */
@@ -44,8 +45,21 @@ const format_time = (value = 0) => {
     : `${Math.floor(minutes / 60)}:${clock}`
 }
 
+const load_media = () => {
+  if (loaded || media.dataset.src === undefined) {
+    return
+  }
+  loaded = true
+  media.src = media.dataset.src
+  if (subtitle && subtitle.dataset.src) {
+    subtitle.src = subtitle.dataset.src
+  }
+  media.load()
+}
+
 const toggle_playback = () => {
   if (media.paused) {
+    load_media()
     media.play().catch(() => {})
   } else {
     media.pause()
@@ -115,15 +129,17 @@ const seek = ({ playing = !media.paused, reset = true } = {}) => {
   position = target
   sync_position()
   if (!transformed) {
+    load_media()
     media.currentTime = target
     return
   }
+  loaded = true
   start = target
-  const source = new URL(media.src)
+  const source = new URL(media.dataset.src ?? media.src)
   source.searchParams.set("t", time_input.value)
   media.src = source.toString()
   if (subtitle) {
-    const source = new URL(subtitle.src)
+    const source = new URL(subtitle.dataset.src ?? subtitle.src)
     source.searchParams.set("t", time_input.value)
     subtitle.src = source.toString()
   }
