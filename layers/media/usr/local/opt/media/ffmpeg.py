@@ -71,8 +71,9 @@ class Probe:
         height: int | None,
         time: str,
     ) -> Iterator[str | PathLike[str]]:
-        video = next(iter(self.videos), None)
         yield from _COMMAND_PREFIX
+
+        video = next(iter(self.videos), None)
         match video, height:
             case Stream(), int():
                 yield from ("-vaapi_device", _VAAPI_DEVICE)
