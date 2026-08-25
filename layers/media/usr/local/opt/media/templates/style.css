@@ -29,6 +29,25 @@ body {
       width: 100%;
     }
 
+    & > #playback {
+      align-self: center;
+      font-size: 6rem;
+      grid-area: media;
+      justify-self: center;
+      line-height: 1;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 2;
+
+      &::after {
+        content: "⏸️";
+      }
+    }
+
+    &:has(:is(audio, video):paused) > #playback {
+      opacity: 1;
+    }
+
     & > .control-sensor {
       align-self: end;
       grid-area: media;
@@ -42,12 +61,16 @@ body {
         box-sizing: border-box;
         display: grid;
         gap: 0.5rem;
-        grid-template-columns: auto auto minmax(0, 1fr) auto;
+        grid-template-columns: auto minmax(0, 1fr) auto;
         left: 0;
         padding: 1rem;
         position: absolute;
         right: 0;
         transform: translateY(100%);
+
+        & > #scrubber {
+          min-width: 0;
+        }
 
         & label {
           min-width: 0;

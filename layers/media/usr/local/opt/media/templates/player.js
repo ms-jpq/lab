@@ -20,10 +20,6 @@ const total_time_output = /** @type {HTMLOutputElement} */ (
   document.querySelector("#total-time")
 )
 
-const playback_button = /** @type {HTMLButtonElement} */ (
-  document.querySelector("#playback")
-)
-
 const subtitle = /** @type {HTMLTrackElement | null} */ (
   document.querySelector("#subtitle")
 )
@@ -34,7 +30,10 @@ const transformed = scrubber.dataset.transformed === "true"
 let start = Number(time_input.value)
 let position = start
 let attempts = 0
-let retry_timer = undefined
+/** @type {number | undefined} */
+let retry_timer
+/** @type {number | undefined} */
+let click_timer
 
 const format_time = (value = 0) => {
   const seconds = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0
@@ -45,7 +44,7 @@ const format_time = (value = 0) => {
     : `${Math.floor(minutes / 60)}:${clock}`
 }
 
-const play = () => {
+const toggle_playback = () => {
   if (media.paused) {
     media.play().catch(() => {})
   } else {
@@ -54,6 +53,10 @@ const play = () => {
 }
 
 const fullscreen = () => {
+  if (click_timer !== undefined) {
+    clearTimeout(click_timer)
+    click_timer = undefined
+  }
   if (document.fullscreenElement) {
     document.exitFullscreen().catch(() => {})
   } else {
@@ -61,8 +64,14 @@ const fullscreen = () => {
   }
 }
 
-const update_playback = () => {
-  playback_button.textContent = media.paused ? "Play" : "Pause"
+const click_media = () => {
+  if (click_timer !== undefined) {
+    return
+  }
+  click_timer = setTimeout(() => {
+    click_timer = undefined
+    toggle_playback()
+  }, 250)
 }
 
 const sync_position = () => {
@@ -81,6 +90,14 @@ const update_position = () => {
   position = current
   scrubber.value = String(position)
   sync_position()
+}
+
+const preview_position = () => {
+  const target = Number(scrubber.value)
+  if (!Number.isFinite(target)) {
+    return
+  }
+  current_time_output.value = format_time(target)
 }
 
 const seek = ({ playing = !media.paused, reset = true } = {}) => {
@@ -121,7 +138,6 @@ const retry_stream = () => {
     return
   }
   attempts += 1
-  playback_button.textContent = `Retry ${attempts}/4`
   retry_timer = setTimeout(
     () => {
       retry_timer = undefined
@@ -135,15 +151,13 @@ total_time_output.value = format_time(Number(scrubber.max))
 sync_position()
 
 media.addEventListener("timeupdate", update_position)
-media.addEventListener("play", update_playback)
-media.addEventListener("pause", update_playback)
 media.addEventListener("loadedmetadata", () => {
   if (!transformed && position > 0) {
     media.currentTime = position
   }
 })
 media.addEventListener("error", retry_stream)
+scrubber.addEventListener("input", preview_position)
 scrubber.addEventListener("change", () => seek())
-playback_button.addEventListener("click", play)
-media.addEventListener("click", play)
+media.addEventListener("click", click_media)
 media.addEventListener("dblclick", fullscreen)

@@ -1,15 +1,12 @@
-<button id="playback" type="button">Play</button>
 <output id="current-time"></output>
-<label>
-  Seek
-  <input
-    id="scrubber"
-    type="range"
-    min="0"
-    max="${duration}"
-    step="1"
-    data-transformed="${transformed}"
-    value="${time}"
-  />
-</label>
+<input
+  id="scrubber"
+  aria-label="Seek"
+  type="range"
+  min="0"
+  max="${duration}"
+  step="1"
+  data-transformed="${transformed}"
+  value="${time}"
+/>
 <output id="total-time"></output>
