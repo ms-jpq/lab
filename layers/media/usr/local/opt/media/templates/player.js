@@ -64,6 +64,12 @@ const format_time = (value = 0) => {
 /** @param {number} value */
 const source_time = (value) => String(Math.round(value * 1_000) / 1_000)
 
+/** @param {number} value */
+const show_position = (value) => {
+  current_time_output.value = format_time(value)
+  remaining_time_output.value = `-${format_time(Number(scrubber.max) - value)}`
+}
+
 /** @param {HTMLMediaElement | HTMLTrackElement} resource */
 const seek_source = (resource) => {
   const source = new URL(resource.dataset.src ?? resource.src, location.href)
@@ -83,10 +89,14 @@ const load_media = () => {
   media.load()
 }
 
+const play_media = () => {
+  load_media()
+  media.play().catch(() => {})
+}
+
 const toggle_playback = () => {
   if (media.paused) {
-    load_media()
-    media.play().catch(() => {})
+    play_media()
   } else {
     media.pause()
   }
@@ -110,10 +120,30 @@ const toggle_fullscreen = () => {
   media.requestFullscreen().catch(() => {})
 }
 
+/** @param {KeyboardEvent} event */
+const keyboard_control = (event) => {
+  if (
+    event.repeat ||
+    event.target instanceof HTMLInputElement ||
+    event.target instanceof HTMLSelectElement ||
+    event.target instanceof HTMLButtonElement
+  ) {
+    return
+  }
+  if (event.code === "Space") {
+    event.preventDefault()
+    toggle_playback()
+    return
+  }
+  if (event.code === "Enter") {
+    event.preventDefault()
+    toggle_fullscreen()
+  }
+}
+
 const sync_position = () => {
   time_input.value = source_time(position)
-  current_time_output.value = format_time(position)
-  remaining_time_output.value = `-${format_time(Number(scrubber.max) - position)}`
+  show_position(position)
   page_url.searchParams.set("t", time_input.value)
   history.replaceState(null, "", page_url)
 }
@@ -164,8 +194,7 @@ const preview_position = () => {
   if (!Number.isFinite(target)) {
     return
   }
-  current_time_output.value = format_time(target)
-  remaining_time_output.value = `-${format_time(Number(scrubber.max) - target)}`
+  show_position(target)
 }
 
 const seek = ({ playing = !media.paused, reset = true } = {}) => {
@@ -195,7 +224,7 @@ const seek = ({ playing = !media.paused, reset = true } = {}) => {
   }
   media.load()
   if (playing) {
-    media.play().catch(() => {})
+    play_media()
   }
 }
 
@@ -230,3 +259,4 @@ scrubber.addEventListener("change", () => seek())
 media.addEventListener("click", toggle_playback)
 playback.addEventListener("click", toggle_playback)
 fullscreen.addEventListener("click", toggle_fullscreen)
+document.addEventListener("keydown", keyboard_control)
