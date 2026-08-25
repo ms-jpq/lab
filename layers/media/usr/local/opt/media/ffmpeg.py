@@ -94,8 +94,6 @@ def _command(
             yield from (
                 "-c:v",
                 "h264_vaapi",
-                "-rc_mode",
-                "CQP",
                 "-qp",
                 "24",
                 "-vf",
