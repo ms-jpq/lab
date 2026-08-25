@@ -16,7 +16,7 @@ User             = 1000
 Group            = www-data
 UMask            = 0007
 
-Environment      = ENV_MEDIA_ROOT=/media
-EnvironmentFile  = -/usr/local/etc/default/media.env
+Environment      = MEDIA_ROOT=/media
+EnvironmentFile  = /usr/local/etc/default/media.env
 
-ExecStart        = /usr/local/opt/media/main.sh --root ${ENV_MEDIA_ROOT} --socket %t/local/media/media.sock
+ExecStart        = /usr/local/opt/media/main.sh --root ${MEDIA_ROOT} --socket %t/local/media/media.sock

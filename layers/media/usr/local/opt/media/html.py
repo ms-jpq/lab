@@ -14,7 +14,9 @@ from urllib.parse import quote, urlencode
 from .ffmpeg import Probe, Stream
 from .filesystem import EntryKind
 
-_PLACEHOLDER = compile(r"<!--\s*(\$\{[_A-Za-z][_A-Za-z0-9]*\})\s*-->")
+_PLACEHOLDER = compile(
+    r"(?:<!--\s*|/\*\s*)(\$\{[_A-Za-z][_A-Za-z0-9]*\})(?:\s*-->|\s*\*/)"
+)
 
 
 @cache
@@ -89,11 +91,12 @@ def _subtitle_track(*, url: str) -> str:
     return _render("subtitle-track.html", url=escape(url, quote=True))
 
 
-def _scrubber(*, duration: str, time: str) -> str:
+def _scrubber(*, duration: str, time: str, transformed: bool) -> str:
     return _render(
         "player-scrubber.html",
         duration=escape(duration, quote=True),
         time=escape(time, quote=True),
+        transformed=str(transformed).lower(),
     )
 
 
@@ -132,6 +135,7 @@ def index(
     return _render(
         "index.html",
         entries="".join(_entry(path=path, detail=detail) for path, detail in entries),
+        style=_resource("style.css"),
     )
 
 
@@ -184,13 +188,14 @@ def player(
             selected=subtitle,
             empty="None",
         ),
-        scrubber=(
-            _scrubber(duration=probe.duration, time=time)
-            if transformed and probe.duration
-            else ""
+        scrubber=_scrubber(
+            duration=probe.duration or "0",
+            time=time,
+            transformed=transformed,
         ),
         summary=escape(f"{title} — {probe.duration}s" if probe.duration else title),
         script=_resource("player.js"),
+        style=_resource("style.css"),
         time=escape(time, quote=True),
         title=escape(title),
     )

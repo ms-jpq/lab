@@ -15,6 +15,7 @@
     "roku.enp1s0.opnsense.home.arpa"
   ],
   "ENV_MACVLAN_IFS": ["enp109s0", "eno1"],
+  "ENV_MEDIA_ROOT": "/media/media",
   "ENV_NFS_EXPORTS": ["downloads", "media", "wallpapers"],
   "ENV_PG_CLUSTERS": ["18/miniflux", "18/wallabag"],
   "ENV_PROMETHEUS_HOSTS": [

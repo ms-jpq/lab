@@ -7,7 +7,7 @@ from json import JSONDecodeError, loads
 from os import PathLike
 from pathlib import Path
 from subprocess import CalledProcessError, TimeoutExpired, run
-from typing import Any, Iterator, cast
+from typing import Any, Iterator
 
 TEXT_SUBTITLES = frozenset(
     {"ass", "mov_text", "srt", "ssa", "subrip", "text", "webvtt"}
@@ -114,16 +114,20 @@ class Probe:
         )
 
 
-def _stream_metadata(*, data: dict[str, Any]) -> tuple[str, int | None, int | None]:
+def _language(*, data: Mapping[Any, Any]) -> str:
     match data:
-        case {"tags": dict() as tags, "width": int(width), "height": int(height)}:
-            return str(tags.get("language", "und")), width, height
-        case {"tags": dict() as tags}:
-            return str(tags.get("language", "und")), None, None
-        case {"width": int(width), "height": int(height)}:
-            return "und", width, height
+        case {"tags": {"language": str(language)}}:
+            return language
         case _:
-            return "und", None, None
+            return "und"
+
+
+def _dimensions(*, data: Mapping[Any, Any]) -> tuple[int | None, int | None]:
+    match data:
+        case {"width": int(width), "height": int(height)}:
+            return width, height
+        case _:
+            return None, None
 
 
 def _parse_stream(*, data: dict[str, Any]) -> Stream:
@@ -135,21 +139,29 @@ def _parse_stream(*, data: dict[str, Any]) -> Stream:
             "disposition": {"default": int(default)},
             **metadata,
         }:
-            language, width, height = _stream_metadata(data=metadata)
+            width, height = _dimensions(data=metadata)
             return Stream(
                 index=str(index),
                 kind=kind,
                 codec=codec,
                 default=bool(default),
-                language=language,
+                language=_language(data=metadata),
                 width=width,
                 height=height,
             )
         case _:
-            raise ValueError(data)
+            assert False
 
 
-def _duration(*, data: Mapping[object, object]) -> str | None:
+def _stream(*, data: object) -> Stream:
+    match data:
+        case dict() as data:
+            return _parse_stream(data=data)
+        case _:
+            assert False
+
+
+def _duration(*, data: Mapping[Any, Any]) -> str | None:
     match data:
         case {"duration": str(duration)}:
             return duration
@@ -167,11 +179,7 @@ def _parse(*, path: Path, raw: dict[str, Any]) -> Probe:
             },
             "streams": list() as streams,
         }:
-            parsed = tuple(
-                _parse_stream(data=stream)
-                for stream in streams
-                if isinstance(stream, dict)
-            )
+            parsed = tuple(_stream(data=stream) for stream in streams)
             videos = tuple(stream for stream in parsed if stream.kind == "video")
             audios = tuple(stream for stream in parsed if stream.kind == "audio")
             subtitles = tuple(
@@ -193,7 +201,7 @@ def _parse(*, path: Path, raw: dict[str, Any]) -> Probe:
                 ),
             )
         case _:
-            raise ValueError(raw)
+            assert False
 
 
 @lru_cache
@@ -215,7 +223,12 @@ def _probe(path: Path, modified: int) -> dict[str, Any]:
         text=True,
         timeout=30,
     )
-    return cast(dict[str, Any], loads(proc.stdout))
+
+    match (json := loads(proc.stdout)):
+        case dict() as raw:
+            return raw
+        case _:
+            assert False, json
 
 
 def probe(*, path: Path) -> Probe:
@@ -227,6 +240,5 @@ def probe(*, path: Path) -> Probe:
         JSONDecodeError,
         OSError,
         TimeoutExpired,
-        ValueError,
     ) as error:
         raise ProbeError(path) from error
