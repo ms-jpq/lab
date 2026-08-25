@@ -32,7 +32,7 @@ def _scale_filter(*, height: int) -> str:
 
 
 def _source(*, path: str | PathLike[str], time: str) -> tuple[str | PathLike[str], ...]:
-    return ("-i", path, "-ss", time)
+    return ("-ss", time, "-i", path)
 
 
 @dataclass(frozen=True, slots=True)
@@ -139,8 +139,6 @@ class Probe:
             *_source(path=self.path, time=time),
             "-map",
             f"0:{subtitle.index}",
-            "-output_ts_offset",
-            f"-{time}",
             "-f",
             "webvtt",
             "pipe:1",
