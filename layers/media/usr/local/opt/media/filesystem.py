@@ -11,6 +11,9 @@ class EntryKind(StrEnum):
     FILE = "file"
 
 
+class EntriesError(Exception): ...
+
+
 def _entry_kind(*, path: Path) -> EntryKind | None:
     if path.is_dir():
         return EntryKind.DIRECTORY
@@ -25,17 +28,20 @@ def _entry_order(entry: tuple[Path, EntryKind]) -> tuple[bool, str, str]:
 
 
 def entries(*, path: Path, needle: str) -> tuple[tuple[Path, EntryKind], ...]:
-    return tuple(
-        sorted(
-            (
-                (entry, kind)
-                for entry in path.iterdir()
-                if (kind := _entry_kind(path=entry)) is not None
-                and (not needle or needle in entry.name.casefold())
-            ),
-            key=_entry_order,
+    try:
+        return tuple(
+            sorted(
+                (
+                    (entry, kind)
+                    for entry in path.iterdir()
+                    if (kind := _entry_kind(path=entry)) is not None
+                    and (not needle or needle in entry.name.casefold())
+                ),
+                key=_entry_order,
+            )
         )
-    )
+    except OSError as error:
+        raise EntriesError(path) from error
 
 
 def resolve(*, root: Path, raw: str) -> tuple[PurePosixPath, Path] | None:
@@ -44,7 +50,10 @@ def resolve(*, root: Path, raw: str) -> tuple[PurePosixPath, Path] | None:
         return None
 
     relative = PurePosixPath(*path.parts[1:])
-    target = root.joinpath(*relative.parts).resolve(strict=False)
+    try:
+        target = root.joinpath(*relative.parts).resolve(strict=False)
+    except (OSError, ValueError):
+        return None
     if not target.is_relative_to(root):
         return None
     return relative, target

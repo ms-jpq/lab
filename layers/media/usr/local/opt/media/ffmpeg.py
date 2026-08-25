@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import lru_cache
-from json import loads
+from json import JSONDecodeError, loads
 from os import PathLike
 from pathlib import Path
-from subprocess import CalledProcessError, run
+from subprocess import CalledProcessError, TimeoutExpired, run
 from typing import Any, Iterator, cast
 
 TEXT_SUBTITLES = frozenset(
@@ -36,12 +36,15 @@ class Stream:
     height: int | None
 
 
+class ProbeError(Exception): ...
+
+
 @dataclass(frozen=True, slots=True)
 class Probe:
     path: PathLike[str]
     formats: frozenset[str]
     container: str
-    duration: str
+    duration: str | None
     videos: tuple[Stream, ...]
     audios: tuple[Stream, ...]
     subtitles: tuple[Stream, ...]
@@ -145,7 +148,7 @@ def _parse(*, path: Path, raw: dict[str, Any]) -> Probe:
             "format": {
                 "format_name": str(format_name),
                 "format_long_name": str(container),
-                "duration": str(duration),
+                **format,
             },
             "streams": list() as streams,
         }:
@@ -165,7 +168,11 @@ def _parse(*, path: Path, raw: dict[str, Any]) -> Probe:
                 path=path,
                 formats=frozenset(format_name.split(",")),
                 container=container,
-                duration=duration,
+                duration=(
+                    duration
+                    if isinstance(duration := format.get("duration"), str)
+                    else None
+                ),
                 videos=videos,
                 audios=audios,
                 subtitles=subtitles,
@@ -201,5 +208,14 @@ def _probe(path: Path, modified: int) -> dict[str, Any]:
 
 
 def probe(*, path: Path) -> Probe:
-    raw = _probe(path, path.stat().st_mtime_ns)
-    return _parse(path=path, raw=raw)
+    try:
+        raw = _probe(path, path.stat().st_mtime_ns)
+        return _parse(path=path, raw=raw)
+    except (
+        CalledProcessError,
+        JSONDecodeError,
+        OSError,
+        TimeoutExpired,
+        ValueError,
+    ) as error:
+        raise ProbeError(path) from error

@@ -5,7 +5,7 @@ from functools import cache
 from html import escape
 from importlib.resources import files
 from itertools import chain
-from pathlib import Path, PurePath, PurePosixPath
+from pathlib import PurePath, PurePosixPath
 from posixpath import curdir, sep
 from re import compile
 from string import Template
@@ -37,17 +37,17 @@ def _child(*, relative: PurePosixPath, endpoint: str, query: dict[str, str]) -> 
 
 
 def _entry(*, path: PurePath, detail: EntryKind) -> str:
-    href = quote(path.name) + (sep if detail is EntryKind.DIRECTORY else "")
+    name = path.name + (sep if detail is EntryKind.DIRECTORY else "")
     return _render(
         "index-entry.html",
-        detail=detail.value,
-        href=escape(href, quote=True),
-        name=escape(path.name),
+        href=escape(quote(name), quote=True),
+        name=escape(name),
     )
 
 
 def _metadata_rows(*, probe: Probe) -> Iterator[tuple[str, str]]:
-    yield "Duration", probe.duration
+    if probe.duration:
+        yield "Duration", probe.duration
     yield "Container", probe.container
 
     for stream in probe.videos + probe.audios + probe.subtitles:
@@ -177,7 +177,7 @@ def player(
             selected=subtitle,
             empty="None",
         ),
-        summary=escape(f"{title} — {probe.duration}s"),
+        summary=escape(f"{title} — {probe.duration}s" if probe.duration else title),
         script=_resource("player.js"),
         time=escape(time, quote=True),
         title=escape(title),

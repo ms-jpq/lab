@@ -6,8 +6,8 @@ from http.server import BaseHTTPRequestHandler
 from pathlib import Path, PurePosixPath
 from posixpath import curdir, sep
 
-from .ffmpeg import Probe, probe
-from .filesystem import entries, resolve
+from .ffmpeg import Probe, ProbeError, probe
+from .filesystem import EntriesError, entries, resolve
 from .html import index as index_html
 from .html import player as player_html
 from .http import (
@@ -65,6 +65,14 @@ def _time(query: Query) -> str:
         return "0"
 
 
+def _media(request: BaseHTTPRequestHandler, *, path: Path) -> Probe | None:
+    try:
+        return probe(path=path)
+    except ProbeError:
+        request.send_error(HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
+        return None
+
+
 def _index(
     request: BaseHTTPRequestHandler,
     *,
@@ -74,9 +82,14 @@ def _index(
 ) -> None:
     name = parameter(query, name="q", default="")
     needle = name.casefold()
+    try:
+        selected = entries(path=path, needle=needle)
+    except EntriesError:
+        request.send_error(HTTPStatus.FORBIDDEN)
+        return
     html(
         request,
-        body=index_html(entries=entries(path=path, needle=needle), query=name),
+        body=index_html(entries=selected, query=name),
         head=head,
     )
 
@@ -89,7 +102,8 @@ def _player(
     query: Query,
     head: bool,
 ) -> None:
-    media = probe(path=path)
+    if (media := _media(request, path=path)) is None:
+        return
     if not media.videos and not media.audios:
         request.send_error(HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
         return
@@ -128,7 +142,8 @@ def _play(
     head: bool,
 ) -> None:
     selected = _profile(query)
-    media = probe(path=path)
+    if (media := _media(request, path=path)) is None:
+        return
 
     if (not media.videos and not media.audios) or selected is None:
         request.send_error(HTTPStatus.BAD_REQUEST)
@@ -162,7 +177,8 @@ def _subtitle(
     head: bool,
 ) -> None:
     stream_index = parameter(query, name="stream", default="")
-    media = probe(path=path)
+    if (media := _media(request, path=path)) is None:
+        return
     subtitle = next(
         (item for item in media.subtitles if item.index == stream_index), None
     )

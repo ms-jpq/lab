@@ -51,7 +51,7 @@ with nullcontext():
     def _integer(value: str) -> int | None:
         return int(value) if value.isascii() and value.isdecimal() else None
 
-    def _range(header: str | None, *, size: int) -> tuple[int, int]:
+    def _range(header: str | None, *, size: int) -> tuple[int, int] | None:
         if header is None:
             return 0, size - 1
 
@@ -70,7 +70,7 @@ with nullcontext():
                                 return 0, size - 1
                     case _:
                         return 0, size - 1
-                return (start, end) if 0 <= start <= end < size else (0, size - 1)
+                return (start, end) if 0 <= start <= end < size else None
             case _:
                 return 0, size - 1
 
@@ -87,7 +87,13 @@ with nullcontext():
         head: bool,
     ) -> None:
         size = path.stat().st_size
-        start, end = _range(request.headers.get("Range"), size=size)
+        if (selected := _range(request.headers.get("Range"), size=size)) is None:
+            request.send_response(HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+            request.send_header("Content-Range", f"bytes */{size}")
+            request.send_header("Content-Length", "0")
+            request.end_headers()
+            return
+        start, end = selected
         status = (
             HTTPStatus.PARTIAL_CONTENT if start or end != size - 1 else HTTPStatus.OK
         )
