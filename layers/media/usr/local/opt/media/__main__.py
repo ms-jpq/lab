@@ -5,7 +5,7 @@ from contextlib import nullcontext
 from logging import INFO, basicConfig, captureWarnings
 from pathlib import Path
 
-from .http import serve
+from .server import server
 
 with nullcontext():
     captureWarnings(True)
@@ -21,7 +21,8 @@ def _parse_args() -> Namespace:
 
 def _main() -> None:
     args = _parse_args()
-    serve(root=args.root, socket=args.socket)
+    with server(root=args.root, socket=args.socket) as srv:
+        srv.serve_forever()
 
 
 if __name__ == "__main__":

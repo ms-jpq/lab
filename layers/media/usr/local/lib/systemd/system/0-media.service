@@ -18,5 +18,5 @@ Group            = www-data
 Environment      = ENV_MEDIA_ROOT=/media
 EnvironmentFile  = -/usr/local/etc/default/media.env
 
-WorkingDirectory = /usr/local/opt/media
+WorkingDirectory = /usr/local/opt
 ExecStart        = /usr/bin/python3 -m media --root ${ENV_MEDIA_ROOT} --socket %t/local/media/media.sock

@@ -1,25 +1,20 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator
-from enum import StrEnum
 from functools import cache
 from html import escape
 from importlib.resources import files
 from itertools import chain
 from pathlib import Path, PurePath, PurePosixPath
-from posixpath import sep
+from posixpath import curdir, sep
 from re import compile
 from string import Template
 from urllib.parse import quote, urlencode
 
 from .ffmpeg import Probe, Stream
+from .filesystem import EntryKind
 
 _PLACEHOLDER = compile(r"<!--\s*(\$\{[_A-Za-z][_A-Za-z0-9]*\})\s*-->")
-
-
-class EntryKind(StrEnum):
-    DIRECTORY = "dir"
-    FILE = "file"
 
 
 @cache
@@ -38,7 +33,7 @@ def _render(template_name: str, **values: str) -> str:
 
 
 def _child(*, relative: PurePosixPath, endpoint: str, query: dict[str, str]) -> str:
-    return f"./{quote(relative.name)}/{endpoint}?{urlencode(query)}"
+    return f"{curdir}{sep}{quote(relative.name)}{sep}{endpoint}?{urlencode(query)}"
 
 
 def _entry(*, path: PurePath, detail: EntryKind) -> str:
@@ -83,18 +78,11 @@ def _metadata(*, probe: Probe) -> str:
 
 
 def _player_element(*, has_video: bool, play_url: str, track: str) -> str:
-    match has_video:
-        case True:
-            return _render(
-                "player-video.html",
-                play_url=escape(play_url, quote=True),
-                track=track,
-            )
-        case False:
-            return _render(
-                "player-audio.html",
-                play_url=escape(play_url, quote=True),
-            )
+    return _render(
+        "player-video.html" if has_video else "player-audio.html",
+        play_url=escape(play_url, quote=True),
+        track=track,
+    )
 
 
 def _subtitle_track(*, url: str) -> str:

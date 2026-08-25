@@ -1,0 +1,215 @@
+from __future__ import annotations
+
+from functools import partial
+from http import HTTPStatus
+from http.server import BaseHTTPRequestHandler
+from pathlib import Path, PurePosixPath
+from posixpath import curdir, sep
+
+from .ffmpeg import Probe, probe
+from .filesystem import entries, resolve
+from .html import index as index_html
+from .html import player as player_html
+from .http import (
+    Query,
+    _Server,
+    file,
+    html,
+    parameter,
+    redirect,
+    stream,
+    target,
+    unix_server,
+)
+
+_NATIVE_PROFILE = "native"
+_HEIGHTS = {
+    _NATIVE_PROFILE: None,
+    "720p": 720,
+    "1080p": 1080,
+    "2160p": 2160,
+}
+_BITRATES = {
+    _NATIVE_PROFILE: None,
+    "720p": 4_000_000,
+    "1080p": 8_000_000,
+    "2160p": 16_000_000,
+}
+_PROFILES = (_NATIVE_PROFILE, *_HEIGHTS)
+
+
+def _profile(query: Query) -> tuple[str, int | None, int | None] | None:
+    profile = parameter(query, name="profile", default=_NATIVE_PROFILE)
+    if profile not in _PROFILES:
+        return None
+    return profile, _HEIGHTS[profile], _BITRATES[profile]
+
+
+def _audio(media: Probe, query: Query) -> str | None:
+    audio = parameter(
+        query,
+        name="audio",
+        default=media.default_audio.index if media.default_audio else "",
+    )
+    return (
+        audio
+        if not audio or any(item.index == audio for item in media.audios)
+        else None
+    )
+
+
+def _time(query: Query) -> str:
+    try:
+        return str(max(0, int(float(parameter(query, name="t", default="0")))))
+    except (OverflowError, ValueError):
+        return "0"
+
+
+def _index(
+    request: BaseHTTPRequestHandler,
+    *,
+    path: Path,
+    query: Query,
+    head: bool,
+) -> None:
+    name = parameter(query, name="q", default="")
+    needle = name.casefold()
+    html(
+        request,
+        body=index_html(entries=entries(path=path, needle=needle), query=name),
+        head=head,
+    )
+
+
+def _player(
+    request: BaseHTTPRequestHandler,
+    *,
+    relative: PurePosixPath,
+    path: Path,
+    query: Query,
+    head: bool,
+) -> None:
+    media = probe(path=path)
+    if not media.videos and not media.audios:
+        request.send_error(HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
+        return
+    if (selected := _profile(query)) is None:
+        request.send_error(HTTPStatus.BAD_REQUEST)
+        return
+    profile, _, _ = selected
+    audio = _audio(media, query)
+    subtitle = parameter(query, name="subtitle", default="")
+    if audio is None or (
+        subtitle and not any(stream.index == subtitle for stream in media.subtitles)
+    ):
+        request.send_error(HTTPStatus.BAD_REQUEST)
+        return
+    html(
+        request,
+        body=player_html(
+            audio=audio,
+            probe=media,
+            relative=relative,
+            profile=profile,
+            profiles=tuple(_PROFILES),
+            subtitle=subtitle,
+            time=_time(query),
+            title=path.name,
+        ),
+        head=head,
+    )
+
+
+def _play(
+    request: BaseHTTPRequestHandler,
+    *,
+    path: Path,
+    query: Query,
+    head: bool,
+) -> None:
+    selected = _profile(query)
+    media = probe(path=path)
+
+    if (not media.videos and not media.audios) or selected is None:
+        request.send_error(HTTPStatus.BAD_REQUEST)
+        return
+    profile, height, bitrate = selected
+    if (audio := _audio(media, query)) is None:
+        request.send_error(HTTPStatus.BAD_REQUEST)
+        return
+
+    content_type = "video/mp4" if media.videos else "audio/mp4"
+    if profile == _NATIVE_PROFILE and media.direct(audio=audio):
+        file(request, path=path, content_type=content_type, head=head)
+        return
+    stream(
+        request,
+        command=tuple(
+            media.command(
+                audio=audio, height=height, bitrate=bitrate, time=_time(query)
+            )
+        ),
+        content_type=content_type,
+        head=head,
+    )
+
+
+def _subtitle(
+    request: BaseHTTPRequestHandler,
+    *,
+    path: Path,
+    query: Query,
+    head: bool,
+) -> None:
+    stream_index = parameter(query, name="stream", default="")
+    media = probe(path=path)
+    subtitle = next(
+        (item for item in media.subtitles if item.index == stream_index), None
+    )
+    if subtitle is None:
+        request.send_error(HTTPStatus.BAD_REQUEST)
+        return
+    stream(
+        request,
+        command=media.subtitle_command(subtitle=subtitle),
+        content_type="text/vtt; charset=utf-8",
+        head=head,
+    )
+
+
+def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> None:
+    raw, query = target(request.path)
+    if (resolved := resolve(root=root, raw=raw)) is None:
+        request.send_error(HTTPStatus.NOT_FOUND)
+        return
+    relative, path = resolved
+    if path.is_dir():
+        if not raw.endswith(sep):
+            redirect(request, location=f"{curdir}{sep}")
+            return
+        _index(request, path=path, query=query, head=head)
+        return
+    if path.is_file():
+        _player(request, relative=relative, path=path, query=query, head=head)
+        return
+    if not path.parent.is_file():
+        request.send_error(HTTPStatus.NOT_FOUND)
+        return
+    match relative.name:
+        case "play":
+            _play(request, path=path.parent, query=query, head=head)
+        case "subtitle":
+            _subtitle(request, path=path.parent, query=query, head=head)
+        case _:
+            request.send_error(HTTPStatus.NOT_FOUND)
+
+
+def server(*, root: Path, socket: Path) -> _Server:
+    root = root.resolve(strict=True)
+    return unix_server(
+        socket=socket,
+        handlers={
+            "HEAD": partial(_dispatch, root, head=True),
+            "GET": partial(_dispatch, root, head=False),
+        },
+    )

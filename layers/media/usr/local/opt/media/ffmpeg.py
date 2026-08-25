@@ -99,10 +99,7 @@ class Probe:
 
     def subtitle_command(self, *, subtitle: Stream) -> tuple[str | PathLike[str], ...]:
         return (
-            "ffmpeg",
-            "-v",
-            "error",
-            "-nostdin",
+            *_COMMAND_PREFIX,
             "-i",
             self.path,
             "-map",
