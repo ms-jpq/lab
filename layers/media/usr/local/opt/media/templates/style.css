@@ -82,6 +82,10 @@ body {
       pointer-events: auto;
     }
 
+    &:has(:is(audio, video):paused) > .control-sensor > .control-bar {
+      transform: translateY(0);
+    }
+
     & > .control-sensor {
       align-self: end;
       display: grid;
