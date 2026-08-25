@@ -27,19 +27,6 @@ _COMMAND_SUFFIX = (
 )
 
 
-def _source_command(
-    *, path: str | PathLike[str], time: str, vaapi: bool = False
-) -> tuple[str | PathLike[str], ...]:
-    return (
-        *_COMMAND_PREFIX,
-        *(("-vaapi_device", _VAAPI_DEVICE) if vaapi else ()),
-        "-i",
-        path,
-        "-ss",
-        time,
-    )
-
-
 def _scale_filter(*, height: int) -> str:
     return f"scale=-2:min({height}\\,ih):force_original_aspect_ratio=decrease"
 
@@ -85,11 +72,13 @@ class Probe:
         time: str,
     ) -> Iterator[str | PathLike[str]]:
         video = next(iter(self.videos), None)
-        yield from _source_command(
-            path=self.path,
-            time=time,
-            vaapi=video is not None and height is not None,
-        )
+        yield from _COMMAND_PREFIX
+        match video, height:
+            case Stream(), int():
+                yield from ("-vaapi_device", _VAAPI_DEVICE)
+            case _:
+                pass
+        yield from ("-i", self.path, "-ss", time)
 
         if audio:
             selected = next(stream for stream in self.audios if stream.index == audio)
@@ -123,7 +112,11 @@ class Probe:
         time: str,
     ) -> tuple[str | PathLike[str], ...]:
         return (
-            *_source_command(path=self.path, time=time),
+            *_COMMAND_PREFIX,
+            "-itsoffset",
+            f"-{time}",
+            "-i",
+            self.path,
             "-map",
             f"0:{subtitle.index}",
             "-f",

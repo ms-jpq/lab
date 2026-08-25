@@ -45,6 +45,9 @@ const format_time = (value = 0) => {
     : `${Math.floor(minutes / 60)}:${clock}`
 }
 
+/** @param {number} value */
+const source_time = (value) => String(Math.round(value * 1_000) / 1_000)
+
 /** @param {HTMLMediaElement | HTMLTrackElement} resource */
 const seek_source = (resource) => {
   const source = new URL(resource.dataset.src ?? resource.src, location.href)
@@ -96,14 +99,16 @@ const click_media = () => {
 }
 
 const sync_position = () => {
-  time_input.value = String(position)
+  time_input.value = source_time(position)
   current_time_output.value = format_time(position)
   page_url.searchParams.set("t", time_input.value)
   history.replaceState(null, "", page_url)
 }
 
 const update_position = () => {
-  const current = Math.floor(media.currentTime + (transformed ? start : 0))
+  const current = Number(
+    source_time(media.currentTime + (transformed ? start : 0)),
+  )
   if (!Number.isFinite(current) || current === position) {
     return
   }

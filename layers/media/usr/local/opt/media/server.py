@@ -3,6 +3,7 @@ from __future__ import annotations
 from functools import partial
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
+from math import isfinite
 from pathlib import Path, PurePosixPath
 from posixpath import curdir, sep
 
@@ -53,9 +54,10 @@ def _audio(media: Probe, query: Query) -> str | None:
 
 def _time(query: Query) -> str:
     try:
-        return str(max(0, int(float(parameter(query, name="t", default="0")))))
+        time = float(parameter(query, name="t", default="0"))
     except (OverflowError, ValueError):
         return "0"
+    return f"{max(0, time):.3f}" if isfinite(time) else "0"
 
 
 def _media(request: BaseHTTPRequestHandler, *, path: Path) -> Probe | None:
