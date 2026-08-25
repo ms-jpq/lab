@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>${title}</title>
+  </head>
+  <body>
+    <!-- ${player} -->
+    <details>
+      <summary>${summary}</summary>
+      <dl><!-- ${metadata} --></dl>
+      <form method="get">
+        <input name="t" type="hidden" value="${time}">
+        <input name="width" type="hidden">
+        <input name="height" type="hidden">
+        <input name="dpr" type="hidden">
+        <label>
+          Profile
+          <select name="profile">
+            <!-- ${profile_options} -->
+          </select>
+        </label>
+        <label>
+          Audio
+          <select name="audio">
+            <!-- ${audio_options} -->
+          </select>
+        </label>
+        <label>
+          Subtitle
+          <select name="subtitle">
+            <!-- ${subtitle_options} -->
+          </select>
+        </label>
+        <button>Apply</button>
+      </form>
+    </details>
+    <script>
+      <!-- ${script} -->
+    </script>
+  </body>
+</html>
