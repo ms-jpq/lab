@@ -1,37 +1,30 @@
-const media = document.querySelector("video, audio")
-if (!(media instanceof HTMLMediaElement)) {
-  throw Error("media")
-}
+const media = /** @type {HTMLMediaElement} */ (
+  document.querySelector("video, audio")
+)
 
-const form = document.querySelector("form")
-if (!(form instanceof HTMLFormElement)) {
-  throw Error("form")
-}
+const form = /** @type {HTMLFormElement} */ (document.querySelector("form"))
 
-const time = form.elements.namedItem("t")
-if (!(time instanceof HTMLInputElement)) {
-  throw Error("t")
-}
+const time = /** @type {HTMLInputElement} */ (form.elements.namedItem("t"))
 
-const scrubber = document.querySelector("#scrubber")
-if (!(scrubber instanceof HTMLInputElement)) {
-  throw Error("scrubber")
-}
+const scrubber = /** @type {HTMLInputElement} */ (
+  document.querySelector("#scrubber")
+)
 
-const current_time = document.querySelector("#current-time")
-if (!(current_time instanceof HTMLOutputElement)) {
-  throw Error("current-time")
-}
+const current_time = /** @type {HTMLOutputElement} */ (
+  document.querySelector("#current-time")
+)
 
-const total_time = document.querySelector("#total-time")
-if (!(total_time instanceof HTMLOutputElement)) {
-  throw Error("total-time")
-}
+const total_time = /** @type {HTMLOutputElement} */ (
+  document.querySelector("#total-time")
+)
 
-const playback = document.querySelector("#playback")
-if (!(playback instanceof HTMLButtonElement)) {
-  throw Error("playback")
-}
+const playback = /** @type {HTMLButtonElement} */ (
+  document.querySelector("#playback")
+)
+
+const subtitle = /** @type {HTMLTrackElement | null} */ (
+  document.querySelector("#subtitle")
+)
 
 const url = new URL(location.href)
 const transformed = scrubber.dataset.transformed === "true"
@@ -93,6 +86,11 @@ const restart = () => {
   const source = new URL(media.src)
   source.searchParams.set("t", time.value)
   media.src = source.toString()
+  if (subtitle) {
+    const source = new URL(subtitle.src)
+    source.searchParams.set("t", time.value)
+    subtitle.src = source.toString()
+  }
   media.load()
   if (playing) {
     media.play().catch(() => {})

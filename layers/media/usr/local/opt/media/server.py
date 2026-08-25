@@ -186,7 +186,7 @@ def _subtitle(
         return
     stream(
         request,
-        command=media.subtitle_command(subtitle=subtitle),
+        command=media.subtitle_command(subtitle=subtitle, time=_time(query)),
         content_type="text/vtt; charset=utf-8",
         head=head,
     )

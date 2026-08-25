@@ -124,11 +124,14 @@ def player(
         play_query["audio"] = audio
     track = ""
     if subtitle:
+        subtitle_query = {"stream": subtitle}
+        if transformed:
+            subtitle_query["t"] = time
         track = _subtitle_track(
             url=_child(
                 relative=relative,
                 endpoint="subtitle",
-                query={"stream": subtitle},
+                query=subtitle_query,
             )
         )
     return _render(

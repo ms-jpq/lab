@@ -101,11 +101,17 @@ class Probe:
 
         yield from _COMMAND_SUFFIX
 
-    def subtitle_command(self, *, subtitle: Stream) -> tuple[str | PathLike[str], ...]:
+    def subtitle_command(
+        self,
+        *,
+        subtitle: Stream,
+        time: str,
+    ) -> tuple[str | PathLike[str], ...]:
         return (
             *_COMMAND_PREFIX,
             "-i",
             self.path,
+            *(("-ss", time) if time != "0" else ()),
             "-map",
             f"0:{subtitle.index}",
             "-f",
