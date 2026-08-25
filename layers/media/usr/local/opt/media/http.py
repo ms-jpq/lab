@@ -6,9 +6,8 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 from io import BufferedReader
 from logging import getLogger
-from os import PathLike, killpg, unlink
+from os import PathLike, unlink
 from pathlib import Path
-from signal import SIGKILL, SIGTERM
 from socketserver import ThreadingMixIn, UnixStreamServer
 from subprocess import DEVNULL, PIPE, Popen, TimeoutExpired
 from typing import Any, cast
@@ -117,32 +116,15 @@ with nullcontext():
 
 with nullcontext():
 
-    def _terminate(process: Popen[bytes]) -> None:
-        with suppress(ProcessLookupError):
-            killpg(process.pid, SIGTERM)
-
-        with suppress(TimeoutExpired):
-            process.wait(timeout=2)
-
-        if process.poll() is None:
-            with suppress(ProcessLookupError):
-                killpg(process.pid, SIGKILL)
-            with suppress(TimeoutExpired):
-                process.wait(timeout=2)
-
     @contextmanager
     def _output(
         *, command: tuple[str | PathLike[str], ...]
     ) -> Iterator[BufferedReader]:
-        with Popen(
-            command, stdin=DEVNULL, stdout=PIPE, start_new_session=True
-        ) as process:
+        with Popen(command, stdin=DEVNULL, stdout=PIPE) as process:
             try:
                 yield cast(BufferedReader, process.stdout)
-                process.wait(timeout=5)
             finally:
-                if process.poll() is None:
-                    _terminate(process)
+                process.kill()
 
     def stream(
         request: BaseHTTPRequestHandler,
@@ -162,9 +144,9 @@ with nullcontext():
         if head:
             return
 
-        with suppress(BrokenPipeError, ConnectionResetError, TimeoutExpired):
-            with _output(command=command) as output:
-                for chunk in iter(output.read1, b""):
+        with suppress(BrokenPipeError, ConnectionResetError):
+            with _output(command=command) as st:
+                for chunk in iter(st.read1, b""):
                     request.wfile.write(chunk)
 
 

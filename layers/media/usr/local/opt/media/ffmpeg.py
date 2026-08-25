@@ -14,7 +14,7 @@ TEXT_SUBTITLES = frozenset(
 )
 MP4_FORMATS = frozenset({"3g2", "3gp", "mj2", "mov", "mp4", "m4a"})
 
-_COMMAND_PREFIX = ("ffmpeg", "-v", "error", "-nostdin")
+_COMMAND_PREFIX = ("nice", "--adjustment=19", "--", "ffmpeg", "-v", "error", "-nostdin")
 _VAAPI_DEVICE = "/dev/dri/renderD128"
 _COMMAND_SUFFIX = (
     "-movflags",
