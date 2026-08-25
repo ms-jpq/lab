@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterator, Mapping
-from contextlib import contextmanager, nullcontext, suppress
+from contextlib import nullcontext, suppress
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 from io import BufferedReader
 from logging import getLogger
-from os import PathLike, unlink
+from os import unlink
 from pathlib import Path
 from socketserver import ThreadingMixIn, UnixStreamServer
-from subprocess import DEVNULL, PIPE, Popen, TimeoutExpired
 from typing import Any, cast
 from urllib.parse import parse_qs, urlsplit
 
@@ -114,48 +113,33 @@ with nullcontext():
                 request.wfile.write(chunk)
 
 
-with nullcontext():
+def stream(
+    request: BaseHTTPRequestHandler,
+    *,
+    source: Iterator[bytes],
+    content_type: str,
+    head: bool,
+) -> None:
+    request.close_connection = True
 
-    @contextmanager
-    def _output(
-        *, command: tuple[str | PathLike[str], ...]
-    ) -> Iterator[BufferedReader]:
-        with Popen(command, stdin=DEVNULL, stdout=PIPE) as process:
-            try:
-                yield cast(BufferedReader, process.stdout)
-            finally:
-                process.kill()
+    request.send_response(HTTPStatus.OK)
+    request.send_header("Content-Type", content_type)
+    request.send_header("Cache-Control", "no-store")
+    request.send_header("Connection", "close")
+    request.end_headers()
 
-    def stream(
-        request: BaseHTTPRequestHandler,
-        *,
-        command: tuple[str | PathLike[str], ...],
-        content_type: str,
-        head: bool,
-    ) -> None:
-        request.close_connection = True
-
-        request.send_response(HTTPStatus.OK)
-        request.send_header("Content-Type", content_type)
-        request.send_header("Cache-Control", "no-store")
-        request.send_header("Connection", "close")
-        request.end_headers()
-
-        if head:
-            return
-
-        with suppress(BrokenPipeError, ConnectionResetError):
-            with _output(command=command) as st:
-                for chunk in iter(st.read1, b""):
-                    request.wfile.write(chunk)
+    if not head:
+        for chunk in source:
+            request.wfile.write(chunk)
 
 
 def _handler(handlers: Mapping[str, _HandlerFn]) -> type[BaseHTTPRequestHandler]:
     def dispatch(request: BaseHTTPRequestHandler) -> None:
-        if (handler := handlers.get(request.command)) is None:
-            request.send_error(HTTPStatus.METHOD_NOT_ALLOWED)
-            return
-        handler(request)
+        with suppress(BrokenPipeError, ConnectionResetError):
+            if (handler := handlers.get(request.command)) is None:
+                request.send_error(HTTPStatus.METHOD_NOT_ALLOWED)
+                return
+            handler(request)
 
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"

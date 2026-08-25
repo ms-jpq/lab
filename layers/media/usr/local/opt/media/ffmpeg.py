@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from functools import lru_cache
+from io import BufferedReader
 from json import JSONDecodeError, loads
 from os import PathLike
 from pathlib import Path
-from subprocess import CalledProcessError, TimeoutExpired, run
-from typing import Any, Iterator
+from re import compile
+from subprocess import DEVNULL, PIPE, CalledProcessError, Popen, TimeoutExpired, run
+from typing import Any, cast
 
 TEXT_SUBTITLES = frozenset(
     {"ass", "mov_text", "srt", "ssa", "subrip", "text", "webvtt"}
@@ -16,6 +18,7 @@ MP4_FORMATS = frozenset({"3g2", "3gp", "mj2", "mov", "mp4", "m4a"})
 
 _COMMAND_PREFIX = ("nice", "--adjustment=19", "--", "ffmpeg", "-v", "error", "-nostdin")
 _VAAPI_DEVICE = "/dev/dri/renderD128"
+_ASS_OVERRIDE = compile(rb"\{\\[^}\r\n]*\}")
 _COMMAND_SUFFIX = (
     "-movflags",
     "frag_keyframe+empty_moov+default_base_moof",
@@ -47,6 +50,92 @@ class Stream:
 
 
 class ProbeError(Exception): ...
+
+
+def _bytes(*, command: tuple[str | PathLike[str], ...]) -> Iterator[bytes]:
+    with Popen(command, stdin=DEVNULL, stdout=PIPE) as proc:
+        reader = cast(BufferedReader, proc.stdout)
+
+        try:
+            yield from iter(reader.read1, b"")
+        finally:
+            proc.kill()
+
+
+def _command(
+    *,
+    path: PathLike[str],
+    videos: tuple[Stream, ...],
+    audios: tuple[Stream, ...],
+    audio: str,
+    height: int | None,
+    time: str,
+) -> Iterator[str | PathLike[str]]:
+    yield from _COMMAND_PREFIX
+
+    video = next(iter(videos), None)
+    match video:
+        case Stream():
+            yield from ("-vaapi_device", _VAAPI_DEVICE)
+        case None:
+            pass
+    yield from _source(path=path, time=time)
+
+    if audio:
+        selected = next(stream for stream in audios if stream.index == audio)
+        yield from ("-map", f"0:{audio}")
+        yield from ("-c:a", "copy" if selected.codec == "aac" else "aac")
+
+    match video, height:
+        case None, _:
+            pass
+        case Stream() as video, height:
+            yield from ("-map", f"0:{video.index}")
+            yield from (
+                "-c:v",
+                "h264_vaapi",
+                "-rc_mode",
+                "CQP",
+                "-qp",
+                "24",
+                "-vf",
+                (
+                    "format=nv12,hwupload"
+                    if height is None
+                    else f"{_scale_filter(height=height)},format=nv12,hwupload"
+                ),
+            )
+
+    yield from _COMMAND_SUFFIX
+
+
+def _subtitle_command(
+    *, path: PathLike[str], subtitle: Stream, time: str
+) -> tuple[str | PathLike[str], ...]:
+    return (
+        *_COMMAND_PREFIX,
+        *_source(path=path, time=time),
+        "-map",
+        f"0:{subtitle.index}",
+        "-f",
+        "webvtt",
+        "pipe:1",
+    )
+
+
+def _clean_subtitles(source: Iterator[bytes]) -> Iterator[bytes]:
+    pending: list[bytes] = []
+    for chunk in source:
+        complete, separator, tail = chunk.rpartition(b"\n")
+        if separator:
+            pending.extend((complete, separator))
+            yield _ASS_OVERRIDE.sub(b"", b"".join(pending))
+            pending = [tail] if tail else []
+        else:
+            pending.append(tail)
+
+    if pending:
+        yield _ASS_OVERRIDE.sub(b"", b"".join(pending))
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,65 +173,40 @@ class Probe:
             case _:
                 return None
 
-    def command(
+    def stream(
         self,
         *,
         audio: str,
         height: int | None,
         time: str,
-    ) -> Iterator[str | PathLike[str]]:
-        yield from _COMMAND_PREFIX
-
-        video = next(iter(self.videos), None)
-        match video:
-            case Stream():
-                yield from ("-vaapi_device", _VAAPI_DEVICE)
-            case None:
-                pass
-        yield from _source(path=self.path, time=time)
-
-        if audio:
-            selected = next(stream for stream in self.audios if stream.index == audio)
-            yield from ("-map", f"0:{audio}")
-            yield from ("-c:a", "copy" if selected.codec == "aac" else "aac")
-
-        match video, height:
-            case None, _:
-                pass
-            case Stream() as video, height:
-                yield from ("-map", f"0:{video.index}")
-                yield from (
-                    "-c:v",
-                    "h264_vaapi",
-                    "-rc_mode",
-                    "CQP",
-                    "-qp",
-                    "24",
-                    "-vf",
-                    (
-                        "format=nv12,hwupload"
-                        if height is None
-                        else f"{_scale_filter(height=height)},format=nv12,hwupload"
-                    ),
+    ) -> Iterator[bytes]:
+        yield from _bytes(
+            command=tuple(
+                _command(
+                    path=self.path,
+                    videos=self.videos,
+                    audios=self.audios,
+                    audio=audio,
+                    height=height,
+                    time=time,
                 )
+            )
+        )
 
-        yield from _COMMAND_SUFFIX
-
-    def subtitle_command(
+    def subtitle(
         self,
         *,
         subtitle: Stream,
         time: str,
-    ) -> tuple[str | PathLike[str], ...]:
-        return (
-            *_COMMAND_PREFIX,
-            *_source(path=self.path, time=time),
-            "-map",
-            f"0:{subtitle.index}",
-            "-f",
-            "webvtt",
-            "pipe:1",
+    ) -> Iterator[bytes]:
+        st = _bytes(
+            command=_subtitle_command(
+                path=self.path,
+                subtitle=subtitle,
+                time=time,
+            )
         )
+        yield from _clean_subtitles(st)
 
 
 def _language(*, data: Mapping[Any, Any]) -> str:

@@ -177,9 +177,7 @@ def _play(
         case _:
             stream(
                 request,
-                command=tuple(
-                    media.command(audio=audio, height=height, time=_time(query))
-                ),
+                source=media.stream(audio=audio, height=height, time=_time(query)),
                 content_type="video/mp4" if media.videos else "audio/mp4",
                 head=head,
             )
@@ -203,7 +201,7 @@ def _subtitle(
         return
     stream(
         request,
-        command=media.subtitle_command(subtitle=subtitle, time=_time(query)),
+        source=media.subtitle(subtitle=subtitle, time=_time(query)),
         content_type="text/vtt; charset=utf-8",
         head=head,
     )
