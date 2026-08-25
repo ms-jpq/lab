@@ -35,6 +35,10 @@ def _scale_filter(*, height: int) -> str:
     return f"scale=-2:min({height}\\,ih):force_original_aspect_ratio=decrease"
 
 
+def _source(*, path: PathLike[str], time: str) -> tuple[str | PathLike[str], ...]:
+    return ("-ss", time, "-copyts", "-i", path, "-ss", time)
+
+
 @dataclass(frozen=True, slots=True)
 class Stream:
     index: str
@@ -63,7 +67,6 @@ def _command(
     *,
     path: PathLike[str],
     videos: tuple[Stream, ...],
-    audios: tuple[Stream, ...],
     audio: str,
     height: int | None,
     time: str,
@@ -76,12 +79,11 @@ def _command(
             yield from ("-vaapi_device", _VAAPI_DEVICE)
         case None:
             pass
-    yield from ("-ss", time, "-i", path)
+    yield from _source(path=path, time=time)
 
     if audio:
-        selected = next(stream for stream in audios if stream.index == audio)
         yield from ("-map", f"0:{audio}")
-        yield from ("-c:a", "copy" if selected.codec == "aac" else "aac")
+        yield from ("-c:a", "aac")
 
     match video, height:
         case None, _:
@@ -109,10 +111,7 @@ def _subtitle_command(
 ) -> tuple[str | PathLike[str], ...]:
     return (
         *_COMMAND_PREFIX,
-        "-i",
-        path,
-        "-ss",
-        time,
+        *_source(path=path, time=time),
         "-map",
         f"0:{subtitle.index}",
         "-output_ts_offset",
@@ -185,7 +184,6 @@ class Probe:
                 _command(
                     path=self.path,
                     videos=self.videos,
-                    audios=self.audios,
                     audio=audio,
                     height=height,
                     time=time,
