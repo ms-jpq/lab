@@ -28,6 +28,10 @@ const subtitle = /** @type {HTMLTrackElement | null} */ (
   document.querySelector("#subtitle")
 )
 
+const playback = /** @type {HTMLButtonElement} */ (
+  document.querySelector("#playback")
+)
+
 const page_url = new URL(location.href)
 const transformed = scrubber.dataset.transformed === "true"
 
@@ -37,8 +41,6 @@ let attempts = 0
 let loaded = false
 /** @type {number | undefined} */
 let retry_timer
-/** @type {number | undefined} */
-let click_timer
 
 const format_time = (value = 0) => {
   const seconds = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0
@@ -78,28 +80,6 @@ const toggle_playback = () => {
   } else {
     media.pause()
   }
-}
-
-const fullscreen = () => {
-  if (click_timer !== undefined) {
-    clearTimeout(click_timer)
-    click_timer = undefined
-  }
-  if (document.fullscreenElement) {
-    document.exitFullscreen().catch(() => {})
-  } else {
-    document.documentElement.requestFullscreen().catch(() => {})
-  }
-}
-
-const click_media = () => {
-  if (click_timer !== undefined) {
-    return
-  }
-  click_timer = setTimeout(() => {
-    click_timer = undefined
-    toggle_playback()
-  }, 250)
 }
 
 const sync_position = () => {
@@ -200,5 +180,5 @@ media.addEventListener("loadedmetadata", () => {
 media.addEventListener("error", retry_stream)
 scrubber.addEventListener("input", preview_position)
 scrubber.addEventListener("change", () => seek())
-media.addEventListener("click", click_media)
-media.addEventListener("dblclick", fullscreen)
+media.addEventListener("click", toggle_playback)
+playback.addEventListener("click", toggle_playback)
