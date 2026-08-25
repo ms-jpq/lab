@@ -18,7 +18,7 @@ MP4_FORMATS = frozenset({"3g2", "3gp", "mj2", "mov", "mp4", "m4a"})
 
 _COMMAND_PREFIX = ("nice", "--adjustment=19", "--", "ffmpeg", "-v", "error", "-nostdin")
 _VAAPI_DEVICE = "/dev/dri/renderD128"
-_ASS_OVERRIDE = compile(rb"\{\\[^}\r\n]*\}")
+_ASS_OVERRIDE = compile(rb"\{[^}\r\n]*\\[^}\r\n]*\}")
 _COMMAND_SUFFIX = (
     "-movflags",
     "frag_keyframe+empty_moov+default_base_moof",
