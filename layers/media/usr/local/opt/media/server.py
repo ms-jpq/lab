@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from functools import partial
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
@@ -56,11 +57,11 @@ def _audio(media: Probe, query: Query) -> str | None:
 
 
 def _time(query: Query) -> str:
-    try:
+    with suppress(OverflowError, ValueError):
         time = float(parameter(query, name="t", default="0"))
-    except (OverflowError, ValueError):
-        return "0"
-    return f"{max(0, time):.3f}" if isfinite(time) else "0"
+        if isfinite(time):
+            return f"{max(0, time):.3f}"
+    return "0"
 
 
 def _media(request: BaseHTTPRequestHandler, *, entry: Entry) -> Probe | None:
@@ -83,6 +84,7 @@ def _index(
     except EntriesError:
         request.send_error(HTTPStatus.FORBIDDEN)
         return
+
     html(
         request,
         body=index_html(entries=selected),
@@ -207,13 +209,6 @@ def _subtitle(
     )
 
 
-def _existing(*, path: Path) -> Entry | None:
-    try:
-        return entry(path=path)
-    except OSError:
-        return None
-
-
 def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> None:
     raw, query = target(request.path)
     if (resolved := resolve(root=root, raw=raw)) is None:
@@ -221,7 +216,7 @@ def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> Non
         return
     relative, path = resolved
 
-    match _existing(path=path):
+    match entry(path=path):
         case source, data if S_ISDIR(data.st_mode):
             if not raw.endswith(sep):
                 redirect(request, location=f"{curdir}{sep}")
@@ -240,7 +235,7 @@ def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> Non
         case _:
             pass
 
-    match _existing(path=path.parent):
+    match entry(path=path.parent):
         case source, data if S_ISREG(data.st_mode):
             match relative.name:
                 case "play":

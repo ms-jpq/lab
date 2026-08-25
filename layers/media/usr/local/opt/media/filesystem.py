@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from os import stat_result
 from pathlib import Path, PurePosixPath
 from posixpath import curdir, pardir
@@ -13,13 +14,11 @@ class EntriesError(Exception): ...
 
 
 def entry(*, path: Path) -> Entry | None:
-    try:
+    with suppress(OSError):
         data = path.stat()
-    except FileNotFoundError:
-        return None
-    if not S_ISDIR(data.st_mode) and not S_ISREG(data.st_mode):
-        return None
-    return path, data
+        if S_ISDIR(data.st_mode) or S_ISREG(data.st_mode):
+            return path, data
+    return None
 
 
 def _entry_order(entry: Entry) -> tuple[bool, str, str]:
@@ -49,10 +48,8 @@ def resolve(*, root: Path, raw: str) -> tuple[PurePosixPath, Path] | None:
         return None
 
     relative = PurePosixPath(*path.parts[1:])
-    try:
+    with suppress(OSError, ValueError):
         target = root.joinpath(*relative.parts).resolve(strict=False)
-    except (OSError, ValueError):
-        return None
-    if not target.is_relative_to(root):
-        return None
-    return relative, target
+        if target.is_relative_to(root):
+            return relative, target
+    return None
