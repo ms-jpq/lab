@@ -1,5 +1,5 @@
 # + transmission-m5_assert([ENV_VERSION_ID])
-+ ffmpeg
++ intel-media-va-driver
 + qbittorrent-nox
 + rclone
 + wireguard-tools

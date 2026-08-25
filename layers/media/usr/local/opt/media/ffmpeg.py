@@ -52,7 +52,7 @@ def _vaapi_available() -> bool:
                 "-f",
                 "lavfi",
                 "-i",
-                "color=c=black:s=16x16",
+                "color=c=black:s=32x32",
                 "-frames:v",
                 "1",
                 "-vf",
