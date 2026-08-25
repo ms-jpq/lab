@@ -45,12 +45,7 @@ const transformed = scrubber.dataset.transformed === "true"
 
 let start = Number(time_input.value)
 let position = start
-let attempts = 0
 let loaded = false
-let buffered_end = Number.NaN
-let buffered_at = performance.now()
-/** @type {number | undefined} */
-let retry_timer
 
 const format_time = (value = 0) => {
   const seconds = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0
@@ -148,42 +143,51 @@ const sync_position = () => {
   history.replaceState(null, "", page_url)
 }
 
-const sync_buffer = () => {
-  const { buffered, currentTime } = media
-  const end = Array.from({ length: buffered.length }, (_, index) => {
-    const start = buffered.start(index)
-    const end = buffered.end(index)
-    return start <= currentTime && currentTime <= end ? end : undefined
-  }).find((end) => end !== undefined)
-  buffered_time_output.value = `+${Math.floor((end ?? currentTime) - currentTime)}s`
+const sync_buffer = (() => {
+  let previous_end = Number.NaN
+  let previous_at = performance.now()
 
-  const now = performance.now()
-  if (
-    end === undefined ||
-    !Number.isFinite(buffered_end) ||
-    end < buffered_end
-  ) {
-    buffered_end = end ?? Number.NaN
-    buffered_at = now
-    loading_speed_output.value = ""
-    return
+  return () => {
+    const { buffered, currentTime } = media
+    let end
+    for (let index = 0; index < buffered.length; index += 1) {
+      const start = buffered.start(index)
+      const candidate = buffered.end(index)
+      if (start <= currentTime && currentTime <= candidate) {
+        end = candidate
+        break
+      }
+    }
+    buffered_time_output.value = `+${Math.floor((end ?? currentTime) - currentTime)}s`
+
+    const now = performance.now()
+    if (
+      end === undefined ||
+      !Number.isFinite(previous_end) ||
+      end < previous_end
+    ) {
+      previous_end = end ?? Number.NaN
+      previous_at = now
+      loading_speed_output.value = ""
+      return
+    }
+    if (end === previous_end) {
+      return
+    }
+    loading_speed_output.value = `${(((end - previous_end) * 1_000) / (now - previous_at)).toFixed(1)}×`
+    previous_end = end
+    previous_at = now
   }
-  if (end === buffered_end) {
-    return
-  }
-  loading_speed_output.value = `${(((end - buffered_end) * 1_000) / (now - buffered_at)).toFixed(1)}×`
-  buffered_end = end
-  buffered_at = now
-}
+})()
+
+const current_position = () =>
+  Number(source_time(media.currentTime + (transformed ? start : 0)))
 
 const update_position = () => {
-  const current = Number(
-    source_time(media.currentTime + (transformed ? start : 0)),
-  )
+  const current = current_position()
   if (!Number.isFinite(current) || current === position) {
     return
   }
-  attempts = 0
   position = current
   scrubber.value = String(position)
   sync_position()
@@ -197,49 +201,92 @@ const preview_position = () => {
   show_position(target)
 }
 
-const seek = ({ playing = !media.paused, reset = true } = {}) => {
-  const target = Number(scrubber.value)
+const seek = ({
+  target = Number(scrubber.value),
+  playing = !media.paused,
+  reset = true,
+  reload = false,
+} = {}) => {
   if (!Number.isFinite(target)) {
     return
   }
-  if (retry_timer !== undefined) {
-    clearTimeout(retry_timer)
-    retry_timer = undefined
-  }
   if (reset) {
-    attempts = 0
+    recovery.reset()
   }
   position = target
   sync_position()
   if (!transformed) {
+    if (reload) {
+      loaded = false
+    }
     load_media()
     media.currentTime = target
-    return
+  } else {
+    loaded = true
+    start = target
+    seek_source(media)
+    if (subtitle) {
+      seek_source(subtitle)
+    }
+    media.load()
   }
-  loaded = true
-  start = target
-  seek_source(media)
-  if (subtitle) {
-    seek_source(subtitle)
-  }
-  media.load()
   if (playing) {
     play_media()
   }
 }
 
-const retry_stream = () => {
-  if (!transformed || retry_timer !== undefined || attempts === 4) {
+/** @param {() => void} restart */
+const retry = (restart) => {
+  let attempts = 0
+  /** @type {number | undefined} */
+  let timer
+
+  const reset = () => {
+    attempts = 0
+    if (timer !== undefined) {
+      clearTimeout(timer)
+      timer = undefined
+    }
+  }
+
+  const schedule = () => {
+    if (timer !== undefined || attempts === 4) {
+      return
+    }
+    attempts += 1
+    timer = setTimeout(
+      () => {
+        timer = undefined
+        restart()
+      },
+      1_000 * 2 ** (attempts - 1),
+    )
+  }
+
+  return { reset, schedule }
+}
+
+let media_ready = false
+let subtitle_ready = subtitle === null
+
+const recovery = retry(() => {
+  const position = current_position()
+  if (!Number.isFinite(position)) {
     return
   }
-  attempts += 1
-  retry_timer = setTimeout(
-    () => {
-      retry_timer = undefined
-      seek({ playing: true, reset: false })
-    },
-    1_000 * 2 ** (attempts - 1),
-  )
+  media_ready = false
+  subtitle_ready = subtitle === null
+  seek({ target: position, playing: !media.paused, reset: false, reload: true })
+})
+
+const recover = () => {
+  recovery.schedule()
+}
+
+const reset_recovery = () => {
+  if (media_ready && subtitle_ready) {
+    recovery.reset()
+  }
 }
 
 sync_position()
@@ -249,11 +296,26 @@ media.addEventListener("timeupdate", update_position)
 media.addEventListener("timeupdate", sync_buffer)
 media.addEventListener("progress", sync_buffer)
 media.addEventListener("loadedmetadata", () => {
+  media_ready = true
+  reset_recovery()
   if (!transformed && position > 0) {
     media.currentTime = position
   }
 })
-media.addEventListener("error", retry_stream)
+media.addEventListener("error", () => {
+  media_ready = false
+  recover()
+})
+if (subtitle) {
+  subtitle.addEventListener("error", () => {
+    subtitle_ready = false
+    recover()
+  })
+  subtitle.addEventListener("load", () => {
+    subtitle_ready = true
+    reset_recovery()
+  })
+}
 scrubber.addEventListener("input", preview_position)
 scrubber.addEventListener("change", () => seek())
 media.addEventListener("click", toggle_playback)
