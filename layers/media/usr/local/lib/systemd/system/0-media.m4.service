@@ -1,14 +1,13 @@
-[Unit]
+[[Unit]]
 Description      = Media Browser
 
-[Service]
+[[Service]]
 Restart          = on-failure
 ProtectSystem    = strict
 ProtectHome      = yes
 PrivateTmp       = yes
 NoNewPrivileges  = yes
 
-ReadOnlyPaths    = /media
 ReadWritePaths   = %t/local/media
 RuntimeDirectory = local/media
 
@@ -16,7 +15,11 @@ User             = 1000
 Group            = www-data
 UMask            = 0007
 
-Environment      = MEDIA_ROOT=/media
-EnvironmentFile  = /usr/local/etc/default/media.env
+Environment      = MEDIA_ROOT=%t/local/media/root
 
+ExecStartPre     = mkdir -p -- ${RUNTIME_DIRECTORY}/root
 ExecStart        = /usr/local/opt/media/main.sh --root ${MEDIA_ROOT} --socket %t/local/media/media.sock
+
+# m5_for([EXPORT], [
+BindReadOnlyPaths = /media/EXPORT:%t/local/media/root/EXPORT
+# ], m5_assert([ENV_MEDIA_EXPORTS]))

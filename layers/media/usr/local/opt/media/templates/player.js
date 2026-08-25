@@ -31,6 +31,9 @@ const transformed = scrubber.dataset.transformed === "true"
 
 let offset = Number(time.value)
 let position = offset
+let attempts = 0
+let retry = 0
+let scheduled = 0
 
 const format_time = (value = 0) => {
   const seconds = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0
@@ -65,17 +68,22 @@ const update = () => {
   if (!Number.isFinite(current) || current === position) {
     return
   }
+  attempts = 0
   position = current
   scrubber.value = String(position)
   sync()
 }
 
-const restart = () => {
+const restart = ({ playing = !media.paused, reset = true } = {}) => {
   const target = Number(scrubber.value)
   if (!Number.isFinite(target)) {
     return
   }
-  const playing = !media.paused
+  retry += 1
+  scheduled = 0
+  if (reset) {
+    attempts = 0
+  }
   position = target
   sync()
   if (!transformed) {
@@ -97,6 +105,25 @@ const restart = () => {
   }
 }
 
+const recover = () => {
+  if (!transformed || scheduled || attempts === 4) {
+    return
+  }
+  attempts += 1
+  const token = ++retry
+  scheduled = token
+  playback.textContent = `Retry ${attempts}/4`
+  setTimeout(
+    () => {
+      if (token === scheduled) {
+        scheduled = 0
+        restart({ playing: true, reset: false })
+      }
+    },
+    1_000 * 2 ** (attempts - 1),
+  )
+}
+
 total_time.value = format_time(Number(scrubber.max))
 sync()
 
@@ -108,6 +135,7 @@ media.addEventListener("loadedmetadata", () => {
     media.currentTime = position
   }
 })
-scrubber.addEventListener("change", restart)
+media.addEventListener("error", recover)
+scrubber.addEventListener("change", () => restart())
 playback.addEventListener("click", play)
 media.addEventListener("click", play)

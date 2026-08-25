@@ -1,6 +1,13 @@
 body {
+  margin: 0;
   padding: 0;
   font-family: sans-serif;
+
+  & > main {
+    margin: 2rem auto;
+    max-width: 72rem;
+    padding: 0 1rem;
+  }
 
   &.player {
     display: grid;
@@ -65,6 +72,10 @@ body {
 ul {
   padding: 0;
   list-style: none;
+
+  & > li + li {
+    margin-top: 0.5rem;
+  }
 }
 
 audio,
