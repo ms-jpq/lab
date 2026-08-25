@@ -83,10 +83,10 @@ with nullcontext():
         request: BaseHTTPRequestHandler,
         *,
         path: Path,
+        size: int,
         content_type: str,
         head: bool,
     ) -> None:
-        size = path.stat().st_size
         if (selected := _range(request.headers.get("Range"), size=size)) is None:
             request.send_response(HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
             request.send_header("Content-Range", f"bytes */{size}")

@@ -98,12 +98,15 @@ def _player(
 ) -> None:
     if (media := _media(request, path=path)) is None:
         return
+
     if not media.videos and not media.audios:
         request.send_error(HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
         return
+
     if (selected := _profile(query)) is None:
         request.send_error(HTTPStatus.BAD_REQUEST)
         return
+
     profile, _ = selected
     audio = _audio(media, query)
     subtitle = parameter(query, name="subtitle", default="")
@@ -112,6 +115,7 @@ def _player(
     ):
         request.send_error(HTTPStatus.BAD_REQUEST)
         return
+
     transformed = (
         profile != _NATIVE_PROFILE or media.direct_content_type(audio=audio) is None
     )

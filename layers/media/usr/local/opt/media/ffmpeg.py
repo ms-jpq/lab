@@ -264,9 +264,9 @@ def _probe(path: Path, modified: int) -> dict[str, Any]:
             assert False, json
 
 
-def probe(*, path: Path) -> Probe:
+def probe(*, path: Path, modified: int) -> Probe:
     try:
-        raw = _probe(path, path.stat().st_mtime_ns)
+        raw = _probe(path, modified)
         return _parse(path=path, raw=raw)
     except (
         CalledProcessError,
