@@ -16,12 +16,16 @@ const current_time_output = /** @type {HTMLOutputElement} */ (
   document.querySelector("#current-time")
 )
 
-const total_time_output = /** @type {HTMLOutputElement} */ (
-  document.querySelector("#total-time")
+const remaining_time_output = /** @type {HTMLOutputElement} */ (
+  document.querySelector("#remaining-time")
 )
 
 const buffered_time_output = /** @type {HTMLOutputElement} */ (
   document.querySelector("#buffered-time")
+)
+
+const loading_speed_output = /** @type {HTMLOutputElement} */ (
+  document.querySelector("#loading-speed")
 )
 
 const subtitle = /** @type {HTMLTrackElement | null} */ (
@@ -32,6 +36,10 @@ const playback = /** @type {HTMLButtonElement} */ (
   document.querySelector("#playback")
 )
 
+const fullscreen = /** @type {HTMLButtonElement} */ (
+  document.querySelector("#fullscreen")
+)
+
 const page_url = new URL(location.href)
 const transformed = scrubber.dataset.transformed === "true"
 
@@ -39,6 +47,8 @@ let start = Number(time_input.value)
 let position = start
 let attempts = 0
 let loaded = false
+let buffered_end = Number.NaN
+let buffered_at = performance.now()
 /** @type {number | undefined} */
 let retry_timer
 
@@ -82,21 +92,58 @@ const toggle_playback = () => {
   }
 }
 
+const toggle_fullscreen = () => {
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(() => {})
+    return
+  }
+  if (media instanceof HTMLVideoElement) {
+    const video =
+      /** @type {HTMLVideoElement & { webkitEnterFullscreen?: () => void }} */ (
+        media
+      )
+    if (typeof video.webkitEnterFullscreen === "function") {
+      video.webkitEnterFullscreen()
+      return
+    }
+  }
+  media.requestFullscreen().catch(() => {})
+}
+
 const sync_position = () => {
   time_input.value = source_time(position)
   current_time_output.value = format_time(position)
+  remaining_time_output.value = `-${format_time(Number(scrubber.max) - position)}`
   page_url.searchParams.set("t", time_input.value)
   history.replaceState(null, "", page_url)
 }
 
 const sync_buffer = () => {
   const { buffered, currentTime } = media
-  const duration = Array.from({ length: buffered.length }, (_, index) =>
-    buffered.start(index) <= currentTime && currentTime <= buffered.end(index)
-      ? buffered.end(index) - currentTime
-      : 0,
-  ).find(Boolean)
-  buffered_time_output.value = `+${Math.floor(duration ?? 0)}s`
+  const end = Array.from({ length: buffered.length }, (_, index) => {
+    const start = buffered.start(index)
+    const end = buffered.end(index)
+    return start <= currentTime && currentTime <= end ? end : undefined
+  }).find((end) => end !== undefined)
+  buffered_time_output.value = `+${Math.floor((end ?? currentTime) - currentTime)}s`
+
+  const now = performance.now()
+  if (
+    end === undefined ||
+    !Number.isFinite(buffered_end) ||
+    end < buffered_end
+  ) {
+    buffered_end = end ?? Number.NaN
+    buffered_at = now
+    loading_speed_output.value = ""
+    return
+  }
+  if (end === buffered_end) {
+    return
+  }
+  loading_speed_output.value = `${(((end - buffered_end) * 1_000) / (now - buffered_at)).toFixed(1)}×`
+  buffered_end = end
+  buffered_at = now
 }
 
 const update_position = () => {
@@ -118,6 +165,7 @@ const preview_position = () => {
     return
   }
   current_time_output.value = format_time(target)
+  remaining_time_output.value = `-${format_time(Number(scrubber.max) - target)}`
 }
 
 const seek = ({ playing = !media.paused, reset = true } = {}) => {
@@ -165,7 +213,6 @@ const retry_stream = () => {
   )
 }
 
-total_time_output.value = format_time(Number(scrubber.max))
 sync_position()
 sync_buffer()
 
@@ -182,3 +229,4 @@ scrubber.addEventListener("input", preview_position)
 scrubber.addEventListener("change", () => seek())
 media.addEventListener("click", toggle_playback)
 playback.addEventListener("click", toggle_playback)
+fullscreen.addEventListener("click", toggle_fullscreen)

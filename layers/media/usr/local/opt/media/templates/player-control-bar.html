@@ -1,6 +1,5 @@
 <span>
   <output id="current-time"></output>
-  <output id="buffered-time"></output>
 </span>
 <input
   id="scrubber"
@@ -12,4 +11,7 @@
   data-transformed="${transformed}"
   value="${time}"
 />
-<output id="total-time"></output>
+<output id="remaining-time"></output>
+<output id="buffered-time"></output>
+<output id="loading-speed" aria-label="Buffer fill rate"></output>
+<button id="fullscreen" type="button" aria-label="Toggle fullscreen">⛶</button>

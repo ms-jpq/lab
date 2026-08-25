@@ -16,25 +16,27 @@
         <!-- ${control_bar} -->
         <form method="get">
           <input name="t" type="hidden" value="${time}" />
-          <label>
-            Profile
-            <select name="profile">
-              <!-- ${profile_options} -->
-            </select>
-          </label>
-          <label>
-            Audio
-            <select name="audio">
-              <!-- ${audio_options} -->
-            </select>
-          </label>
-          <label>
-            Subtitle
-            <select name="subtitle">
-              <!-- ${subtitle_options} -->
-            </select>
-          </label>
-          <button>Apply</button>
+          <div class="selections">
+            <label title="Profile">
+              <span aria-hidden="true">⚙</span>
+              <select name="profile" aria-label="Profile">
+                <!-- ${profile_options} -->
+              </select>
+            </label>
+            <label title="Audio">
+              <span aria-hidden="true">♫</span>
+              <select name="audio" aria-label="Audio">
+                <!-- ${audio_options} -->
+              </select>
+            </label>
+            <label title="Subtitle">
+              <span aria-hidden="true">▤</span>
+              <select name="subtitle" aria-label="Subtitle">
+                <!-- ${subtitle_options} -->
+              </select>
+            </label>
+          </div>
+          <button aria-label="Apply">✓</button>
         </form>
       </div>
     </div>
