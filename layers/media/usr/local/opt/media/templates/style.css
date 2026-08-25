@@ -80,11 +80,17 @@ body {
       pointer-events: auto;
     }
 
+    &:has(audio) > #playback {
+      align-self: stretch;
+      justify-self: stretch;
+      pointer-events: auto;
+    }
+
     & > .control-sensor {
       align-self: end;
       display: grid;
       grid-area: media;
-      z-index: 1;
+      z-index: 3;
 
       & > .control-bar {
         background: Canvas;

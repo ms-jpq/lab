@@ -47,7 +47,9 @@ def _audio(media: Probe, query: Query) -> str | None:
     )
     return (
         audio
-        if not audio or any(item.index == audio for item in media.audios)
+        if any(item.index == audio for item in media.audios)
+        or not audio
+        and media.videos
         else None
     )
 
@@ -110,7 +112,9 @@ def _player(
     ):
         request.send_error(HTTPStatus.BAD_REQUEST)
         return
-    transformed = profile != _NATIVE_PROFILE or not media.direct(audio=audio)
+    transformed = (
+        profile != _NATIVE_PROFILE or media.direct_content_type(audio=audio) is None
+    )
     html(
         request,
         body=player_html(
@@ -147,14 +151,14 @@ def _play(
         request.send_error(HTTPStatus.BAD_REQUEST)
         return
 
-    content_type = "video/mp4" if media.videos else "audio/mp4"
-    if profile == _NATIVE_PROFILE and media.direct(audio=audio):
-        file(request, path=path, content_type=content_type, head=head)
+    direct_content_type = media.direct_content_type(audio=audio)
+    if profile == _NATIVE_PROFILE and direct_content_type:
+        file(request, path=path, content_type=direct_content_type, head=head)
         return
     stream(
         request,
         command=tuple(media.command(audio=audio, height=height, time=_time(query))),
-        content_type=content_type,
+        content_type="video/mp4" if media.videos else "audio/mp4",
         head=head,
     )
 
@@ -189,6 +193,7 @@ def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> Non
         request.send_error(HTTPStatus.NOT_FOUND)
         return
     relative, path = resolved
+
     if path.is_dir():
         if not raw.endswith(sep):
             redirect(request, location=f"{curdir}{sep}")
@@ -198,9 +203,11 @@ def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> Non
     if path.is_file():
         _player(request, relative=relative, path=path, query=query, head=head)
         return
+
     if not path.parent.is_file():
         request.send_error(HTTPStatus.NOT_FOUND)
         return
+
     match relative.name:
         case "play":
             _play(request, path=path.parent, query=query, head=head)

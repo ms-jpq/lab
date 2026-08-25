@@ -60,13 +60,29 @@ class Probe:
     subtitles: tuple[Stream, ...]
     default_audio: Stream | None
 
-    def direct(self, *, audio: str) -> bool:
-        return (
-            bool(self.formats & MP4_FORMATS)
-            and all(stream.codec == "h264" for stream in self.videos)
-            and (self.default_audio is None or self.default_audio.codec == "aac")
-            and audio == (self.default_audio.index if self.default_audio else "")
-        )
+    def direct_content_type(self, *, audio: str) -> str | None:
+        match self.videos, self.default_audio:
+            case videos, None if (
+                not audio
+                and self.formats & MP4_FORMATS
+                and all(stream.codec == "h264" for stream in videos)
+            ):
+                return "video/mp4"
+
+            case videos, Stream(index=index, codec="aac") if (
+                audio == index
+                and self.formats & MP4_FORMATS
+                and all(stream.codec == "h264" for stream in videos)
+            ):
+                return "video/mp4" if videos else "audio/mp4"
+
+            case (), Stream(index=index, codec="mp3") if (
+                audio == index and "mp3" in self.formats
+            ):
+                return "audio/mpeg"
+
+            case _:
+                return None
 
     def command(
         self,
