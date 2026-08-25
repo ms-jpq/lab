@@ -135,11 +135,11 @@ const seek = ({ playing = !media.paused, reset = true } = {}) => {
   }
   loaded = true
   start = target
-  const source = new URL(media.dataset.src ?? media.src)
+  const source = new URL(media.dataset.src ?? media.src, location.href)
   source.searchParams.set("t", time_input.value)
   media.src = source.toString()
   if (subtitle) {
-    const source = new URL(subtitle.dataset.src ?? subtitle.src)
+    const source = new URL(subtitle.dataset.src ?? subtitle.src, location.href)
     source.searchParams.set("t", time_input.value)
     subtitle.src = source.toString()
   }
