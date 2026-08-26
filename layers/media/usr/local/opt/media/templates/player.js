@@ -9,22 +9,24 @@ const subtitle = /** @type {HTMLTrackElement | null} */ (
   document.querySelector("#subtitle")
 )
 
-const mse = media.dataset.transformed === "true" ? new MediaSource() : undefined
+const transformed = media.dataset.transformed === "true"
 const MAX_PLAY_AHEAD = 30
 
 /**
+ * @param {MediaSource} mse
  * @param {SourceBuffer} buffer
  * @param {AbortSignal} signal
  * @param {() => void} operation
  */
-const update = async (buffer, signal, operation) => {
+const mse_buffer_update = async (mse, buffer, signal, operation) => {
   signal.throwIfAborted()
   const { promise, reject, resolve } =
     /** @type {PromiseWithResolvers<void>} */ (Promise.withResolvers())
   buffer.onupdateend = () => resolve(undefined)
   buffer.onerror = (event) => reject(event)
+
   signal.onabort = () => {
-    if (buffer.updating) {
+    if (mse.readyState === "open" && buffer.updating) {
       buffer.abort()
     }
   }
@@ -56,10 +58,13 @@ const mse_buffer = (mse, type) => {
 
   /** @param {Uint8Array} bytes @param {AbortSignal} signal */
   const append = (bytes, signal) =>
-    update(buffer, signal, () => buffer.appendBuffer(bytes))
+    mse_buffer_update(mse, buffer, signal, () => buffer.appendBuffer(bytes))
 
   /** @param {number} position */
-  const seek = (position) => (buffer.timestampOffset = position)
+  const seek = (position) => {
+    buffer.abort()
+    buffer.timestampOffset = position
+  }
 
   /** @param {number} position @param {AbortSignal} signal */
   const prepare = async (position, signal) => {
@@ -69,9 +74,10 @@ const mse_buffer = (mse, type) => {
       if (mse.readyState === "ended" && Number.isFinite(duration)) {
         mse.duration = duration
       }
-      buffer.abort()
       if (Number.isFinite(duration)) {
-        await update(buffer, signal, () => buffer.remove(0, duration))
+        await mse_buffer_update(mse, buffer, signal, () =>
+          buffer.remove(0, duration),
+        )
       }
     }
     seek(position)
@@ -83,7 +89,6 @@ const mse_buffer = (mse, type) => {
     }
   }
 
-  // sort this so it makese more sense in terms of which op need to be there first
   return { frontier, play_ahead, append, seek, prepare, end }
 }
 
@@ -115,8 +120,8 @@ const load_media = (media, source) => {
   media.load()
 }
 
-/** @param {MediaSource} mse */
-const open_mse = async (mse) => {
+const open_mse = async () => {
+  const mse = new MediaSource()
   const opened = Promise.withResolvers()
   const type = /** @type {string} */ (media.dataset.mseType)
   const duration = Number(media.dataset.duration)
@@ -134,10 +139,8 @@ const open_mse = async (mse) => {
   return mse_buffer(mse, type)
 }
 
-/** @param {MediaSource} mse */
-const stream = (mse) => {
+const stream = () => {
   const restart = Symbol("restart")
-  const opened = open_mse(mse)
   let delay = 1_000
   let controller = new AbortController()
   let wake = () => {}
@@ -189,27 +192,30 @@ const stream = (mse) => {
   }
 
   const run = async () => {
-    const buffer = await opened
-
     for (;;) {
-      controller = new AbortController()
+      const buffer = await open_mse()
 
-      try {
-        await buffer.prepare(media.currentTime, controller.signal)
-        for await (const bytes of resumable_stream(buffer)) {
-          await buffer.append(bytes, controller.signal)
+      for (;;) {
+        controller = new AbortController()
+
+        try {
+          await buffer.prepare(media.currentTime, controller.signal)
+          for await (const bytes of resumable_stream(buffer)) {
+            await buffer.append(bytes, controller.signal)
+          }
+          buffer.end()
+          return
+        } catch (error) {
+          controller.abort()
+          if (controller.signal.reason === restart) {
+            continue
+          }
+          console.error(error)
+          await new Promise((resolve) => setTimeout(resolve, delay))
+          delay = Math.min(delay * 2, 8_000)
+          reload_subtitle(true)
+          break
         }
-        buffer.end()
-        return
-      } catch (error) {
-        controller.abort()
-        if (controller.signal.reason === restart) {
-          continue
-        }
-        console.error(error)
-        await new Promise((resolve) => setTimeout(resolve, delay))
-        delay = Math.min(delay * 2, 8_000)
-        reload_subtitle(true)
       }
     }
   }
@@ -217,7 +223,7 @@ const stream = (mse) => {
   return { stop, ready, resume, run, seek }
 }
 
-const streaming = mse === undefined ? undefined : stream(mse)
+const streaming = transformed ? stream() : undefined
 
 {
   const initial_position = Number(time_input.value)
