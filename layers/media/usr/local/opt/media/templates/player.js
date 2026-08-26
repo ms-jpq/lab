@@ -70,9 +70,8 @@ const mse_buffer = (mse, type) => {
     return last < 0 ? undefined : ranges.end(last)
   }
 
-  /** @param {number} position @param {number} [fallback] */
-  const play_ahead = (position, fallback = position) =>
-    (frontier() ?? fallback) - position
+  /** @param {number} position */
+  const play_ahead = (position) => (frontier() ?? position) - position
 
   /** @param {AbortSignal} signal @param {Uint8Array} bytes */
   const append = (signal, bytes) =>
@@ -107,8 +106,8 @@ const mse_buffer = (mse, type) => {
   return { frontier, play_ahead, append, seek, prepare, end }
 }
 
-/** @param {AbortSignal} signal @param {number} time */
-const open_mse = async (signal, time) => {
+/** @param {AbortSignal} signal */
+const open_mse = async (signal) => {
   const mse = new MediaSource()
   const future = Promise.withResolvers()
   const type = /** @type {string} */ (media.dataset.mseType)
@@ -131,7 +130,6 @@ const open_mse = async (signal, time) => {
     media.src = URL.createObjectURL(mse)
     await future.promise
     signal.throwIfAborted()
-    media.currentTime = time
     return mse_buffer(mse, type)
   } finally {
     signal.removeEventListener("abort", abort)
@@ -154,6 +152,7 @@ const stream = () => {
 
   let controller = new AbortController()
   let can_seek = false
+  let expected_time = Number.NaN
   let wake = Promise.withResolvers()
 
   const resume = () => wake.resolve(undefined)
@@ -165,6 +164,12 @@ const stream = () => {
   }
 
   const retry = () => stop(retrying)
+
+  /** @param {number} time */
+  const restore_time = (time) => {
+    expected_time = time > 0 ? time : Number.NaN
+    media.currentTime = time
+  }
 
   /** @param {ReturnType<typeof mse_buffer>} buffer @param {AbortSignal} signal */
   const resumable_stream = async function* (buffer, signal) {
@@ -205,14 +210,16 @@ const stream = () => {
       const { signal } = controller
 
       try {
+        const time = media.currentTime
         if (buffer === undefined) {
           signal.throwIfAborted()
-          buffer = await open_mse(signal, media.currentTime)
+          buffer = await open_mse(signal)
+          restore_time(time)
         }
-        await buffer.prepare(signal, media.currentTime)
+        await buffer.prepare(signal, time)
+        can_seek = true
         for await (const bytes of resumable_stream(buffer, signal)) {
           await buffer.append(signal, bytes)
-          can_seek = true
         }
         buffer.end()
         return
@@ -239,6 +246,10 @@ const stream = () => {
 
   /** @param {number} time */
   const seek = (time) => {
+    if (time === expected_time) {
+      expected_time = Number.NaN
+      return
+    }
     if (can_seek) {
       can_seek = false
       reload_subtitle(time)
@@ -257,47 +268,44 @@ if (subtitle) {
   subtitle.onerror = () => streaming?.retry()
 }
 
-{
-  const initial_position = Number(time_input.value)
+const initial_position = Number(time_input.value)
 
-  if (!streaming) {
-    media.src = source_url(media, media.currentTime)
-    media.load()
-  }
-
-  media.onerror = () => streaming?.retry()
-
+if (!streaming) {
+  media.src = source_url(media, media.currentTime)
+  media.load()
   media.addEventListener(
     "loadedmetadata",
     () => {
-      if (!streaming && initial_position > 0) {
+      if (initial_position > 0) {
         media.currentTime = initial_position
       }
     },
     { once: true },
   )
-
-  media.onplay = () => streaming?.resume()
-
-  media.onseeking = () => {
-    const target = media.currentTime
-    if (!Number.isFinite(target)) {
-      return
-    }
-    set_position(target)
-    streaming?.seek(target)
-  }
-
-  media.ontimeupdate = () => {
-    const current = Math.round(media.currentTime * 1_000) / 1_000
-    if (!Number.isFinite(current)) {
-      return
-    }
-    set_position(current)
-    streaming?.resume()
-  }
-
-  media.currentTime = initial_position
-  set_position(initial_position)
-  streaming?.run()
 }
+
+media.onerror = () => streaming?.retry()
+
+media.onplay = () => streaming?.resume()
+
+media.onseeking = () => {
+  const target = media.currentTime
+  if (!Number.isFinite(target)) {
+    return
+  }
+  set_position(target)
+  streaming?.seek(target)
+}
+
+media.ontimeupdate = () => {
+  const current = Math.round(media.currentTime * 1_000) / 1_000
+  if (!Number.isFinite(current)) {
+    return
+  }
+  set_position(current)
+  streaming?.resume()
+}
+
+media.currentTime = initial_position
+set_position(initial_position)
+streaming?.run()
