@@ -254,19 +254,16 @@ const stream = () => {
 
   /** @param {boolean} seeking @param {number} time */
   const update = (seeking, time) => {
-    if (!seeking) {
-      if (!can_seek) {
-        return false
-      }
-      resume()
-      return true
-    }
-    if (time === restored_time) {
+    if (seeking && time === restored_time) {
       restored_time = Number.NaN
       return false
     }
     if (!can_seek) {
       return false
+    }
+    if (!seeking) {
+      resume()
+      return true
     }
     can_seek = false
     reload_subtitle(time)
