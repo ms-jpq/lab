@@ -19,25 +19,25 @@ const RETRY_DELAY = 1_000
  */
 const mse_buffer_update = async (mse, buffer, signal, operation) => {
   signal.throwIfAborted()
-  const { promise, reject, resolve } =
-    /** @type {PromiseWithResolvers<void>} */ (Promise.withResolvers())
-  buffer.onupdateend = () => resolve(undefined)
-  buffer.onerror = (event) => reject(event)
+  const future = Promise.withResolvers()
+  buffer.onupdateend = () => future.resolve(undefined)
+  buffer.onerror = (event) => future.reject(event)
 
-  signal.onabort = () => {
+  const abort = () => {
     if (mse.readyState === "open" && buffer.updating) {
       buffer.abort()
     }
   }
+  signal.addEventListener("abort", abort)
 
   try {
     operation()
-    await promise
+    await future.promise
     signal.throwIfAborted()
   } finally {
     buffer.onupdateend = null
     buffer.onerror = null
-    signal.onabort = null
+    signal.removeEventListener("abort", abort)
   }
 }
 
@@ -121,7 +121,7 @@ const load_media = (media, source) => {
 
 const open_mse = async () => {
   const mse = new MediaSource()
-  const opened = Promise.withResolvers()
+  const future = Promise.withResolvers()
   const type = /** @type {string} */ (media.dataset.mseType)
   const duration = Number(media.dataset.duration)
 
@@ -130,11 +130,11 @@ const open_mse = async () => {
     if (Number.isFinite(duration) && duration > 0) {
       mse.duration = duration
     }
-    opened.resolve(undefined)
+    future.resolve(undefined)
   }
   load_media(media, URL.createObjectURL(mse))
 
-  await opened.promise
+  await future.promise
   return mse_buffer(mse, type)
 }
 
@@ -189,10 +189,11 @@ const stream = () => {
   const run = async () => {
     for (;;) {
       controller = new AbortController()
-      const { signal } = controller
       const buffer = await open_mse()
 
       for (;;) {
+        const { signal } = controller
+
         try {
           signal.throwIfAborted()
           await buffer.prepare(media.currentTime, signal)
