@@ -124,7 +124,7 @@ const open_mse = async (signal) => {
     },
     { once: true },
   )
-  const abort = () => future.reject(signal.reason)
+  const abort = () => future.resolve(undefined)
   signal.addEventListener("abort", abort, { once: true })
 
   try {
