@@ -155,10 +155,21 @@ const source_stream = async function* (signal, time) {
     const response = await fetch(source_url(media, time), {
       signal: AbortSignal.any([signal, controller.signal]),
     })
-    if (!response.ok || !response.body) {
+    if (!response.ok) {
       throw new Error(`${response.statusText} ${response.status}`)
     }
-    yield* response.body
+    const reader = response.body?.getReader()
+    try {
+      for (;;) {
+        const { done, value } = (await reader?.read()) ?? { done: true }
+        if (done) {
+          return
+        }
+        yield value
+      }
+    } finally {
+      reader?.releaseLock()
+    }
   } finally {
     controller.abort()
   }
