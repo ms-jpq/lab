@@ -79,23 +79,6 @@ const mse_buffer = (mse, type) => {
   return { append, end, frontier, prepare, seek }
 }
 
-/** @param {HTMLMediaElement} media @param {string} source */
-const load_media = (media, source) => {
-  media.src = source
-  media.load()
-}
-
-const page_url = new URL(location.href)
-const initial_position = Number(time_input.value)
-
-/** @param {number} value */
-const set_position = (value) => {
-  const rounded = Math.round(value * 1_000) / 1_000
-  time_input.value = String(rounded)
-  page_url.searchParams.set("t", time_input.value)
-  history.replaceState(null, "", page_url)
-}
-
 /** @param {HTMLMediaElement | HTMLTrackElement} resource @param {number | string} [time] */
 const source_url = (resource, time = media.currentTime) => {
   const source = new URL(
@@ -118,15 +101,17 @@ const reload_subtitle = (retry) => {
   subtitle.src = source.toString()
 }
 
+/** @param {HTMLMediaElement} media @param {string} source */
+const load_media = (media, source) => {
+  media.src = source
+  media.load()
+}
+
 /** @param {MediaSource} mse */
-const stream = (mse) => {
-  const restart = Symbol("restart")
+const open_mse = async (mse) => {
   const opened = Promise.withResolvers()
   const type = /** @type {string} */ (media.dataset.mseType)
   const duration = Number(media.dataset.duration)
-  let delay = 1_000
-  let controller = new AbortController()
-  let wake = () => {}
 
   mse.onsourceopen = () => {
     mse.onsourceopen = null
@@ -136,6 +121,18 @@ const stream = (mse) => {
     opened.resolve(undefined)
   }
   load_media(media, URL.createObjectURL(mse))
+
+  await opened.promise
+  return mse_buffer(mse, type)
+}
+
+/** @param {MediaSource} mse */
+const stream = (mse) => {
+  const restart = Symbol("restart")
+  const opened = open_mse(mse)
+  let delay = 1_000
+  let controller = new AbortController()
+  let wake = () => {}
 
   const resume = () => wake()
   const ready = () => {
@@ -186,10 +183,7 @@ const stream = (mse) => {
   }
 
   const run = async () => {
-    await opened.promise
-    const buffer = mse_buffer(mse, type)
-    buffer.seek(initial_position)
-    media.currentTime = initial_position
+    const buffer = await opened
 
     for (;;) {
       controller = new AbortController()
@@ -214,13 +208,26 @@ const stream = (mse) => {
     }
   }
 
-  return { fail: stop, ready, resume, run, seek }
+  return { stop, ready, resume, run, seek }
 }
 
 const streaming = mse === undefined ? undefined : stream(mse)
 
 {
-  media.onerror = () => streaming?.fail(new Error("media error"))
+  const initial_position = Number(time_input.value)
+
+  /** @param {number} value */
+  const set_position = (value) => {
+    const page_url = new URL(location.href)
+    const rounded = Math.round(value * 1_000) / 1_000
+    time_input.value = String(rounded)
+    page_url.searchParams.set("t", time_input.value)
+    history.replaceState(null, "", page_url)
+  }
+
+  media.currentTime = initial_position
+
+  media.onerror = () => streaming?.stop(new Error("media error"))
 
   media.onloadedmetadata = () => {
     streaming?.ready()
@@ -259,7 +266,7 @@ const streaming = mse === undefined ? undefined : stream(mse)
 }
 
 if (subtitle) {
-  subtitle.onerror = () => streaming?.fail(new Error("subtitle error"))
+  subtitle.onerror = () => streaming?.stop(new Error("subtitle error"))
   subtitle.onload = () => streaming?.ready()
 }
 
