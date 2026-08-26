@@ -10,33 +10,31 @@
   </head>
   <body class="player">
     <!-- ${player} -->
-    <div class="control-sensor">
-      <div class="control-bar">
-        <form method="get">
-          <input name="t" type="hidden" value="${time}" />
-          <div class="selections">
-            <label title="Profile">
-              <span aria-hidden="true">⚙</span>
-              <select name="profile" aria-label="Profile">
-                <!-- ${profile_options} -->
-              </select>
-            </label>
-            <label title="Audio">
-              <span aria-hidden="true">♫</span>
-              <select name="audio" aria-label="Audio">
-                <!-- ${audio_options} -->
-              </select>
-            </label>
-            <label title="Subtitle">
-              <span aria-hidden="true">▤</span>
-              <select name="subtitle" aria-label="Subtitle">
-                <!-- ${subtitle_options} -->
-              </select>
-            </label>
-          </div>
-          <button aria-label="Apply">✓</button>
-        </form>
-      </div>
+    <div class="control-bar">
+      <form method="get">
+        <input name="t" type="hidden" value="${time}" />
+        <div class="selections">
+          <label title="Profile">
+            <span aria-hidden="true">⚙</span>
+            <select name="profile" aria-label="Profile">
+              <!-- ${profile_options} -->
+            </select>
+          </label>
+          <label title="Audio">
+            <span aria-hidden="true">♫</span>
+            <select name="audio" aria-label="Audio">
+              <!-- ${audio_options} -->
+            </select>
+          </label>
+          <label title="Subtitle">
+            <span aria-hidden="true">▤</span>
+            <select name="subtitle" aria-label="Subtitle">
+              <!-- ${subtitle_options} -->
+            </select>
+          </label>
+        </div>
+        <button aria-label="Apply">✓</button>
+      </form>
     </div>
     <script>
       <!-- ${script} -->

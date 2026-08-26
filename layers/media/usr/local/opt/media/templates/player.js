@@ -10,11 +10,6 @@ const time_input = /** @type {HTMLInputElement} */ (
 
 const MAX_PLAY_AHEAD = 30
 const RETRY_DELAY = 1_000
-const STATE = Object.freeze({
-  INITIAL: "initial",
-  LOADING: "loading",
-  READY: "ready",
-})
 
 /** @param {HTMLMediaElement | HTMLTrackElement} resource @param {number | string} time */
 const source_url = (resource, time) => {
@@ -128,7 +123,9 @@ const reload_subtitle = (time) => {
   subtitle.src = source.toString()
 }
 
-const open_mse = async () => {
+/** @param {AbortSignal} signal */
+const open_mse = async (signal) => {
+  signal.throwIfAborted()
   const mse = new MediaSource()
   const future = Promise.withResolvers()
   const type = /** @type {string} */ (media.dataset.mseType)
@@ -144,17 +141,25 @@ const open_mse = async () => {
     },
     { once: true },
   )
-  load_media(media, URL.createObjectURL(mse))
+  const abort = () => future.reject(signal.reason)
+  signal.addEventListener("abort", abort, { once: true })
 
-  await future.promise
-  return mse_buffer(mse, type)
+  try {
+    load_media(media, URL.createObjectURL(mse))
+    await future.promise
+    signal.throwIfAborted()
+    return mse_buffer(mse, type)
+  } finally {
+    signal.removeEventListener("abort", abort)
+  }
 }
 
 const stream = () => {
   const restart = Symbol("restart")
+  const retrying = Symbol("retrying")
+
   let controller = new AbortController()
-  /** @type {(typeof STATE)[keyof typeof STATE]} */
-  let state = STATE.INITIAL
+  let can_seek = false
   let wake = Promise.withResolvers()
 
   const resume = () => wake.resolve(undefined)
@@ -164,6 +169,8 @@ const stream = () => {
     controller.abort(reason)
     resume()
   }
+
+  const retry = () => stop(retrying)
 
   /** @param {ReturnType<typeof mse_buffer>} buffer @param {AbortSignal} signal */
   const resumable_stream = async function* (buffer, signal) {
@@ -196,59 +203,67 @@ const stream = () => {
   }
 
   const run = async () => {
+    /** @type {ReturnType<typeof mse_buffer> | undefined} */
+    let buffer
+
     for (;;) {
-      state = STATE.LOADING
-      const buffer = await open_mse()
-      reload_subtitle(media.currentTime)
+      can_seek = false
+      const { signal } = controller
 
-      for (;;) {
-        const { signal } = controller
-
-        try {
-          signal.throwIfAborted()
-          await buffer.prepare(signal, media.currentTime)
-          for await (const bytes of resumable_stream(buffer, signal)) {
-            await buffer.append(signal, bytes)
-            state = STATE.READY
-          }
-          buffer.end()
-          return
-        } catch (error) {
-          if (signal.reason === restart) {
-            continue
-          }
-          if (signal.aborted) {
-            return
-          }
-          console.error(error)
-        } finally {
-          controller.abort()
-          controller = new AbortController()
+      try {
+        if (buffer === undefined) {
+          buffer = await open_mse(signal)
         }
-        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY))
-        break
+        signal.throwIfAborted()
+        await buffer.prepare(signal, media.currentTime)
+        for await (const bytes of resumable_stream(buffer, signal)) {
+          await buffer.append(signal, bytes)
+          can_seek = true
+        }
+        buffer.end()
+        return
+      } catch (error) {
+        if (signal.reason === restart) {
+          continue
+        }
+        if (signal.aborted && signal.reason !== retrying) {
+          return
+        }
+        if (!signal.aborted) {
+          console.error(error)
+        }
+        buffer = undefined
+        reload_subtitle(media.currentTime)
+      } finally {
+        controller.abort()
+        controller = new AbortController()
       }
+
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY))
     }
   }
 
-  const seek = () => {
-    if (state === STATE.INITIAL) {
-      state = STATE.LOADING
-      void run()
-      return
-    }
-    if (state === STATE.READY) {
-      state = STATE.LOADING
+  const start = () => void run()
+
+  /** @param {number} time */
+  const seek = (time) => {
+    if (can_seek) {
+      can_seek = false
+      reload_subtitle(time)
       stop(restart)
     }
   }
 
-  return { stop, resume, seek }
+  return { retry, stop, resume, seek, start }
 }
 
 const streaming = media.dataset.transformed === "true" ? stream() : undefined
 
 addEventListener("pagehide", (event) => streaming?.stop(event), { once: true })
+
+if (subtitle) {
+  subtitle.onerror = () => streaming?.retry()
+}
 
 {
   const initial_position = Number(time_input.value)
@@ -257,10 +272,9 @@ addEventListener("pagehide", (event) => streaming?.stop(event), { once: true })
 
   if (!streaming) {
     load_media(media, source_url(media, media.currentTime))
-    reload_subtitle(initial_position)
   }
 
-  media.onerror = (event) => streaming?.stop(event)
+  media.onerror = () => streaming?.retry()
 
   media.addEventListener(
     "loadedmetadata",
@@ -280,8 +294,9 @@ addEventListener("pagehide", (event) => streaming?.stop(event), { once: true })
       return
     }
     set_position(target)
-    reload_subtitle(target)
-    streaming?.seek()
+    if (streaming) {
+      streaming.seek(target)
+    }
   }
 
   media.ontimeupdate = () => {
@@ -292,11 +307,8 @@ addEventListener("pagehide", (event) => streaming?.stop(event), { once: true })
     set_position(current)
     streaming?.resume()
   }
+
   set_position(initial_position)
 }
 
-if (subtitle) {
-  subtitle.onerror = (event) => streaming?.stop(event)
-}
-
-streaming?.seek()
+streaming?.start()

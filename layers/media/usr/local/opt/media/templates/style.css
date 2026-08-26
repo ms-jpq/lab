@@ -53,84 +53,71 @@ body {
       object-fit: contain;
     }
 
-    & > .control-sensor {
+    & > .control-bar {
       align-self: start;
+      background: Canvas;
+      box-sizing: border-box;
       grid-area: media;
-      height: 6rem;
-      position: relative;
+      padding: 0.5rem;
       z-index: 3;
+      transform: translateY(-100%);
 
-      & > .control-bar {
-        background: Canvas;
-        box-sizing: border-box;
-        left: 0;
-        padding: 0.5rem;
-        position: absolute;
-        right: 0;
-        top: 0;
-        transform: translateY(-100%);
+      & form {
+        align-items: end;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
 
-        & form {
-          align-items: end;
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.5rem;
+        & > .selections {
+          --selection-width: 9rem;
+          display: grid;
+          flex: 0 1 auto;
+          gap: 0.75rem;
+          grid-template-columns: repeat(3, var(--selection-width));
 
-          & > .selections {
-            --selection-width: 9rem;
-            display: grid;
-            flex: 0 1 auto;
-            gap: 0.75rem;
-            grid-template-columns: repeat(3, var(--selection-width));
+          & > label {
+            align-items: center;
+            display: flex;
+            gap: 0.5rem;
 
-            & > label {
-              align-items: center;
-              display: flex;
-              gap: 0.5rem;
-
-              & > select {
-                flex: 1;
-                min-width: 0;
-              }
+            & > select {
+              flex: 1;
+              min-width: 0;
             }
           }
+        }
 
-          & > button {
-            margin-left: auto;
-          }
+        & > button {
+          margin-left: auto;
         }
       }
+    }
 
-      &:hover > .control-bar,
-      &:focus-within > .control-bar {
-        transform: translateY(0);
-      }
+    &:has(:is(audio, video):paused) > .control-bar {
+      transform: translateY(0);
     }
   }
 }
 
 @media (pointer: coarse) {
   body.player {
-    & > .control-sensor {
-      & > .control-bar {
-        max-width: calc(100vw - 2rem);
-        overflow-x: auto;
-        padding: 0.75rem;
-        transform: translateY(0);
+    & > .control-bar {
+      max-width: calc(100vw - 2rem);
+      overflow-x: auto;
+      padding: 0.75rem;
 
-        & form {
-          & > .selections {
-            flex-basis: 100%;
-            grid-template-columns: repeat(
-              auto-fit,
-              minmax(var(--selection-width), 1fr)
-            );
-          }
+      & form {
+        & > .selections {
+          flex-basis: 100%;
+          grid-template-columns: repeat(
+            auto-fit,
+            minmax(var(--selection-width), 1fr)
+          );
         }
+      }
 
-        & :is(button, select) {
-          min-height: 2.75rem;
-        }
+      & :is(button, select) {
+        min-height: 2.75rem;
       }
     }
   }
