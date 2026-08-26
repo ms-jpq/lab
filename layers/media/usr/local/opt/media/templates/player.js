@@ -41,6 +41,7 @@ const fetch_stream = async function* (url, signal) {
 /** @param {MediaSource} mse @param {string} type */
 const mse_buffer = (mse, type) => {
   const buffer = mse.addSourceBuffer(type)
+  let populated = false
 
   /**
    * @param {() => void} operation
@@ -67,8 +68,9 @@ const mse_buffer = (mse, type) => {
   }
 
   /** @param {Uint8Array} bytes @param {AbortSignal} signal */
-  const append = (bytes, signal) =>
-    update(
+  const append = (bytes, signal) => {
+    populated = true
+    return update(
       () => buffer.appendBuffer(bytes),
       signal,
       () => {
@@ -77,6 +79,7 @@ const mse_buffer = (mse, type) => {
         }
       },
     )
+  }
 
   /** @param {number} position */
   const seek = (position) => {
@@ -85,6 +88,11 @@ const mse_buffer = (mse, type) => {
 
   /** @param {number} position @param {AbortSignal} signal */
   const prepare = async (position, signal) => {
+    signal.throwIfAborted()
+    if (!populated) {
+      seek(position)
+      return
+    }
     const duration = mse.duration
     if (mse.readyState === "ended" && Number.isFinite(duration)) {
       mse.duration = duration
@@ -106,12 +114,10 @@ const load_media = (media, source) => {
 }
 
 /**
- * @param {{ duration: number; media: HTMLMediaElement; mse: MediaSource }} options
+ * @param {{ duration: number; media: HTMLMediaElement; mse: MediaSource; type: string }} options
  */
-const open_mse = ({ duration, media, mse }) => {
-  const opened = /** @type {PromiseWithResolvers<void>} */ (
-    Promise.withResolvers()
-  )
+const open_mse = async ({ duration, media, mse, type }) => {
+  const opened = Promise.withResolvers()
   mse.onsourceopen = () => {
     mse.onsourceopen = null
     if (Number.isFinite(duration) && duration > 0) {
@@ -120,7 +126,23 @@ const open_mse = ({ duration, media, mse }) => {
     opened.resolve(undefined)
   }
   load_media(media, URL.createObjectURL(mse))
-  return opened.promise
+
+  await opened.promise
+  const buffer = mse_buffer(mse, type)
+
+  /** @param {number} position */
+  const seek = (position) => {
+    buffer.seek(position)
+    media.currentTime = position
+  }
+
+  const end = () => {
+    if (mse.readyState === "open") {
+      mse.endOfStream()
+    }
+  }
+
+  return { append: buffer.append, end, prepare: buffer.prepare, seek }
 }
 
 const backoff = () => {
@@ -140,16 +162,13 @@ const backoff = () => {
 
 /**
  * @param {{
- *   media: HTMLMediaElement
- *   mse: MediaSource
- *   opened: Promise<void>
+ *   opened: ReturnType<typeof open_mse>
  *   position: () => number
  *   recover: () => void
  *   source: () => string
- *   type: string
  * }} options
  */
-const stream = ({ media, mse, opened, position, recover, source, type }) => {
+const stream = ({ opened, position, recover, source }) => {
   const restart = Symbol("restart")
   const retry = backoff()
 
@@ -161,29 +180,23 @@ const stream = ({ media, mse, opened, position, recover, source, type }) => {
   const seek = () => controller.abort(restart)
 
   const run = async () => {
-    await opened
-    const buffer = mse_buffer(mse, type)
-    const init_pos = position()
-    buffer.seek(init_pos)
-    media.currentTime = init_pos
+    const buffer = await opened
+    buffer.seek(position())
 
     for (;;) {
-      const current = new AbortController()
-      controller = current
+      controller = new AbortController()
 
       try {
-        await buffer.prepare(position(), current.signal)
+        await buffer.prepare(position(), controller.signal)
 
-        for await (const bytes of fetch_stream(source(), current.signal)) {
-          await buffer.append(bytes, current.signal)
+        for await (const bytes of fetch_stream(source(), controller.signal)) {
+          await buffer.append(bytes, controller.signal)
         }
-        if (mse.readyState === "open") {
-          mse.endOfStream()
-        }
-        await aborted(current.signal)
+        buffer.end()
+        await aborted(controller.signal)
       } catch (error) {
-        current.abort()
-        if (current.signal.reason === restart) {
+        controller.abort()
+        if (controller.signal.reason === restart) {
           continue
         }
         console.error(error)
@@ -240,15 +253,13 @@ void (() => {
       duration: Number(media.dataset.duration),
       media,
       mse,
+      type,
     })
     return stream({
-      media,
-      mse,
       opened,
       position,
       recover: () => reload_subtitle(true),
       source: () => source_url(media),
-      type,
     })
   })()
 
