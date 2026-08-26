@@ -8,308 +8,234 @@ const time_input = /** @type {HTMLInputElement} */ (
   form.elements.namedItem("t")
 )
 
-const scrubber = /** @type {HTMLInputElement} */ (
-  document.querySelector("#scrubber")
-)
-
-const current_time_output = /** @type {HTMLOutputElement} */ (
-  document.querySelector("#current-time")
-)
-
-const remaining_time_output = /** @type {HTMLOutputElement} */ (
-  document.querySelector("#remaining-time")
-)
-
-const buffered_time_output = /** @type {HTMLOutputElement} */ (
-  document.querySelector("#buffered-time")
-)
-
-const loading_speed_output = /** @type {HTMLOutputElement} */ (
-  document.querySelector("#loading-speed")
-)
-
 const subtitle = /** @type {HTMLTrackElement | null} */ (
   document.querySelector("#subtitle")
 )
 
-const playback = /** @type {HTMLButtonElement} */ (
-  document.querySelector("#playback")
-)
-
-const fullscreen = /** @type {HTMLButtonElement} */ (
-  document.querySelector("#fullscreen")
-)
-
 const page_url = new URL(location.href)
-const transformed = scrubber.dataset.transformed === "true"
+const duration = Number(media.dataset.duration)
+const transformed = media.dataset.transformed === "true"
+const RESTART = Symbol("restart")
 
-let start = Number(time_input.value)
-let position = start
-let loaded = false
-
-const format_time = (value = 0) => {
-  const seconds = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0
-  const minutes = Math.floor(seconds / 60)
-  const clock = `${String(minutes % 60).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`
-  return minutes < 60
-    ? `${minutes}:${clock.slice(3)}`
-    : `${Math.floor(minutes / 60)}:${clock}`
-}
+let position = Number(time_input.value)
+let expected_position = Number.NaN
+let requested = false
+let replacing = transformed
+let retry_delay = 1_000
+/** @type {AbortController | undefined} */
+let controller
+let request = () => {}
 
 /** @param {number} value */
 const source_time = (value) => String(Math.round(value * 1_000) / 1_000)
 
 /** @param {number} value */
-const show_position = (value) => {
-  current_time_output.value = format_time(value)
-  remaining_time_output.value = `-${format_time(Number(scrubber.max) - value)}`
+const set_position = (value) => {
+  expected_position = value
+  media.currentTime = value
+}
+
+/** @param {number} delay */
+const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
+
+/** @param {SourceBuffer} buffer @param {Uint8Array} bytes */
+const append = async (buffer, bytes) => {
+  const { promise, reject, resolve } =
+    /** @type {PromiseWithResolvers<void>} */ (Promise.withResolvers())
+  buffer.onupdateend = () => resolve(undefined)
+  buffer.onerror = () => reject()
+  buffer.appendBuffer(bytes)
+  try {
+    await promise
+  } finally {
+    buffer.onupdateend = null
+    buffer.onerror = null
+  }
+}
+
+/** @param {string} url @param {AbortController} controller */
+const fetch_stream = async function* (url, controller) {
+  try {
+    const response = await fetch(url, { signal: controller.signal })
+    if (!response.ok || response.body === null) {
+      throw new Error("stream request failed")
+    }
+    yield* response.body
+  } finally {
+    controller.abort()
+  }
 }
 
 /** @param {HTMLMediaElement | HTMLTrackElement} resource */
 const seek_source = (resource) => {
   const source = new URL(resource.dataset.src ?? resource.src, location.href)
   source.searchParams.set("t", time_input.value)
-  resource.src = source.toString()
-}
-
-const load_media = () => {
-  if (loaded || media.dataset.src === undefined) {
-    return
-  }
-  loaded = true
-  media.src = media.dataset.src
-  if (subtitle && subtitle.dataset.src) {
-    subtitle.src = subtitle.dataset.src
-  }
-  media.load()
-}
-
-const play_media = () => {
-  load_media()
-  media.play().catch(() => {})
-}
-
-const toggle_playback = () => {
-  if (media.paused) {
-    play_media()
+  if (resource === media && transformed) {
+    resource.dataset.src = source.toString()
   } else {
-    media.pause()
-  }
-}
-
-const toggle_fullscreen = () => {
-  if (document.fullscreenElement) {
-    document.exitFullscreen().catch(() => {})
-    return
-  }
-  if (media instanceof HTMLVideoElement) {
-    const video =
-      /** @type {HTMLVideoElement & { webkitEnterFullscreen?: () => void }} */ (
-        media
-      )
-    if (typeof video.webkitEnterFullscreen === "function") {
-      video.webkitEnterFullscreen()
-      return
-    }
-  }
-  media.requestFullscreen().catch(() => {})
-}
-
-/** @param {KeyboardEvent} event */
-const keyboard_control = (event) => {
-  if (
-    event.repeat ||
-    event.target instanceof HTMLInputElement ||
-    event.target instanceof HTMLSelectElement ||
-    event.target instanceof HTMLButtonElement
-  ) {
-    return
-  }
-  if (event.code === "Space") {
-    event.preventDefault()
-    toggle_playback()
-    return
-  }
-  if (event.code === "Enter") {
-    event.preventDefault()
-    toggle_fullscreen()
+    resource.src = source.toString()
   }
 }
 
 const sync_position = () => {
   time_input.value = source_time(position)
-  show_position(position)
   page_url.searchParams.set("t", time_input.value)
   history.replaceState(null, "", page_url)
 }
 
-const sync_buffer = (() => {
-  let previous_end = Number.NaN
-  let previous_at = performance.now()
+const current_position = () => Number(source_time(media.currentTime))
 
-  return () => {
-    const { buffered, currentTime } = media
-    let end
-    for (let index = 0; index < buffered.length; index += 1) {
-      const start = buffered.start(index)
-      const candidate = buffered.end(index)
-      if (start <= currentTime && currentTime <= candidate) {
-        end = candidate
-        break
-      }
-    }
-    buffered_time_output.value = `+${Math.floor((end ?? currentTime) - currentTime)}s`
-
-    const now = performance.now()
-    const speed =
-      end === undefined || !Number.isFinite(previous_end)
-        ? 0
-        : Math.max(0, ((end - previous_end) * 1_000) / (now - previous_at))
-    loading_speed_output.value = `${speed.toFixed(1)}×`
-    previous_end = end ?? Number.NaN
-    previous_at = now
-  }
-})()
-
-const current_position = () =>
-  Number(source_time(media.currentTime + (transformed ? start : 0)))
-
-const update_position = () => {
-  const current = current_position()
-  if (!Number.isFinite(current) || current === position) {
-    return
-  }
-  position = current
-  scrubber.value = String(position)
-  sync_position()
-}
-
-const preview_position = () => {
-  const target = Number(scrubber.value)
+const restart_at = ({ target = media.currentTime } = {}) => {
   if (!Number.isFinite(target)) {
     return
-  }
-  show_position(target)
-}
-
-const seek = ({
-  target = Number(scrubber.value),
-  playing = !media.paused,
-  reset = true,
-  reload = false,
-} = {}) => {
-  if (!Number.isFinite(target)) {
-    return
-  }
-  if (reset) {
-    recovery.reset()
   }
   position = target
   sync_position()
   if (!transformed) {
-    if (reload) {
-      loaded = false
-    }
-    load_media()
-    media.currentTime = target
-  } else {
-    loaded = true
-    start = target
-    seek_source(media)
-    if (subtitle) {
-      seek_source(subtitle)
-    }
-    media.load()
-  }
-  if (playing) {
-    play_media()
-  }
-}
-
-/** @param {() => void} restart */
-const retry = (restart) => {
-  let attempts = 0
-  /** @type {number | undefined} */
-  let timer
-
-  const reset = () => {
-    attempts = 0
-    if (timer !== undefined) {
-      clearTimeout(timer)
-      timer = undefined
-    }
-  }
-
-  const schedule = () => {
-    if (timer !== undefined || attempts === 4) {
-      return
-    }
-    attempts += 1
-    timer = setTimeout(
-      () => {
-        timer = undefined
-        restart()
-      },
-      1_000 * 2 ** (attempts - 1),
-    )
-  }
-
-  return { reset, schedule }
-}
-
-let media_ready = false
-let subtitle_ready = subtitle === null
-
-const recovery = retry(() => {
-  const position = current_position()
-  if (!Number.isFinite(position)) {
+    set_position(target)
     return
   }
-  media_ready = false
-  subtitle_ready = subtitle === null
-  seek({ target: position, playing: !media.paused, reset: false, reload: true })
-})
-
-const recover = () => {
-  recovery.schedule()
+  requested = true
+  replacing = true
+  seek_source(media)
+  if (subtitle) {
+    seek_source(subtitle)
+  }
+  controller?.abort(RESTART)
 }
 
-const reset_recovery = () => {
-  if (media_ready && subtitle_ready) {
-    recovery.reset()
+/** @param {AbortController} current */
+const main_stream = async (current) => {
+  const type = media.dataset.mseType
+  const url = media.dataset.src
+  if (
+    type === undefined ||
+    !MediaSource.isTypeSupported(type) ||
+    url === undefined
+  ) {
+    throw new Error("unsupported MSE source")
+  }
+
+  const source = new MediaSource()
+  const object_url = URL.createObjectURL(source)
+  const { promise, reject, resolve } =
+    /** @type {PromiseWithResolvers<void>} */ (Promise.withResolvers())
+
+  current.signal.onabort = () => reject(current.signal.reason)
+  source.onsourceopen = async () => {
+    try {
+      current.signal.throwIfAborted()
+      if (Number.isFinite(duration) && duration > 0) {
+        source.duration = duration
+      }
+      const buffer = source.addSourceBuffer(type)
+      buffer.timestampOffset = position
+      set_position(position)
+      replacing = false
+
+      const waiting = /** @type {PromiseWithResolvers<void>} */ (
+        Promise.withResolvers()
+      )
+      request = () => waiting.resolve(undefined)
+      if (requested) {
+        request()
+      }
+      await waiting.promise
+      current.signal.onabort = null
+      current.signal.throwIfAborted()
+
+      for await (const bytes of fetch_stream(url, current)) {
+        await append(buffer, bytes)
+      }
+      if (source.readyState === "open") {
+        source.endOfStream()
+      }
+      resolve(undefined)
+    } catch (error) {
+      reject(error)
+    } finally {
+      current.signal.onabort = null
+      source.onsourceopen = null
+      if (controller === current) {
+        request = () => {}
+      }
+    }
+  }
+  media.src = object_url
+  media.load()
+  await promise
+}
+
+/** @param {unknown} error */
+const failure = (error) => {
+  if (transformed && !replacing) {
+    controller?.abort(error)
   }
 }
 
 sync_position()
-sync_buffer()
 
-media.addEventListener("timeupdate", update_position)
-media.addEventListener("timeupdate", sync_buffer)
-media.addEventListener("progress", sync_buffer)
-media.addEventListener("loadedmetadata", () => {
-  media_ready = true
-  reset_recovery()
-  if (!transformed && position > 0) {
-    media.currentTime = position
+{
+  media.ontimeupdate = () => {
+    const current = current_position()
+    if (!Number.isFinite(current) || current === position) {
+      return
+    }
+    position = current
+    sync_position()
   }
-})
-media.addEventListener("error", () => {
-  media_ready = false
-  recover()
-})
-if (subtitle) {
-  subtitle.addEventListener("error", () => {
-    subtitle_ready = false
-    recover()
-  })
-  subtitle.addEventListener("load", () => {
-    subtitle_ready = true
-    reset_recovery()
-  })
+  media.onplay = () => {
+    requested = true
+    request()
+  }
+  media.onloadedmetadata = () => {
+    retry_delay = 1_000
+    if (!transformed && position > 0) {
+      set_position(position)
+    }
+  }
+  media.onseeking = () => {
+    const current = media.currentTime
+    if (!transformed || replacing) {
+      return
+    }
+    if (Math.abs(current - expected_position) < 0.001) {
+      expected_position = Number.NaN
+      return
+    }
+    expected_position = Number.NaN
+    restart_at({ target: current })
+  }
+  media.onerror = () => failure(new Error("media error"))
 }
-scrubber.addEventListener("input", preview_position)
-scrubber.addEventListener("change", () => seek())
-media.addEventListener("click", toggle_playback)
-playback.addEventListener("click", toggle_playback)
-fullscreen.addEventListener("click", toggle_fullscreen)
-document.addEventListener("keydown", keyboard_control)
+
+if (subtitle) {
+  subtitle.onerror = () => failure(new Error("subtitle error"))
+  subtitle.onload = () => {
+    retry_delay = 1_000
+  }
+  subtitle.src = subtitle.dataset.src ?? subtitle.src
+}
+
+if (transformed) {
+  void (async () => {
+    for (;;) {
+      const current = new AbortController()
+      controller = current
+      try {
+        await main_stream(current)
+        return
+      } catch (error) {
+        if (current.signal.reason === RESTART) {
+          continue
+        }
+        console.error(error)
+        await sleep(retry_delay)
+        retry_delay = Math.min(retry_delay * 2, 8_000)
+      }
+    }
+  })()
+} else if (media.dataset.src) {
+  media.src = media.dataset.src
+  media.load()
+}

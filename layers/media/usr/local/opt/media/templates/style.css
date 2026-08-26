@@ -44,6 +44,7 @@ body {
     & :is(audio, video) {
       grid-area: media;
       min-width: 0;
+      width: 100%;
     }
 
     & video {
@@ -52,70 +53,28 @@ body {
       object-fit: contain;
     }
 
-    & > #playback {
-      align-self: center;
-      appearance: none;
-      background: transparent;
-      border: 0;
-      color: inherit;
-      font-size: 6rem;
-      grid-area: media;
-      justify-self: center;
-      line-height: 1;
-      opacity: 0;
-      pointer-events: none;
-      z-index: 2;
-
-      &::after {
-        content: "⏸️";
-      }
-    }
-
-    &:has(:is(audio, video):paused) > #playback {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    &:has(audio) > #playback {
-      align-self: stretch;
-      justify-self: stretch;
-      pointer-events: auto;
-    }
-
-    &:has(:is(audio, video):paused) > .control-sensor > .control-bar {
-      transform: translateY(0);
-    }
-
     & > .control-sensor {
-      align-self: end;
-      display: grid;
+      align-self: start;
       grid-area: media;
+      height: 6rem;
+      position: relative;
       z-index: 3;
 
       & > .control-bar {
         background: Canvas;
         box-sizing: border-box;
-        column-gap: 0.5rem;
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr) auto auto auto auto;
-        padding: 1rem;
-        row-gap: 1rem;
-        transform: translateY(100%);
-
-        & > #scrubber {
-          min-width: 0;
-        }
-
-        & label {
-          min-width: 0;
-        }
+        left: 0;
+        padding: 0.5rem;
+        position: absolute;
+        right: 0;
+        top: 0;
+        transform: translateY(-100%);
 
         & form {
           align-items: end;
           display: flex;
           flex-wrap: wrap;
           gap: 0.5rem;
-          grid-column: 1 / -1;
 
           & > .selections {
             --selection-width: 9rem;
@@ -154,10 +113,10 @@ body {
   body.player {
     & > .control-sensor {
       & > .control-bar {
-        max-height: 50vh;
-        overflow-y: auto;
+        max-width: calc(100vw - 2rem);
+        overflow-x: auto;
         padding: 0.75rem;
-        transform: none;
+        transform: translateY(0);
 
         & form {
           & > .selections {

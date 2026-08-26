@@ -141,7 +141,7 @@ def _player(
     )
 
 
-def _play(
+def _stream(
     request: BaseHTTPRequestHandler,
     *,
     entry: Entry,
@@ -236,8 +236,8 @@ def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> Non
     match entry(path=path.parent):
         case source, data if S_ISREG(data.st_mode):
             match relative.name:
-                case "play":
-                    _play(request, entry=(source, data), query=query, head=head)
+                case "stream":
+                    _stream(request, entry=(source, data), query=query, head=head)
                 case "subtitle":
                     _subtitle(request, entry=(source, data), query=query, head=head)
                 case _:

@@ -20,11 +20,14 @@ _COMMAND_PREFIX = ("nice", "--adjustment=19", "--", "ffmpeg", "-v", "error", "-n
 _VAAPI_DEVICE = "/dev/dri/renderD128"
 _H264_VAAPI_QP = "25"
 _ASS_OVERRIDE = compile(rb"\{[^}\r\n]*\\[^}\r\n]*\}")
+_FRAGMENT_DURATION = str(1_000_000)
 _COMMAND_SUFFIX = (
     "-movflags",
     "frag_keyframe+empty_moov+default_base_moof",
     "-flush_packets",
     "1",
+    "-frag_duration",
+    _FRAGMENT_DURATION,
     "-f",
     "mp4",
     "pipe:1",
@@ -93,6 +96,8 @@ def _command(
             yield from (
                 "-c:v",
                 "h264_vaapi",
+                "-profile:v",
+                "high",
                 "-qp",
                 _H264_VAAPI_QP,
                 "-vf",
@@ -114,8 +119,6 @@ def _subtitle_command(
         *_source(path=path, time=time),
         "-map",
         f"0:{subtitle.index}",
-        "-output_ts_offset",
-        f"-{time}",
         "-f",
         "webvtt",
         "pipe:1",

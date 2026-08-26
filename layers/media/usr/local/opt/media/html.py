@@ -64,11 +64,34 @@ def _entry(*, entry: Entry) -> str:
     )
 
 
-def _player_element(*, has_video: bool, play_url: str, track: str) -> str:
+def _mse_type(*, has_audio: bool, has_video: bool) -> str:
+    match has_video, has_audio:
+        case True, True:
+            return 'video/mp4; codecs="avc1.640033,mp4a.40.2"'
+        case True, False:
+            return 'video/mp4; codecs="avc1.640033"'
+        case False, _:
+            return 'audio/mp4; codecs="mp4a.40.2"'
+        case _:
+            assert False
+
+
+def _player_element(
+    *,
+    duration: str,
+    has_audio: bool,
+    has_video: bool,
+    stream_url: str,
+    track: str,
+    transformed: bool,
+) -> str:
     return _render(
         "player-video.html" if has_video else "player-audio.html",
-        play_url=escape(play_url, quote=True),
+        duration=escape(duration, quote=True),
+        mse_type=_mse_type(has_audio=has_audio, has_video=has_video),
+        stream_url=escape(stream_url, quote=True),
         track=track,
+        transformed=str(transformed).lower(),
     )
 
 
@@ -77,15 +100,6 @@ def _subtitle_track(*, language: str, url: str) -> str:
         "subtitle-track.html",
         language=escape(language, quote=True),
         url=escape(url, quote=True),
-    )
-
-
-def _control_bar(*, duration: str, time: str, transformed: bool) -> str:
-    return _render(
-        "player-control-bar.html",
-        duration=escape(duration, quote=True),
-        time=escape(time, quote=True),
-        transformed=str(transformed).lower(),
     )
 
 
@@ -167,13 +181,16 @@ def player(
             empty="No audio",
         ),
         player=_player_element(
+            duration=probe.duration or "0",
+            has_audio=bool(audio),
             has_video=bool(probe.videos),
-            play_url=_child(
+            stream_url=_child(
                 relative=relative,
-                endpoint="play",
+                endpoint="stream",
                 query=play_query,
             ),
             track=track,
+            transformed=transformed,
         ),
         profile_options=_options(
             ((value, value) for value in profiles), selected=profile
@@ -182,11 +199,6 @@ def player(
             probe.subtitles,
             selected=subtitle,
             empty="None",
-        ),
-        control_bar=_control_bar(
-            duration=probe.duration or "0",
-            time=time,
-            transformed=transformed,
         ),
         script=_resource("player.js"),
         style=_resource("style.css"),
