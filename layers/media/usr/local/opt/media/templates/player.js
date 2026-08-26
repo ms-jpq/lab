@@ -146,6 +146,24 @@ const reload_subtitle = (time) => {
   subtitle.src = source.toString()
 }
 
+/** @param {AbortSignal} signal @param {number} time */
+const source_stream = async function* (signal, time) {
+  signal.throwIfAborted()
+  const controller = new AbortController()
+
+  try {
+    const response = await fetch(source_url(media, time), {
+      signal: AbortSignal.any([signal, controller.signal]),
+    })
+    if (!response.ok || !response.body) {
+      throw new Error(`${response.statusText} ${response.status}`)
+    }
+    yield* response.body
+  } finally {
+    controller.abort()
+  }
+}
+
 /** @param {ReturnType<typeof mse_buffer>} buffer @param {AbortSignal} signal @param {number} time @param {() => Promise<void>} wait */
 const resumable_stream = async function* (buffer, signal, time, wait) {
   const pausing = () =>
@@ -159,13 +177,7 @@ const resumable_stream = async function* (buffer, signal, time, wait) {
 
     const start = buffer.frontier() ?? time
     buffer.seek(start)
-    const response = await fetch(source_url(media, start), { signal })
-
-    if (!response.ok || !response.body) {
-      throw new Error(`${response.statusText} ${response.status}`)
-    }
-
-    for await (const bytes of response.body) {
+    for await (const bytes of source_stream(signal, start)) {
       yield bytes
       if (pausing()) {
         continue resumable
