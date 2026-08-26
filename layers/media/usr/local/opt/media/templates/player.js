@@ -239,6 +239,7 @@ const stream = () => {
 
         await buffer.prepare(signal, time)
         can_seek = true
+        reload_subtitle(time)
         for await (const bytes of resumable_stream(
           buffer,
           signal,
@@ -263,7 +264,6 @@ const stream = () => {
           console.error(error)
         }
         buffer = undefined
-        reload_subtitle(media.currentTime)
       } finally {
         restored_time = Number.NaN
         controller.abort()
@@ -288,7 +288,6 @@ const stream = () => {
       return true
     }
     can_seek = false
-    reload_subtitle(time)
     stop(restart)
     return true
   }
