@@ -57,7 +57,9 @@ const mse_buffer = (mse, type) => {
 
   /** @param {AbortSignal} signal @param {Uint8Array} bytes */
   const append = (signal, bytes) =>
-    mse_buffer_update(mse, buffer, signal, () => buffer.appendBuffer(bytes))
+    mse_buffer_update(mse, buffer, signal, () =>
+      buffer.appendBuffer(new Uint8Array(bytes)),
+    )
 
   /** @param {number} position */
   const seek = (position) => {
@@ -150,31 +152,23 @@ const stream = () => {
 
   /** @param {ReturnType<typeof mse_buffer>} buffer @param {AbortSignal} signal */
   const resumable_stream = async function* (buffer, signal) {
-    resumable: for (;;) {
-      while (buffer.play_ahead(media.currentTime) >= MAX_PLAY_AHEAD) {
+    const start = buffer.frontier() ?? media.currentTime
+    buffer.seek(start)
+    const response = await fetch(source_url(media, start), { signal })
+
+    if (!response.ok || !response.body) {
+      throw new Error(`${response.statusText} ${response.status}`)
+    }
+
+    for await (const bytes of response.body) {
+      yield bytes
+      while (buffer.play_ahead(media.currentTime, start) >= MAX_PLAY_AHEAD) {
         await wake.promise
         signal.throwIfAborted()
         wake = Promise.withResolvers()
       }
-
-      const start = buffer.frontier() ?? media.currentTime
-      buffer.seek(start)
-      const response = await fetch(source_url(media, start), {
-        signal,
-      })
-
-      if (!response.ok || !response.body) {
-        throw new Error(`${response.statusText} ${response.status}`)
-      }
-
-      for await (const bytes of response.body) {
-        yield bytes
-        if (buffer.play_ahead(media.currentTime, start) >= MAX_PLAY_AHEAD) {
-          continue resumable
-        }
-      }
-      return
     }
+    return
   }
 
   const run = async () => {
