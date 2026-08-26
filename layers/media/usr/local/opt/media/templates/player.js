@@ -149,6 +149,7 @@ const reload_subtitle = (time) => {
 
 /** @param {AbortSignal} signal @param {number} time */
 const source_stream = async function* (signal, time) {
+  signal.throwIfAborted()
   const controller = new AbortController()
 
   try {
@@ -168,7 +169,11 @@ const source_stream = async function* (signal, time) {
         yield value
       }
     } finally {
-      reader.releaseLock()
+      try {
+        await reader.cancel()
+      } finally {
+        reader.releaseLock()
+      }
     }
   } finally {
     controller.abort()
