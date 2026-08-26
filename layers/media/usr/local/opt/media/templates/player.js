@@ -168,11 +168,7 @@ const source_stream = async function* (signal, time) {
         yield value
       }
     } finally {
-      try {
-        await reader.cancel()
-      } finally {
-        reader.releaseLock()
-      }
+      reader.releaseLock()
     }
   } finally {
     controller.abort()
@@ -198,6 +194,7 @@ const resumable_stream = async function* (buffer, signal, time, wait) {
         continue resumable
       }
     }
+    return
   }
 }
 
