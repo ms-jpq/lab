@@ -285,9 +285,7 @@ if (subtitle) {
       return
     }
     set_position(target)
-    if (streaming) {
-      streaming.seek(target)
-    }
+    streaming?.seek(target)
   }
 
   media.ontimeupdate = () => {
@@ -301,6 +299,5 @@ if (subtitle) {
 
   media.currentTime = initial_position
   set_position(initial_position)
+  streaming?.run()
 }
-
-streaming?.run()
