@@ -164,10 +164,10 @@ void (() => {
         }
 
         const start = buffer.frontier() ?? position()
-        const request = new AbortController()
+        let capped = false
         buffer.seek(start)
         const response = await fetch(source_url(media, start), {
-          signal: AbortSignal.any([controller.signal, request.signal]),
+          signal: controller.signal,
         })
         if (!response.ok || response.body === null) {
           throw new Error("stream request failed")
@@ -176,12 +176,12 @@ void (() => {
         for await (const bytes of response.body) {
           yield bytes
           if ((buffer.frontier() ?? start) - position() >= MAX_PLAY_AHEAD) {
-            request.abort()
+            capped = true
             break
           }
         }
 
-        if (!request.signal.aborted) {
+        if (!capped) {
           return
         }
       }
