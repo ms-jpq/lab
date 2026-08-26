@@ -136,31 +136,6 @@ const open_mse = async (signal) => {
   }
 }
 
-/**
- * @param {AbortSignal} signal
- */
-const preserve_time = async function* (signal) {
-  const time = media.currentTime
-  yield
-  if (media.currentTime === time) {
-    return
-  }
-
-  const future = Promise.withResolvers()
-  const seeking = () => future.resolve(undefined)
-  const abort = () => future.reject(signal.reason)
-  media.addEventListener("seeking", seeking, { once: true })
-  signal.addEventListener("abort", abort, { once: true })
-
-  try {
-    media.currentTime = time
-    await future.promise
-  } finally {
-    media.removeEventListener("seeking", seeking)
-    signal.removeEventListener("abort", abort)
-  }
-}
-
 /** @param {number | string} time */
 const reload_subtitle = (time) => {
   if (!subtitle) {
@@ -171,6 +146,35 @@ const reload_subtitle = (time) => {
   subtitle.src = source.toString()
 }
 
+/** @param {ReturnType<typeof mse_buffer>} buffer @param {AbortSignal} signal @param {number} time @param {() => Promise<void>} wait */
+const resumable_stream = async function* (buffer, signal, time, wait) {
+  const pausing = () =>
+    media.paused && buffer.play_ahead(media.currentTime) >= MAX_PLAY_AHEAD
+
+  resumable: for (;;) {
+    while (pausing()) {
+      await wait()
+      signal.throwIfAborted()
+    }
+
+    const start = buffer.frontier() ?? time
+    buffer.seek(start)
+    const response = await fetch(source_url(media, start), { signal })
+
+    if (!response.ok || !response.body) {
+      throw new Error(`${response.statusText} ${response.status}`)
+    }
+
+    for await (const bytes of response.body) {
+      yield bytes
+      if (pausing()) {
+        continue resumable
+      }
+    }
+    return
+  }
+}
+
 const stream = () => {
   const restart = Symbol("restart")
   const retrying = Symbol("retrying")
@@ -178,6 +182,7 @@ const stream = () => {
   let controller = new AbortController()
   let can_seek = false
   let wake = Promise.withResolvers()
+  let restored_time = Number.NaN
 
   const resume = () => wake.resolve(undefined)
 
@@ -187,35 +192,9 @@ const stream = () => {
     resume()
   }
 
-  const retry = () => stop(retrying)
-
-  /** @param {ReturnType<typeof mse_buffer>} buffer @param {AbortSignal} signal */
-  const resumable_stream = async function* (buffer, signal) {
-    const pausing = () =>
-      media.paused && buffer.play_ahead(media.currentTime) >= MAX_PLAY_AHEAD
-
-    resumable: for (;;) {
-      while (pausing()) {
-        await wake.promise
-        signal.throwIfAborted()
-        wake = Promise.withResolvers()
-      }
-
-      const start = buffer.frontier() ?? media.currentTime
-      buffer.seek(start)
-      const response = await fetch(source_url(media, start), { signal })
-
-      if (!response.ok || !response.body) {
-        throw new Error(`${response.statusText} ${response.status}`)
-      }
-
-      for await (const bytes of response.body) {
-        yield bytes
-        if (pausing()) {
-          continue resumable
-        }
-      }
-      return
+  const retry = () => {
+    if (can_seek) {
+      stop(retrying)
     }
   }
 
@@ -226,22 +205,30 @@ const stream = () => {
     for (;;) {
       can_seek = false
       const { signal } = controller
+      const time = Number(time_input.value)
 
       try {
         if (buffer === undefined) {
           signal.throwIfAborted()
-          for await (const _ of preserve_time(signal)) {
-            buffer = await open_mse(signal)
-          }
+          buffer = await open_mse(signal)
+          restored_time = time
+          media.currentTime = time
         }
 
-        const current = /** @type {ReturnType<typeof mse_buffer>} */ (buffer)
-        await current.prepare(signal, media.currentTime)
+        await buffer.prepare(signal, time)
         can_seek = true
-        for await (const bytes of resumable_stream(current, signal)) {
-          await current.append(signal, bytes)
+        for await (const bytes of resumable_stream(
+          buffer,
+          signal,
+          time,
+          async () => {
+            await wake.promise
+            wake = Promise.withResolvers()
+          },
+        )) {
+          await buffer.append(signal, bytes)
         }
-        current.end()
+        buffer.end()
         return
       } catch (error) {
         if (signal.reason === restart) {
@@ -256,6 +243,7 @@ const stream = () => {
         buffer = undefined
         reload_subtitle(media.currentTime)
       } finally {
+        restored_time = Number.NaN
         controller.abort()
         controller = new AbortController()
       }
@@ -264,16 +252,26 @@ const stream = () => {
     }
   }
 
-  /** @param {number} time */
-  const seek = (time) => {
-    if (can_seek) {
+  /** @param {number} time @param {boolean} seeking */
+  const update = (time, seeking) => {
+    if (seeking && time === restored_time) {
+      restored_time = Number.NaN
+      return false
+    }
+    if (!can_seek) {
+      return false
+    }
+    if (seeking) {
       can_seek = false
       reload_subtitle(time)
       stop(restart)
+    } else {
+      resume()
     }
+    return true
   }
 
-  return { retry, stop, resume, seek, run }
+  return { retry, stop, resume, run, update }
 }
 
 const streaming = media.dataset.transformed === "true" ? stream() : undefined
@@ -309,8 +307,10 @@ media.onseeking = () => {
   if (!Number.isFinite(target)) {
     return
   }
+  if (streaming && !streaming.update(target, true)) {
+    return
+  }
   set_position(target)
-  streaming?.seek(target)
 }
 
 media.ontimeupdate = () => {
@@ -318,8 +318,10 @@ media.ontimeupdate = () => {
   if (!Number.isFinite(current)) {
     return
   }
+  if (streaming && !streaming.update(current, false)) {
+    return
+  }
   set_position(current)
-  streaming?.resume()
 }
 
 media.currentTime = initial_position
