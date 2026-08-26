@@ -141,24 +141,22 @@ const open_mse = async (signal) => {
  */
 const preserve_time = async function* (signal) {
   const time = media.currentTime
-  if (time <= 0) {
-    yield
-    return
-  }
+  yield
 
-  const future = Promise.withResolvers()
-  const seeking = () => future.resolve(undefined)
-  const abort = () => future.reject(signal.reason)
-  media.addEventListener("seeking", seeking, { once: true })
-  signal.addEventListener("abort", abort, { once: true })
+  if (time > 0) {
+    const future = Promise.withResolvers()
+    const seeking = () => future.resolve(undefined)
+    const abort = () => future.reject(signal.reason)
+    media.addEventListener("seeking", seeking, { once: true })
+    signal.addEventListener("abort", abort, { once: true })
 
-  try {
-    yield
-    media.currentTime = time
-    await future.promise
-  } finally {
-    media.removeEventListener("seeking", seeking)
-    signal.removeEventListener("abort", abort)
+    try {
+      media.currentTime = time
+      await future.promise
+    } finally {
+      media.removeEventListener("seeking", seeking)
+      signal.removeEventListener("abort", abort)
+    }
   }
 }
 
