@@ -237,8 +237,6 @@ const stream = () => {
     }
   }
 
-  const start = () => void run()
-
   /** @param {number} time */
   const seek = (time) => {
     if (can_seek) {
@@ -248,7 +246,7 @@ const stream = () => {
     }
   }
 
-  return { retry, stop, resume, seek, start }
+  return { retry, stop, resume, seek, run }
 }
 
 const streaming = media.dataset.transformed === "true" ? stream() : undefined
@@ -305,4 +303,4 @@ if (subtitle) {
   set_position(initial_position)
 }
 
-streaming?.start()
+streaming?.run()
