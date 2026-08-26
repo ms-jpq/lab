@@ -108,6 +108,7 @@ const mse_buffer = (mse, type) => {
 
 /** @param {AbortSignal} signal */
 const open_mse = async (signal) => {
+  signal.throwIfAborted()
   const mse = new MediaSource()
   const future = Promise.withResolvers()
   const type = /** @type {string} */ (media.dataset.mseType)
@@ -148,7 +149,6 @@ const reload_subtitle = (time) => {
 
 /** @param {AbortSignal} signal @param {number} time */
 const source_stream = async function* (signal, time) {
-  signal.throwIfAborted()
   const controller = new AbortController()
 
   try {
@@ -231,7 +231,6 @@ const stream = () => {
 
       try {
         if (buffer === undefined) {
-          signal.throwIfAborted()
           buffer = await open_mse(signal)
           restored_time = time
           media.currentTime = time
@@ -317,7 +316,11 @@ if (!streaming) {
   )
 }
 
-media.onerror = () => streaming?.retry()
+media.onerror = () => {
+  if (media.error?.code !== MediaError.MEDIA_ERR_ABORTED) {
+    streaming?.retry()
+  }
+}
 
 media.onplay = () => streaming?.resume()
 
