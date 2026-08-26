@@ -1,14 +1,44 @@
-/** @param {string} selector */
-const element = (selector) => document.querySelector(selector)
-const media = /** @type {HTMLMediaElement} */ (element("video, audio"))
-const form = /** @type {HTMLFormElement} */ (element("form"))
+const media = /** @type {HTMLMediaElement} */ (
+  document.querySelector("video, audio")
+)
+const form = /** @type {HTMLFormElement} */ (document.querySelector("form"))
 const time_input = /** @type {HTMLInputElement} */ (
   form.elements.namedItem("t")
 )
-const subtitle = /** @type {HTMLTrackElement | null} */ (element("#subtitle"))
+const subtitle = /** @type {HTMLTrackElement | null} */ (
+  document.querySelector("#subtitle")
+)
 
 const mse = media.dataset.transformed === "true" ? new MediaSource() : undefined
 const MAX_PLAY_AHEAD = 30
+
+/**
+ * @param {SourceBuffer} buffer
+ * @param {AbortSignal} signal
+ * @param {() => void} operation
+ */
+const update = async (buffer, signal, operation) => {
+  signal.throwIfAborted()
+  const { promise, reject, resolve } =
+    /** @type {PromiseWithResolvers<void>} */ (Promise.withResolvers())
+  buffer.onupdateend = () => resolve(undefined)
+  buffer.onerror = (event) => reject(event)
+  signal.onabort = () => {
+    if (buffer.updating) {
+      buffer.abort()
+    }
+  }
+
+  try {
+    operation()
+    await promise
+    signal.throwIfAborted()
+  } finally {
+    buffer.onupdateend = null
+    buffer.onerror = null
+    signal.onabort = null
+  }
+}
 
 /** @param {MediaSource} mse @param {string} type */
 const mse_buffer = (mse, type) => {
@@ -20,36 +50,13 @@ const mse_buffer = (mse, type) => {
     return last < 0 ? undefined : ranges.end(last)
   }
 
-  /**
-   * @param {() => void} operation
-   * @param {AbortSignal} signal
-   */
-  const update = async (operation, signal) => {
-    signal.throwIfAborted()
-    const { promise, reject, resolve } =
-      /** @type {PromiseWithResolvers<void>} */ (Promise.withResolvers())
-    buffer.onupdateend = () => resolve(undefined)
-    buffer.onerror = () => reject(new Error("MSE update failed"))
-    signal.onabort = () => {
-      if (mse.readyState === "open") {
-        buffer.abort()
-      }
-    }
-
-    try {
-      operation()
-      await promise
-      signal.throwIfAborted()
-    } finally {
-      buffer.onupdateend = null
-      buffer.onerror = null
-      signal.onabort = null
-    }
-  }
+  /** @param {number} position @param {number} [fallback] */
+  const play_ahead = (position, fallback = position) =>
+    (frontier() ?? fallback) - position
 
   /** @param {Uint8Array} bytes @param {AbortSignal} signal */
   const append = (bytes, signal) =>
-    update(() => buffer.appendBuffer(bytes), signal)
+    update(buffer, signal, () => buffer.appendBuffer(bytes))
 
   /** @param {number} position */
   const seek = (position) => (buffer.timestampOffset = position)
@@ -64,7 +71,7 @@ const mse_buffer = (mse, type) => {
       }
       buffer.abort()
       if (Number.isFinite(duration)) {
-        await update(() => buffer.remove(0, duration), signal)
+        await update(buffer, signal, () => buffer.remove(0, duration))
       }
     }
     seek(position)
@@ -76,7 +83,8 @@ const mse_buffer = (mse, type) => {
     }
   }
 
-  return { append, end, frontier, prepare, seek }
+  // sort this so it makese more sense in terms of which op need to be there first
+  return { frontier, play_ahead, append, seek, prepare, end }
 }
 
 /** @param {HTMLMediaElement | HTMLTrackElement} resource @param {number | string} [time] */
@@ -149,28 +157,26 @@ const stream = (mse) => {
 
   /** @param {ReturnType<typeof mse_buffer>} buffer */
   const resumable_stream = async function* (buffer) {
-    const play_ahead = (fallback = media.currentTime) =>
-      (buffer.frontier() ?? fallback) - media.currentTime
-
     for (;;) {
-      while (play_ahead() >= MAX_PLAY_AHEAD) {
+      while (buffer.play_ahead(media.currentTime) >= MAX_PLAY_AHEAD) {
         await new Promise((resolve) => (wake = () => resolve(undefined)))
         controller.signal.throwIfAborted()
       }
 
       const start = buffer.frontier() ?? media.currentTime
-      let capped = false
       buffer.seek(start)
       const response = await fetch(source_url(media, start), {
         signal: controller.signal,
       })
-      if (!response.ok || response.body === null) {
-        throw new Error("stream request failed")
+
+      if (!response.ok || !response.body) {
+        throw new Error(`${response.statusText} ${response.status}`)
       }
 
+      let capped = false
       for await (const bytes of response.body) {
         yield bytes
-        if (play_ahead(start) >= MAX_PLAY_AHEAD) {
+        if (buffer.play_ahead(media.currentTime, start) >= MAX_PLAY_AHEAD) {
           capped = true
           break
         }
@@ -227,7 +233,7 @@ const streaming = mse === undefined ? undefined : stream(mse)
 
   media.currentTime = initial_position
 
-  media.onerror = () => streaming?.stop(new Error("media error"))
+  media.onerror = (event) => streaming?.stop(event)
 
   media.onloadedmetadata = () => {
     streaming?.ready()
@@ -266,7 +272,7 @@ const streaming = mse === undefined ? undefined : stream(mse)
 }
 
 if (subtitle) {
-  subtitle.onerror = () => streaming?.stop(new Error("subtitle error"))
+  subtitle.onerror = (event) => streaming?.stop(event)
   subtitle.onload = () => streaming?.ready()
 }
 
