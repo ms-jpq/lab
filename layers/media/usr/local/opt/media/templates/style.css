@@ -102,9 +102,9 @@ body {
 @media (pointer: coarse) {
   body.player {
     & > .control-bar {
-      max-width: calc(100vw - 2rem);
       overflow-x: auto;
       padding: 0.75rem;
+      width: 100%;
 
       & form {
         & > .selections {

@@ -11,6 +11,14 @@ const time_input = /** @type {HTMLInputElement} */ (
 const MAX_PLAY_AHEAD = 30
 const RETRY_DELAY = 1_000
 
+const media_source = () => {
+  const { ManagedMediaSource } =
+    /** @type {typeof globalThis & { ManagedMediaSource?: typeof MediaSource }} */ (
+      globalThis
+    )
+  return new (ManagedMediaSource ?? MediaSource)()
+}
+
 /** @param {HTMLMediaElement | HTMLTrackElement} resource @param {number | string} time */
 const source_url = (resource, time) => {
   const source = new URL(
@@ -109,7 +117,7 @@ const mse_buffer = (mse, type) => {
 /** @param {AbortSignal} signal */
 const open_mse = async (signal) => {
   signal.throwIfAborted()
-  const mse = new MediaSource()
+  const mse = media_source()
   const future = Promise.withResolvers()
   const type = /** @type {string} */ (media.dataset.mseType)
   const duration = Number(media.dataset.duration)
