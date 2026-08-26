@@ -107,25 +107,8 @@ const mse_buffer = (mse, type) => {
   return { frontier, play_ahead, append, seek, prepare, end }
 }
 
-/** @param {HTMLMediaElement} media @param {string} source */
-const load_media = (media, source) => {
-  media.src = source
-  media.load()
-}
-
-/** @param {number | string} time */
-const reload_subtitle = (time) => {
-  if (!subtitle) {
-    return
-  }
-  const source = new URL(source_url(subtitle, time))
-  source.searchParams.set("retry", crypto.randomUUID())
-  subtitle.src = source.toString()
-}
-
-/** @param {AbortSignal} signal */
-const open_mse = async (signal) => {
-  signal.throwIfAborted()
+/** @param {AbortSignal} signal @param {number} time */
+const open_mse = async (signal, time) => {
   const mse = new MediaSource()
   const future = Promise.withResolvers()
   const type = /** @type {string} */ (media.dataset.mseType)
@@ -145,13 +128,24 @@ const open_mse = async (signal) => {
   signal.addEventListener("abort", abort, { once: true })
 
   try {
-    load_media(media, URL.createObjectURL(mse))
+    media.src = URL.createObjectURL(mse)
     await future.promise
     signal.throwIfAborted()
+    media.currentTime = time
     return mse_buffer(mse, type)
   } finally {
     signal.removeEventListener("abort", abort)
   }
+}
+
+/** @param {number | string} time */
+const reload_subtitle = (time) => {
+  if (!subtitle) {
+    return
+  }
+  const source = new URL(source_url(subtitle, time))
+  source.searchParams.set("retry", crypto.randomUUID())
+  subtitle.src = source.toString()
 }
 
 const stream = () => {
@@ -212,9 +206,9 @@ const stream = () => {
 
       try {
         if (buffer === undefined) {
-          buffer = await open_mse(signal)
+          signal.throwIfAborted()
+          buffer = await open_mse(signal, media.currentTime)
         }
-        signal.throwIfAborted()
         await buffer.prepare(signal, media.currentTime)
         for await (const bytes of resumable_stream(buffer, signal)) {
           await buffer.append(signal, bytes)
@@ -268,10 +262,9 @@ if (subtitle) {
 {
   const initial_position = Number(time_input.value)
 
-  media.currentTime = initial_position
-
   if (!streaming) {
-    load_media(media, source_url(media, media.currentTime))
+    media.src = source_url(media, media.currentTime)
+    media.load()
   }
 
   media.onerror = () => streaming?.retry()
@@ -308,6 +301,7 @@ if (subtitle) {
     streaming?.resume()
   }
 
+  media.currentTime = initial_position
   set_position(initial_position)
 }
 
