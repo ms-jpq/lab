@@ -24,6 +24,7 @@ from .http import (
     target,
     unix_server,
 )
+from .lang import select_subtitle
 
 _NATIVE_PROFILE = "native"
 _HEIGHTS = {
@@ -114,7 +115,11 @@ def _player(
 
     profile, _ = selected
     audio = _audio(media, query)
-    subtitle = parameter(query, name="subtitle", default="")
+    subtitle = parameter(query, name="subtitle", default="") or select_subtitle(
+        accept_language=request.headers.get("Accept-Language"),
+        default_audio=media.default_audio,
+        subtitles=media.subtitles,
+    )
     if audio is None or (
         subtitle and not any(stream.index == subtitle for stream in media.subtitles)
     ):
