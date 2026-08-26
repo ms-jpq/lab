@@ -145,6 +145,7 @@ const preserve_time = async function* (signal) {
     yield
     return
   }
+
   const future = Promise.withResolvers()
   const seeking = () => future.resolve(undefined)
   const abort = () => future.reject(signal.reason)
