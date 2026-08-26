@@ -1,16 +1,15 @@
 const media = /** @type {HTMLMediaElement} */ (
   document.querySelector("video, audio")
 )
-const form = /** @type {HTMLFormElement} */ (document.querySelector("form"))
-const time_input = /** @type {HTMLInputElement} */ (
-  form.elements.namedItem("t")
-)
 const subtitle = /** @type {HTMLTrackElement | null} */ (
   document.querySelector("#subtitle")
 )
+const time_input = /** @type {HTMLInputElement} */ (
+  document.querySelector("form")?.elements.namedItem("t")
+)
 
-const transformed = media.dataset.transformed === "true"
 const MAX_PLAY_AHEAD = 30
+const RETRY_DELAY = 1_000
 
 /**
  * @param {MediaSource} mse
@@ -141,14 +140,10 @@ const open_mse = async () => {
 
 const stream = () => {
   const restart = Symbol("restart")
-  let delay = 1_000
   let controller = new AbortController()
   let wake = () => {}
 
   const resume = () => wake()
-  const ready = () => {
-    delay = 1_000
-  }
 
   /** @param {unknown} reason */
   const stop = (reason) => {
@@ -158,18 +153,18 @@ const stream = () => {
 
   const seek = () => stop(restart)
 
-  /** @param {ReturnType<typeof mse_buffer>} buffer */
-  const resumable_stream = async function* (buffer) {
+  /** @param {ReturnType<typeof mse_buffer>} buffer @param {AbortSignal} signal */
+  const resumable_stream = async function* (buffer, signal) {
     for (;;) {
       while (buffer.play_ahead(media.currentTime) >= MAX_PLAY_AHEAD) {
         await new Promise((resolve) => (wake = () => resolve(undefined)))
-        controller.signal.throwIfAborted()
+        signal.throwIfAborted()
       }
 
       const start = buffer.frontier() ?? media.currentTime
       buffer.seek(start)
       const response = await fetch(source_url(media, start), {
-        signal: controller.signal,
+        signal,
       })
 
       if (!response.ok || !response.body) {
@@ -193,26 +188,27 @@ const stream = () => {
 
   const run = async () => {
     for (;;) {
+      controller = new AbortController()
+      const { signal } = controller
       const buffer = await open_mse()
 
       for (;;) {
-        controller = new AbortController()
-
         try {
-          await buffer.prepare(media.currentTime, controller.signal)
-          for await (const bytes of resumable_stream(buffer)) {
-            await buffer.append(bytes, controller.signal)
+          signal.throwIfAborted()
+          await buffer.prepare(media.currentTime, signal)
+          for await (const bytes of resumable_stream(buffer, signal)) {
+            await buffer.append(bytes, signal)
           }
           buffer.end()
           return
         } catch (error) {
           controller.abort()
           if (controller.signal.reason === restart) {
+            controller = new AbortController()
             continue
           }
           console.error(error)
-          await new Promise((resolve) => setTimeout(resolve, delay))
-          delay = Math.min(delay * 2, 8_000)
+          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY))
           reload_subtitle(true)
           break
         }
@@ -220,10 +216,10 @@ const stream = () => {
     }
   }
 
-  return { stop, ready, resume, run, seek }
+  return { stop, resume, run, seek }
 }
 
-const streaming = transformed ? stream() : undefined
+const streaming = media.dataset.transformed === "true" ? stream() : undefined
 
 {
   const initial_position = Number(time_input.value)
@@ -242,7 +238,6 @@ const streaming = transformed ? stream() : undefined
   media.onerror = (event) => streaming?.stop(event)
 
   media.onloadedmetadata = () => {
-    streaming?.ready()
     if (!streaming && initial_position > 0) {
       media.currentTime = initial_position
     }
@@ -279,7 +274,6 @@ const streaming = transformed ? stream() : undefined
 
 if (subtitle) {
   subtitle.onerror = (event) => streaming?.stop(event)
-  subtitle.onload = () => streaming?.ready()
 }
 
 if (streaming) {
