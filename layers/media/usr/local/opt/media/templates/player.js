@@ -136,6 +136,31 @@ const open_mse = async (signal) => {
   }
 }
 
+/**
+ * @param {AbortSignal} signal
+ */
+const preserve_time = async function* (signal) {
+  const time = media.currentTime
+  if (time <= 0) {
+    yield
+    return
+  }
+  const future = Promise.withResolvers()
+  const seeking = () => future.resolve(undefined)
+  const abort = () => future.reject(signal.reason)
+  media.addEventListener("seeking", seeking, { once: true })
+  signal.addEventListener("abort", abort, { once: true })
+
+  try {
+    yield
+    media.currentTime = time
+    await future.promise
+  } finally {
+    media.removeEventListener("seeking", seeking)
+    signal.removeEventListener("abort", abort)
+  }
+}
+
 /** @param {number | string} time */
 const reload_subtitle = (time) => {
   if (!subtitle) {
@@ -152,7 +177,6 @@ const stream = () => {
 
   let controller = new AbortController()
   let can_seek = false
-  let expected_time = Number.NaN
   let wake = Promise.withResolvers()
 
   const resume = () => wake.resolve(undefined)
@@ -164,12 +188,6 @@ const stream = () => {
   }
 
   const retry = () => stop(retrying)
-
-  /** @param {number} time */
-  const restore_time = (time) => {
-    expected_time = time > 0 ? time : Number.NaN
-    media.currentTime = time
-  }
 
   /** @param {ReturnType<typeof mse_buffer>} buffer @param {AbortSignal} signal */
   const resumable_stream = async function* (buffer, signal) {
@@ -210,18 +228,20 @@ const stream = () => {
       const { signal } = controller
 
       try {
-        const time = media.currentTime
         if (buffer === undefined) {
           signal.throwIfAborted()
-          buffer = await open_mse(signal)
-          restore_time(time)
+          for await (const _ of preserve_time(signal)) {
+            buffer = await open_mse(signal)
+          }
         }
-        await buffer.prepare(signal, time)
+
+        const current = /** @type {ReturnType<typeof mse_buffer>} */ (buffer)
+        await current.prepare(signal, media.currentTime)
         can_seek = true
-        for await (const bytes of resumable_stream(buffer, signal)) {
-          await buffer.append(signal, bytes)
+        for await (const bytes of resumable_stream(current, signal)) {
+          await current.append(signal, bytes)
         }
-        buffer.end()
+        current.end()
         return
       } catch (error) {
         if (signal.reason === restart) {
@@ -246,10 +266,6 @@ const stream = () => {
 
   /** @param {number} time */
   const seek = (time) => {
-    if (time === expected_time) {
-      expected_time = Number.NaN
-      return
-    }
     if (can_seek) {
       can_seek = false
       reload_subtitle(time)
