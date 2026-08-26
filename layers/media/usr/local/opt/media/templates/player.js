@@ -183,7 +183,6 @@ const resumable_stream = async function* (buffer, signal, time, wait) {
         continue resumable
       }
     }
-    return
   }
 }
 
