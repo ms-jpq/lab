@@ -152,23 +152,32 @@ const stream = () => {
 
   /** @param {ReturnType<typeof mse_buffer>} buffer @param {AbortSignal} signal */
   const resumable_stream = async function* (buffer, signal) {
-    const start = buffer.frontier() ?? media.currentTime
-    buffer.seek(start)
-    const response = await fetch(source_url(media, start), { signal })
+    const pausing = () =>
+      media.paused && buffer.play_ahead(media.currentTime) >= MAX_PLAY_AHEAD
 
-    if (!response.ok || !response.body) {
-      throw new Error(`${response.statusText} ${response.status}`)
-    }
-
-    for await (const bytes of response.body) {
-      yield bytes
-      while (buffer.play_ahead(media.currentTime, start) >= MAX_PLAY_AHEAD) {
+    resumable: for (;;) {
+      while (pausing()) {
         await wake.promise
         signal.throwIfAborted()
         wake = Promise.withResolvers()
       }
+
+      const start = buffer.frontier() ?? media.currentTime
+      buffer.seek(start)
+      const response = await fetch(source_url(media, start), { signal })
+
+      if (!response.ok || !response.body) {
+        throw new Error(`${response.statusText} ${response.status}`)
+      }
+
+      for await (const bytes of response.body) {
+        yield bytes
+        if (pausing()) {
+          continue resumable
+        }
+      }
+      return
     }
-    return
   }
 
   const run = async () => {
@@ -209,6 +218,8 @@ const stream = () => {
 }
 
 const streaming = media.dataset.transformed === "true" ? stream() : undefined
+
+addEventListener("pagehide", (event) => streaming?.stop(event), { once: true })
 
 {
   const initial_position = Number(time_input.value)
@@ -263,10 +274,9 @@ if (subtitle) {
   subtitle.onerror = (event) => streaming?.stop(event)
 }
 
-if (streaming) {
-  addEventListener("pagehide", (event) => streaming.stop(event), { once: true })
-  void streaming.run()
-} else {
+streaming?.run()
+
+if (!streaming) {
   reload_subtitle()
   load_media(media, source_url(media))
 }
