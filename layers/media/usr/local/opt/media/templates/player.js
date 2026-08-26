@@ -22,8 +22,7 @@ let expected_position = Number.NaN
 let requested = false
 let replacing = transformed
 let retry_delay = 1_000
-/** @type {AbortController | undefined} */
-let controller
+let controller = new AbortController()
 let request = () => {}
 
 /** @param {number} value */
@@ -97,13 +96,13 @@ const restart_at = ({ target = media.currentTime } = {}) => {
   if (subtitle) {
     seek_source(subtitle)
   }
-  controller?.abort(RESTART)
+  controller.abort(RESTART)
 }
 
 /** @param {unknown} error */
 const failure = (error) => {
   if (transformed && !replacing) {
-    controller?.abort(error)
+    controller.abort(error)
   }
 }
 
