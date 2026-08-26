@@ -120,6 +120,7 @@ def stream(
     content_type: str,
     head: bool,
 ) -> None:
+    request.close_connection = True
     request.send_response(HTTPStatus.OK)
     request.send_header("Content-Type", content_type)
     request.send_header("Cache-Control", "no-store")
