@@ -55,8 +55,8 @@ const mse_buffer = (mse, type) => {
   const play_ahead = (position, fallback = position) =>
     (frontier() ?? fallback) - position
 
-  /** @param {Uint8Array} bytes @param {AbortSignal} signal */
-  const append = (bytes, signal) =>
+  /** @param {AbortSignal} signal @param {Uint8Array} bytes */
+  const append = (signal, bytes) =>
     mse_buffer_update(mse, buffer, signal, () => buffer.appendBuffer(bytes))
 
   /** @param {number} position */
@@ -65,8 +65,8 @@ const mse_buffer = (mse, type) => {
     buffer.timestampOffset = position
   }
 
-  /** @param {number} position @param {AbortSignal} signal */
-  const prepare = async (position, signal) => {
+  /** @param {AbortSignal} signal @param {number} position */
+  const prepare = async (signal, position) => {
     signal.throwIfAborted()
     const duration = mse.duration
     if (buffer.buffered.length && Number.isFinite(duration)) {
@@ -187,9 +187,9 @@ const stream = () => {
 
         try {
           signal.throwIfAborted()
-          await buffer.prepare(media.currentTime, signal)
+          await buffer.prepare(signal, media.currentTime)
           for await (const bytes of resumable_stream(buffer, signal)) {
-            await buffer.append(bytes, signal)
+            await buffer.append(signal, bytes)
           }
           buffer.end()
           return
