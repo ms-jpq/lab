@@ -42,18 +42,23 @@ const fetch_stream = async function* (url, signal) {
 const mse_buffer = (mse, type) => {
   const buffer = mse.addSourceBuffer(type)
 
-  /** @param {() => void} operation @param {AbortSignal} signal */
-  const update = async (operation, signal) => {
+  /**
+   * @param {() => void} operation
+   * @param {AbortSignal} signal
+   * @param {(() => void) | undefined} cancel
+   */
+  const update = async (operation, signal, cancel) => {
     signal.throwIfAborted()
     const { promise, reject, resolve } =
       /** @type {PromiseWithResolvers<void>} */ (Promise.withResolvers())
     buffer.onupdateend = () => resolve(undefined)
     buffer.onerror = () => reject(new Error("MSE update failed"))
-    signal.onabort = () => reject(signal.reason)
+    signal.onabort = () => cancel?.()
 
     try {
       operation()
       await promise
+      signal.throwIfAborted()
     } finally {
       buffer.onupdateend = null
       buffer.onerror = null
@@ -63,7 +68,15 @@ const mse_buffer = (mse, type) => {
 
   /** @param {Uint8Array} bytes @param {AbortSignal} signal */
   const append = (bytes, signal) =>
-    update(() => buffer.appendBuffer(bytes), signal)
+    update(
+      () => buffer.appendBuffer(bytes),
+      signal,
+      () => {
+        if (mse.readyState === "open") {
+          buffer.abort()
+        }
+      },
+    )
 
   /** @param {number} position */
   const seek = (position) => {
@@ -78,7 +91,7 @@ const mse_buffer = (mse, type) => {
     }
     buffer.abort()
     if (Number.isFinite(duration)) {
-      await update(() => buffer.remove(0, duration), signal)
+      await update(() => buffer.remove(0, duration), signal, undefined)
     }
     seek(position)
   }
@@ -206,11 +219,16 @@ void (() => {
     return source.toString()
   }
 
-  const reload_subtitle = () => {
+  /** @param {boolean} retry */
+  const reload_subtitle = (retry) => {
     if (!subtitle) {
       return
     }
-    subtitle.src = source_url(subtitle)
+    const source = new URL(source_url(subtitle))
+    if (retry) {
+      source.searchParams.set("retry", crypto.randomUUID())
+    }
+    subtitle.src = source.toString()
   }
 
   const streaming = (() => {
@@ -228,7 +246,7 @@ void (() => {
       mse,
       opened,
       position,
-      recover: reload_subtitle,
+      recover: () => reload_subtitle(true),
       source: () => source_url(media),
       type,
     })
@@ -236,7 +254,7 @@ void (() => {
 
   const start = () => {
     media.onplay = null
-    reload_subtitle()
+    reload_subtitle(false)
     void streaming?.run()
   }
 
@@ -247,7 +265,7 @@ void (() => {
     }
     set_position(target)
     if (media.onplay === null) {
-      reload_subtitle()
+      reload_subtitle(false)
     }
     streaming?.seek()
   }
