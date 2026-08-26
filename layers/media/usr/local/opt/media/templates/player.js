@@ -155,7 +155,7 @@ const stream = () => {
 
   /** @param {ReturnType<typeof mse_buffer>} buffer @param {AbortSignal} signal */
   const resumable_stream = async function* (buffer, signal) {
-    for (;;) {
+    resumable: for (;;) {
       while (buffer.play_ahead(media.currentTime) >= MAX_PLAY_AHEAD) {
         await new Promise((resolve) => (wake = () => resolve(undefined)))
         signal.throwIfAborted()
@@ -171,18 +171,13 @@ const stream = () => {
         throw new Error(`${response.statusText} ${response.status}`)
       }
 
-      let capped = false
       for await (const bytes of response.body) {
         yield bytes
         if (buffer.play_ahead(media.currentTime, start) >= MAX_PLAY_AHEAD) {
-          capped = true
-          break
+          continue resumable
         }
       }
-
-      if (!capped) {
-        return
-      }
+      return
     }
   }
 
