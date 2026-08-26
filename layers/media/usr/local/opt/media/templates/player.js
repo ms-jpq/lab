@@ -10,6 +10,30 @@ const time_input = /** @type {HTMLInputElement} */ (
 
 const MAX_PLAY_AHEAD = 30
 const RETRY_DELAY = 1_000
+const STATE = Object.freeze({
+  INITIAL: "initial",
+  LOADING: "loading",
+  READY: "ready",
+})
+
+/** @param {HTMLMediaElement | HTMLTrackElement} resource @param {number | string} time */
+const source_url = (resource, time) => {
+  const source = new URL(
+    /** @type {string} */ (resource.dataset.src),
+    location.href,
+  )
+  source.searchParams.set("t", String(time))
+  return source.toString()
+}
+
+/** @param {number} value */
+const set_position = (value) => {
+  const page_url = new URL(location.href)
+  const rounded = Math.round(value * 1_000) / 1_000
+  time_input.value = String(rounded)
+  page_url.searchParams.set("t", time_input.value)
+  history.replaceState(null, "", page_url)
+}
 
 /**
  * @param {MediaSource} mse
@@ -88,29 +112,20 @@ const mse_buffer = (mse, type) => {
   return { frontier, play_ahead, append, seek, prepare, end }
 }
 
-/** @param {HTMLMediaElement | HTMLTrackElement} resource @param {number | string} [time] */
-const source_url = (resource, time = media.currentTime) => {
-  const source = new URL(
-    /** @type {string} */ (resource.dataset.src),
-    location.href,
-  )
-  source.searchParams.set("t", String(time))
-  return source.toString()
-}
-
-const reload_subtitle = () => {
-  if (!subtitle) {
-    return
-  }
-  const source = new URL(source_url(subtitle))
-  source.searchParams.set("retry", crypto.randomUUID())
-  subtitle.src = source.toString()
-}
-
 /** @param {HTMLMediaElement} media @param {string} source */
 const load_media = (media, source) => {
   media.src = source
   media.load()
+}
+
+/** @param {number | string} time */
+const reload_subtitle = (time) => {
+  if (!subtitle) {
+    return
+  }
+  const source = new URL(source_url(subtitle, time))
+  source.searchParams.set("retry", crypto.randomUUID())
+  subtitle.src = source.toString()
 }
 
 const open_mse = async () => {
@@ -138,6 +153,8 @@ const open_mse = async () => {
 const stream = () => {
   const restart = Symbol("restart")
   let controller = new AbortController()
+  /** @type {(typeof STATE)[keyof typeof STATE]} */
+  let state = STATE.INITIAL
   let wake = Promise.withResolvers()
 
   const resume = () => wake.resolve(undefined)
@@ -147,8 +164,6 @@ const stream = () => {
     controller.abort(reason)
     resume()
   }
-
-  const seek = () => stop(restart)
 
   /** @param {ReturnType<typeof mse_buffer>} buffer @param {AbortSignal} signal */
   const resumable_stream = async function* (buffer, signal) {
@@ -182,8 +197,9 @@ const stream = () => {
 
   const run = async () => {
     for (;;) {
+      state = STATE.LOADING
       const buffer = await open_mse()
-      reload_subtitle()
+      reload_subtitle(media.currentTime)
 
       for (;;) {
         const { signal } = controller
@@ -193,6 +209,7 @@ const stream = () => {
           await buffer.prepare(signal, media.currentTime)
           for await (const bytes of resumable_stream(buffer, signal)) {
             await buffer.append(signal, bytes)
+            state = STATE.READY
           }
           buffer.end()
           return
@@ -214,7 +231,19 @@ const stream = () => {
     }
   }
 
-  return { stop, resume, run, seek }
+  const seek = () => {
+    if (state === STATE.INITIAL) {
+      state = STATE.LOADING
+      void run()
+      return
+    }
+    if (state === STATE.READY) {
+      state = STATE.LOADING
+      stop(restart)
+    }
+  }
+
+  return { stop, resume, seek }
 }
 
 const streaming = media.dataset.transformed === "true" ? stream() : undefined
@@ -224,16 +253,12 @@ addEventListener("pagehide", (event) => streaming?.stop(event), { once: true })
 {
   const initial_position = Number(time_input.value)
 
-  /** @param {number} value */
-  const set_position = (value) => {
-    const page_url = new URL(location.href)
-    const rounded = Math.round(value * 1_000) / 1_000
-    time_input.value = String(rounded)
-    page_url.searchParams.set("t", time_input.value)
-    history.replaceState(null, "", page_url)
-  }
-
   media.currentTime = initial_position
+
+  if (!streaming) {
+    load_media(media, source_url(media, media.currentTime))
+    reload_subtitle(initial_position)
+  }
 
   media.onerror = (event) => streaming?.stop(event)
 
@@ -255,7 +280,7 @@ addEventListener("pagehide", (event) => streaming?.stop(event), { once: true })
       return
     }
     set_position(target)
-    reload_subtitle()
+    reload_subtitle(target)
     streaming?.seek()
   }
 
@@ -274,9 +299,4 @@ if (subtitle) {
   subtitle.onerror = (event) => streaming?.stop(event)
 }
 
-streaming?.run()
-
-if (!streaming) {
-  reload_subtitle()
-  load_media(media, source_url(media))
-}
+streaming?.seek()
