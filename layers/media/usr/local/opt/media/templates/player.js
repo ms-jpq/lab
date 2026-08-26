@@ -101,15 +101,12 @@ const source_url = (resource, time = media.currentTime) => {
   return source.toString()
 }
 
-/** @param {boolean} retry */
-const reload_subtitle = (retry) => {
+const reload_subtitle = () => {
   if (!subtitle) {
     return
   }
   const source = new URL(source_url(subtitle))
-  if (retry) {
-    source.searchParams.set("retry", crypto.randomUUID())
-  }
+  source.searchParams.set("retry", crypto.randomUUID())
   subtitle.src = source.toString()
 }
 
@@ -141,9 +138,9 @@ const open_mse = async () => {
 const stream = () => {
   const restart = Symbol("restart")
   let controller = new AbortController()
-  let wake = () => {}
+  let wake = Promise.withResolvers()
 
-  const resume = () => wake()
+  const resume = () => wake.resolve(undefined)
 
   /** @param {unknown} reason */
   const stop = (reason) => {
@@ -157,8 +154,9 @@ const stream = () => {
   const resumable_stream = async function* (buffer, signal) {
     resumable: for (;;) {
       while (buffer.play_ahead(media.currentTime) >= MAX_PLAY_AHEAD) {
-        await new Promise((resolve) => (wake = () => resolve(undefined)))
+        await wake.promise
         signal.throwIfAborted()
+        wake = Promise.withResolvers()
       }
 
       const start = buffer.frontier() ?? media.currentTime
@@ -183,8 +181,8 @@ const stream = () => {
 
   const run = async () => {
     for (;;) {
-      controller = new AbortController()
       const buffer = await open_mse()
+      reload_subtitle()
 
       for (;;) {
         const { signal } = controller
@@ -198,16 +196,16 @@ const stream = () => {
           buffer.end()
           return
         } catch (error) {
-          controller.abort()
-          if (controller.signal.reason === restart) {
-            controller = new AbortController()
+          if (signal.reason === restart) {
             continue
           }
           console.error(error)
-          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY))
-          reload_subtitle(true)
-          break
+        } finally {
+          controller.abort()
+          controller = new AbortController()
         }
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY))
+        break
       }
     }
   }
@@ -239,11 +237,7 @@ const streaming = media.dataset.transformed === "true" ? stream() : undefined
     }
   }
 
-  media.onplay = () => {
-    media.onplay = null
-    reload_subtitle(false)
-    streaming?.resume()
-  }
+  media.onplay = () => streaming?.resume()
 
   media.onseeking = () => {
     const target = media.currentTime
@@ -251,9 +245,7 @@ const streaming = media.dataset.transformed === "true" ? stream() : undefined
       return
     }
     set_position(target)
-    if (media.onplay === null) {
-      reload_subtitle(false)
-    }
+    reload_subtitle()
     streaming?.seek()
   }
 
@@ -275,5 +267,6 @@ if (subtitle) {
 if (streaming) {
   void streaming.run()
 } else {
+  reload_subtitle()
   load_media(media, source_url(media))
 }
