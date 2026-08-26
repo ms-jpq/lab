@@ -46,7 +46,7 @@ const mse_buffer = (mse, type) => {
   const buffer = mse.addSourceBuffer(type)
 
   const frontier = () => {
-    const ranges = buffer.buffered
+    const ranges = media.buffered
     const last = ranges.length - 1
     return last < 0 ? undefined : ranges.end(last)
   }
@@ -191,6 +191,9 @@ const stream = () => {
           if (signal.reason === restart) {
             continue
           }
+          if (signal.aborted) {
+            return
+          }
           console.error(error)
         } finally {
           controller.abort()
@@ -261,6 +264,7 @@ if (subtitle) {
 }
 
 if (streaming) {
+  addEventListener("pagehide", (event) => streaming.stop(event), { once: true })
   void streaming.run()
 } else {
   reload_subtitle()
