@@ -28,7 +28,7 @@ const mse_buffer_update = async (mse, buffer, signal, operation) => {
       buffer.abort()
     }
   }
-  signal.addEventListener("abort", abort)
+  signal.addEventListener("abort", abort, { once: true })
 
   try {
     operation()
@@ -68,16 +68,11 @@ const mse_buffer = (mse, type) => {
   /** @param {number} position @param {AbortSignal} signal */
   const prepare = async (position, signal) => {
     signal.throwIfAborted()
-    if (buffer.buffered.length) {
-      const duration = mse.duration
-      if (mse.readyState === "ended" && Number.isFinite(duration)) {
-        mse.duration = duration
-      }
-      if (Number.isFinite(duration)) {
-        await mse_buffer_update(mse, buffer, signal, () =>
-          buffer.remove(0, duration),
-        )
-      }
+    const duration = mse.duration
+    if (buffer.buffered.length && Number.isFinite(duration)) {
+      await mse_buffer_update(mse, buffer, signal, () =>
+        buffer.remove(0, duration),
+      )
     }
     seek(position)
   }
@@ -122,13 +117,16 @@ const open_mse = async () => {
   const type = /** @type {string} */ (media.dataset.mseType)
   const duration = Number(media.dataset.duration)
 
-  mse.onsourceopen = () => {
-    mse.onsourceopen = null
-    if (Number.isFinite(duration) && duration > 0) {
-      mse.duration = duration
-    }
-    future.resolve(undefined)
-  }
+  mse.addEventListener(
+    "sourceopen",
+    () => {
+      if (Number.isFinite(duration) && duration > 0) {
+        mse.duration = duration
+      }
+      future.resolve(undefined)
+    },
+    { once: true },
+  )
   load_media(media, URL.createObjectURL(mse))
 
   await future.promise
@@ -231,11 +229,15 @@ const streaming = media.dataset.transformed === "true" ? stream() : undefined
 
   media.onerror = (event) => streaming?.stop(event)
 
-  media.onloadedmetadata = () => {
-    if (!streaming && initial_position > 0) {
-      media.currentTime = initial_position
-    }
-  }
+  media.addEventListener(
+    "loadedmetadata",
+    () => {
+      if (!streaming && initial_position > 0) {
+        media.currentTime = initial_position
+      }
+    },
+    { once: true },
+  )
 
   media.onplay = () => streaming?.resume()
 
