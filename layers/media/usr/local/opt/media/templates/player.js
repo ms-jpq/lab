@@ -35,9 +35,6 @@ const set_position = (value) => {
   media.currentTime = value
 }
 
-/** @param {number} delay */
-const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
-
 /** @param {SourceBuffer} buffer @param {Uint8Array} bytes */
 const append = async (buffer, bytes) => {
   const { promise, reject, resolve } =
@@ -45,6 +42,7 @@ const append = async (buffer, bytes) => {
   buffer.onupdateend = () => resolve(undefined)
   buffer.onerror = () => reject()
   buffer.appendBuffer(bytes)
+
   try {
     await promise
   } finally {
@@ -83,8 +81,6 @@ const sync_position = () => {
   history.replaceState(null, "", page_url)
 }
 
-const current_position = () => Number(source_time(media.currentTime))
-
 const restart_at = ({ target = media.currentTime } = {}) => {
   if (!Number.isFinite(target)) {
     return
@@ -104,68 +100,6 @@ const restart_at = ({ target = media.currentTime } = {}) => {
   controller?.abort(RESTART)
 }
 
-/** @param {AbortController} current */
-const main_stream = async (current) => {
-  const type = media.dataset.mseType
-  const url = media.dataset.src
-  if (
-    type === undefined ||
-    !MediaSource.isTypeSupported(type) ||
-    url === undefined
-  ) {
-    throw new Error("unsupported MSE source")
-  }
-
-  const source = new MediaSource()
-  const object_url = URL.createObjectURL(source)
-  const { promise, reject, resolve } =
-    /** @type {PromiseWithResolvers<void>} */ (Promise.withResolvers())
-
-  current.signal.onabort = () => reject(current.signal.reason)
-  source.onsourceopen = async () => {
-    try {
-      current.signal.throwIfAborted()
-      if (Number.isFinite(duration) && duration > 0) {
-        source.duration = duration
-      }
-      const buffer = source.addSourceBuffer(type)
-      buffer.timestampOffset = position
-      set_position(position)
-      replacing = false
-
-      const waiting = /** @type {PromiseWithResolvers<void>} */ (
-        Promise.withResolvers()
-      )
-      request = () => waiting.resolve(undefined)
-      if (requested) {
-        request()
-      }
-      await waiting.promise
-      current.signal.onabort = null
-      current.signal.throwIfAborted()
-
-      for await (const bytes of fetch_stream(url, current)) {
-        await append(buffer, bytes)
-      }
-      if (source.readyState === "open") {
-        source.endOfStream()
-      }
-      resolve(undefined)
-    } catch (error) {
-      reject(error)
-    } finally {
-      current.signal.onabort = null
-      source.onsourceopen = null
-      if (controller === current) {
-        request = () => {}
-      }
-    }
-  }
-  media.src = object_url
-  media.load()
-  await promise
-}
-
 /** @param {unknown} error */
 const failure = (error) => {
   if (transformed && !replacing) {
@@ -177,7 +111,7 @@ sync_position()
 
 {
   media.ontimeupdate = () => {
-    const current = current_position()
+    const current = Number(source_time(media.currentTime))
     if (!Number.isFinite(current) || current === position) {
       return
     }
@@ -218,19 +152,78 @@ if (subtitle) {
 }
 
 if (transformed) {
+  const type = media.dataset.mseType
+  const url = media.dataset.src
+
+  if (
+    type === undefined ||
+    !MediaSource.isTypeSupported(type) ||
+    url === undefined
+  ) {
+    throw new Error("unsupported MSE source")
+  }
+
   void (async () => {
     for (;;) {
       const current = new AbortController()
       controller = current
+
       try {
-        await main_stream(current)
+        const source = new MediaSource()
+        const object_url = URL.createObjectURL(source)
+        const { promise, reject, resolve } =
+          /** @type {PromiseWithResolvers<void>} */ (Promise.withResolvers())
+
+        current.signal.onabort = () => reject(current.signal.reason)
+        source.onsourceopen = async () => {
+          try {
+            current.signal.throwIfAborted()
+            if (Number.isFinite(duration) && duration > 0) {
+              source.duration = duration
+            }
+            const buffer = source.addSourceBuffer(type)
+            buffer.timestampOffset = position
+            set_position(position)
+            replacing = false
+
+            const waiting = /** @type {PromiseWithResolvers<void>} */ (
+              Promise.withResolvers()
+            )
+            request = () => waiting.resolve(undefined)
+            if (requested) {
+              request()
+            }
+            await waiting.promise
+            current.signal.onabort = null
+            current.signal.throwIfAborted()
+
+            for await (const bytes of fetch_stream(url, current)) {
+              await append(buffer, bytes)
+            }
+            if (source.readyState === "open") {
+              source.endOfStream()
+            }
+            resolve(undefined)
+          } catch (error) {
+            reject(error)
+          } finally {
+            current.signal.onabort = null
+            source.onsourceopen = null
+            if (controller === current) {
+              request = () => {}
+            }
+          }
+        }
+        media.src = object_url
+        media.load()
+        await promise
         return
       } catch (error) {
         if (current.signal.reason === RESTART) {
           continue
         }
         console.error(error)
-        await sleep(retry_delay)
+        await new Promise((resolve) => setTimeout(resolve, retry_delay))
         retry_delay = Math.min(retry_delay * 2, 8_000)
       }
     }
