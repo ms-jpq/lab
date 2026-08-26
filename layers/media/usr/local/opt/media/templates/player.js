@@ -252,8 +252,8 @@ const stream = () => {
     }
   }
 
-  /** @param {number} time @param {boolean} seeking */
-  const update = (time, seeking) => {
+  /** @param {boolean} seeking @param {number} time */
+  const update = (seeking, time) => {
     if (!seeking) {
       if (!can_seek) {
         return false
@@ -308,7 +308,7 @@ media.onseeking = () => {
   if (!Number.isFinite(target)) {
     return
   }
-  if (streaming && !streaming.update(target, true)) {
+  if (streaming && !streaming.update(true, target)) {
     return
   }
   set_position(target)
@@ -319,7 +319,7 @@ media.ontimeupdate = () => {
   if (!Number.isFinite(current)) {
     return
   }
-  if (streaming && !streaming.update(current, false)) {
+  if (streaming && !streaming.update(false, current)) {
     return
   }
   set_position(current)
