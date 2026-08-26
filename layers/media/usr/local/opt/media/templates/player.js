@@ -35,7 +35,19 @@ const fetch_stream = async function* (url, signal) {
   if (!response.ok || response.body === null) {
     throw new Error("stream request failed")
   }
-  yield* response.body
+  const reader = response.body.getReader()
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) {
+        return
+      }
+      yield value
+    }
+  } finally {
+    reader.releaseLock()
+  }
 }
 
 /** @param {MediaSource} mse @param {string} type */
