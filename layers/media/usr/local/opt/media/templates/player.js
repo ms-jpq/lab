@@ -279,8 +279,6 @@ const stream = () => {
 
 const streaming = media.dataset.transformed === "true" ? stream() : undefined
 
-addEventListener("pagehide", (event) => streaming?.stop(event), { once: true })
-
 if (subtitle) {
   subtitle.onerror = () => streaming?.retry()
 }
