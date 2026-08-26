@@ -142,7 +142,7 @@ const open_mse = async (signal) => {
 const preserve_time = async function* (signal) {
   const time = media.currentTime
   yield
-  if (!time) {
+  if (media.currentTime === time) {
     return
   }
 

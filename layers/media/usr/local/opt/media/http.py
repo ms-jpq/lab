@@ -120,17 +120,18 @@ def stream(
     content_type: str,
     head: bool,
 ) -> None:
-    request.close_connection = True
-
     request.send_response(HTTPStatus.OK)
     request.send_header("Content-Type", content_type)
     request.send_header("Cache-Control", "no-store")
-    request.send_header("Connection", "close")
+    request.send_header("Transfer-Encoding", "chunked")
     request.end_headers()
 
     if not head:
         for chunk in source:
+            request.wfile.write(f"{len(chunk):X}\r\n".encode())
             request.wfile.write(chunk)
+            request.wfile.write(b"\r\n")
+        request.wfile.write(b"0\r\n\r\n")
 
 
 def _handler(handlers: Mapping[str, _HandlerFn]) -> type[BaseHTTPRequestHandler]:
