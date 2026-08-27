@@ -47,8 +47,17 @@ const source_url = (resource, time) => {
 const mse_buffer_update = async function* (signal, mse, buffer) {
   signal.throwIfAborted()
   const future = Promise.withResolvers()
-  buffer.onupdateend = () => future.resolve(undefined)
-  buffer.onerror = (event) => future.reject(event)
+  let failure = /** @type {Event | undefined} */ (undefined)
+  buffer.onerror = (event) => {
+    failure = event
+  }
+  buffer.onupdateend = () => {
+    if (failure === undefined) {
+      future.resolve(undefined)
+    } else {
+      future.reject(failure)
+    }
+  }
 
   const abort = () => {
     if (mse.readyState === "open" && buffer.updating) {
