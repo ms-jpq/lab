@@ -44,7 +44,7 @@ def _source(*, path: PathLike[str], time: str) -> tuple[str | PathLike[str], ...
 
 @dataclass(frozen=True, slots=True)
 class Stream:
-    index: str
+    index: int
     kind: str
     codec: str
     default: bool
@@ -70,7 +70,7 @@ def _command(
     *,
     path: PathLike[str],
     videos: tuple[Stream, ...],
-    audio: str,
+    audio: int | None,
     height: int | None,
     time: str,
 ) -> Iterator[str | PathLike[str]]:
@@ -84,7 +84,7 @@ def _command(
             pass
     yield from _source(path=path, time=time)
 
-    if audio:
+    if audio is not None:
         yield from ("-map", f"0:{audio}")
         yield from ("-c:a", "aac")
 
@@ -151,10 +151,10 @@ class Probe:
     subtitles: tuple[Stream, ...]
     default_audio: Stream | None
 
-    def direct_content_type(self, *, audio: str) -> str | None:
+    def direct_content_type(self, *, audio: int | None) -> str | None:
         match self.videos, self.default_audio:
             case videos, None if (
-                not audio
+                audio is None
                 and self.formats & MP4_FORMATS
                 and all(stream.codec == "h264" for stream in videos)
             ):
@@ -178,7 +178,7 @@ class Probe:
     def stream(
         self,
         *,
-        audio: str,
+        audio: int | None,
         height: int | None,
         time: str,
     ) -> Iterator[bytes]:
@@ -244,7 +244,7 @@ def _parse_stream(*, data: dict[str, Any]) -> Stream | None:
         }:
             width, height = _dimensions(data=metadata)
             return Stream(
-                index=str(index),
+                index=index,
                 kind=kind,
                 codec=codec,
                 default=_default(data=metadata),

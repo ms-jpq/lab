@@ -9,7 +9,7 @@ from pathlib import Path, PurePosixPath
 from posixpath import curdir, sep
 from stat import S_ISDIR, S_ISREG
 
-from .ffmpeg import Probe, ProbeError, probe
+from .ffmpeg import Probe, ProbeError, Stream, probe
 from .filesystem import EntriesError, Entry, entries, entry, resolve
 from .html import index as index_html
 from .html import player as player_html
@@ -42,18 +42,37 @@ def _profile(query: Query) -> tuple[str, int | None] | None:
     return profile, _HEIGHTS[profile]
 
 
-def _audio(media: Probe, query: Query) -> str | None:
-    audio = parameter(
+def _selected(streams: tuple[Stream, ...], *, value: str) -> Stream | None:
+    for item in streams:
+        if str(item.index) == value:
+            return item
+    return None
+
+
+def _audio(media: Probe, query: Query) -> Stream | None:
+    value = parameter(
         query,
         name="audio",
-        default=media.default_audio.index if media.default_audio else "",
+        default=str(media.default_audio.index) if media.default_audio else "",
     )
-    return (
-        audio
-        if any(item.index == audio for item in media.audios)
-        or not audio
-        and media.videos
-        else None
+    return _selected(media.audios, value=value)
+
+
+def _subtitle(
+    media: Probe,
+    *,
+    audio: Stream | None,
+    request: BaseHTTPRequestHandler,
+    query: Query,
+) -> Stream | None:
+    value = parameter(query, name="subtitle", default="")
+    if (subtitle := _selected(media.subtitles, value=value)) is not None:
+        return subtitle
+
+    return select_subtitle(
+        audio=audio,
+        subtitles=media.subtitles,
+        accept_language=request.headers.get("Accept-Language"),
     )
 
 
@@ -115,24 +134,17 @@ def _player(
 
     profile, _ = selected
     audio = _audio(media, query)
-    subtitle = parameter(query, name="subtitle", default="") or select_subtitle(
-        accept_language=request.headers.get("Accept-Language"),
-        default_audio=media.default_audio,
-        subtitles=media.subtitles,
-    )
-    if audio is None or (
-        subtitle and not any(stream.index == subtitle for stream in media.subtitles)
-    ):
-        request.send_error(HTTPStatus.BAD_REQUEST)
-        return
+    audio_index = audio.index if audio else None
+    subtitle = _subtitle(media, audio=audio, request=request, query=query)
 
     transformed = (
-        profile != _NATIVE_PROFILE or media.direct_content_type(audio=audio) is None
+        profile != _NATIVE_PROFILE
+        or media.direct_content_type(audio=audio_index) is None
     )
     html(
         request,
         body=player_html(
-            audio=audio,
+            audio=audio_index,
             probe=media,
             relative=relative,
             profile=profile,
@@ -165,11 +177,10 @@ def _stream(
         request.send_error(HTTPStatus.BAD_REQUEST)
         return
 
-    if (audio := _audio(media, query)) is None:
-        request.send_error(HTTPStatus.BAD_REQUEST)
-        return
+    audio = _audio(media, query)
+    audio_index = audio.index if audio else None
 
-    match profile, media.direct_content_type(audio=audio):
+    match profile, media.direct_content_type(audio=audio_index):
         case _NATIVE_PROFILE, str(content_type):
             path, data = entry
             file(
@@ -182,26 +193,31 @@ def _stream(
         case _:
             stream(
                 request,
-                source=media.stream(audio=audio, height=height, time=_time(query)),
+                source=media.stream(
+                    audio=audio_index,
+                    height=height,
+                    time=_time(query),
+                ),
                 content_type="video/mp4" if media.videos else "audio/mp4",
                 head=head,
             )
 
 
-def _subtitle(
+def _subtitle_stream(
     request: BaseHTTPRequestHandler,
     *,
     entry: Entry,
     query: Query,
     head: bool,
 ) -> None:
-    stream_index = parameter(query, name="stream", default="")
     if (media := _media(request, entry=entry)) is None:
         return
-    subtitle = next(
-        (item for item in media.subtitles if item.index == stream_index), None
-    )
-    if subtitle is None:
+    if (
+        subtitle := _selected(
+            media.subtitles,
+            value=parameter(query, name="stream", default=""),
+        )
+    ) is None:
         request.send_error(HTTPStatus.BAD_REQUEST)
         return
     stream(
@@ -244,7 +260,9 @@ def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> Non
                 case "stream":
                     _stream(request, entry=(source, data), query=query, head=head)
                 case "subtitle":
-                    _subtitle(request, entry=(source, data), query=query, head=head)
+                    _subtitle_stream(
+                        request, entry=(source, data), query=query, head=head
+                    )
                 case _:
                     request.send_error(HTTPStatus.NOT_FOUND)
         case _:

@@ -1,37 +1,34 @@
+from collections.abc import Iterator
 from re import VERBOSE, compile
 
 from .ffmpeg import Stream
 
-_CODES = {
-    "ara": "ar",
-    "ces": "cs",
-    "chi": "zh",
-    "deu": "de",
-    "dut": "nl",
-    "ell": "el",
-    "eng": "en",
-    "fin": "fi",
-    "fra": "fr",
-    "fre": "fr",
-    "ger": "de",
-    "heb": "he",
-    "hin": "hi",
-    "ind": "id",
-    "ita": "it",
-    "jpn": "ja",
-    "kor": "ko",
-    "nld": "nl",
-    "nor": "no",
-    "pol": "pl",
-    "por": "pt",
-    "rus": "ru",
-    "spa": "es",
-    "swe": "sv",
-    "tha": "th",
-    "tur": "tr",
-    "ukr": "uk",
-    "vie": "vi",
-    "zho": "zh",
+_CODECS = {
+    "ar": ("ara",),
+    "cs": ("ces",),
+    "de": ("deu", "ger"),
+    "el": ("ell",),
+    "en": ("eng",),
+    "fi": ("fin",),
+    "fr": ("fra", "fre"),
+    "he": ("heb",),
+    "hi": ("hin",),
+    "id": ("ind",),
+    "it": ("ita",),
+    "ja": ("jpn",),
+    "ko": ("kor",),
+    "nl": ("dut", "nld"),
+    "no": ("nor",),
+    "pl": ("pol",),
+    "pt": ("por",),
+    "ru": ("rus",),
+    "es": ("spa",),
+    "sv": ("swe",),
+    "th": ("tha",),
+    "tr": ("tur",),
+    "uk": ("ukr",),
+    "vi": ("vie",),
+    "zh": ("chi", "zho"),
 }
 _RANGE = compile(
     r"""\s*(?P<language>[A-Za-z]{2,8})(?:-[A-Za-z0-9]{1,8})*
@@ -40,42 +37,29 @@ _RANGE = compile(
 )
 
 
-def _language(value: str) -> str:
-    candidates: list[tuple[float, int, str]] = []
-    for index, item in enumerate(value.split(",")):
-        if not (match := _RANGE.fullmatch(item)):
-            continue
-
-        if quality := float(match.group("quality") or 1):
+def _codecs(value: str) -> Iterator[str]:
+    for item in value.split(","):
+        if (match := _RANGE.fullmatch(item)) and (
+            quality := float(match.group("quality") or 1)
+        ):
             language = match.group("language").casefold()
-            candidates.append((quality, -index, _CODES.get(language, language)))
-
-    _, _, language = max(candidates, default=(0, 0, ""))
-    return language
+            yield from _CODECS.get(language, (language,))
+    return
 
 
 def select_subtitle(
     *,
-    accept_language: str | None,
-    default_audio: Stream | None,
+    audio: Stream | None,
     subtitles: tuple[Stream, ...],
-) -> str:
-    if (
-        not (language := _language(accept_language or ""))
-        or default_audio is None
-        or language == _language(default_audio.language)
-    ):
-        return ""
+    accept_language: str | None,
+) -> Stream | None:
+    active = {*_codecs(accept_language or "")}
 
     for item in subtitles:
-        if _language(item.language) == language:
-            return item.index
+        if audio and item.language == audio.language:
+            continue
 
-    for item in subtitles:
-        if item.default:
-            return item.index
+        if item.language in active:
+            return item
 
-    for item in subtitles:
-        return item.index
-
-    return ""
+    return None

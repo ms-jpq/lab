@@ -118,16 +118,18 @@ def _options(options: Iterable[tuple[str, str]], *, selected: str) -> str:
     )
 
 
-def _stream_options(streams: tuple[Stream, ...], *, selected: str, empty: str) -> str:
+def _stream_options(
+    streams: tuple[Stream, ...], *, selected: int | None, empty: str
+) -> str:
     return _options(
         chain(
             (("", empty),),
             (
-                (stream.index, f"{stream.index}: {stream.language} {stream.codec}")
+                (str(stream.index), f"{stream.index}: {stream.language} {stream.codec}")
                 for stream in streams
             ),
         ),
-        selected=selected,
+        selected=str(selected) if selected is not None else "",
     )
 
 
@@ -144,29 +146,26 @@ def index(
 
 def player(
     *,
-    audio: str,
+    audio: int | None,
     probe: Probe,
     relative: PurePosixPath,
     profile: str,
     profiles: tuple[str, ...],
-    subtitle: str,
+    subtitle: Stream | None,
     time: str,
     title: str,
     transformed: bool,
 ) -> str:
     play_query = {"profile": profile, "t": time}
-    if audio:
-        play_query["audio"] = audio
+    if audio is not None:
+        play_query["audio"] = str(audio)
     track = ""
     if subtitle:
-        selected_subtitle = next(
-            stream for stream in probe.subtitles if stream.index == subtitle
-        )
-        subtitle_query = {"stream": subtitle}
+        subtitle_query = {"stream": str(subtitle.index)}
         if transformed:
             subtitle_query["t"] = time
         track = _subtitle_track(
-            language=selected_subtitle.language,
+            language=subtitle.language,
             url=_child(
                 relative=relative,
                 endpoint="subtitle",
@@ -182,7 +181,7 @@ def player(
         ),
         player=_player_element(
             duration=probe.duration or "0",
-            has_audio=bool(audio),
+            has_audio=audio is not None,
             has_video=bool(probe.videos),
             stream_url=_child(
                 relative=relative,
@@ -197,7 +196,7 @@ def player(
         ),
         subtitle_options=_stream_options(
             probe.subtitles,
-            selected=subtitle,
+            selected=subtitle.index if subtitle else None,
             empty="None",
         ),
         script=_resource("player.js"),
