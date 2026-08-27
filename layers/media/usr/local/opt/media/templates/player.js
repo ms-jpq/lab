@@ -9,7 +9,8 @@ const time_input = /** @type {HTMLInputElement} */ (
 )
 
 const MAX_PLAY_BEHIND = 30
-const MAX_PLAY_AHEAD = 30
+const MAX_PAUSE_AHEAD = 30
+const MAX_PLAY_AHEAD = 60
 const RETRY_DELAY = 1_000
 
 const media_source = () => {
@@ -208,7 +209,9 @@ const source_stream = async function* (signal, time) {
 
 /** @param {AbortSignal} signal @param {ReturnType<typeof mse_buffer>} buffer @param {number} time @param {() => Promise<void>} wait */
 const resumable_stream = async function* (signal, buffer, time, wait) {
-  const buffered = () => buffer.play_ahead(media.currentTime) >= MAX_PLAY_AHEAD
+  const buffered = () =>
+    buffer.play_ahead(media.currentTime) >=
+    (media.paused ? MAX_PAUSE_AHEAD : MAX_PLAY_AHEAD)
 
   l1: for (;;) {
     while (buffered()) {
