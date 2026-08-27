@@ -64,16 +64,25 @@ body {
 
       & form {
         align-items: end;
-        display: flex;
-        flex-wrap: wrap;
+        display: grid;
         gap: 0.5rem;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+
+        & > .back {
+          align-self: center;
+          background: ButtonFace;
+          border: 1px solid ButtonBorder;
+          color: ButtonText;
+          padding: 0.25rem 0.5rem;
+          text-decoration: none;
+        }
 
         & > .selections {
           --selection-width: 9rem;
           display: grid;
-          flex: 0 1 auto;
           gap: 0.75rem;
           grid-template-columns: repeat(3, var(--selection-width));
+          justify-self: center;
 
           & > label {
             align-items: center;
@@ -88,7 +97,7 @@ body {
         }
 
         & > button {
-          margin-left: auto;
+          align-self: center;
         }
       }
     }
@@ -108,11 +117,7 @@ body {
 
       & form {
         & > .selections {
-          flex-basis: 100%;
-          grid-template-columns: repeat(
-            auto-fit,
-            minmax(var(--selection-width), 1fr)
-          );
+          justify-self: start;
         }
       }
 

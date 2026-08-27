@@ -64,6 +64,15 @@ def _entry(*, entry: Entry) -> str:
     )
 
 
+def _parent() -> str:
+    return _render(
+        "index-entry.html",
+        href="../",
+        name="../",
+        size="—",
+    )
+
+
 def _mse_type(*, has_audio: bool, has_video: bool) -> str:
     match has_video, has_audio:
         case True, True:
@@ -136,10 +145,16 @@ def _stream_options(
 def index(
     *,
     entries: tuple[Entry, ...],
+    relative: PurePosixPath,
 ) -> str:
     return _render(
         "index.html",
-        entries="".join(_entry(entry=entry) for entry in entries),
+        entries="".join(
+            chain(
+                (_parent(),) if relative.parts else (),
+                (_entry(entry=entry) for entry in entries),
+            )
+        ),
         style=_resource("style.css"),
     )
 

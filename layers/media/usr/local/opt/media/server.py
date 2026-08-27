@@ -114,6 +114,7 @@ def _index(
     request: BaseHTTPRequestHandler,
     *,
     path: Path,
+    relative: PurePosixPath,
     head: bool,
 ) -> None:
     try:
@@ -124,7 +125,7 @@ def _index(
 
     html(
         request,
-        body=index_html(entries=selected),
+        body=index_html(entries=selected, relative=relative),
         head=head,
     )
 
@@ -257,7 +258,7 @@ def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> Non
                 redirect(request, location=f"{curdir}{sep}")
                 return
 
-            _index(request, path=source, head=head)
+            _index(request, path=source, relative=relative, head=head)
             return
 
         case source, data if S_ISREG(data.st_mode):
