@@ -15,6 +15,7 @@ const BUFFER = {
   HI: 60,
 }
 const RETRY_DELAY = 1_000
+const POSITION = `media:position:${location.pathname}`
 
 const media_source = () => {
   const { ManagedMediaSource } =
@@ -32,15 +33,6 @@ const source_url = (resource, time) => {
   )
   source.searchParams.set("t", String(Math.floor(Number(time))))
   return source.toString()
-}
-
-/** @param {number} value */
-const set_position = (value) => {
-  const page_url = new URL(location.href)
-  const rounded = Math.round(value * 1_000) / 1_000
-  time_input.value = String(rounded)
-  page_url.searchParams.set("t", time_input.value)
-  history.replaceState(null, "", page_url)
 }
 
 /**
@@ -334,7 +326,29 @@ if (subtitle) {
   subtitle.onerror = () => streaming?.retry()
 }
 
-const initial_position = Number(time_input.value)
+const initial_position = (() => {
+  if (new URL(location.href).searchParams.has("t")) {
+    return Number(time_input.value)
+  }
+  try {
+    const stored = Number(localStorage.getItem(POSITION))
+    return Number.isFinite(stored) ? stored : 0
+  } catch {
+    return 0
+  }
+})()
+
+/** @param {number} value */
+const set_position = (value) => {
+  const page_url = new URL(location.href)
+  const rounded = Math.round(value * 1_000) / 1_000
+  time_input.value = String(rounded)
+  page_url.searchParams.set("t", time_input.value)
+  history.replaceState(null, "", page_url)
+  try {
+    localStorage.setItem(POSITION, time_input.value)
+  } catch {}
+}
 
 if (!streaming) {
   media.src = source_url(media, media.currentTime)
