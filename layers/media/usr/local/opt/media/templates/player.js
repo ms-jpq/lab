@@ -30,7 +30,7 @@ const source_url = (resource, time) => {
     /** @type {string} */ (resource.dataset.src),
     location.href,
   )
-  source.searchParams.set("t", String(time))
+  source.searchParams.set("t", String(Math.floor(Number(time))))
   return source.toString()
 }
 
