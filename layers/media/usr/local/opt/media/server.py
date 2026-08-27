@@ -87,13 +87,10 @@ def _language(streams: tuple[Stream, ...], *, value: str) -> Stream | None:
 
 def _audio(media: Probe, *, query: Query, preferences: dict[str, str]) -> Stream | None:
     match query, preferences:
-        case {_Preference.AUDIO: [*_, Selection.NONE]}, _:
-            return media.default_audio
-        case {_Preference.AUDIO: [*_, language]}, _:
-            return _language(media.audios, value=language) or media.default_audio
-        case _, {_Preference.AUDIO: Selection.NONE}:
-            return media.default_audio
-        case _, {_Preference.AUDIO: str(language)}:
+        case ({_Preference.AUDIO: [*_, str(language)]}, _) | (
+            _,
+            {_Preference.AUDIO: str(language)},
+        ):
             return _language(media.audios, value=language) or media.default_audio
         case _, _:
             return media.default_audio
@@ -108,13 +105,15 @@ def _subtitle(
     request: BaseHTTPRequestHandler,
 ) -> Stream | None:
     match query, preferences:
-        case {_Preference.SUBTITLE: [*_, Selection.NONE]}, _:
+        case ({_Preference.SUBTITLE: [*_, Selection.NONE]}, _) | (
+            _,
+            {_Preference.SUBTITLE: Selection.NONE},
+        ):
             return None
-        case {_Preference.SUBTITLE: [*_, language]}, _:
-            return _language(media.subtitles, value=language)
-        case _, {_Preference.SUBTITLE: Selection.NONE}:
-            return None
-        case _, {_Preference.SUBTITLE: str(language)}:
+        case ({_Preference.SUBTITLE: [*_, str(language)]}, _) | (
+            _,
+            {_Preference.SUBTITLE: str(language)},
+        ):
             return _language(media.subtitles, value=language)
         case _, _:
             return select_subtitle(
@@ -165,7 +164,6 @@ def _index(
     *,
     path: Path,
     relative: PurePosixPath,
-    query: Query,
     head: bool,
 ) -> None:
     try:
@@ -178,10 +176,8 @@ def _index(
         request,
         body=index_html(
             relative=relative,
-            query=_query_preferences(query),
             entries=selected,
         ),
-        cookies=_set_preferences(query),
         head=head,
     )
 
@@ -326,7 +322,6 @@ def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> Non
                 request,
                 path=source,
                 relative=relative,
-                query=query,
                 head=head,
             )
             return

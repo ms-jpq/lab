@@ -4,8 +4,9 @@ const media = /** @type {HTMLMediaElement} */ (
 const subtitle = /** @type {HTMLTrackElement | null} */ (
   document.querySelector("#subtitle")
 )
+const form = /** @type {HTMLFormElement} */ (document.querySelector("form"))
 const time_input = /** @type {HTMLInputElement} */ (
-  document.querySelector("form")?.elements.namedItem("t")
+  form.elements.namedItem("t")
 )
 
 const BUFFER = {
@@ -364,6 +365,8 @@ if (!streaming) {
   media.load()
 }
 
+media.onabort = console.log
+
 media.onerror = () => {
   if (media.error?.code !== MediaError.MEDIA_ERR_ABORTED) {
     streaming?.retry()
@@ -397,3 +400,20 @@ media.ontimeupdate = () => {
 media.currentTime = initial_position
 set_position(initial_position)
 streaming?.run()
+
+/** @param {SubmitEvent} event */
+form.onsubmit = (event) => {
+  if (event.submitter?.classList.contains("back")) {
+    return
+  }
+  event.preventDefault()
+  const target = new URL(form.action)
+  const query = new URLSearchParams()
+  for (const [name, value] of new FormData(form)) {
+    if (typeof value === "string") {
+      query.append(name, value)
+    }
+  }
+  target.search = query.toString()
+  location.replace(target)
+}

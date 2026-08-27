@@ -200,14 +200,15 @@ class Probe:
         subtitle: Stream,
         time: str,
     ) -> Iterator[bytes]:
-        st = _bytes(
-            command=_subtitle_command(
-                path=self.path,
-                subtitle=subtitle,
-                time=time,
+        yield from _clean_subtitles(
+            _bytes(
+                command=_subtitle_command(
+                    path=self.path,
+                    subtitle=subtitle,
+                    time=time,
+                )
             )
         )
-        yield from _clean_subtitles(st)
 
 
 def _language(*, data: Mapping[Any, Any]) -> str:
@@ -234,7 +235,7 @@ def _default(*, data: Mapping[Any, Any]) -> bool:
             return False
 
 
-def _parse_stream(*, data: dict[str, Any]) -> Stream | None:
+def _stream(*, data: object) -> Stream | None:
     match data:
         case {
             "index": int(index),
@@ -252,14 +253,6 @@ def _parse_stream(*, data: dict[str, Any]) -> Stream | None:
                 width=width,
                 height=height,
             )
-        case _:
-            return None
-
-
-def _stream(*, data: object) -> Stream | None:
-    match data:
-        case dict() as data:
-            return _parse_stream(data=data)
         case _:
             return None
 

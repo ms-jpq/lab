@@ -45,10 +45,6 @@ def _child(*, relative: PurePosixPath, endpoint: str, query: dict[str, str]) -> 
     return f"{curdir}{sep}{quote(relative.name)}{sep}{endpoint}?{urlencode(query)}"
 
 
-def _href(*, path: str, query: dict[str, str]) -> str:
-    return f"{path}?{urlencode(query)}" if query else path
-
-
 def _size(size: int | None) -> str:
     if size is None:
         return "—"
@@ -63,21 +59,21 @@ def _size(size: int | None) -> str:
     return f"{size / (1 << 40):.1f} TiB"
 
 
-def _entry(*, entry: Entry, query: dict[str, str]) -> str:
+def _entry(*, entry: Entry) -> str:
     path, data = entry
     name = path.name + (sep if S_ISDIR(data.st_mode) else "")
     return _render(
         "index-entry.html",
-        href=escape(_href(path=quote(name), query=query), quote=True),
+        href=escape(quote(name), quote=True),
         name=escape(name),
         size=_size(data.st_size if S_ISREG(data.st_mode) else None),
     )
 
 
-def _parent(*, query: dict[str, str]) -> str:
+def _parent() -> str:
     return _render(
         "index-entry.html",
-        href=_href(path="../", query=query),
+        href="../",
         name="../",
         size="—",
     )
@@ -159,15 +155,14 @@ def _subtitle_options(streams: tuple[Stream, ...], *, selected: Stream | None) -
 def index(
     *,
     relative: PurePosixPath,
-    query: dict[str, str],
     entries: tuple[Entry, ...],
 ) -> str:
     return _render(
         "index.html",
         entries="".join(
             chain(
-                (_parent(query=query),) if relative.parts else (),
-                (_entry(entry=entry, query=query) for entry in entries),
+                (_parent(),) if relative.parts else (),
+                (_entry(entry=entry) for entry in entries),
             )
         ),
         style=_resource("style.css"),
