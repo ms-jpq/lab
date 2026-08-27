@@ -62,6 +62,23 @@ const source_url = (resource, time) => {
   return source.toString()
 }
 
+/** @param {AbortSignal} signal */
+const create_mse = async (signal) => {
+  signal.throwIfAborted()
+  const mse = media_source()
+  const duration = Number(media.dataset.duration)
+
+  const previous = media.src
+  media.src = URL.createObjectURL(mse)
+  URL.revokeObjectURL(previous)
+
+  await once(mse, signal, "sourceopen")
+  if (Number.isFinite(duration) && duration > 0) {
+    mse.duration = duration
+  }
+  return mse
+}
+
 /**
  * @param {AbortSignal} signal
  * @param {MediaSource} mse
@@ -91,10 +108,8 @@ const mse_buffer_update = async function* (signal, mse, buffer) {
   }
 }
 
-/** @param {MediaSource} mse @param {string} type */
-const mse_buffer = (mse, type) => {
-  const buffer = mse.addSourceBuffer(type)
-
+/** @param {MediaSource} mse @param {SourceBuffer} buffer */
+const mse_buffer = (mse, buffer) => {
   const frontier = () => {
     const ranges = buffer.buffered
     const last = ranges.length - 1
@@ -131,21 +146,6 @@ const mse_buffer = (mse, type) => {
     seek: (position) => {
       buffer.timestampOffset = position
     },
-    /** @param {AbortSignal} signal */
-    rotate: async (signal) => {
-      if (mse.readyState !== "open") {
-        return false
-      }
-
-      buffer.abort()
-      const end = mse.duration
-      if (Number.isFinite(end) && end > 0) {
-        for await (const _ of mse_buffer_update(signal, mse, buffer)) {
-          buffer.remove(0, end)
-        }
-      }
-      return true
-    },
     end: () => {
       if (mse.readyState === "open") {
         mse.endOfStream()
@@ -155,21 +155,30 @@ const mse_buffer = (mse, type) => {
 }
 
 /** @param {AbortSignal} signal */
-const open_mse = async (signal) => {
-  signal.throwIfAborted()
-  const mse = media_source()
+const open_mse = async function* (signal) {
   const type = /** @type {string} */ (media.dataset.mseType)
-  const duration = Number(media.dataset.duration)
+  const mse = await create_mse(signal)
 
-  const previous = media.src
-  media.src = URL.createObjectURL(mse)
-  URL.revokeObjectURL(previous)
-
-  await once(mse, signal, "sourceopen")
-  if (Number.isFinite(duration) && duration > 0) {
-    mse.duration = duration
+  for (;;) {
+    const buffer = mse.addSourceBuffer(type)
+    try {
+      yield mse_buffer(mse, buffer)
+    } finally {
+      switch (mse.readyState) {
+        case "ended":
+          buffer.abort()
+          mse.removeSourceBuffer(buffer)
+          break
+        case "open":
+          mse.removeSourceBuffer(buffer)
+          break
+        case "closed":
+          break
+        default:
+          throw new Error(mse.readyState)
+      }
+    }
   }
-  return mse_buffer(mse, type)
 }
 
 /** @param {number} time */
@@ -223,17 +232,14 @@ const resumable_stream = async function* (signal, buffer, time, wait) {
   }
 }
 
-const stream = () => {
+/** @param {AbortController} root */
+const stream = (root) => {
   const restart = Symbol("restart")
-  const retrying = Symbol("retrying")
 
   let controller = new AbortController()
   /** @type {ReturnType<typeof mse_buffer> | undefined} */
-  let buffer = undefined
+  let active = undefined
   let can_seek = false
-  /** @type {number | undefined} */
-  let restoring_position = undefined
-  let running = Promise.resolve()
   let wake = Promise.withResolvers()
 
   const resume = () => wake.resolve(undefined)
@@ -244,76 +250,77 @@ const stream = () => {
 
   /** @param {unknown} reason */
   const stop = (reason) => {
+    can_seek = false
     controller.abort(reason)
     resume()
   }
 
-  const execute = async () => {
-    for (;;) {
-      can_seek = false
-      const { signal } = controller
-      const time = Number(time_input.value)
-
+  const run = async () => {
+    while (!root.signal.aborted) {
       try {
-        if (buffer === undefined || !(await buffer.rotate(signal))) {
-          restoring_position = time
-          buffer = await open_mse(signal)
-        }
-        if (same_position(media.currentTime, time)) {
-          restoring_position = undefined
-        } else {
-          media.currentTime = time
-        }
-        for await (const bytes of resumable_stream(
-          signal,
-          buffer,
-          time,
-          wait,
-        )) {
-          await buffer.append(signal, media.currentTime, bytes)
-          if (!can_seek) {
-            can_seek = true
-            reload_subtitle(time)
+        for await (const buffer of open_mse(root.signal)) {
+          active = buffer
+          can_seek = false
+          const current = (controller = new AbortController())
+          const signal = AbortSignal.any([root.signal, current.signal])
+          const time = Number(time_input.value)
+
+          try {
+            if (!same_position(media.currentTime, time)) {
+              media.currentTime = time
+            }
+            for await (const bytes of resumable_stream(
+              signal,
+              buffer,
+              time,
+              wait,
+            )) {
+              await buffer.append(signal, media.currentTime, bytes)
+              if (!can_seek) {
+                can_seek = true
+                reload_subtitle(time)
+              }
+            }
+            buffer.end()
+            await once(signal, signal, "abort")
+          } catch (error) {
+            if (current.signal.reason === restart) {
+              continue
+            }
+            if (root.signal.aborted) {
+              return
+            }
+
+            if (!signal.aborted) {
+              console.error(error)
+            }
+          } finally {
+            current.abort()
           }
+
+          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY))
         }
-        buffer.end()
-        await once(signal, signal, "abort")
+        return
       } catch (error) {
-        if (signal.reason === restart) {
-          continue
-        }
-        buffer = undefined
-        if (signal.aborted && signal.reason !== retrying) {
+        if (root.signal.aborted) {
           return
         }
-
-        if (!signal.aborted) {
-          console.error(error)
-        }
-      } finally {
-        controller.abort()
-        controller = new AbortController()
+        console.error(error)
       }
-
       await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY))
     }
   }
 
+  void run()
+
   return {
     /** @param {boolean} seeking @param {number} time */
     accept_position: (seeking, time) => {
-      if (!seeking && !can_seek) {
+      if (!can_seek) {
         return false
       }
       if (seeking) {
-        if (restoring_position !== undefined) {
-          if (same_position(time, restoring_position)) {
-            restoring_position = undefined
-          }
-          return false
-        }
-        if (!can_seek || !buffer?.contains(time)) {
-          can_seek = false
+        if (!active?.contains(time)) {
           stop(restart)
           return true
         }
@@ -323,18 +330,16 @@ const stream = () => {
     },
     retry: () => {
       if (can_seek) {
-        stop(retrying)
+        stop(undefined)
       }
     },
-    stop,
     resume,
-    run: () => {
-      running = running.then(execute, execute)
-    },
   }
 }
 
-const streaming = media.dataset.transformed === "true" ? stream() : undefined
+const transformed = media.dataset.transformed === "true"
+/** @type {ReturnType<typeof stream> | undefined} */
+let streaming = undefined
 
 if (subtitle) {
   subtitle.onerror = () => streaming?.retry()
@@ -364,7 +369,7 @@ const set_position = (value) => {
   } catch {}
 }
 
-if (!streaming) {
+if (!transformed) {
   void (async () => {
     const loaded = once(media, undefined, "loadedmetadata")
     media.src = source_url(media, media.currentTime)
@@ -384,6 +389,7 @@ media.onerror = () => {
 
 {
   let controller = new AbortController()
+  let root = new AbortController()
 
   media.onplay = () => {
     streaming?.resume()
@@ -423,9 +429,14 @@ media.onerror = () => {
 
   onpagehide = () => {
     controller.abort()
-    streaming?.stop(undefined)
+    root.abort()
+    streaming = undefined
   }
-  onpageshow = () => streaming?.run()
+  onpageshow = () => {
+    root.abort()
+    root = new AbortController()
+    streaming = transformed ? stream(root) : undefined
+  }
 }
 
 set_position(initial_position)
