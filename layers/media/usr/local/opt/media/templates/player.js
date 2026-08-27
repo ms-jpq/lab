@@ -79,57 +79,55 @@ const mse_buffer = (mse, type) => {
   }
 
   /** @param {number} position */
-  const contains = (position) => {
-    const ranges = buffer.buffered
-    for (let index = 0; index < ranges.length; index += 1) {
-      if (ranges.start(index) <= position && position <= ranges.end(index)) {
-        return true
-      }
-    }
-    return false
-  }
-
-  /** @param {number} position */
-  const play_ahead = (position) => (frontier() ?? position) - position
-
-  /** @param {AbortSignal} signal @param {number} position @param {Uint8Array} bytes */
-  const append = async (signal, position, bytes) => {
-    const end = position - BUFFER.BEHIND
-    if (end > 0 && buffer.buffered.length && buffer.buffered.start(0) < end) {
-      for await (const _ of mse_buffer_update(signal, mse, buffer)) {
-        buffer.remove(0, end)
-      }
-    }
-    for await (const _ of mse_buffer_update(signal, mse, buffer)) {
-      buffer.appendBuffer(new Uint8Array(bytes))
-    }
-  }
-
-  /** @param {number} position */
   const seek = (position) => {
     buffer.abort()
     buffer.timestampOffset = position
   }
 
-  /** @param {AbortSignal} signal @param {number} position */
-  const prepare = async (signal, position) => {
-    signal.throwIfAborted()
-    const duration = mse.duration
-    if (buffer.buffered.length && Number.isFinite(duration)) {
-      for await (const _ of mse_buffer_update(signal, mse, buffer)) {
-        buffer.remove(0, duration)
+  return {
+    frontier,
+    /** @param {number} position */
+    contains: (position) => {
+      const ranges = buffer.buffered
+      for (let index = 0; index < ranges.length; index += 1) {
+        if (ranges.start(index) <= position && position <= ranges.end(index)) {
+          return true
+        }
       }
-    }
-    seek(position)
+      return false
+    },
+    /** @param {number} position */
+    play_ahead: (position) => (frontier() ?? position) - position,
+    /** @param {AbortSignal} signal @param {number} position @param {Uint8Array} bytes */
+    append: async (signal, position, bytes) => {
+      const end = position - BUFFER.BEHIND
+      if (end > 0 && buffer.buffered.length && buffer.buffered.start(0) < end) {
+        for await (const _ of mse_buffer_update(signal, mse, buffer)) {
+          buffer.remove(0, end)
+        }
+      }
+      for await (const _ of mse_buffer_update(signal, mse, buffer)) {
+        buffer.appendBuffer(new Uint8Array(bytes))
+      }
+    },
+    seek,
+    /** @param {AbortSignal} signal @param {number} position */
+    prepare: async (signal, position) => {
+      signal.throwIfAborted()
+      const duration = mse.duration
+      if (buffer.buffered.length && Number.isFinite(duration)) {
+        for await (const _ of mse_buffer_update(signal, mse, buffer)) {
+          buffer.remove(0, duration)
+        }
+      }
+      seek(position)
+    },
+    end: () => {
+      if (mse.readyState === "open") {
+        mse.endOfStream()
+      }
+    },
   }
-
-  const end = () => {
-    if (mse.readyState === "open") {
-      mse.endOfStream()
-    }
-  }
-
-  return { frontier, contains, play_ahead, append, seek, prepare, end }
 }
 
 /** @param {AbortSignal} signal */
@@ -228,95 +226,95 @@ const stream = () => {
 
   const resume = () => wake.resolve(undefined)
 
-  const wait = async () => {
-    await wake.promise
-    wake = Promise.withResolvers()
-  }
-
   /** @param {unknown} reason */
   const stop = (reason) => {
     controller.abort(reason)
     resume()
   }
 
-  const retry = () => {
-    if (can_seek) {
-      stop(retrying)
-    }
-  }
-
-  const run = async () => {
-    for (;;) {
-      can_seek = false
-      const { signal } = controller
-      const time = Number(time_input.value)
-
-      try {
-        if (buffer === undefined) {
-          buffer = await open_mse(signal)
-          if (media.currentTime !== time) {
-            media.currentTime = time
-            restored_position = media.currentTime
-          }
-        }
-
-        await buffer.prepare(signal, time)
-        for await (const bytes of resumable_stream(
-          signal,
-          buffer,
-          time,
-          wait,
-        )) {
-          await buffer.append(signal, media.currentTime, bytes)
-          if (!can_seek) {
-            can_seek = true
-            reload_subtitle(time)
-          }
-        }
-        buffer.end()
-        return
-      } catch (error) {
-        if (signal.reason === restart) {
-          continue
-        }
-        if (signal.aborted && signal.reason !== retrying) {
-          return
-        }
-        if (!signal.aborted) {
-          console.error(error)
-        }
-        buffer = undefined
-      } finally {
-        controller.abort()
-        controller = new AbortController()
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY))
-    }
-  }
-
-  /** @param {boolean} seeking @param {number} time */
-  const accept_position = (seeking, time) => {
-    if (seeking && restored_position !== undefined) {
-      const restored = time === restored_position
-      restored_position = undefined
-      if (restored) {
+  return {
+    /** @param {boolean} seeking @param {number} time */
+    accept_position: (seeking, time) => {
+      if (!seeking && !can_seek) {
         return false
       }
-    }
-    if (!seeking && !can_seek) {
-      return false
-    }
-    if (seeking && (!can_seek || !buffer?.contains(time))) {
-      can_seek = false
-      stop(restart)
+      if (seeking) {
+        if (restored_position !== undefined) {
+          const restored = time === restored_position
+          restored_position = undefined
+          if (restored) {
+            return false
+          }
+        }
+        if (!can_seek || !buffer?.contains(time)) {
+          can_seek = false
+          stop(restart)
+          return true
+        }
+      }
+      resume()
       return true
-    }
-    resume()
-    return true
-  }
+    },
+    retry: () => {
+      if (can_seek) {
+        stop(retrying)
+      }
+    },
+    stop,
+    resume,
+    run: async () => {
+      for (;;) {
+        can_seek = false
+        const { signal } = controller
+        const time = Number(time_input.value)
 
-  return { accept_position, retry, stop, resume, run }
+        try {
+          if (buffer === undefined) {
+            buffer = await open_mse(signal)
+            if (media.currentTime !== time) {
+              media.currentTime = time
+              restored_position = media.currentTime
+            }
+          }
+
+          await buffer.prepare(signal, time)
+          for await (const bytes of resumable_stream(
+            signal,
+            buffer,
+            time,
+            async () => {
+              await wake.promise
+              wake = Promise.withResolvers()
+            },
+          )) {
+            await buffer.append(signal, media.currentTime, bytes)
+            if (!can_seek) {
+              can_seek = true
+              reload_subtitle(time)
+            }
+          }
+          buffer.end()
+          return
+        } catch (error) {
+          if (signal.reason === restart) {
+            continue
+          }
+          if (signal.aborted && signal.reason !== retrying) {
+            return
+          }
+          if (!signal.aborted) {
+            console.error(error)
+          }
+          buffer = undefined
+        } finally {
+          controller.abort()
+          controller = new AbortController()
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY))
+      }
+    },
+  }
 }
 
 const streaming = media.dataset.transformed === "true" ? stream() : undefined
