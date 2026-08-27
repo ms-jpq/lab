@@ -20,18 +20,18 @@ const POSITION = `media:position:${location.pathname}`
 const PAGE = crypto.randomUUID()
 
 /** @param {EventTarget} target @param {AbortSignal | undefined} signal @param {string} type @returns {Promise<Event>} */
-const once = (target, signal, type) =>
-  new Promise((resolve, reject) => {
-    signal?.throwIfAborted()
-
-    const abort = () => reject(signal?.reason)
-    const complete = (/** @type {Event} */ event) => {
-      signal?.removeEventListener("abort", abort)
-      resolve(event)
-    }
-    signal?.addEventListener("abort", abort, { once: true })
-    target.addEventListener(type, complete, { once: true, signal })
-  })
+const once = (target, signal, type) => {
+  signal?.throwIfAborted()
+  const { promise, reject, resolve } = Promise.withResolvers()
+  const abort = () => reject(signal?.reason)
+  const complete = (/** @type {Event} */ event) => {
+    signal?.removeEventListener("abort", abort)
+    resolve(event)
+  }
+  signal?.addEventListener("abort", abort, { once: true })
+  target.addEventListener(type, complete, { once: true, signal })
+  return promise
+}
 
 const media_source = () => {
   const { ManagedMediaSource } =
@@ -59,7 +59,6 @@ const source_url = (resource, time) => {
  * @param {SourceBuffer} buffer
  */
 const mse_buffer_update = async function* (signal, mse, buffer) {
-  signal.throwIfAborted()
   const operation = new AbortController()
   const events_signal = AbortSignal.any([signal, operation.signal])
   let failure = /** @type {Event | undefined} */ (undefined)
@@ -370,23 +369,31 @@ media.onerror = () => {
 }
 
 {
-  let waiting_to_play = false
+  let controller = /** @type {AbortController | null} */ (null)
 
   media.onplay = async () => {
     streaming?.resume()
+    controller?.abort()
+    controller = null
     if (media.readyState >= media.HAVE_FUTURE_DATA) {
-      waiting_to_play = false
       return
     }
 
     media.pause()
-    if (waiting_to_play) {
+    const current = new AbortController()
+    controller = current
+    try {
+      await once(media, current.signal, "canplay")
+    } catch (error) {
+      if (!current.signal.aborted) {
+        throw error
+      }
       return
     }
-    waiting_to_play = true
-    await once(media, undefined, "canplay")
-    waiting_to_play = false
-    await media.play()
+    if (controller === current) {
+      controller = null
+      await media.play()
+    }
   }
 }
 
