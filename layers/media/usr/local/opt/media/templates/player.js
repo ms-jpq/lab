@@ -351,8 +351,6 @@ const set_position = (value) => {
 }
 
 if (!streaming) {
-  media.src = source_url(media, media.currentTime)
-  media.load()
   media.addEventListener(
     "loadedmetadata",
     () => {
@@ -362,6 +360,8 @@ if (!streaming) {
     },
     { once: true },
   )
+  media.src = source_url(media, media.currentTime)
+  media.load()
 }
 
 media.onerror = () => {
