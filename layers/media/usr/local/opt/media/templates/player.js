@@ -174,32 +174,31 @@ const reload_subtitle = (time) => {
 const source_stream = async function* (signal, time) {
   signal.throwIfAborted()
   const controller = new AbortController()
+  /** @type {ReadableStreamDefaultReader<Uint8Array> | undefined} */
+  let reader = undefined
 
   try {
     const response = await fetch(source_url(media, time), {
       signal: AbortSignal.any([signal, controller.signal]),
     })
-    const reader = response.body?.getReader()
+    reader = response.body?.getReader()
     if (!response.ok || !reader) {
       throw new Error(`${response.statusText} ${response.status}`)
     }
-    try {
-      for (;;) {
-        const { done, value } = await reader.read()
-        if (done) {
-          return
-        }
-        yield value
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) {
+        return
       }
-    } finally {
-      try {
-        await reader.cancel()
-      } finally {
-        reader.releaseLock()
-      }
+      yield value
     }
   } finally {
     controller.abort()
+    try {
+      await reader?.cancel()
+    } finally {
+      reader?.releaseLock()
+    }
   }
 }
 
