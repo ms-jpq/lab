@@ -21,11 +21,6 @@ def target(raw: str) -> tuple[str, Query]:
     return split.path, parse_qs(split.query, keep_blank_values=True)
 
 
-def parameter(query: Query, *, name: str, default: str) -> str:
-    values = query.get(name, ())
-    return values[-1] if values else default
-
-
 def redirect(request: BaseHTTPRequestHandler, *, location: str) -> None:
     request.send_response(HTTPStatus.TEMPORARY_REDIRECT)
     request.send_header("Location", location)

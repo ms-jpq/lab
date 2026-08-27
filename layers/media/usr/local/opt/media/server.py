@@ -18,7 +18,6 @@ from .http import (
     _Server,
     file,
     html,
-    parameter,
     redirect,
     stream,
     target,
@@ -35,11 +34,24 @@ _HEIGHTS = {
 }
 
 
-def _profile(query: Query) -> tuple[str, int | None] | None:
-    profile = parameter(query, name="profile", default=_NATIVE_PROFILE)
-    if profile not in _HEIGHTS:
-        return None
-    return profile, _HEIGHTS[profile]
+def _profiles(media: Probe) -> tuple[str, ...]:
+    match media.videos:
+        case (Stream(height=int(height)), *_):
+            return tuple(
+                profile
+                for profile, maximum in _HEIGHTS.items()
+                if maximum is None or maximum <= height
+            )
+        case _:
+            return (_NATIVE_PROFILE,)
+
+
+def _profile(media: Probe, query: Query) -> tuple[str, int | None] | None:
+    match query:
+        case {"profile": [*_, profile]}:
+            return (profile, _HEIGHTS[profile]) if profile in _profiles(media) else None
+        case _:
+            return _NATIVE_PROFILE, None
 
 
 def _selected(streams: tuple[Stream, ...], *, value: str) -> Stream | None:
@@ -50,12 +62,11 @@ def _selected(streams: tuple[Stream, ...], *, value: str) -> Stream | None:
 
 
 def _audio(media: Probe, query: Query) -> Stream | None:
-    value = parameter(
-        query,
-        name="audio",
-        default=str(media.default_audio.index) if media.default_audio else "",
-    )
-    return _selected(media.audios, value=value)
+    match query:
+        case {"audio": [*_, value]}:
+            return _selected(media.audios, value=value)
+        case _:
+            return media.default_audio
 
 
 def _subtitle(
@@ -65,22 +76,26 @@ def _subtitle(
     request: BaseHTTPRequestHandler,
     query: Query,
 ) -> Stream | None:
-    value = parameter(query, name="subtitle", default="")
-    if (subtitle := _selected(media.subtitles, value=value)) is not None:
-        return subtitle
-
-    return select_subtitle(
-        audio=audio,
-        subtitles=media.subtitles,
-        accept_language=request.headers.get("Accept-Language"),
-    )
+    match query:
+        case {"subtitle": [*_, value]}:
+            return _selected(media.subtitles, value=value)
+        case {"subtitle": _}:
+            return None
+        case _:
+            return select_subtitle(
+                audio=audio,
+                subtitles=media.subtitles,
+                accept_language=request.headers.get("Accept-Language"),
+            )
 
 
 def _time(query: Query) -> str:
-    with suppress(OverflowError, ValueError):
-        time = float(parameter(query, name="t", default="0"))
-        if isfinite(time):
-            return f"{max(0, time):.3f}"
+    match query:
+        case {"t": [*_, value]}:
+            with suppress(OverflowError, ValueError):
+                time = float(value)
+                if isfinite(time):
+                    return f"{max(0, time):.3f}"
     return "0"
 
 
@@ -128,7 +143,7 @@ def _player(
         request.send_error(HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
         return
 
-    if (selected := _profile(query)) is None:
+    if (selected := _profile(media, query)) is None:
         request.send_error(HTTPStatus.BAD_REQUEST)
         return
 
@@ -148,7 +163,7 @@ def _player(
             probe=media,
             relative=relative,
             profile=profile,
-            profiles=tuple(_HEIGHTS),
+            profiles=_profiles(media),
             subtitle=subtitle,
             time=_time(query),
             title=path.name,
@@ -165,17 +180,17 @@ def _stream(
     query: Query,
     head: bool,
 ) -> None:
-    if (selected := _profile(query)) is None:
-        request.send_error(HTTPStatus.BAD_REQUEST)
-        return
-
-    profile, height = selected
     if (media := _media(request, entry=entry)) is None:
         return
 
     if not media.videos and not media.audios:
         request.send_error(HTTPStatus.BAD_REQUEST)
         return
+
+    if (selected := _profile(media, query)) is None:
+        request.send_error(HTTPStatus.BAD_REQUEST)
+        return
+    profile, height = selected
 
     audio = _audio(media, query)
     audio_index = audio.index if audio else None
@@ -212,14 +227,16 @@ def _subtitle_stream(
 ) -> None:
     if (media := _media(request, entry=entry)) is None:
         return
-    if (
-        subtitle := _selected(
-            media.subtitles,
-            value=parameter(query, name="stream", default=""),
-        )
-    ) is None:
+    match query:
+        case {"stream": [*_, value]}:
+            subtitle = _selected(media.subtitles, value=value)
+        case _:
+            subtitle = None
+
+    if subtitle is None:
         request.send_error(HTTPStatus.BAD_REQUEST)
         return
+
     stream(
         request,
         source=media.subtitle(subtitle=subtitle, time=_time(query)),
@@ -240,8 +257,10 @@ def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> Non
             if not raw.endswith(sep):
                 redirect(request, location=f"{curdir}{sep}")
                 return
+
             _index(request, path=source, head=head)
             return
+
         case source, data if S_ISREG(data.st_mode):
             _player(
                 request,
@@ -251,6 +270,7 @@ def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> Non
                 head=head,
             )
             return
+
         case _:
             pass
 
