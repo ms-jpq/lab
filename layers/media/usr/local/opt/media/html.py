@@ -29,7 +29,7 @@ _PLACEHOLDER = compile(
 @cache
 def _resource(name: str) -> str:
     resource = files(__package__) / "templates" / name
-    return resource.read_text()
+    return resource.read_text(encoding="utf-8")
 
 
 @cache

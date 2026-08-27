@@ -320,7 +320,7 @@ def _probe(path: Path, modified: int) -> dict[str, Any]:
         ),
         capture_output=True,
         check=True,
-        text=True,
+        encoding="utf-8",
         timeout=30,
     )
 
