@@ -9,6 +9,7 @@ const time_input = /** @type {HTMLInputElement} */ (
 )
 
 const MAX_PLAY_AHEAD = 30
+const MAX_PLAY_BEHIND = 30
 const RETRY_DELAY = 1_000
 
 const media_source = () => {
@@ -82,6 +83,12 @@ const mse_buffer = (mse, type) => {
 
   /** @param {AbortSignal} signal @param {Uint8Array} bytes */
   const append = async (signal, bytes) => {
+    const end = media.currentTime - MAX_PLAY_BEHIND
+    if (end > 0 && buffer.buffered.length && buffer.buffered.start(0) < end) {
+      for await (const _ of mse_buffer_update(mse, buffer, signal)) {
+        buffer.remove(0, end)
+      }
+    }
     for await (const _ of mse_buffer_update(mse, buffer, signal)) {
       buffer.appendBuffer(new Uint8Array(bytes))
     }
