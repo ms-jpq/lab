@@ -88,9 +88,9 @@ const mse_buffer = (mse, type) => {
   /** @param {number} position */
   const play_ahead = (position) => (frontier() ?? position) - position
 
-  /** @param {AbortSignal} signal @param {Uint8Array} bytes */
-  const append = async (signal, bytes) => {
-    const end = media.currentTime - BUFFER.BEHIND
+  /** @param {AbortSignal} signal @param {number} position @param {Uint8Array} bytes */
+  const append = async (signal, position, bytes) => {
+    const end = position - BUFFER.BEHIND
     if (end > 0 && buffer.buffered.length && buffer.buffered.start(0) < end) {
       for await (const _ of mse_buffer_update(signal, mse, buffer)) {
         buffer.remove(0, end)
@@ -274,7 +274,7 @@ const stream = () => {
           time,
           wait,
         )) {
-          await buffer.append(signal, bytes)
+          await buffer.append(signal, media.currentTime, bytes)
         }
         buffer.end()
         return
