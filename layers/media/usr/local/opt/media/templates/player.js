@@ -272,8 +272,7 @@ const stream = () => {
           if (buffer === undefined) {
             buffer = await open_mse(signal)
             if (media.currentTime !== time) {
-              media.currentTime = time
-              restored_position = media.currentTime
+              media.currentTime = restored_position = time
             }
           }
 
