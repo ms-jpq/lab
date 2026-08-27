@@ -226,6 +226,7 @@ const stream = () => {
   /** @type {ReturnType<typeof mse_buffer> | undefined} */
   let buffer = undefined
   let can_seek = false
+  let restoring_position = false
   let wake = Promise.withResolvers()
 
   const resume = () => wake.resolve(undefined)
@@ -256,7 +257,10 @@ const stream = () => {
       try {
         if (buffer === undefined) {
           buffer = await open_mse(signal)
-          media.currentTime = time
+          if (media.currentTime !== time) {
+            restoring_position = true
+            media.currentTime = time
+          }
         }
 
         await buffer.prepare(signal, time)
@@ -296,6 +300,10 @@ const stream = () => {
 
   /** @param {boolean} seeking @param {number} time */
   const update = (seeking, time) => {
+    if (seeking && restoring_position) {
+      restoring_position = false
+      return false
+    }
     if (!can_seek) {
       return false
     }
@@ -387,7 +395,6 @@ media.ontimeupdate = () => {
   set_position(current)
 }
 
-media.currentTime = initial_position
 set_position(initial_position)
 onpagehide = () => streaming?.stop(undefined)
 onpageshow = () => streaming?.run()
