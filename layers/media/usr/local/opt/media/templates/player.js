@@ -201,21 +201,22 @@ const source_stream = async function* (signal, time) {
 
 /** @param {AbortSignal} signal @param {ReturnType<typeof mse_buffer>} buffer @param {number} time @param {() => Promise<void>} wait */
 const resumable_stream = async function* (signal, buffer, time, wait) {
-  l1: for (;;) {
+  for (;;) {
     while (buffer.play_ahead(media.currentTime) >= BUFFER.LO) {
       await wait()
       signal.throwIfAborted()
     }
 
-    const start = buffer.frontier() ?? time
-    buffer.seek(start)
-    for await (const bytes of source_stream(signal, start)) {
-      yield bytes
-      if (buffer.play_ahead(media.currentTime) >= BUFFER.HI) {
-        continue l1
+    do {
+      const start = buffer.frontier() ?? time
+      buffer.seek(start)
+      for await (const bytes of source_stream(signal, start)) {
+        yield bytes
       }
-    }
-    return
+      if (same_position(buffer.frontier() ?? start, start)) {
+        return
+      }
+    } while (buffer.play_ahead(media.currentTime) < BUFFER.HI)
   }
 }
 
@@ -303,10 +304,10 @@ const stream = () => {
           await once(signal, undefined, "abort")
           signal.throwIfAborted()
         } catch (error) {
+          buffer = undefined
           if (signal.reason === restart) {
             continue
           }
-          buffer = undefined
           if (signal.aborted && signal.reason !== retrying) {
             return
           }
