@@ -173,13 +173,12 @@ const reload_subtitle = (time) => {
 /** @param {AbortSignal} signal @param {number} time */
 const source_stream = async function* (signal, time) {
   signal.throwIfAborted()
-  const controller = new AbortController()
   /** @type {ReadableStreamDefaultReader<Uint8Array> | undefined} */
   let reader = undefined
 
   try {
     const response = await fetch(source_url(media, time), {
-      signal: AbortSignal.any([signal, controller.signal]),
+      signal,
     })
     reader = response.body?.getReader()
     if (!response.ok || !reader) {
@@ -193,12 +192,7 @@ const source_stream = async function* (signal, time) {
       yield value
     }
   } finally {
-    controller.abort()
-    try {
-      await reader?.cancel()
-    } finally {
-      reader?.releaseLock()
-    }
+    reader?.releaseLock()
   }
 }
 
@@ -211,12 +205,21 @@ const resumable_stream = async function* (signal, buffer, time, wait) {
     }
 
     const start = buffer.frontier() ?? time
+    const connection = new AbortController()
     buffer.seek(start)
-    for await (const bytes of source_stream(signal, start)) {
-      yield bytes
-      if (buffer.play_ahead(media.currentTime) >= BUFFER.HI) {
-        continue l1
+    try {
+      for await (const bytes of source_stream(
+        AbortSignal.any([signal, connection.signal]),
+        start,
+      )) {
+        yield bytes
+        if (buffer.play_ahead(media.currentTime) >= BUFFER.HI) {
+          connection.abort()
+          continue l1
+        }
       }
+    } finally {
+      connection.abort()
     }
     return
   }
