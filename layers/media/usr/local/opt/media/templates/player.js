@@ -286,13 +286,12 @@ const source_stream = async function* (signal, time) {
   let reader = undefined
 
   try {
-    const selected = await select(signal, () =>
+    const response = await select(signal, () =>
       fetch(source, { signal: request_signal }),
     )
-    if (!selected) {
+    if (!response) {
       return
     }
-    const response = selected
     const current = (reader = response.body?.getReader())
     if (!response.ok || !current) {
       throw new Error(`${response.statusText} - ${response.status}`)
@@ -462,12 +461,11 @@ const playback_page = async (signal) => {
         } else {
           resume()
         }
-        set_position(current.time)
       }
       if (!current.paused) {
         resume()
       }
-      if (!transformed && moved) {
+      if (moved && (buffer || !transformed)) {
         set_position(current.time)
       }
 
@@ -478,11 +476,7 @@ const playback_page = async (signal) => {
         }
       } else if (waiting && current.future) {
         waiting = false
-        try {
-          await media.play()
-        } catch (error) {
-          console.error(error)
-        }
+        await media.play().catch(console.error)
       }
       previous = current
     }
@@ -512,19 +506,15 @@ form.onsubmit = (event) => {
 }
 
 void (async () => {
-  try {
-    for (;;) {
-      await once(window, undefined, "pageshow")
-      const page = new AbortController()
-      const playback = playback_page(page.signal)
-      try {
-        await Promise.race([once(window, page.signal, "pagehide"), playback])
-      } finally {
-        page.abort()
-        await playback
-      }
+  for (;;) {
+    await once(window, undefined, "pageshow")
+    const page = new AbortController()
+    const playback = playback_page(page.signal)
+    try {
+      await Promise.race([once(window, page.signal, "pagehide"), playback])
+    } finally {
+      page.abort()
+      await playback
     }
-  } catch (error) {
-    console.error(error)
   }
-})()
+})().catch(console.error)
