@@ -323,10 +323,11 @@ const stream = () => {
           if (signal.aborted && signal.reason !== retrying) {
             return
           }
+          buffer = undefined
+
           if (!signal.aborted) {
             console.error(error)
           }
-          buffer = undefined
         } finally {
           controller.abort()
           controller = new AbortController()
