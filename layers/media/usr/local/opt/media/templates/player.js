@@ -81,7 +81,9 @@ const mse_buffer_update = async function* (signal, mse, buffer) {
     signal.throwIfAborted()
   } catch (error) {
     if (signal.aborted && mse.readyState === "open" && buffer.updating) {
+      const aborted = once(buffer, undefined, "updateend")
       buffer.abort()
+      await aborted
     }
     throw error
   } finally {
@@ -128,6 +130,21 @@ const mse_buffer = (mse, type) => {
     /** @param {number} position */
     seek: (position) => {
       buffer.timestampOffset = position
+    },
+    /** @param {AbortSignal} signal */
+    rotate: async (signal) => {
+      if (mse.readyState !== "open") {
+        return false
+      }
+
+      buffer.abort()
+      const end = mse.duration
+      if (Number.isFinite(end) && end > 0) {
+        for await (const _ of mse_buffer_update(signal, mse, buffer)) {
+          buffer.remove(0, end)
+        }
+      }
+      return true
     },
     end: () => {
       if (mse.readyState === "open") {
@@ -238,12 +255,10 @@ const stream = () => {
       const time = Number(time_input.value)
 
       try {
-        if (buffer === undefined) {
+        if (buffer === undefined || !(await buffer.rotate(signal))) {
           restoring_position = time
           buffer = await open_mse(signal)
         }
-
-        buffer.seek(time)
         if (same_position(media.currentTime, time)) {
           restoring_position = undefined
         } else {
@@ -262,13 +277,12 @@ const stream = () => {
           }
         }
         buffer.end()
-        await once(signal, undefined, "abort")
-        signal.throwIfAborted()
+        await once(signal, signal, "abort")
       } catch (error) {
-        buffer = undefined
         if (signal.reason === restart) {
           continue
         }
+        buffer = undefined
         if (signal.aborted && signal.reason !== retrying) {
           return
         }
