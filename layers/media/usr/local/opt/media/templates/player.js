@@ -27,13 +27,13 @@ const media_source = () => {
   return new (ManagedMediaSource ?? MediaSource)()
 }
 
-/** @param {HTMLMediaElement | HTMLTrackElement} resource @param {number | string} time */
+/** @param {HTMLMediaElement | HTMLTrackElement} resource @param {number} time */
 const source_url = (resource, time) => {
   const source = new URL(
     /** @type {string} */ (resource.dataset.src),
     location.href,
   )
-  source.searchParams.set("t", String(Math.floor(Number(time))))
+  source.searchParams.set("t", String(Math.floor(time)))
   source.searchParams.set("page", PAGE)
   source.searchParams.set("request", crypto.randomUUID())
   return source.toString()
@@ -163,26 +163,22 @@ const open_mse = async (signal) => {
   }
 }
 
-/** @param {number | string} time */
+/** @param {number} time */
 const reload_subtitle = (time) => {
   if (!subtitle) {
     return
   }
-  const source = new URL(source_url(subtitle, time))
-  source.searchParams.set("retry", crypto.randomUUID())
-  subtitle.src = source.toString()
+  subtitle.src = source_url(subtitle, time)
 }
 
 /** @param {AbortSignal} signal @param {number} time */
 const source_stream = async function* (signal, time) {
   signal.throwIfAborted()
   const source = source_url(media, time)
-  /** @type {ReadableStreamDefaultReader<Uint8Array> | undefined} */
-  let reader = undefined
+  const response = await fetch(source, { signal })
+  const reader = response.body?.getReader()
 
   try {
-    const response = await fetch(source, { signal })
-    reader = response.body?.getReader()
     if (!response.ok || !reader) {
       throw new Error(`${response.statusText} ${response.status}`)
     }
@@ -226,7 +222,8 @@ const stream = () => {
   /** @type {ReturnType<typeof mse_buffer> | undefined} */
   let buffer = undefined
   let can_seek = false
-  let restoring_position = false
+  /** @type {number | undefined} */
+  let restored_position = undefined
   let wake = Promise.withResolvers()
 
   const resume = () => wake.resolve(undefined)
@@ -258,8 +255,8 @@ const stream = () => {
         if (buffer === undefined) {
           buffer = await open_mse(signal)
           if (media.currentTime !== time) {
-            restoring_position = true
             media.currentTime = time
+            restored_position = media.currentTime
           }
         }
 
@@ -299,10 +296,13 @@ const stream = () => {
   }
 
   /** @param {boolean} seeking @param {number} time */
-  const update = (seeking, time) => {
-    if (seeking && restoring_position) {
-      restoring_position = false
-      return false
+  const accept_position = (seeking, time) => {
+    if (seeking && restored_position !== undefined) {
+      const restored = time === restored_position
+      restored_position = undefined
+      if (restored) {
+        return false
+      }
     }
     if (!can_seek) {
       return false
@@ -316,7 +316,7 @@ const stream = () => {
     return true
   }
 
-  return { retry, stop, resume, run, update }
+  return { accept_position, retry, stop, resume, run }
 }
 
 const streaming = media.dataset.transformed === "true" ? stream() : undefined
@@ -363,8 +363,6 @@ if (!streaming) {
   media.load()
 }
 
-media.onabort = console.log
-
 media.onerror = () => {
   if (media.error?.code !== MediaError.MEDIA_ERR_ABORTED) {
     streaming?.retry()
@@ -373,27 +371,20 @@ media.onerror = () => {
 
 media.onplay = () => streaming?.resume()
 
-media.onseeking = () => {
-  const target = media.currentTime
-  if (!Number.isFinite(target)) {
+/** @param {boolean} seeking */
+const update_position = (seeking) => {
+  const time = media.currentTime
+  if (!Number.isFinite(time)) {
     return
   }
-  if (streaming && !streaming.update(true, target)) {
+  if (streaming && !streaming.accept_position(seeking, time)) {
     return
   }
-  set_position(target)
+  set_position(time)
 }
 
-media.ontimeupdate = () => {
-  const current = Math.round(media.currentTime * 1_000) / 1_000
-  if (!Number.isFinite(current)) {
-    return
-  }
-  if (streaming && !streaming.update(false, current)) {
-    return
-  }
-  set_position(current)
-}
+media.onseeking = () => update_position(true)
+media.ontimeupdate = () => update_position(false)
 
 set_position(initial_position)
 onpagehide = () => streaming?.stop(undefined)
