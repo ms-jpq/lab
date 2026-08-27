@@ -8,8 +8,8 @@ const time_input = /** @type {HTMLInputElement} */ (
   document.querySelector("form")?.elements.namedItem("t")
 )
 
-const MAX_PLAY_AHEAD = 30
 const MAX_PLAY_BEHIND = 30
+const MAX_PLAY_AHEAD = 30
 const RETRY_DELAY = 1_000
 
 const media_source = () => {
