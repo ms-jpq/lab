@@ -99,7 +99,9 @@ const mse_buffer = (mse, type) => {
 
   /** @param {number} position */
   const seek = (position) => {
-    buffer.abort()
+    if (mse.readyState === "open") {
+      buffer.abort()
+    }
     buffer.timestampOffset = position
   }
 
@@ -274,12 +276,12 @@ const stream = () => {
         try {
           if (buffer === undefined) {
             buffer = await open_mse(signal)
-            if (media.currentTime !== time) {
-              media.currentTime = restored_position = time
-            }
           }
 
           await buffer.prepare(signal, time)
+          if (media.currentTime !== time) {
+            media.currentTime = restored_position = time
+          }
           for await (const bytes of resumable_stream(
             signal,
             buffer,
