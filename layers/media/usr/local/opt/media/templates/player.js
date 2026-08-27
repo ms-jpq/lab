@@ -33,29 +33,6 @@ const once = (target, signal, type) =>
     target.addEventListener(type, complete, { once: true, signal })
   })
 
-/** @param {EventTarget} target @param {AbortSignal | undefined} signal @param {string} type @returns {AsyncIteratorObject<Event>} */
-const events = (target, signal, type) => {
-  signal?.throwIfAborted()
-  let cleanup = () => {}
-  const stream = new ReadableStream(
-    /** @type {UnderlyingDefaultSource<Event>} */ ({
-      start: (controller) => {
-        const receive = (/** @type {Event} */ event) =>
-          controller.enqueue(event)
-        const abort = () => controller.error(signal?.reason)
-        cleanup = () => {
-          target.removeEventListener(type, receive)
-          signal?.removeEventListener("abort", abort)
-        }
-        signal?.addEventListener("abort", abort, { once: true })
-        target.addEventListener(type, receive, { signal })
-      },
-      cancel: () => cleanup(),
-    }),
-  )
-  return stream.values()
-}
-
 const media_source = () => {
   const { ManagedMediaSource } =
     /** @type {typeof globalThis & { ManagedMediaSource?: typeof MediaSource }} */ (
@@ -85,22 +62,27 @@ const mse_buffer_update = async function* (signal, mse, buffer) {
   signal.throwIfAborted()
   const operation = new AbortController()
   const events_signal = AbortSignal.any([signal, operation.signal])
+  let failure = /** @type {Event | undefined} */ (undefined)
 
   const updated = once(buffer, events_signal, "updateend")
-  const failed = (async () => {
-    throw await once(buffer, events_signal, "error")
-  })()
   const aborted = (async () => {
     await once(signal, operation.signal, "abort")
     if (mse.readyState === "open" && buffer.updating) {
       buffer.abort()
     }
   })()
+  void once(buffer, events_signal, "error").then(
+    (event) => (failure = event),
+    () => undefined,
+  )
 
   try {
     yield
-    await Promise.race([updated, failed, aborted])
+    await Promise.race([updated, aborted])
     signal.throwIfAborted()
+    if (failure !== undefined) {
+      throw failure
+    }
   } finally {
     operation.abort()
   }
@@ -387,18 +369,26 @@ media.onerror = () => {
   }
 }
 
-void (async () => {
-  for await (const _ of events(media, undefined, "play")) {
+{
+  let waiting_to_play = false
+
+  media.onplay = async () => {
     streaming?.resume()
     if (media.readyState >= media.HAVE_FUTURE_DATA) {
-      continue
+      waiting_to_play = false
+      return
     }
 
     media.pause()
+    if (waiting_to_play) {
+      return
+    }
+    waiting_to_play = true
     await once(media, undefined, "canplay")
+    waiting_to_play = false
     await media.play()
   }
-})()
+}
 
 /** @param {boolean} seeking */
 const update_position = (seeking) => {
