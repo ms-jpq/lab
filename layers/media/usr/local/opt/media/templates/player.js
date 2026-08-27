@@ -29,12 +29,16 @@ const once = (target, signal, type) => {
   signal?.throwIfAborted()
   const { promise, reject, resolve } = Promise.withResolvers()
   const abort = () => reject(signal?.reason)
-  const complete = (/** @type {Event} */ event) => {
+  const settle = (/** @type {Event} */ event) => {
     signal?.removeEventListener("abort", abort)
-    resolve(event)
+    if (type === "error") {
+      reject(event)
+    } else {
+      resolve(event)
+    }
   }
   signal?.addEventListener("abort", abort, { once: true })
-  target.addEventListener(type, complete, { once: true, signal })
+  target.addEventListener(type, settle, { once: true, signal })
   return promise
 }
 
@@ -66,15 +70,14 @@ const source_url = (resource, time) => {
 const mse_buffer_update = async function* (signal, mse, buffer) {
   const operation = new AbortController()
   const events_signal = AbortSignal.any([signal, operation.signal])
-
-  const updated = once(buffer, events_signal, "updateend")
-  const failed = once(buffer, events_signal, "error").then((event) => {
-    throw event
-  })
+  const settled = Promise.race([
+    once(buffer, events_signal, "updateend"),
+    once(buffer, events_signal, "error"),
+  ])
 
   try {
     yield
-    await Promise.race([updated, failed])
+    await settled
     signal.throwIfAborted()
   } catch (error) {
     if (signal.aborted && mse.readyState === "open" && buffer.updating) {
@@ -144,6 +147,7 @@ const open_mse = async (signal) => {
   const previous = media.src
   media.src = URL.createObjectURL(mse)
   URL.revokeObjectURL(previous)
+
   await once(mse, signal, "sourceopen")
   if (Number.isFinite(duration) && duration > 0) {
     mse.duration = duration
@@ -211,7 +215,7 @@ const stream = () => {
   let buffer = undefined
   let can_seek = false
   /** @type {number | undefined} */
-  let restored_position = undefined
+  let restoring_position = undefined
   let running = Promise.resolve()
   let wake = Promise.withResolvers()
 
@@ -235,12 +239,15 @@ const stream = () => {
 
       try {
         if (buffer === undefined) {
+          restoring_position = time
           buffer = await open_mse(signal)
         }
 
         buffer.seek(time)
-        if (!same_position(media.currentTime, time)) {
-          media.currentTime = restored_position = time
+        if (same_position(media.currentTime, time)) {
+          restoring_position = undefined
+        } else {
+          media.currentTime = time
         }
         for await (const bytes of resumable_stream(
           signal,
@@ -285,12 +292,11 @@ const stream = () => {
         return false
       }
       if (seeking) {
-        if (restored_position !== undefined) {
-          const restored = same_position(time, restored_position)
-          restored_position = undefined
-          if (restored) {
-            return false
+        if (restoring_position !== undefined) {
+          if (same_position(time, restoring_position)) {
+            restoring_position = undefined
           }
+          return false
         }
         if (!can_seek || !buffer?.contains(time)) {
           can_seek = false
