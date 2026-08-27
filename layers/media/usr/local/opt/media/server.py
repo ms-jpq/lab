@@ -9,8 +9,9 @@ from http.cookies import Morsel
 from http.server import BaseHTTPRequestHandler
 from math import isfinite
 from pathlib import Path, PurePosixPath
-from posixpath import curdir, sep
+from posixpath import sep
 from stat import S_ISDIR, S_ISREG
+from urllib.parse import quote
 
 from .ffmpeg import Probe, ProbeError, Stream, probe
 from .filesystem import EntriesError, Entry, entries, entry, resolve
@@ -315,7 +316,7 @@ def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> Non
     match entry(path=path):
         case source, data if S_ISDIR(data.st_mode):
             if not raw.endswith(sep):
-                redirect(request, location=f"{curdir}{sep}")
+                redirect(request, location=f"{quote(relative.name)}{sep}")
                 return
 
             _index(

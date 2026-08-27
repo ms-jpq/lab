@@ -54,11 +54,10 @@ def select_subtitle(
     accept_language: str | None,
 ) -> Stream | None:
     active = {*_codecs(accept_language or "")}
+    if audio and audio.language in active:
+        return None
 
     for item in subtitles:
-        if audio and item.language == audio.language:
-            continue
-
         if item.language in active:
             return item
 

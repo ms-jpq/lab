@@ -42,6 +42,7 @@ with nullcontext():
 def redirect(request: BaseHTTPRequestHandler, *, location: str) -> None:
     request.send_response(HTTPStatus.TEMPORARY_REDIRECT)
     request.send_header("Location", location)
+    request.send_header("Content-Length", "0")
     request.end_headers()
 
 
@@ -70,9 +71,9 @@ with nullcontext():
     def _integer(value: str) -> int | None:
         return int(value) if value.isascii() and value.isdecimal() else None
 
-    def _range(header: str | None, *, size: int) -> tuple[int, int] | None:
+    def _range(header: str | None, *, size: int) -> tuple[HTTPStatus, int, int] | None:
         if header is None:
-            return 0, size - 1
+            return HTTPStatus.OK, 0, size - 1
 
         match header.split("=", 1):
             case ["bytes", raw] if "," not in raw:
@@ -84,17 +85,22 @@ with nullcontext():
                             case int(start), None if not end_raw:
                                 end = size - 1
                             case int(start), int(end):
-                                ...
+                                end = min(end, size - 1)
                             case _:
-                                return 0, size - 1
+                                return HTTPStatus.OK, 0, size - 1
                     case _:
-                        return 0, size - 1
-                return (start, end) if 0 <= start <= end < size else None
+                        return HTTPStatus.OK, 0, size - 1
+                return (
+                    (HTTPStatus.PARTIAL_CONTENT, start, end)
+                    if 0 <= start <= end < size
+                    else None
+                )
             case _:
-                return 0, size - 1
+                return HTTPStatus.OK, 0, size - 1
 
     def _chunks(*, source: BufferedReader, size: int) -> Iterator[bytes]:
-        while size and (chunk := source.read1(size)):
+        while size and (chunk := source.read1()):
+            chunk = chunk[:size]
             size -= len(chunk)
             yield chunk
 
@@ -112,10 +118,7 @@ with nullcontext():
             request.send_header("Content-Length", "0")
             request.end_headers()
             return
-        start, end = selected
-        status = (
-            HTTPStatus.PARTIAL_CONTENT if start or end != size - 1 else HTTPStatus.OK
-        )
+        status, start, end = selected
 
         request.send_response(status)
         request.send_header("Accept-Ranges", "bytes")
@@ -191,6 +194,5 @@ class _Server(ThreadingMixIn, UnixStreamServer):
 
 def unix_server(*, socket: Path, handlers: Mapping[str, _HandlerFn]) -> _Server:
     socket.parent.mkdir(parents=True, exist_ok=True)
-    with suppress(FileNotFoundError):
-        unlink(socket)
+    socket.unlink(missing_ok=True)
     return _Server(socket=socket, handler=_handler(handlers))
