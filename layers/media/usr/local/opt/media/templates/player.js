@@ -580,32 +580,6 @@ const playback_page = async (signal) => {
   }
 }
 
-/** @param {AbortSignal} signal */
-const pages = async function* (signal) {
-  for (;;) {
-    if (
-      cancelled(
-        await select(signal, (s) => once(window, s, "pageshow")),
-        signal,
-      )
-    ) {
-      return
-    }
-    const page = new AbortController()
-    const page_signal = AbortSignal.any([signal, page.signal])
-    window.addEventListener("pagehide", (event) => page.abort(event), {
-      once: true,
-      signal: page_signal,
-    })
-
-    try {
-      yield page_signal
-    } finally {
-      page.abort()
-    }
-  }
-}
-
 set_position(initial_position)
 
 /** @param {SubmitEvent} event */
@@ -628,8 +602,26 @@ form.onsubmit = (event) => {
 void (async () => {
   const root = new AbortController()
   try {
-    for await (const page of pages(root.signal)) {
-      await playback_page(page)
+    for (;;) {
+      if (
+        cancelled(
+          await select(root.signal, (s) => once(window, s, "pageshow")),
+          root.signal,
+        )
+      ) {
+        return
+      }
+      const page = new AbortController()
+      const signal = AbortSignal.any([root.signal, page.signal])
+      window.addEventListener("pagehide", (event) => page.abort(event), {
+        once: true,
+        signal,
+      })
+      try {
+        await playback_page(signal)
+      } finally {
+        page.abort()
+      }
     }
   } catch (error) {
     console.error(error)
