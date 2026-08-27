@@ -8,9 +8,9 @@ const time_input = /** @type {HTMLInputElement} */ (
   document.querySelector("form")?.elements.namedItem("t")
 )
 
-const MAX_PLAY_BEHIND = 30
-const MAX_PAUSE_AHEAD = 30
-const MAX_PLAY_AHEAD = 60
+const MAX_BUFFER_BEHIND = 30
+const MAX_BUFFER_AHEAD = 60
+const MIN_BUFFER_START = MAX_BUFFER_AHEAD - 15
 const RETRY_DELAY = 1_000
 
 const media_source = () => {
@@ -95,7 +95,7 @@ const mse_buffer = (mse, type) => {
 
   /** @param {AbortSignal} signal @param {Uint8Array} bytes */
   const append = async (signal, bytes) => {
-    const end = media.currentTime - MAX_PLAY_BEHIND
+    const end = media.currentTime - MAX_BUFFER_BEHIND
     if (end > 0 && buffer.buffered.length && buffer.buffered.start(0) < end) {
       for await (const _ of mse_buffer_update(signal, mse, buffer)) {
         buffer.remove(0, end)
@@ -209,12 +209,8 @@ const source_stream = async function* (signal, time) {
 
 /** @param {AbortSignal} signal @param {ReturnType<typeof mse_buffer>} buffer @param {number} time @param {() => Promise<void>} wait */
 const resumable_stream = async function* (signal, buffer, time, wait) {
-  const buffered = () =>
-    buffer.play_ahead(media.currentTime) >=
-    (media.paused ? MAX_PAUSE_AHEAD : MAX_PLAY_AHEAD)
-
   l1: for (;;) {
-    while (buffered()) {
+    while (buffer.play_ahead(media.currentTime) >= MIN_BUFFER_START) {
       await wait()
       signal.throwIfAborted()
     }
@@ -223,7 +219,7 @@ const resumable_stream = async function* (signal, buffer, time, wait) {
     buffer.seek(start)
     for await (const bytes of source_stream(signal, start)) {
       yield bytes
-      if (buffered()) {
+      if (buffer.play_ahead(media.currentTime) >= MAX_BUFFER_AHEAD) {
         continue l1
       }
     }
