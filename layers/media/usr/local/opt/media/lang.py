@@ -43,7 +43,7 @@ _RANGE = compile(
 def _language(value: str) -> str:
     candidates: list[tuple[float, int, str]] = []
     for index, item in enumerate(value.split(",")):
-        if (match := _RANGE.fullmatch(item)) is None:
+        if not (match := _RANGE.fullmatch(item)):
             continue
 
         if quality := float(match.group("quality") or 1):
