@@ -19,11 +19,28 @@ const RETRY_DELAY = 1_000
 const POSITION = `media:position:${location.pathname}`
 const PAGE = crypto.randomUUID()
 
-/** @param {EventTarget} target @param {string} type @returns {Promise<void>} */
-const once = (target, type) =>
-  new Promise((resolve) =>
-    target.addEventListener(type, () => resolve(undefined), { once: true }),
-  )
+/** @param {EventTarget} target @param {AbortSignal | undefined} signal @param {string} type @returns {Promise<Event>} */
+const once = (target, signal, type) =>
+  new Promise((resolve, reject) => {
+    signal?.throwIfAborted()
+
+    const abort = () => reject(signal?.reason)
+    const complete = (/** @type {Event} */ event) => {
+      signal?.removeEventListener("abort", abort)
+      resolve(event)
+    }
+    signal?.addEventListener("abort", abort, { once: true })
+    target.addEventListener(type, complete, { once: true, signal })
+  })
+
+/** @param {EventTarget} target @param {AbortSignal | undefined} signal @param {string} type @returns {AsyncIteratorObject<Event>} */
+const events = async function* (target, signal, type) {
+  while (signal?.aborted !== true) {
+    yield await once(target, signal, type)
+  }
+  signal.throwIfAborted()
+  return
+}
 
 const media_source = () => {
   const { ManagedMediaSource } =
@@ -149,31 +166,15 @@ const mse_buffer = (mse, type) => {
 const open_mse = async (signal) => {
   signal.throwIfAborted()
   const mse = media_source()
-  const future = Promise.withResolvers()
   const type = /** @type {string} */ (media.dataset.mseType)
   const duration = Number(media.dataset.duration)
 
-  mse.addEventListener(
-    "sourceopen",
-    () => {
-      if (Number.isFinite(duration) && duration > 0) {
-        mse.duration = duration
-      }
-      future.resolve(undefined)
-    },
-    { once: true },
-  )
-  const abort = () => future.resolve(undefined)
-  signal.addEventListener("abort", abort, { once: true })
-
-  try {
-    media.src = URL.createObjectURL(mse)
-    await future.promise
-    signal.throwIfAborted()
-    return mse_buffer(mse, type)
-  } finally {
-    signal.removeEventListener("abort", abort)
+  media.src = URL.createObjectURL(mse)
+  await once(mse, signal, "sourceopen")
+  if (Number.isFinite(duration) && duration > 0) {
+    mse.duration = duration
   }
+  return mse_buffer(mse, type)
 }
 
 /** @param {number} time */
@@ -396,7 +397,7 @@ media.onerror = () => {
       return
     }
     waiting_to_play = true
-    await once(media, "canplay")
+    await once(media, undefined, "canplay")
     waiting_to_play = false
     await media.play()
   }
