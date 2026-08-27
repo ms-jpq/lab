@@ -16,8 +16,13 @@ const BUFFER = {
   HI: 60,
 }
 const RETRY_DELAY = 1_000
+const POSITION_TOLERANCE = 0.1
 const POSITION = `media:position:${location.pathname}`
 const PAGE = crypto.randomUUID()
+
+/** @param {number} left @param {number} right */
+const same_position = (left, right) =>
+  Math.abs(left - right) <= POSITION_TOLERANCE
 
 /** @param {EventTarget} target @param {AbortSignal | undefined} signal @param {string} type @returns {Promise<Event>} */
 const once = (target, signal, type) => {
@@ -99,9 +104,6 @@ const mse_buffer = (mse, type) => {
 
   /** @param {number} position */
   const seek = (position) => {
-    if (mse.readyState === "open") {
-      buffer.abort()
-    }
     buffer.timestampOffset = position
   }
 
@@ -111,7 +113,7 @@ const mse_buffer = (mse, type) => {
     contains: (position) => {
       const ranges = buffer.buffered
       for (let index = 0; index < ranges.length; index += 1) {
-        if (ranges.start(index) <= position && position <= ranges.end(index)) {
+        if (ranges.start(index) <= position && position < ranges.end(index)) {
           return true
         }
       }
@@ -245,7 +247,7 @@ const stream = () => {
       }
       if (seeking) {
         if (restored_position !== undefined) {
-          const restored = time === restored_position
+          const restored = same_position(time, restored_position)
           restored_position = undefined
           if (restored) {
             return false
@@ -279,7 +281,7 @@ const stream = () => {
           }
 
           await buffer.prepare(signal, time)
-          if (media.currentTime !== time) {
+          if (!same_position(media.currentTime, time)) {
             media.currentTime = restored_position = time
           }
           for await (const bytes of resumable_stream(
@@ -298,15 +300,16 @@ const stream = () => {
             }
           }
           buffer.end()
-          return
+          await once(signal, undefined, "abort")
+          signal.throwIfAborted()
         } catch (error) {
           if (signal.reason === restart) {
             continue
           }
+          buffer = undefined
           if (signal.aborted && signal.reason !== retrying) {
             return
           }
-          buffer = undefined
 
           if (!signal.aborted) {
             console.error(error)
@@ -371,31 +374,27 @@ media.onerror = () => {
 }
 
 {
-  let controller = /** @type {AbortController | null} */ (null)
+  let controller = new AbortController()
 
-  media.onplay = async () => {
+  media.onplay = () => {
     streaming?.resume()
-    controller?.abort()
-    controller = null
+    controller.abort()
+    const current = (controller = new AbortController())
     if (media.readyState >= media.HAVE_FUTURE_DATA) {
       return
     }
 
     media.pause()
-    const current = new AbortController()
-    controller = current
-    try {
-      await once(media, current.signal, "canplay")
-    } catch (error) {
-      if (!current.signal.aborted) {
-        throw error
+    void (async () => {
+      try {
+        await once(media, current.signal, "canplay")
+        await media.play()
+      } catch (error) {
+        if (!current.signal.aborted) {
+          console.error(error)
+        }
       }
-      return
-    }
-    if (controller === current) {
-      controller = null
-      await media.play()
-    }
+    })()
   }
 }
 
