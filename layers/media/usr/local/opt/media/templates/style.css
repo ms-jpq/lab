@@ -66,15 +66,14 @@ body {
         align-items: end;
         display: grid;
         gap: 0.5rem;
-        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-columns: minmax(max-content, 1fr) auto minmax(
+            max-content,
+            1fr
+          );
 
         & > .back {
           align-self: center;
-          background: ButtonFace;
-          border: 1px solid ButtonBorder;
-          color: ButtonText;
-          padding: 0.25rem 0.5rem;
-          text-decoration: none;
+          justify-self: start;
         }
 
         & > .selections {
@@ -98,6 +97,7 @@ body {
 
         & > button {
           align-self: center;
+          justify-self: end;
         }
       }
     }
@@ -114,12 +114,6 @@ body {
       overflow-x: auto;
       padding: 0.75rem;
       width: 100%;
-
-      & form {
-        & > .selections {
-          justify-self: start;
-        }
-      }
 
       & :is(button, select) {
         min-height: 2.75rem;
