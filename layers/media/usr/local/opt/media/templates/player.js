@@ -34,12 +34,26 @@ const once = (target, signal, type) =>
   })
 
 /** @param {EventTarget} target @param {AbortSignal | undefined} signal @param {string} type @returns {AsyncIteratorObject<Event>} */
-const events = async function* (target, signal, type) {
-  while (signal?.aborted !== true) {
-    yield await once(target, signal, type)
-  }
-  signal.throwIfAborted()
-  return
+const events = (target, signal, type) => {
+  signal?.throwIfAborted()
+  let cleanup = () => {}
+  const stream = new ReadableStream(
+    /** @type {UnderlyingDefaultSource<Event>} */ ({
+      start: (controller) => {
+        const receive = (/** @type {Event} */ event) =>
+          controller.enqueue(event)
+        const abort = () => controller.error(signal?.reason)
+        cleanup = () => {
+          target.removeEventListener(type, receive)
+          signal?.removeEventListener("abort", abort)
+        }
+        signal?.addEventListener("abort", abort, { once: true })
+        target.addEventListener(type, receive, { signal })
+      },
+      cancel: () => cleanup(),
+    }),
+  )
+  return stream.values()
 }
 
 const media_source = () => {
@@ -69,34 +83,26 @@ const source_url = (resource, time) => {
  */
 const mse_buffer_update = async function* (signal, mse, buffer) {
   signal.throwIfAborted()
-  const future = Promise.withResolvers()
-  let failure = /** @type {Event | undefined} */ (undefined)
-  buffer.onerror = (event) => {
-    failure = event
-  }
-  buffer.onupdateend = () => {
-    if (failure === undefined) {
-      future.resolve(undefined)
-    } else {
-      future.reject(failure)
-    }
-  }
+  const operation = new AbortController()
+  const events_signal = AbortSignal.any([signal, operation.signal])
 
-  const abort = () => {
+  const updated = once(buffer, events_signal, "updateend")
+  const failed = (async () => {
+    throw await once(buffer, events_signal, "error")
+  })()
+  const aborted = (async () => {
+    await once(signal, operation.signal, "abort")
     if (mse.readyState === "open" && buffer.updating) {
       buffer.abort()
     }
-  }
-  signal.addEventListener("abort", abort, { once: true })
+  })()
 
   try {
     yield
-    await future.promise
+    await Promise.race([updated, failed, aborted])
     signal.throwIfAborted()
   } finally {
-    buffer.onupdateend = null
-    buffer.onerror = null
-    signal.removeEventListener("abort", abort)
+    operation.abort()
   }
 }
 
@@ -363,17 +369,15 @@ const set_position = (value) => {
 }
 
 if (!streaming) {
-  media.addEventListener(
-    "loadedmetadata",
-    () => {
-      if (initial_position > 0) {
-        media.currentTime = initial_position
-      }
-    },
-    { once: true },
-  )
-  media.src = source_url(media, media.currentTime)
-  media.load()
+  void (async () => {
+    const loaded = once(media, undefined, "loadedmetadata")
+    media.src = source_url(media, media.currentTime)
+    media.load()
+    await loaded
+    if (initial_position > 0) {
+      media.currentTime = initial_position
+    }
+  })()
 }
 
 media.onerror = () => {
