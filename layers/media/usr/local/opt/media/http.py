@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from contextlib import nullcontext, suppress
 from http import HTTPStatus
+from http.cookies import CookieError, Morsel, SimpleCookie
 from http.server import BaseHTTPRequestHandler
 from io import BufferedReader
 from logging import getLogger
@@ -21,18 +22,43 @@ def target(raw: str) -> tuple[str, Query]:
     return split.path, parse_qs(split.query, keep_blank_values=True)
 
 
+with nullcontext():
+
+    def cookies(request: BaseHTTPRequestHandler) -> dict[str, str]:
+        jar = SimpleCookie()
+        with suppress(CookieError):
+            jar.load(request.headers.get("Cookie", ""))
+        return {name: morsel.value for name, morsel in jar.items()}
+
+    def set_cookie(*, name: str, path: str, value: str) -> Morsel[str]:
+        jar = SimpleCookie({name: value})
+        morsel = jar[name]
+        morsel["httponly"] = True
+        morsel["path"] = path
+        morsel["samesite"] = "Lax"
+        return morsel
+
+
 def redirect(request: BaseHTTPRequestHandler, *, location: str) -> None:
     request.send_response(HTTPStatus.TEMPORARY_REDIRECT)
     request.send_header("Location", location)
     request.end_headers()
 
 
-def html(request: BaseHTTPRequestHandler, *, body: str, head: bool) -> None:
+def html(
+    request: BaseHTTPRequestHandler,
+    *,
+    cookies: Iterable[Morsel[str]] = (),
+    body: str,
+    head: bool,
+) -> None:
     encoded = body.encode()
 
     request.send_response(HTTPStatus.OK)
     request.send_header("Content-Type", "text/html; charset=utf-8")
     request.send_header("Content-Length", str(len(encoded)))
+    for morsel in cookies:
+        request.send_header("Set-Cookie", morsel.OutputString())
     request.end_headers()
 
     if not head:

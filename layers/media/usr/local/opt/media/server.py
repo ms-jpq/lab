@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from contextlib import suppress
+from collections.abc import Iterator
+from contextlib import nullcontext, suppress
+from enum import StrEnum
 from functools import partial
 from http import HTTPStatus
+from http.cookies import Morsel
 from http.server import BaseHTTPRequestHandler
 from math import isfinite
 from pathlib import Path, PurePosixPath
@@ -11,27 +14,39 @@ from stat import S_ISDIR, S_ISREG
 
 from .ffmpeg import Probe, ProbeError, Stream, probe
 from .filesystem import EntriesError, Entry, entries, entry, resolve
+from .html import Selection
 from .html import index as index_html
 from .html import player as player_html
 from .http import (
     Query,
     _Server,
+    cookies,
     file,
     html,
     redirect,
+    set_cookie,
     stream,
     target,
     unix_server,
 )
 from .lang import select_subtitle
 
-_NATIVE_PROFILE = "native"
-_HEIGHTS = {
-    _NATIVE_PROFILE: None,
-    "2160p": 2160,
-    "1080p": 1080,
-    "720p": 720,
-}
+with nullcontext():
+    _NATIVE_PROFILE = "native"
+    _HEIGHTS = {
+        _NATIVE_PROFILE: None,
+        "2160p": 2160,
+        "1080p": 1080,
+        "720p": 720,
+    }
+
+with nullcontext():
+    _COOKIE_PATH = "/media/"
+
+
+class _Preference(StrEnum):
+    AUDIO = "audio"
+    SUBTITLE = "subtitle"
 
 
 def _profiles(media: Probe) -> tuple[str, ...]:
@@ -63,11 +78,24 @@ def _selected(streams: tuple[Stream, ...], *, value: str) -> Stream | None:
     return None
 
 
-def _audio(media: Probe, query: Query) -> Stream | None:
-    match query:
-        case {"audio": [*_, value]}:
-            return _selected(media.audios, value=value)
-        case _:
+def _language(streams: tuple[Stream, ...], *, value: str) -> Stream | None:
+    for item in streams:
+        if item.language == value:
+            return item
+    return None
+
+
+def _audio(media: Probe, *, query: Query, preferences: dict[str, str]) -> Stream | None:
+    match query, preferences:
+        case {_Preference.AUDIO: [*_, Selection.NONE]}, _:
+            return media.default_audio
+        case {_Preference.AUDIO: [*_, language]}, _:
+            return _language(media.audios, value=language) or media.default_audio
+        case _, {_Preference.AUDIO: Selection.NONE}:
+            return media.default_audio
+        case _, {_Preference.AUDIO: str(language)}:
+            return _language(media.audios, value=language) or media.default_audio
+        case _, _:
             return media.default_audio
 
 
@@ -75,20 +103,42 @@ def _subtitle(
     media: Probe,
     *,
     audio: Stream | None,
-    request: BaseHTTPRequestHandler,
     query: Query,
+    preferences: dict[str, str],
+    request: BaseHTTPRequestHandler,
 ) -> Stream | None:
-    match query:
-        case {"subtitle": [*_, value]}:
-            return _selected(media.subtitles, value=value)
-        case {"subtitle": _}:
+    match query, preferences:
+        case {_Preference.SUBTITLE: [*_, Selection.NONE]}, _:
             return None
-        case _:
+        case {_Preference.SUBTITLE: [*_, language]}, _:
+            return _language(media.subtitles, value=language)
+        case _, {_Preference.SUBTITLE: Selection.NONE}:
+            return None
+        case _, {_Preference.SUBTITLE: str(language)}:
+            return _language(media.subtitles, value=language)
+        case _, _:
             return select_subtitle(
                 audio=audio,
                 subtitles=media.subtitles,
                 accept_language=request.headers.get("Accept-Language"),
             )
+
+
+def _query_preferences(query: Query) -> dict[str, str]:
+    return {
+        name: values[-1] or Selection.NONE
+        for name in _Preference
+        if (values := query.get(name))
+    }
+
+
+def _set_preferences(query: Query) -> Iterator[Morsel[str]]:
+    for name, value in _query_preferences(query).items():
+        yield set_cookie(
+            name=name,
+            path=_COOKIE_PATH,
+            value=value,
+        )
 
 
 def _time(query: Query) -> str:
@@ -115,6 +165,7 @@ def _index(
     *,
     path: Path,
     relative: PurePosixPath,
+    query: Query,
     head: bool,
 ) -> None:
     try:
@@ -125,7 +176,12 @@ def _index(
 
     html(
         request,
-        body=index_html(entries=selected, relative=relative),
+        body=index_html(
+            relative=relative,
+            query=_query_preferences(query),
+            entries=selected,
+        ),
+        cookies=_set_preferences(query),
         head=head,
     )
 
@@ -152,9 +208,16 @@ def _player(
         return
 
     profile, _ = selected
-    audio = _audio(media, query)
+    preferences = cookies(request)
+    audio = _audio(media, query=query, preferences=preferences)
     audio_index = audio.index if audio else None
-    subtitle = _subtitle(media, audio=audio, request=request, query=query)
+    subtitle = _subtitle(
+        media,
+        audio=audio,
+        query=query,
+        preferences=preferences,
+        request=request,
+    )
 
     transformed = (
         profile != _NATIVE_PROFILE
@@ -162,8 +225,9 @@ def _player(
     )
     html(
         request,
+        cookies=_set_preferences(query),
         body=player_html(
-            audio=audio_index,
+            audio=audio,
             probe=media,
             relative=relative,
             profile=profile,
@@ -196,7 +260,7 @@ def _stream(
         return
 
     profile, height = selected
-    audio = _audio(media, query)
+    audio = _audio(media, query=query, preferences=cookies(request))
     audio_index = audio.index if audio else None
 
     match profile, media.direct_content_type(audio=audio_index):
@@ -258,7 +322,13 @@ def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> Non
                 redirect(request, location=f"{curdir}{sep}")
                 return
 
-            _index(request, path=source, relative=relative, head=head)
+            _index(
+                request,
+                path=source,
+                relative=relative,
+                query=query,
+                head=head,
+            )
             return
 
         case source, data if S_ISREG(data.st_mode):

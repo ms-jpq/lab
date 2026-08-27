@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
+from enum import StrEnum
 from functools import cache
 from html import escape
 from importlib.resources import files
@@ -14,6 +15,11 @@ from urllib.parse import quote, urlencode
 
 from .ffmpeg import Probe, Stream
 from .filesystem import Entry
+
+
+class Selection(StrEnum):
+    NONE = "none"
+
 
 _PLACEHOLDER = compile(
     r"(?:<!--\s*|/\*\s*)(\$\{[_A-Za-z][_A-Za-z0-9]*\})(?:\s*-->|\s*\*/)"
@@ -39,6 +45,10 @@ def _child(*, relative: PurePosixPath, endpoint: str, query: dict[str, str]) -> 
     return f"{curdir}{sep}{quote(relative.name)}{sep}{endpoint}?{urlencode(query)}"
 
 
+def _href(*, path: str, query: dict[str, str]) -> str:
+    return f"{path}?{urlencode(query)}" if query else path
+
+
 def _size(size: int | None) -> str:
     if size is None:
         return "—"
@@ -53,21 +63,21 @@ def _size(size: int | None) -> str:
     return f"{size / (1 << 40):.1f} TiB"
 
 
-def _entry(*, entry: Entry) -> str:
+def _entry(*, entry: Entry, query: dict[str, str]) -> str:
     path, data = entry
     name = path.name + (sep if S_ISDIR(data.st_mode) else "")
     return _render(
         "index-entry.html",
-        href=escape(quote(name), quote=True),
+        href=escape(_href(path=quote(name), query=query), quote=True),
         name=escape(name),
         size=_size(data.st_size if S_ISREG(data.st_mode) else None),
     )
 
 
-def _parent() -> str:
+def _parent(*, query: dict[str, str]) -> str:
     return _render(
         "index-entry.html",
-        href="../",
+        href=_href(path="../", query=query),
         name="../",
         size="—",
     )
@@ -127,32 +137,37 @@ def _options(options: Iterable[tuple[str, str]], *, selected: str) -> str:
     )
 
 
-def _stream_options(
-    streams: tuple[Stream, ...], *, selected: int | None, empty: str
-) -> str:
+def _language_options(streams: tuple[Stream, ...]) -> Iterator[tuple[str, str]]:
+    languages: set[str] = set()
+    for stream in streams:
+        if stream.language not in languages:
+            languages.add(stream.language)
+            yield stream.language, f"{stream.index}: {stream.language} {stream.codec}"
+    return
+
+
+def _subtitle_options(streams: tuple[Stream, ...], *, selected: Stream | None) -> str:
     return _options(
         chain(
-            (("", empty),),
-            (
-                (str(stream.index), f"{stream.index}: {stream.language} {stream.codec}")
-                for stream in streams
-            ),
+            ((Selection.NONE, "None"),),
+            _language_options(streams),
         ),
-        selected=str(selected) if selected is not None else "",
+        selected=selected.language if selected else Selection.NONE,
     )
 
 
 def index(
     *,
-    entries: tuple[Entry, ...],
     relative: PurePosixPath,
+    query: dict[str, str],
+    entries: tuple[Entry, ...],
 ) -> str:
     return _render(
         "index.html",
         entries="".join(
             chain(
-                (_parent(),) if relative.parts else (),
-                (_entry(entry=entry) for entry in entries),
+                (_parent(query=query),) if relative.parts else (),
+                (_entry(entry=entry, query=query) for entry in entries),
             )
         ),
         style=_resource("style.css"),
@@ -161,7 +176,7 @@ def index(
 
 def player(
     *,
-    audio: int | None,
+    audio: Stream | None,
     probe: Probe,
     relative: PurePosixPath,
     profile: str,
@@ -171,9 +186,11 @@ def player(
     title: str,
     transformed: bool,
 ) -> str:
-    play_query = {"profile": profile, "t": time}
-    if audio is not None:
-        play_query["audio"] = str(audio)
+    play_query = {
+        "audio": audio.language if audio else Selection.NONE,
+        "profile": profile,
+        "t": time,
+    }
     track = ""
     if subtitle:
         subtitle_query = {"stream": str(subtitle.index)}
@@ -189,10 +206,9 @@ def player(
         )
     return _render(
         "player.html",
-        audio_options=_stream_options(
-            probe.audios,
-            selected=audio,
-            empty="No audio",
+        audio_options=_options(
+            _language_options(probe.audios),
+            selected=audio.language if audio else "",
         ),
         player=_player_element(
             duration=probe.duration or "0",
@@ -209,11 +225,7 @@ def player(
         profile_options=_options(
             ((value, value) for value in profiles), selected=profile
         ),
-        subtitle_options=_stream_options(
-            probe.subtitles,
-            selected=subtitle.index if subtitle else None,
-            empty="None",
-        ),
+        subtitle_options=_subtitle_options(probe.subtitles, selected=subtitle),
         script=_resource("player.js"),
         style=_resource("style.css"),
         time=escape(time, quote=True),
