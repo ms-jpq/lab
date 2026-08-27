@@ -22,6 +22,7 @@ const PAGE = crypto.randomUUID()
 /** @typedef {number | readonly [position: number, bytes: Uint8Array]} MseOperation */
 /** @typedef {AsyncGenerator<void, void, MseOperation | undefined> & {contains: (position: number) => boolean, frontier: () => number | undefined, play_ahead: (position: number) => number}} MseBuffer */
 /** @typedef {(signal: AbortSignal) => MseBuffer} MseBufferFactory */
+/** @typedef {AsyncGenerator<MseBuffer, void, void> & {abort: (reason: unknown) => void, signal: AbortSignal}} Attempt */
 
 /** @param {EventTarget} target @param {AbortSignal | undefined} signal @param {string} type @returns {Promise<Event>} */
 const once = (target, signal, type) => {
@@ -320,7 +321,8 @@ const playback_page = async (signal) => {
   const scope = new AbortController()
   const page_signal = AbortSignal.any([signal, scope.signal])
   const restart = Symbol("restart")
-  let controller = new AbortController()
+  /** @type {Attempt | undefined} */
+  let session = undefined
   const stream_state = {
     active: /** @type {MseBuffer | undefined} */ (undefined),
   }
@@ -338,76 +340,89 @@ const playback_page = async (signal) => {
   }
 
   /** @param {unknown} reason */
-  const stop = (reason) => controller.abort(reason)
+  const stop = (reason) => session?.abort(reason)
 
-  /** @param {MseBufferFactory} create_buffer */
-  const attempt = async (create_buffer) => {
-    stream_state.active = undefined
-    const current = (controller = new AbortController())
-    const signal = AbortSignal.any([page_signal, current.signal])
+  /** @param {MseBufferFactory} create_buffer @returns {Attempt} */
+  const attempt = (create_buffer) => {
+    const controller = new AbortController()
+    const signal = AbortSignal.any([page_signal, controller.signal])
     /** @type {MseBuffer | undefined} */
     let buffer = undefined
     const time = Number(time_input.value)
+    let active = false
 
-    try {
-      buffer = create_buffer(signal)
-      await buffer.next()
-      if (Math.abs(media.currentTime - time) > POSITION_TOLERANCE) {
-        media.currentTime = time
-      }
-
-      streaming: for (;;) {
-        while (buffer.play_ahead(media.currentTime) >= BUFFER.LO) {
-          if (!(await wait(signal))) {
-            break streaming
-          }
+    const run = async function* () {
+      try {
+        buffer = create_buffer(signal)
+        await buffer.next()
+        if (Math.abs(media.currentTime - time) > POSITION_TOLERANCE) {
+          media.currentTime = time
         }
 
-        const start = buffer.frontier() ?? time
-        if ((await buffer.next(start)).done) {
-          break
-        }
-        for await (const bytes of source_stream(signal, start)) {
-          if ((await buffer.next([media.currentTime, bytes])).done) {
-            break streaming
-          }
-          if (!stream_state.active) {
-            stream_state.active = buffer
-            if (subtitle) {
-              subtitle.src = source_url(subtitle, time)
+        streaming: for (;;) {
+          while (buffer.play_ahead(media.currentTime) >= BUFFER.LO) {
+            if (!(await wait(signal))) {
+              break streaming
             }
           }
-          if (buffer.play_ahead(media.currentTime) >= BUFFER.HI) {
-            continue streaming
+
+          const start = buffer.frontier() ?? time
+          if ((await buffer.next(start)).done) {
+            break
           }
+          for await (const bytes of source_stream(signal, start)) {
+            if ((await buffer.next([media.currentTime, bytes])).done) {
+              break streaming
+            }
+            if (!active) {
+              active = true
+              if (subtitle) {
+                subtitle.src = source_url(subtitle, time)
+              }
+              yield buffer
+            }
+            if (buffer.play_ahead(media.currentTime) >= BUFFER.HI) {
+              continue streaming
+            }
+          }
+          if (!signal.aborted) {
+            await buffer.next()
+          }
+          await select(signal)
+          break
         }
+      } catch (error) {
         if (!signal.aborted) {
-          await buffer.next()
+          console.error(error)
         }
-        await select(signal)
-        break
+      } finally {
+        controller.abort()
+        await buffer?.return()
       }
-    } catch (error) {
-      if (!signal.aborted) {
-        console.error(error)
-      }
-    } finally {
-      if (stream_state.active === buffer) {
-        stream_state.active = undefined
-      }
-      current.abort()
-      await buffer?.return()
+      return
     }
 
-    return current.signal.reason
+    return Object.assign(run(), {
+      abort: (/** @type {unknown} */ reason) => controller.abort(reason),
+      signal: controller.signal,
+    })
   }
 
   const run = async () => {
     for (;;) {
       try {
         for await (const create_buffer of mse(page_signal)) {
+          const current = (session = attempt(create_buffer))
+          try {
+            for await (const buffer of current) {
+              stream_state.active = buffer
+            }
+          } finally {
+            stream_state.active = undefined
+            session = undefined
+          }
           if (
-            (await attempt(create_buffer)) !== restart &&
+            current.signal.reason !== restart &&
             !(await retry_delay(page_signal))
           ) {
             return
