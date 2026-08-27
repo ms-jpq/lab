@@ -9,8 +9,9 @@ const time_input = /** @type {HTMLInputElement} */ (
 )
 
 const MAX_BUFFER_BEHIND = 30
-const MAX_BUFFER_AHEAD = 60
-const MIN_BUFFER_START = MAX_BUFFER_AHEAD - 15
+// TODO: https://bugzilla.mozilla.org/show_bug.cgi?id=1808868
+const MAX_BUFFER_HI = 60
+const MIN_BUFFER_LO = MAX_BUFFER_HI - 15
 const RETRY_DELAY = 1_000
 
 const media_source = () => {
@@ -210,7 +211,7 @@ const source_stream = async function* (signal, time) {
 /** @param {AbortSignal} signal @param {ReturnType<typeof mse_buffer>} buffer @param {number} time @param {() => Promise<void>} wait */
 const resumable_stream = async function* (signal, buffer, time, wait) {
   l1: for (;;) {
-    while (buffer.play_ahead(media.currentTime) >= MIN_BUFFER_START) {
+    while (buffer.play_ahead(media.currentTime) >= MIN_BUFFER_LO) {
       await wait()
       signal.throwIfAborted()
     }
@@ -219,7 +220,7 @@ const resumable_stream = async function* (signal, buffer, time, wait) {
     buffer.seek(start)
     for await (const bytes of source_stream(signal, start)) {
       yield bytes
-      if (buffer.play_ahead(media.currentTime) >= MAX_BUFFER_AHEAD) {
+      if (buffer.play_ahead(media.currentTime) >= MAX_BUFFER_HI) {
         continue l1
       }
     }
