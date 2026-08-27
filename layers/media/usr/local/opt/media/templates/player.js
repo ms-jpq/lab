@@ -210,7 +210,7 @@ const source_stream = async function* (signal, time) {
 const resumable_stream = async function* (signal, buffer, time, wait) {
   const buffered = () => buffer.play_ahead(media.currentTime) >= MAX_PLAY_AHEAD
 
-  resumable: for (;;) {
+  l1: for (;;) {
     while (buffered()) {
       await wait()
       signal.throwIfAborted()
@@ -221,7 +221,7 @@ const resumable_stream = async function* (signal, buffer, time, wait) {
     for await (const bytes of source_stream(signal, start)) {
       yield bytes
       if (buffered()) {
-        continue resumable
+        continue l1
       }
     }
     return
