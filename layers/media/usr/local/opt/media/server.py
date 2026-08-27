@@ -46,10 +46,10 @@ def _profiles(media: Probe) -> tuple[str, ...]:
             return (_NATIVE_PROFILE,)
 
 
-def _profile(media: Probe, query: Query) -> tuple[str, int | None] | None:
+def _profile(profiles: tuple[str, ...], query: Query) -> tuple[str, int | None] | None:
     match query:
         case {"profile": [*_, profile]}:
-            return (profile, _HEIGHTS[profile]) if profile in _profiles(media) else None
+            return (profile, _HEIGHTS[profile]) if profile in profiles else None
         case _:
             return _NATIVE_PROFILE, None
 
@@ -143,7 +143,8 @@ def _player(
         request.send_error(HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
         return
 
-    if (selected := _profile(media, query)) is None:
+    profiles = _profiles(media)
+    if (selected := _profile(profiles, query)) is None:
         request.send_error(HTTPStatus.BAD_REQUEST)
         return
 
@@ -163,7 +164,7 @@ def _player(
             probe=media,
             relative=relative,
             profile=profile,
-            profiles=_profiles(media),
+            profiles=profiles,
             subtitle=subtitle,
             time=_time(query),
             title=path.name,
@@ -187,7 +188,7 @@ def _stream(
         request.send_error(HTTPStatus.BAD_REQUEST)
         return
 
-    if (selected := _profile(media, query)) is None:
+    if (selected := _profile(_profiles(media), query)) is None:
         request.send_error(HTTPStatus.BAD_REQUEST)
         return
     profile, height = selected
@@ -228,21 +229,17 @@ def _subtitle_stream(
     if (media := _media(request, entry=entry)) is None:
         return
     match query:
-        case {"stream": [*_, value]}:
-            subtitle = _selected(media.subtitles, value=value)
+        case {"stream": [*_, value]} if (
+            subtitle := _selected(media.subtitles, value=value)
+        ) is not None:
+            stream(
+                request,
+                source=media.subtitle(subtitle=subtitle, time=_time(query)),
+                content_type="text/vtt; charset=utf-8",
+                head=head,
+            )
         case _:
-            subtitle = None
-
-    if subtitle is None:
-        request.send_error(HTTPStatus.BAD_REQUEST)
-        return
-
-    stream(
-        request,
-        source=media.subtitle(subtitle=subtitle, time=_time(query)),
-        content_type="text/vtt; charset=utf-8",
-        head=head,
-    )
+            request.send_error(HTTPStatus.BAD_REQUEST)
 
 
 def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> None:
