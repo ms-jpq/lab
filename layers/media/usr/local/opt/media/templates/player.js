@@ -19,6 +19,12 @@ const RETRY_DELAY = 1_000
 const POSITION = `media:position:${location.pathname}`
 const PAGE = crypto.randomUUID()
 
+/** @param {EventTarget} target @param {string} type @returns {Promise<void>} */
+const once = (target, type) =>
+  new Promise((resolve) =>
+    target.addEventListener(type, () => resolve(undefined), { once: true }),
+  )
+
 const media_source = () => {
   const { ManagedMediaSource } =
     /** @type {typeof globalThis & { ManagedMediaSource?: typeof MediaSource }} */ (
@@ -375,7 +381,26 @@ media.onerror = () => {
   }
 }
 
-media.onplay = () => streaming?.resume()
+{
+  let waiting_to_play = false
+
+  media.onplay = async () => {
+    streaming?.resume()
+    if (media.readyState >= media.HAVE_FUTURE_DATA) {
+      waiting_to_play = false
+      return
+    }
+
+    media.pause()
+    if (waiting_to_play) {
+      return
+    }
+    waiting_to_play = true
+    await once(media, "canplay")
+    waiting_to_play = false
+    await media.play()
+  }
+}
 
 /** @param {boolean} seeking */
 const update_position = (seeking) => {
