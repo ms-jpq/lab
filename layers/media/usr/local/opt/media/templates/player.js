@@ -40,11 +40,11 @@ const set_position = (value) => {
 }
 
 /**
+ * @param {AbortSignal} signal
  * @param {MediaSource} mse
  * @param {SourceBuffer} buffer
- * @param {AbortSignal} signal
  */
-const mse_buffer_update = async function* (mse, buffer, signal) {
+const mse_buffer_update = async function* (signal, mse, buffer) {
   signal.throwIfAborted()
   const future = Promise.withResolvers()
   buffer.onupdateend = () => future.resolve(undefined)
@@ -96,11 +96,11 @@ const mse_buffer = (mse, type) => {
   const append = async (signal, bytes) => {
     const end = media.currentTime - MAX_PLAY_BEHIND
     if (end > 0 && buffer.buffered.length && buffer.buffered.start(0) < end) {
-      for await (const _ of mse_buffer_update(mse, buffer, signal)) {
+      for await (const _ of mse_buffer_update(signal, mse, buffer)) {
         buffer.remove(0, end)
       }
     }
-    for await (const _ of mse_buffer_update(mse, buffer, signal)) {
+    for await (const _ of mse_buffer_update(signal, mse, buffer)) {
       buffer.appendBuffer(new Uint8Array(bytes))
     }
   }
@@ -116,7 +116,7 @@ const mse_buffer = (mse, type) => {
     signal.throwIfAborted()
     const duration = mse.duration
     if (buffer.buffered.length && Number.isFinite(duration)) {
-      for await (const _ of mse_buffer_update(mse, buffer, signal)) {
+      for await (const _ of mse_buffer_update(signal, mse, buffer)) {
         buffer.remove(0, duration)
       }
     }
@@ -206,8 +206,8 @@ const source_stream = async function* (signal, time) {
   }
 }
 
-/** @param {ReturnType<typeof mse_buffer>} buffer @param {AbortSignal} signal @param {number} time @param {() => Promise<void>} wait */
-const resumable_stream = async function* (buffer, signal, time, wait) {
+/** @param {AbortSignal} signal @param {ReturnType<typeof mse_buffer>} buffer @param {number} time @param {() => Promise<void>} wait */
+const resumable_stream = async function* (signal, buffer, time, wait) {
   const buffered = () => buffer.play_ahead(media.currentTime) >= MAX_PLAY_AHEAD
 
   resumable: for (;;) {
@@ -241,6 +241,11 @@ const stream = () => {
 
   const resume = () => wake.resolve(undefined)
 
+  const wait = async () => {
+    await wake.promise
+    wake = Promise.withResolvers()
+  }
+
   /** @param {unknown} reason */
   const stop = (reason) => {
     controller.abort(reason)
@@ -270,13 +275,10 @@ const stream = () => {
         can_seek = true
         reload_subtitle(time)
         for await (const bytes of resumable_stream(
-          buffer,
           signal,
+          buffer,
           time,
-          async () => {
-            await wake.promise
-            wake = Promise.withResolvers()
-          },
+          wait,
         )) {
           await buffer.append(signal, bytes)
         }
@@ -312,11 +314,7 @@ const stream = () => {
     if (!can_seek) {
       return false
     }
-    if (!seeking) {
-      resume()
-      return true
-    }
-    if (buffer?.contains(time)) {
+    if (!seeking || buffer?.contains(time)) {
       resume()
       return true
     }
