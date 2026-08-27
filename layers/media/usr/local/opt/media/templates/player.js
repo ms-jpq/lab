@@ -190,23 +190,24 @@ const source_stream = async function* (signal, time) {
 
 /** @param {ReturnType<typeof mse_buffer>} buffer @param {AbortSignal} signal @param {number} time @param {() => Promise<void>} wait */
 const resumable_stream = async function* (buffer, signal, time, wait) {
-  const full = () => buffer.play_ahead(media.currentTime) >= MAX_PLAY_AHEAD
+  const buffered = () => buffer.play_ahead(media.currentTime) >= MAX_PLAY_AHEAD
 
-  while (full()) {
-    await wait()
-    signal.throwIfAborted()
-  }
-
-  const start = buffer.frontier() ?? time
-  buffer.seek(start)
-  for await (const bytes of source_stream(signal, start)) {
-    yield bytes
-    while (full()) {
+  resumable: for (;;) {
+    while (buffered()) {
       await wait()
       signal.throwIfAborted()
     }
+
+    const start = buffer.frontier() ?? time
+    buffer.seek(start)
+    for await (const bytes of source_stream(signal, start)) {
+      yield bytes
+      if (buffered()) {
+        continue resumable
+      }
+    }
+    return
   }
-  return
 }
 
 const stream = () => {
