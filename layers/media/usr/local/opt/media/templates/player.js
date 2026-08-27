@@ -42,9 +42,8 @@ const set_position = (value) => {
  * @param {MediaSource} mse
  * @param {SourceBuffer} buffer
  * @param {AbortSignal} signal
- * @param {() => void} operation
  */
-const mse_buffer_update = async (mse, buffer, signal, operation) => {
+const mse_buffer_update = async function* (mse, buffer, signal) {
   signal.throwIfAborted()
   const future = Promise.withResolvers()
   buffer.onupdateend = () => future.resolve(undefined)
@@ -58,7 +57,7 @@ const mse_buffer_update = async (mse, buffer, signal, operation) => {
   signal.addEventListener("abort", abort, { once: true })
 
   try {
-    operation()
+    yield
     await future.promise
     signal.throwIfAborted()
   } finally {
@@ -82,10 +81,11 @@ const mse_buffer = (mse, type) => {
   const play_ahead = (position) => (frontier() ?? position) - position
 
   /** @param {AbortSignal} signal @param {Uint8Array} bytes */
-  const append = (signal, bytes) =>
-    mse_buffer_update(mse, buffer, signal, () =>
-      buffer.appendBuffer(new Uint8Array(bytes)),
-    )
+  const append = async (signal, bytes) => {
+    for await (const _ of mse_buffer_update(mse, buffer, signal)) {
+      buffer.appendBuffer(new Uint8Array(bytes))
+    }
+  }
 
   /** @param {number} position */
   const seek = (position) => {
@@ -98,9 +98,9 @@ const mse_buffer = (mse, type) => {
     signal.throwIfAborted()
     const duration = mse.duration
     if (buffer.buffered.length && Number.isFinite(duration)) {
-      await mse_buffer_update(mse, buffer, signal, () =>
-        buffer.remove(0, duration),
-      )
+      for await (const _ of mse_buffer_update(mse, buffer, signal)) {
+        buffer.remove(0, duration)
+      }
     }
     seek(position)
   }
@@ -190,25 +190,23 @@ const source_stream = async function* (signal, time) {
 
 /** @param {ReturnType<typeof mse_buffer>} buffer @param {AbortSignal} signal @param {number} time @param {() => Promise<void>} wait */
 const resumable_stream = async function* (buffer, signal, time, wait) {
-  const pausing = () =>
-    media.paused && buffer.play_ahead(media.currentTime) >= MAX_PLAY_AHEAD
+  const full = () => buffer.play_ahead(media.currentTime) >= MAX_PLAY_AHEAD
 
-  resumable: for (;;) {
-    while (pausing()) {
+  while (full()) {
+    await wait()
+    signal.throwIfAborted()
+  }
+
+  const start = buffer.frontier() ?? time
+  buffer.seek(start)
+  for await (const bytes of source_stream(signal, start)) {
+    yield bytes
+    while (full()) {
       await wait()
       signal.throwIfAborted()
     }
-
-    const start = buffer.frontier() ?? time
-    buffer.seek(start)
-    for await (const bytes of source_stream(signal, start)) {
-      yield bytes
-      if (pausing()) {
-        continue resumable
-      }
-    }
-    return
   }
+  return
 }
 
 const stream = () => {
