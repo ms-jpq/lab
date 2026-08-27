@@ -187,7 +187,7 @@ const source_stream = async function* (signal, time) {
 
   try {
     if (!response.ok || !reader) {
-      throw new Error(`${response.statusText} ${response.status}`)
+      throw new Error(`${response.statusText} - ${response.status}`)
     }
     for (;;) {
       const { done, value } = await reader.read()

@@ -86,7 +86,7 @@ def _command(
 
     if audio is not None:
         yield from ("-map", f"0:{audio}")
-        yield from ("-c:a", "aac")
+        yield from ("-c:a", "aac", "-ac", "2")
 
     match video, height:
         case None, _:
