@@ -79,6 +79,17 @@ const mse_buffer = (mse, type) => {
   }
 
   /** @param {number} position */
+  const contains = (position) => {
+    const ranges = buffer.buffered
+    for (let index = 0; index < ranges.length; index += 1) {
+      if (ranges.start(index) <= position && position <= ranges.end(index)) {
+        return true
+      }
+    }
+    return false
+  }
+
+  /** @param {number} position */
   const play_ahead = (position) => (frontier() ?? position) - position
 
   /** @param {AbortSignal} signal @param {Uint8Array} bytes */
@@ -118,7 +129,7 @@ const mse_buffer = (mse, type) => {
     }
   }
 
-  return { frontier, play_ahead, append, seek, prepare, end }
+  return { frontier, contains, play_ahead, append, seek, prepare, end }
 }
 
 /** @param {AbortSignal} signal */
@@ -222,6 +233,8 @@ const stream = () => {
   const retrying = Symbol("retrying")
 
   let controller = new AbortController()
+  /** @type {ReturnType<typeof mse_buffer> | undefined} */
+  let buffer
   let can_seek = false
   let wake = Promise.withResolvers()
   let restored_time = Number.NaN
@@ -241,9 +254,6 @@ const stream = () => {
   }
 
   const run = async () => {
-    /** @type {ReturnType<typeof mse_buffer> | undefined} */
-    let buffer
-
     for (;;) {
       can_seek = false
       const { signal } = controller
@@ -303,6 +313,10 @@ const stream = () => {
       return false
     }
     if (!seeking) {
+      resume()
+      return true
+    }
+    if (buffer?.contains(time)) {
       resume()
       return true
     }
