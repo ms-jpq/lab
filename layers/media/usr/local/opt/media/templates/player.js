@@ -73,7 +73,7 @@ const mse_buffer = (mse, type) => {
   const buffer = mse.addSourceBuffer(type)
 
   const frontier = () => {
-    const ranges = media.buffered
+    const ranges = buffer.buffered
     const last = ranges.length - 1
     return last < 0 ? undefined : ranges.end(last)
   }
