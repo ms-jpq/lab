@@ -234,7 +234,7 @@ const stream = () => {
 
   let controller = new AbortController()
   /** @type {ReturnType<typeof mse_buffer> | undefined} */
-  let buffer
+  let buffer = undefined
   let can_seek = false
   let wake = Promise.withResolvers()
   let restored_time = Number.NaN
