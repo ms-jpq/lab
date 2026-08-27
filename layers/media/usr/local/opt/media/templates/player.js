@@ -386,26 +386,18 @@ media.onerror = () => {
   }
 }
 
-{
-  let waiting_to_play = false
-
-  media.onplay = async () => {
+void (async () => {
+  for await (const _ of events(media, undefined, "play")) {
     streaming?.resume()
     if (media.readyState >= media.HAVE_FUTURE_DATA) {
-      waiting_to_play = false
-      return
+      continue
     }
 
     media.pause()
-    if (waiting_to_play) {
-      return
-    }
-    waiting_to_play = true
     await once(media, undefined, "canplay")
-    waiting_to_play = false
     await media.play()
   }
-}
+})()
 
 /** @param {boolean} seeking */
 const update_position = (seeking) => {
