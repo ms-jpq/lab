@@ -48,8 +48,10 @@ def _profiles(media: Probe) -> tuple[str, ...]:
 
 def _profile(profiles: tuple[str, ...], query: Query) -> tuple[str, int | None] | None:
     match query:
-        case {"profile": [*_, profile]}:
-            return (profile, _HEIGHTS[profile]) if profile in profiles else None
+        case {"profile": [*_, profile]} if profile in profiles:
+            return profile, _HEIGHTS[profile]
+        case {"profile": [*_, _]}:
+            return None
         case _:
             return _NATIVE_PROFILE, None
 
@@ -191,8 +193,8 @@ def _stream(
     if (selected := _profile(_profiles(media), query)) is None:
         request.send_error(HTTPStatus.BAD_REQUEST)
         return
-    profile, height = selected
 
+    profile, height = selected
     audio = _audio(media, query)
     audio_index = audio.index if audio else None
 
