@@ -17,6 +17,7 @@ const BUFFER = {
 }
 const RETRY_DELAY = 1_000
 const POSITION = `media:position:${location.pathname}`
+const PAGE = crypto.randomUUID()
 
 const media_source = () => {
   const { ManagedMediaSource } =
@@ -33,6 +34,8 @@ const source_url = (resource, time) => {
     location.href,
   )
   source.searchParams.set("t", String(Math.floor(Number(time))))
+  source.searchParams.set("page", PAGE)
+  source.searchParams.set("request", crypto.randomUUID())
   return source.toString()
 }
 
@@ -173,13 +176,12 @@ const reload_subtitle = (time) => {
 /** @param {AbortSignal} signal @param {number} time */
 const source_stream = async function* (signal, time) {
   signal.throwIfAborted()
+  const source = new URL(source_url(media, time))
   /** @type {ReadableStreamDefaultReader<Uint8Array> | undefined} */
   let reader = undefined
 
   try {
-    const response = await fetch(source_url(media, time), {
-      signal,
-    })
+    const response = await fetch(source, { signal })
     reader = response.body?.getReader()
     if (!response.ok || !reader) {
       throw new Error(`${response.statusText} ${response.status}`)
@@ -194,7 +196,6 @@ const source_stream = async function* (signal, time) {
   } finally {
     try {
       await reader?.cancel()
-    } catch {
     } finally {
       reader?.releaseLock()
     }
