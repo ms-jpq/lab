@@ -176,7 +176,7 @@ const reload_subtitle = (time) => {
 /** @param {AbortSignal} signal @param {number} time */
 const source_stream = async function* (signal, time) {
   signal.throwIfAborted()
-  const source = new URL(source_url(media, time))
+  const source = source_url(media, time)
   /** @type {ReadableStreamDefaultReader<Uint8Array> | undefined} */
   let reader = undefined
 
@@ -194,36 +194,25 @@ const source_stream = async function* (signal, time) {
       yield value
     }
   } finally {
-    try {
-      await reader?.cancel()
-    } finally {
-      reader?.releaseLock()
-    }
+    await reader?.cancel()
   }
 }
 
 /** @param {AbortSignal} signal @param {ReturnType<typeof mse_buffer>} buffer @param {number} time @param {() => Promise<void>} wait */
 const resumable_stream = async function* (signal, buffer, time, wait) {
   l1: for (;;) {
-    const controller = new AbortController()
-    const sig = AbortSignal.any([signal, controller.signal])
-
     while (buffer.play_ahead(media.currentTime) >= BUFFER.LO) {
       await wait()
-      sig.throwIfAborted()
+      signal.throwIfAborted()
     }
 
     const start = buffer.frontier() ?? time
     buffer.seek(start)
-    try {
-      for await (const bytes of source_stream(sig, start)) {
-        yield bytes
-        if (buffer.play_ahead(media.currentTime) >= BUFFER.HI) {
-          continue l1
-        }
+    for await (const bytes of source_stream(signal, start)) {
+      yield bytes
+      if (buffer.play_ahead(media.currentTime) >= BUFFER.HI) {
+        continue l1
       }
-    } finally {
-      controller.abort()
     }
     return
   }
@@ -400,7 +389,8 @@ media.ontimeupdate = () => {
 
 media.currentTime = initial_position
 set_position(initial_position)
-streaming?.run()
+onpagehide = () => streaming?.stop(undefined)
+onpageshow = () => streaming?.run()
 
 /** @param {SubmitEvent} event */
 form.onsubmit = (event) => {
