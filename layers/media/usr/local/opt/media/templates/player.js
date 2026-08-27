@@ -304,15 +304,15 @@ const stream = () => {
         return false
       }
     }
-    if (!can_seek) {
+    if (!seeking && !can_seek) {
       return false
     }
-    if (!seeking || buffer?.contains(time)) {
-      resume()
+    if (seeking && (!can_seek || !buffer?.contains(time))) {
+      can_seek = false
+      stop(restart)
       return true
     }
-    can_seek = false
-    stop(restart)
+    resume()
     return true
   }
 
