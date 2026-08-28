@@ -139,6 +139,8 @@ const page_state = () => ({
 
 /** @param {AbortSignal} signal @param {Mse} buffer @param {number} position @returns {AsyncGenerator<PageChange, void, void>} */
 const page_states = (signal, buffer, position) => {
+  const observation = new AbortController()
+  const observation_signal = AbortSignal.any([signal, observation.signal])
   let changed = Promise.withResolvers()
   let previous = page_state()
   /** @type {number | undefined} */
@@ -147,12 +149,14 @@ const page_states = (signal, buffer, position) => {
 
   const wake = () => changed.resolve(true)
 
-  signal.addEventListener("abort", () => changed.resolve(false), { once: true })
+  observation_signal.addEventListener("abort", () => changed.resolve(false), {
+    once: true,
+  })
 
   for (const type of "canplay ended error loadedmetadata progress seeked seeking timeupdate".split(
     " ",
   )) {
-    media.addEventListener(type, wake, { signal })
+    media.addEventListener(type, wake, { signal: observation_signal })
   }
   if (subtitle && subtitle.src === "") {
     subtitle.src = source_url(subtitle, 0)
@@ -160,78 +164,85 @@ const page_states = (signal, buffer, position) => {
   wake()
 
   return (async function* () {
-    for (;;) {
-      if (!(await changed.promise)) {
-        return
-      }
-      changed = Promise.withResolvers()
+    try {
+      for (;;) {
+        if (!(await changed.promise)) {
+          return
+        }
+        changed = Promise.withResolvers()
 
-      let current = page_state()
-      let moved =
-        Number.isFinite(current.time) &&
-        (current.time !== previous.time || current.seeking !== previous.seeking)
-      const internal_seek =
-        requested_position !== undefined &&
-        Math.abs(current.time - requested_position) <= POSITION_TOLERANCE
-      const user_seek = current.seeking && moved && !internal_seek
-      let restart = false
-
-      if (user_seek) {
-        target = playable_position(current.time)
-        const available = buffer.available(target)
-        if (available !== undefined) {
-          target = available
-        }
-        const positioned = Math.abs(current.time - target) <= POSITION_TOLERANCE
-        restart = available === undefined
-        requested_position = restart || !positioned ? target : undefined
-        set_position(target)
-      } else if (requested_position !== undefined) {
-        const available = buffer.available(requested_position)
-        if (available !== undefined && available !== requested_position) {
-          requested_position = available
-          target = available
-        }
-        if (
-          available !== undefined &&
-          !media.seeking &&
-          Math.abs(media.currentTime - requested_position) > POSITION_TOLERANCE
-        ) {
-          media.currentTime = requested_position
-        } else if (
-          available !== undefined &&
-          Math.abs(media.currentTime - requested_position) <=
-            POSITION_TOLERANCE &&
-          !media.seeking
-        ) {
-          requested_position = undefined
-        }
-        current = page_state()
-        moved =
+        let current = page_state()
+        let moved =
           Number.isFinite(current.time) &&
           (current.time !== previous.time ||
             current.seeking !== previous.seeking)
-      }
+        const internal_seek =
+          requested_position !== undefined &&
+          Math.abs(current.time - requested_position) <= POSITION_TOLERANCE
+        const user_seek = current.seeking && moved && !internal_seek
+        let restart = false
 
-      if (current.ended && !previous.ended) {
-        set_position(0)
-      } else if (
-        !user_seek &&
-        requested_position === undefined &&
-        moved &&
-        buffer.contains(current.time)
-      ) {
-        set_position(current.time)
-      }
+        if (user_seek) {
+          target = playable_position(current.time)
+          const available = buffer.available(target)
+          if (available !== undefined) {
+            target = available
+          }
+          const positioned =
+            Math.abs(current.time - target) <= POSITION_TOLERANCE
+          restart = available === undefined
+          requested_position = restart || !positioned ? target : undefined
+          set_position(target)
+        } else if (requested_position !== undefined) {
+          const available = buffer.available(requested_position)
+          if (available !== undefined && available !== requested_position) {
+            requested_position = available
+            target = available
+          }
+          if (
+            available !== undefined &&
+            !media.seeking &&
+            Math.abs(media.currentTime - requested_position) >
+              POSITION_TOLERANCE
+          ) {
+            media.currentTime = requested_position
+          } else if (
+            available !== undefined &&
+            Math.abs(media.currentTime - requested_position) <=
+              POSITION_TOLERANCE &&
+            !media.seeking
+          ) {
+            requested_position = undefined
+          }
+          current = page_state()
+          moved =
+            Number.isFinite(current.time) &&
+            (current.time !== previous.time ||
+              current.seeking !== previous.seeking)
+        }
 
-      yield {
-        failed:
-          current.error !== previous.error &&
-          current.error !== null &&
-          current.error.code !== MediaError.MEDIA_ERR_ABORTED,
-        seek: restart ? target : undefined,
+        if (current.ended && !previous.ended) {
+          set_position(0)
+        } else if (
+          !user_seek &&
+          requested_position === undefined &&
+          moved &&
+          buffer.contains(current.time)
+        ) {
+          set_position(current.time)
+        }
+
+        yield {
+          failed:
+            current.error !== previous.error &&
+            current.error !== null &&
+            current.error.code !== MediaError.MEDIA_ERR_ABORTED,
+          seek: restart ? target : undefined,
+        }
+        previous = current
       }
-      previous = current
+    } finally {
+      observation.abort()
     }
   })()
 }
@@ -243,16 +254,10 @@ const mse = (signal, media, position) => {
       globalThis
     )
   const source = new (ManagedMediaSource ?? MediaSource)()
-  /** @type {SourceBuffer | undefined} */
-  let buffer = undefined
 
   /** @param {number} position */
   const frontier = (position) => {
-    const current = buffer
-    if (current === undefined) {
-      return undefined
-    }
-    const ranges = current.buffered
+    const ranges = media.buffered
     for (let index = 0; index < ranges.length; index += 1) {
       if (
         ranges.start(index) - POSITION_TOLERANCE <= position &&
@@ -266,11 +271,7 @@ const mse = (signal, media, position) => {
 
   /** @param {number} position */
   const available = (position) => {
-    const current = buffer
-    if (current === undefined) {
-      return undefined
-    }
-    const ranges = current.buffered
+    const ranges = media.buffered
     for (let index = 0; index < ranges.length; index += 1) {
       const start = ranges.start(index)
       const end = ranges.end(index)
@@ -312,7 +313,6 @@ const mse = (signal, media, position) => {
         source.duration = duration
       }
       const opened_buffer = source.addSourceBuffer(type)
-      buffer = opened_buffer
 
       /** @param {() => void} mutate */
       const update = async (mutate) => {
