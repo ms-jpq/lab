@@ -24,6 +24,7 @@ const PAGE = crypto.randomUUID()
 /** @typedef {(signal: AbortSignal) => MseBuffer} MseBufferFactory */
 /** @typedef {AsyncGenerator<void, void, void> & {buffer: MseBuffer}} Attempt */
 /** @typedef {ReturnType<typeof page_state> & {failed: boolean, moved: boolean}} PageChange */
+/** @typedef {AsyncIterator<unknown, void, void> & {enabled: boolean, pending?: Promise<IteratorResult<unknown, void>>}} MergeSource */
 
 /** @param {EventTarget} target @param {AbortSignal | undefined} signal @param {string} type @returns {Promise<Event>} */
 const once = (target, signal, type) => {
@@ -58,26 +59,42 @@ const select = async (signal, ...cases) => {
   }
 }
 
-/** @param {AbortSignal} signal @param {...readonly [AsyncIterator<unknown, void, void>, Promise<IteratorResult<unknown, void>>]} sources */
-const merge = (signal, ...sources) =>
-  select(
-    signal,
-    ...sources.map(
-      ([source, pending]) =>
-        async () =>
-          /** @type {const} */ ([source, await pending]),
-    ),
-  )
+/** @param {AbortSignal} signal @param {...MergeSource} sources @returns {AsyncGenerator<readonly [MergeSource, IteratorResult<unknown, void>], void, void>} */
+const merge = async function* (signal, ...sources) {
+  for (;;) {
+    const cases = sources.flatMap((source) => {
+      if (!source.enabled) {
+        return []
+      }
+      const pending = (source.pending ??= source.next())
+      return [async () => /** @type {const} */ ([source, await pending])]
+    })
+    if (cases.length === 0) {
+      return
+    }
+
+    const selected = await select(signal, ...cases)
+    if (!selected) {
+      return
+    }
+    const [source, result] = selected
+    source.pending = undefined
+    if (result.done) {
+      source.enabled = false
+    }
+    yield selected
+  }
+}
 
 /** @param {AbortSignal} signal */
 const retry_delay = (signal) =>
   select(signal, (s) => once(AbortSignal.timeout(RETRY_DELAY), s, "abort"))
 
-/** @template T @param {AbortSignal} signal @param {() => AsyncIterable<T>} source @returns {AsyncGenerator<T, void, void>} */
+/** @template T @param {AbortSignal} signal @param {(signal: AbortSignal) => AsyncIterable<T>} source @returns {AsyncGenerator<T, void, void>} */
 const retrying = async function* (signal, source) {
   for (;;) {
     try {
-      yield* source()
+      yield* source(signal)
     } catch (error) {
       console.error(error)
     }
@@ -125,8 +142,8 @@ const set_position = (value) => {
 
 const page_state = () => ({
   error: media.error,
-  future: media.readyState >= media.HAVE_FUTURE_DATA,
   paused: media.paused,
+  playable: media.readyState >= media.HAVE_FUTURE_DATA,
   seeking: media.seeking,
   subtitle_error: subtitle !== null && subtitle.readyState === subtitle.ERROR,
   time: media.currentTime,
@@ -184,8 +201,8 @@ const abort_mse_update = async (source, buffer) => {
   await aborted
 }
 
-/** @param {AbortSignal} signal @param {MediaSource} source @param {SourceBuffer} buffer @param {() => void} mutate */
-const mse_update = async (signal, source, buffer, mutate) => {
+/** @param {AbortSignal} signal @param {SourceBuffer} buffer @param {() => void} mutate */
+const mse_update = async (signal, buffer, mutate) => {
   if (signal.aborted) {
     return false
   }
@@ -195,11 +212,7 @@ const mse_update = async (signal, source, buffer, mutate) => {
     (s) => once(buffer, s, "error"),
   )
   mutate()
-  if (await settled) {
-    return true
-  }
-  await abort_mse_update(source, buffer)
-  return false
+  return Boolean(await settled)
 }
 
 /** @param {SourceBuffer} buffer */
@@ -237,16 +250,12 @@ const mse_operations = async function* (signal, source, buffer) {
           end > 0 && buffer.buffered.length && buffer.buffered.start(0) < end
         if (
           expired &&
-          !(await mse_update(signal, source, buffer, () =>
-            buffer.remove(0, end),
-          ))
+          !(await mse_update(signal, buffer, () => buffer.remove(0, end)))
         ) {
           return
         }
         if (
-          !(await mse_update(signal, source, buffer, () =>
-            buffer.appendBuffer(bytes),
-          ))
+          !(await mse_update(signal, buffer, () => buffer.appendBuffer(bytes)))
         ) {
           return
         }
@@ -398,32 +407,24 @@ const attempt = (signal, create_buffer) => {
 
 /** @param {AbortSignal} signal */
 const playback_page = async (signal) => {
-  const changed = changes(signal)
-  let change = changed.next()
-  let waiting = false
+  const changed = Object.assign(changes(signal), { enabled: true })
+  let resume_when_ready = false
 
-  attempts: for await (const create_buffer of retrying(signal, () =>
-    mse(signal),
-  )) {
+  attempts: for await (const create_buffer of retrying(signal, mse)) {
     const current = new AbortController()
     const attempt_signal = AbortSignal.any([signal, current.signal])
-    const session = attempt(attempt_signal, create_buffer)
-    /** @type {Promise<IteratorResult<void, void>> | undefined} */
-    let progress = session.next()
+    const session = Object.assign(attempt(attempt_signal, create_buffer), {
+      enabled: true,
+    })
 
     try {
-      for (;;) {
-        const selected = await merge(
-          attempt_signal,
-          [changed, change],
-          ...(progress ? [/** @type {const} */ ([session, progress])] : []),
-        )
-        if (!selected) {
-          break
-        }
-        const [source, result] = selected
-        if (source !== changed) {
-          progress = undefined
+      for await (const [source, result] of merge(
+        attempt_signal,
+        changed,
+        session,
+      )) {
+        if (source === session) {
+          session.enabled = false
           if (result.done) {
             break
           }
@@ -434,18 +435,19 @@ const playback_page = async (signal) => {
         if (state.done) {
           return
         }
-        change = changed.next()
 
         const value = state.value
         if (value.moved) {
           set_position(value.time)
         }
-        if (!value.paused && !value.future) {
-          waiting = true
+        if (resume_when_ready) {
+          if (value.playable) {
+            resume_when_ready = false
+            await media.play()
+          }
+        } else if (!value.paused && !value.playable) {
+          resume_when_ready = true
           media.pause()
-        } else if (value.paused && waiting && value.future) {
-          waiting = false
-          await media.play()
         }
         if (value.failed) {
           break
@@ -457,8 +459,8 @@ const playback_page = async (signal) => {
         ) {
           continue attempts
         }
-        if ((value.moved || !value.paused) && progress === undefined) {
-          progress = session.next()
+        if (value.moved || !value.paused) {
+          session.enabled = true
         }
       }
     } catch (error) {
