@@ -731,17 +731,19 @@ test(
 )
 
 test(
-  "a failed target request waits for new user intent",
+  "a failed target request retries on the same MediaSource",
   { concurrency: true, timeout: 1_000 },
   async () => {
     const current = await fixture()
-    const failed = Promise.withResolvers()
+    const retried = Promise.withResolvers()
     let requests = 0
-    current.context.fetch = async (_url, { signal }) => {
+    current.context.fetch = async (url, { signal }) => {
       requests += 1
-      if (requests > 1) {
-        failed.resolve()
+      if (requests === 2) {
         throw new Error("target request failed")
+      }
+      if (requests === 3) {
+        retried.resolve(String(url))
       }
       return {
         body: new ReadableStream({
@@ -771,9 +773,9 @@ test(
       current.media.seeking = true
       current.media.dispatchEvent(new Event("seeking"))
 
-      await failed.promise
-      await new Promise((resolve) => setImmediate(resolve))
-      assert.equal(requests, 2)
+      const request = new URL(await retried.promise)
+      assert.equal(request.searchParams.get("t"), "110")
+      assert.equal(requests, 3)
       assert.equal(current.sources.length, 1)
       assert.equal(current.media.src, source)
       assert.equal(current.media.currentTime, 110)
