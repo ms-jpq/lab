@@ -2,7 +2,7 @@
 /** @typedef {AsyncGenerator<void, void, MseOperation | undefined>} Mse */
 /** @typedef {{error: MediaError | null, position: number, queued: boolean, seek: number | undefined}} PageChange */
 /** @typedef {{buffer: Mse, position: number, signal: AbortSignal}} PlaybackSource */
-/** @typedef {{error?: unknown, position: number, reset: boolean}} SourceChange */
+/** @typedef {{error?: unknown, position: number}} SourceChange */
 /** @typedef {{error: unknown}} Failure */
 /** @typedef {{next: Promise<IteratorResult<PageChange, void>>}} PageReader */
 /** @typedef {{action: "done" | "retry" | "seek", error?: unknown, position: number}} AttemptChange */
@@ -474,7 +474,8 @@ const media_sources = async function* (signal, position) {
       if (change?.error !== undefined) {
         report(change.error)
       }
-      retry = change?.reset ? !signal.aborted : await retry_delay(signal)
+      retry =
+        change?.error !== undefined ? !signal.aborted : await retry_delay(signal)
     } catch (error) {
       if (!lifetime_signal.aborted) {
         report(error)
@@ -596,7 +597,7 @@ const play_source = async ({ buffer, position, signal }) => {
       const change = await play_attempt(signal, buffer, states, page, position)
       position = change.position
       if (change.action === "done") {
-        return { position, reset: false }
+        return { position }
       }
       if (change.action === "retry") {
         if (!failure_reported) {
@@ -605,15 +606,13 @@ const play_source = async ({ buffer, position, signal }) => {
         }
         const waiting = await wait_to_retry(signal, states, page, position)
         if (waiting === undefined) {
-          return { position, reset: false }
+          return { position }
         }
         position = waiting
       }
     }
   } catch (error) {
-    return signal.aborted
-      ? { position, reset: false }
-      : { error, position, reset: true }
+    return signal.aborted ? { position } : { error, position }
   } finally {
     observation.abort()
     await states.return()
