@@ -1,6 +1,7 @@
 /** @typedef {"end" | number | Uint8Array} MseOperation */
 /** @typedef {AsyncGenerator<void, void, MseOperation>} Mse */
 /** @typedef {{failure: unknown}} Failure */
+/** @template T @typedef {Failure | {value: T}} Result */
 /** @typedef {MseOperation | Failure} SourceOperation */
 /** @typedef {{error: (error: unknown) => void, progress: () => void}} Diagnostics */
 /** @typedef {{position: number, restart: boolean, started: boolean}} Target */
@@ -80,6 +81,13 @@ const delay = (signal, milliseconds) => {
   signal.addEventListener("abort", cancelled, { once: true })
   return promise
 }
+
+/** @template T @param {Promise<T>} promise @returns {Promise<Result<T>>} */
+const result = (promise) =>
+  promise.then(
+    (value) => ({ value }),
+    (failure) => ({ failure }),
+  )
 
 /** @param {string | undefined} url */
 const revoke_url = (url) => url && URL.revokeObjectURL(url)
@@ -473,7 +481,7 @@ const play_subtitle = async (signal) => {
     return
   }
   const failures = diagnostics()
-  for (;;) {
+  while (!signal.aborted) {
     const loaded = first_event(subtitle, signal, "load", "error")
     subtitle.src = source_url(subtitle, 0)
     const event = await loaded
@@ -623,13 +631,11 @@ const play_source = async (buffer, failures, page) => {
   const stream = source_stream(failures, page)
   try {
     for (;;) {
-      /** @type {IteratorResult<SourceOperation, void>} */
-      let next
-      try {
-        next = await stream.next()
-      } catch (failure) {
-        return { failure }
+      const selected = await result(stream.next())
+      if ("failure" in selected) {
+        return selected
       }
+      const next = selected.value
       if (next.done) {
         return
       }
@@ -638,12 +644,12 @@ const play_source = async (buffer, failures, page) => {
         failures.error(operation.failure)
         continue
       }
-      try {
-        if ((await buffer.next(operation)).done) {
-          return
-        }
-      } catch (failure) {
-        return { failure }
+      const mutated = await result(buffer.next(operation))
+      if ("failure" in mutated) {
+        return mutated
+      }
+      if (mutated.value.done) {
+        return
       }
     }
   } finally {
@@ -656,9 +662,12 @@ const media_sources = () => {
   let url = undefined
   return {
     close: () => {
-      media.removeAttribute("src")
-      media.load()
-      revoke_url(url)
+      try {
+        media.removeAttribute("src")
+        media.load()
+      } finally {
+        revoke_url(url)
+      }
     },
     /** @param {AbortSignal} signal @param {PageReader} page */
     open: async (signal, page) => {
@@ -712,22 +721,22 @@ const media_sources = () => {
 
 /** @param {AbortSignal} signal @param {ReturnType<typeof media_sources>} sources @param {Diagnostics} failures @param {PageReader} page */
 const play_attempt = async (signal, sources, failures, page) => {
-  /** @type {Mse | undefined} */
-  let buffer = undefined
-  try {
-    buffer = await sources.open(signal, page)
-  } catch (error) {
-    return signal.aborted ? undefined : { failure: error, opened: false }
+  const opened = await result(sources.open(signal, page))
+  if ("failure" in opened) {
+    return signal.aborted
+      ? undefined
+      : { failure: opened.failure, opened: false }
   }
+  const buffer = opened.value
   if (!buffer) {
     return undefined
   }
   try {
-    const result = await play_source(buffer, failures, page)
-    return !result || signal.aborted
+    const played = await play_source(buffer, failures, page)
+    return !played || signal.aborted
       ? undefined
       : {
-          failure: page.take_error() ?? result.failure,
+          failure: page.take_error() ?? played.failure,
           opened: true,
         }
   } finally {
@@ -765,8 +774,11 @@ const play_media = async (signal) => {
       }
     }
   } finally {
-    sources.close()
-    await page.close()
+    try {
+      sources.close()
+    } finally {
+      await page.close()
+    }
   }
 }
 

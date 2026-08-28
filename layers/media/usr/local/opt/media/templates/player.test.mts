@@ -1084,6 +1084,42 @@ test(
   },
 )
 
+test("a pre-cancelled subtitle owner starts no request", options, async () => {
+  const current = await fixture()
+  const controller = new AbortController()
+  controller.abort()
+
+  await current.context.player_test.play_subtitle(controller.signal)
+
+  deepEqual(current.subtitle.sources, [])
+})
+
+test(
+  "subtitle cancellation at its retry deadline starts no successor",
+  options,
+  async () => {
+    const current = await fixture()
+    const clock = frozenClock(current.context)
+    const controller = new AbortController()
+    const playback = current.context.player_test.play_subtitle(controller.signal)
+    try {
+      await eventually(() => current.subtitle.sources.length === 1)
+      current.subtitle.dispatchEvent(new Event("error"))
+      await eventually(() => clock.length === 1)
+
+      clock.advance(0)
+      controller.abort()
+      await playback
+
+      deepEqual(current.subtitle.sources.length, 1)
+    } finally {
+      controller.abort()
+      await playback
+      clock.dispose()
+    }
+  },
+)
+
 test(
   "subtitle owner cancellation clears frozen retry and listeners",
   options,
@@ -4047,6 +4083,35 @@ test(
       await playback
       clock.dispose()
     }
+  },
+)
+
+test(
+  "a throwing media detach still revokes its URL and closes observation",
+  options,
+  async () => {
+    const current = await fixture()
+    const failure = new Error("media detach failed")
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    await eventually(
+      () => current.sources[0]?.sourceBuffers[0]?.buffered.length === 1,
+    )
+    current.media.load = () => {
+      current.media.loads += 1
+      throw failure
+    }
+
+    controller.abort()
+    await rejects(playback, (error) => error === failure)
+
+    deepEqual(current.media.loads, 1)
+    deepEqual(current.revoked.length, 1)
+    const calls = current.media.listenerCalls
+    current.media.dispatchEvent(new Event("timeupdate"))
+    deepEqual(current.media.listenerCalls, calls)
   },
 )
 
