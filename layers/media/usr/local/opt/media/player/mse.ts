@@ -3,12 +3,6 @@ import { abortion, events, merge } from "./util.ts"
 export type MseOperation = "end" | number | Uint8Array
 export type Mse = AsyncGenerator<void, void, MseOperation>
 
-type MseContext = {
-  currentTime: () => number
-  signal: AbortSignal
-  source: MediaSource
-}
-
 const BEHIND = 30
 
 const MSE = (): MediaSource => {
@@ -27,10 +21,19 @@ const revoke = (url: string | undefined): void => {
   }
 }
 
-export const media_source = async function* (
-  buffer: SourceBuffer,
-  { currentTime, signal, source }: MseContext,
-): Mse {
+export const media_source = async function* ({
+  evict_before,
+  mime_type,
+  signal,
+  source,
+}: {
+  evict_before: () => number
+  mime_type: string
+  signal: AbortSignal
+  source: MediaSource
+}): Mse {
+  const buffer = source.addSourceBuffer(mime_type)
+
   const update = async (mutate: () => void) => {
     using operation = abortion()
     const settled = merge<Event>(
@@ -56,6 +59,7 @@ export const media_source = async function* (
     if (signal.aborted) {
       return
     }
+
     if (operation === "end") {
       source.endOfStream()
       continue
@@ -74,10 +78,10 @@ export const media_source = async function* (
       continue
     }
 
-    const expired = currentTime() - BEHIND
+    const cutoff = evict_before()
     const ranges = buffer.buffered
-    if (expired > 0 && ranges.length && ranges.start(0) < expired) {
-      await update(() => buffer.remove(0, expired))
+    if (cutoff > 0 && ranges.length && ranges.start(0) < cutoff) {
+      await update(() => buffer.remove(0, cutoff))
     }
     await update(() =>
       buffer.appendBuffer(operation as Uint8Array<ArrayBuffer>),
@@ -139,14 +143,12 @@ export const media_sources = (media: HTMLMediaElement) => {
         if (duration > 0) {
           source.duration = duration
         }
-        const buffer = media_source(
-          source.addSourceBuffer(media.dataset["mseType"] as string),
-          {
-            currentTime: () => media.currentTime,
-            signal,
-            source,
-          },
-        )
+        const buffer = media_source({
+          evict_before: () => media.currentTime - BEHIND,
+          mime_type: media.dataset["mseType"] as string,
+          signal,
+          source,
+        })
         await buffer.next()
         return buffer
       } finally {

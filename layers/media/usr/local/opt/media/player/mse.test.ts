@@ -17,6 +17,7 @@ const fixture = (
   failure: "append" | undefined = undefined,
 ) => {
   const mutations: unknown[] = []
+  const types: string[] = []
   const buffer = Object.assign(new EventTarget(), {
     abort: () => mutations.push(["abort"]),
     appendBuffer: (bytes: Uint8Array<ArrayBuffer>) => {
@@ -35,23 +36,28 @@ const fixture = (
     timestampOffset: 0,
   })
   const source = {
+    addSourceBuffer: (type: string) => {
+      types.push(type)
+      return buffer
+    },
     endOfStream: () => mutations.push(["end"]),
     readyState: "open",
   }
   const lifetime = new AbortController()
-  const values = media_source(buffer as unknown as SourceBuffer, {
-    currentTime: () => 100,
+  const values = media_source({
+    evict_before: () => 70,
+    mime_type: "video/test",
     signal: lifetime.signal,
     source: source as unknown as MediaSource,
   })
-  return { lifetime, mutations, values }
+  return { lifetime, mutations, types, values }
 }
 
 const cases = [
   {
     name: "MSE observes a synchronous append completion",
     run: async () => {
-      const { mutations, values } = fixture()
+      const { mutations, types, values } = fixture()
 
       deepEqual(await values.next(), { done: false, value: undefined })
       deepEqual(await values.next(new Uint8Array([1, 2])), {
@@ -59,6 +65,7 @@ const cases = [
         value: undefined,
       })
       deepEqual(mutations, [["append", [1, 2]]])
+      deepEqual(types, ["video/test"])
 
       const closed = values.return?.(undefined)
       assert(closed)
