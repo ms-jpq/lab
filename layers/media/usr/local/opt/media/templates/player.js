@@ -6,8 +6,8 @@
 /** @typedef {{error: unknown}} Failure */
 /** @typedef {{kind: "page", result: IteratorResult<PageChange, void>} | {kind: "progress", result: IteratorResult<void, Failure | void>}} AttemptSelection */
 /** @typedef {{kind: "delay", result: boolean} | {kind: "page", result: IteratorResult<PageChange, void>}} RetrySelection */
-/** @typedef {Promise<IteratorResult<PageChange, void>>} PageResult */
-/** @typedef {{action: "done" | "reset" | "retry" | "seek", error?: unknown, page: PageResult, position: number}} AttemptChange */
+/** @typedef {{next: Promise<IteratorResult<PageChange, void>>}} PageReader */
+/** @typedef {{action: "done" | "reset" | "retry" | "seek", error?: unknown, position: number}} AttemptChange */
 
 const BUFFER = {
   BEHIND: 30,
@@ -512,7 +512,7 @@ const media_sources = async function* (signal, position) {
   }
 }
 
-/** @param {AbortSignal} signal @param {Mse} buffer @param {AsyncGenerator<PageChange, void, void>} states @param {PageResult} page @param {number} position @returns {Promise<AttemptChange>} */
+/** @param {AbortSignal} signal @param {Mse} buffer @param {AsyncGenerator<PageChange, void, void>} states @param {PageReader} page @param {number} position @returns {Promise<AttemptChange>} */
 const play_attempt = async (signal, buffer, states, page, position) => {
   const attempt = new AbortController()
   const attempt_signal = AbortSignal.any([signal, attempt.signal])
@@ -523,10 +523,10 @@ const play_attempt = async (signal, buffer, states, page, position) => {
     for (;;) {
       const selected = await select(
         attempt_signal,
-        async () =>
+          async () =>
           /** @type {AttemptSelection} */ ({
             kind: "page",
-            result: await page,
+            result: await page.next,
           }),
         progress
           ? async () =>
@@ -537,35 +537,34 @@ const play_attempt = async (signal, buffer, states, page, position) => {
           : undefined,
       )
       if (!selected) {
-        return { action: "done", page, position }
+        return { action: "done", position }
       }
       if (selected.kind === "progress") {
         const { result } = selected
         progress = undefined
         if (result.done) {
           return result.value
-            ? { action: "retry", error: result.value.error, page, position }
-            : { action: "done", page, position }
+            ? { action: "retry", error: result.value.error, position }
+            : { action: "done", position }
         }
         continue
       }
 
       const state = selected.result
       if (state.done) {
-        return { action: "done", page, position }
+        return { action: "done", position }
       }
       position = state.value.position
       if (state.value.error) {
         return {
           action: "reset",
           error: state.value.error,
-          page,
           position,
         }
       }
-      page = states.next()
+      page.next = states.next()
       if (state.value.seek !== undefined) {
-        return { action: "seek", page, position }
+        return { action: "seek", position }
       }
       if (progress === undefined) {
         progress = current.next()
@@ -577,14 +576,17 @@ const play_attempt = async (signal, buffer, states, page, position) => {
   }
 }
 
-/** @param {AbortSignal} signal @param {AsyncGenerator<PageChange, void, void>} states @param {PageResult} page @param {number} position @returns {Promise<AttemptChange>} */
+/** @param {AbortSignal} signal @param {AsyncGenerator<PageChange, void, void>} states @param {PageReader} page @param {number} position @returns {Promise<AttemptChange>} */
 const wait_to_retry = async (signal, states, page, position) => {
   const delay = retry_delay(signal)
   for (;;) {
     const selected = await select(
       signal,
       async () =>
-        /** @type {RetrySelection} */ ({ kind: "page", result: await page }),
+        /** @type {RetrySelection} */ ({
+          kind: "page",
+          result: await page.next,
+        }),
       async () =>
         /** @type {RetrySelection} */ ({
           kind: "delay",
@@ -592,20 +594,20 @@ const wait_to_retry = async (signal, states, page, position) => {
         }),
     )
     if (!selected || (selected.kind === "delay" && !selected.result)) {
-      return { action: "done", page, position }
+      return { action: "done", position }
     }
     if (selected.kind === "delay") {
-      return { action: "seek", page, position }
+      return { action: "seek", position }
     }
     const state = selected.result
     if (state.done) {
-      return { action: "done", page, position }
+      return { action: "done", position }
     }
     position = state.value.position
     if (state.value.error) {
-      return { action: "reset", error: state.value.error, page, position }
+      return { action: "reset", error: state.value.error, position }
     }
-    page = states.next()
+    page.next = states.next()
   }
 }
 
@@ -616,11 +618,10 @@ const play_source = async ({ buffer, position, signal }) => {
     AbortSignal.any([signal, observation.signal]),
     position,
   )
-  let page = states.next()
+  const page = { next: states.next() }
   try {
     for (;;) {
       const change = await play_attempt(signal, buffer, states, page, position)
-      page = change.page
       position = change.position
       if (change.action === "done") {
         return { position, reset: false }
@@ -631,7 +632,6 @@ const play_source = async ({ buffer, position, signal }) => {
       if (change.action === "retry") {
         report(change.error)
         const waiting = await wait_to_retry(signal, states, page, position)
-        page = waiting.page
         position = waiting.position
         if (waiting.action === "done") {
           return { position, reset: false }
