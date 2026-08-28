@@ -1,4 +1,4 @@
-import { abortion, once } from "./util.ts"
+import { abortion, defer, once } from "./util.ts"
 
 export type MseOperation = undefined | number | Uint8Array
 export type Mse = AsyncGenerator<void, void, MseOperation>
@@ -84,6 +84,15 @@ export const media_source = async function* ({
   }
 }
 
+export const setup = (media: HTMLMediaElement, url: string) => {
+  media.src = url
+
+  return defer(() => {
+    media.removeAttribute("src")
+    media.load()
+  })
+}
+
 export const attach = async function* (
   media: HTMLMediaElement,
   source: MediaSource,
@@ -99,8 +108,9 @@ export const attach = async function* (
   const next = URL.createObjectURL(source)
   try {
     media.src = next
-  } catch {
+  } catch (e) {
     URL.revokeObjectURL(next)
+    throw e
   }
   await opened
 }
@@ -116,6 +126,12 @@ export const media_sources = async function* (
   try {
     while (!signal.aborted) {
       const source = MSE()
+      const url = URL.createObjectURL(source)
+      using _ = defer(() => {
+        URL.revokeObjectURL(url)
+      })
+      using _m = setup(media, url)
+
       const previous = url
       const next = URL.createObjectURL(source)
       const event = await attach(media, {
@@ -158,8 +174,6 @@ export const media_sources = async function* (
     }
   } finally {
     try {
-      media.removeAttribute("src")
-      media.load()
     } finally {
       revoke(url)
     }
