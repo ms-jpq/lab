@@ -3096,6 +3096,58 @@ test(
 )
 
 test(
+  "a stale empty media error cannot retire its replacement request",
+  options,
+  async () => {
+    const current = await fixture()
+    const requests: Array<{ signal: AbortSignal; time: string | null }> = []
+    current.context.fetch = async (url, { signal }) => {
+      requests.push({
+        signal,
+        time: new URL(String(url)).searchParams.get("t"),
+      })
+      return liveResponse(signal)
+    }
+
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    try {
+      await eventually(
+        () => current.sources[0]?.sourceBuffers[0]?.buffered.length === 1,
+      )
+      const failure = { code: 3, message: "initial media failure" }
+      current.media.error = failure
+      current.media.dispatchEvent(new Event("error"))
+      await eventually(
+        () => current.sources[1]?.sourceBuffers[0]?.buffered.length === 1,
+      )
+
+      deepEqual(current.media.error, null)
+      current.media.dispatchEvent(new Event("error"))
+      for (let turn = 0; turn < 4; turn += 1) {
+        await nextTask()
+      }
+
+      deepEqual(current.sources.length, 2)
+      deepEqual(
+        requests.map(({ time }) => time),
+        ["40", "40"],
+      )
+      deepEqual(requests[1]?.signal.aborted, false)
+      deepEqual(
+        current.errors.map(([error]) => error),
+        [failure],
+      )
+    } finally {
+      controller.abort()
+      await playback
+    }
+  },
+)
+
+test(
   "a queued SourceBuffer epoch does not enter after lifetime cancellation",
   options,
   async () => {

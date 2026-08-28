@@ -281,11 +281,13 @@ const page_reader = (signal, position) => {
   /** @param {Event} event */
   const observe = (event) => {
     current = media_observation()
+    const error = media.error
     if (
       event.type === "error" &&
-      media.error?.code !== MediaError.MEDIA_ERR_ABORTED
+      error !== null &&
+      error.code !== MediaError.MEDIA_ERR_ABORTED
     ) {
-      failure ??= media.error
+      failure ??= error
     }
     const owned =
       positioning !== undefined && aligned(current.time, positioning.position)
