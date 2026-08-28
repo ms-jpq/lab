@@ -18,18 +18,17 @@ const stream = async function* (
   return
 }
 
-export const water_stream = async function* (
+export const logical_stream = async function* (
   request: Request,
 ): AsyncGenerator<Uint8Array<ArrayBuffer>, undefined, Request | undefined> {
-  // like this?
-
-  for (;;) {
+  requests: for (;;) {
     for await (const bytes of stream(request)) {
-      const r = yield bytes
-      if (r) {
-        request = r
-        break
+      const next = yield bytes
+      if (next !== undefined) {
+        request = next
+        continue requests
       }
     }
+    return
   }
 }
