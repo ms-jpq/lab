@@ -117,8 +117,10 @@ export const media_source = async function* ({
       await using _ = op_lock(buffer, a.signal)
       buffer.appendBuffer(operation as Uint8Array<ArrayBuffer>)
     }
-    if (a.signal.aborted && buffer.updating) {
-      buffer.abort()
+    if (a.signal.aborted) {
+      if (buffer.updating) {
+        buffer.abort()
+      }
     }
   }
 }
