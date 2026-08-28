@@ -47,7 +47,7 @@ type MseSource = EventTarget & {
 type TestMseSource = Omit<MseSource, "addSourceBuffer"> & {
   addSourceBuffer: (type: string) => TestMseBuffer
 }
-type FailureStorm = { fail: (error: unknown) => void; recover: () => void }
+type Diagnostics = { error: (error: unknown) => void; progress: () => void }
 type Target = { position: number; restart: boolean; started: boolean }
 type SourcePage = {
   next: <T>(work?: Promise<T>) => Promise<symbol | T | undefined>
@@ -66,7 +66,7 @@ type PlayerTest = {
     buffer: {
       next: (operation: MseOperation) => Promise<IteratorResult<void>>
     },
-    failures: FailureStorm,
+    failures: Diagnostics,
     page: SourcePage,
   ) => Promise<void>
   play_subtitle: (signal: AbortSignal) => Promise<void>
@@ -74,7 +74,7 @@ type PlayerTest = {
   selector: <T>(
     source: AsyncIterator<T, void, void>,
   ) => <W>(work?: Promise<W>) => Promise<T | W | undefined>
-  source_stream: (
+  request_stream: (
     request: AbortController,
     position: number,
   ) => AsyncGenerator<Uint8Array, unknown, undefined>
@@ -665,7 +665,7 @@ const fixture = async (position = 40) => {
   const source = await readFile(PLAYER, "utf8")
   vm.runInContext(
     `${source}
-globalThis.player_test = { PULSE, mse, page_reader, play_source, play_subtitle, playback_page, selector, source_stream }`,
+globalThis.player_test = { PULSE, mse, page_reader, play_source, play_subtitle, playback_page, request_stream, selector }`,
     context,
   )
   const { ranges } = media.buffered
@@ -706,10 +706,19 @@ test(
     const pending = Promise.withResolvers<IteratorResult<number, void>>()
     const original = pending.promise.then
     let subscriptions = 0
+    let derivedSubscriptions = 0
     Object.defineProperty(pending.promise, "then", {
       value: (...arguments_: unknown[]) => {
         subscriptions += 1
-        return Reflect.apply(original, pending.promise, arguments_)
+        const derived = Reflect.apply(original, pending.promise, arguments_)
+        const then = derived.then
+        Object.defineProperty(derived, "then", {
+          value: (...derivedArguments: unknown[]) => {
+            derivedSubscriptions += 1
+            return Reflect.apply(then, derived, derivedArguments)
+          },
+        })
+        return derived
       },
     })
     const select = current.context.player_test.selector({
@@ -720,6 +729,7 @@ test(
       deepEqual(await select(Promise.resolve(value)), value)
     }
     deepEqual(subscriptions, 1)
+    deepEqual(derivedSubscriptions, 0)
 
     const work = Promise.withResolvers<number>()
     const selected = select(work.promise)
@@ -728,6 +738,7 @@ test(
     deepEqual(await selected, 1_000)
     deepEqual(await select(), 1_001)
     deepEqual(subscriptions, 2)
+    deepEqual(derivedSubscriptions, 0)
 
     const source = Promise.withResolvers<IteratorResult<number, void>>()
     const losing = Promise.withResolvers<number>()
@@ -776,7 +787,7 @@ for (const { abortParent, cancelRejects, name } of readerTeardownCases) {
       })
 
     const controller = new AbortController()
-    const stream = current.context.player_test.source_stream(controller, 40)
+    const stream = current.context.player_test.request_stream(controller, 40)
     const chunk = await stream.next()
     deepEqual(chunk.done, false)
     deepEqual([...chunk.value], [1])
@@ -818,7 +829,7 @@ test(
     }
 
     const controller = new AbortController()
-    const stream = current.context.player_test.source_stream(controller, 40)
+    const stream = current.context.player_test.request_stream(controller, 40)
     const chunk = await stream.next()
     deepEqual(chunk.done, false)
     deepEqual([...chunk.value], [1])
@@ -1007,37 +1018,19 @@ test(
 )
 
 test(
-  "a suspended observation batch awaits its captured task boundary",
+  "one observation batch retains its latest synchronous seek",
   options,
   async () => {
     const current = await fixture()
-    const scheduled: Array<() => void> = []
-    current.context.setTimeout = (run) => {
-      const timeout = setTimeout(() => {}, 10_000)
-      scheduled.push(() => {
-        clearTimeout(timeout)
-        run()
-      })
-      return timeout
-    }
     const controller = new AbortController()
     const page = await openPage(current, controller.signal, 40)
 
+    const pending = page.next()
     current.media.error = { code: 3, message: "decode failed" }
     current.media.dispatchEvent(new Event("error"))
-    let settled = false
-    const pending = page.next().then((result) => {
-      settled = true
-      return result
-    })
-    await Promise.resolve()
-    deepEqual(settled, false)
-
     current.media.currentTime = 110
     current.media.seeking = true
     current.media.dispatchEvent(new Event("seeking"))
-    deepEqual(scheduled.length, 1)
-    present(scheduled[0])()
 
     deepEqual(await pending, current.context.player_test.PULSE)
     deepEqual(page.target.position, 110)
@@ -1904,7 +1897,7 @@ test(
     }
     const playback = current.context.player_test.play_source(
       buffer,
-      { fail: () => {}, recover: () => {} },
+      { error: () => {}, progress: () => {} },
       page.page,
     )
     try {
@@ -1988,7 +1981,7 @@ for (const { name, ranges } of unrelatedHighWaterCases) {
     const page = controlledPage(110, current.context.player_test.PULSE)
     const playback = current.context.player_test.play_source(
       { next: async () => ({ done: false as const, value: undefined }) },
-      { fail: () => {}, recover: () => {} },
+      { error: () => {}, progress: () => {} },
       page.page,
     )
 
@@ -2114,7 +2107,7 @@ for (const { expected, name, range, target } of acquisitionPolicyCases) {
     current.media.currentTime = 40
     const playback = current.context.player_test.play_source(
       buffer,
-      { fail: () => {}, recover: () => {} },
+      { error: () => {}, progress: () => {} },
       page.page,
     )
     try {
@@ -2188,7 +2181,7 @@ for (const { aborted, expected, name, target } of pendingFetchSeekCases) {
       {
         next: async () => ({ done: false as const, value: undefined }),
       },
-      { fail: () => {}, recover: () => {} },
+      { error: () => {}, progress: () => {} },
       page.page,
     )
     try {
@@ -2243,7 +2236,7 @@ test(
       {
         next: async () => ({ done: false as const, value: undefined }),
       },
-      { fail: () => {}, recover: () => {} },
+      { error: () => {}, progress: () => {} },
       page.page,
     )
     try {
@@ -2333,7 +2326,7 @@ for (const { expected, name, targets } of enteredAppendSeekCases) {
     opened.holdUpdate = true
     const playback = current.context.player_test.play_source(
       buffer,
-      { fail: () => {}, recover: () => {} },
+      { error: () => {}, progress: () => {} },
       page.page,
     )
     try {
@@ -2431,7 +2424,7 @@ test(
     const page = controlledPage(40, current.context.player_test.PULSE)
     const playback = current.context.player_test.play_source(
       buffer,
-      { fail: () => {}, recover: () => {} },
+      { error: () => {}, progress: () => {} },
       page.page,
     )
     try {
@@ -2859,7 +2852,7 @@ test(
     }
     const playback = current.context.player_test.play_source(
       buffer,
-      { fail: () => {}, recover: () => {} },
+      { error: () => {}, progress: () => {} },
       page.page,
     )
     try {
@@ -4574,6 +4567,57 @@ test(
       parent.abort()
       await observed
       clock.dispose()
+    }
+  },
+)
+
+test(
+  "a throwing transport reporter escapes once and drains both siblings",
+  options,
+  async () => {
+    const current = await fixture()
+    const requestFailure = new Error("source request failed")
+    current.context.fetch = async () => {
+      throw requestFailure
+    }
+    const reporterFailure = new Error("transport diagnostic failed")
+    let reports = 0
+    current.context.console = {
+      error: () => {
+        reports += 1
+        throw reporterFailure
+      },
+    }
+    const parent = new AbortController()
+    const playback = current.context.player_test.playback_page(parent.signal)
+    let outcome:
+      | { error: unknown; status: "rejected" }
+      | { status: "fulfilled" }
+      | undefined = undefined
+    const observed = playback.then(
+      () => {
+        outcome = { status: "fulfilled" }
+      },
+      (error: unknown) => {
+        outcome = { error, status: "rejected" }
+      },
+    )
+
+    try {
+      await eventually(() => outcome !== undefined || current.sources.length > 1)
+      deepEqual(outcome, {
+        error: reporterFailure,
+        status: "rejected",
+      })
+      deepEqual(reports, 1)
+      deepEqual(parent.signal.aborted, false)
+      deepEqual(current.sources.length, 1)
+      deepEqual(current.media.src, "")
+      deepEqual(current.media.loads, 1)
+      deepEqual(current.revoked.length, 1)
+    } finally {
+      parent.abort()
+      await observed
     }
   },
 )
