@@ -1,5 +1,5 @@
-/** @typedef {number | readonly [position: number, bytes: Uint8Array]} MseOperation */
-/** @typedef {AsyncGenerator<void, void, MseOperation | undefined> & {active: () => boolean, available: (position: number) => number | undefined, changes: EventTarget, contains: (position: number) => boolean, end: () => boolean, frontier: (position: number) => number | undefined, play_ahead: (position: number) => number}} Mse */
+/** @typedef {"end" | number | readonly [position: number, bytes: Uint8Array]} MseOperation */
+/** @typedef {AsyncGenerator<void, void, MseOperation | undefined> & {active: () => boolean, available: (position: number) => number | undefined, changes: EventTarget, contains: (position: number) => boolean, frontier: (position: number) => number | undefined, play_ahead: (position: number) => number}} Mse */
 /** @typedef {ReturnType<typeof page_state> & {media_failed: boolean, moved: boolean, restart: boolean, subtitle_failed: boolean, target: number}} PageChange */
 /** @typedef {{type: "complete"} | {type: "failure", error: unknown} | {type: "state", state: IteratorResult<PageChange, void>}} PlaybackSelection */
 
@@ -60,8 +60,23 @@ const select = async (signal, ...cases) => {
 }
 
 /** @param {AbortSignal} signal */
-const retry_delay = (signal) =>
-  select(signal, (s) => once(AbortSignal.timeout(RETRY_DELAY), s, "abort"))
+const retry_delay = (signal) => {
+  const { promise, resolve } = Promise.withResolvers()
+  if (signal.aborted) {
+    resolve(false)
+    return promise
+  }
+  const timeout = setTimeout(() => {
+    signal.removeEventListener("abort", cancelled)
+    resolve(true)
+  }, RETRY_DELAY)
+  const cancelled = () => {
+    clearTimeout(timeout)
+    resolve(false)
+  }
+  signal.addEventListener("abort", cancelled, { once: true })
+  return promise
+}
 
 /** @param {AbortSignal} signal */
 const wait_for_abort = (signal) => select(signal)
@@ -252,24 +267,60 @@ const mse = (signal, media, position) => {
   const changes = new EventTarget()
   /** @type {SourceBuffer | undefined} */
   let buffer = undefined
-  /** @type {SourceBuffer | undefined} */
-  let current_buffer = undefined
+
+  /** @param {unknown} error */
+  const invalid_state = (error) =>
+    error instanceof DOMException && error.name === "InvalidStateError"
+
+  /** @param {SourceBuffer} current */
+  const listed = (current) => {
+    try {
+      const buffers = source.sourceBuffers
+      for (let index = 0; index < buffers.length; index += 1) {
+        if (buffers[index] === current) {
+          return true
+        }
+      }
+    } catch {}
+    return false
+  }
 
   /** @param {SourceBuffer} current */
   const attached = (current) =>
-    !signal.aborted && source.readyState !== "closed" && buffer === current
+    !signal.aborted &&
+    source.readyState !== "closed" &&
+    buffer === current &&
+    listed(current)
 
   /** @param {SourceBuffer} current */
   const writable = (current) =>
-    attached(current) && source.readyState === "open"
+    attached(current) && source.readyState === "open" && !current.updating
+
+  /** @param {SourceBuffer} current */
+  const buffered = (current) => {
+    if (!attached(current)) {
+      return undefined
+    }
+    try {
+      return current.buffered
+    } catch (error) {
+      if (invalid_state(error)) {
+        return undefined
+      }
+      throw error
+    }
+  }
 
   /** @param {number} position */
   const frontier = (position) => {
     const current = buffer
-    if (current === undefined || source.readyState === "closed") {
+    if (current === undefined) {
       return undefined
     }
-    const ranges = current.buffered
+    const ranges = buffered(current)
+    if (ranges === undefined) {
+      return undefined
+    }
     for (let index = 0; index < ranges.length; index += 1) {
       if (
         ranges.start(index) - POSITION_TOLERANCE <= position &&
@@ -284,10 +335,13 @@ const mse = (signal, media, position) => {
   /** @param {number} position */
   const available = (position) => {
     const current = buffer
-    if (current === undefined || source.readyState === "closed") {
+    if (current === undefined) {
       return undefined
     }
-    const ranges = current.buffered
+    const ranges = buffered(current)
+    if (ranges === undefined) {
+      return undefined
+    }
     for (let index = 0; index < ranges.length; index += 1) {
       const start = ranges.start(index)
       const end = ranges.end(index)
@@ -304,10 +358,13 @@ const mse = (signal, media, position) => {
   /** @param {number} position */
   const contains = (position) => {
     const current = buffer
-    if (current === undefined || source.readyState === "closed") {
+    if (current === undefined) {
       return false
     }
-    const ranges = current.buffered
+    const ranges = buffered(current)
+    if (ranges === undefined) {
+      return false
+    }
     for (let index = 0; index < ranges.length; index += 1) {
       if (ranges.start(index) <= position && position < ranges.end(index)) {
         return true
@@ -321,13 +378,21 @@ const mse = (signal, media, position) => {
     if (!writable(current)) {
       return false
     }
-    const settled = select(
-      signal,
-      (s) => once(current, s, "updateend"),
-      (s) => once(current, s, "error"),
+    try {
+      mutate()
+    } catch (error) {
+      if (invalid_state(error)) {
+        return false
+      }
+      throw error
+    }
+    return Boolean(
+      await select(
+        signal,
+        (s) => once(current, s, "updateend"),
+        (s) => once(current, s, "error"),
+      ),
     )
-    mutate()
-    return Boolean(await settled)
   }
 
   /** @param {SourceBuffer} current */
@@ -338,15 +403,45 @@ const mse = (signal, media, position) => {
     if (source.readyState === "open") {
       return true
     }
-    const ranges = current.buffered
+    const ranges = buffered(current)
+    if (ranges === undefined) {
+      return false
+    }
     const start = ranges.length ? ranges.end(ranges.length - 1) : 0
-    const settled = select(
-      signal,
-      (s) => once(current, s, "updateend"),
-      (s) => once(current, s, "error"),
+    try {
+      current.remove(start, start + 0.001)
+    } catch (error) {
+      if (invalid_state(error)) {
+        return false
+      }
+      throw error
+    }
+    return (
+      Boolean(
+        await select(
+          signal,
+          (s) => once(current, s, "updateend"),
+          (s) => once(current, s, "error"),
+        ),
+      ) && writable(current)
     )
-    current.remove(start, start + 0.001)
-    return Boolean(await settled) && writable(current)
+  }
+
+  /** @param {SourceBuffer} current */
+  const discard = (current) => {
+    if (source.readyState !== "open" || !listed(current)) {
+      return
+    }
+    try {
+      if (current.updating) {
+        current.abort()
+      }
+      source.removeSourceBuffer(current)
+    } catch (error) {
+      if (!invalid_state(error)) {
+        throw error
+      }
+    }
   }
 
   /** @returns {AsyncGenerator<void, void, MseOperation | undefined>} */
@@ -374,94 +469,93 @@ const mse = (signal, media, position) => {
         source.duration = duration
       }
       const opened_buffer = source.addSourceBuffer(type)
-      current_buffer = opened_buffer
       buffer = opened_buffer
 
-      for (
-        let operation = yield undefined;
-        operation !== undefined;
-        operation = yield undefined
-      ) {
-        if (!attached(opened_buffer)) {
-          return
-        }
-        if (typeof operation === "number") {
-          if (!(await reopen(opened_buffer))) {
+      try {
+        for (
+          let operation = yield undefined;
+          operation !== undefined;
+          operation = yield undefined
+        ) {
+          if (!attached(opened_buffer)) {
             return
           }
-          opened_buffer.timestampOffset = operation
-          continue
-        }
-        if (!writable(opened_buffer)) {
-          return
-        }
-
-        const [position, bytes] = operation
-        const end = position - BUFFER.BEHIND
-        const expired =
-          end > 0 &&
-          opened_buffer.buffered.length &&
-          opened_buffer.buffered.start(0) < end
-        if (
-          expired &&
-          !(await update(opened_buffer, () => opened_buffer.remove(0, end)))
-        ) {
-          return
-        }
-        if (
-          !(await update(opened_buffer, () =>
-            opened_buffer.appendBuffer(
-              /** @type {Uint8Array<ArrayBuffer>} */ (bytes),
-            ),
-          ))
-        ) {
-          return
-        }
-        changes.dispatchEvent(new Event("change"))
-      }
-    } finally {
-      const current = current_buffer
-      buffer = undefined
-      try {
-        if (
-          current !== undefined &&
-          source.readyState === "open" &&
-          [...source.sourceBuffers].includes(current)
-        ) {
-          if (current.updating) {
-            current.abort()
+          if (operation === "end") {
+            if (!writable(opened_buffer)) {
+              return
+            }
+            try {
+              source.endOfStream()
+            } catch (error) {
+              if (!invalid_state(error)) {
+                throw error
+              }
+              return
+            }
+            continue
           }
-          source.removeSourceBuffer(current)
+          if (typeof operation === "number") {
+            if (!(await reopen(opened_buffer))) {
+              return
+            }
+            try {
+              opened_buffer.timestampOffset = operation
+            } catch (error) {
+              if (!invalid_state(error)) {
+                throw error
+              }
+              return
+            }
+            continue
+          }
+          if (!writable(opened_buffer)) {
+            return
+          }
+
+          const [position, bytes] = operation
+          const end = position - BUFFER.BEHIND
+          const ranges = buffered(opened_buffer)
+          if (ranges === undefined) {
+            return
+          }
+          const expired =
+            end > 0 && ranges.length && ranges.start(0) < end
+          if (
+            expired &&
+            !(await update(opened_buffer, () => opened_buffer.remove(0, end)))
+          ) {
+            return
+          }
+          if (
+            !(await update(opened_buffer, () =>
+              opened_buffer.appendBuffer(
+                /** @type {Uint8Array<ArrayBuffer>} */ (bytes),
+              ),
+            ))
+          ) {
+            return
+          }
+          changes.dispatchEvent(new Event("change"))
         }
       } finally {
-        if (media.src === url) {
-          media.removeAttribute("src")
-          media.load()
-        }
-        URL.revokeObjectURL(url)
+        buffer = undefined
+        discard(opened_buffer)
       }
+    } finally {
+      if (media.src === url) {
+        media.removeAttribute("src")
+        media.load()
+      }
+      URL.revokeObjectURL(url)
     }
     return
   }
 
   return Object.assign(operations(), {
-    active: () => buffer !== undefined && source.readyState !== "closed",
+    active: () => buffer !== undefined && attached(buffer),
     available,
     changes,
     contains,
-    end: () => {
-      const current = buffer
-      if (
-        current === undefined ||
-        current.updating ||
-        signal.aborted ||
-        source.readyState !== "open"
-      ) {
-        return false
-      }
-      source.endOfStream()
-      return true
-    },
     frontier,
     /** @param {number} position */
     play_ahead: (position) => (frontier(position) ?? position) - position,
@@ -562,7 +656,7 @@ const session = async (signal, buffer, time) => {
       start = stream_position(tail)
       continue streaming
     }
-    if (buffer.end()) {
+    if (!(await buffer.next("end")).done) {
       await wait_for_abort(signal)
     }
     return
