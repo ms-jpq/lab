@@ -1,6 +1,6 @@
 /** @typedef {"end" | number | Uint8Array} MseOperation */
 /** @typedef {AsyncGenerator<void, void, MseOperation | undefined>} Mse */
-/** @typedef {{failed: boolean, seek: number | undefined}} PageChange */
+/** @typedef {{failed: boolean, position: number, seek: number | undefined}} PageChange */
 /** @typedef {readonly [AsyncIterator<unknown, void, void>, IteratorResult<unknown, void>]} IteratorSelection */
 /** @typedef {{buffer: Mse, position: number, signal: AbortSignal}} PlaybackSource */
 
@@ -284,6 +284,7 @@ const page_states = (signal, position) => {
             current.error !== previous.error &&
             current.error !== null &&
             current.error.code !== MediaError.MEDIA_ERR_ABORTED,
+          position: target,
           seek: restart ? target : undefined,
         }
         previous = current
@@ -458,12 +459,11 @@ const session = async function* (signal, buffer, time) {
   return
 }
 
-/** @param {AbortSignal} signal @returns {AsyncGenerator<PlaybackSource, void, void>} */
-const media_sources = async function* (signal) {
+/** @param {AbortSignal} signal @param {number} position @returns {AsyncGenerator<PlaybackSource, void, number | undefined>} */
+const media_sources = async function* (signal, position) {
   for (;;) {
     const lifetime = new AbortController()
     const lifetime_signal = AbortSignal.any([signal, lifetime.signal])
-    const position = playable_position(Number(time_input.value))
     const buffer = mse(lifetime_signal, media, () => lifetime.abort())
     let retry = false
 
@@ -471,7 +471,8 @@ const media_sources = async function* (signal) {
       if ((await buffer.next()).done) {
         return
       }
-      yield { buffer, position, signal: lifetime_signal }
+      position =
+        (yield { buffer, position, signal: lifetime_signal }) ?? position
       retry = await retry_delay(signal)
     } catch (error) {
       if (!lifetime_signal.aborted) {
@@ -489,88 +490,105 @@ const media_sources = async function* (signal) {
   }
 }
 
-/** @param {PlaybackSource} source */
+/** @param {PlaybackSource} source @returns {Promise<number>} */
 const play_source = async (source) => {
   const { buffer, position, signal } = source
-  const states = page_states(signal, position)
+  const observation = new AbortController()
+  const states = page_states(
+    AbortSignal.any([signal, observation.signal]),
+    position,
+  )
   let change = states.next()
   let target = position
 
-  for (;;) {
-    const attempt = new AbortController()
-    const attempt_signal = AbortSignal.any([signal, attempt.signal])
-    const current = session(attempt_signal, buffer, target)
-    /** @type {Promise<IteratorResult<void, void>> | undefined} */
-    let progress = current.next()
-    let retry = false
+  try {
+    for (;;) {
+      const attempt = new AbortController()
+      const attempt_signal = AbortSignal.any([signal, attempt.signal])
+      const current = session(attempt_signal, buffer, target)
+      /** @type {Promise<IteratorResult<void, void>> | undefined} */
+      let progress = current.next()
+      let retry = false
 
-    try {
-      for (;;) {
-        const selected = /** @type {IteratorSelection | undefined} */ (
-          await select(
-            attempt_signal,
-            async () =>
-              /** @type {IteratorSelection} */ ([states, await change]),
-            progress
-              ? async () =>
-                  /** @type {IteratorSelection} */ ([current, await progress])
-              : undefined,
+      try {
+        for (;;) {
+          const selected = /** @type {IteratorSelection | undefined} */ (
+            await select(
+              attempt_signal,
+              async () =>
+                /** @type {IteratorSelection} */ ([states, await change]),
+              progress
+                ? async () =>
+                    /** @type {IteratorSelection} */ ([current, await progress])
+                : undefined,
+            )
           )
-        )
-        if (!selected) {
-          return
-        }
-        const [selected_source, result] = selected
-        if (selected_source === current) {
-          progress = undefined
-          if (result.done) {
-            return
+          if (!selected) {
+            return target
           }
-          continue
-        }
+          const [selected_source, result] = selected
+          if (selected_source === current) {
+            progress = undefined
+            if (result.done) {
+              return target
+            }
+            continue
+          }
 
-        const state = /** @type {IteratorResult<PageChange, void>} */ (result)
-        if (state.done || state.value.failed) {
-          return
+          const state = /** @type {IteratorResult<PageChange, void>} */ (result)
+          if (state.done) {
+            return target
+          }
+          target = state.value.position
+          if (state.value.failed) {
+            return target
+          }
+          change = states.next()
+          if (state.value.seek !== undefined) {
+            break
+          }
+          if (progress === undefined) {
+            progress = current.next()
+          }
         }
-        change = states.next()
-        if (state.value.seek !== undefined) {
-          target = state.value.seek
-          break
+      } catch (error) {
+        if (!attempt_signal.aborted) {
+          console.error(error)
+          retry = true
         }
-        if (progress === undefined) {
-          progress = current.next()
-        }
+      } finally {
+        attempt.abort()
+        await current.return()
       }
-    } catch (error) {
-      if (!attempt_signal.aborted) {
-        console.error(error)
-        retry = true
-      }
-    } finally {
-      attempt.abort()
-      await current.return()
-    }
 
-    if (signal.aborted) {
-      return
+      if (signal.aborted) {
+        return target
+      }
+      if (retry && !(await retry_delay(signal))) {
+        return target
+      }
     }
-    if (retry && !(await retry_delay(signal))) {
-      return
-    }
+  } finally {
+    observation.abort()
+    await states.return()
   }
 }
 
 /** @param {AbortSignal} signal */
 const playback_page = async (signal) => {
-  for await (const source of media_sources(signal)) {
+  const sources = media_sources(signal, initial_position)
+  let next = await sources.next()
+  while (!next.done) {
+    const source = next.value
+    let position = source.position
     try {
-      await play_source(source)
+      position = await play_source(source)
     } catch (error) {
       if (!source.signal.aborted) {
         console.error(error)
       }
     }
+    next = await sources.next(position)
   }
 }
 
