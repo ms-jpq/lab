@@ -60,18 +60,15 @@ export const media_source = async function* ({
     }
 
     if (typeof operation === "number") {
-      {
-        using _ = defer(() => buffer.abort())
+      if (source.readyState === "ended") {
+        const ranges = buffer.buffered
+        const end = ranges.length ? ranges.end(ranges.length - 1) : 0
 
-        if (source.readyState === "ended") {
-          const ranges = buffer.buffered
-          const end = ranges.length ? ranges.end(ranges.length - 1) : 0
-
-          for await (const _ of op_lock(buffer)) {
-            buffer.remove(end, end + EPSILON)
-          }
+        for await (const _ of op_lock(buffer)) {
+          buffer.remove(end, end + EPSILON)
         }
       }
+      buffer.abort()
       buffer.timestampOffset = operation
       continue
     }
@@ -155,7 +152,6 @@ export const media_sources = (media: HTMLMediaElement) => {
         const buffer = media_source({
           evict_before: () => media.currentTime - BEHIND,
           mime_type: media.dataset["mseType"] as string,
-          signal,
           source,
         })
         await buffer.next()
