@@ -440,8 +440,8 @@ const session = async function* (signal, buffer, time) {
         if ((await buffer.next(next.value)).done) {
           return
         }
+        start = stream_position(buffered_end() ?? start)
         if (play_ahead() >= BUFFER.HI) {
-          start = stream_position(buffered_end() ?? start)
           continue streaming
         }
       }
