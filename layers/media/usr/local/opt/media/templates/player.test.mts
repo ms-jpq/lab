@@ -736,17 +736,20 @@ test(
 const readerTeardownCases = [
   {
     cancelRejects: false,
-    name: "source stream reads and releases a reader-only response body",
+    name: "request return aborts before and awaits reader cancellation",
+    waits: true,
   },
   {
     cancelRejects: true,
     name: "an aborted reader cannot reject stream teardown",
+    waits: false,
   },
 ] as const
 
-for (const { cancelRejects, name } of readerTeardownCases) {
+for (const { cancelRejects, name, waits } of readerTeardownCases) {
   test(name, options, async () => {
     const current = await fixture()
+    const cancellation = Promise.withResolvers<void>()
     let cancellations = 0
     let reads = 0
     current.context.fetch = async (_url, { signal }) =>
@@ -755,6 +758,9 @@ for (const { cancelRejects, name } of readerTeardownCases) {
           cancel: async () => {
             cancellations += 1
             deepEqual(signal.aborted, true)
+            if (waits) {
+              await cancellation.promise
+            }
             if (cancelRejects) {
               throw new DOMException("The operation was aborted", "AbortError")
             }
@@ -770,7 +776,15 @@ for (const { cancelRejects, name } of readerTeardownCases) {
     const chunk = await stream.next()
     deepEqual(chunk.done, false)
     deepEqual([...chunk.value], [1])
-    await doesNotReject(stream.return())
+    let closed = false
+    const closing = stream.return().then(() => {
+      closed = true
+    })
+    await eventually(() => cancellations === 1)
+    await nextTask()
+    deepEqual(closed, !waits)
+    cancellation.resolve()
+    await doesNotReject(closing)
 
     deepEqual(reads, 1)
     deepEqual(cancellations, 1)
