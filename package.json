@@ -9,7 +9,7 @@
     "typescript": "*"
   },
   "scripts": {
-    "test": "node --test"
+    "test": "node --test --test-concurrency=$(nproc) '{layers,machines}/**/*.test.*'"
   },
   "type": "module"
 }
