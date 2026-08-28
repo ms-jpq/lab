@@ -23,7 +23,6 @@ type MutableTimeRanges = {
 type MediaFailure = { code: number; message?: string }
 type MseOperation = "end" | number | Uint8Array
 type Mse = AsyncGenerator<void, void, MseOperation>
-type SessionStep = "checkpoint" | void
 type MseBuffer = EventTarget & {
   abort: () => void
   appendBuffer: (bytes: Uint8Array) => void
@@ -49,45 +48,34 @@ type TestMseSource = Omit<MseSource, "addSourceBuffer"> & {
   addSourceBuffer: (type: string) => TestMseBuffer
 }
 type FailureStorm = { fail: (error: unknown) => void; recover: () => void }
-type PageChange = {
-  position: number
-  restart: boolean
-  revision: number
+type Target = { position: number; restart: boolean; started: boolean }
+type SourcePage = {
+  next: <T>(work?: Promise<T>) => Promise<symbol | T | undefined>
+  readonly target: Target
+  take_error: () => unknown
 }
-type PageReader = {
-  changes: AsyncGenerator<PageChange, void, void>
-  pending: Promise<IteratorResult<PageChange, void>>
-  position: number
-  revision: number
+type PageReader = SourcePage & {
+  close: () => Promise<void>
   seek: () => void
 }
 type PlayerTest = {
+  PULSE: symbol
   mse: (signal: AbortSignal, source: MseSource, buffer: MseBuffer) => Mse
   page_reader: (signal: AbortSignal, position: number) => PageReader
   play_source: (
-    signal: AbortSignal,
     buffer: {
       next: (operation: MseOperation) => Promise<IteratorResult<void>>
     },
     failures: FailureStorm,
-    page: PageReader,
-    mediaFailure: {
-      current: unknown | undefined
-      pending: Promise<unknown | undefined>
-    },
-  ) => Promise<{ error: unknown } | undefined>
+    page: SourcePage,
+  ) => Promise<void>
   play_subtitle: (signal: AbortSignal) => Promise<void>
   playback_page: (signal: AbortSignal) => Promise<void>
-  session: (
-    signal: AbortSignal,
-    buffer: {
-      next: (operation: MseOperation) => Promise<IteratorResult<void>>
-    },
-    position: number,
-    failures: FailureStorm,
-  ) => AsyncGenerator<SessionStep, unknown, undefined>
+  selector: <T>(
+    source: AsyncIterator<T, void, void>,
+  ) => <W>(work?: Promise<W>) => Promise<T | W | undefined>
   source_stream: (
-    signal: AbortSignal,
+    request: AbortController,
     position: number,
   ) => AsyncGenerator<Uint8Array, unknown, undefined>
 }
@@ -124,13 +112,6 @@ const test = (name: string, _options: typeof options, run: TestBody): void => {
 const present = <T,>(value: T | undefined): T => {
   assert(value !== undefined)
   return value
-}
-const nextValue = async <T,>(
-  iterator: AsyncIterator<T, unknown, undefined>,
-): Promise<T> => {
-  const result = await iterator.next()
-  deepEqual(result.done, false)
-  return result.value
 }
 const eventually = async (predicate: () => boolean): Promise<void> => {
   while (!predicate()) {
@@ -683,7 +664,8 @@ const fixture = async (position = 40) => {
   }) as PlayerContext
   const source = await readFile(PLAYER, "utf8")
   vm.runInContext(
-    `${source}\nglobalThis.player_test = { mse, page_reader, play_source, play_subtitle, playback_page, session, source_stream }`,
+    `${source}
+globalThis.player_test = { PULSE, mse, page_reader, play_source, play_subtitle, playback_page, selector, source_stream }`,
     context,
   )
   const { ranges } = media.buffered
@@ -715,6 +697,48 @@ const open_mse = async (current: Awaited<ReturnType<typeof fixture>>) => {
   await buffer.next()
   return { buffer, controller, opened, source }
 }
+
+test(
+  "a selector subscribes once while work repeatedly wins",
+  options,
+  async () => {
+    const current = await fixture()
+    const pending = Promise.withResolvers<IteratorResult<number, void>>()
+    const original = pending.promise.then
+    let subscriptions = 0
+    Object.defineProperty(pending.promise, "then", {
+      value: (...arguments_: unknown[]) => {
+        subscriptions += 1
+        return Reflect.apply(original, pending.promise, arguments_)
+      },
+    })
+    const select = current.context.player_test.selector({
+      next: () => pending.promise,
+    })
+
+    for (let value = 0; value < 1_000; value += 1) {
+      deepEqual(await select(Promise.resolve(value)), value)
+    }
+    deepEqual(subscriptions, 1)
+
+    const work = Promise.withResolvers<number>()
+    const selected = select(work.promise)
+    work.resolve(1_000)
+    pending.resolve({ done: false, value: 1_001 })
+    deepEqual(await selected, 1_000)
+    deepEqual(await select(), 1_001)
+    deepEqual(subscriptions, 2)
+
+    const source = Promise.withResolvers<IteratorResult<number, void>>()
+    const losing = Promise.withResolvers<number>()
+    const sourceFirst = current.context.player_test.selector({
+      next: () => source.promise,
+    })(losing.promise)
+    source.resolve({ done: false, value: 2_000 })
+    losing.reject(new Error("losing work"))
+    deepEqual(await sourceFirst, 2_000)
+  },
+)
 
 const readerTeardownCases = [
   {
@@ -752,10 +776,7 @@ for (const { abortParent, cancelRejects, name } of readerTeardownCases) {
       })
 
     const controller = new AbortController()
-    const stream = current.context.player_test.source_stream(
-      controller.signal,
-      40,
-    )
+    const stream = current.context.player_test.source_stream(controller, 40)
     const chunk = await stream.next()
     deepEqual(chunk.done, false)
     deepEqual([...chunk.value], [1])
@@ -797,10 +818,7 @@ test(
     }
 
     const controller = new AbortController()
-    const stream = current.context.player_test.source_stream(
-      controller.signal,
-      40,
-    )
+    const stream = current.context.player_test.source_stream(controller, 40)
     const chunk = await stream.next()
     deepEqual(chunk.done, false)
     deepEqual([...chunk.value], [1])
@@ -814,29 +832,127 @@ test(
   },
 )
 
+test(
+  "a non-OK response aborts and drains its body before retry",
+  options,
+  async () => {
+    const current = await fixture()
+    const clock = frozenClock(current.context)
+    const cancelReleased = Promise.withResolvers<void>()
+    const requests: Array<{ signal: AbortSignal; target: string | null }> = []
+    let cancelStarted = false
+    let abortedBeforeCancel = false
+
+    current.context.fetch = async (url, { signal }) => {
+      requests.push({
+        signal,
+        target: new URL(String(url)).searchParams.get("t"),
+      })
+      if (requests.length !== 1) return liveResponse(signal)
+
+      return {
+        ...mockResponse({
+          getReader: () => ({
+            cancel: async () => {
+              cancelStarted = true
+              abortedBeforeCancel = signal.aborted
+              await cancelReleased.promise
+            },
+            read: async () => ({ done: true, value: undefined }),
+          }),
+        }),
+        ok: false,
+        status: 503,
+        statusText: "Service Unavailable",
+      }
+    }
+
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    try {
+      await eventually(() => cancelStarted || clock.length !== 0)
+      await nextTask()
+      deepEqual(
+        {
+          abortedBeforeCancel,
+          cancelStarted,
+          requests: requests.length,
+          retryTimers: clock.length,
+        },
+        {
+          abortedBeforeCancel: true,
+          cancelStarted: true,
+          requests: 1,
+          retryTimers: 0,
+        },
+      )
+
+      cancelReleased.resolve()
+      await eventually(() => clock.length === 1)
+      deepEqual(requests.length, 1)
+      clock.advance(0)
+      await eventually(() => requests.length === 2)
+      deepEqual(
+        requests.map(({ target }) => target),
+        ["40", "40"],
+      )
+      deepEqual(requests[0]?.signal.aborted, true)
+      deepEqual(requests[1]?.signal.aborted, false)
+    } finally {
+      cancelReleased.resolve()
+      controller.abort()
+      await playback
+      clock.dispose()
+    }
+  },
+)
+
+const openPage = async (
+  current: Awaited<ReturnType<typeof fixture>>,
+  signal: AbortSignal,
+  position: number,
+) => {
+  const page = current.context.player_test.page_reader(signal, position)
+  deepEqual(await page.next(), current.context.player_test.PULSE)
+  return page
+}
+
+const pulsePage = async (
+  current: Awaited<ReturnType<typeof fixture>>,
+  page: PageReader,
+  dispatch: () => void,
+) => {
+  const pending = page.next()
+  dispatch()
+  deepEqual(await pending, current.context.player_test.PULSE)
+  return page.target
+}
+
+const closePage = async (controller: AbortController, page: PageReader) => {
+  controller.abort()
+  await page.close()
+}
+
 const ready = async (
   current: Awaited<ReturnType<typeof fixture>>,
   position = 40,
 ) => {
   const controller = new AbortController()
-  const page = current.context.player_test.page_reader(
-    controller.signal,
-    position,
-  )
-  const { changes: states } = page
-  await page.pending
+  const page = await openPage(current, controller.signal, position)
   current.ranges.push([0, 100])
   current.media.readyState = 1
-  const aligned = states.next()
-  current.media.dispatchEvent(new Event("canplay"))
-  await aligned
-  const acknowledged = states.next()
-  current.media.seeking = true
-  current.media.dispatchEvent(new Event("seeking"))
-  current.media.seeking = false
-  current.media.dispatchEvent(new Event("seeked"))
-  await acknowledged
-  return { controller, states }
+  await pulsePage(current, page, () => {
+    current.media.dispatchEvent(new Event("canplay"))
+  })
+  await pulsePage(current, page, () => {
+    current.media.seeking = true
+    current.media.dispatchEvent(new Event("seeking"))
+    current.media.seeking = false
+    current.media.dispatchEvent(new Event("seeked"))
+  })
+  return { controller, page }
 }
 
 const runningPlayback = async (
@@ -856,41 +972,37 @@ test(
   async () => {
     const current = await fixture()
     const controller = new AbortController()
-    const page = current.context.player_test.page_reader(controller.signal, 40)
-    const { changes: states } = page
-    await page.pending
+    const page = await openPage(current, controller.signal, 40)
 
-    const transient = states.next()
-    current.media.dispatchEvent(new Event("timeupdate"))
-    await transient
+    await pulsePage(current, page, () => {
+      current.media.dispatchEvent(new Event("timeupdate"))
+    })
     deepEqual(current.timeInput.value, "40")
 
-    const aligned = states.next()
     current.media.readyState = 1
-    current.media.dispatchEvent(new Event("loadedmetadata"))
-    await aligned
+    await pulsePage(current, page, () => {
+      current.media.dispatchEvent(new Event("loadedmetadata"))
+    })
     deepEqual(current.media.currentTime, 40)
-    controller.abort()
+    await closePage(controller, page)
   },
 )
 
 test(
-  "returning page states detaches observers from a live parent",
+  "closing a page reader detaches observers from a live parent",
   options,
   async () => {
     const current = await fixture()
     const parent = new AbortController()
-    const page = current.context.player_test.page_reader(parent.signal, 40)
-    const { changes: states } = page
-    await page.pending
+    const page = await openPage(current, parent.signal, 40)
     const calls = current.media.listenerCalls
 
-    await states.return(undefined)
+    await page.close()
     deepEqual(parent.signal.aborted, false)
     current.media.dispatchEvent(new Event("timeupdate"))
 
     deepEqual(current.media.listenerCalls, calls)
-    deepEqual((await states.next()).done, true)
+    deepEqual(await page.next(), undefined)
   },
 )
 
@@ -909,14 +1021,12 @@ test(
       return timeout
     }
     const controller = new AbortController()
-    const page = current.context.player_test.page_reader(controller.signal, 40)
-    const { changes: states } = page
-    await page.pending
+    const page = await openPage(current, controller.signal, 40)
 
     current.media.error = { code: 3, message: "decode failed" }
     current.media.dispatchEvent(new Event("error"))
     let settled = false
-    const pending = states.next().then((result) => {
+    const pending = page.next().then((result) => {
       settled = true
       return result
     })
@@ -929,34 +1039,12 @@ test(
     deepEqual(scheduled.length, 1)
     present(scheduled[0])()
 
-    const change = await nextValue({ next: () => pending })
-    deepEqual(change.position, 110)
-    deepEqual(change.restart, true)
-    controller.abort()
-    await states.return(undefined)
+    deepEqual(await pending, current.context.player_test.PULSE)
+    deepEqual(page.target.position, 110)
+    deepEqual(page.target.restart, true)
+    await closePage(controller, page)
   },
 )
-
-test("subtitle events stay outside media state batches", options, async () => {
-  const current = await fixture()
-  const controller = new AbortController()
-  const page = current.context.player_test.page_reader(controller.signal, 40)
-  const { changes: states } = page
-  await page.pending
-  let observed = false
-  const pending = states.next().then((result) => {
-    observed = true
-    return result
-  })
-
-  current.subtitle.dispatchEvent(new Event("error"))
-  await new Promise((resolve) => setImmediate(resolve))
-  deepEqual(observed, false)
-
-  controller.abort()
-  deepEqual((await pending).done, true)
-  await states.return(undefined)
-})
 
 test("a starved seek preserves native play intent", options, async () => {
   const current = await fixture()
@@ -1262,24 +1350,25 @@ test(
   async () => {
     const current = await fixture(0)
     const controller = new AbortController()
-    const page = current.context.player_test.page_reader(controller.signal, 0)
-    const { changes: states } = page
-    await page.pending
+    const page = await openPage(current, controller.signal, 0)
+    const initial = page.target
 
     current.media.currentTime = 37
     current.media.seeking = true
-    const sought = states.next()
-    current.media.dispatchEvent(new Event("seeking"))
-    const value = await nextValue({ next: () => sought })
-    deepEqual(value.restart, true)
+    const sought = await pulsePage(current, page, () => {
+      current.media.dispatchEvent(new Event("seeking"))
+    })
+    notEqual(sought, initial)
+    deepEqual(sought.restart, true)
     deepEqual(current.timeInput.value, "37")
 
     current.ranges.push([0, 10])
-    const stale = states.next()
-    current.media.dispatchEvent(new Event("canplay"))
-    await stale
+    const stale = await pulsePage(current, page, () => {
+      current.media.dispatchEvent(new Event("canplay"))
+    })
+    deepEqual(stale, sought)
     deepEqual(current.media.currentTime, 37)
-    controller.abort()
+    await closePage(controller, page)
   },
 )
 
@@ -1289,50 +1378,35 @@ test(
   async () => {
     const current = await fixture()
     const controller = new AbortController()
-    const page = current.context.player_test.page_reader(controller.signal, 40)
-    const { changes: states } = page
-    await page.pending
+    const page = await openPage(current, controller.signal, 40)
+    const initial = page.target
 
-    const sought = states.next()
-    current.media.currentTime = 110
-    current.media.seeking = true
-    current.media.dispatchEvent(new Event("seeking"))
-    current.media.currentTime = 40
-    current.media.dispatchEvent(new Event("seeking"))
-
-    const change = await nextValue({ next: () => sought })
+    const change = await pulsePage(current, page, () => {
+      current.media.currentTime = 110
+      current.media.seeking = true
+      current.media.dispatchEvent(new Event("seeking"))
+      current.media.currentTime = 40
+      current.media.dispatchEvent(new Event("seeking"))
+    })
+    notEqual(change, initial)
     deepEqual(
       {
         position: change.position,
         restart: change.restart,
-        revision: change.revision,
       },
       {
         position: 110,
         restart: true,
-        revision: 1,
       },
     )
     deepEqual(current.timeInput.value, "110")
 
-    const stale = states.next()
-    current.media.seeking = false
-    current.media.dispatchEvent(new Event("seeked"))
-    const echo = await nextValue({ next: () => stale })
-    deepEqual(
-      {
-        position: echo.position,
-        restart: echo.restart,
-        revision: echo.revision,
-      },
-      {
-        position: 110,
-        restart: false,
-        revision: 1,
-      },
-    )
-    controller.abort()
-    await states.return(undefined)
+    const echo = await pulsePage(current, page, () => {
+      current.media.seeking = false
+      current.media.dispatchEvent(new Event("seeked"))
+    })
+    deepEqual(echo, change)
+    await closePage(controller, page)
   },
 )
 
@@ -1342,26 +1416,30 @@ test(
   async () => {
     const current = await fixture()
     const controller = new AbortController()
-    const page = current.context.player_test.page_reader(controller.signal, 40)
-    const { changes: states } = page
-    await page.pending
+    const page = await openPage(current, controller.signal, 40)
+    const initial = page.target
 
     current.media.readyState = 1
-    current.media.dispatchEvent(new Event("loadedmetadata"))
-    await states.next()
+    deepEqual(
+      await pulsePage(current, page, () => {
+        current.media.dispatchEvent(new Event("loadedmetadata"))
+      }),
+      initial,
+    )
     deepEqual(current.media.currentTime, 40)
 
-    current.media.seeking = true
-    current.media.dispatchEvent(new Event("seeking"))
-    current.media.seeking = false
-    current.media.dispatchEvent(new Event("seeked"))
-    current.media.dispatchEvent(new Event("timeupdate"))
-    const change = await nextValue(states)
-
-    deepEqual(change.position, 40)
-    deepEqual(change.restart, false)
+    const acknowledged = await pulsePage(current, page, () => {
+      current.media.seeking = true
+      current.media.dispatchEvent(new Event("seeking"))
+      current.media.seeking = false
+      current.media.dispatchEvent(new Event("seeked"))
+      current.media.dispatchEvent(new Event("timeupdate"))
+    })
+    deepEqual(acknowledged, initial)
+    deepEqual(acknowledged.position, 40)
+    deepEqual(acknowledged.restart, false)
     deepEqual(current.timeInput.value, "40")
-    controller.abort()
+    await closePage(controller, page)
   },
 )
 
@@ -1386,22 +1464,25 @@ for (const { events, name } of synchronousSeekCases) {
     options,
     async () => {
       const current = await fixture()
-      const { controller, states } = await ready(current)
+      const { controller, page } = await ready(current)
+      const previous = page.target
       current.media.currentTime = 110
-      for (const event of events) {
-        if (event === "seeking") {
-          current.media.seeking = true
-        } else if (event === "seeked") {
-          current.media.seeking = false
+      const change = await pulsePage(current, page, () => {
+        for (const event of events) {
+          if (event === "seeking") {
+            current.media.seeking = true
+          } else if (event === "seeked") {
+            current.media.seeking = false
+          }
+          current.media.dispatchEvent(new Event(event))
         }
-        current.media.dispatchEvent(new Event(event))
-      }
+      })
 
-      const change = await nextValue(states)
+      notEqual(change, previous)
       deepEqual(change.restart, true)
       deepEqual(change.position, 110)
       deepEqual(current.timeInput.value, "110")
-      controller.abort()
+      await closePage(controller, page)
     },
   )
 }
@@ -1418,48 +1499,53 @@ for (const { name, range, target } of bufferedSeekCases) {
     options,
     async () => {
       const current = await fixture()
-      const { controller, states } = await ready(current)
+      const { controller, page } = await ready(current)
+      const previous = page.target
       current.ranges.splice(0, current.ranges.length, [range[0], range[1]])
       current.media.currentTime = 70
-      current.media.seeking = true
-      current.media.dispatchEvent(new Event("seeking"))
-      const change = await nextValue(states)
+      const change = await pulsePage(current, page, () => {
+        current.media.seeking = true
+        current.media.dispatchEvent(new Event("seeking"))
+      })
 
+      notEqual(change, previous)
       deepEqual(change.position, target)
       deepEqual(change.restart, false)
       deepEqual(current.timeInput.value, String(Math.floor(target)))
-      controller.abort()
+      await closePage(controller, page)
     },
   )
 }
 
 test("page progress persists only playable positions", options, async () => {
   const current = await fixture()
-  const { controller, states } = await ready(current)
+  const { controller, page } = await ready(current)
 
   current.media.currentTime = 110
-  current.media.dispatchEvent(new Event("timeupdate"))
-  await states.next()
+  await pulsePage(current, page, () => {
+    current.media.dispatchEvent(new Event("timeupdate"))
+  })
   deepEqual(current.timeInput.value, "40")
 
   current.ranges.push([110, 120])
   current.media.currentTime = 111
-  current.media.dispatchEvent(new Event("timeupdate"))
-  await states.next()
+  await pulsePage(current, page, () => {
+    current.media.dispatchEvent(new Event("timeupdate"))
+  })
   deepEqual(current.timeInput.value, "111")
-  controller.abort()
+  await closePage(controller, page)
 })
 
 test("ended resets the resume position", options, async () => {
   const current = await fixture()
-  const { controller, states } = await ready(current)
+  const { controller, page } = await ready(current)
   current.media.currentTime = 200
   current.media.ended = true
-  const observed = states.next()
-  current.media.dispatchEvent(new Event("ended"))
-  await observed
+  await pulsePage(current, page, () => {
+    current.media.dispatchEvent(new Event("ended"))
+  })
   deepEqual(current.timeInput.value, "0")
-  controller.abort()
+  await closePage(controller, page)
 })
 
 test("exact-end startup requests a playable position", options, async () => {
@@ -1477,28 +1563,6 @@ test("exact-end startup requests a playable position", options, async () => {
     controller.abort()
     await playback
   }
-})
-
-test("media failures stay outside page state", options, async () => {
-  const current = await fixture()
-  const { controller, states } = await ready(current)
-  const failure = { code: 3, message: "decode failed" }
-  current.media.error = failure
-  current.media.dispatchEvent(new Event("error"))
-  let settled = false
-  const pending = states.next().then((result) => {
-    settled = true
-    return result
-  })
-  await nextTask()
-  deepEqual(settled, false)
-
-  current.media.dispatchEvent(new Event("timeupdate"))
-  const change = await nextValue({ next: () => pending })
-
-  deepEqual(change.position, 40)
-  deepEqual(change.restart, false)
-  controller.abort()
 })
 
 test(
@@ -1537,34 +1601,40 @@ test(
   async () => {
     const current = await fixture(110)
     const controller = new AbortController()
-    const page = current.context.player_test.page_reader(controller.signal, 110)
-    const { changes: states } = page
-    await page.pending
+    const page = await openPage(current, controller.signal, 110)
+    const owned = page.target
 
     page.seek()
     current.media.readyState = current.media.HAVE_METADATA
     current.media.buffered.ranges = [[110, 120]]
-    const playable = states.next()
-    current.media.dispatchEvent(new Event("loadedmetadata"))
-    deepEqual((await nextValue({ next: () => playable })).restart, false)
+    deepEqual(
+      await pulsePage(current, page, () => {
+        current.media.dispatchEvent(new Event("loadedmetadata"))
+      }),
+      owned,
+    )
 
     current.media.buffered.ranges = []
-    const acknowledged = states.next()
-    current.media.seeking = true
-    current.media.dispatchEvent(new Event("seeking"))
-    current.media.seeking = false
-    current.media.dispatchEvent(new Event("seeked"))
-    deepEqual((await nextValue({ next: () => acknowledged })).restart, false)
+    deepEqual(
+      await pulsePage(current, page, () => {
+        current.media.seeking = true
+        current.media.dispatchEvent(new Event("seeking"))
+        current.media.seeking = false
+        current.media.dispatchEvent(new Event("seeked"))
+      }),
+      owned,
+    )
 
-    const later = states.next()
-    current.media.seeking = true
-    current.media.dispatchEvent(new Event("seeking"))
-    current.media.seeking = false
-    current.media.dispatchEvent(new Event("seeked"))
-    deepEqual((await nextValue({ next: () => later })).restart, true)
+    const later = await pulsePage(current, page, () => {
+      current.media.seeking = true
+      current.media.dispatchEvent(new Event("seeking"))
+      current.media.seeking = false
+      current.media.dispatchEvent(new Event("seeked"))
+    })
+    notEqual(later, owned)
+    deepEqual(later.restart, true)
 
-    controller.abort()
-    await states.return(undefined)
+    await closePage(controller, page)
   },
 )
 
@@ -1573,20 +1643,21 @@ test(
   options,
   async () => {
     const current = await fixture()
-    const { controller, states } = await ready(current)
-    const pending = states.next()
+    const { controller, page } = await ready(current)
+    const previous = page.target
     const failure = { code: 3, message: "decode failed" }
 
-    current.media.error = failure
-    current.media.dispatchEvent(new Event("error"))
-    current.media.currentTime = 110
-    current.media.seeking = true
-    current.media.dispatchEvent(new Event("seeking"))
-
-    const change = await nextValue({ next: () => pending })
+    const change = await pulsePage(current, page, () => {
+      current.media.error = failure
+      current.media.dispatchEvent(new Event("error"))
+      current.media.currentTime = 110
+      current.media.seeking = true
+      current.media.dispatchEvent(new Event("seeking"))
+    })
+    notEqual(change, previous)
     deepEqual(change.position, 110)
     deepEqual(change.restart, true)
-    controller.abort()
+    await closePage(controller, page)
   },
 )
 
@@ -1707,6 +1778,46 @@ for (const { events, name } of synchronousFailureSeekCases) {
   )
 }
 
+const controlledPage = (position: number, pulse: symbol) => {
+  let target = { position, restart: false, started: false }
+  let closed = false
+  let changed = Promise.withResolvers<symbol | undefined>()
+  const page: SourcePage = {
+    next: async <T,>(work?: Promise<T>) => {
+      const selected = await Promise.race([
+        changed.promise,
+        ...(work ? [work] : []),
+      ])
+      if (selected === pulse) {
+        changed = Promise.withResolvers<symbol | undefined>()
+        if (closed) changed.resolve(undefined)
+      }
+      return selected
+    },
+    get target() {
+      return target
+    },
+    take_error: () => undefined,
+  }
+  const notify = () => changed.resolve(pulse)
+  return {
+    change: (position: number): void => {
+      target = {
+        position,
+        restart: true,
+        started: true,
+      }
+      notify()
+    },
+    close: (): void => {
+      closed = true
+      changed.resolve(undefined)
+    },
+    page,
+    pulse: notify,
+  }
+}
+
 test(
   "high water stops an eager transport from growing while paused",
   options,
@@ -1779,7 +1890,7 @@ test(
         }),
       })
     }
-    const controller = new AbortController()
+    const page = controlledPage(40, current.context.player_test.PULSE)
     let appends = 0
     const buffer = {
       next: async (operation: MseOperation) => {
@@ -1791,16 +1902,14 @@ test(
         return { done: false as const, value: undefined }
       },
     }
-    const playback = current.context.player_test.session(
-      controller.signal,
+    const playback = current.context.player_test.play_source(
       buffer,
-      40,
       { fail: () => {}, recover: () => {} },
+      page.page,
     )
     try {
-      const paused = playback.next()
       await firstAppend.promise
-      await paused
+      await eventually(() => completed || aborts > 0 || cancellations > 0)
       deepEqual(requests, 1)
       deepEqual(appends, 1)
 
@@ -1816,79 +1925,28 @@ test(
       assert(completed || aborts > 0 || cancellations > 0)
     } finally {
       producing = false
-      controller.abort()
-      await playback.return(undefined)
+      page.close()
+      await playback
     }
   },
 )
 
-test(
-  "an unrelated high-water range cannot cancel a parser-warmup target request",
-  options,
-  async () => {
-    const current = await fixture()
-    current.media.currentTime = 110
-    let reads = 0
-    let cancellations = 0
-    let requestSignal: AbortSignal | undefined = undefined
-    current.context.fetch = async (url, { signal }) => {
-      deepEqual(new URL(String(url)).searchParams.get("t"), "110")
-      requestSignal = signal
-      return mockResponse({
-        getReader: () => ({
-          cancel: async () => {
-            cancellations += 1
-          },
-          read: async () => {
-            reads += 1
-            if (reads === 1) {
-              current.media.currentTime = 40
-              current.media.buffered.ranges = [[40, 100]]
-              return { done: false, value: new Uint8Array([1]) }
-            }
-            return new Promise<ReadableStreamReadResult<Uint8Array>>(
-              (resolve) => {
-                signal.addEventListener(
-                  "abort",
-                  () => resolve({ done: true, value: undefined }),
-                  { once: true },
-                )
-              },
-            )
-          },
-        }),
-      })
-    }
-    const buffer = {
-      next: async () => ({ done: false as const, value: undefined }),
-    }
-    const controller = new AbortController()
-    const playback = current.context.player_test.session(
-      controller.signal,
-      buffer,
-      110,
-      { fail: () => {}, recover: () => {} },
-    )
-
-    try {
-      const running = playback.next()
-      await eventually(() => reads === 2)
-      deepEqual(present<AbortSignal>(requestSignal).aborted, false)
-      deepEqual(cancellations, 0)
-      deepEqual(current.media.buffered.ranges, [[40, 100]])
-      controller.abort()
-      deepEqual((await running).done, true)
-    } finally {
-      controller.abort()
-      await playback.return(undefined)
-    }
+const unrelatedHighWaterCases = [
+  {
+    name: "an unrelated high-water range cannot cancel a parser-warmup target request",
+    ranges: [[40, 100]],
   },
-)
+  {
+    name: "an unrelated high-water range cannot cap partial target progress",
+    ranges: [
+      [40, 100],
+      [110, 120],
+    ],
+  },
+] as const
 
-test(
-  "an unrelated high-water range cannot cap partial target progress",
-  options,
-  async () => {
+for (const { name, ranges } of unrelatedHighWaterCases) {
+  test(name, options, async () => {
     const current = await fixture()
     current.media.currentTime = 110
     const requests: Array<{ signal: AbortSignal; time: string | null }> = []
@@ -1908,10 +1966,10 @@ test(
             reads += 1
             if (reads === 1) {
               current.media.currentTime = 40
-              current.media.buffered.ranges = [
-                [40, 100],
-                [110, 120],
-              ]
+              current.media.buffered.ranges = ranges.map(([start, end]) => [
+                start,
+                end,
+              ])
               return { done: false, value: new Uint8Array([1]) }
             }
             return new Promise<ReadableStreamReadResult<Uint8Array>>(
@@ -1927,211 +1985,64 @@ test(
         }),
       })
     }
-    const buffer = {
-      next: async () => ({ done: false as const, value: undefined }),
-    }
-    const controller = new AbortController()
-    const playback = current.context.player_test.session(
-      controller.signal,
-      buffer,
-      110,
+    const page = controlledPage(110, current.context.player_test.PULSE)
+    const playback = current.context.player_test.play_source(
+      { next: async () => ({ done: false as const, value: undefined }) },
       { fail: () => {}, recover: () => {} },
+      page.page,
     )
 
     try {
-      const running = playback.next()
-      for (let turn = 0; turn < 4; turn += 1) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
-
+      await eventually(() => reads === 2)
       deepEqual(
         requests.map(({ time }) => time),
         ["110"],
       )
       deepEqual(present(requests[0]).signal.aborted, false)
       deepEqual(cancellations, 0)
-      controller.abort()
-      await running
+      deepEqual(current.media.buffered.ranges, ranges)
     } finally {
-      controller.abort()
-      await playback.return(undefined)
+      page.close()
+      await playback
     }
-  },
-)
+  })
+}
 
 test(
-  "owner cancellation drains a page suspended at high water",
+  "owner cancellation aborts and drains a pending fetch",
   options,
   async () => {
     const current = await fixture()
-    const chunk = Promise.withResolvers<ReadableStreamReadResult<Uint8Array>>()
-    let cancellations = 0
+    const response = Promise.withResolvers<MockResponse>()
     let requestSignal: AbortSignal | undefined = undefined
     current.context.fetch = async (_url, { signal }) => {
       requestSignal = signal
-      return mockResponse({
-        getReader: () => ({
-          cancel: async () => {
-            cancellations += 1
-          },
-          read: () => chunk.promise,
-        }),
-      })
+      return response.promise
     }
 
     const controller = new AbortController()
     const playback = current.context.player_test.playback_page(
       controller.signal,
     )
-    await eventually(() => current.sources[0]?.sourceBuffers.length === 1)
-    const source = present(current.sources[0])
-    const buffer = present(source.sourceBuffers[0])
-    buffer.appendBuffer = () => {
-      buffer.updating = true
-      buffer.appendState = "parsing"
-      queueMicrotask(() => {
-        buffer.buffered.ranges = [[40, 100]]
-        current.media.buffered.ranges = [[40, 100]]
-        buffer.updating = false
-        buffer.dispatchEvent(new Event("updateend"))
-      })
-    }
-    chunk.resolve({ done: false, value: new Uint8Array([1]) })
-    await eventually(() => cancellations === 1)
-
+    await eventually(() => requestSignal !== undefined)
+    let settled = false
+    void playback.then(() => {
+      settled = true
+    })
     controller.abort()
-    await playback
+    await eventually(() => present(requestSignal).aborted)
+    await nextTask()
+    deepEqual(settled, false)
 
-    deepEqual(present<AbortSignal>(requestSignal).aborted, true)
+    response.reject(new DOMException("The operation was aborted", "AbortError"))
+    await playback
     deepEqual(current.media.loads, 1)
     deepEqual(current.media.src, "")
     deepEqual(current.revoked.length, 1)
-    deepEqual(buffer.usable, false)
-    const calls = current.media.listenerCalls
-    current.media.dispatchEvent(new Event("timeupdate"))
-    deepEqual(current.media.listenerCalls, calls)
-  },
-)
-
-test(
-  "low water resumes the same session from its buffered frontier",
-  options,
-  async () => {
-    const current = await fixture()
-    current.media.currentTime = 40
-    const firstAppend = Promise.withResolvers<void>()
-    const secondRequest = Promise.withResolvers<string>()
-    const requests: string[] = []
-    let firstAborts = 0
-    let firstCancellations = 0
-    current.context.fetch = async (url, { signal }) => {
-      const request = String(url)
-      const index = requests.push(request) - 1
-      if (index === 1) {
-        secondRequest.resolve(request)
-      }
-      signal.addEventListener(
-        "abort",
-        () => {
-          if (index === 0) {
-            firstAborts += 1
-          }
-        },
-        { once: true },
-      )
-      return mockResponse({
-        getReader: () => ({
-          cancel: async () => {
-            if (index === 0) {
-              firstCancellations += 1
-            }
-          },
-          read: async () => {
-            if (index === 0) {
-              return {
-                done: false as const,
-                value: new Uint8Array([1]),
-              }
-            }
-            if (signal.aborted) {
-              return { done: true as const, value: undefined }
-            }
-            return new Promise<ReadableStreamReadResult<Uint8Array>>(
-              (resolve) => {
-                signal.addEventListener(
-                  "abort",
-                  () => resolve({ done: true, value: undefined }),
-                  { once: true },
-                )
-              },
-            )
-          },
-        }),
-      })
-    }
-
-    const controller = new AbortController()
-    const operations: MseOperation[] = []
-    let ends = 0
-    const buffer = {
-      next: async (operation: MseOperation) => {
-        operations.push(operation)
-        if (operation === "end") {
-          ends += 1
-        } else if (operation instanceof Uint8Array) {
-          current.media.buffered.ranges = [[40, 100]]
-          firstAppend.resolve()
-        }
-        return { done: false as const, value: undefined }
-      },
-    }
-    const playback = current.context.player_test.session(
-      controller.signal,
-      buffer,
-      40,
-      { fail: () => {}, recover: () => {} },
-    )
-    let resumed: Promise<IteratorResult<SessionStep, unknown>> | undefined =
-      undefined
-    try {
-      const paused = playback.next()
-      await firstAppend.promise
-      deepEqual((await paused).done, false)
-      assert(firstAborts > 0 || firstCancellations > 0)
-      deepEqual(
-        requests.map((url) => new URL(url).searchParams.get("t")),
-        ["40"],
-      )
-
-      current.media.currentTime = 60
-      resumed = playback.next()
-      const request = new URL(await secondRequest.promise)
-
-      deepEqual(request.searchParams.get("t"), "100")
-      deepEqual(
-        requests.map((url) => new URL(url).searchParams.get("t")),
-        ["40", "100"],
-      )
-      deepEqual(
-        operations.filter((operation) => typeof operation === "number"),
-        [40, 100],
-      )
-      deepEqual(ends, 0)
-    } finally {
-      controller.abort()
-      await resumed
-      await playback.return(undefined)
-    }
   },
 )
 
 const acquisitionPolicyCases = [
-  {
-    expected: ["40"],
-    name: "a committed active frontier keeps its reader",
-    range: [40, 50],
-    target: 50,
-  },
   {
     expected: ["40", "100"],
     name: "a suspended same-frontier seek resumes one request",
@@ -2151,24 +2062,7 @@ for (const { expected, name, range, target } of acquisitionPolicyCases) {
     const current = await fixture()
     const firstChunk =
       Promise.withResolvers<ReadableStreamReadResult<Uint8Array>>()
-    const changed = Promise.withResolvers<PageChange>()
-    const drained = Promise.withResolvers<void>()
-    const changes = (async function* (): AsyncGenerator<
-      PageChange,
-      void,
-      void
-    > {
-      yield await changed.promise
-      await drained.promise
-      return
-    })()
-    const page: PageReader = {
-      changes,
-      pending: changes.next(),
-      position: 40,
-      revision: 0,
-      seek: () => {},
-    }
+    const page = controlledPage(40, current.context.player_test.PULSE)
     const requests: Array<{
       cancellations: number
       reads: number
@@ -2218,16 +2112,10 @@ for (const { expected, name, range, target } of acquisitionPolicyCases) {
       },
     }
     current.media.currentTime = 40
-    const controller = new AbortController()
     const playback = current.context.player_test.play_source(
-      controller.signal,
       buffer,
       { fail: () => {}, recover: () => {} },
-      page,
-      {
-        current: undefined,
-        pending: new Promise<undefined>(() => {}),
-      },
+      page.page,
     )
     try {
       await eventually(() => requests.length === 1)
@@ -2239,12 +2127,8 @@ for (const { expected, name, range, target } of acquisitionPolicyCases) {
       )
 
       current.media.currentTime = target
-      page.position = target
-      page.revision = 1
-      changed.resolve({ position: target, restart: true, revision: 1 })
-      if (expected.length === 2) {
-        await eventually(() => requests.length === 2)
-      }
+      page.change(target)
+      await eventually(() => requests.length === 2)
       await nextTask()
 
       deepEqual(
@@ -2254,62 +2138,133 @@ for (const { expected, name, range, target } of acquisitionPolicyCases) {
           requests: requests.map(({ time }) => time),
         },
         {
-          aborted: expected.length === 1 ? [false] : [true, false],
-          cancellations: expected.length === 1 ? [0] : [1, 0],
+          aborted: [true, false],
+          cancellations: [1, 0],
           requests: expected,
         },
       )
     } finally {
-      drained.resolve()
-      controller.abort()
+      page.close()
       await playback
-      await changes.return(undefined)
     }
   })
 }
 
-const controlledPage = (position: number) => {
-  const pending: PageChange[] = []
-  let closed = false
-  let changed = Promise.withResolvers<void>()
-  const changes = (async function* (): AsyncGenerator<PageChange, void, void> {
-    for (;;) {
-      while (pending.length) {
-        yield present(pending.shift())
-      }
-      if (closed) {
-        return
-      }
-      await changed.promise
-      changed = Promise.withResolvers<void>()
+const pendingFetchSeekCases = [
+  {
+    aborted: false,
+    expected: ["40"],
+    name: "a same-target seek retains a pending fetch",
+    target: 40,
+  },
+  {
+    aborted: true,
+    expected: ["40", "110"],
+    name: "a different target waits for its pending fetch to retire",
+    target: 110,
+  },
+] as const
+
+for (const { aborted, expected, name, target } of pendingFetchSeekCases) {
+  test(name, options, async () => {
+    const current = await fixture()
+    const held = Promise.withResolvers<MockResponse>()
+    const requests: Array<{
+      abortedAtFetch: boolean
+      signal: AbortSignal
+      time: string | null
+    }> = []
+    current.context.fetch = async (url, { signal }) => {
+      const index =
+        requests.push({
+          abortedAtFetch: signal.aborted,
+          signal,
+          time: new URL(String(url)).searchParams.get("t"),
+        }) - 1
+      return index === 0 ? held.promise : liveResponse(signal)
     }
-  })()
-  const page: PageReader = {
-    changes,
-    pending: changes.next(),
-    position,
-    revision: 0,
-    seek: () => {},
-  }
-  return {
-    change: (target: number): void => {
-      page.position = target
-      page.revision += 1
-      pending.push({
-        position: target,
-        restart: true,
-        revision: page.revision,
-      })
-      changed.resolve()
-    },
-    changes,
-    close: (): void => {
-      closed = true
-      changed.resolve()
-    },
-    page,
-  }
+    const page = controlledPage(40, current.context.player_test.PULSE)
+    const playback = current.context.player_test.play_source(
+      {
+        next: async () => ({ done: false as const, value: undefined }),
+      },
+      { fail: () => {}, recover: () => {} },
+      page.page,
+    )
+    try {
+      await eventually(() => requests.length === 1)
+      page.change(target)
+      await eventually(() => requests[0]?.signal.aborted === aborted)
+      await nextTask()
+      deepEqual(
+        requests.map(({ time }) => time),
+        ["40"],
+      )
+
+      if (aborted) {
+        held.reject(new DOMException("The operation was aborted", "AbortError"))
+        await eventually(() => requests.length === 2)
+      }
+      await nextTask()
+      deepEqual(
+        requests.map(({ abortedAtFetch, signal, time }) => ({
+          aborted: signal.aborted,
+          abortedAtFetch,
+          time,
+        })),
+        expected.map((time, index) => ({
+          aborted: aborted && index === 0,
+          abortedAtFetch: false,
+          time,
+        })),
+      )
+    } finally {
+      held.reject(new DOMException("The operation was aborted", "AbortError"))
+      page.close()
+      await playback
+    }
+  })
 }
+
+test(
+  "an unbuffered seek keeps its retry interruption after later progress",
+  options,
+  async () => {
+    const current = await fixture()
+    const clock = frozenClock(current.context)
+    const page = controlledPage(40, current.context.player_test.PULSE)
+    const requests: string[] = []
+    current.context.fetch = async (url, { signal }) => {
+      requests.push(String(url))
+      if (requests.length === 1) throw new Error("source request failed")
+      return liveResponse(signal)
+    }
+    const playback = current.context.player_test.play_source(
+      {
+        next: async () => ({ done: false as const, value: undefined }),
+      },
+      { fail: () => {}, recover: () => {} },
+      page.page,
+    )
+    try {
+      await eventually(() => clock.length === 1)
+      page.change(40)
+      current.media.buffered.ranges = [[40, 41]]
+      await eventually(() => requests.length === 2)
+
+      deepEqual(
+        requests.map((url) => new URL(url).searchParams.get("t")),
+        ["40", "40"],
+      )
+      deepEqual(clock.callbacks, 0)
+      deepEqual(clock.cancellations, 1)
+    } finally {
+      page.close()
+      await playback
+      clock.dispose()
+    }
+  },
+)
 
 const enteredAppendSeekCases = [
   {
@@ -2374,17 +2329,12 @@ for (const { expected, name, targets } of enteredAppendSeekCases) {
     }
 
     const { buffer, controller, opened } = await open_mse(current)
-    const page = controlledPage(40)
+    const page = controlledPage(40, current.context.player_test.PULSE)
     opened.holdUpdate = true
     const playback = current.context.player_test.play_source(
-      controller.signal,
       buffer,
       { fail: () => {}, recover: () => {} },
       page.page,
-      {
-        current: undefined,
-        pending: new Promise<undefined>(() => {}),
-      },
     )
     try {
       await eventually(() => opened.updating)
@@ -2419,7 +2369,6 @@ for (const { expected, name, targets } of enteredAppendSeekCases) {
       }
       await playback
       await buffer.return(undefined)
-      await page.changes.return(undefined)
     }
   })
 }
@@ -2479,17 +2428,11 @@ test(
         return { done: false as const, value: undefined }
       },
     }
-    const controller = new AbortController()
-    const page = controlledPage(40)
+    const page = controlledPage(40, current.context.player_test.PULSE)
     const playback = current.context.player_test.play_source(
-      controller.signal,
       buffer,
       { fail: () => {}, recover: () => {} },
       page.page,
-      {
-        current: undefined,
-        pending: new Promise<undefined>(() => {}),
-      },
     )
     try {
       await eventually(() => requests.length === 1)
@@ -2512,9 +2455,7 @@ test(
       )
     } finally {
       page.close()
-      controller.abort()
       await playback
-      await page.changes.return(undefined)
     }
   },
 )
@@ -2902,7 +2843,7 @@ test(
       })
     }
 
-    const controller = new AbortController()
+    const page = controlledPage(40, current.context.player_test.PULSE)
     const operations: MseOperation[] = []
     let ends = 0
     const buffer = {
@@ -2916,21 +2857,18 @@ test(
         return { done: false as const, value: undefined }
       },
     }
-    const playback = current.context.player_test.session(
-      controller.signal,
+    const playback = current.context.player_test.play_source(
       buffer,
-      40,
       { fail: () => {}, recover: () => {} },
+      page.page,
     )
-    let ending: Promise<IteratorResult<SessionStep, unknown>> | undefined =
-      undefined
     try {
-      deepEqual((await playback.next()).done, false)
+      await eventually(() => firstAborts > 0 || firstCancellations > 0)
       deepEqual(firstReads, 1)
       assert(firstAborts > 0 || firstCancellations > 0)
 
       current.media.currentTime = 60
-      ending = playback.next()
+      page.pulse()
       await eventually(() => ends === 1)
 
       deepEqual(
@@ -2944,9 +2882,8 @@ test(
       deepEqual(firstReads, 1)
       deepEqual(ends, 1)
     } finally {
-      controller.abort()
-      await ending
-      await playback.return(undefined)
+      page.close()
+      await playback
     }
   },
 )
@@ -3074,6 +3011,89 @@ test(
     } finally {
       controller.abort()
       await buffer.return(undefined)
+    }
+  },
+)
+
+test(
+  "one retiring failure cannot poison its scrub replacement",
+  options,
+  async () => {
+    const current = await fixture()
+    const chunk = Promise.withResolvers<ReadableStreamReadResult<Uint8Array>>()
+    const retiringFailure = { code: 3, message: "retiring MSE failed" }
+    const requests: Array<{ signal: AbortSignal; time: string | null }> = []
+    current.context.fetch = async (url, { signal }) => {
+      const index =
+        requests.push({
+          signal,
+          time: new URL(String(url)).searchParams.get("t"),
+        }) - 1
+      return index === 0
+        ? mockResponse({
+            getReader: () => ({
+              cancel: async () => {
+                current.media.error = retiringFailure
+                current.media.dispatchEvent(new Event("error"))
+              },
+              read: async () => chunk.promise,
+            }),
+          })
+        : liveResponse(signal)
+    }
+
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    try {
+      await eventually(() => current.sources[0]?.sourceBuffers.length === 1)
+      const buffer = present(current.sources[0]?.sourceBuffers[0])
+      const entered = Promise.withResolvers<void>()
+      buffer.appendBuffer = () => {
+        buffer.updating = true
+        buffer.appendState = "parsing"
+        entered.resolve()
+      }
+      chunk.resolve({ done: false, value: new Uint8Array([1]) })
+      await entered.promise
+
+      current.media.currentTime = 110
+      current.media.seeking = true
+      current.media.dispatchEvent(new Event("seeking"))
+      buffer.dispatchEvent(new Event("error"))
+
+      await eventually(
+        () => current.sources[1]?.sourceBuffers[0]?.buffered.length === 1,
+      )
+      await nextTask()
+      deepEqual(current.sources.length, 2)
+      deepEqual(
+        requests.map(({ time }) => time),
+        ["40", "110"],
+      )
+      deepEqual(
+        current.errors.map(([error]) => error),
+        [retiringFailure],
+      )
+
+      const replacementFailure = { code: 3, message: "replacement failed" }
+      current.media.error = replacementFailure
+      current.media.dispatchEvent(new Event("error"))
+      await eventually(
+        () => current.sources.length === 3 && requests.length === 3,
+      )
+      deepEqual(
+        requests.map(({ time }) => time),
+        ["40", "110", "110"],
+      )
+      deepEqual(
+        current.errors.map(([error]) => error),
+        [retiringFailure, replacementFailure],
+      )
+    } finally {
+      controller.abort()
+      await playback
     }
   },
 )
@@ -4066,10 +4086,19 @@ test(
   },
 )
 
-test(
-  "a media failure supersedes MSE setup backoff without a second diagnostic",
-  options,
-  async () => {
+const setupBackoffMediaFailureCases = [
+  {
+    deadline: false,
+    name: "a media failure supersedes MSE setup backoff without a second diagnostic",
+  },
+  {
+    deadline: true,
+    name: "a media failure at the setup retry deadline rebuilds MSE once",
+  },
+] as const
+
+for (const { deadline, name } of setupBackoffMediaFailureCases) {
+  test(name, options, async () => {
     const current = await fixture()
     const clock = frozenClock(current.context)
     const setupFailure = new Error("MSE setup failed")
@@ -4095,13 +4124,16 @@ test(
       await eventually(() => clock.length === 1)
       current.media.error = mediaFailure
       current.media.dispatchEvent(new Event("error"))
+      if (deadline) {
+        clock.advance(0)
+      }
       await eventually(
         () => current.sources[1]?.sourceBuffers[0]?.buffered.length === 1,
       )
 
       deepEqual(attempts, 2)
-      deepEqual(clock.callbacks, 0)
-      deepEqual(clock.cancellations, 1)
+      deepEqual(clock.callbacks, deadline ? 1 : 0)
+      deepEqual(clock.cancellations, deadline ? 0 : 1)
       deepEqual(
         current.errors.map(([error]) => error),
         [setupFailure],
@@ -4110,6 +4142,47 @@ test(
         new URL(present(current.requests[0])).searchParams.get("t"),
         "40",
       )
+    } finally {
+      controller.abort()
+      await playback
+      clock.dispose()
+    }
+  })
+}
+
+test(
+  "a media failure at the transport retry deadline retires MSE before mutation",
+  options,
+  async () => {
+    const current = await fixture()
+    const clock = frozenClock(current.context)
+    const requestFailure = new Error("source request failed")
+    let requests = 0
+    current.context.fetch = async (_url, { signal }) => {
+      requests += 1
+      if (requests === 1) throw requestFailure
+      return liveResponse(signal)
+    }
+
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    try {
+      await eventually(() => clock.length === 1)
+      const retiring = present(current.sources[0]?.sourceBuffers[0])
+      const mediaFailure = { code: 3, message: "media failed at retry" }
+      current.media.error = mediaFailure
+      current.media.dispatchEvent(new Event("error"))
+      clock.advance(0)
+      await eventually(
+        () => current.sources[1]?.sourceBuffers[0]?.buffered.length === 1,
+      )
+
+      deepEqual(retiring.aborts, 0)
+      deepEqual(requests, 2)
+      deepEqual(current.sources.length, 2)
+      deepEqual(current.errors, [[requestFailure]])
     } finally {
       controller.abort()
       await playback
