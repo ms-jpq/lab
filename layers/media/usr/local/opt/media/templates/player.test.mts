@@ -340,6 +340,7 @@ class Media extends TrackedEventTarget {
     this._src = value
     this.topology.push(`src:${value}`)
     this.buffered.ranges = []
+    this.paused = true
     this.readyState = 0
     this.currentTime = 0
     this.onSourceChange?.(previous, value)

@@ -223,7 +223,7 @@ const page_changes = async function* (signal, position) {
   }
   pending.push(media_observation())
   changed.resolve(true)
-  /** @type {Promise<{played: true} | {play_error: unknown}> | undefined} */
+  /** @type {Promise<{played: true} | {play_error: unknown, source: string}> | undefined} */
   let playing = undefined
   let previous = media_observation()
   let established = false
@@ -239,7 +239,12 @@ const page_changes = async function* (signal, position) {
         ...(playing ? [playing] : []),
       ])
       if ("play_error" in selected) {
-        throw selected.play_error
+        playing = undefined
+        if (selected.source === media.src) {
+          throw selected.play_error
+        }
+        resume = true
+        continue
       }
       if ("played" in selected) {
         playing = undefined
@@ -278,9 +283,10 @@ const page_changes = async function* (signal, position) {
           current.future
         ) {
           resume = false
+          const source = media.src
           playing = media.play().then(
             () => ({ played: /** @type {const} */ (true) }),
-            (play_error) => ({ play_error }),
+            (play_error) => ({ play_error, source }),
           )
         }
         let moved =
