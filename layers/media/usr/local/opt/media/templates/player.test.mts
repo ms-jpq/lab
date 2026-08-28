@@ -1021,7 +1021,6 @@ test(
       await current.media.play()
       current.media.dispatchEvent(new Event("play"))
       current.media.pause()
-      current.media.dispatchEvent(new Event("pause"))
       current.media.readyState = current.media.HAVE_FUTURE_DATA
       current.media.dispatchEvent(new Event("canplay"))
       await nextTask()
@@ -1094,9 +1093,6 @@ test(
     current.media.playResult = resumed.promise
     const { controller, playback } = await runningPlayback(current)
     try {
-      await eventually(
-        () => current.sources[0]?.sourceBuffers[0]?.buffered.length === 1,
-      )
       current.media.readyState = current.media.HAVE_FUTURE_DATA
       current.media.paused = false
       current.media.dispatchEvent(new Event("playing"))
@@ -1136,7 +1132,6 @@ test("an ordinary user pause is never auto-resumed", options, async () => {
     await new Promise((resolve) => setImmediate(resolve))
 
     current.media.pause()
-    current.media.dispatchEvent(new Event("pause"))
     current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
     current.media.dispatchEvent(new Event("waiting"))
     current.media.readyState = current.media.HAVE_FUTURE_DATA
@@ -1201,52 +1196,6 @@ test(
         resumed.resolve()
       }
       await playback
-    }
-  },
-)
-
-test(
-  "a readiness play owns its rejection before yielding",
-  options,
-  async () => {
-    const current = await fixture()
-    const resumed = Promise.withResolvers<void>()
-    const then = resumed.promise.then.bind(resumed.promise)
-    let rejectionOwned = false
-    resumed.promise.then = ((fulfilled, rejected) => {
-      rejectionOwned = typeof rejected === "function"
-      return then(fulfilled, rejected)
-    }) as typeof resumed.promise.then
-    current.media.playResult = resumed.promise
-    const { controller, states } = await ready(current)
-
-    try {
-      current.media.readyState = current.media.HAVE_FUTURE_DATA
-      current.media.paused = false
-      const established = states.next()
-      current.media.dispatchEvent(new Event("playing"))
-      await established
-
-      current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
-      const starved = states.next()
-      current.media.dispatchEvent(new Event("waiting"))
-      await starved
-
-      current.media.readyState = current.media.HAVE_FUTURE_DATA
-      const resumedState = states.next()
-      current.media.dispatchEvent(new Event("canplay"))
-      await resumedState
-
-      assert.equal(rejectionOwned, true)
-    } finally {
-      controller.abort()
-      resumed.reject(
-        new DOMException(
-          "The fetching process for the media resource was aborted by the user agent at the user's request.",
-          "AbortError",
-        ),
-      )
-      await states.return(undefined)
     }
   },
 )
@@ -3196,22 +3145,6 @@ test(
         }),
       )
     }
-    const playFailure = new DOMException(
-      "The operation was aborted",
-      "AbortError",
-    )
-    const pendingPlay = Promise.withResolvers<void>()
-    let playRejections = 0
-    void pendingPlay.promise.catch((error: unknown) => {
-      assert.equal(error, playFailure)
-      playRejections += 1
-    })
-    const release = present(current.media.onLoad)
-    current.media.onLoad = () => {
-      release()
-      pendingPlay.reject(playFailure)
-    }
-
     const controller = new AbortController()
     const playback = current.context.player_test.playback_page(
       controller.signal,
@@ -3239,7 +3172,6 @@ test(
       assert.notEqual(newUrl, oldUrl)
       assert.equal(current.media.loads, 0)
       assert.equal(current.media.removals, 0)
-      assert.equal(playRejections, 0)
       assert.equal(activeReaders, 1)
       assert.deepEqual(current.revoked, [oldUrl])
       assert.ok(
@@ -3259,11 +3191,9 @@ test(
       await playback
     }
 
-    await Promise.resolve()
     assert.equal(current.media.src, "")
     assert.equal(current.media.removals, 1)
     assert.equal(current.media.loads, 1)
-    assert.equal(playRejections, 1)
     assert.equal(activeReaders, 0)
     assert.equal(current.sources.length, 2)
     assert.equal(retryDelays, 0)

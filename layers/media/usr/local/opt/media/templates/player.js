@@ -29,10 +29,12 @@ const form = /** @type {HTMLFormElement} */ (document.querySelector("form"))
 const time_input = /** @type {HTMLInputElement} */ (
   form.elements.namedItem("t")
 )
-const MediaSourceConstructor =
-  /** @type {typeof globalThis & { ManagedMediaSource?: typeof MediaSource }} */ (
+const media_source_api =
+  /** @type {typeof globalThis & {ManagedMediaSource?: typeof MediaSource}} */ (
     globalThis
-  ).ManagedMediaSource ?? MediaSource
+  )
+const MediaSourceConstructor =
+  media_source_api.ManagedMediaSource ?? MediaSource
 
 /** @param {EventTarget} target @param {AbortSignal | undefined} signal @param {string} type @returns {Promise<Event>} */
 const once = (target, signal, type) => {
@@ -98,10 +100,8 @@ const failure_storm = () => {
 
 /** @param {HTMLMediaElement | HTMLTrackElement} resource @param {number} time */
 const source_url = (resource, time) => {
-  const source = new URL(
-    /** @type {string} */ (resource.dataset.src),
-    location.href,
-  )
+  const path = /** @type {string} */ (resource.dataset.src)
+  const source = new URL(path, location.href)
   source.searchParams.set("t", String(time))
   source.searchParams.set("page", PAGE)
   source.searchParams.set("request", crypto.randomUUID())
@@ -244,11 +244,7 @@ const page_changes = async function* (signal, position) {
       if ("play_error" in selected) {
         playing = undefined
         if (selected.source === media.src) {
-          yield {
-            error: selected.play_error,
-            position: target,
-            restart: false,
-          }
+          yield { error: selected.play_error, position: target, restart: false }
           continue
         }
         resume = true
@@ -676,9 +672,8 @@ const play_media = async (signal) => {
       /** @type {SourceFailure | {setup: unknown} | undefined} */
       let failure = undefined
       /** @type {string | undefined} */
-      let loose_url = undefined
-      /** @type {string | undefined} */
-      let previous_url = undefined
+      let loose_url = undefined,
+        previous_url = undefined
 
       try {
         const source = new MediaSourceConstructor()
