@@ -22,6 +22,7 @@ const PAGE = crypto.randomUUID()
 /** @typedef {number | readonly [position: number, bytes: Uint8Array]} MseOperation */
 /** @typedef {AsyncGenerator<void, void, MseOperation | undefined> & {contains: (position: number) => boolean, frontier: () => number | undefined, play_ahead: (position: number) => number}} MseBuffer */
 /** @typedef {(signal: AbortSignal) => MseBuffer} MseBufferFactory */
+/** @typedef {AsyncGenerator<void, void, void> & {buffer: MseBuffer}} Attempt */
 
 /** @param {EventTarget} target @param {AbortSignal | undefined} signal @param {string} type @returns {Promise<Event>} */
 const once = (target, signal, type) => {
@@ -170,7 +171,7 @@ const mse = async function* (signal) {
     if (selected.type === "sourceclose") {
       throw selected
     }
-    if (Number.isFinite(duration) && duration > 0) {
+    if (duration > 0) {
       source.duration = duration
     }
 
@@ -198,7 +199,7 @@ const mse = async function* (signal) {
           (s) => once(buffer, s, "error"),
         )
         mutate()
-        if ((await settled) instanceof Event) {
+        if (await settled) {
           return true
         }
         await abort_update()
@@ -224,12 +225,11 @@ const mse = async function* (signal) {
             } else {
               const [position, bytes] = operation
               const end = position - BUFFER.BEHIND
-              if (
+              const expired =
                 end > 0 &&
                 buffer.buffered.length &&
-                buffer.buffered.start(0) < end &&
-                !(await update(() => buffer.remove(0, end)))
-              ) {
+                buffer.buffered.start(0) < end
+              if (expired && !(await update(() => buffer.remove(0, end)))) {
                 return
               }
               if (!(await update(() => buffer.appendBuffer(bytes)))) {
@@ -279,15 +279,15 @@ const mse = async function* (signal) {
 
 /** @param {AbortSignal} signal @param {number} time */
 const source_stream = async function* (signal, time) {
-  const source = source_url(media, time)
   const request = new AbortController()
-  const request_signal = AbortSignal.any([signal, request.signal])
   /** @type {ReadableStreamDefaultReader<Uint8Array> | undefined} */
   let reader = undefined
 
   try {
     const response = await select(signal, () =>
-      fetch(source, { signal: request_signal }),
+      fetch(source_url(media, time), {
+        signal: AbortSignal.any([signal, request.signal]),
+      }),
     )
     if (!response) {
       return
@@ -315,53 +315,55 @@ const source_stream = async function* (signal, time) {
   }
 }
 
-/** @param {AbortSignal} signal @param {MseBufferFactory} create_buffer @returns {AsyncGenerator<MseBuffer, void, void>} */
-const attempt = async function* (signal, create_buffer) {
-  /** @type {MseBuffer | undefined} */
-  let buffer = undefined
+/** @param {AbortSignal} signal @param {MseBufferFactory} create_buffer @returns {Attempt} */
+const attempt = (signal, create_buffer) => {
+  const buffer = create_buffer(signal)
   const time = Number(time_input.value)
-  let active = false
+  let started = false
 
-  try {
-    buffer = create_buffer(signal)
-    await buffer.next()
-    if (Math.abs(media.currentTime - time) > POSITION_TOLERANCE) {
-      media.currentTime = time
-    }
-
-    streaming: for (;;) {
-      while (buffer.play_ahead(media.currentTime) >= BUFFER.LO) {
-        yield buffer
+  const run = async function* () {
+    try {
+      await buffer.next()
+      if (Math.abs(media.currentTime - time) > POSITION_TOLERANCE) {
+        media.currentTime = time
       }
 
-      const start = buffer.frontier() ?? time
-      if ((await buffer.next(start)).done) {
+      streaming: for (;;) {
+        while (buffer.play_ahead(media.currentTime) >= BUFFER.LO) {
+          yield undefined
+        }
+
+        const start = buffer.frontier() ?? time
+        if ((await buffer.next(start)).done) {
+          break
+        }
+        for await (const bytes of source_stream(signal, start)) {
+          if ((await buffer.next([media.currentTime, bytes])).done) {
+            break streaming
+          }
+          if (!started) {
+            started = true
+            if (subtitle) {
+              subtitle.src = source_url(subtitle, time)
+            }
+          }
+          if (buffer.play_ahead(media.currentTime) >= BUFFER.HI) {
+            continue streaming
+          }
+        }
+        if (!signal.aborted) {
+          await buffer.next()
+        }
+        await select(signal)
         break
       }
-      for await (const bytes of source_stream(signal, start)) {
-        if ((await buffer.next([media.currentTime, bytes])).done) {
-          break streaming
-        }
-        if (!active) {
-          active = true
-          if (subtitle) {
-            subtitle.src = source_url(subtitle, time)
-          }
-          yield buffer
-        }
-        if (buffer.play_ahead(media.currentTime) >= BUFFER.HI) {
-          continue streaming
-        }
-      }
-      if (!signal.aborted) {
-        await buffer.next()
-      }
-      await select(signal)
-      break
+    } finally {
+      await buffer.return()
     }
-  } finally {
-    await buffer?.return()
+    return
   }
+
+  return Object.assign(run(), { buffer })
 }
 
 /** @param {AbortSignal} signal */
@@ -396,15 +398,12 @@ const playback_page = async (signal) => {
           const current = (controller = new AbortController())
           const attempt_signal = AbortSignal.any([page_signal, current.signal])
           const session = attempt(attempt_signal, create_buffer)
+          stream_state.active = session.buffer
           try {
-            const ready = await session.next()
-            if (!ready.done) {
-              stream_state.active = ready.value
-              while (
-                !(await session.next()).done &&
-                (await wait(attempt_signal))
-              ) {}
-            }
+            while (
+              !(await session.next()).done &&
+              (await wait(attempt_signal))
+            ) {}
           } catch (error) {
             if (!attempt_signal.aborted) {
               console.error(error)
@@ -434,7 +433,7 @@ const playback_page = async (signal) => {
   let positioned = transformed
   let waiting = false
   let previous = page_state()
-  const worker = transformed ? run().catch(console.error) : undefined
+  const worker = transformed ? run() : undefined
   if (!transformed) {
     media.src = source_url(media, media.currentTime)
     media.load()
