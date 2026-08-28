@@ -53,7 +53,15 @@ export const media_source = async function* ({
 }): Mse {
   const buffer = source.addSourceBuffer(mime_type)
 
-  let started = false
+  const position = yield undefined
+  if (signal.aborted) {
+    return
+  }
+  if (typeof position !== "number") {
+    throw new TypeError("initial MSE operation must be a position")
+  }
+  buffer.timestampOffset = position
+
   for (let operation = yield undefined; ; operation = yield undefined) {
     if (signal.aborted) {
       return
@@ -66,8 +74,7 @@ export const media_source = async function* ({
     }
 
     if (typeof operation === "number") {
-      // i dont understand why we need started, is this just so we know the buffer has been drained?
-      if (started) {
+      {
         using _ = defer(() => buffer.abort())
 
         if (source.readyState === "ended") {
@@ -80,16 +87,12 @@ export const media_source = async function* ({
             }
             buffer.remove(end, end + EPSILON)
           }
-          if (a.signal.aborted) {
-            return
-          }
         }
       }
       if (a.signal.aborted) {
         return
       }
       buffer.timestampOffset = operation
-      started = true
       continue
     }
 
