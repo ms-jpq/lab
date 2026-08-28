@@ -388,7 +388,7 @@ const fixture = async (position = 40) => {
     }
   }
   class PlayerURL extends URL {
-    static createObjectURL(
+    static override createObjectURL(
       source: Blob | globalThis.MediaSource | MediaSource,
     ): string {
       assert.ok(source instanceof MediaSource)
@@ -400,7 +400,7 @@ const fixture = async (position = 40) => {
       return url
     }
 
-    static revokeObjectURL(url: string): void {
+    static override revokeObjectURL(url: string): void {
       revoked.push(url)
     }
   }
