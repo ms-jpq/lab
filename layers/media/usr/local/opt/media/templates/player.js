@@ -1,5 +1,5 @@
 /** @typedef {"end" | number | readonly [position: number, bytes: Uint8Array]} MseOperation */
-/** @typedef {AsyncGenerator<void, void, MseOperation | undefined> & {active: () => boolean, available: (position: number) => number | undefined, changes: EventTarget, contains: (position: number) => boolean, frontier: (position: number) => number | undefined, play_ahead: (position: number) => number}} Mse */
+/** @typedef {AsyncGenerator<void, void, MseOperation | undefined> & {active: () => boolean, available: (position: number) => number | undefined, contains: (position: number) => boolean, frontier: (position: number) => number | undefined, play_ahead: (position: number) => number}} Mse */
 /** @typedef {ReturnType<typeof page_state> & {media_failed: boolean, moved: boolean, restart: boolean, subtitle_failed: boolean, target: number}} PageChange */
 /** @typedef {{type: "complete"} | {type: "failure", error: unknown} | {type: "state", state: IteratorResult<PageChange, void>}} PlaybackSelection */
 
@@ -155,7 +155,7 @@ const page_states = (signal, buffer, position) => {
 
   signal.addEventListener("abort", () => changed.resolve(false), { once: true })
 
-  for (const type of "emptied ended error loadedmetadata pause play playing seeked seeking timeupdate waiting".split(
+  for (const type of "canplay ended error loadedmetadata progress seeked seeking timeupdate".split(
     " ",
   )) {
     media.addEventListener(type, wake, { signal })
@@ -163,7 +163,6 @@ const page_states = (signal, buffer, position) => {
   for (const type of "error load".split(" ")) {
     subtitle?.addEventListener(type, wake, { signal })
   }
-  buffer.changes.addEventListener("change", wake, { signal })
   if (subtitle && subtitle.src === "") {
     subtitle.src = source_url(subtitle, 0)
   }
@@ -261,52 +260,8 @@ const mse = (signal, media, position) => {
       globalThis
     )
   const source = new (ManagedMediaSource ?? MediaSource)()
-  const changes = new EventTarget()
   /** @type {SourceBuffer | undefined} */
   let buffer = undefined
-
-  /** @param {unknown} error */
-  const invalid_state = (error) =>
-    error instanceof DOMException && error.name === "InvalidStateError"
-
-  /** @param {SourceBuffer} current */
-  const listed = (current) => {
-    try {
-      const buffers = source.sourceBuffers
-      for (let index = 0; index < buffers.length; index += 1) {
-        if (buffers[index] === current) {
-          return true
-        }
-      }
-    } catch {}
-    return false
-  }
-
-  /** @param {SourceBuffer} current */
-  const attached = (current) =>
-    !signal.aborted &&
-    source.readyState !== "closed" &&
-    buffer === current &&
-    listed(current)
-
-  /** @param {SourceBuffer} current */
-  const writable = (current) =>
-    attached(current) && source.readyState === "open" && !current.updating
-
-  /** @param {SourceBuffer} current */
-  const buffered = (current) => {
-    if (!attached(current)) {
-      return undefined
-    }
-    try {
-      return current.buffered
-    } catch (error) {
-      if (invalid_state(error)) {
-        return undefined
-      }
-      throw error
-    }
-  }
 
   /** @param {number} position */
   const frontier = (position) => {
@@ -314,10 +269,7 @@ const mse = (signal, media, position) => {
     if (current === undefined) {
       return undefined
     }
-    const ranges = buffered(current)
-    if (ranges === undefined) {
-      return undefined
-    }
+    const ranges = current.buffered
     for (let index = 0; index < ranges.length; index += 1) {
       if (
         ranges.start(index) - POSITION_TOLERANCE <= position &&
@@ -335,10 +287,7 @@ const mse = (signal, media, position) => {
     if (current === undefined) {
       return undefined
     }
-    const ranges = buffered(current)
-    if (ranges === undefined) {
-      return undefined
-    }
+    const ranges = current.buffered
     for (let index = 0; index < ranges.length; index += 1) {
       const start = ranges.start(index)
       const end = ranges.end(index)
@@ -358,10 +307,7 @@ const mse = (signal, media, position) => {
     if (current === undefined) {
       return false
     }
-    const ranges = buffered(current)
-    if (ranges === undefined) {
-      return false
-    }
+    const ranges = current.buffered
     for (let index = 0; index < ranges.length; index += 1) {
       if (ranges.start(index) <= position && position < ranges.end(index)) {
         return true
@@ -372,17 +318,10 @@ const mse = (signal, media, position) => {
 
   /** @param {SourceBuffer} current @param {() => void} mutate */
   const update = async (current, mutate) => {
-    if (!writable(current)) {
+    if (signal.aborted) {
       return false
     }
-    try {
-      mutate()
-    } catch (error) {
-      if (invalid_state(error)) {
-        return false
-      }
-      throw error
-    }
+    mutate()
     return Boolean(
       await select(
         signal,
@@ -394,51 +333,12 @@ const mse = (signal, media, position) => {
 
   /** @param {SourceBuffer} current */
   const reopen = async (current) => {
-    if (!attached(current) || current.updating) {
-      return false
-    }
     if (source.readyState === "open") {
       return true
     }
-    const ranges = buffered(current)
-    if (ranges === undefined) {
-      return false
-    }
+    const ranges = current.buffered
     const start = ranges.length ? ranges.end(ranges.length - 1) : 0
-    try {
-      current.remove(start, start + 0.001)
-    } catch (error) {
-      if (invalid_state(error)) {
-        return false
-      }
-      throw error
-    }
-    return (
-      Boolean(
-        await select(
-          signal,
-          (s) => once(current, s, "updateend"),
-          (s) => once(current, s, "error"),
-        ),
-      ) && writable(current)
-    )
-  }
-
-  /** @param {SourceBuffer} current */
-  const discard = (current) => {
-    if (source.readyState !== "open" || !listed(current)) {
-      return
-    }
-    try {
-      if (current.updating) {
-        current.abort()
-      }
-      source.removeSourceBuffer(current)
-    } catch (error) {
-      if (!invalid_state(error)) {
-        throw error
-      }
-    }
+    return update(current, () => current.remove(start, start + 0.001))
   }
 
   /** @returns {AsyncGenerator<void, void, MseOperation | undefined>} */
@@ -474,50 +374,27 @@ const mse = (signal, media, position) => {
           operation !== undefined;
           operation = yield undefined
         ) {
-          if (!attached(opened_buffer)) {
-            return
-          }
           if (operation === "end") {
-            if (!writable(opened_buffer)) {
-              return
-            }
-            try {
-              source.endOfStream()
-            } catch (error) {
-              if (!invalid_state(error)) {
-                throw error
-              }
-              return
-            }
+            source.endOfStream()
             continue
           }
           if (typeof operation === "number") {
             if (!(await reopen(opened_buffer))) {
               return
             }
-            try {
-              opened_buffer.timestampOffset = operation
-            } catch (error) {
-              if (!invalid_state(error)) {
-                throw error
-              }
-              return
-            }
+            opened_buffer.timestampOffset = operation
             continue
-          }
-          if (!writable(opened_buffer)) {
-            return
           }
 
           const [position, bytes] = operation
           const end = position - BUFFER.BEHIND
-          const ranges = buffered(opened_buffer)
-          if (ranges === undefined) {
-            return
-          }
+          const ranges = opened_buffer.buffered
           const expired = end > 0 && ranges.length && ranges.start(0) < end
-          if (expired) {
-            await update(opened_buffer, () => opened_buffer.remove(0, end))
+          if (
+            expired &&
+            !(await update(opened_buffer, () => opened_buffer.remove(0, end)))
+          ) {
+            return
           }
           if (
             !(await update(opened_buffer, () =>
@@ -528,11 +405,9 @@ const mse = (signal, media, position) => {
           ) {
             return
           }
-          changes.dispatchEvent(new Event("change"))
         }
       } finally {
         buffer = undefined
-        discard(opened_buffer)
       }
     } finally {
       if (media.src === url) {
@@ -545,9 +420,8 @@ const mse = (signal, media, position) => {
   }
 
   return Object.assign(operations(), {
-    active: () => buffer !== undefined && attached(buffer),
+    active: () => buffer !== undefined,
     available,
-    changes,
     contains,
     frontier,
     /** @param {number} position */

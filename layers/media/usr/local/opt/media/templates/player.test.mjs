@@ -272,7 +272,6 @@ const fixture = async (position = 40) => {
       }
       return undefined
     },
-    changes: new EventTarget(),
     contains: (value) =>
       ranges.some(([start, end]) => start <= value && value < end),
   }
@@ -301,7 +300,7 @@ const ready = async (current, position = 40) => {
   await states.next()
   current.ranges.push([0, 100])
   const aligned = states.next()
-  current.buffer.changes.dispatchEvent(new Event("change"))
+  current.media.dispatchEvent(new Event("canplay"))
   await aligned
   const acknowledged = states.next()
   current.media.dispatchEvent(new Event("timeupdate"))
@@ -329,7 +328,7 @@ test(
 
     current.ranges.push([40, 80])
     const aligned = states.next()
-    current.buffer.changes.dispatchEvent(new Event("change"))
+    current.media.dispatchEvent(new Event("canplay"))
     await aligned
     assert.equal(current.media.currentTime, 40)
     controller.abort()
@@ -360,7 +359,7 @@ test(
 
     current.ranges.push([0, 10])
     const stale = states.next()
-    current.buffer.changes.dispatchEvent(new Event("change"))
+    current.media.dispatchEvent(new Event("canplay"))
     await stale
     assert.equal(current.media.currentTime, 37)
     controller.abort()
