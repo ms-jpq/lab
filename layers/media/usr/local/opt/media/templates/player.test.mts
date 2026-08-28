@@ -77,9 +77,7 @@ type PlayerTest = {
   selector: <T>(
     source: AsyncIterator<T, void, void>,
   ) => <W>(work?: Promise<W>) => Promise<T | W | undefined>
-  request_stream: (
-    position: number,
-  ) => {
+  request_stream: (position: number) => {
     next: () => Promise<IteratorResult<Uint8Array, unknown>>
     return: () => Promise<IteratorResult<Uint8Array, unknown>>
   }
