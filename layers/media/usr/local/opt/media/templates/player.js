@@ -402,13 +402,14 @@ const playback_page = async (signal) => {
   let change = changed.next()
   let waiting = false
 
-  for await (const create_buffer of retrying(signal, () => mse(signal))) {
+  attempts: for await (const create_buffer of retrying(signal, () =>
+    mse(signal),
+  )) {
     const current = new AbortController()
     const attempt_signal = AbortSignal.any([signal, current.signal])
     const session = attempt(attempt_signal, create_buffer)
     /** @type {Promise<IteratorResult<void, void>> | undefined} */
     let progress = session.next()
-    let immediate = false
 
     try {
       for (;;) {
@@ -454,8 +455,7 @@ const playback_page = async (signal) => {
           value.seeking &&
           !session.buffer.contains(value.time)
         ) {
-          immediate = true
-          break
+          continue attempts
         }
         if ((value.moved || !value.paused) && progress === undefined) {
           progress = session.next()
@@ -468,7 +468,7 @@ const playback_page = async (signal) => {
       await session.return()
     }
 
-    if (!immediate && !(await retry_delay(signal))) {
+    if (!(await retry_delay(signal))) {
       return
     }
   }
