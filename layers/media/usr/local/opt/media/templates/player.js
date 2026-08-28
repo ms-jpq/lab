@@ -200,9 +200,6 @@ const page_states = async function* (signal, position) {
   )) {
     media.addEventListener(type, observe, { signal })
   }
-  if (subtitle && subtitle.src === "") {
-    subtitle.src = source_url(subtitle, 0)
-  }
   observe()
 
   for (;;) {
@@ -633,6 +630,9 @@ const submit = (event) => {
 
 const main = async () => {
   persist_position(initial_position)
+  if (subtitle && subtitle.src === "") {
+    subtitle.src = source_url(subtitle, 0)
+  }
   for (;;) {
     const page = new AbortController()
     await once(window, page.signal, "pageshow")
