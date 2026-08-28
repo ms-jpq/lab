@@ -4,7 +4,6 @@
   "compilerOptions": {
     "composite": false,
     "noEmit": false,
-    "rewriteRelativeImportExtensions": true,
     "rootDir": "."
   },
   "include": ["**/*.ts"]
