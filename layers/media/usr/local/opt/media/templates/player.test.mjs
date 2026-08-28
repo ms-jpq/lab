@@ -16,8 +16,6 @@ class Media extends EventTarget {
     }
     this.ended = false
     this.error = null
-    this.paused = true
-    this.readyState = 0
     this.seeking = false
     this._src = ""
     this.loads = 0
@@ -49,8 +47,6 @@ class Subtitle extends EventTarget {
   constructor() {
     super()
     this.dataset = { src: "/movie/subtitle" }
-    this.ERROR = 3
-    this.readyState = 0
     this.sources = []
     this._src = ""
   }
@@ -345,8 +341,7 @@ test(
     const sought = states.next()
     current.media.dispatchEvent(new Event("seeking"))
     const { value } = await sought
-    assert.equal(value.restart, true)
-    assert.equal(value.target, 37)
+    assert.equal(value.seek, 37)
     assert.equal(current.timeInput.value, "37")
 
     current.ranges.push([0, 10])
@@ -370,15 +365,14 @@ for (const order of ["seeking-timeupdate", "timeupdate-seeking"]) {
       if (order === "timeupdate-seeking") {
         const observed = states.next()
         current.media.dispatchEvent(new Event("timeupdate"))
-        assert.equal((await observed).value.restart, false)
+        assert.equal((await observed).value.seek, undefined)
       }
 
       current.media.seeking = true
       const observed = states.next()
       current.media.dispatchEvent(new Event("seeking"))
       const { value } = await observed
-      assert.equal(value.restart, true)
-      assert.equal(value.target, 110)
+      assert.equal(value.seek, 110)
       assert.equal(current.timeInput.value, "110")
       controller.abort()
     },
@@ -396,7 +390,7 @@ test(
     const observed = states.next()
     current.media.dispatchEvent(new Event("seeking"))
     const { value } = await observed
-    assert.equal(value.restart, false)
+    assert.equal(value.seek, undefined)
     assert.equal(current.timeInput.value, "70")
     controller.abort()
   },
@@ -415,8 +409,7 @@ test(
     const observed = states.next()
     current.media.dispatchEvent(new Event("seeking"))
     const { value } = await observed
-    assert.equal(value.restart, false)
-    assert.equal(value.target, 70.05)
+    assert.equal(value.seek, undefined)
     controller.abort()
   },
 )
@@ -439,22 +432,6 @@ test(
 )
 
 test(
-  "subtitle failure does not become media failure",
-  { concurrency: true },
-  async () => {
-    const current = await fixture()
-    const { controller, states } = await ready(current)
-    current.subtitle.readyState = current.subtitle.ERROR
-    const observed = states.next()
-    current.subtitle.dispatchEvent(new Event("error"))
-    const { value } = await observed
-    assert.equal(value.media_failed, false)
-    assert.equal(value.subtitle_failed, true)
-    controller.abort()
-  },
-)
-
-test(
   "an expected native media abort does not become media failure",
   { concurrency: true },
   async () => {
@@ -464,41 +441,8 @@ test(
     const observed = states.next()
     current.media.dispatchEvent(new Event("error"))
     const { value } = await observed
-    assert.equal(value.media_failed, false)
+    assert.equal(value.failed, false)
     controller.abort()
-  },
-)
-
-test(
-  "an init-only stream fails instead of parking forever",
-  { concurrency: true },
-  async () => {
-    const current = await fixture()
-    const operations = []
-    const buffer = {
-      available: () => undefined,
-      contains: () => false,
-      next: async (operation) => {
-        assert.notEqual(
-          operation,
-          "end",
-          "empty media must not end successfully",
-        )
-        operations.push(operation)
-        return { done: false }
-      },
-      play_ahead: () => 0,
-    }
-    await assert.rejects(
-      current.context.player_test.session(
-        new AbortController().signal,
-        buffer,
-        40.1254,
-      ),
-      /stream ended before position 40\.1254 became playable/,
-    )
-    assert.equal(operations[0], 40.125)
-    assert.equal(new URL(current.requests[0]).searchParams.get("t"), "40.125")
   },
 )
 
@@ -525,7 +469,12 @@ test(
       },
       play_ahead: () => 0,
     }
-    await current.context.player_test.session(controller.signal, buffer, 40)
+    for await (const _ of current.context.player_test.session(
+      controller.signal,
+      buffer,
+      40,
+    )) {
+    }
     assert.equal(ended, 1)
     assert.equal(current.requests.length, 1)
   },
@@ -590,12 +539,13 @@ test(
       buffer,
       40,
     )
+    const paused = playback.next()
     await firstAppend.promise
+    assert.equal((await paused).done, false)
     assert.equal(requests, 1)
 
     released = true
-    current.media.dispatchEvent(new Event("timeupdate"))
-    await playback
+    assert.equal((await playback.next()).done, true)
     assert.equal(appends, 2)
     assert.equal(cancellations, 0)
     assert.equal(ended, 1)
@@ -623,8 +573,6 @@ test(
     assert.equal(buffer.contains(10), true)
     assert.equal(buffer.contains(9.95), false)
     assert.equal(buffer.available(9.95), 10)
-    assert.equal(buffer.frontier(9.95), 20)
-
     controller.abort()
     await buffer.return()
     assert.equal(current.media.src, "")
