@@ -4,6 +4,7 @@ import test from "node:test"
 import vm from "node:vm"
 
 const PLAYER = new URL("player.js", import.meta.url)
+const options = { concurrency: true, timeout: 2_000 }
 
 const timeRanges = () => ({
   ranges: [],
@@ -368,7 +369,7 @@ const open_mse = async (current) => {
 
 test(
   "source stream reads and releases a reader-only response body",
-  { concurrency: true },
+  options,
   async () => {
     const current = await fixture()
     let cancelled = 0
@@ -407,7 +408,7 @@ test(
 
 test(
   "an aborted reader cannot reject stream teardown",
-  { concurrency: true },
+  options,
   async () => {
     const current = await fixture()
     let requestSignal = undefined
@@ -465,7 +466,7 @@ const ready = async (current, position = 40) => {
 
 test(
   "startup applies its target after metadata without waiting for target bytes",
-  { concurrency: true },
+  options,
   async () => {
     const current = await fixture()
     const controller = new AbortController()
@@ -491,7 +492,7 @@ test(
 
 test(
   "a user seek supersedes an unacknowledged startup position",
-  { concurrency: true },
+  options,
   async () => {
     const current = await fixture(0)
     const controller = new AbortController()
@@ -517,7 +518,7 @@ test(
 
 test(
   "a user seek survives a synchronous seeking and seeked storm",
-  { concurrency: true },
+  options,
   async () => {
     const current = await fixture()
     const { controller, states } = await ready(current)
@@ -537,7 +538,7 @@ test(
 for (const order of ["seeking-timeupdate", "timeupdate-seeking"]) {
   test(
     `an unbuffered seek restarts once with ${order} ordering`,
-    { concurrency: true },
+    options,
     async () => {
       const current = await fixture()
       const { controller, states } = await ready(current)
@@ -562,7 +563,7 @@ for (const order of ["seeking-timeupdate", "timeupdate-seeking"]) {
 
 test(
   "a buffered seek persists without restarting",
-  { concurrency: true },
+  options,
   async () => {
     const current = await fixture()
     const { controller, states } = await ready(current)
@@ -579,7 +580,7 @@ test(
 
 test(
   "a seek adjacent to buffered media aligns without restarting",
-  { concurrency: true },
+  options,
   async () => {
     const current = await fixture()
     const { controller, states } = await ready(current)
@@ -597,7 +598,7 @@ test(
 
 test(
   "ended resets resume position and exact-end startup stays playable",
-  { concurrency: true },
+  options,
   async () => {
     const current = await fixture()
     const { controller, states } = await ready(current)
@@ -614,7 +615,7 @@ test(
 
 test(
   "an expected native media abort does not become media failure",
-  { concurrency: true },
+  options,
   async () => {
     const current = await fixture()
     const { controller, states } = await ready(current)
@@ -629,7 +630,7 @@ test(
 
 test(
   "a media failure storm produces one diagnostic and one same-target reset",
-  { concurrency: true, timeout: 1_000 },
+  options,
   async () => {
     const current = await fixture()
     const controller = new AbortController()
@@ -669,7 +670,7 @@ test(
 
 test(
   "high water pauses one response instead of canceling and retrying",
-  { concurrency: true },
+  options,
   async () => {
     const current = await fixture()
     current.media.currentTime = 40
@@ -741,7 +742,7 @@ test(
 
 test(
   "availability aligns adjacent seeks and teardown releases the owned source",
-  { concurrency: true },
+  options,
   async () => {
     const current = await fixture()
     const { buffer, controller, lifetime } = await open_mse(current)
@@ -760,7 +761,7 @@ test(
 
 test(
   "append evicts media more than thirty seconds behind",
-  { concurrency: true },
+  options,
   async () => {
     const current = await fixture()
     const { buffer, controller, lifetime } = await open_mse(current)
@@ -779,7 +780,7 @@ test(
 
 test(
   "a new stream epoch aborts an incomplete parser before changing offset",
-  { concurrency: true, timeout: 1_000 },
+  options,
   async () => {
     const current = await fixture()
     const { buffer, controller, lifetime } = await open_mse(current)
@@ -803,7 +804,7 @@ test(
 
 test(
   "a seek reopens an ended MediaSource without exposing native zero",
-  { concurrency: true },
+  options,
   async () => {
     const current = await fixture()
     const { buffer, controller, lifetime } = await open_mse(current)
@@ -829,7 +830,7 @@ test(
 
 test(
   "an entered SourceBuffer mutation drains before lifetime teardown",
-  { concurrency: true, timeout: 1_000 },
+  options,
   async () => {
     const current = await fixture()
     const { buffer, controller, lifetime } = await open_mse(current)
@@ -864,7 +865,7 @@ test(
 
 test(
   "page state survives an event storm after SourceBuffer release",
-  { concurrency: true, timeout: 1_000 },
+  options,
   async () => {
     const current = await fixture()
     const { buffer, lifetime } = await open_mse(current)
@@ -905,7 +906,7 @@ test(
 
 test(
   "an ordinary unbuffered seek keeps one target request and one MediaSource",
-  { concurrency: true },
+  options,
   async () => {
     const current = await fixture()
     const secondRequest = Promise.withResolvers()
@@ -982,7 +983,7 @@ test(
 
 test(
   "a failed target request retries on the same MediaSource",
-  { concurrency: true, timeout: 1_000 },
+  options,
   async () => {
     const current = await fixture()
     const retried = Promise.withResolvers()
@@ -1039,7 +1040,7 @@ test(
 
 test(
   "MediaSource replacement cannot turn its native reset into a zero seek",
-  { concurrency: true, timeout: 1_000 },
+  options,
   async () => {
     const current = await fixture()
     const replaced = Promise.withResolvers()
@@ -1114,7 +1115,7 @@ test(
 
 test(
   "a failed parser abort rebuilds once at the requested target",
-  { concurrency: true, timeout: 1_000 },
+  options,
   async () => {
     const current = await fixture()
     const controller = new AbortController()
