@@ -31,6 +31,8 @@ const form = /** @type {HTMLFormElement} */ (document.querySelector("form"))
 const time_input = /** @type {HTMLInputElement} */ (
   form.elements.namedItem("t")
 )
+const MediaSourceConstructor =
+  /** @type {typeof globalThis & { ManagedMediaSource?: typeof MediaSource }} */ (
     globalThis
   ).ManagedMediaSource ?? MediaSource
 

@@ -615,17 +615,14 @@ const fixture = async (position = 40) => {
     DOMException,
     fetch: async (url: string | URL | Request) => {
       requests.push(String(url))
-      return {
-        body: new ReadableStream<Uint8Array>({
+      return mockResponse(
+        new ReadableStream<Uint8Array>({
           start: (controller: ReadableStreamDefaultController<Uint8Array>) => {
             controller.enqueue(new Uint8Array([1]))
             controller.close()
           },
         }),
-        ok: true,
-        status: 200,
-        statusText: "OK",
-      }
+      )
     },
     FormData,
     history: {
@@ -698,8 +695,8 @@ for (const { abortParent, cancelRejects, name } of readerTeardownCases) {
     const current = await fixture()
     let cancellations = 0
     let reads = 0
-    current.context.fetch = async (_url, { signal }) => ({
-      body: {
+    current.context.fetch = async (_url, { signal }) =>
+      mockResponse({
         getReader: () => ({
           cancel: async () => {
             cancellations += 1
@@ -713,11 +710,7 @@ for (const { abortParent, cancelRejects, name } of readerTeardownCases) {
             return { done: false, value: new Uint8Array([1]) }
           },
         }),
-      },
-      ok: true,
-      status: 200,
-      statusText: "OK",
-    })
+      })
 
     const controller = new AbortController()
     const stream = current.context.player_test.source_stream(
@@ -749,24 +742,19 @@ test(
       signal.addEventListener("abort", () => {
         aborts += 1
       })
-      return {
-        body: {
-          getReader: () => ({
-            cancel: async () => {
-              cancellations += 1
-            },
-            read: async () => {
-              reads += 1
-              return reads === 1
-                ? { done: false as const, value: new Uint8Array([1]) }
-                : { done: true as const, value: undefined }
-            },
-          }),
-        },
-        ok: true,
-        status: 200,
-        statusText: "OK",
-      }
+      return mockResponse({
+        getReader: () => ({
+          cancel: async () => {
+            cancellations += 1
+          },
+          read: async () => {
+            reads += 1
+            return reads === 1
+              ? { done: false as const, value: new Uint8Array([1]) }
+              : { done: true as const, value: undefined }
+          },
+        }),
+      })
     }
 
     const controller = new AbortController()
@@ -1367,41 +1355,32 @@ test(
       )
       await new Promise((resolve) => setImmediate(resolve))
       const subtitleRequests = current.subtitle.sources.length
-      const mediaRequests = current.requests.length
-      const mediaSources = current.sources.length
-      const mediaSource = current.media.src
-      const source = present(current.sources[0])
-      const buffer = present(source.sourceBuffers[0])
-      const mseState = () => ({
-        aborts: buffer.aborts,
-        ends: source.ends,
-        offset: buffer.timestampOffset,
-        ranges: buffer.buffered.ranges.map(([start, end]) => [start, end]),
-        removes: buffer.removes.map(([start, end]) => [start, end]),
+      const mediaBoundary = () => ({
+        buffered: current.media.buffered.ranges.map(([start, end]) => [
+          start,
+          end,
+        ]),
+        currentTime: current.media.currentTime,
+        loads: current.media.loads,
+        requests: current.requests.length,
+        revoked: current.revoked.length,
+        source: current.media.src,
+        sources: current.sources.length,
       })
-      const beforeError = mseState()
+      const beforeError = mediaBoundary()
 
       for (let event = 0; event < 64; event += 1) {
         current.subtitle.dispatchEvent(new Event("error"))
       }
-      for (let turn = 0; turn < 32 && clock.length === 0; turn += 1) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
+      await eventually(() => clock.length === 1)
 
       assert.equal(current.errors.length, 1)
       assert.equal(clock.length, 1)
-      assert.equal(current.requests.length, mediaRequests)
-      assert.equal(current.sources.length, mediaSources)
-      assert.equal(current.media.src, mediaSource)
-      assert.deepEqual(mseState(), beforeError)
+      assert.deepEqual(mediaBoundary(), beforeError)
       clock.advance(0)
-      for (
-        let turn = 0;
-        turn < 32 && current.subtitle.sources.length === subtitleRequests;
-        turn += 1
-      ) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
+      await eventually(
+        () => current.subtitle.sources.length === subtitleRequests + 1,
+      )
 
       assert.equal(current.subtitle.sources.length, subtitleRequests + 1)
       const initial = new URL(
@@ -1419,10 +1398,7 @@ test(
       await new Promise((resolve) => setImmediate(resolve))
       assert.equal(clock.length, 1)
       assert.equal(current.errors.length, 1)
-      assert.equal(current.requests.length, mediaRequests)
-      assert.equal(current.sources.length, mediaSources)
-      assert.equal(current.media.src, mediaSource)
-      assert.deepEqual(mseState(), beforeError)
+      assert.deepEqual(mediaBoundary(), beforeError)
     } finally {
       current.context.window.dispatchEvent(new Event("pagehide"))
       clock.dispose()
@@ -1445,17 +1421,13 @@ test(
           current.sources[0]?.sourceBuffers[0]?.buffered.length === 1,
       )
       current.subtitle.dispatchEvent(new Event("error"))
-      for (let turn = 0; turn < 32 && clock.length === 0; turn += 1) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
+      await eventually(() => clock.length === 1)
       assert.equal(clock.length, 1)
       const subtitleRequests = current.subtitle.sources.length
 
       current.context.window.dispatchEvent(new Event("pagehide"))
       hidden = true
-      for (let turn = 0; turn < 32 && clock.cancellations === 0; turn += 1) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
+      await eventually(() => clock.cancellations === 1)
       assert.equal(clock.cancellations, 1)
       clock.advance(0)
       await new Promise((resolve) => setImmediate(resolve))
@@ -1496,19 +1468,7 @@ test(
     let requestSignal: AbortSignal | undefined = undefined
     current.context.fetch = async (_url, { signal }) => {
       requestSignal = signal
-      return {
-        body: new ReadableStream({
-          start: (controller) => {
-            controller.enqueue(new Uint8Array([1]))
-            signal.addEventListener("abort", () => controller.close(), {
-              once: true,
-            })
-          },
-        }),
-        ok: true,
-        status: 200,
-        statusText: "OK",
-      }
+      return liveResponse(signal)
     }
     const clock = frozenClock(current.context)
     const parent = new AbortController()
@@ -1541,9 +1501,7 @@ test(
         },
       }
       current.subtitle.dispatchEvent(new Event("error"))
-      for (let turn = 0; turn < 64 && outcome === undefined; turn += 1) {
-        await Promise.resolve()
-      }
+      await eventually(() => outcome !== undefined)
 
       assert.deepEqual(outcome, { error: diagnostic, status: "rejected" })
       assert.equal(parent.signal.aborted, false)
@@ -1957,8 +1915,7 @@ test(
         { once: true },
       )
       setImmediate(produce)
-      return {
-        body: {
+      return mockResponse({
           getReader: () => ({
             cancel: async () => {
               cancellations += 1
@@ -1980,11 +1937,7 @@ test(
               )
             },
           }),
-        },
-        ok: true,
-        status: 200,
-        statusText: "OK",
-      }
+        })
     }
     const controller = new AbortController()
     let appends = 0
@@ -2055,8 +2008,7 @@ test(
         },
         { once: true },
       )
-      return {
-        body: {
+      return mockResponse({
           getReader: () => ({
             cancel: async () => {
               if (index === 0) {
@@ -2084,11 +2036,7 @@ test(
               )
             },
           }),
-        },
-        ok: true,
-        status: 200,
-        statusText: "OK",
-      }
+        })
     }
 
     const controller = new AbortController()
@@ -2177,8 +2125,7 @@ for (const { failure, name, playhead } of partialFailureCases) {
       if (index === 1) {
         retried.resolve(request)
       }
-      return {
-        body: {
+      return mockResponse({
           getReader: () => ({
             cancel: async () => {},
             read: async () => {
@@ -2205,11 +2152,7 @@ for (const { failure, name, playhead } of partialFailureCases) {
               )
             },
           }),
-        },
-        ok: true,
-        status: 200,
-        statusText: "OK",
-      }
+        })
     }
 
     const controller = new AbortController()
@@ -2285,8 +2228,7 @@ test(
         },
         { once: true },
       )
-      return {
-        body: {
+      return mockResponse({
           getReader: () => ({
             cancel: async () => {
               if (index === 0) {
@@ -2306,11 +2248,7 @@ test(
               return { done: true as const, value: undefined }
             },
           }),
-        },
-        ok: true,
-        status: 200,
-        statusText: "OK",
-      }
+        })
     }
 
     const controller = new AbortController()
@@ -2667,19 +2605,7 @@ test(
         targetSignal = signal
         secondRequest.resolve(String(url))
       }
-      return {
-        body: new ReadableStream({
-          start: (controller) => {
-            controller.enqueue(new Uint8Array([1]))
-            signal.addEventListener("abort", () => controller.close(), {
-              once: true,
-            })
-          },
-        }),
-        ok: true,
-        status: 200,
-        statusText: "OK",
-      }
+      return liveResponse(signal)
     }
     const controller = new AbortController()
     const playback = current.context.player_test.playback_page(
@@ -2758,19 +2684,7 @@ test(
     current.context.fetch = async (url, { signal }) => {
       const request = String(url)
       requests.push(request)
-      return {
-        body: new ReadableStream({
-          start: (controller) => {
-            controller.enqueue(new Uint8Array([1]))
-            signal.addEventListener("abort", () => controller.close(), {
-              once: true,
-            })
-          },
-        }),
-        ok: true,
-        status: 200,
-        statusText: "OK",
-      }
+      return liveResponse(signal)
     }
 
     const controller = new AbortController()
@@ -2786,14 +2700,9 @@ test(
         current.media.seeking = true
         current.media.dispatchEvent(new Event("seeking"))
       }
-      for (
-        let turn = 0;
-        turn < 128 &&
-        !requests.some((url) => new URL(url).searchParams.get("t") === "163");
-        turn += 1
-      ) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
+      await eventually(() =>
+        requests.some((url) => new URL(url).searchParams.get("t") === "163"),
+      )
 
       assert.deepEqual(
         requests.map((url) => new URL(url).searchParams.get("t")),
@@ -2824,19 +2733,7 @@ test(
       if (requests === 3) {
         retried.resolve(String(url))
       }
-      return {
-        body: new ReadableStream({
-          start: (controller) => {
-            controller.enqueue(new Uint8Array([1]))
-            signal.addEventListener("abort", () => controller.close(), {
-              once: true,
-            })
-          },
-        }),
-        ok: true,
-        status: 200,
-        statusText: "OK",
-      }
+      return liveResponse(signal)
     }
 
     const controller = new AbortController()
@@ -2880,19 +2777,7 @@ test(
         throw new Error("source unavailable")
       }
       succeeded.resolve()
-      return {
-        body: new ReadableStream({
-          start: (controller) => {
-            controller.enqueue(new Uint8Array([1]))
-            signal.addEventListener("abort", () => controller.close(), {
-              once: true,
-            })
-          },
-        }),
-        ok: true,
-        status: 200,
-        statusText: "OK",
-      }
+      return liveResponse(signal)
     }
 
     const controller = new AbortController()
@@ -2938,8 +2823,7 @@ test(
       if (requests.length === 1) {
         throw firstFailure
       }
-      return {
-        body: {
+      return mockResponse({
           getReader: () => ({
             cancel: async () => {},
             read: async () => {
@@ -2952,11 +2836,7 @@ test(
                 : failAfterProgress.promise
             },
           }),
-        },
-        ok: true,
-        status: 200,
-        statusText: "OK",
-      }
+        })
     }
 
     const controller = new AbortController()
@@ -3107,19 +2987,7 @@ test(
       if (requests.length === 1) {
         throw new Error("source request failed")
       }
-      return {
-        body: new ReadableStream({
-          start: (controller) => {
-            controller.enqueue(new Uint8Array([1]))
-            signal.addEventListener("abort", () => controller.close(), {
-              once: true,
-            })
-          },
-        }),
-        ok: true,
-        status: 200,
-        statusText: "OK",
-      }
+      return liveResponse(signal)
     }
 
     const controller = new AbortController()
@@ -3174,19 +3042,7 @@ test(
       if (requests.length === 1) {
         throw new Error("source request failed")
       }
-      return {
-        body: new ReadableStream({
-          start: (controller) => {
-            controller.enqueue(new Uint8Array([1]))
-            signal.addEventListener("abort", () => controller.close(), {
-              once: true,
-            })
-          },
-        }),
-        ok: true,
-        status: 200,
-        statusText: "OK",
-      }
+      return liveResponse(signal)
     }
 
     const controller = new AbortController()
@@ -3242,8 +3098,8 @@ test(
       if (firstResponse) {
         replaced.resolve(String(url))
       }
-      return {
-        body: new ReadableStream({
+      return mockResponse(
+        new ReadableStream({
           start: (controller) => {
             activeReaders += 1
             if (!firstResponse) {
@@ -3255,10 +3111,7 @@ test(
             activeReaders -= 1
           },
         }),
-        ok: true,
-        status: 200,
-        statusText: "OK",
-      }
+      )
     }
     const playFailure = new DOMException(
       "The operation was aborted",
@@ -3417,8 +3270,7 @@ test(
         throw firstFailure
       }
       let reads = 0
-      return {
-        body: {
+      return mockResponse({
           getReader: () => ({
             cancel: async () => {},
             read: async () => {
@@ -3432,11 +3284,7 @@ test(
               throw requests === 2 ? parserFailure : recoveredFailure
             },
           }),
-        },
-        ok: true,
-        status: 200,
-        statusText: "OK",
-      }
+        })
     }
 
     const controller = new AbortController()
