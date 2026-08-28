@@ -157,7 +157,7 @@ const initial_position = (() => {
 })()
 
 /** @param {number} value */
-const set_position = (value) => {
+const persist_position = (value) => {
   const page_url = new URL(location.href)
   const position = Math.floor(value)
   if (Number(time_input.value) === position) {
@@ -185,7 +185,7 @@ const page_states = async function* (signal, position) {
   let changed = Promise.withResolvers()
   let previous = page_state()
   /** @type {number | undefined} */
-  let requested_position = position
+  let pending_seek = position
   let target = position
 
   const observe = () => {
@@ -220,8 +220,8 @@ const page_states = async function* (signal, position) {
     let moved =
       current.time !== previous.time || current.seeking !== previous.seeking
     const internal_seek =
-      requested_position !== undefined &&
-      Math.abs(current.time - requested_position) <= POSITION_TOLERANCE
+      pending_seek !== undefined &&
+      Math.abs(current.time - pending_seek) <= POSITION_TOLERANCE
     const user_seek = current.seeking && moved && !internal_seek
     let restart = false
 
@@ -230,27 +230,27 @@ const page_states = async function* (signal, position) {
       const playable = available(target)
       target = playable ?? target
       restart = playable === undefined
-      requested_position =
+      pending_seek =
         restart || Math.abs(current.time - target) > POSITION_TOLERANCE
           ? target
           : undefined
-      set_position(target)
-    } else if (requested_position !== undefined) {
-      const playable = available(requested_position)
+      persist_position(target)
+    } else if (pending_seek !== undefined) {
+      const playable = available(pending_seek)
       if (playable !== undefined) {
-        requested_position = playable
+        pending_seek = playable
         target = playable
       }
       if (!media.seeking) {
         const positioned =
-          Math.abs(media.currentTime - requested_position) <= POSITION_TOLERANCE
+          Math.abs(media.currentTime - pending_seek) <= POSITION_TOLERANCE
         if (
           !positioned &&
           (media.readyState !== 0 || playable !== undefined)
         ) {
-          media.currentTime = requested_position
+          media.currentTime = pending_seek
         } else if (positioned && playable !== undefined) {
-          requested_position = undefined
+          pending_seek = undefined
         }
       }
       current = page_state()
@@ -259,14 +259,14 @@ const page_states = async function* (signal, position) {
     }
 
     if (current.ended && !previous.ended) {
-      set_position(0)
+      persist_position(0)
     } else if (
       !user_seek &&
-      requested_position === undefined &&
+      pending_seek === undefined &&
       moved &&
       available(current.time) === current.time
     ) {
-      set_position(current.time)
+      persist_position(current.time)
     }
 
     yield {
@@ -659,7 +659,7 @@ const submit = (event) => {
 }
 
 const main = async () => {
-  set_position(initial_position)
+  persist_position(initial_position)
   for (;;) {
     const page = new AbortController()
     await once(window, page.signal, "pageshow")
