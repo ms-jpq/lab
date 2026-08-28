@@ -34,28 +34,25 @@ const MediaSourceConstructor =
     globalThis
   ).ManagedMediaSource ?? MediaSource
 
-/** @param {EventTarget} target @param {AbortSignal | undefined} signal @param {string} type @returns {Promise<Event>} */
-const once = (target, signal, type) => {
-  const { promise, resolve } = Promise.withResolvers()
-  target.addEventListener(type, resolve, { once: true, signal })
-  return promise
-}
-
-/** @param {AbortSignal} signal @param {EventTarget} target @param {...string} types */
-const first_event = async (signal, target, ...types) => {
-  if (signal.aborted) {
-    return undefined
-  }
+/** @param {EventTarget} target @param {AbortSignal | undefined} signal @param {...string} types */
+const first_event = (target, signal, ...types) => {
   const listeners = new AbortController()
-  const listener_signal = AbortSignal.any([signal, listeners.signal])
-  try {
-    return await Promise.race([
-      ...types.map((type) => once(target, listener_signal, type)),
-      once(signal, listeners.signal, "abort").then(() => undefined),
-    ])
-  } finally {
+  const { promise, resolve } = Promise.withResolvers()
+  /** @param {Event | undefined} event */
+  const finish = (event) => {
     listeners.abort()
+    resolve(event)
   }
+  const cancelled = () => finish(undefined)
+  const options = { once: true, signal: listeners.signal }
+  signal?.addEventListener("abort", cancelled, options)
+  if (signal?.aborted) {
+    cancelled()
+  }
+  for (const type of types) {
+    target.addEventListener(type, finish, options)
+  }
+  return promise
 }
 
 /** @param {AbortSignal} signal */
@@ -312,8 +309,8 @@ const mse = (signal, source, buffer) => {
     const operation = new AbortController()
     try {
       const settled = first_event(
-        operation.signal,
         buffer,
+        operation.signal,
         "updateend",
         "error",
       )
@@ -404,7 +401,7 @@ const play_subtitle = async (signal) => {
   }
   const failures = failure_storm()
   for (;;) {
-    const loaded = first_event(signal, subtitle, "load", "error")
+    const loaded = first_event(subtitle, signal, "load", "error")
     subtitle.src = source_url(subtitle, 0)
     const event = await loaded
     if (!event || event.type === "load") {
@@ -461,7 +458,7 @@ const session = async function* (signal, buffer, time, failures) {
     return
   }
   if (!(await buffer.next("end")).done && !signal.aborted) {
-    await once(signal, undefined, "abort")
+    await first_event(signal, undefined, "abort")
   }
 }
 
@@ -593,8 +590,8 @@ const play_media = async (signal) => {
       try {
         const source = new MediaSourceConstructor()
         const opened = first_event(
-          lifetime_signal,
           source,
+          lifetime_signal,
           "sourceopen",
           "sourceclose",
         )
@@ -691,10 +688,13 @@ const main = async () => {
   persist_position(initial_position)
   for (;;) {
     const page = new AbortController()
-    await once(window, page.signal, "pageshow")
+    await first_event(window, page.signal, "pageshow")
     const playback = playback_page(page.signal)
     try {
-      await Promise.race([once(window, page.signal, "pagehide"), playback])
+      await Promise.race([
+        first_event(window, page.signal, "pagehide"),
+        playback,
+      ])
     } finally {
       page.abort()
       await playback
