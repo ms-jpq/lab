@@ -14,18 +14,20 @@ type MutableTimeRanges = {
   end: (index: number) => number
 }
 type MediaFailure = { code: number; message?: string }
-type MediaObservation = {
-  ended: boolean
-  error: MediaFailure | null
-  future: boolean
-  metadata: boolean
-  paused: boolean
-  seeking: boolean
-  time: number
-  type: string | undefined
-}
 type MseOperation = "end" | number | Uint8Array
 type Mse = AsyncGenerator<void, void, MseOperation | undefined>
+type MseBuffer = EventTarget & {
+  abort: () => void
+  appendBuffer: (bytes: Uint8Array) => void
+  buffered: MutableTimeRanges
+  remove: (start: number, end: number) => void
+  timestampOffset: number
+}
+type MseSource = EventTarget & {
+  addSourceBuffer: (type: string) => MseBuffer
+  endOfStream: () => void
+  readyState: "closed" | "open" | "ended"
+}
 type FailureStorm = { fail: (error: unknown) => void; recover: () => void }
 type SourceFailure = { error: unknown; position: number }
 type RetryChange = { position: number; start: number } | SourceFailure
@@ -35,23 +37,7 @@ type PageChange = {
   restart: boolean
 }
 type PlayerTest = {
-  media_observation_batches: (
-    signal: AbortSignal,
-  ) => AsyncGenerator<MediaObservation[], void, void>
-  media_sources: (
-    signal: AbortSignal,
-    position: number,
-    retry: (position: number) => Promise<RetryChange | undefined>,
-  ) => AsyncGenerator<
-    {
-      buffer: Mse
-      failures: FailureStorm
-      position: number
-      signal: AbortSignal
-    },
-    void,
-    SourceFailure
-  >
+  mse: (signal: AbortSignal, source: MseSource, buffer: MseBuffer) => Mse
   page_changes: AsyncGeneratorFactory<PageChange>
   play_subtitle: (signal: AbortSignal) => Promise<void>
   playback_page: (signal: AbortSignal) => Promise<void>
@@ -91,6 +77,7 @@ type PlayerContext = vm.Context & {
   clearTimeout: (timeout: ReturnType<typeof setTimeout>) => void
   fetch: MockFetch
   MediaError: { MEDIA_ERR_ABORTED: number }
+  MediaSource: new () => MseSource
   player_test: PlayerTest
   setTimeout: (run: () => void, delay?: number) => ReturnType<typeof setTimeout>
 }
@@ -647,7 +634,7 @@ const fixture = async (position = 40) => {
   }) as PlayerContext
   const source = await readFile(PLAYER, "utf8")
   vm.runInContext(
-    `${source}\nglobalThis.player_test = { media_observation_batches, media_sources, page_changes, play_subtitle, playback_page, session, source_stream }`,
+    `${source}\nglobalThis.player_test = { mse, page_changes, play_subtitle, playback_page, session, source_stream }`,
     context,
   )
   const { ranges } = media.buffered
@@ -667,14 +654,16 @@ const fixture = async (position = 40) => {
 
 const open_mse = async (current: Awaited<ReturnType<typeof fixture>>) => {
   const controller = new AbortController()
-  const lifetime = current.context.player_test.media_sources(
+  const source = new current.context.MediaSource()
+  source.readyState = "open"
+  const opened = source.addSourceBuffer(current.media.dataset.mseType)
+  const buffer = current.context.player_test.mse(
     controller.signal,
-    10,
-    async (position) => ({ position, start: position }),
+    source,
+    opened,
   )
-  const opened = await lifetime.next()
-  assert.equal(opened.done, false)
-  return { buffer: opened.value.buffer, controller, lifetime }
+  await buffer.next()
+  return { buffer, controller, opened, source }
 }
 
 const readerTeardownCases = [
@@ -853,34 +842,6 @@ test(
 )
 
 test(
-  "media state batches preserve synchronous event order",
-  options,
-  async () => {
-    const current = await fixture()
-    const controller = new AbortController()
-    const batches = current.context.player_test.media_observation_batches(
-      controller.signal,
-    )
-    await batches.next()
-
-    current.media.currentTime = 110
-    current.media.seeking = true
-    current.media.dispatchEvent(new Event("seeking"))
-    current.media.seeking = false
-    current.media.dispatchEvent(new Event("seeked"))
-
-    const states = await nextValue(batches)
-    assert.equal(states.length, 2)
-    assert.equal(states[0]?.seeking, true)
-    assert.equal(states[0]?.time, 110)
-    assert.equal(states[1]?.seeking, false)
-    assert.equal(states[1]?.time, 110)
-    controller.abort()
-    await batches.return(undefined)
-  },
-)
-
-test(
   "a suspended observation batch awaits its captured task boundary",
   options,
   async () => {
@@ -895,14 +856,13 @@ test(
       return timeout
     }
     const controller = new AbortController()
-    const batches = current.context.player_test.media_observation_batches(
-      controller.signal,
-    )
-    await batches.next()
+    const states = current.context.player_test.page_changes(controller.signal, 40)
+    await states.next()
 
+    current.media.error = { code: 3, message: "decode failed" }
     current.media.dispatchEvent(new Event("error"))
     let settled = false
-    const pending = batches.next().then((result) => {
+    const pending = states.next().then((result) => {
       settled = true
       return result
     })
@@ -915,25 +875,22 @@ test(
     assert.equal(scheduled.length, 1)
     present(scheduled[0])()
 
-    const observations = await nextValue({ next: () => pending })
-    assert.deepEqual(
-      Array.from(observations, ({ type }) => type),
-      ["error", "seeking"],
-    )
+    const change = await nextValue({ next: () => pending })
+    assert.equal(change.error, current.media.error)
+    assert.equal(change.position, 110)
+    assert.equal(change.restart, true)
     controller.abort()
-    await batches.return(undefined)
+    await states.return(undefined)
   },
 )
 
 test("subtitle events stay outside media state batches", options, async () => {
   const current = await fixture()
   const controller = new AbortController()
-  const batches = current.context.player_test.media_observation_batches(
-    controller.signal,
-  )
-  await batches.next()
+  const states = current.context.player_test.page_changes(controller.signal, 40)
+  await states.next()
   let observed = false
-  const pending = batches.next().then((result) => {
+  const pending = states.next().then((result) => {
     observed = true
     return result
   })
@@ -944,6 +901,7 @@ test("subtitle events stay outside media state batches", options, async () => {
 
   controller.abort()
   assert.equal((await pending).done, true)
+  await states.return(undefined)
 })
 
 test(

@@ -2,11 +2,9 @@
 /** @typedef {AsyncGenerator<void, void, MseOperation | undefined>} Mse */
 /** @typedef {{error: MediaError | null, position: number, restart: boolean}} PageChange */
 /** @typedef {{fail: (error: unknown) => void, recover: () => void}} FailureStorm */
-/** @typedef {{buffer: Mse, failures: FailureStorm, position: number, signal: AbortSignal}} PlaybackSource */
 /** @typedef {{error: unknown, position: number}} SourceFailure */
 /** @typedef {{error: unknown, start: number}} SessionFailure */
 /** @typedef {{pending: Promise<IteratorResult<PageChange, void>>}} PageReader */
-/** @typedef {SourceFailure | {action: "cancel" | "restart", position: number} | {action: "retry", error: unknown, position: number, start: number}} AttemptChange */
 /** @typedef {{position: number, start: number} | SourceFailure} RetryChange */
 
 const BUFFER = {
@@ -129,34 +127,30 @@ const stream_position = (value) => Math.round(value * 1_000) / 1_000
 /** @param {number} left @param {number} right */
 const aligned = (left, right) => Math.abs(left - right) <= POSITION_TOLERANCE
 
-/** @param {number} position */
-const buffered_position = (position) => {
+/** @param {number} position @param {boolean} inclusive */
+const buffered_range = (position, inclusive) => {
   const ranges = media.buffered
   for (let index = 0; index < ranges.length; index += 1) {
     const start = ranges.start(index)
-    if (position < ranges.end(index)) {
-      return start <= position
-        ? position
-        : aligned(start, position)
-          ? start
-          : undefined
+    const end = ranges.end(index)
+    if (
+      start - position <= POSITION_TOLERANCE &&
+      (inclusive ? position <= end : position < end)
+    ) {
+      return [start, end]
     }
   }
   return undefined
 }
 
 /** @param {number} position */
-const buffered_end = (position) => {
-  const ranges = media.buffered
-  for (let index = 0; index < ranges.length; index += 1) {
-    const start = ranges.start(index)
-    const end = ranges.end(index)
-    if (start - position <= POSITION_TOLERANCE && position <= end) {
-      return end
-    }
-  }
-  return undefined
+const buffered_position = (position) => {
+  const range = buffered_range(position, false)
+  return range ? Math.max(position, range[0]) : undefined
 }
+
+/** @param {number} position */
+const buffered_end = (position) => buffered_range(position, true)?.[1]
 
 const play_ahead = () =>
   (buffered_end(media.currentTime) ?? media.currentTime) - media.currentTime
@@ -200,10 +194,10 @@ const media_observation = (type) => ({
   type,
 })
 
-/** @param {AbortSignal} signal @returns {AsyncGenerator<ReturnType<typeof media_observation>[], void, void>} */
-const media_observation_batches = async function* (signal) {
+/** @param {AbortSignal} signal @param {number} position @returns {AsyncGenerator<PageChange, void, void>} */
+const page_changes = async function* (signal, position) {
   const types =
-    "canplay ended error loadedmetadata pause play playing progress seeked seeking timeupdate waiting".split(
+    "canplay ended error loadedmetadata play playing progress seeked seeking timeupdate waiting".split(
       " ",
     )
   /** @type {ReturnType<typeof media_observation>[]} */
@@ -236,59 +230,31 @@ const media_observation_batches = async function* (signal) {
   }
   pending.push(media_observation())
   changed.resolve(true)
-
-  try {
-    for (;;) {
-      if (!(await changed.promise) || signal.aborted) {
-        return
-      }
-      const batch = pending.splice(0)
-      changed = Promise.withResolvers()
-      scheduled = undefined
-      yield batch
-    }
-  } finally {
-    if (scheduled !== undefined) {
-      clearTimeout(scheduled)
-    }
-    signal.removeEventListener("abort", cancelled)
-    for (const type of types) {
-      media.removeEventListener(type, observe)
-    }
-  }
-}
-
-/** @param {AbortSignal} signal @param {number} position @returns {AsyncGenerator<PageChange, void, void>} */
-const page_changes = async function* (signal, position) {
-  const batches = media_observation_batches(signal)
-  /** @type {Promise<IteratorResult<ReturnType<typeof media_observation>[], void>> | undefined} */
-  let batch = undefined
   /** @type {Promise<{played: true}> | undefined} */
   let playing = undefined
   let previous = media_observation()
-  /** @type {"idle" | "established" | "pausing" | "waiting"} */
-  let readiness = "idle"
+  let established = false
+  let resume = false
   /** @type {number | undefined} */
   let pending_seek = position
   let target = position
 
   try {
     for (;;) {
-      batch ??= batches.next()
       const selected = await Promise.race([
-        batch.then((observations) => ({ observations })),
+        changed.promise.then((result) => ({ changed: result })),
         ...(playing ? [playing] : []),
       ])
       if ("played" in selected) {
         playing = undefined
         continue
       }
-      const next = selected.observations
-      if (next.done) {
+      if (!selected.changed || signal.aborted) {
         return
       }
-      batch = undefined
-      const observations = next.value
+      const observations = pending.splice(0)
+      changed = Promise.withResolvers()
+      scheduled = undefined
       /** @type {MediaError | null} */
       let error = null
       let restart = false
@@ -296,31 +262,26 @@ const page_changes = async function* (signal, position) {
       for (const observed of observations) {
         const current = observed
         if (current.type === "playing") {
-          readiness = "established"
-        } else if (
-          (readiness === "pausing" || readiness === "waiting") &&
-          current.type === "play"
-        ) {
-          readiness = "idle"
-        }
-        if (current.type === "pause") {
-          readiness = readiness === "pausing" ? "waiting" : "idle"
+          established = true
+        } else if (current.type === "play") {
+          resume = false
         }
         if (
-          readiness === "established" &&
+          established &&
           current.type === "waiting" &&
           !current.future &&
           !current.paused
         ) {
-          readiness = "pausing"
+          established = false
+          resume = true
           media.pause()
         } else if (
-          (readiness === "pausing" || readiness === "waiting") &&
+          resume &&
           current.type === "canplay" &&
           current.paused &&
           current.future
         ) {
-          readiness = "idle"
+          resume = false
           playing = media
             .play()
             .then(() => ({ played: /** @type {const} */ (true) }))
@@ -385,7 +346,13 @@ const page_changes = async function* (signal, position) {
       yield { error, position: target, restart }
     }
   } finally {
-    await batches.return()
+    if (scheduled !== undefined) {
+      clearTimeout(scheduled)
+    }
+    signal.removeEventListener("abort", cancelled)
+    for (const type of types) {
+      media.removeEventListener(type, observe)
+    }
     await playing
   }
 }
@@ -573,169 +540,6 @@ const session = async function* (signal, buffer, time, failures) {
   }
 }
 
-/** @param {AbortSignal} signal @param {number} position @param {(position: number) => Promise<RetryChange | undefined>} retry @returns {AsyncGenerator<PlaybackSource, void, SourceFailure>} */
-const media_sources = async function* (signal, position, retry) {
-  const failures = failure_storm()
-  /** @type {string | undefined} */
-  let attached_url = undefined
-  try {
-    for (;;) {
-      const lifetime = new AbortController()
-      const lifetime_signal = AbortSignal.any([signal, lifetime.signal])
-      const source = new MediaSourceConstructor()
-      const opened = first_event(
-        lifetime_signal,
-        source,
-        "sourceopen",
-        "sourceclose",
-      )
-      const url = URL.createObjectURL(source)
-      const previous_url = attached_url
-      media.src = url
-      media.currentTime = position
-      attached_url = url
-      /** @type {Mse | undefined} */
-      let buffer = undefined
-      /** @type {SourceFailure | undefined} */
-      let failure = undefined
-      /** @type {{error: unknown} | undefined} */
-      let setup_failure = undefined
-
-      try {
-        const selected = await opened.finally(() => {
-          if (previous_url) {
-            URL.revokeObjectURL(previous_url)
-          }
-        })
-        if (!selected) {
-          return
-        }
-        if (selected.type === "sourceclose") {
-          throw selected
-        }
-        const duration = Number(media.dataset.duration)
-        if (duration > 0) {
-          source.duration = duration
-        }
-        buffer = mse(
-          lifetime_signal,
-          source,
-          source.addSourceBuffer(/** @type {string} */ (media.dataset.mseType)),
-        )
-        await buffer.next()
-        failure = yield {
-          buffer,
-          failures,
-          position,
-          signal: lifetime_signal,
-        }
-        position = failure.position
-      } catch (error) {
-        if (lifetime_signal.aborted) {
-          return
-        }
-        setup_failure = { error }
-      } finally {
-        lifetime.abort()
-        await buffer?.return()
-      }
-      if (setup_failure) {
-        failures.fail(setup_failure.error)
-        const waiting = await retry(position)
-        if (waiting === undefined) {
-          return
-        }
-        position = waiting.position
-        if ("error" in waiting) {
-          failures.fail(waiting.error)
-        }
-        continue
-      }
-      if (failure) {
-        failures.fail(failure.error)
-        if (signal.aborted) {
-          return
-        }
-      }
-    }
-  } finally {
-    media.removeAttribute("src")
-    media.load()
-    if (attached_url) {
-      URL.revokeObjectURL(attached_url)
-    }
-  }
-}
-
-/** @param {AbortSignal} signal @param {Mse} buffer @param {AsyncGenerator<PageChange, void, void>} changes @param {PageReader} page @param {number} position @param {number} start @param {FailureStorm} failures @returns {Promise<AttemptChange>} */
-const play_attempt = async (
-  signal,
-  buffer,
-  changes,
-  page,
-  position,
-  start,
-  failures,
-) => {
-  const attempt = new AbortController()
-  const attempt_signal = AbortSignal.any([signal, attempt.signal])
-  const current = session(attempt_signal, buffer, start, failures)
-  const cancelled = attempt_signal.aborted
-    ? Promise.resolve({ cancelled: true })
-    : once(attempt_signal, undefined, "abort").then(() => ({
-        cancelled: true,
-      }))
-  /** @type {Promise<IteratorResult<void, SessionFailure | void>> | undefined} */
-  let progress = current.next()
-  try {
-    for (;;) {
-      const selected = await Promise.race([
-        page.pending.then((result) => ({ page: result })),
-        ...(progress
-          ? [progress.then((result) => ({ progress: result }))]
-          : []),
-        cancelled,
-      ])
-      if ("cancelled" in selected) {
-        return { action: "cancel", position }
-      }
-      if ("progress" in selected) {
-        const { progress: result } = selected
-        progress = undefined
-        if (result.done) {
-          return result.value
-            ? {
-                action: "retry",
-                error: result.value.error,
-                position,
-                start: result.value.start,
-              }
-            : { action: "cancel", position }
-        }
-        continue
-      }
-
-      const change = advance_page(changes, page, selected.page)
-      if (change === undefined) {
-        return { action: "cancel", position }
-      }
-      position = change.position
-      if (change.error) {
-        return { error: change.error, position }
-      }
-      if (change.restart) {
-        return { action: "restart", position }
-      }
-      if (progress === undefined) {
-        progress = current.next()
-      }
-    }
-  } finally {
-    attempt.abort()
-    await current.return()
-  }
-}
-
 /** @param {AbortSignal} signal @param {AsyncGenerator<PageChange, void, void>} changes @param {PageReader} page @param {number} position @param {number} start @returns {Promise<RetryChange | undefined>} */
 const wait_to_retry = async (signal, changes, page, position, start) => {
   const timer = new AbortController()
@@ -767,54 +571,96 @@ const wait_to_retry = async (signal, changes, page, position, start) => {
   }
 }
 
-/** @param {PlaybackSource} source @param {AsyncGenerator<PageChange, void, void>} changes @param {PageReader} page @returns {Promise<SourceFailure | undefined>} */
+/** @param {AbortSignal} signal @param {Mse} buffer @param {FailureStorm} failures @param {AsyncGenerator<PageChange, void, void>} changes @param {PageReader} page @param {number} position @returns {Promise<SourceFailure | undefined>} */
 const play_source = async (
-  { buffer, failures, position, signal },
+  signal,
+  buffer,
+  failures,
   changes,
   page,
+  position,
 ) => {
   let start = position
   try {
     for (;;) {
-      const change = await play_attempt(
+      const attempt = new AbortController()
+      const attempt_signal = AbortSignal.any([signal, attempt.signal])
+      const current = session(attempt_signal, buffer, start, failures)
+      const cancelled = attempt_signal.aborted
+        ? Promise.resolve({ cancelled: true })
+        : once(attempt_signal, undefined, "abort").then(() => ({
+            cancelled: true,
+          }))
+      /** @type {Promise<IteratorResult<void, SessionFailure | void>> | undefined} */
+      let progress = current.next()
+      /** @type {SessionFailure | undefined} */
+      let failure = undefined
+
+      try {
+        for (;;) {
+          const selected = await Promise.race([
+            page.pending.then((result) => ({ page: result })),
+            ...(progress
+              ? [progress.then((result) => ({ progress: result }))]
+              : []),
+            cancelled,
+          ])
+          if ("cancelled" in selected) {
+            return undefined
+          }
+          if ("progress" in selected) {
+            const result = selected.progress
+            progress = undefined
+            if (result.done) {
+              if (!result.value) {
+                return undefined
+              }
+              failure = result.value
+              break
+            }
+            continue
+          }
+
+          const change = advance_page(changes, page, selected.page)
+          if (change === undefined) {
+            return undefined
+          }
+          position = change.position
+          if (change.error) {
+            return { error: change.error, position }
+          }
+          if (change.restart) {
+            start = position
+            break
+          }
+          if (progress === undefined) {
+            progress = current.next()
+          }
+        }
+      } finally {
+        attempt.abort()
+        await current.return()
+      }
+      if (!failure) {
+        continue
+      }
+
+      failures.fail(failure.error)
+      const waiting = await wait_to_retry(
         signal,
-        buffer,
         changes,
         page,
         position,
-        start,
-        failures,
+        failure.start,
       )
-      position = change.position
-      if (!("action" in change)) {
-        return change
+      if (waiting === undefined) {
+        return undefined
       }
-      switch (change.action) {
-        case "cancel":
-          return undefined
-        case "restart":
-          start = position
-          continue
-        case "retry": {
-          failures.fail(change.error)
-          const waiting = await wait_to_retry(
-            signal,
-            changes,
-            page,
-            position,
-            change.start,
-          )
-          if (waiting === undefined) {
-            return undefined
-          }
-          if ("error" in waiting) {
-            return waiting
-          }
-          position = waiting.position
-          start = waiting.start
-          break
-        }
+      if ("error" in waiting) {
+        return waiting
       }
+      position = waiting.position
+      start = waiting.start
     }
   } catch (error) {
     return signal.aborted ? undefined : { error, position }
@@ -823,27 +669,111 @@ const play_source = async (
 
 /** @param {AbortSignal} signal */
 const play_media = async (signal) => {
-  const position = playable_position(Number(time_input.value))
+  let position = playable_position(Number(time_input.value))
   const observation = new AbortController()
   const changes = page_changes(
     AbortSignal.any([signal, observation.signal]),
     position,
   )
   const page = { pending: changes.next() }
-  const sources = media_sources(signal, position, (failed_position) =>
-    wait_to_retry(signal, changes, page, failed_position, failed_position),
-  )
+  const failures = failure_storm()
+  /** @type {string | undefined} */
+  let attached_url = undefined
   try {
-    let next = await sources.next()
-    while (!next.done) {
-      const change = await play_source(next.value, changes, page)
-      if (change === undefined) {
-        return
+    for (;;) {
+      const lifetime = new AbortController()
+      const lifetime_signal = AbortSignal.any([signal, lifetime.signal])
+      const source = new MediaSourceConstructor()
+      const opened = first_event(
+        lifetime_signal,
+        source,
+        "sourceopen",
+        "sourceclose",
+      )
+      const url = URL.createObjectURL(source)
+      const previous_url = attached_url
+      media.src = url
+      media.currentTime = position
+      attached_url = url
+      /** @type {Mse | undefined} */
+      let buffer = undefined
+      /** @type {{error: unknown} | undefined} */
+      let setup_failure = undefined
+      /** @type {SourceFailure | undefined} */
+      let failure = undefined
+
+      try {
+        const selected = await opened.finally(() => {
+          if (previous_url) {
+            URL.revokeObjectURL(previous_url)
+          }
+        })
+        if (!selected) {
+          return
+        }
+        if (selected.type === "sourceclose") {
+          throw selected
+        }
+        const duration = Number(media.dataset.duration)
+        if (duration > 0) {
+          source.duration = duration
+        }
+        buffer = mse(
+          lifetime_signal,
+          source,
+          source.addSourceBuffer(/** @type {string} */ (media.dataset.mseType)),
+        )
+        await buffer.next()
+        failure = await play_source(
+          lifetime_signal,
+          buffer,
+          failures,
+          changes,
+          page,
+          position,
+        )
+        if (!failure) {
+          return
+        }
+        position = failure.position
+      } catch (error) {
+        if (lifetime_signal.aborted) {
+          return
+        }
+        setup_failure = { error }
+      } finally {
+        lifetime.abort()
+        await buffer?.return()
       }
-      next = await sources.next(change)
+      if (setup_failure) {
+        failures.fail(setup_failure.error)
+        const waiting = await wait_to_retry(
+          signal,
+          changes,
+          page,
+          position,
+          position,
+        )
+        if (!waiting) {
+          return
+        }
+        position = waiting.position
+        if ("error" in waiting) {
+          failures.fail(waiting.error)
+        }
+      } else {
+        failures.fail(failure.error)
+        if (signal.aborted) {
+          return
+        }
+      }
     }
   } finally {
-    await sources.return()
+    media.removeAttribute("src")
+    media.load()
+    if (attached_url) {
+      URL.revokeObjectURL(attached_url)
+    }
     observation.abort()
     await changes.return()
   }
