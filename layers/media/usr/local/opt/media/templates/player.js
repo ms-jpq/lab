@@ -23,6 +23,8 @@ const PAGE = crypto.randomUUID()
 /** @typedef {AsyncGenerator<void, void, MseOperation | undefined> & {contains: (position: number) => boolean, frontier: () => number | undefined, play_ahead: (position: number) => number}} MseBuffer */
 /** @typedef {(signal: AbortSignal) => MseBuffer} MseBufferFactory */
 /** @typedef {AsyncGenerator<void, void, void> & {buffer: MseBuffer}} Attempt */
+/** @typedef {ReturnType<typeof page_state> & {failed: boolean, moved: boolean}} PageChange */
+/** @typedef {{state: IteratorResult<PageChange, void>} | {attempt: IteratorResult<void, void>} | {error: unknown}} PlaybackSelection */
 
 /** @param {EventTarget} target @param {AbortSignal | undefined} signal @param {string} type @returns {Promise<Event>} */
 const once = (target, signal, type) => {
@@ -109,9 +111,10 @@ const page_state = () => ({
   time: media.currentTime,
 })
 
-/** @param {AbortSignal} signal @returns {AsyncGenerator<ReturnType<typeof page_state>, void, void>} */
+/** @param {AbortSignal} signal @returns {AsyncGenerator<PageChange, void, void>} */
 const changes = (signal) => {
   let changed = Promise.withResolvers()
+  let previous = page_state()
   const wake = () => changed.resolve(true)
 
   for (const type of [
@@ -139,7 +142,20 @@ const changes = (signal) => {
         return
       }
       changed = Promise.withResolvers()
-      yield page_state()
+      const current = page_state()
+      yield {
+        ...current,
+        failed:
+          (current.error !== previous.error &&
+            current.error !== null &&
+            current.error.code !== MediaError.MEDIA_ERR_ABORTED) ||
+          (current.subtitle_error && !previous.subtitle_error),
+        moved:
+          Number.isFinite(current.time) &&
+          (current.time !== previous.time ||
+            current.seeking !== previous.seeking),
+      }
+      previous = current
     }
   })()
 }
@@ -370,49 +386,124 @@ const attempt = (signal, create_buffer) => {
 const playback_page = async (signal) => {
   const scope = new AbortController()
   const page_signal = AbortSignal.any([signal, scope.signal])
+  const resume = Symbol("resume")
   const restart = Symbol("restart")
-  let controller = new AbortController()
-  const stream_state = {
-    active: /** @type {MseBuffer | undefined} */ (undefined),
-  }
-  let wake = Promise.withResolvers()
+  const retry = Symbol("retry")
+  const states = changes(page_signal)
+  let changed = states.next()
+  let positioned = transformed
+  let waiting = false
 
-  const resume = () => wake.resolve(true)
-
-  /** @param {AbortSignal} signal */
-  const wait = async (signal) => {
-    if (!(await select(signal, () => wake.promise))) {
-      return false
+  /** @param {PageChange} state @param {MseBuffer | undefined} buffer */
+  const update = async (state, buffer) => {
+    if (!positioned && state.metadata) {
+      positioned = true
+      if (initial_position > 0) {
+        media.currentTime = initial_position
+      }
     }
-    wake = Promise.withResolvers()
-    return true
+
+    const action =
+      buffer && state.failed
+        ? retry
+        : buffer && state.moved && state.seeking && !buffer.contains(state.time)
+          ? restart
+          : buffer && (state.moved || !state.paused)
+            ? resume
+            : undefined
+
+    if (state.moved && (buffer || !transformed)) {
+      set_position(state.time)
+    }
+    if (!state.paused && !state.future) {
+      waiting = true
+      media.pause()
+    } else if (state.paused && waiting && state.future) {
+      waiting = false
+      await media.play().catch(console.error)
+    }
+    return action
   }
 
-  /** @param {unknown} reason */
-  const stop = (reason) => controller.abort(reason)
+  if (!transformed) {
+    media.src = source_url(media, media.currentTime)
+    media.load()
+    try {
+      for await (const change of states) {
+        await update(change, undefined)
+      }
+    } finally {
+      scope.abort()
+    }
+    return
+  }
 
-  const run = async () => {
+  try {
     for (;;) {
       try {
         for await (const create_buffer of mse(page_signal)) {
-          const current = (controller = new AbortController())
+          const current = new AbortController()
           const attempt_signal = AbortSignal.any([page_signal, current.signal])
           const session = attempt(attempt_signal, create_buffer)
-          stream_state.active = session.buffer
+          /** @type {Promise<IteratorResult<void, void>> | undefined} */
+          let progress = session.next()
+
           try {
-            while (
-              !(await session.next()).done &&
-              (await wait(attempt_signal))
-            ) {}
+            for (;;) {
+              const pending = progress
+              const selected = await select(
+                attempt_signal,
+                () =>
+                  changed.then(
+                    (state) => /** @type {PlaybackSelection} */ ({ state }),
+                  ),
+                ...(pending
+                  ? [
+                      () =>
+                        pending.then(
+                          (attempt) =>
+                            /** @type {PlaybackSelection} */ ({ attempt }),
+                          (error) =>
+                            /** @type {PlaybackSelection} */ ({ error }),
+                        ),
+                    ]
+                  : []),
+              )
+
+              if (!selected) {
+                break
+              } else if ("state" in selected) {
+                const { state } = selected
+                if (state.done) {
+                  return
+                }
+                changed = states.next()
+                const action = await update(state.value, session.buffer)
+                if (action === restart || action === retry) {
+                  current.abort(action)
+                  break
+                }
+                if (action === resume && progress === undefined) {
+                  progress = session.next()
+                }
+              } else if ("error" in selected) {
+                throw selected.error
+              } else {
+                progress = undefined
+                if (selected.attempt.done) {
+                  break
+                }
+              }
+            }
           } catch (error) {
             if (!attempt_signal.aborted) {
               console.error(error)
             }
           } finally {
-            stream_state.active = undefined
             current.abort()
             await session.return()
           }
+
           if (
             current.signal.reason !== restart &&
             !(await retry_delay(page_signal))
@@ -427,69 +518,8 @@ const playback_page = async (signal) => {
         return
       }
     }
-  }
-
-  const states = changes(page_signal)
-  let positioned = transformed
-  let waiting = false
-  let previous = page_state()
-  const worker = transformed ? run() : undefined
-  if (!transformed) {
-    media.src = source_url(media, media.currentTime)
-    media.load()
-  }
-
-  try {
-    for await (const current of states) {
-      if (!positioned && current.metadata) {
-        positioned = true
-        if (initial_position > 0) {
-          media.currentTime = initial_position
-        }
-      }
-
-      const buffer = stream_state.active
-      const moved =
-        Number.isFinite(current.time) &&
-        (current.time !== previous.time || current.seeking !== previous.seeking)
-      if (
-        buffer &&
-        ((current.error !== previous.error &&
-          current.error !== null &&
-          current.error?.code !== MediaError.MEDIA_ERR_ABORTED) ||
-          (current.subtitle_error && !previous.subtitle_error))
-      ) {
-        stop(undefined)
-      }
-
-      if (buffer && moved) {
-        if (current.seeking && !buffer.contains(current.time)) {
-          stop(restart)
-        } else {
-          resume()
-        }
-      }
-      if (!current.paused) {
-        resume()
-      }
-      if (moved && (buffer || !transformed)) {
-        set_position(current.time)
-      }
-
-      if (!current.paused) {
-        if (!current.future) {
-          waiting = true
-          media.pause()
-        }
-      } else if (waiting && current.future) {
-        waiting = false
-        await media.play().catch(console.error)
-      }
-      previous = current
-    }
   } finally {
     scope.abort()
-    await worker
   }
 }
 
