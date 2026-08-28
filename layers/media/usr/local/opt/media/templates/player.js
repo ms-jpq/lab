@@ -393,18 +393,28 @@ const mse = (signal, media, position) => {
 
 /** @param {AbortSignal} signal @param {number} time */
 const source_stream = async function* (signal, time) {
+  /** @type {ReadableStreamDefaultReader<Uint8Array> | undefined} */
+  let reader = undefined
   try {
     const response = await fetch(source_url(media, time), { signal })
     if (!response.ok || !response.body) {
       throw new Error(`${response.statusText} - ${response.status}`)
     }
-    yield* response.body
+    reader = response.body.getReader()
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) {
+        return
+      }
+      yield value
+    }
   } catch (error) {
     if (!signal.aborted) {
       throw error
     }
+  } finally {
+    await reader?.cancel()
   }
-  return
 }
 
 /** @param {AbortSignal} signal @param {Mse} buffer @param {number} time @returns {AsyncGenerator<void, void, void>} */

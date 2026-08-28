@@ -326,7 +326,7 @@ const fixture = async (position = 40) => {
   })
   const source = await readFile(PLAYER, "utf8")
   vm.runInContext(
-    `${source}\nglobalThis.player_test = { available, mse, page_states, playback_page, playable_position, session, source_url, stream_position }`,
+    `${source}\nglobalThis.player_test = { available, mse, page_states, playback_page, playable_position, session, source_stream, source_url, stream_position }`,
     context,
   )
   const { ranges } = media.buffered
@@ -343,6 +343,45 @@ const fixture = async (position = 40) => {
     timeInput,
   }
 }
+
+test(
+  "source stream reads and releases a reader-only response body",
+  { concurrency: true },
+  async () => {
+    const current = await fixture()
+    let cancelled = 0
+    let reads = 0
+    current.context.fetch = async () => ({
+      body: {
+        getReader: () => ({
+          cancel: async () => {
+            cancelled += 1
+          },
+          read: async () => {
+            reads += 1
+            return { done: false, value: new Uint8Array([1]) }
+          },
+        }),
+      },
+      ok: true,
+      status: 200,
+      statusText: "OK",
+    })
+
+    const controller = new AbortController()
+    const stream = current.context.player_test.source_stream(
+      controller.signal,
+      40,
+    )
+    const chunk = await stream.next()
+    assert.equal(chunk.done, false)
+    assert.deepEqual([...chunk.value], [1])
+    await stream.return()
+
+    assert.equal(reads, 1)
+    assert.equal(cancelled, 1)
+  },
+)
 
 /** @param {Awaited<ReturnType<typeof fixture>>} current @param {number} position */
 const ready = async (current, position = 40) => {
