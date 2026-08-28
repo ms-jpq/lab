@@ -5,11 +5,25 @@ import vm from "node:vm"
 
 const PLAYER = new URL("player.js", import.meta.url)
 
+const timeRanges = () => ({
+  ranges: [],
+  get length() {
+    return this.ranges.length
+  },
+  start(index) {
+    return this.ranges[index][0]
+  },
+  end(index) {
+    return this.ranges[index][1]
+  },
+})
+
 class Media extends EventTarget {
   constructor() {
     super()
     this.currentTimes = []
     this._currentTime = 0
+    this.buffered = timeRanges()
     this.dataset = {
       duration: "200",
       mseType: 'video/mp4; codecs="avc1.640028"',
@@ -39,11 +53,14 @@ class Media extends EventTarget {
   /** @param {string} value */
   set src(value) {
     this._src = value
+    this.buffered.ranges = []
     this.currentTime = 0
   }
 
   load() {
     this.loads += 1
+    this.buffered.ranges = []
+    this.onLoad?.()
   }
 
   /** @param {string} name */
@@ -98,22 +115,22 @@ const fixture = async (position = 40) => {
     constructor(source) {
       super()
       this.source = source
-      this.buffered = {
-        ranges: [],
-        get length() {
-          return this.ranges.length
-        },
-        start(index) {
-          return this.ranges[index][0]
-        },
-        end(index) {
-          return this.ranges[index][1]
-        },
-      }
+      this._buffered = timeRanges()
       this._timestampOffset = 0
       this.holdUpdate = false
       this.releaseUpdate = undefined
       this.updating = false
+      this.usable = true
+    }
+
+    get buffered() {
+      if (!this.usable) {
+        throw new DOMException(
+          "SourceBuffer is no longer usable",
+          "InvalidStateError",
+        )
+      }
+      return this._buffered
     }
 
     get timestampOffset() {
@@ -137,9 +154,9 @@ const fixture = async (position = 40) => {
     appendBuffer(_bytes) {
       this.updating = true
       const complete = () => {
-        this.buffered.ranges = [
-          [this.timestampOffset, this.timestampOffset + 10],
-        ]
+        const ranges = [[this.timestampOffset, this.timestampOffset + 10]]
+        this._buffered.ranges = ranges
+        media.buffered.ranges = ranges
         this.updating = false
         this.dispatchEvent(new Event("updateend"))
       }
@@ -158,9 +175,11 @@ const fixture = async (position = 40) => {
       }
       this.updating = true
       queueMicrotask(() => {
-        this.buffered.ranges = this.buffered.ranges.flatMap(([left, right]) =>
+        const ranges = this._buffered.ranges.flatMap(([left, right]) =>
           right <= start || end <= left ? [[left, right]] : [],
         )
+        this._buffered.ranges = ranges
+        media.buffered.ranges = ranges
         this.updating = false
         this.dispatchEvent(new Event("updateend"))
       })
@@ -207,6 +226,13 @@ const fixture = async (position = 40) => {
     /** @param {string} url */
     static revokeObjectURL(url) {
       revoked.push(url)
+    }
+  }
+  media.onLoad = () => {
+    for (const source of sources) {
+      for (const buffer of source.sourceBuffers) {
+        buffer.usable = false
+      }
     }
   }
   const context = vm.createContext({
@@ -271,7 +297,7 @@ const fixture = async (position = 40) => {
     `${source}\nglobalThis.player_test = { mse, page_states, playback_page, playable_position, session, source_url, stream_position }`,
     context,
   )
-  const ranges = []
+  const { ranges } = media.buffered
   const buffer = {
     available: (value) => {
       for (const [start, end] of ranges) {
