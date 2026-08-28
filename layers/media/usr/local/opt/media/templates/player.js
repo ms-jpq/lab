@@ -367,10 +367,9 @@ const attempt = (signal, create_buffer) => {
             continue streaming
           }
         }
-        if (!signal.aborted) {
-          await buffer.next()
+        if (await select(signal, () => buffer.next())) {
+          await select(signal)
         }
-        await select(signal)
         break
       }
     } finally {
@@ -440,6 +439,7 @@ const playback_page = async (signal) => {
         const session = attempt(attempt_signal, create_buffer)
         /** @type {Promise<IteratorResult<void, void>> | undefined} */
         let progress = session.next()
+        let transition = undefined
 
         try {
           for (;;) {
@@ -469,12 +469,12 @@ const playback_page = async (signal) => {
                 return
               }
               changed = states.next()
-              const action = await update(state.value, session.buffer)
-              if (action === restart || action === retry) {
-                current.abort(action)
+              transition = await update(state.value, session.buffer)
+              if (transition === restart || transition === retry) {
+                current.abort()
                 break
               }
-              if (action === resume && progress === undefined) {
+              if (transition === resume && progress === undefined) {
                 progress = session.next()
               }
             } else {
@@ -485,15 +485,13 @@ const playback_page = async (signal) => {
             }
           }
         } catch (error) {
-          if (!attempt_signal.aborted) {
-            console.error(error)
-          }
+          console.error(error)
         } finally {
           current.abort()
           await session.return()
         }
 
-        if (current.signal.reason !== restart && !(await retry_delay(signal))) {
+        if (transition !== restart && !(await retry_delay(signal))) {
           return
         }
       }
