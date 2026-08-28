@@ -42,7 +42,7 @@ type TestMseSource = Omit<MseSource, "addSourceBuffer"> & {
 }
 type FailureStorm = { fail: (error: unknown) => void; recover: () => void }
 type PageChange = {
-  error: MediaFailure | null
+  error: unknown | null
   position: number
   restart: boolean
 }
@@ -1378,6 +1378,74 @@ test(
         ),
         false,
       )
+    } finally {
+      current.media.onSourceChange = undefined
+      controller.abort()
+      await playback
+    }
+  },
+)
+
+test(
+  "a current-source play failure advances the page before rebuilding",
+  options,
+  async () => {
+    const current = await fixture()
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    const resumed = Promise.withResolvers<void>()
+    const playFailure = new DOMException("play failed", "NotSupportedError")
+    let replacements = 0
+
+    try {
+      await eventually(
+        () => current.sources[0]?.sourceBuffers[0]?.buffered.length === 1,
+      )
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.paused = false
+      current.media.dispatchEvent(new Event("playing"))
+      await nextTask()
+      current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
+      current.media.dispatchEvent(new Event("waiting"))
+      await nextTask()
+
+      current.media.playResult = resumed.promise
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.dispatchEvent(new Event("canplay"))
+      await nextTask()
+      current.media.onSourceChange = (previous, next) => {
+        if (previous.startsWith("blob:") && next.startsWith("blob:")) {
+          replacements += 1
+          if (replacements > 1) {
+            controller.abort()
+          }
+        }
+      }
+      resumed.reject(playFailure)
+
+      await eventually(
+        () =>
+          controller.signal.aborted ||
+          current.sources[1]?.sourceBuffers[0]?.buffered.length === 1,
+      )
+      assert.equal(controller.signal.aborted, false)
+      assert.equal(current.sources.length, 2)
+      assert.deepEqual(
+        current.errors.map(([error]) => error),
+        [playFailure],
+      )
+
+      current.media.currentTime = 100
+      current.media.seeking = true
+      current.media.dispatchEvent(new Event("seeking"))
+      await eventually(() =>
+        current.requests.some(
+          (url) => new URL(url).searchParams.get("t") === "100",
+        ),
+      )
+      assert.equal(current.sources.length, 2)
     } finally {
       current.media.onSourceChange = undefined
       controller.abort()
@@ -2917,7 +2985,10 @@ test(
 
     try {
       await eventually(() => clock.length === 1)
-      assert.deepEqual(current.errors.map(([error]) => error), [failure])
+      assert.deepEqual(
+        current.errors.map(([error]) => error),
+        [failure],
+      )
       assert.equal(current.sources.length, 1)
       assert.equal(current.revoked.length, 1)
     } finally {

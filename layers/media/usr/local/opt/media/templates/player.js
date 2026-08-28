@@ -1,6 +1,6 @@
 /** @typedef {"end" | number | Uint8Array} MseOperation */
 /** @typedef {AsyncGenerator<void, void, MseOperation | undefined>} Mse */
-/** @typedef {{error: MediaError | null, position: number, restart: boolean}} PageChange */
+/** @typedef {{error: unknown | null, position: number, restart: boolean}} PageChange */
 /** @typedef {{fail: (error: unknown) => void, recover: () => void}} FailureStorm */
 /** @typedef {{error: unknown, position: number}} SourceFailure */
 /** @typedef {{error: unknown, start: number}} SessionFailure */
@@ -244,7 +244,12 @@ const page_changes = async function* (signal, position) {
       if ("play_error" in selected) {
         playing = undefined
         if (selected.source === media.src) {
-          throw selected.play_error
+          yield {
+            error: selected.play_error,
+            position: target,
+            restart: false,
+          }
+          continue
         }
         resume = true
         continue
