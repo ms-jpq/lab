@@ -58,24 +58,16 @@ const select = async (signal, ...cases) => {
   }
 }
 
-/** @template K,V @param {AbortSignal} signal @param {Map<K, Promise<V>>} pending @returns {AsyncGenerator<readonly [K, V], void, void>} */
-const merge = async function* (signal, pending) {
-  for (;;) {
-    const selected = await select(
-      signal,
-      ...pending.entries().map(
-        ([key, value]) =>
-          async () =>
-            /** @type {const} */ ([key, await value]),
-      ),
-    )
-    if (!selected) {
-      return
-    }
-    pending.delete(selected[0])
-    yield selected
-  }
-}
+/** @param {AbortSignal} signal @param {...readonly [AsyncIterator<unknown, void, void>, Promise<IteratorResult<unknown, void>>]} sources */
+const merge = (signal, ...sources) =>
+  select(
+    signal,
+    ...sources.map(
+      ([source, pending]) =>
+        async () =>
+          /** @type {const} */ ([source, await pending]),
+    ),
+  )
 
 /** @param {AbortSignal} signal */
 const retry_delay = (signal) =>
@@ -412,10 +404,8 @@ const playback_page = async (signal) => {
   const resume = Symbol("resume")
   const restart = Symbol("restart")
   const retry = Symbol("retry")
-  const states = changes(signal)
-  /** @type {Map<AsyncIterator<unknown, void, void>, Promise<IteratorResult<unknown, void>>>} */
-  const pending = new Map()
-  pending.set(states, states.next())
+  const changed = changes(signal)
+  let change = changed.next()
   let positioned = transformed
   let waiting = false
 
@@ -453,8 +443,8 @@ const playback_page = async (signal) => {
   if (!transformed) {
     media.src = source_url(media, media.currentTime)
     media.load()
-    for await (const change of states) {
-      await update(change, undefined)
+    for await (const state of changed) {
+      await update(state, undefined)
     }
     return
   }
@@ -463,12 +453,23 @@ const playback_page = async (signal) => {
     const current = new AbortController()
     const attempt_signal = AbortSignal.any([signal, current.signal])
     const session = attempt(attempt_signal, create_buffer)
-    pending.set(session, session.next())
+    /** @type {Promise<IteratorResult<void, void>> | undefined} */
+    let progress = session.next()
     let transition = undefined
 
     try {
-      for await (const [source, result] of merge(attempt_signal, pending)) {
-        if (source === session) {
+      for (;;) {
+        const selected = await merge(
+          attempt_signal,
+          [changed, change],
+          ...(progress ? [/** @type {const} */ ([session, progress])] : []),
+        )
+        if (!selected) {
+          break
+        }
+        const [source, result] = selected
+        if (source !== changed) {
+          progress = undefined
           if (result.done) {
             break
           }
@@ -479,20 +480,19 @@ const playback_page = async (signal) => {
         if (state.done) {
           return
         }
-        pending.set(states, states.next())
+        change = changed.next()
         transition = await update(state.value, session.buffer)
         if (transition === restart || transition === retry) {
           break
         }
-        if (transition === resume && !pending.has(session)) {
-          pending.set(session, session.next())
+        if (transition === resume && progress === undefined) {
+          progress = session.next()
         }
       }
     } catch (error) {
       console.error(error)
     } finally {
       current.abort()
-      pending.delete(session)
       await session.return()
     }
 
