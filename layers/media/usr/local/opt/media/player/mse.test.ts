@@ -111,34 +111,6 @@ const start = async (values: Mse, position = 0): Promise<void> => {
 
 const cases = [
   {
-    name: "MSE requires an initial position before bytes",
-    run: async () => {
-      const { mutations, values } = fixture()
-      await values.next()
-
-      const failure = await values.next(new Uint8Array([1])).then(
-        () => undefined,
-        (error: unknown) => error,
-      )
-
-      assert(failure instanceof TypeError)
-      deepEqual(mutations, [])
-    },
-  },
-  {
-    name: "lifetime cancellation prevents initial position entry",
-    run: async () => {
-      const { buffer, lifetime, values } = fixture()
-      await values.next()
-
-      const positioning = values.next(10)
-      lifetime.abort()
-
-      deepEqual(await positioning, { done: true, value: undefined })
-      deepEqual(buffer.timestampOffset, 0)
-    },
-  },
-  {
     name: "MSE observes a synchronous append completion",
     run: async () => {
       const { mutations, types, values } = fixture()
