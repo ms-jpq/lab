@@ -4,7 +4,7 @@
 /** @typedef {{fail: (error: unknown) => void, recover: () => void}} FailureStorm */
 /** @typedef {{error: unknown, position: number}} SourceFailure */
 /** @typedef {{error: unknown, start: number}} SessionFailure */
-/** @typedef {{pending: Promise<IteratorResult<PageChange, void>>}} PageReader */
+/** @typedef {{changes: AsyncGenerator<PageChange, void, void>, pending: Promise<IteratorResult<PageChange, void>>}} PageReader */
 /** @typedef {{position: number, start: number} | SourceFailure} RetryChange */
 
 const BUFFER = {
@@ -41,21 +41,17 @@ const once = (target, signal, type) => {
   return promise
 }
 
-/** @param {AbortSignal | undefined} signal @param {EventTarget} target @param {...string} types */
+/** @param {AbortSignal} signal @param {EventTarget} target @param {...string} types */
 const first_event = async (signal, target, ...types) => {
-  if (signal?.aborted) {
+  if (signal.aborted) {
     return undefined
   }
   const listeners = new AbortController()
-  const listener_signal = signal
-    ? AbortSignal.any([signal, listeners.signal])
-    : listeners.signal
+  const listener_signal = AbortSignal.any([signal, listeners.signal])
   try {
     return await Promise.race([
       ...types.map((type) => once(target, listener_signal, type)),
-      ...(signal
-        ? [once(signal, listeners.signal, "abort").then(() => undefined)]
-        : []),
+      once(signal, listeners.signal, "abort").then(() => undefined),
     ])
   } finally {
     listeners.abort()
@@ -88,15 +84,12 @@ const failure_storm = () => {
   let failed = false
   return {
     fail: (error) => {
-      if (failed) {
-        return
+      if (!failed) {
+        failed = true
+        report(error)
       }
-      failed = true
-      report(error)
     },
-    recover: () => {
-      failed = false
-    },
+    recover: () => (failed = false),
   }
 }
 
@@ -357,12 +350,12 @@ const page_changes = async function* (signal, position) {
   }
 }
 
-/** @param {AsyncGenerator<PageChange, void, void>} changes @param {PageReader} page @param {IteratorResult<PageChange, void>} result */
-const advance_page = (changes, page, result) => {
+/** @param {PageReader} page @param {IteratorResult<PageChange, void>} result */
+const advance_page = (page, result) => {
   if (result.done) {
     return undefined
   }
-  page.pending = changes.next()
+  page.pending = page.changes.next()
   return result.value
 }
 
@@ -469,25 +462,15 @@ const play_subtitle = async (signal) => {
   }
   const failures = failure_storm()
   for (;;) {
-    try {
-      const loaded = first_event(signal, subtitle, "load", "error")
-      subtitle.src = source_url(subtitle, 0)
-      const event = await loaded
-      if (!event) {
-        return
-      }
-      if (event.type === "error") {
-        throw event
-      }
+    const loaded = first_event(signal, subtitle, "load", "error")
+    subtitle.src = source_url(subtitle, 0)
+    const event = await loaded
+    if (!event || event.type === "load") {
       return
-    } catch (error) {
-      if (signal.aborted) {
-        return
-      }
-      failures.fail(error)
-      if (!(await retry_delay(signal))) {
-        return
-      }
+    }
+    failures.fail(event)
+    if (!(await retry_delay(signal))) {
+      return
     }
   }
 }
@@ -540,8 +523,8 @@ const session = async function* (signal, buffer, time, failures) {
   }
 }
 
-/** @param {AbortSignal} signal @param {AsyncGenerator<PageChange, void, void>} changes @param {PageReader} page @param {number} position @param {number} start @returns {Promise<RetryChange | undefined>} */
-const wait_to_retry = async (signal, changes, page, position, start) => {
+/** @param {AbortSignal} signal @param {PageReader} page @param {number} position @param {number} start @returns {Promise<RetryChange | undefined>} */
+const wait_to_retry = async (signal, page, position, start) => {
   const timer = new AbortController()
   const delay = retry_delay(AbortSignal.any([signal, timer.signal]))
   const deadline = delay.then((result) => ({ delay: result }))
@@ -554,7 +537,7 @@ const wait_to_retry = async (signal, changes, page, position, start) => {
       if ("delay" in selected) {
         return selected.delay ? { position, start } : undefined
       }
-      const change = advance_page(changes, page, selected.page)
+      const change = advance_page(page, selected.page)
       if (change === undefined) {
         return undefined
       }
@@ -571,15 +554,8 @@ const wait_to_retry = async (signal, changes, page, position, start) => {
   }
 }
 
-/** @param {AbortSignal} signal @param {Mse} buffer @param {FailureStorm} failures @param {AsyncGenerator<PageChange, void, void>} changes @param {PageReader} page @param {number} position @returns {Promise<SourceFailure | undefined>} */
-const play_source = async (
-  signal,
-  buffer,
-  failures,
-  changes,
-  page,
-  position,
-) => {
+/** @param {AbortSignal} signal @param {Mse} buffer @param {FailureStorm} failures @param {PageReader} page @param {number} position @returns {Promise<SourceFailure | undefined>} */
+const play_source = async (signal, buffer, failures, page, position) => {
   let start = position
   try {
     for (;;) {
@@ -621,7 +597,7 @@ const play_source = async (
             continue
           }
 
-          const change = advance_page(changes, page, selected.page)
+          const change = advance_page(page, selected.page)
           if (change === undefined) {
             return undefined
           }
@@ -646,13 +622,7 @@ const play_source = async (
       }
 
       failures.fail(failure.error)
-      const waiting = await wait_to_retry(
-        signal,
-        changes,
-        page,
-        position,
-        failure.start,
-      )
+      const waiting = await wait_to_retry(signal, page, position, failure.start)
       if (waiting === undefined) {
         return undefined
       }
@@ -675,7 +645,7 @@ const play_media = async (signal) => {
     AbortSignal.any([signal, observation.signal]),
     position,
   )
-  const page = { pending: changes.next() }
+  const page = { changes, pending: changes.next() }
   const failures = failure_storm()
   /** @type {string | undefined} */
   let attached_url = undefined
@@ -697,9 +667,7 @@ const play_media = async (signal) => {
       attached_url = url
       /** @type {Mse | undefined} */
       let buffer = undefined
-      /** @type {{error: unknown} | undefined} */
-      let setup_failure = undefined
-      /** @type {SourceFailure | undefined} */
+      /** @type {SourceFailure | {setup: unknown} | undefined} */
       let failure = undefined
 
       try {
@@ -711,7 +679,7 @@ const play_media = async (signal) => {
         if (!selected) {
           return
         }
-        if (selected.type === "sourceclose") {
+        if (selected.type !== "sourceopen") {
           throw selected
         }
         const duration = Number(media.dataset.duration)
@@ -728,7 +696,6 @@ const play_media = async (signal) => {
           lifetime_signal,
           buffer,
           failures,
-          changes,
           page,
           position,
         )
@@ -740,20 +707,17 @@ const play_media = async (signal) => {
         if (lifetime_signal.aborted) {
           return
         }
-        setup_failure = { error }
+        failure = { setup: error }
       } finally {
         lifetime.abort()
         await buffer?.return()
       }
-      if (setup_failure) {
-        failures.fail(setup_failure.error)
-        const waiting = await wait_to_retry(
-          signal,
-          changes,
-          page,
-          position,
-          position,
-        )
+      if (!failure) {
+        return
+      }
+      if ("setup" in failure) {
+        failures.fail(failure.setup)
+        const waiting = await wait_to_retry(signal, page, position, position)
         if (!waiting) {
           return
         }

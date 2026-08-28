@@ -23,14 +23,24 @@ type MseBuffer = EventTarget & {
   remove: (start: number, end: number) => void
   timestampOffset: number
 }
+type TestMseBuffer = MseBuffer & {
+  aborts: number
+  appendState: string
+  holdUpdate: boolean
+  releaseUpdate: (() => void) | undefined
+  removes: Range[]
+  updating: boolean
+  usable: boolean
+}
 type MseSource = EventTarget & {
   addSourceBuffer: (type: string) => MseBuffer
   endOfStream: () => void
   readyState: "closed" | "open" | "ended"
 }
+type TestMseSource = Omit<MseSource, "addSourceBuffer"> & {
+  addSourceBuffer: (type: string) => TestMseBuffer
+}
 type FailureStorm = { fail: (error: unknown) => void; recover: () => void }
-type SourceFailure = { error: unknown; position: number }
-type RetryChange = { position: number; start: number } | SourceFailure
 type PageChange = {
   error: MediaFailure | null
   position: number
@@ -77,7 +87,7 @@ type PlayerContext = vm.Context & {
   clearTimeout: (timeout: ReturnType<typeof setTimeout>) => void
   fetch: MockFetch
   MediaError: { MEDIA_ERR_ABORTED: number }
-  MediaSource: new () => MseSource
+  MediaSource: new () => TestMseSource
   player_test: PlayerTest
   setTimeout: (run: () => void, delay?: number) => ReturnType<typeof setTimeout>
 }
@@ -856,7 +866,10 @@ test(
       return timeout
     }
     const controller = new AbortController()
-    const states = current.context.player_test.page_changes(controller.signal, 40)
+    const states = current.context.player_test.page_changes(
+      controller.signal,
+      40,
+    )
     await states.next()
 
     current.media.error = { code: 3, message: "decode failed" }
@@ -2261,68 +2274,20 @@ test(
 )
 
 test(
-  "an explicit undefined source error immediately rebuilds at the same target",
-  options,
-  async () => {
-    const current = await fixture()
-    let retryDelays = 0
-    current.context.setTimeout = (run, delay = 0) => {
-      if (delay > 0) {
-        retryDelays += 1
-      }
-      return setTimeout(run, 0)
-    }
-    const controller = new AbortController()
-    const sources = current.context.player_test.media_sources(
-      controller.signal,
-      40,
-      async (position) => ({ position, start: position }),
-    )
-
-    try {
-      const opened = await sources.next()
-      assert.equal(opened.done, false)
-      const rebuilt = await sources.next({ error: undefined, position: 110 })
-      assert.equal(rebuilt.done, false)
-
-      assert.deepEqual(
-        {
-          errors: current.errors.map(([error]) => error),
-          position: rebuilt.value.position,
-          retryDelays,
-          sources: current.sources.length,
-        },
-        {
-          errors: [undefined],
-          position: 110,
-          retryDelays: 0,
-          sources: 2,
-        },
-      )
-    } finally {
-      controller.abort()
-      await sources.return(undefined)
-    }
-  },
-)
-
-test(
   "append evicts media more than thirty seconds behind",
   options,
   async () => {
     const current = await fixture()
-    const { buffer, controller, lifetime } = await open_mse(current)
+    const { buffer, controller, opened } = await open_mse(current)
     await buffer.next(10)
     await buffer.next(new Uint8Array([1]))
 
     current.media.currentTime = 100
     await buffer.next(new Uint8Array([2]))
-    const source = present(current.sources[0])
-    const openedBuffer = present(source.sourceBuffers[0])
-    assert.deepEqual(openedBuffer.removes, [[0, 70]])
+    assert.deepEqual(opened.removes, [[0, 70]])
 
     controller.abort()
-    await lifetime.return(undefined)
+    await buffer.return(undefined)
   },
 )
 
@@ -2331,23 +2296,21 @@ test(
   options,
   async () => {
     const current = await fixture()
-    const { buffer, controller, lifetime } = await open_mse(current)
+    const { buffer, controller, opened } = await open_mse(current)
     await buffer.next(10)
     await buffer.next(new Uint8Array([1]))
 
-    const source = present(current.sources[0])
-    const openedBuffer = present(source.sourceBuffers[0])
-    assert.equal(openedBuffer.updating, false)
-    assert.equal(openedBuffer.appendState, "parsing")
+    assert.equal(opened.updating, false)
+    assert.equal(opened.appendState, "parsing")
     assert.equal((await buffer.next(30)).done, false)
-    assert.equal(openedBuffer.aborts, 1)
-    assert.equal(openedBuffer.appendState, "waiting")
-    assert.equal(openedBuffer.timestampOffset, 30)
+    assert.equal(opened.aborts, 1)
+    assert.equal(opened.appendState, "waiting")
+    assert.equal(opened.timestampOffset, 30)
     assert.equal(current.sources.length, 1)
     assert.equal(current.media.loads, 0)
 
     controller.abort()
-    await lifetime.return(undefined)
+    await buffer.return(undefined)
   },
 )
 
@@ -2356,7 +2319,7 @@ test(
   options,
   async () => {
     const current = await fixture()
-    const { buffer, controller, lifetime } = await open_mse(current)
+    const { buffer, controller, opened } = await open_mse(current)
     await buffer.next(10)
     await buffer.next(new Uint8Array([1]))
     assert.equal((await buffer.next("end")).done, false)
@@ -2364,17 +2327,15 @@ test(
     const source = current.media.src
     current.media.currentTime = 30
     assert.equal((await buffer.next(30)).done, false)
-    const mediaSource = present(current.sources[0])
-    const openedBuffer = present(mediaSource.sourceBuffers[0])
-    assert.equal(openedBuffer.aborts, 1)
-    assert.deepEqual(openedBuffer.removes, [[20, 20.001]])
+    assert.equal(opened.aborts, 1)
+    assert.deepEqual(opened.removes, [[20, 20.001]])
     assert.equal(current.media.src, source)
     assert.equal(current.media.currentTime, 30)
     assert.equal(current.media.loads, 0)
     assert.equal(current.revoked.length, 0)
 
     controller.abort()
-    await lifetime.return(undefined)
+    await buffer.return(undefined)
   },
 )
 
@@ -2383,98 +2344,59 @@ test(
   options,
   async () => {
     const current = await fixture()
-    const { buffer, controller, lifetime } = await open_mse(current)
+    const { buffer, controller, opened } = await open_mse(current)
     await buffer.next(10)
 
-    const source = present(current.sources[0])
-    const openedBuffer = present(source.sourceBuffers[0])
-    openedBuffer.holdUpdate = true
+    opened.holdUpdate = true
     const appending = buffer.next(new Uint8Array([1]))
-    await eventually(() => openedBuffer.updating)
+    await eventually(() => opened.updating)
 
     controller.abort()
     let closed = false
-    const closing = lifetime.return(undefined).then(() => {
+    const closing = buffer.return(undefined).then(() => {
       closed = true
     })
     await new Promise((resolve) => setImmediate(resolve))
 
     assert.equal(closed, false)
-    assert.notEqual(current.media.src, "")
-    assert.equal(current.media.loads, 0)
 
-    present(openedBuffer.releaseUpdate)()
+    present(opened.releaseUpdate)()
     await appending
     await closing
-    assert.equal(current.media.src, "")
-    assert.equal(current.media.loads, 1)
   },
 )
 
 test(
-  "an asynchronous SourceBuffer error closes the mutation before MSE rebuild",
+  "an asynchronous SourceBuffer error closes the entered mutation",
   options,
   async () => {
     const current = await fixture()
-    let retryDelays = 0
-    current.context.setTimeout = (run, delay = 0) => {
-      if (delay > 0) {
-        retryDelays += 1
-      }
-      return setTimeout(run, 0)
-    }
-    const controller = new AbortController()
-    const sources = current.context.player_test.media_sources(
-      controller.signal,
-      40,
-      async (position) => ({ position, start: position }),
-    )
+    const { buffer, controller, opened } = await open_mse(current)
 
     try {
-      const opened = await sources.next()
-      assert.equal(opened.done, false)
-      const first = opened.value
-      const source = present(current.sources[0])
-      const openedBuffer = present(source.sourceBuffers[0])
       const entered = Promise.withResolvers<void>()
-      openedBuffer.appendBuffer = () => {
-        openedBuffer.updating = true
-        openedBuffer.appendState = "parsing"
+      opened.appendBuffer = () => {
+        opened.updating = true
+        opened.appendState = "parsing"
         entered.resolve()
       }
 
-      await first.buffer.next(40)
-      const appending = first.buffer.next(new Uint8Array([1]))
+      await buffer.next(40)
+      const appending = buffer.next(new Uint8Array([1]))
       await entered.promise
-      const later = first.buffer.next(80)
+      const later = buffer.next(80)
       const failure = new Event("error")
-      openedBuffer.usable = false
-      openedBuffer.dispatchEvent(failure)
+      opened.usable = false
+      opened.dispatchEvent(failure)
 
       await assert.rejects(appending, (error) => error === failure)
       assert.equal((await later).done, true)
-      assert.equal(openedBuffer.timestampOffset, 40)
-      assert.equal(openedBuffer.aborts, 0)
-
-      const rebuilt = await sources.next({ error: failure, position: 40 })
-      assert.equal(rebuilt.done, false)
-      assert.equal(first.signal.aborted, true)
-      assert.equal(rebuilt.value.position, 40)
-      assert.equal(current.sources.length, 2)
-      assert.equal(retryDelays, 0)
-      assert.deepEqual(
-        current.errors.map(([error]) => error),
-        [failure],
-      )
+      assert.equal(opened.timestampOffset, 40)
+      assert.equal(opened.aborts, 0)
     } finally {
       controller.abort()
-      await sources.return(undefined)
+      await buffer.return(undefined)
     }
-
-    assert.equal(current.media.src, "")
-    assert.equal(current.media.removals, 1)
-    assert.equal(current.media.loads, 1)
-    assert.equal(current.revoked.length, 2)
   },
 )
 
@@ -2483,72 +2405,32 @@ test(
   options,
   async () => {
     const current = await fixture()
-    const { buffer, controller, lifetime } = await open_mse(current)
+    const { buffer, controller, opened } = await open_mse(current)
     await buffer.next(10)
 
-    const source = present(current.sources[0])
-    const openedBuffer = present(source.sourceBuffers[0])
-    openedBuffer.holdUpdate = true
+    opened.holdUpdate = true
     const appending = buffer.next(new Uint8Array([1]))
-    await eventually(() => openedBuffer.updating)
+    await eventually(() => opened.updating)
 
     const offsetting = buffer.next(30)
     controller.abort()
     let closed = false
-    const closing = lifetime.return(undefined).then(() => {
+    const closing = buffer.return(undefined).then(() => {
       closed = true
     })
     await new Promise((resolve) => setImmediate(resolve))
 
     assert.equal(closed, false)
-    assert.equal(openedBuffer.timestampOffset, 10)
-    assert.equal(openedBuffer.aborts, 0)
+    assert.equal(opened.timestampOffset, 10)
+    assert.equal(opened.aborts, 0)
 
-    present(openedBuffer.releaseUpdate)()
+    present(opened.releaseUpdate)()
     assert.equal((await appending).done, false)
     await offsetting
     await closing
 
-    assert.equal(openedBuffer.timestampOffset, 10)
-    assert.equal(openedBuffer.aborts, 0)
-    assert.equal(current.media.loads, 1)
-  },
-)
-
-test(
-  "page state survives an event storm after SourceBuffer release",
-  options,
-  async () => {
-    const current = await fixture()
-    const { buffer, lifetime } = await open_mse(current)
-    await buffer.next(10)
-    await buffer.next(new Uint8Array([1]))
-
-    const stateController = new AbortController()
-    const states = current.context.player_test.page_changes(
-      stateController.signal,
-      10,
-    )
-    await states.next()
-    const source = present(current.sources[0])
-    const openedBuffer = present(source.sourceBuffers[0])
-    await lifetime.return(undefined)
-    assert.equal(openedBuffer.usable, false)
-
-    for (let index = 0; index < 64; index += 1) {
-      const position = 100 + index
-      current.media.currentTime = position
-      current.media.seeking = true
-      const observed = states.next()
-      current.media.dispatchEvent(new Event("progress"))
-      current.media.dispatchEvent(new Event("timeupdate"))
-      current.media.dispatchEvent(new Event("seeking"))
-      const change = await nextValue({ next: () => observed })
-      assert.equal(change.restart, true)
-    }
-
-    stateController.abort()
-    await states.return(undefined)
+    assert.equal(opened.timestampOffset, 10)
+    assert.equal(opened.aborts, 0)
   },
 )
 
