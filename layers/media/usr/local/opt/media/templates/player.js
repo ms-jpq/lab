@@ -93,10 +93,11 @@ const failure_storm = () => {
   let failed = false
   return {
     fail: (error) => {
-      if (!failed) {
-        failed = true
-        report(error)
+      if (failed) {
+        return
       }
+      failed = true
+      report(error)
     },
     recover: () => {
       failed = false
@@ -471,7 +472,6 @@ const session = async function* (signal, buffer, time, failures) {
 /** @param {AbortSignal} signal @param {number} position @returns {AsyncGenerator<PlaybackSource, void, SourceFailure>} */
 const media_sources = async function* (signal, position) {
   const failures = failure_storm()
-
   /** @type {string | undefined} */
   let attached_url = undefined
   try {
@@ -548,15 +548,7 @@ const media_sources = async function* (signal, position) {
 }
 
 /** @param {AbortSignal} signal @param {Mse} buffer @param {AsyncGenerator<PageChange, void, void>} changes @param {PageReader} page @param {number} position @param {number} start @param {FailureStorm} failures @returns {Promise<AttemptChange>} */
-const play_attempt = async (
-  signal,
-  buffer,
-  changes,
-  page,
-  position,
-  start,
-  failures,
-) => {
+const play_attempt = async (signal, buffer, changes, page, position, start, failures) => {
   const attempt = new AbortController()
   const attempt_signal = AbortSignal.any([signal, attempt.signal])
   const current = session(attempt_signal, buffer, start, failures)
@@ -641,12 +633,7 @@ const wait_to_retry = async (signal, changes, page, position, start) => {
 }
 
 /** @param {PlaybackSource} source @returns {Promise<SourceFailure | undefined>} */
-const play_source = async ({
-  buffer,
-  failures,
-  position,
-  signal,
-}) => {
+const play_source = async ({ buffer, failures, position, signal }) => {
   const observation = new AbortController()
   const changes = page_changes(
     AbortSignal.any([signal, observation.signal]),

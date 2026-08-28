@@ -2384,28 +2384,8 @@ test(
   options,
   async () => {
     const current = await fixture()
+    const clock = frozenClock(current.context)
     const requests: string[] = []
-    let advance: (() => void) | undefined = undefined
-    let timerCallbacks = 0
-    let timerCancellations = 0
-    let timers = 0
-    current.context.clearTimeout = (timeout) => {
-      timerCancellations += 1
-      clearTimeout(timeout)
-    }
-    current.context.setTimeout = (run) => {
-      timers += 1
-      const invoke = () => {
-        timerCallbacks += 1
-        run()
-      }
-      const timeout = setTimeout(invoke, 10_000)
-      advance = () => {
-        clearTimeout(timeout)
-        invoke()
-      }
-      return timeout
-    }
     current.context.fetch = async (url, { signal }) => {
       requests.push(String(url))
       if (requests.length === 1) {
@@ -2431,27 +2411,27 @@ test(
       controller.signal,
     )
     try {
-      await eventually(() => timers === 1)
+      await eventually(() => clock.length === 1)
       for (let event = 0; event < 64; event += 1) {
         current.media.dispatchEvent(new Event("timeupdate"))
         current.media.dispatchEvent(new Event("progress"))
         await new Promise((resolve) => setImmediate(resolve))
       }
 
-      assert.equal(timers, 1)
-      assert.equal(timerCallbacks, 0)
-      assert.equal(timerCancellations, 0)
+      assert.equal(clock.length, 1)
+      assert.equal(clock.callbacks, 0)
+      assert.equal(clock.cancellations, 0)
       assert.deepEqual(
         requests.map((url) => new URL(url).searchParams.get("t")),
         ["40"],
       )
 
-      present<() => void>(advance)()
+      clock.advance(0)
       await eventually(() => requests.length === 2)
 
-      assert.equal(timers, 1)
-      assert.equal(timerCallbacks, 1)
-      assert.equal(timerCancellations, 0)
+      assert.equal(clock.length, 1)
+      assert.equal(clock.callbacks, 1)
+      assert.equal(clock.cancellations, 0)
       assert.deepEqual(
         requests.map((url) => new URL(url).searchParams.get("t")),
         ["40", "40"],
@@ -2461,6 +2441,7 @@ test(
     } finally {
       controller.abort()
       await playback
+      clock.dispose()
     }
   },
 )
@@ -2470,21 +2451,8 @@ test(
   options,
   async () => {
     const current = await fixture()
+    const clock = frozenClock(current.context)
     const requests: string[] = []
-    let timerCallbacks = 0
-    let timerCancellations = 0
-    let timers = 0
-    current.context.clearTimeout = (timeout) => {
-      timerCancellations += 1
-      clearTimeout(timeout)
-    }
-    current.context.setTimeout = (run) => {
-      timers += 1
-      return setTimeout(() => {
-        timerCallbacks += 1
-        run()
-      }, 10_000)
-    }
     current.context.fetch = async (url, { signal }) => {
       requests.push(String(url))
       if (requests.length === 1) {
@@ -2510,7 +2478,7 @@ test(
       controller.signal,
     )
     try {
-      await eventually(() => timers === 1)
+      await eventually(() => clock.length === 1)
       current.media.currentTime = 110
       current.media.seeking = true
       current.media.dispatchEvent(new Event("seeking"))
@@ -2522,9 +2490,9 @@ test(
         requests.map((url) => new URL(url).searchParams.get("t")),
         ["40", "110"],
       )
-      assert.equal(timers, 1)
-      assert.equal(timerCallbacks, 0)
-      assert.equal(timerCancellations, 1)
+      assert.equal(clock.length, 1)
+      assert.equal(clock.callbacks, 0)
+      assert.equal(clock.cancellations, 1)
       assert.equal(current.timeInput.value, "110")
       assert.equal(current.media.currentTime, 110)
       assert.equal(current.sources.length, 1)
@@ -2532,6 +2500,7 @@ test(
     } finally {
       controller.abort()
       await playback
+      clock.dispose()
     }
   },
 )
@@ -2698,16 +2667,8 @@ test(
     const firstFailure = new Error("first request outage")
     const parserFailure = new Error("parser-only retry outage")
     const recoveredFailure = new Error("post-recovery outage")
-    const advance: Array<() => void> = []
+    const clock = frozenClock(current.context)
     let requests = 0
-    current.context.setTimeout = (run) => {
-      const timeout = setTimeout(run, 10_000)
-      advance.push(() => {
-        clearTimeout(timeout)
-        run()
-      })
-      return timeout
-    }
     const originalAddSourceBuffer =
       current.context.MediaSource.prototype.addSourceBuffer
     current.context.MediaSource.prototype.addSourceBuffer = function (
@@ -2761,11 +2722,11 @@ test(
       controller.signal,
     )
     try {
-      await eventually(() => advance.length === 1)
-      present(advance[0])()
-      await eventually(() => advance.length === 2)
-      present(advance[1])()
-      await eventually(() => advance.length === 3)
+      await eventually(() => clock.length === 1)
+      clock.advance(0)
+      await eventually(() => clock.length === 2)
+      clock.advance(1)
+      await eventually(() => clock.length === 3)
 
       assert.deepEqual(
         current.errors.map(([error]) => error),
@@ -2777,6 +2738,7 @@ test(
     } finally {
       controller.abort()
       await playback
+      clock.dispose()
     }
   },
 )
@@ -2786,17 +2748,7 @@ test(
   options,
   async () => {
     const current = await fixture()
-    const scheduled: Array<ReturnType<typeof setTimeout>> = []
-    let timerCancellations = 0
-    current.context.clearTimeout = (timeout) => {
-      timerCancellations += 1
-      clearTimeout(timeout)
-    }
-    current.context.setTimeout = (run) => {
-      const timeout = setTimeout(run, 10_000)
-      scheduled.push(timeout)
-      return timeout
-    }
+    const clock = frozenClock(current.context)
     const parent = new AbortController()
     const playback = current.context.player_test.playback_page(parent.signal)
     let outcome:
@@ -2821,7 +2773,7 @@ test(
       const source = present(current.sources[0])
       const buffer = present(source.sourceBuffers[0])
       current.subtitle.dispatchEvent(new Event("error"))
-      await eventually(() => scheduled.length === 1)
+      await eventually(() => clock.length === 1)
       const subtitleRequests = current.subtitle.sources.length
       const reporterFailure = new Error("media diagnostic failed")
       let reports = 0
@@ -2842,7 +2794,7 @@ test(
       })
       assert.equal(reports, 1)
       assert.equal(parent.signal.aborted, false)
-      assert.equal(timerCancellations, 1)
+      assert.equal(clock.cancellations, 1)
       assert.equal(current.subtitle.sources.length, subtitleRequests)
       assert.equal(current.media.src, "")
       assert.equal(current.media.loads, 1)
@@ -2856,6 +2808,7 @@ test(
     } finally {
       parent.abort()
       await observed
+      clock.dispose()
     }
   },
 )
