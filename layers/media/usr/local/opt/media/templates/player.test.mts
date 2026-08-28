@@ -22,7 +22,7 @@ type MediaObservation = {
 }
 type MseOperation = "end" | number | Uint8Array
 type Mse = AsyncGenerator<void, void, MseOperation | undefined>
-type SourceChange = { position: number } | { error: unknown; position: number }
+type SourceFailure = { error: unknown; position: number }
 type PageChange = {
   error: MediaFailure | null
   position: number
@@ -35,7 +35,7 @@ type PlayerTest = {
   ) => AsyncGenerator<MediaObservation[], void, void>
   media_sources: AsyncGeneratorFactory<
     { buffer: Mse; position: number; signal: AbortSignal },
-    SourceChange
+    SourceFailure
   >
   page_changes: AsyncGeneratorFactory<PageChange>
   play_subtitle: (signal: AbortSignal) => Promise<void>
@@ -449,9 +449,6 @@ const fixture = async (position = 40) => {
       this.readyState = "ended"
     }
 
-    removeSourceBuffer(buffer: SourceBuffer): void {
-      this.sourceBuffers = this.sourceBuffers.filter((item) => item !== buffer)
-    }
   }
   class PlayerURL extends URL {
     static override createObjectURL(
@@ -538,7 +535,7 @@ const fixture = async (position = 40) => {
   }) as PlayerContext
   const source = await readFile(PLAYER, "utf8")
   vm.runInContext(
-    `${source}\nglobalThis.player_test = { buffered_position, media_observation_batches, media_sources, page_changes, play_subtitle, playback_page, playable_position, session, source_stream, source_url, stream_position }`,
+    `${source}\nglobalThis.player_test = { buffered_position, media_observation_batches, media_sources, page_changes, play_subtitle, playback_page, playable_position, session, source_stream }`,
     context,
   )
   const { ranges } = media.buffered
@@ -2624,6 +2621,8 @@ test(
     assert.equal(current.media.loads, 1)
     assert.equal(playRejections, 1)
     assert.equal(activeReaders, 0)
+    assert.equal(current.sources.length, 2)
+    assert.equal(retryDelays, 0)
     assert.deepEqual(current.revoked, [oldUrl, newUrl])
   },
 )
