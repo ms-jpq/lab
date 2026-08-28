@@ -297,8 +297,8 @@ const page_states = (signal, position) => {
   })()
 }
 
-/** @param {AbortSignal} signal @param {HTMLMediaElement} media @param {() => void} [disconnect] @returns {Mse} */
-const mse = (signal, media, disconnect = () => {}) => {
+/** @param {AbortSignal} signal @param {HTMLMediaElement} media @param {() => void} [disconnect] @returns {AsyncGenerator<Mse, void, void>} */
+const mse = async function* (signal, media, disconnect = () => {}) {
   const { ManagedMediaSource } =
     /** @type {typeof globalThis & { ManagedMediaSource?: typeof MediaSource }} */ (
       globalThis
@@ -306,107 +306,118 @@ const mse = (signal, media, disconnect = () => {}) => {
   const source = new (ManagedMediaSource ?? MediaSource)()
   const type = /** @type {string} */ (media.dataset.mseType)
   const duration = Number(media.dataset.duration)
+  const opened = select(
+    signal,
+    (s) => once(source, s, "sourceopen"),
+    (s) =>
+      once(source, s, "sourceclose").then((event) => {
+        throw event
+      }),
+  )
+  const url = URL.createObjectURL(source)
+  media.src = url
 
-  /** @returns {AsyncGenerator<void, void, MseOperation | undefined>} */
-  const operations = async function* () {
-    const opened = select(
-      signal,
-      (s) => once(source, s, "sourceopen"),
-      (s) =>
-        once(source, s, "sourceclose").then((e) => {
-          throw e
-        }),
-    )
-    const url = URL.createObjectURL(source)
-    media.src = url
-
-    try {
-      const selected = await opened
-      if (!selected) {
-        return
-      }
-      if (duration > 0) {
-        source.duration = duration
-      }
-
-      const opened_buffer = source.addSourceBuffer(type)
-
-      /** @param {() => void} mutate */
-      const update = async (mutate) => {
-        if (signal.aborted) {
-          return false
-        }
-        const settled = new AbortController()
-        try {
-          mutate()
-          await Promise.race([
-            once(opened_buffer, settled.signal, "updateend"),
-            once(opened_buffer, settled.signal, "error"),
-          ])
-          return true
-        } finally {
-          settled.abort()
-        }
-      }
-
-      let started = false
-      for (
-        let operation = yield undefined;
-        operation !== undefined;
-        operation = yield undefined
-      ) {
-        if (operation === "end") {
-          source.endOfStream()
-          continue
-        }
-        if (typeof operation === "number") {
-          if (started) {
-            if (source.readyState === "ended") {
-              const ranges = opened_buffer.buffered
-              const end = ranges.length ? ranges.end(ranges.length - 1) : 0
-              if (
-                !(await update(() => opened_buffer.remove(end, end + 0.001)))
-              ) {
-                return
-              }
-            }
-            opened_buffer.abort()
-          }
-          opened_buffer.timestampOffset = operation
-          started = true
-          continue
-        }
-
-        const expired = media.currentTime - BUFFER.BEHIND
-        const ranges = opened_buffer.buffered
-        if (
-          expired > 0 &&
-          ranges.length &&
-          ranges.start(0) < expired &&
-          !(await update(() => opened_buffer.remove(0, expired)))
-        ) {
-          return
-        }
-        if (
-          !(await update(() =>
-            opened_buffer.appendBuffer(
-              /** @type {Uint8Array<ArrayBuffer>} */ (operation),
-            ),
-          ))
-        ) {
-          return
-        }
-      }
-    } finally {
-      disconnect()
-      media.removeAttribute("src")
-      media.load()
-      URL.revokeObjectURL(url)
+  try {
+    const selected = await opened
+    if (!selected) {
+      return
     }
-    return
-  }
+    if (duration > 0) {
+      source.duration = duration
+    }
 
-  return operations()
+    const opened_buffer = source.addSourceBuffer(type)
+
+    /** @param {() => void} mutate */
+    const update = async (mutate) => {
+      if (signal.aborted) {
+        return false
+      }
+      const settled = new AbortController()
+      try {
+        mutate()
+        await Promise.race([
+          once(opened_buffer, settled.signal, "updateend"),
+          once(opened_buffer, settled.signal, "error"),
+        ])
+        return true
+      } finally {
+        settled.abort()
+      }
+    }
+
+    /** @returns {Mse} */
+    const operations = async function* () {
+      let started = false
+      try {
+        for (
+          let operation = yield undefined;
+          operation !== undefined;
+          operation = yield undefined
+        ) {
+          if (operation === "end") {
+            source.endOfStream()
+            continue
+          }
+          if (typeof operation === "number") {
+            if (started) {
+              if (source.readyState === "ended") {
+                const ranges = opened_buffer.buffered
+                const end = ranges.length ? ranges.end(ranges.length - 1) : 0
+                if (
+                  !(await update(() =>
+                    opened_buffer.remove(end, end + 0.001),
+                  ))
+                ) {
+                  return
+                }
+              }
+              opened_buffer.abort()
+            }
+            opened_buffer.timestampOffset = operation
+            started = true
+            continue
+          }
+
+          const expired = media.currentTime - BUFFER.BEHIND
+          const ranges = opened_buffer.buffered
+          if (
+            expired > 0 &&
+            ranges.length &&
+            ranges.start(0) < expired &&
+            !(await update(() => opened_buffer.remove(0, expired)))
+          ) {
+            return
+          }
+          if (
+            !(await update(() =>
+              opened_buffer.appendBuffer(
+                /** @type {Uint8Array<ArrayBuffer>} */ (operation),
+              ),
+            ))
+          ) {
+            return
+          }
+        }
+      } catch (error) {
+        disconnect()
+        throw error
+      }
+      return
+    }
+
+    const buffer = operations()
+    try {
+      yield buffer
+    } finally {
+      await buffer.return()
+    }
+  } finally {
+    media.removeAttribute("src")
+    media.load()
+    URL.revokeObjectURL(url)
+  }
+  return
 }
 
 /** @param {AbortSignal} signal @param {number} time */
@@ -478,10 +489,17 @@ const media_sources = async function* (signal, position) {
   for (;;) {
     const lifetime = new AbortController()
     const lifetime_signal = AbortSignal.any([signal, lifetime.signal])
-    const buffer = mse(lifetime_signal, media, () => lifetime.abort())
+    const attachment = mse(lifetime_signal, media, () => lifetime.abort())
+    /** @type {Mse | undefined} */
+    let buffer = undefined
     let retry = false
 
     try {
+      const opened = await attachment.next()
+      if (opened.done) {
+        return
+      }
+      buffer = opened.value
       if ((await buffer.next()).done) {
         return
       }
@@ -497,7 +515,8 @@ const media_sources = async function* (signal, position) {
       retry = await retry_delay(signal)
     } finally {
       lifetime.abort()
-      await buffer.return()
+      await buffer?.return()
+      await attachment.return()
     }
 
     if (!retry) {
