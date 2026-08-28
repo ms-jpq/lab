@@ -170,8 +170,23 @@ const page_states = (signal) => {
 }
 
 /** @param {MediaSource} source @param {SourceBuffer} buffer */
+const mse_attached = (source, buffer) =>
+  source.readyState !== "closed" &&
+  Array.from(source.sourceBuffers).includes(buffer)
+
+/** @param {AbortSignal} signal @param {MediaSource} source @param {SourceBuffer} buffer */
+const mse_writable = (signal, source, buffer) =>
+  !signal.aborted &&
+  source.readyState === "open" &&
+  mse_attached(source, buffer)
+
+/** @param {MediaSource} source @param {SourceBuffer} buffer */
 const abort_mse_update = async (source, buffer) => {
-  if (source.readyState !== "open" || !buffer.updating) {
+  if (
+    source.readyState !== "open" ||
+    !mse_attached(source, buffer) ||
+    !buffer.updating
+  ) {
     return
   }
   const aborted = once(buffer, undefined, "updateend")
@@ -181,7 +196,7 @@ const abort_mse_update = async (source, buffer) => {
 
 /** @param {AbortSignal} signal @param {MediaSource} source @param {SourceBuffer} buffer @param {() => void} mutate */
 const mse_update = async (signal, source, buffer, mutate) => {
-  if (signal.aborted || source.readyState !== "open") {
+  if (!mse_writable(signal, source, buffer)) {
     return false
   }
   const settled = select(
@@ -219,6 +234,9 @@ const mse_operations = async function* (signal, source, buffer) {
       operation !== undefined;
       operation = yield undefined
     ) {
+      if (!mse_writable(signal, source, buffer)) {
+        return
+      }
       if (typeof operation === "number") {
         buffer.timestampOffset = operation
         continue
@@ -242,12 +260,12 @@ const mse_operations = async function* (signal, source, buffer) {
         return
       }
     }
-    if (source.readyState === "open") {
+    if (source.readyState === "open" && mse_attached(source, buffer)) {
       source.endOfStream()
     }
   } finally {
     await abort_mse_update(source, buffer)
-    if (source.readyState !== "closed") {
+    if (mse_attached(source, buffer)) {
       source.removeSourceBuffer(buffer)
     }
   }
@@ -259,10 +277,14 @@ const mse_buffer = (signal, source, type) => {
   const buffer = source.addSourceBuffer(type)
   return Object.assign(mse_operations(signal, source, buffer), {
     /** @param {number} position */
-    contains: (position) => mse_contains(buffer, position),
-    frontier: () => mse_frontier(buffer),
+    contains: (position) =>
+      mse_attached(source, buffer) && mse_contains(buffer, position),
+    frontier: () =>
+      mse_attached(source, buffer) ? mse_frontier(buffer) : undefined,
     /** @param {number} position */
-    play_ahead: (position) => (mse_frontier(buffer) ?? position) - position,
+    play_ahead: (position) =>
+      ((mse_attached(source, buffer) ? mse_frontier(buffer) : undefined) ??
+        position) - position,
   })
 }
 
@@ -373,7 +395,7 @@ const sessions = (signal, create_buffer) => {
           if ((await buffer.next([media.currentTime, bytes])).done) {
             break streaming
           }
-          if (!ready && buffer.contains(time)) {
+          if (!ready && buffer.frontier() !== undefined) {
             ready = true
             if (subtitle) {
               subtitle.src = source_url(subtitle, time)
