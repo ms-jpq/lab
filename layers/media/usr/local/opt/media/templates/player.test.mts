@@ -19,11 +19,11 @@ type Mse = AsyncGenerator<void, void, MseOperation | undefined>
 type SourceChange = {
   error?: unknown
   position: number
-  reset: boolean
 }
 type PageChange = {
   error: MediaFailure | null
   position: number
+  queued: boolean
   seek: number | undefined
 }
 type PlayerTest = {
@@ -112,6 +112,7 @@ class Media extends EventTarget {
   seeking: boolean
   private _src: string
   loads: number
+  listenerCalls: number
   readyState: number
   onLoad: (() => void) | undefined
 
@@ -130,7 +131,31 @@ class Media extends EventTarget {
     this.seeking = false
     this._src = ""
     this.loads = 0
+    this.listenerCalls = 0
     this.readyState = 0
+  }
+
+  override addEventListener(
+    type: string,
+    callback: EventListenerOrEventListenerObject | null,
+    options?: AddEventListenerOptions | boolean,
+  ): void {
+    if (!callback) {
+      super.addEventListener(type, callback, options)
+      return
+    }
+    super.addEventListener(
+      type,
+      (event) => {
+        this.listenerCalls += 1
+        if (typeof callback === "function") {
+          callback.call(this, event)
+        } else {
+          callback.handleEvent(event)
+        }
+      },
+      options,
+    )
   }
 
   get currentTime() {
@@ -646,6 +671,25 @@ test(
     await aligned
     assert.equal(current.media.currentTime, 40)
     controller.abort()
+  },
+)
+
+test(
+  "returning page states detaches observers from a live parent",
+  options,
+  async () => {
+    const current = await fixture()
+    const parent = new AbortController()
+    const states = current.context.player_test.page_states(parent.signal, 40)
+    await states.next()
+    const calls = current.media.listenerCalls
+
+    await states.return(undefined)
+    assert.equal(parent.signal.aborted, false)
+    current.media.dispatchEvent(new Event("timeupdate"))
+
+    assert.equal(current.media.listenerCalls, calls)
+    assert.equal((await states.next()).done, true)
   },
 )
 
