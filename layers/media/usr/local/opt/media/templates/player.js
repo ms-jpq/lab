@@ -473,16 +473,22 @@ const media_sources = async function* (signal, position) {
         "sourceclose",
       )
       const url = URL.createObjectURL(source)
+      const previous_url = attached_url
       media.src = url
-      if (attached_url) {
-        URL.revokeObjectURL(attached_url)
-      }
       attached_url = url
       /** @type {Mse | undefined} */
       let buffer = undefined
 
       try {
-        if (!(await opened)) {
+        let selected
+        try {
+          selected = await opened
+        } finally {
+          if (previous_url) {
+            URL.revokeObjectURL(previous_url)
+          }
+        }
+        if (!selected) {
           return
         }
         const duration = Number(media.dataset.duration)

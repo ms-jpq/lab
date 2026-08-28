@@ -461,6 +461,7 @@ const fixture = async (position = 40) => {
       const url = `blob:player-${crypto.randomUUID()}`
       queueMicrotask(() => {
         source.readyState = "open"
+        media.topology.push(`open:${url}`)
         source.dispatchEvent(new Event("sourceopen"))
       })
       return url
@@ -1624,6 +1625,112 @@ test(
 )
 
 test(
+  "a stalled playhead retains its exact buffered frontier for retry",
+  options,
+  async () => {
+    const current = await fixture()
+    const failed = Promise.withResolvers<ReadableStreamReadResult<Uint8Array>>()
+    const retried = Promise.withResolvers<string>()
+    const retry: Array<() => void> = []
+    const requests: string[] = []
+    let firstReads = 0
+    current.context.setTimeout = (run) => {
+      const timeout = setTimeout(run, 10_000)
+      retry.push(() => {
+        clearTimeout(timeout)
+        run()
+      })
+      return timeout
+    }
+    current.context.fetch = async (url, { signal }) => {
+      const request = String(url)
+      const index = requests.push(request) - 1
+      if (index === 1) {
+        retried.resolve(request)
+      }
+      return {
+        body: {
+          getReader: () => ({
+            cancel: async () => {},
+            read: async () => {
+              if (index === 0) {
+                firstReads += 1
+                return firstReads === 1
+                  ? {
+                      done: false as const,
+                      value: new Uint8Array([1]),
+                    }
+                  : failed.promise
+              }
+              if (signal.aborted) {
+                return { done: true as const, value: undefined }
+              }
+              return new Promise<ReadableStreamReadResult<Uint8Array>>(
+                (resolve) => {
+                  signal.addEventListener(
+                    "abort",
+                    () => resolve({ done: true, value: undefined }),
+                    { once: true },
+                  )
+                },
+              )
+            },
+          }),
+        },
+        ok: true,
+        status: 200,
+        statusText: "OK",
+      }
+    }
+
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    try {
+      while (current.sources[0]?.sourceBuffers[0]?.buffered.length !== 1) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+      const source = present(current.sources[0])
+      const buffer = present(source.sourceBuffers[0])
+      buffer.buffered.ranges = [[40, 55]]
+      current.media.buffered.ranges = [[40, 55]]
+      while (current.media.currentTime !== 40) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+      current.media.currentTime = 55
+
+      failed.reject(new Error("request failed at the buffered frontier"))
+      while (retry.length !== 1) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+      present(retry[0])()
+      const request = new URL(await retried.promise)
+
+      assert.deepEqual(
+        {
+          acquisition: request.searchParams.get("t"),
+          offset: buffer.timestampOffset,
+          playhead: current.media.currentTime,
+          targetInput: current.timeInput.value,
+        },
+        {
+          acquisition: "55",
+          offset: 55,
+          playhead: 55,
+          targetInput: "40",
+        },
+      )
+      assert.equal(current.sources.length, 1)
+      assert.equal(current.errors.length, 1)
+    } finally {
+      controller.abort()
+      await playback
+    }
+  },
+)
+
+test(
   "a final chunk canceled at high water gets one EOF frontier probe",
   options,
   async () => {
@@ -2498,7 +2605,7 @@ test(
       assert.equal(activeReaders, 1)
       assert.deepEqual(current.revoked, [oldUrl])
       assert.ok(
-        current.media.topology.indexOf(`src:${newUrl}`) <
+        current.media.topology.indexOf(`open:${newUrl}`) <
           current.media.topology.indexOf(`revoke:${oldUrl}`),
       )
       assert.equal(retryDelays, 0)
