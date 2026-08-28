@@ -221,26 +221,25 @@ const mse_operations = async function* (signal, source, buffer) {
     ) {
       if (typeof operation === "number") {
         buffer.timestampOffset = operation
-      } else {
-        const [position, bytes] = operation
-        const end = position - BUFFER.BEHIND
-        const expired =
-          end > 0 && buffer.buffered.length && buffer.buffered.start(0) < end
-        if (
-          expired &&
-          !(await mse_update(signal, source, buffer, () =>
-            buffer.remove(0, end),
-          ))
-        ) {
-          return
-        }
-        if (
-          !(await mse_update(signal, source, buffer, () =>
-            buffer.appendBuffer(bytes),
-          ))
-        ) {
-          return
-        }
+        continue
+      }
+
+      const [position, bytes] = operation
+      const end = position - BUFFER.BEHIND
+      const expired =
+        end > 0 && buffer.buffered.length && buffer.buffered.start(0) < end
+      if (
+        expired &&
+        !(await mse_update(signal, source, buffer, () => buffer.remove(0, end)))
+      ) {
+        return
+      }
+      if (
+        !(await mse_update(signal, source, buffer, () =>
+          buffer.appendBuffer(bytes),
+        ))
+      ) {
+        return
       }
     }
     if (source.readyState === "open") {
