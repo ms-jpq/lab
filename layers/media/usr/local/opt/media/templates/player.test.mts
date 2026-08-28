@@ -3663,6 +3663,29 @@ test(
 )
 
 test(
+  "cancellation after sourceopen cannot acquire a SourceBuffer",
+  options,
+  async () => {
+    const current = await fixture()
+    current.sourceOpen.hold = true
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+
+    await eventually(() => current.sourceOpen.pending.length === 1)
+    current.sourceOpen.release()
+    controller.abort()
+    await playback
+
+    deepEqual(current.sources.length, 1)
+    deepEqual(current.sources[0]?.sourceBuffers.length, 0)
+    deepEqual(current.media.loads, 1)
+    deepEqual(current.revoked.length, 1)
+  },
+)
+
+test(
   "an ordinary unbuffered seek keeps one target request and one MediaSource",
   options,
   async () => {

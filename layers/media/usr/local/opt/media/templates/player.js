@@ -643,40 +643,49 @@ const media_sources = () => {
     /** @param {AbortSignal} signal @param {PageReader} page */
     open: async (signal, page) => {
       const source = new MediaSourceConstructor()
-      const opened = first_event(source, signal, "sourceopen", "sourceclose")
+      const opening = new AbortController()
+      const opened = first_event(
+        source,
+        AbortSignal.any([signal, opening.signal]),
+        "sourceopen",
+        "sourceclose",
+      )
       const previous = url
       const next = URL.createObjectURL(source)
       try {
         media.src = next
       } catch (error) {
+        opening.abort()
         revoke_url(next)
         throw error
       }
       url = next
       try {
         page.seek()
-      } catch (error) {
+        const event = await opened
+        if (!event || signal.aborted) {
+          return undefined
+        }
+        if (event.type !== "sourceopen") {
+          throw event
+        }
+        const duration = Number(media.dataset.duration)
+        if (duration > 0) {
+          source.duration = duration
+        }
+        const buffer = mse(
+          signal,
+          source,
+          source.addSourceBuffer(
+            /** @type {string} */ (media.dataset.mseType),
+          ),
+        )
+        await buffer.next()
+        return buffer
+      } finally {
+        opening.abort()
         revoke_url(previous)
-        throw error
       }
-      const event = await opened.finally(() => revoke_url(previous))
-      if (!event) {
-        return undefined
-      }
-      if (event.type !== "sourceopen") {
-        throw event
-      }
-      const duration = Number(media.dataset.duration)
-      if (duration > 0) {
-        source.duration = duration
-      }
-      const buffer = mse(
-        signal,
-        source,
-        source.addSourceBuffer(/** @type {string} */ (media.dataset.mseType)),
-      )
-      await buffer.next()
-      return buffer
     },
   }
 }
