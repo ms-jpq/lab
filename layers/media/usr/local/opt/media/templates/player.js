@@ -3,12 +3,13 @@
 /** @typedef {{failure: unknown}} Failure */
 /** @template T @typedef {Failure | {value: T}} Result */
 /** @typedef {{action: "done"} | {action: "restart", start?: number} | {action: "retry", start: number}} RequestOutcome */
-/** @typedef {{next: () => Promise<IteratorResult<Uint8Array, {error: unknown} | void>>, return: () => Promise<IteratorResult<Uint8Array, {error: unknown} | void>>}} RequestStream */
+/** @template T, R @typedef {{next: () => Promise<IteratorResult<T, R>>, return: () => Promise<IteratorResult<T, R>>}} OwnedStream */
+/** @typedef {OwnedStream<Uint8Array, {error: unknown} | void>} RequestStream */
 /** @typedef {MseOperation | Failure} SourceOperation */
 /** @typedef {{error: (error: unknown) => void, progress: () => void}} Diagnostics */
 /** @typedef {{position: number, restart: boolean, started: boolean}} Target */
 /** @template T @typedef {{error: unknown} | {result: IteratorResult<T, void>}} Selection */
-/** @typedef {{close: () => Promise<void>, next: <T>(work?: Promise<T>) => Promise<typeof PULSE | T | undefined>, seek: () => void, take_error: () => unknown, target: Target}} PageReader */
+/** @typedef {{next: <T>(work?: Promise<T>) => Promise<typeof PULSE | T | undefined>, return: () => Promise<IteratorResult<typeof PULSE, void>>, seek: () => void, take_error: () => unknown, target: Target}} PageReader */
 
 const PULSE = Symbol()
 const SOURCE = Symbol()
@@ -212,7 +213,26 @@ const observe_media = (signal, observe) => {
   }
 }
 
-/** @template T @param {AsyncIterator<T, void, void>} source */
+/** @template T, R @param {AsyncGenerator<T, R, void>} stream @param {() => void} cancel @returns {OwnedStream<T, R>} */
+const owned_stream = (stream, cancel) => {
+  let active = true
+  return {
+    next: async () => {
+      const next = await stream.next()
+      active = !next.done
+      return next
+    },
+    return: async () => {
+      if (active) {
+        active = false
+        cancel()
+      }
+      return stream.return(/** @type {R} */ (undefined))
+    },
+  }
+}
+
+/** @template T @param {OwnedStream<T, void>} source */
 const selector = (source) => {
   /** @type {Selection<T> | undefined} */
   let available = undefined
@@ -230,34 +250,37 @@ const selector = (source) => {
     )
   advance()
 
-  /** @template W @param {Promise<W>} [work] @returns {Promise<T | W | undefined>} */
-  return async (work) => {
-    if (!available) {
-      const selected = await new Promise((resolve, reject) => {
-        /** @param {unknown} value */
-        const awaken = (value) => {
-          if (notify === awaken) {
-            notify = undefined
-            resolve(value)
+  return {
+    /** @template W @param {Promise<W>} [work] @returns {Promise<T | W | undefined>} */
+    next: async (work) => {
+      if (!available) {
+        const selected = await new Promise((resolve, reject) => {
+          /** @param {unknown} value */
+          const awaken = (value) => {
+            if (notify === awaken) {
+              notify = undefined
+              resolve(value)
+            }
           }
+          notify = awaken
+          work?.then(awaken, reject)
+        })
+        if (selected !== SOURCE) {
+          return /** @type {W} */ (selected)
         }
-        notify = awaken
-        work?.then(awaken, reject)
-      })
-      if (selected !== SOURCE) {
-        return /** @type {W} */ (selected)
       }
-    }
-    const selection = /** @type {Selection<T>} */ (available)
-    if ("error" in selection) {
-      throw selection.error
-    }
-    if (selection.result.done) {
-      return undefined
-    }
-    available = undefined
-    advance()
-    return selection.result.value
+      const selection = /** @type {Selection<T>} */ (available)
+      if ("error" in selection) {
+        throw selection.error
+      }
+      if (selection.result.done) {
+        return undefined
+      }
+      available = undefined
+      advance()
+      return selection.result.value
+    },
+    return: () => source.return(),
   }
 }
 
@@ -316,69 +339,69 @@ const page_reader = (signal, position) => {
   })
   observe_media(page_signal, observe)
 
-  const pulses = /** @type {AsyncGenerator<typeof PULSE, void, void>} */ (
-    (async function* () {
-      let handled = target
-      yield PULSE
-      for (;;) {
-        if (!(await changed.promise) || page_signal.aborted) {
-          return
-        }
-        changed = Promise.withResolvers()
-        const moved =
-          current.time !== previous.time || current.seeking !== previous.seeking
-        const user_seek = target !== handled
-
-        if (user_seek) {
-          const playable = buffered_position(target.position)
-          target.position = playable ?? target.position
-          target.restart = playable === undefined
-          positioning =
-            target.restart || !aligned(current.time, target.position)
-              ? target
-              : undefined
-          handled = target
-          persist_position(target.position)
-        }
-
-        if (current.ended && !previous.ended) {
-          persist_position(0)
-        } else if (
-          !user_seek &&
-          positioning === undefined &&
-          moved &&
-          buffered_position(current.time) === current.time
-        ) {
-          persist_position(current.time)
-        }
-
-        if (positioning !== undefined) {
-          const playable = buffered_position(positioning.position)
-          if (playable !== undefined) {
-            positioning.position = playable
+  const pulses = owned_stream(
+    /** @type {AsyncGenerator<typeof PULSE, void, void>} */ (
+      (async function* () {
+        let handled = target
+        yield PULSE
+        for (;;) {
+          if (!(await changed.promise) || page_signal.aborted) {
+            return
           }
-          if (!current.seeking) {
-            const positioned = aligned(current.time, positioning.position)
-            if (!positioned && (current.metadata || playable !== undefined)) {
-              seek()
-            } else if (positioned && positioning.started) {
-              positioning = undefined
+          changed = Promise.withResolvers()
+          const moved =
+            current.time !== previous.time ||
+            current.seeking !== previous.seeking
+          const user_seek = target !== handled
+
+          if (user_seek) {
+            const playable = buffered_position(target.position)
+            target.position = playable ?? target.position
+            target.restart = playable === undefined
+            positioning =
+              target.restart || !aligned(current.time, target.position)
+                ? target
+                : undefined
+            handled = target
+            persist_position(target.position)
+          }
+
+          if (current.ended && !previous.ended) {
+            persist_position(0)
+          } else if (
+            !user_seek &&
+            positioning === undefined &&
+            moved &&
+            buffered_position(current.time) === current.time
+          ) {
+            persist_position(current.time)
+          }
+
+          if (positioning !== undefined) {
+            const playable = buffered_position(positioning.position)
+            if (playable !== undefined) {
+              positioning.position = playable
+            }
+            if (!current.seeking) {
+              const positioned = aligned(current.time, positioning.position)
+              if (!positioned && (current.metadata || playable !== undefined)) {
+                seek()
+              } else if (positioned && positioning.started) {
+                positioning = undefined
+              }
             }
           }
-        }
 
-        previous = current
-        yield PULSE
-      }
-    })()
+          previous = current
+          yield PULSE
+        }
+      })()
+    ),
+    () => lifetime.abort(),
   )
-  const next = selector(pulses)
+  const changes = selector(pulses)
   return {
-    close: async () => {
-      lifetime.abort()
-      await pulses.return()
-    },
-    next,
+    ...changes,
     get target() {
       return target
     },
@@ -446,7 +469,6 @@ const mse = async function* (signal, source, buffer) {
 /** @param {number} time @returns {RequestStream} */
 const request_stream = (time) => {
   const request = new AbortController()
-  let active = true
   /** @type {ReadableStreamDefaultReader<Uint8Array> | undefined} */
   let reader = undefined
   const stream = (async function* () {
@@ -480,22 +502,7 @@ const request_stream = (time) => {
       }
     }
   })()
-  return {
-    next: async () => {
-      const next = await stream.next()
-      if (next.done) {
-        active = false
-      }
-      return next
-    },
-    return: async () => {
-      if (active) {
-        active = false
-        request.abort()
-      }
-      return stream.return(undefined)
-    },
-  }
+  return owned_stream(stream, () => request.abort())
 }
 
 /** @param {AbortSignal} signal */
@@ -842,7 +849,7 @@ const play_media = async (signal) => {
     try {
       sources.close()
     } finally {
-      await page.close()
+      await page.return()
     }
   }
 }

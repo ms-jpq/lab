@@ -58,7 +58,7 @@ type SourcePage = {
   take_error: () => unknown
 }
 type PageReader = SourcePage & {
-  close: () => Promise<void>
+  return: () => Promise<IteratorResult<symbol, void>>
   seek: () => void
 }
 type PlayerTest = {
@@ -75,8 +75,14 @@ type PlayerTest = {
   play_subtitle: (signal: AbortSignal) => Promise<void>
   playback_page: (signal: AbortSignal) => Promise<void>
   selector: <T>(
-    source: AsyncIterator<T, void, void>,
-  ) => <W>(work?: Promise<W>) => Promise<T | W | undefined>
+    source: {
+      next: () => Promise<IteratorResult<T, void>>
+      return: () => Promise<IteratorResult<T, void>>
+    },
+  ) => {
+    next: <W>(work?: Promise<W>) => Promise<T | W | undefined>
+    return: () => Promise<IteratorResult<T, void>>
+  }
   request_stream: (position: number) => {
     next: () => Promise<IteratorResult<Uint8Array, unknown>>
     return: () => Promise<IteratorResult<Uint8Array, unknown>>
@@ -703,20 +709,21 @@ test(
     })
     const select = current.context.player_test.selector({
       next: () => pending.promise,
+      return: async () => ({ done: true, value: undefined }),
     })
 
     for (let value = 0; value < 1_000; value += 1) {
-      deepEqual(await select(Promise.resolve(value)), value)
+      deepEqual(await select.next(Promise.resolve(value)), value)
     }
     deepEqual(subscriptions, 1)
     deepEqual(derivedSubscriptions, 0)
 
     const work = Promise.withResolvers<number>()
-    const selected = select(work.promise)
+    const selected = select.next(work.promise)
     work.resolve(1_000)
     pending.resolve({ done: false, value: 1_001 })
     deepEqual(await selected, 1_000)
-    deepEqual(await select(), 1_001)
+    deepEqual(await select.next(), 1_001)
     deepEqual(subscriptions, 2)
     deepEqual(derivedSubscriptions, 0)
 
@@ -724,7 +731,8 @@ test(
     const losing = Promise.withResolvers<number>()
     const sourceFirst = current.context.player_test.selector({
       next: () => source.promise,
-    })(losing.promise)
+      return: async () => ({ done: true, value: undefined }),
+    }).next(losing.promise)
     source.resolve({ done: false, value: 2_000 })
     losing.reject(new Error("losing work"))
     deepEqual(await sourceFirst, 2_000)
@@ -930,7 +938,7 @@ const pulsePage = async (
 
 const closePage = async (controller: AbortController, page: PageReader) => {
   controller.abort()
-  await page.close()
+  await page.return()
 }
 
 const ready = async (
@@ -987,7 +995,7 @@ test(
 )
 
 test(
-  "closing a page reader detaches observers from a live parent",
+  "returning a page reader cancels its pending read and detaches observers",
   options,
   async () => {
     const current = await fixture()
@@ -995,7 +1003,7 @@ test(
     const page = await openPage(current, parent.signal, 40)
     const calls = current.media.listenerCalls
 
-    await page.close()
+    await page.return()
     deepEqual(parent.signal.aborted, false)
     current.media.dispatchEvent(new Event("timeupdate"))
 
