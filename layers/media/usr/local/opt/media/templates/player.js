@@ -459,58 +459,69 @@ const session = async function* (signal, buffer, time) {
 
 /** @param {AbortSignal} signal @param {number} position @returns {AsyncGenerator<PlaybackSource, void, SourceChange>} */
 const media_sources = async function* (signal, position) {
-  for (;;) {
-    const lifetime = new AbortController()
-    const lifetime_signal = AbortSignal.any([signal, lifetime.signal])
-    const source = new MediaSourceConstructor()
-    const opened = resource_event(
-      lifetime_signal,
-      source,
-      "sourceopen",
-      "sourceclose",
-    )
-    const url = URL.createObjectURL(source)
-    media.src = url
-    /** @type {Mse | undefined} */
-    let buffer = undefined
-
-    try {
-      if (!(await opened)) {
-        return
-      }
-      const duration = Number(media.dataset.duration)
-      if (duration > 0) {
-        source.duration = duration
-      }
-      buffer = mse(
+  /** @type {string | undefined} */
+  let attached_url = undefined
+  try {
+    for (;;) {
+      const lifetime = new AbortController()
+      const lifetime_signal = AbortSignal.any([signal, lifetime.signal])
+      const source = new MediaSourceConstructor()
+      const opened = resource_event(
         lifetime_signal,
         source,
-        source.addSourceBuffer(/** @type {string} */ (media.dataset.mseType)),
+        "sourceopen",
+        "sourceclose",
       )
-      await buffer.next()
-      const change = yield { buffer, position, signal: lifetime_signal }
-      position = change.position
-      if ("error" in change) {
-        report(change.error)
-        if (signal.aborted) {
+      const url = URL.createObjectURL(source)
+      media.src = url
+      if (attached_url) {
+        URL.revokeObjectURL(attached_url)
+      }
+      attached_url = url
+      /** @type {Mse | undefined} */
+      let buffer = undefined
+
+      try {
+        if (!(await opened)) {
           return
         }
-      } else if (!(await retry_delay(signal))) {
-        return
+        const duration = Number(media.dataset.duration)
+        if (duration > 0) {
+          source.duration = duration
+        }
+        buffer = mse(
+          lifetime_signal,
+          source,
+          source.addSourceBuffer(/** @type {string} */ (media.dataset.mseType)),
+        )
+        await buffer.next()
+        const change = yield { buffer, position, signal: lifetime_signal }
+        position = change.position
+        if ("error" in change) {
+          report(change.error)
+          if (signal.aborted) {
+            return
+          }
+        } else if (!(await retry_delay(signal))) {
+          return
+        }
+      } catch (error) {
+        if (!lifetime_signal.aborted) {
+          report(error)
+        }
+        if (!(await retry_delay(signal))) {
+          return
+        }
+      } finally {
+        lifetime.abort()
+        await buffer?.return()
       }
-    } catch (error) {
-      if (!lifetime_signal.aborted) {
-        report(error)
-      }
-      if (!(await retry_delay(signal))) {
-        return
-      }
-    } finally {
-      lifetime.abort()
-      await buffer?.return()
-      media.removeAttribute("src")
-      media.load()
-      URL.revokeObjectURL(url)
+    }
+  } finally {
+    media.removeAttribute("src")
+    media.load()
+    if (attached_url) {
+      URL.revokeObjectURL(attached_url)
     }
   }
 }
@@ -620,6 +631,7 @@ const play_source = async ({ buffer, position, signal }) => {
         start,
       )
       position = change.position
+      // this is a switch right
       if (change.action === "done") {
         return { position }
       }

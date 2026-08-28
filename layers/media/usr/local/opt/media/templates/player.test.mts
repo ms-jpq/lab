@@ -123,8 +123,10 @@ class Media extends EventTarget {
   loads: number
   listenerCalls: number
   listenerWrappers: WeakMap<EventListenerOrEventListenerObject, EventListener>
+  removals: number
   readyState: number
   onLoad: (() => void) | undefined
+  topology: string[]
 
   constructor() {
     super()
@@ -143,7 +145,9 @@ class Media extends EventTarget {
     this.loads = 0
     this.listenerCalls = 0
     this.listenerWrappers = new WeakMap()
+    this.removals = 0
     this.readyState = 0
+    this.topology = []
   }
 
   override addEventListener(
@@ -194,6 +198,7 @@ class Media extends EventTarget {
 
   set src(value: string) {
     this._src = value
+    this.topology.push(`src:${value}`)
     this.buffered.ranges = []
     this.readyState = 0
     this.currentTime = 0
@@ -201,12 +206,15 @@ class Media extends EventTarget {
 
   load(): void {
     this.loads += 1
+    this.topology.push("load")
     this.buffered.ranges = []
     this.onLoad?.()
   }
 
   removeAttribute(name: string): void {
     if (name === "src") {
+      this.removals += 1
+      this.topology.push("remove")
       this._src = ""
     }
   }
@@ -460,6 +468,7 @@ const fixture = async (position = 40) => {
 
     static override revokeObjectURL(url: string): void {
       revoked.push(url)
+      media.topology.push(`revoke:${url}`)
     }
   }
   media.onLoad = () => {
@@ -1022,7 +1031,7 @@ test(
       assert.equal(parent.signal.aborted, false)
       assert.equal(present<AbortSignal>(requestSignal).aborted, true)
       assert.equal(current.media.src, "")
-      assert.equal(current.media.loads, 1)
+      assert.equal(current.media.loads, 0)
       assert.equal(current.revoked.length, 1)
       assert.equal(buffer.usable, false)
       assert.equal(timers, 0)
@@ -2405,14 +2414,13 @@ test(
 )
 
 test(
-  "MediaSource replacement cannot turn its native reset into a zero seek",
+  "live MediaSource replacement is an atomic blob handoff",
   options,
   async () => {
     const current = await fixture()
     const replaced = Promise.withResolvers<string>()
     const requests: string[] = []
     let activeReaders = 0
-    const readersAtLoad: number[] = []
     let retryDelays = 0
     let firstResponse: ReadableStreamDefaultController<Uint8Array> | undefined =
       undefined
@@ -2443,24 +2451,34 @@ test(
         statusText: "OK",
       }
     }
+    const playFailure = new DOMException(
+      "The operation was aborted",
+      "AbortError",
+    )
+    const pendingPlay = Promise.withResolvers<void>()
+    let playRejections = 0
+    void pendingPlay.promise.catch((error: unknown) => {
+      assert.equal(error, playFailure)
+      playRejections += 1
+    })
     const release = present(current.media.onLoad)
     current.media.onLoad = () => {
-      readersAtLoad.push(activeReaders)
       release()
-      current.media.currentTime = 0
-      current.media.seeking = true
-      current.media.dispatchEvent(new Event("seeking"))
-      current.media.dispatchEvent(new Event("timeupdate"))
+      pendingPlay.reject(playFailure)
     }
 
     const controller = new AbortController()
     const playback = current.context.player_test.playback_page(
       controller.signal,
     )
+    let oldUrl = ""
+    let newUrl = ""
     try {
       while (current.sources[0]?.sourceBuffers[0]?.buffered.length !== 1) {
         await new Promise((resolve) => setImmediate(resolve))
       }
+      oldUrl = current.media.src
+      current.media.topology.length = 0
       const source = present(current.sources[0])
       present(source.sourceBuffers[0]).usable = false
       const response =
@@ -2468,9 +2486,21 @@ test(
       response.enqueue(new Uint8Array([2]))
 
       const request = new URL(await replaced.promise)
+      newUrl = current.media.src
       assert.equal(request.searchParams.get("t"), "40")
       assert.equal(current.timeInput.value, "40")
-      assert.deepEqual(readersAtLoad, [0])
+      assert.match(oldUrl, /^blob:player-/)
+      assert.match(newUrl, /^blob:player-/)
+      assert.notEqual(newUrl, oldUrl)
+      assert.equal(current.media.loads, 0)
+      assert.equal(current.media.removals, 0)
+      assert.equal(playRejections, 0)
+      assert.equal(activeReaders, 1)
+      assert.deepEqual(current.revoked, [oldUrl])
+      assert.ok(
+        current.media.topology.indexOf(`src:${newUrl}`) <
+          current.media.topology.indexOf(`revoke:${oldUrl}`),
+      )
       assert.equal(retryDelays, 0)
       assert.equal(
         requests.some((url) => new URL(url).searchParams.get("t") === "0"),
@@ -2480,6 +2510,14 @@ test(
       controller.abort()
       await playback
     }
+
+    await Promise.resolve()
+    assert.equal(current.media.src, "")
+    assert.equal(current.media.removals, 1)
+    assert.equal(current.media.loads, 1)
+    assert.equal(playRejections, 1)
+    assert.equal(activeReaders, 0)
+    assert.deepEqual(current.revoked, [oldUrl, newUrl])
   },
 )
 
