@@ -169,122 +169,102 @@ const page_states = (signal) => {
   })()
 }
 
-/** @param {MediaSource} source @param {SourceBuffer} buffer */
-const mse_attached = (source, buffer) =>
-  source.readyState !== "closed" &&
-  Array.from(source.sourceBuffers).includes(buffer)
-
-/** @param {AbortSignal} signal @param {MediaSource} source @param {SourceBuffer} buffer */
-const mse_writable = (signal, source, buffer) =>
-  !signal.aborted &&
-  source.readyState === "open" &&
-  mse_attached(source, buffer)
-
-/** @param {MediaSource} source @param {SourceBuffer} buffer */
-const abort_mse_update = async (source, buffer) => {
-  if (
-    source.readyState !== "open" ||
-    !mse_attached(source, buffer) ||
-    !buffer.updating
-  ) {
-    return
-  }
-  const aborted = once(buffer, undefined, "updateend")
-  buffer.abort()
-  await aborted
-}
-
-/** @param {AbortSignal} signal @param {MediaSource} source @param {SourceBuffer} buffer @param {() => void} mutate */
-const mse_update = async (signal, source, buffer, mutate) => {
-  if (!mse_writable(signal, source, buffer)) {
-    return false
-  }
-  const settled = select(
-    signal,
-    (s) => once(buffer, s, "updateend"),
-    (s) => once(buffer, s, "error"),
-  )
-  mutate()
-  return Boolean(await settled)
-}
-
-/** @param {SourceBuffer} buffer */
-const mse_frontier = (buffer) => {
-  const ranges = buffer.buffered
-  const last = ranges.length - 1
-  return last < 0 ? undefined : ranges.end(last)
-}
-
-/** @param {SourceBuffer} buffer @param {number} position */
-const mse_contains = (buffer, position) => {
-  const ranges = buffer.buffered
-  for (let index = 0; index < ranges.length; index += 1) {
-    if (ranges.start(index) <= position && position < ranges.end(index)) {
-      return true
-    }
-  }
-  return false
-}
-
-/** @param {AbortSignal} signal @param {MediaSource} source @param {SourceBuffer} buffer @returns {AsyncGenerator<void, void, MseOperation | undefined>} */
-const mse_operations = async function* (signal, source, buffer) {
-  try {
-    for (
-      let operation = yield undefined;
-      operation !== undefined;
-      operation = yield undefined
-    ) {
-      if (!mse_writable(signal, source, buffer)) {
-        return
-      }
-      if (typeof operation === "number") {
-        buffer.timestampOffset = operation
-        continue
-      }
-
-      const [position, bytes] = operation
-      const end = position - BUFFER.BEHIND
-      const expired =
-        end > 0 && buffer.buffered.length && buffer.buffered.start(0) < end
-      if (
-        expired &&
-        !(await mse_update(signal, source, buffer, () => buffer.remove(0, end)))
-      ) {
-        return
-      }
-      if (
-        !(await mse_update(signal, source, buffer, () =>
-          buffer.appendBuffer(bytes),
-        ))
-      ) {
-        return
-      }
-    }
-    if (source.readyState === "open" && mse_attached(source, buffer)) {
-      source.endOfStream()
-    }
-  } finally {
-    await abort_mse_update(source, buffer)
-    if (mse_attached(source, buffer)) {
-      source.removeSourceBuffer(buffer)
-    }
-  }
-  return
-}
-
 /** @param {AbortSignal} signal @param {MediaSource} source @param {string} type @returns {MseBuffer} */
 const mse_buffer = (signal, source, type) => {
   const buffer = source.addSourceBuffer(type)
-  return Object.assign(mse_operations(signal, source, buffer), {
+
+  const attached = () =>
+    source.readyState !== "closed" &&
+    Array.from(source.sourceBuffers).includes(buffer)
+
+  const writable = () =>
+    !signal.aborted && source.readyState === "open" && attached()
+
+  const frontier = () => {
+    if (!attached()) {
+      return undefined
+    }
+    const ranges = buffer.buffered
+    const last = ranges.length - 1
+    return last < 0 ? undefined : ranges.end(last)
+  }
+
+  /** @param {number} position */
+  const contains = (position) => {
+    if (!attached()) {
+      return false
+    }
+    const ranges = buffer.buffered
+    for (let index = 0; index < ranges.length; index += 1) {
+      if (ranges.start(index) <= position && position < ranges.end(index)) {
+        return true
+      }
+    }
+    return false
+  }
+
+  /** @param {() => void} mutate */
+  const update = async (mutate) => {
+    if (!writable()) {
+      return false
+    }
+    const settled = select(
+      signal,
+      (s) => once(buffer, s, "updateend"),
+      (s) => once(buffer, s, "error"),
+    )
+    mutate()
+    return Boolean(await settled)
+  }
+
+  /** @returns {AsyncGenerator<void, void, MseOperation | undefined>} */
+  const operations = async function* () {
+    try {
+      for (
+        let operation = yield undefined;
+        operation !== undefined;
+        operation = yield undefined
+      ) {
+        if (!writable()) {
+          return
+        }
+        if (typeof operation === "number") {
+          buffer.timestampOffset = operation
+          continue
+        }
+
+        const [position, bytes] = operation
+        const end = position - BUFFER.BEHIND
+        const expired =
+          end > 0 && buffer.buffered.length && buffer.buffered.start(0) < end
+        if (expired && !(await update(() => buffer.remove(0, end)))) {
+          return
+        }
+        if (!(await update(() => buffer.appendBuffer(bytes)))) {
+          return
+        }
+      }
+      if (writable()) {
+        source.endOfStream()
+      }
+    } finally {
+      if (source.readyState === "open" && attached() && buffer.updating) {
+        const aborted = once(buffer, undefined, "updateend")
+        buffer.abort()
+        await aborted
+      }
+      if (attached()) {
+        source.removeSourceBuffer(buffer)
+      }
+    }
+    return
+  }
+
+  return Object.assign(operations(), {
+    contains,
+    frontier,
     /** @param {number} position */
-    contains: (position) =>
-      mse_attached(source, buffer) && mse_contains(buffer, position),
-    frontier: () =>
-      mse_attached(source, buffer) ? mse_frontier(buffer) : undefined,
-    /** @param {number} position */
-    play_ahead: (position) =>
-      ((mse_attached(source, buffer) ? mse_frontier(buffer) : undefined) ??
-        position) - position,
+    play_ahead: (position) => (frontier() ?? position) - position,
   })
 }
 
