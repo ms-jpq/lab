@@ -72,11 +72,7 @@ export const events = async function* <
   T extends EventTarget,
   E extends EventName<T>,
   R extends EventMap<T>[E],
->(
-  signal: AbortSignal,
-  target: T,
-  event: E,
-): AsyncIteratorObject<R, undefined, undefined> {
+>(signal: AbortSignal, target: T, event: E): AsyncIteratorObject<R> {
   using a = abortion(signal)
 
   const stream = new ReadableStream<R>({
@@ -89,6 +85,7 @@ export const events = async function* <
     },
   })
 
+  // better now?
   a.signal.addEventListener("abort", () => stream.cancel(), { once: true })
   yield* readableIterator(stream)
   return
