@@ -212,7 +212,9 @@ const page_states = async function* (signal, position) {
       return
     }
 
-    const observed = /** @type {ReturnType<typeof page_state>} */ (events.shift())
+    const observed = /** @type {ReturnType<typeof page_state>} */ (
+      events.shift()
+    )
     if (events.length === 0) {
       changed = Promise.withResolvers()
     }
@@ -244,10 +246,7 @@ const page_states = async function* (signal, position) {
       if (!media.seeking) {
         const positioned =
           Math.abs(media.currentTime - pending_seek) <= POSITION_TOLERANCE
-        if (
-          !positioned &&
-          (media.readyState !== 0 || playable !== undefined)
-        ) {
+        if (!positioned && (media.readyState !== 0 || playable !== undefined)) {
           media.currentTime = pending_seek
         } else if (positioned && playable !== undefined) {
           pending_seek = undefined
@@ -508,7 +507,7 @@ const play_attempt = async (signal, buffer, states, page, position) => {
     for (;;) {
       const selected = await select(
         attempt_signal,
-          async () =>
+        async () =>
           /** @type {AttemptSelection} */ ({
             kind: "page",
             result: await page.next,
