@@ -164,8 +164,8 @@ const page_states = (signal, buffer, position) => {
     subtitle?.addEventListener(type, wake, { signal })
   }
   buffer.changes.addEventListener("change", wake, { signal })
-  if (subtitle) {
-    subtitle.src = source_url(subtitle, position)
+  if (subtitle && subtitle.src === "") {
+    subtitle.src = source_url(subtitle, 0)
   }
   wake()
 
@@ -198,9 +198,6 @@ const page_states = (signal, buffer, position) => {
         requested_position = restart || !positioned ? target : undefined
         requested_position_applied = positioned
         set_position(target)
-        if (restart && subtitle) {
-          subtitle.src = source_url(subtitle, target)
-        }
       } else if (requested_position !== undefined) {
         const available = buffer.available(requested_position)
         if (available !== undefined && available !== requested_position) {
@@ -519,11 +516,8 @@ const mse = (signal, media, position) => {
             return
           }
           const expired = end > 0 && ranges.length && ranges.start(0) < end
-          if (
-            expired &&
-            !(await update(opened_buffer, () => opened_buffer.remove(0, end)))
-          ) {
-            return
+          if (expired) {
+            await update(opened_buffer, () => opened_buffer.remove(0, end))
           }
           if (
             !(await update(opened_buffer, () =>
@@ -563,13 +557,12 @@ const mse = (signal, media, position) => {
 
 /** @param {AbortSignal} signal @param {number} time */
 const source_stream = async function* (signal, time) {
-  const request = new AbortController()
   /** @type {ReadableStreamDefaultReader<Uint8Array> | undefined} */
   let reader = undefined
 
   try {
     const response = await fetch(source_url(media, time), {
-      signal: AbortSignal.any([signal, request.signal]),
+      signal,
     })
     reader = response.body?.getReader()
     if (!response.ok || !reader) {
@@ -583,11 +576,7 @@ const source_stream = async function* (signal, time) {
       yield value
     }
   } finally {
-    try {
-      await reader?.cancel()
-    } finally {
-      request.abort()
-    }
+    await reader?.cancel()
   }
   return
 }

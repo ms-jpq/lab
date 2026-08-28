@@ -51,7 +51,18 @@ class Subtitle extends EventTarget {
     this.dataset = { src: "/movie/subtitle" }
     this.ERROR = 3
     this.readyState = 0
-    this.src = ""
+    this.sources = []
+    this._src = ""
+  }
+
+  get src() {
+    return this._src
+  }
+
+  /** @param {string} value */
+  set src(value) {
+    this._src = value
+    this.sources.push(value)
   }
 }
 
@@ -685,7 +696,7 @@ test(
 )
 
 test(
-  "an invalidated eviction ends its MSE lifetime without rejecting",
+  "a failed eviction does not end its MSE lifetime",
   { concurrency: true },
   async () => {
     const current = await fixture()
@@ -704,23 +715,28 @@ test(
     const [openedBuffer] = source.sourceBuffers
     openedBuffer.failNextRemove = true
     current.media.currentTime = 100
-    assert.equal((await buffer.next([100, new Uint8Array([1])])).done, true)
-    assert.equal(current.media.src, "")
-    assert.equal(current.media.loads, 1)
-    assert.equal(current.revoked.includes(sourceUrl), true)
+    assert.equal((await buffer.next([100, new Uint8Array([1])])).done, false)
+    assert.equal(current.media.src, sourceUrl)
+    assert.equal(current.media.loads, 0)
+    assert.equal(current.revoked.includes(sourceUrl), false)
+
+    controller.abort()
+    await buffer.return()
   },
 )
 
 test(
-  "an ordinary unbuffered seek retains its MediaSource",
+  "an ordinary unbuffered seek keeps one target request and one MediaSource",
   { concurrency: true },
   async () => {
     const current = await fixture()
     const secondRequest = Promise.withResolvers()
     let requests = 0
+    let targetSignal = undefined
     current.context.fetch = async (url, { signal }) => {
       requests += 1
       if (requests === 2) {
+        targetSignal = signal
         secondRequest.resolve(String(url))
       }
       return {
@@ -745,13 +761,29 @@ test(
     while (requests < 1) {
       await new Promise((resolve) => setImmediate(resolve))
     }
+    const [mediaSource] = current.sources
+    while (mediaSource.sourceBuffers[0]?.buffered.length !== 1) {
+      await new Promise((resolve) => setImmediate(resolve))
+    }
+    mediaSource.sourceBuffers[0].failNextRemove = true
     const source = current.media.src
     current.media.currentTime = 110
     current.media.seeking = true
     current.media.dispatchEvent(new Event("seeking"))
 
     const request = new URL(await secondRequest.promise)
+    while (mediaSource.sourceBuffers[0]?.buffered.start(0) !== 110) {
+      await new Promise((resolve) => setImmediate(resolve))
+    }
+    await new Promise((resolve) => setImmediate(resolve))
     assert.equal(request.searchParams.get("t"), "110")
+    assert.equal(requests, 2)
+    assert.equal(targetSignal.aborted, false)
+    assert.equal(current.subtitle.sources.length, 1)
+    assert.equal(
+      new URL(current.subtitle.sources[0]).searchParams.get("t"),
+      "0",
+    )
     assert.equal(current.media.src, source)
     assert.equal(current.media.currentTime, 110)
     assert.equal(current.media.loads, 0)
