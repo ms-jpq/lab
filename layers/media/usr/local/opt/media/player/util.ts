@@ -73,23 +73,24 @@ export const events = async function* <
   E extends EventName<T>,
   R extends EventMap<T>[E],
 >(signal: AbortSignal, target: T, event: E): AsyncIteratorObject<R> {
-  using a = abortion()
-  const listener = AbortSignal.any([signal, a.signal])
+  using a = abortion(signal)
 
   const stream = new ReadableStream<R>({
     start: (controller) => {
-      target.addEventListener(
-        event,
-        (received) => controller.enqueue(received as R),
-        { signal: listener },
-      )
+      if (a.signal.aborted) {
+        controller.close()
+        return
+      }
+
       signal.addEventListener("abort", () => controller.close(), {
         once: true,
         signal: a.signal,
       })
-      if (signal.aborted) {
-        controller.close()
-      }
+      target.addEventListener(
+        event,
+        (received) => controller.enqueue(received as R),
+        { signal: a.signal },
+      )
     },
   })
 
