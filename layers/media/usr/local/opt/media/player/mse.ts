@@ -5,16 +5,6 @@ export type Mse = AsyncGenerator<void, void, MseOperation>
 
 const EPSILON = 0.001
 
-const MSE = (): MediaSource => {
-  return new (
-    (
-      globalThis as typeof globalThis & {
-        ManagedMediaSource?: typeof MediaSource
-      }
-    ).ManagedMediaSource ?? MediaSource
-  )()
-}
-
 const op_lock = async function* (
   buffer: SourceBuffer,
 ): AsyncIteratorObject<undefined> {
@@ -84,6 +74,25 @@ export const media_source = async function* ({
   }
 }
 
+// wehat do we need here?
+const MSE = async (): Promise<MediaSource> => {
+  const source = new (
+    (
+      globalThis as typeof globalThis & {
+        ManagedMediaSource?: typeof MediaSource
+      }
+    ).ManagedMediaSource ?? MediaSource
+  )()
+  using a = abortion()
+  const opened = Promise.race([
+    once(a.signal, source, "sourceopen"),
+    once(a.signal, source, "sourceclose"),
+  ])
+
+  await opened
+  return source
+}
+
 export const setup = (media: HTMLMediaElement, url: string) => {
   media.src = url
 
@@ -91,28 +100,6 @@ export const setup = (media: HTMLMediaElement, url: string) => {
     media.removeAttribute("src")
     media.load()
   })
-}
-
-export const attach = async function* (
-  media: HTMLMediaElement,
-  source: MediaSource,
-) {
-  using a = abortion()
-  const opened = Promise.race([
-    once(a.signal, source, "sourceopen"),
-    once(a.signal, source, "sourceclose"),
-  ])
-  if (media.src) {
-    URL.revokeObjectURL(media.src)
-  }
-  const next = URL.createObjectURL(source)
-  try {
-    media.src = next
-  } catch (e) {
-    URL.revokeObjectURL(next)
-    throw e
-  }
-  await opened
 }
 
 const BEHIND = 30
