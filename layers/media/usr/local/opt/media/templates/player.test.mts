@@ -792,7 +792,7 @@ for (const { cancelRejects, name, waits } of readerTeardownCases) {
 }
 
 test(
-  "source stream clean EOF does not cancel its completed request",
+  "request stream clean EOF does not cancel its completed request",
   options,
   async () => {
     const current = await fixture()
