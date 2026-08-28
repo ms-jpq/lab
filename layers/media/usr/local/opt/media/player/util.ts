@@ -97,3 +97,43 @@ export const events = async function* <
   yield* readableIterator(stream)
   return
 }
+
+const select = async <T>(
+  source: AsyncIterator<T>,
+): Promise<readonly [AsyncIterator<T>, IteratorResult<T>]> => [
+  source,
+  await source.next(),
+]
+
+const close = async <T>(sources: Iterable<AsyncIterator<T>>): Promise<void> => {
+  const settled = await Promise.allSettled(
+    [...sources].map(async (source) => source.return?.()),
+  )
+  const errors = settled.flatMap((result) =>
+    result.status === "rejected" ? [result.reason] : [],
+  )
+  if (errors.length > 0) {
+    throw new AggregateError(errors)
+  }
+}
+
+export const merge = async function* <T>(
+  ...sources: AsyncIterator<T>[]
+): AsyncIteratorObject<T> {
+  const pending = new Map(
+    sources.map((source) => [source, select(source)] as const),
+  )
+  await using _ = defer(() => close(pending.keys()))
+
+  while (pending.size) {
+    const [source, result] = await Promise.race(pending.values())
+    if (result.done) {
+      pending.delete(source)
+      continue
+    }
+
+    yield result.value
+    pending.set(source, select(source))
+  }
+  return
+}
