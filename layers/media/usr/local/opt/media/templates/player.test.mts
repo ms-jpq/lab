@@ -2855,7 +2855,7 @@ test(
     }
     const playback = current.context.player_test.play_source(
       buffer,
-      { error: () => {}, escaped: () => false, progress: () => {} },
+      { error: () => {}, progress: () => {} },
       page.page,
     )
     try {
