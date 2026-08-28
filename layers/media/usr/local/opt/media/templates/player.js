@@ -24,7 +24,7 @@ const PAGE = crypto.randomUUID()
 /** @typedef {(signal: AbortSignal) => MseBuffer} MseBufferFactory */
 /** @typedef {AsyncGenerator<void, void, void> & {buffer: MseBuffer}} Attempt */
 /** @typedef {ReturnType<typeof page_state> & {failed: boolean, moved: boolean}} PageChange */
-/** @typedef {{state: IteratorResult<PageChange, void>} | {attempt: IteratorResult<void, void>} | {error: unknown}} PlaybackSelection */
+/** @typedef {{state: IteratorResult<PageChange, void>} | {attempt: IteratorResult<void, void>}} PlaybackSelection */
 
 /** @param {EventTarget} target @param {AbortSignal | undefined} signal @param {string} type @returns {Promise<Event>} */
 const once = (target, signal, type) => {
@@ -384,12 +384,10 @@ const attempt = (signal, create_buffer) => {
 
 /** @param {AbortSignal} signal */
 const playback_page = async (signal) => {
-  const scope = new AbortController()
-  const page_signal = AbortSignal.any([signal, scope.signal])
   const resume = Symbol("resume")
   const restart = Symbol("restart")
   const retry = Symbol("retry")
-  const states = changes(page_signal)
+  const states = changes(signal)
   let changed = states.next()
   let positioned = transformed
   let waiting = false
@@ -428,98 +426,83 @@ const playback_page = async (signal) => {
   if (!transformed) {
     media.src = source_url(media, media.currentTime)
     media.load()
-    try {
-      for await (const change of states) {
-        await update(change, undefined)
-      }
-    } finally {
-      scope.abort()
+    for await (const change of states) {
+      await update(change, undefined)
     }
     return
   }
 
-  try {
-    for (;;) {
-      try {
-        for await (const create_buffer of mse(page_signal)) {
-          const current = new AbortController()
-          const attempt_signal = AbortSignal.any([page_signal, current.signal])
-          const session = attempt(attempt_signal, create_buffer)
-          /** @type {Promise<IteratorResult<void, void>> | undefined} */
-          let progress = session.next()
+  for (;;) {
+    try {
+      for await (const create_buffer of mse(signal)) {
+        const current = new AbortController()
+        const attempt_signal = AbortSignal.any([signal, current.signal])
+        const session = attempt(attempt_signal, create_buffer)
+        /** @type {Promise<IteratorResult<void, void>> | undefined} */
+        let progress = session.next()
 
-          try {
-            for (;;) {
-              const pending = progress
-              const selected = await select(
-                attempt_signal,
-                () =>
-                  changed.then(
-                    (state) => /** @type {PlaybackSelection} */ ({ state }),
-                  ),
-                ...(pending
-                  ? [
-                      () =>
-                        pending.then(
-                          (attempt) =>
-                            /** @type {PlaybackSelection} */ ({ attempt }),
-                          (error) =>
-                            /** @type {PlaybackSelection} */ ({ error }),
-                        ),
-                    ]
-                  : []),
-              )
+        try {
+          for (;;) {
+            const pending = progress
+            const selected = await select(
+              attempt_signal,
+              () =>
+                changed.then(
+                  (state) => /** @type {PlaybackSelection} */ ({ state }),
+                ),
+              ...(pending
+                ? [
+                    () =>
+                      pending.then(
+                        (attempt) =>
+                          /** @type {PlaybackSelection} */ ({ attempt }),
+                      ),
+                  ]
+                : []),
+            )
 
-              if (!selected) {
+            if (!selected) {
+              break
+            } else if ("state" in selected) {
+              const { state } = selected
+              if (state.done) {
+                return
+              }
+              changed = states.next()
+              const action = await update(state.value, session.buffer)
+              if (action === restart || action === retry) {
+                current.abort(action)
                 break
-              } else if ("state" in selected) {
-                const { state } = selected
-                if (state.done) {
-                  return
-                }
-                changed = states.next()
-                const action = await update(state.value, session.buffer)
-                if (action === restart || action === retry) {
-                  current.abort(action)
-                  break
-                }
-                if (action === resume && progress === undefined) {
-                  progress = session.next()
-                }
-              } else if ("error" in selected) {
-                throw selected.error
-              } else {
-                progress = undefined
-                if (selected.attempt.done) {
-                  break
-                }
+              }
+              if (action === resume && progress === undefined) {
+                progress = session.next()
+              }
+            } else {
+              progress = undefined
+              if (selected.attempt.done) {
+                break
               }
             }
-          } catch (error) {
-            if (!attempt_signal.aborted) {
-              console.error(error)
-            }
-          } finally {
-            current.abort()
-            await session.return()
           }
-
-          if (
-            current.signal.reason !== restart &&
-            !(await retry_delay(page_signal))
-          ) {
-            return
+        } catch (error) {
+          if (!attempt_signal.aborted) {
+            console.error(error)
           }
+        } finally {
+          current.abort()
+          await session.return()
         }
-      } catch (error) {
-        console.error(error)
+
+        if (current.signal.reason !== restart && !(await retry_delay(signal))) {
+          return
+        }
       }
-      if (!(await retry_delay(page_signal))) {
-        return
-      }
+    } catch (error) {
+      console.error(error)
     }
-  } finally {
-    scope.abort()
+    if (!(await retry_delay(signal))) {
+      return
+    }
   }
 }
 
