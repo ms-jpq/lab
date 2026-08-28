@@ -12,12 +12,13 @@ type MseContext = {
 const BEHIND = 30
 
 const MSE = (): MediaSource => {
-  const constructor = (
-    globalThis as typeof globalThis & {
-      ManagedMediaSource?: typeof MediaSource
-    }
-  ).ManagedMediaSource
-  return new (constructor ?? MediaSource)()
+  return new (
+    (
+      globalThis as typeof globalThis & {
+        ManagedMediaSource?: typeof MediaSource
+      }
+    ).ManagedMediaSource ?? MediaSource
+  )()
 }
 
 const revoke = (url: string | undefined): void => {
@@ -138,7 +139,7 @@ export const media_sources = (media: HTMLMediaElement) => {
         if (duration > 0) {
           source.duration = duration
         }
-        const buffer = mse(
+        const buffer = media_source(
           source.addSourceBuffer(media.dataset["mseType"] as string),
           {
             currentTime: () => media.currentTime,
