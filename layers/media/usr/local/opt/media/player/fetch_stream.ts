@@ -20,13 +20,14 @@ const stream = async function* (
 
 export const water_stream = async function* (
   request: Request,
-  lo: () => true,
-  hi: () => true,
-): Generator<Uint8Array<ArrayBuffer>, undefined, Request> {
+): AsyncGenerator<Uint8Array<ArrayBuffer>, undefined, Request | undefined> {
+  // like this?
+
   for (;;) {
     for await (const bytes of stream(request)) {
-      yield bytes
-      if (hi()) {
+      const r = yield bytes
+      if (r) {
+        request = r
         break
       }
     }
