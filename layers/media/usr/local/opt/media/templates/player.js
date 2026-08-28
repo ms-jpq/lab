@@ -524,6 +524,7 @@ const play_attempt = async (signal, buffer, states, position) => {
   const attempt = new AbortController()
   const attempt_signal = AbortSignal.any([signal, attempt.signal])
   const current = session(attempt_signal, buffer, position)
+  /** @type {Promise<IteratorResult<void, Failure | void>> | undefined} */
   let progress = current.next()
   let change = states.next()
   try {
@@ -637,7 +638,7 @@ const playback_page = async (signal) => {
 }
 
 /** @param {SubmitEvent} event */
-form.onsubmit = (event) => {
+const submit = (event) => {
   if (event.submitter?.classList.contains("back")) {
     return
   }
@@ -653,7 +654,7 @@ form.onsubmit = (event) => {
   location.replace(target)
 }
 
-void (async () => {
+const main = async () => {
   set_position(initial_position)
   for (;;) {
     const page = new AbortController()
@@ -666,4 +667,7 @@ void (async () => {
       await playback
     }
   }
-})().catch(report)
+}
+
+form.onsubmit = submit
+void main().catch(report)

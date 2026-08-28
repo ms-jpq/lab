@@ -77,11 +77,11 @@ const cases: TestCase[] = []
 const test = (name: string, _options: typeof options, run: TestBody): void => {
   cases.push({ name, run })
 }
-const present = <T>(value: T | undefined): T => {
-  assert.notEqual(value, undefined)
+const present = <T,>(value: T | undefined): T => {
+  assert.ok(value !== undefined)
   return value
 }
-const nextValue = async <T>(
+const nextValue = async <T,>(
   iterator: AsyncIterator<T, unknown, undefined>,
 ): Promise<T> => {
   const result = await iterator.next()
@@ -864,7 +864,7 @@ test(
     assert.equal(current.context.player_test.available(10), 10)
     assert.equal(current.context.player_test.available(9.95), 10)
     controller.abort()
-    await lifetime.return()
+    await lifetime.return(undefined)
     assert.equal(current.media.src, "")
     assert.equal(current.media.loads, 1)
     assert.equal(current.revoked.length, 1)
@@ -882,11 +882,12 @@ test(
 
     current.media.currentTime = 100
     await buffer.next(new Uint8Array([2]))
-    const [openedBuffer] = current.sources[0].sourceBuffers
+    const source = present(current.sources[0])
+    const openedBuffer = present(source.sourceBuffers[0])
     assert.deepEqual(openedBuffer.removes, [[0, 70]])
 
     controller.abort()
-    await lifetime.return()
+    await lifetime.return(undefined)
   },
 )
 
@@ -899,7 +900,8 @@ test(
     await buffer.next(10)
     await buffer.next(new Uint8Array([1]))
 
-    const [openedBuffer] = current.sources[0].sourceBuffers
+    const source = present(current.sources[0])
+    const openedBuffer = present(source.sourceBuffers[0])
     assert.equal(openedBuffer.updating, false)
     assert.equal(openedBuffer.appendState, "parsing")
     assert.equal((await buffer.next(30)).done, false)
@@ -910,7 +912,7 @@ test(
     assert.equal(current.media.loads, 0)
 
     controller.abort()
-    await lifetime.return()
+    await lifetime.return(undefined)
   },
 )
 
@@ -927,7 +929,8 @@ test(
     const source = current.media.src
     current.media.currentTime = 30
     assert.equal((await buffer.next(30)).done, false)
-    const [openedBuffer] = current.sources[0].sourceBuffers
+    const mediaSource = present(current.sources[0])
+    const openedBuffer = present(mediaSource.sourceBuffers[0])
     assert.equal(openedBuffer.aborts, 1)
     assert.deepEqual(openedBuffer.removes, [[20, 20.001]])
     assert.equal(current.media.src, source)
@@ -936,7 +939,7 @@ test(
     assert.equal(current.revoked.length, 0)
 
     controller.abort()
-    await lifetime.return()
+    await lifetime.return(undefined)
   },
 )
 
@@ -948,8 +951,8 @@ test(
     const { buffer, controller, lifetime } = await open_mse(current)
     await buffer.next(10)
 
-    const [source] = current.sources
-    const [openedBuffer] = source.sourceBuffers
+    const source = present(current.sources[0])
+    const openedBuffer = present(source.sourceBuffers[0])
     openedBuffer.holdUpdate = true
     const appending = buffer.next(new Uint8Array([1]))
     while (!openedBuffer.updating) {
@@ -958,7 +961,7 @@ test(
 
     controller.abort()
     let closed = false
-    const closing = lifetime.return().then(() => {
+    const closing = lifetime.return(undefined).then(() => {
       closed = true
     })
     await new Promise((resolve) => setImmediate(resolve))
@@ -967,7 +970,7 @@ test(
     assert.notEqual(current.media.src, "")
     assert.equal(current.media.loads, 0)
 
-    openedBuffer.releaseUpdate()
+    present(openedBuffer.releaseUpdate)()
     await appending
     await closing
     assert.equal(current.media.src, "")
@@ -990,8 +993,9 @@ test(
       10,
     )
     await states.next()
-    const [openedBuffer] = current.sources[0].sourceBuffers
-    await lifetime.return()
+    const source = present(current.sources[0])
+    const openedBuffer = present(source.sourceBuffers[0])
+    await lifetime.return(undefined)
     assert.equal(openedBuffer.usable, false)
 
     for (let index = 0; index < 64; index += 1) {
@@ -1002,17 +1006,19 @@ test(
       current.media.dispatchEvent(new Event("progress"))
       current.media.dispatchEvent(new Event("timeupdate"))
       current.media.dispatchEvent(new Event("seeking"))
-      const changes = [await observed, await states.next(), await states.next()]
+      const changes = [
+        await nextValue({ next: () => observed }),
+        await nextValue(states),
+        await nextValue(states),
+      ]
       assert.deepEqual(
-        changes.flatMap(({ value }) =>
-          value.seek === undefined ? [] : [value.seek],
-        ),
+        changes.flatMap(({ seek }) => (seek === undefined ? [] : [seek])),
         [position],
       )
     }
 
     stateController.abort()
-    await states.return()
+    await states.return(undefined)
   },
 )
 
@@ -1021,9 +1027,9 @@ test(
   options,
   async () => {
     const current = await fixture()
-    const secondRequest = Promise.withResolvers()
+    const secondRequest = Promise.withResolvers<string>()
     let requests = 0
-    let targetSignal = undefined
+    let targetSignal: AbortSignal | undefined = undefined
     current.context.fetch = async (url, { signal }) => {
       requests += 1
       if (requests === 2) {
@@ -1052,7 +1058,7 @@ test(
     while (requests < 1) {
       await new Promise((resolve) => setImmediate(resolve))
     }
-    const [mediaSource] = current.sources
+    const mediaSource = present(current.sources[0])
     while (mediaSource.sourceBuffers[0]?.buffered.length !== 1) {
       await new Promise((resolve) => setImmediate(resolve))
     }
@@ -1075,11 +1081,11 @@ test(
     await new Promise((resolve) => setImmediate(resolve))
     assert.equal(request.searchParams.get("t"), "110")
     assert.equal(requests, 2)
-    assert.equal(targetSignal.aborted, false)
+    assert.equal(present<AbortSignal>(targetSignal).aborted, false)
     assert.equal(current.sources.length, 1)
     assert.equal(current.subtitle.sources.length, 1)
     assert.equal(
-      new URL(current.subtitle.sources[0]).searchParams.get("t"),
+      new URL(present(current.subtitle.sources[0])).searchParams.get("t"),
       "0",
     )
     assert.equal(current.media.src, source)
@@ -1098,7 +1104,7 @@ test(
   options,
   async () => {
     const current = await fixture()
-    const retried = Promise.withResolvers()
+    const retried = Promise.withResolvers<string>()
     let requests = 0
     current.context.fetch = async (url, { signal }) => {
       requests += 1
@@ -1155,12 +1161,13 @@ test(
   options,
   async () => {
     const current = await fixture()
-    const replaced = Promise.withResolvers()
-    const requests = []
+    const replaced = Promise.withResolvers<string>()
+    const requests: string[] = []
     let activeReaders = 0
-    const readersAtLoad = []
+    const readersAtLoad: number[] = []
     let retryDelays = 0
-    let firstResponse = undefined
+    let firstResponse: ReadableStreamDefaultController<Uint8Array> | undefined =
+      undefined
     current.context.setTimeout = (run) => {
       retryDelays += 1
       return setTimeout(run, 0)
@@ -1188,7 +1195,7 @@ test(
         statusText: "OK",
       }
     }
-    const release = current.media.onLoad
+    const release = present(current.media.onLoad)
     current.media.onLoad = () => {
       readersAtLoad.push(activeReaders)
       release()
@@ -1206,8 +1213,10 @@ test(
       while (current.sources[0]?.sourceBuffers[0]?.buffered.length !== 1) {
         await new Promise((resolve) => setImmediate(resolve))
       }
-      current.sources[0].sourceBuffers[0].usable = false
-      firstResponse.enqueue(new Uint8Array([2]))
+      const source = present(current.sources[0])
+      present(source.sourceBuffers[0]).usable = false
+      const response = present(firstResponse)
+      response.enqueue(new Uint8Array([2]))
 
       const request = new URL(await replaced.promise)
       assert.equal(request.searchParams.get("t"), "40")
@@ -1238,7 +1247,8 @@ test(
       while (current.sources[0]?.sourceBuffers[0]?.buffered.length !== 1) {
         await new Promise((resolve) => setImmediate(resolve))
       }
-      current.sources[0].sourceBuffers[0].abortError = new DOMException(
+      const source = present(current.sources[0])
+      present(source.sourceBuffers[0]).abortError = new DOMException(
         "The operation was aborted",
         "AbortError",
       )
@@ -1249,7 +1259,10 @@ test(
       while (current.sources.length !== 2 || current.requests.length !== 2) {
         await new Promise((resolve) => setImmediate(resolve))
       }
-      assert.equal(new URL(current.requests[1]).searchParams.get("t"), "110")
+      assert.equal(
+        new URL(present(current.requests[1])).searchParams.get("t"),
+        "110",
+      )
       assert.equal(current.sources.length, 2)
       assert.equal(current.errors.length, 1)
       assert.equal(
@@ -1263,4 +1276,13 @@ test(
       await assert.doesNotReject(playback)
     }
   },
+)
+
+const shuffled = cases
+  .map((testCase) => ({ order: crypto.randomUUID(), testCase }))
+  .sort((left, right) => left.order.localeCompare(right.order))
+  .map(({ testCase }) => testCase)
+
+await Promise.all(
+  shuffled.map(({ name, run }) => nodeTest(name, options, run)),
 )
