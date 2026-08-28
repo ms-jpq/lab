@@ -1,7 +1,7 @@
 /** @typedef {number | readonly [position: number, bytes: Uint8Array]} MseOperation */
 /** @typedef {AsyncGenerator<void, void, MseOperation | undefined> & {active: () => boolean, contains: (position: number) => boolean, frontier: (position: number) => number | undefined, play_ahead: (position: number) => number}} Mse */
 /** @typedef {AsyncGenerator<void, void, void>} Session */
-/** @typedef {ReturnType<typeof page_state> & {failed: boolean, moved: boolean, started: boolean}} PageChange */
+/** @typedef {ReturnType<typeof page_state> & {failed: boolean, moved: boolean}} PageChange */
 /** @typedef {readonly [AsyncIterator<unknown, void, void>, IteratorResult<unknown, void>]} IteratorSelection */
 
 const BUFFER = {
@@ -105,7 +105,6 @@ const set_position = (value) => {
 const page_state = () => ({
   error: media.error,
   paused: media.paused,
-  playable: media.readyState >= media.HAVE_FUTURE_DATA,
   seeking: media.seeking,
   subtitle_error: subtitle !== null && subtitle.readyState === subtitle.ERROR,
   time: media.currentTime,
@@ -148,7 +147,6 @@ const page_states = (signal) => {
           Number.isFinite(current.time) &&
           (current.time !== previous.time ||
             current.seeking !== previous.seeking),
-        started: previous.paused && !current.paused,
       }
       previous = current
     }
@@ -355,7 +353,6 @@ const session = (signal, buffer) => {
 const playback_page = async (signal) => {
   const states = page_states(signal)
   let change = states.next()
-  let resume_when_ready = false
 
   for (;;) {
     const lifetime = new AbortController()
@@ -416,15 +413,6 @@ const playback_page = async (signal) => {
             const value = state.value
             if (value.moved && buffer.contains(value.time)) {
               set_position(value.time)
-            }
-            if (resume_when_ready) {
-              if (value.playable) {
-                resume_when_ready = false
-                await media.play()
-              }
-            } else if (value.started && !value.playable) {
-              resume_when_ready = true
-              media.pause()
             }
             if (value.failed || !buffer.active()) {
               break sessions
