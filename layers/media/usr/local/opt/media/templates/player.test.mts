@@ -14,7 +14,7 @@ type MutableTimeRanges = {
   end: (index: number) => number
 }
 type MediaFailure = { code: number; message?: string }
-type MediaState = {
+type MediaObservation = {
   ended: boolean
   error: MediaFailure | null
   seeking: boolean
@@ -22,10 +22,7 @@ type MediaState = {
 }
 type MseOperation = "end" | number | Uint8Array
 type Mse = AsyncGenerator<void, void, MseOperation | undefined>
-type SourceChange = {
-  error?: unknown
-  position: number
-}
+type SourceChange = { position: number } | { error: unknown; position: number }
 type PageChange = {
   error: MediaFailure | null
   position: number
@@ -33,14 +30,14 @@ type PageChange = {
 }
 type PlayerTest = {
   buffered_position: (position: number) => number | undefined
-  media_state_batches: (
+  media_observation_batches: (
     signal: AbortSignal,
-  ) => AsyncGenerator<MediaState[], void, void>
+  ) => AsyncGenerator<MediaObservation[], void, void>
   media_sources: AsyncGeneratorFactory<
     { buffer: Mse; position: number; signal: AbortSignal },
-    SourceChange | undefined
+    SourceChange
   >
-  page_states: AsyncGeneratorFactory<PageChange>
+  page_changes: AsyncGeneratorFactory<PageChange>
   playback_page: (signal: AbortSignal) => Promise<void>
   playable_position: (position: number) => number
   session: (
@@ -54,6 +51,7 @@ type PlayerTest = {
     signal: AbortSignal,
     position: number,
   ) => AsyncGenerator<Uint8Array, unknown, undefined>
+  subtitle_sources: (signal: AbortSignal) => AsyncGenerator<unknown, void, void>
 }
 type AsyncGeneratorFactory<TYield, TNext = undefined> = (
   signal: AbortSignal,
@@ -216,14 +214,51 @@ class Media extends EventTarget {
 
 class Subtitle extends EventTarget {
   dataset: { src: string }
+  listenerCalls: number
+  listenerWrappers: WeakMap<EventListenerOrEventListenerObject, EventListener>
   sources: string[]
   private _src: string
 
   constructor() {
     super()
     this.dataset = { src: "/movie/subtitle" }
+    this.listenerCalls = 0
+    this.listenerWrappers = new WeakMap()
     this.sources = []
     this._src = ""
+  }
+
+  override addEventListener(
+    type: string,
+    callback: EventListenerOrEventListenerObject | null,
+    options?: AddEventListenerOptions | boolean,
+  ): void {
+    if (!callback) {
+      super.addEventListener(type, callback, options)
+      return
+    }
+    const wrapped = (event: Event) => {
+      this.listenerCalls += 1
+      if (typeof callback === "function") {
+        callback.call(this, event)
+      } else {
+        callback.handleEvent(event)
+      }
+    }
+    this.listenerWrappers.set(callback, wrapped)
+    super.addEventListener(type, wrapped, options)
+  }
+
+  override removeEventListener(
+    type: string,
+    callback: EventListenerOrEventListenerObject | null,
+    options?: EventListenerOptions | boolean,
+  ): void {
+    super.removeEventListener(
+      type,
+      callback ? (this.listenerWrappers.get(callback) ?? callback) : null,
+      options,
+    )
   }
 
   get src() {
@@ -493,7 +528,7 @@ const fixture = async (position = 40) => {
   }) as PlayerContext
   const source = await readFile(PLAYER, "utf8")
   vm.runInContext(
-    `${source}\nglobalThis.player_test = { buffered_position, media_sources, media_state_batches, mse, page_states, playback_page, playable_position, session, source_stream, source_url, stream_position }`,
+    `${source}\nglobalThis.player_test = { buffered_position, media_observation_batches, media_sources, page_changes, playback_page, playable_position, session, source_stream, source_url, stream_position, subtitle_sources }`,
     context,
   )
   const { ranges } = media.buffered
@@ -651,7 +686,7 @@ const ready = async (
   position = 40,
 ) => {
   const controller = new AbortController()
-  const states = current.context.player_test.page_states(
+  const states = current.context.player_test.page_changes(
     controller.signal,
     position,
   )
@@ -673,7 +708,7 @@ test(
   async () => {
     const current = await fixture()
     const controller = new AbortController()
-    const states = current.context.player_test.page_states(
+    const states = current.context.player_test.page_changes(
       controller.signal,
       40,
     )
@@ -699,7 +734,7 @@ test(
   async () => {
     const current = await fixture()
     const parent = new AbortController()
-    const states = current.context.player_test.page_states(parent.signal, 40)
+    const states = current.context.player_test.page_changes(parent.signal, 40)
     await states.next()
     const calls = current.media.listenerCalls
 
@@ -718,7 +753,7 @@ test(
   async () => {
     const current = await fixture()
     const controller = new AbortController()
-    const batches = current.context.player_test.media_state_batches(
+    const batches = current.context.player_test.media_observation_batches(
       controller.signal,
     )
     await batches.next()
@@ -743,7 +778,7 @@ test(
 test("subtitle events stay outside media state batches", options, async () => {
   const current = await fixture()
   const controller = new AbortController()
-  const batches = current.context.player_test.media_state_batches(
+  const batches = current.context.player_test.media_observation_batches(
     controller.signal,
   )
   await batches.next()
@@ -762,12 +797,177 @@ test("subtitle events stay outside media state batches", options, async () => {
 })
 
 test(
+  "a subtitle error storm retries once without touching media",
+  options,
+  async () => {
+    const current = await fixture()
+    const advance: Array<() => void> = []
+    current.context.setTimeout = (run) => {
+      const timeout = setTimeout(run, 10_000)
+      advance.push(() => {
+        clearTimeout(timeout)
+        run()
+      })
+      return timeout
+    }
+    current.context.window.dispatchEvent(new Event("pageshow"))
+    try {
+      while (
+        current.subtitle.sources.length === 0 ||
+        current.sources[0]?.sourceBuffers[0]?.buffered.length !== 1
+      ) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+      await new Promise((resolve) => setImmediate(resolve))
+      const subtitleRequests = current.subtitle.sources.length
+      const mediaRequests = current.requests.length
+      const mediaSources = current.sources.length
+      const mediaSource = current.media.src
+      const source = present(current.sources[0])
+      const buffer = present(source.sourceBuffers[0])
+      const mseState = () => ({
+        aborts: buffer.aborts,
+        ends: source.ends,
+        offset: buffer.timestampOffset,
+        ranges: buffer.buffered.ranges.map(([start, end]) => [start, end]),
+        removes: buffer.removes.map(([start, end]) => [start, end]),
+      })
+      const beforeError = mseState()
+
+      for (let event = 0; event < 64; event += 1) {
+        current.subtitle.dispatchEvent(new Event("error"))
+      }
+      for (let turn = 0; turn < 32 && advance.length === 0; turn += 1) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+
+      assert.equal(current.errors.length, 1)
+      assert.equal(advance.length, 1)
+      assert.equal(current.requests.length, mediaRequests)
+      assert.equal(current.sources.length, mediaSources)
+      assert.equal(current.media.src, mediaSource)
+      assert.deepEqual(mseState(), beforeError)
+      present(advance[0])()
+      for (
+        let turn = 0;
+        turn < 32 && current.subtitle.sources.length === subtitleRequests;
+        turn += 1
+      ) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+
+      assert.equal(current.subtitle.sources.length, subtitleRequests + 1)
+      const initial = new URL(
+        present(current.subtitle.sources[subtitleRequests - 1]),
+      )
+      const retried = new URL(
+        present(current.subtitle.sources[subtitleRequests]),
+      )
+      assert.equal(retried.searchParams.get("t"), "0")
+      assert.notEqual(
+        retried.searchParams.get("request"),
+        initial.searchParams.get("request"),
+      )
+      current.subtitle.dispatchEvent(new Event("load"))
+      await new Promise((resolve) => setImmediate(resolve))
+      assert.equal(advance.length, 1)
+      assert.equal(current.errors.length, 1)
+      assert.equal(current.requests.length, mediaRequests)
+      assert.equal(current.sources.length, mediaSources)
+      assert.equal(current.media.src, mediaSource)
+      assert.deepEqual(mseState(), beforeError)
+    } finally {
+      current.context.window.dispatchEvent(new Event("pagehide"))
+    }
+  },
+)
+
+test(
+  "subtitle owner cancellation clears frozen retry and listeners",
+  options,
+  async () => {
+    const current = await fixture()
+    const scheduled: Array<{
+      run: () => void
+      timeout: ReturnType<typeof setTimeout>
+    }> = []
+    let timerCancellations = 0
+    current.context.clearTimeout = (timeout) => {
+      timerCancellations += 1
+      clearTimeout(timeout)
+    }
+    current.context.setTimeout = (run) => {
+      const timeout = setTimeout(run, 10_000)
+      scheduled.push({ run, timeout })
+      return timeout
+    }
+    let hidden = false
+    try {
+      current.context.window.dispatchEvent(new Event("pageshow"))
+      while (
+        current.subtitle.sources.length === 0 ||
+        current.sources[0]?.sourceBuffers[0]?.buffered.length !== 1
+      ) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+      current.subtitle.dispatchEvent(new Event("error"))
+      for (let turn = 0; turn < 32 && scheduled.length === 0; turn += 1) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+      assert.equal(scheduled.length, 1)
+      const subtitleRequests = current.subtitle.sources.length
+
+      current.context.window.dispatchEvent(new Event("pagehide"))
+      hidden = true
+      for (let turn = 0; turn < 32 && timerCancellations === 0; turn += 1) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+      assert.equal(timerCancellations, 1)
+      present(scheduled[0]).run()
+      await new Promise((resolve) => setImmediate(resolve))
+      assert.equal(current.subtitle.sources.length, subtitleRequests)
+      const listenerCalls = current.subtitle.listenerCalls
+      current.subtitle.dispatchEvent(new Event("error"))
+      current.subtitle.dispatchEvent(new Event("load"))
+      assert.equal(current.subtitle.listenerCalls, listenerCalls)
+    } finally {
+      if (!hidden) {
+        current.context.window.dispatchEvent(new Event("pagehide"))
+      }
+      for (const { timeout } of scheduled) {
+        clearTimeout(timeout)
+      }
+    }
+
+    const owned = await fixture()
+    const parent = new AbortController()
+    const owner = new AbortController()
+    const attempt = owned.context.player_test.subtitle_sources(
+      AbortSignal.any([parent.signal, owner.signal]),
+    )
+    const pending = attempt.next()
+    await new Promise((resolve) => setImmediate(resolve))
+    owner.abort()
+    assert.equal((await pending).done, true)
+    await attempt.return(undefined)
+    assert.equal(parent.signal.aborted, false)
+    const ownedCalls = owned.subtitle.listenerCalls
+    owned.subtitle.dispatchEvent(new Event("error"))
+    owned.subtitle.dispatchEvent(new Event("load"))
+    assert.equal(owned.subtitle.listenerCalls, ownedCalls)
+  },
+)
+
+test(
   "a user seek supersedes an unacknowledged startup position",
   options,
   async () => {
     const current = await fixture(0)
     const controller = new AbortController()
-    const states = current.context.player_test.page_states(controller.signal, 0)
+    const states = current.context.player_test.page_changes(
+      controller.signal,
+      0,
+    )
     await states.next()
 
     current.media.currentTime = 37
@@ -793,7 +993,7 @@ test(
   async () => {
     const current = await fixture()
     const controller = new AbortController()
-    const states = current.context.player_test.page_states(
+    const states = current.context.player_test.page_changes(
       controller.signal,
       40,
     )
@@ -1084,6 +1284,49 @@ test(
 )
 
 test(
+  "an explicit undefined source error immediately rebuilds at the same target",
+  options,
+  async () => {
+    const current = await fixture()
+    let retryDelays = 0
+    current.context.setTimeout = (run) => {
+      retryDelays += 1
+      return setTimeout(run, 0)
+    }
+    const controller = new AbortController()
+    const sources = current.context.player_test.media_sources(
+      controller.signal,
+      40,
+    )
+
+    try {
+      const opened = await sources.next()
+      assert.equal(opened.done, false)
+      const rebuilt = await sources.next({ error: undefined, position: 110 })
+      assert.equal(rebuilt.done, false)
+
+      assert.deepEqual(
+        {
+          errors: current.errors.map(([error]) => error),
+          position: rebuilt.value.position,
+          retryDelays,
+          sources: current.sources.length,
+        },
+        {
+          errors: [undefined],
+          position: 110,
+          retryDelays: 0,
+          sources: 2,
+        },
+      )
+    } finally {
+      controller.abort()
+      await sources.return(undefined)
+    }
+  },
+)
+
+test(
   "append evicts media more than thirty seconds behind",
   options,
   async () => {
@@ -1191,6 +1434,45 @@ test(
 )
 
 test(
+  "a queued SourceBuffer epoch does not enter after lifetime cancellation",
+  options,
+  async () => {
+    const current = await fixture()
+    const { buffer, controller, lifetime } = await open_mse(current)
+    await buffer.next(10)
+
+    const source = present(current.sources[0])
+    const openedBuffer = present(source.sourceBuffers[0])
+    openedBuffer.holdUpdate = true
+    const appending = buffer.next(new Uint8Array([1]))
+    while (!openedBuffer.updating) {
+      await new Promise((resolve) => setImmediate(resolve))
+    }
+
+    const offsetting = buffer.next(30)
+    controller.abort()
+    let closed = false
+    const closing = lifetime.return(undefined).then(() => {
+      closed = true
+    })
+    await new Promise((resolve) => setImmediate(resolve))
+
+    assert.equal(closed, false)
+    assert.equal(openedBuffer.timestampOffset, 10)
+    assert.equal(openedBuffer.aborts, 0)
+
+    present(openedBuffer.releaseUpdate)()
+    assert.equal((await appending).done, false)
+    await offsetting
+    await closing
+
+    assert.equal(openedBuffer.timestampOffset, 10)
+    assert.equal(openedBuffer.aborts, 0)
+    assert.equal(current.media.loads, 1)
+  },
+)
+
+test(
   "page state survives an event storm after SourceBuffer release",
   options,
   async () => {
@@ -1200,7 +1482,7 @@ test(
     await buffer.next(new Uint8Array([1]))
 
     const stateController = new AbortController()
-    const states = current.context.player_test.page_states(
+    const states = current.context.player_test.page_changes(
       stateController.signal,
       10,
     )
@@ -1301,6 +1583,31 @@ test(
 
     controller.abort()
     await playback
+  },
+)
+
+test(
+  "a new page lifetime starts at the persisted target",
+  options,
+  async () => {
+    const current = await fixture()
+    current.timeInput.value = "110"
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    try {
+      while (current.requests.length === 0) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+      assert.equal(
+        new URL(present(current.requests[0])).searchParams.get("t"),
+        "110",
+      )
+    } finally {
+      controller.abort()
+      await playback
+    }
   },
 )
 
@@ -1475,6 +1782,96 @@ test(
       assert.deepEqual(
         requests.map((url) => new URL(url).searchParams.get("t")),
         ["40", "40", "40", "40"],
+      )
+      assert.equal(current.sources.length, 1)
+      assert.equal(current.errors.length, 1)
+    } finally {
+      controller.abort()
+      await playback
+    }
+  },
+)
+
+test(
+  "benign page activity preserves one original retry deadline",
+  options,
+  async () => {
+    const current = await fixture()
+    const requests: string[] = []
+    let advance: (() => void) | undefined = undefined
+    let timerCallbacks = 0
+    let timerCancellations = 0
+    let timers = 0
+    current.context.clearTimeout = (timeout) => {
+      timerCancellations += 1
+      clearTimeout(timeout)
+    }
+    current.context.setTimeout = (run) => {
+      timers += 1
+      const invoke = () => {
+        timerCallbacks += 1
+        run()
+      }
+      const timeout = setTimeout(invoke, 10_000)
+      advance = () => {
+        clearTimeout(timeout)
+        invoke()
+      }
+      return timeout
+    }
+    current.context.fetch = async (url, { signal }) => {
+      requests.push(String(url))
+      if (requests.length === 1) {
+        throw new Error("source request failed")
+      }
+      return {
+        body: new ReadableStream({
+          start: (controller) => {
+            controller.enqueue(new Uint8Array([1]))
+            signal.addEventListener("abort", () => controller.close(), {
+              once: true,
+            })
+          },
+        }),
+        ok: true,
+        status: 200,
+        statusText: "OK",
+      }
+    }
+
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    try {
+      while (timers !== 1) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+      for (let event = 0; event < 64; event += 1) {
+        current.media.dispatchEvent(new Event("timeupdate"))
+        current.media.dispatchEvent(new Event("progress"))
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+
+      assert.equal(timers, 1)
+      assert.equal(timerCallbacks, 0)
+      assert.equal(timerCancellations, 0)
+      assert.deepEqual(
+        requests.map((url) => new URL(url).searchParams.get("t")),
+        ["40"],
+      )
+
+      present<() => void>(advance)()
+      while (requests.length !== 2) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+
+      assert.equal(timers, 1)
+      assert.equal(timerCallbacks, 1)
+      assert.equal(timerCancellations, 0)
+      assert.deepEqual(
+        requests.map((url) => new URL(url).searchParams.get("t")),
+        ["40", "40"],
       )
       assert.equal(current.sources.length, 1)
       assert.equal(current.errors.length, 1)
