@@ -34,6 +34,7 @@ class Media extends EventTarget {
     this.seeking = false
     this._src = ""
     this.loads = 0
+    this.readyState = 0
   }
 
   get currentTime() {
@@ -54,6 +55,7 @@ class Media extends EventTarget {
   set src(value) {
     this._src = value
     this.buffered.ranges = []
+    this.readyState = 0
     this.currentTime = 0
   }
 
@@ -187,6 +189,10 @@ const fixture = async (position = 40) => {
         const ranges = [[this.timestampOffset, this.timestampOffset + 10]]
         this._buffered.ranges = ranges
         media.buffered.ranges = ranges
+        if (media.readyState === 0) {
+          media.readyState = 1
+          media.dispatchEvent(new Event("loadedmetadata"))
+        }
         this.updating = false
         this.dispatchEvent(new Event("updateend"))
       }
@@ -392,6 +398,7 @@ const ready = async (current, position = 40) => {
   )
   await states.next()
   current.ranges.push([0, 100])
+  current.media.readyState = 1
   const aligned = states.next()
   current.media.dispatchEvent(new Event("canplay"))
   await aligned
@@ -402,7 +409,7 @@ const ready = async (current, position = 40) => {
 }
 
 test(
-  "native startup time is provisional until the requested position is buffered",
+  "startup applies its target after metadata without waiting for target bytes",
   { concurrency: true },
   async () => {
     const current = await fixture()
@@ -418,9 +425,9 @@ test(
     await transient
     assert.equal(current.timeInput.value, "40")
 
-    current.ranges.push([40, 80])
     const aligned = states.next()
-    current.media.dispatchEvent(new Event("canplay"))
+    current.media.readyState = 1
+    current.media.dispatchEvent(new Event("loadedmetadata"))
     await aligned
     assert.equal(current.media.currentTime, 40)
     controller.abort()
@@ -977,7 +984,12 @@ test(
     const current = await fixture()
     const replaced = Promise.withResolvers()
     const requests = []
+    let retryDelays = 0
     let firstResponse = undefined
+    current.context.setTimeout = (run) => {
+      retryDelays += 1
+      return setTimeout(run, 0)
+    }
     current.context.fetch = async (url) => {
       requests.push(String(url))
       if (firstResponse) {
@@ -1020,6 +1032,7 @@ test(
       const request = new URL(await replaced.promise)
       assert.equal(request.searchParams.get("t"), "40")
       assert.equal(current.timeInput.value, "40")
+      assert.equal(retryDelays, 0)
       assert.equal(
         requests.some(
           (url) => new URL(url).searchParams.get("t") === "0",

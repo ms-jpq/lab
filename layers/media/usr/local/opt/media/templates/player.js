@@ -174,6 +174,7 @@ const page_state = () => ({
 const page_states = (signal, position) => {
   const observation = new AbortController()
   const observation_signal = AbortSignal.any([signal, observation.signal])
+  /** @type {{state: ReturnType<typeof page_state>, type: string}[]} */
   const events = []
   let changed = Promise.withResolvers()
   let previous = page_state()
@@ -247,7 +248,7 @@ const page_states = (signal, position) => {
             target = playable
           }
           if (
-            playable !== undefined &&
+            (media.readyState !== 0 || playable !== undefined) &&
             !media.seeking &&
             Math.abs(media.currentTime - requested_position) >
               POSITION_TOLERANCE
@@ -473,7 +474,9 @@ const media_sources = async function* (signal, position) {
       }
       position =
         (yield { buffer, position, signal: lifetime_signal }) ?? position
-      retry = await retry_delay(signal)
+      retry = lifetime_signal.aborted
+        ? !signal.aborted
+        : await retry_delay(signal)
     } catch (error) {
       if (!lifetime_signal.aborted) {
         console.error(error)
