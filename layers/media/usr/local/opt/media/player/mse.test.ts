@@ -16,7 +16,11 @@ const timeRanges = (...ranges: [number, number][]): TimeRanges => ({
 const fixture = (
   buffered: TimeRanges = timeRanges(),
   failure:
-    "append" | "append-sync" | "remove" | "remove-sync" | undefined = undefined,
+    | "append"
+    | "append-sync"
+    | "remove"
+    | "remove-sync"
+    | undefined = undefined,
   hold: "append" | "remove" | undefined = undefined,
   readyState: "open" | "ended" = "open",
   cancelOnAbort = false,
