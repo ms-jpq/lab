@@ -117,7 +117,10 @@ const fixture = async (position = 40) => {
       this.source = source
       this._buffered = timeRanges()
       this._timestampOffset = 0
+      this.aborts = 0
+      this.appendState = "waiting"
       this.holdUpdate = false
+      this.removes = []
       this.releaseUpdate = undefined
       this.updating = false
       this.usable = true
@@ -139,20 +142,47 @@ const fixture = async (position = 40) => {
 
     /** @param {number} value */
     set timestampOffset(value) {
+      if (!this.usable || this.updating) {
+        throw new DOMException(
+          "SourceBuffer is no longer usable",
+          "InvalidStateError",
+        )
+      }
       if (this.source.readyState === "ended") {
         this.source.readyState = "open"
         queueMicrotask(() => this.source.dispatchEvent(new Event("sourceopen")))
+      }
+      if (this.appendState === "parsing") {
+        throw new DOMException(
+          "SourceBuffer is parsing a media segment",
+          "InvalidStateError",
+        )
       }
       this._timestampOffset = value
     }
 
     abort() {
+      if (!this.usable || this.source.readyState !== "open") {
+        throw new DOMException(
+          "SourceBuffer is no longer usable",
+          "InvalidStateError",
+        )
+      }
+      this.aborts += 1
+      this.appendState = "waiting"
       this.updating = false
     }
 
     /** @param {Uint8Array} _bytes */
     appendBuffer(_bytes) {
+      if (!this.usable || this.updating) {
+        throw new DOMException(
+          "SourceBuffer is no longer usable",
+          "InvalidStateError",
+        )
+      }
       this.updating = true
+      this.appendState = "parsing"
       const complete = () => {
         const ranges = [[this.timestampOffset, this.timestampOffset + 10]]
         this._buffered.ranges = ranges
@@ -165,6 +195,26 @@ const fixture = async (position = 40) => {
       } else {
         queueMicrotask(complete)
       }
+    }
+
+    /** @param {number} start @param {number} end */
+    remove(start, end) {
+      if (!this.usable || this.updating) {
+        throw new DOMException(
+          "SourceBuffer is no longer usable",
+          "InvalidStateError",
+        )
+      }
+      if (this.source.readyState === "ended") {
+        this.source.readyState = "open"
+        queueMicrotask(() => this.source.dispatchEvent(new Event("sourceopen")))
+      }
+      this.removes.push([start, end])
+      this.updating = true
+      queueMicrotask(() => {
+        this.updating = false
+        this.dispatchEvent(new Event("updateend"))
+      })
     }
 
   }
@@ -277,7 +327,7 @@ const fixture = async (position = 40) => {
   })
   const source = await readFile(PLAYER, "utf8")
   vm.runInContext(
-    `${source}\nglobalThis.player_test = { mse, page_states, playback_page, playable_position, session, source_url, stream_position }`,
+    `${source}\nglobalThis.player_test = { available, contains, mse, page_states, playback_page, playable_position, session, source_url, stream_position }`,
     context,
   )
   const { ranges } = media.buffered
@@ -316,7 +366,6 @@ const ready = async (current, position = 40) => {
   const controller = new AbortController()
   const states = current.context.player_test.page_states(
     controller.signal,
-    current.buffer,
     position,
   )
   await states.next()
@@ -338,7 +387,6 @@ test(
     const controller = new AbortController()
     const states = current.context.player_test.page_states(
       controller.signal,
-      current.buffer,
       40,
     )
     await states.next()
@@ -365,7 +413,6 @@ test(
     const controller = new AbortController()
     const states = current.context.player_test.page_states(
       controller.signal,
-      current.buffer,
       0,
     )
     await states.next()
@@ -512,11 +559,8 @@ test(
     let appends = 0
     let ended = 0
     let offset = 0
-    let released = false
     let tail = 40
     const buffer = {
-      available: (position) => (tail > position ? position : undefined),
-      frontier: () => tail,
       next: async (operation) => {
         if (operation === "end") {
           ended += 1
@@ -526,13 +570,15 @@ test(
         } else if (operation instanceof Uint8Array) {
           appends += 1
           tail = offset + appends * 10
+          current.media.buffered.ranges = [
+            [current.media.currentTime, appends === 1 ? 100 : tail],
+          ]
           if (appends === 1) {
             firstAppend.resolve()
           }
         }
         return { done: false }
       },
-      play_ahead: () => (appends === 1 && !released ? 60 : 0),
     }
     const playback = current.context.player_test.session(
       controller.signal,
@@ -544,7 +590,7 @@ test(
     assert.equal((await paused).done, false)
     assert.equal(requests, 1)
 
-    released = true
+    current.media.buffered.ranges = []
     assert.equal((await playback.next()).done, true)
     assert.equal(appends, 2)
     assert.equal(cancellations, 0)
@@ -570,14 +616,44 @@ test(
     await buffer.next(10)
     await buffer.next(new Uint8Array([1]))
 
-    assert.equal(buffer.contains(10), true)
-    assert.equal(buffer.contains(9.95), false)
-    assert.equal(buffer.available(9.95), 10)
+    assert.equal(current.context.player_test.contains(10), true)
+    assert.equal(current.context.player_test.contains(9.95), false)
+    assert.equal(current.context.player_test.available(9.95), 10)
     controller.abort()
     await buffer.return()
     assert.equal(current.media.src, "")
     assert.equal(current.media.loads, 1)
     assert.equal(current.revoked.length, 1)
+  },
+)
+
+test(
+  "a new stream epoch aborts an incomplete parser before changing offset",
+  { concurrency: true, timeout: 1_000 },
+  async () => {
+    const current = await fixture()
+    const controller = new AbortController()
+    const buffer = current.context.player_test.mse(
+      controller.signal,
+      current.media,
+      10,
+    )
+    assert.equal((await buffer.next()).done, false)
+    await buffer.next(10)
+    await buffer.next(new Uint8Array([1]))
+
+    const [openedBuffer] = current.sources[0].sourceBuffers
+    assert.equal(openedBuffer.updating, false)
+    assert.equal(openedBuffer.appendState, "parsing")
+    assert.equal((await buffer.next(30)).done, false)
+    assert.equal(openedBuffer.aborts, 1)
+    assert.equal(openedBuffer.appendState, "waiting")
+    assert.equal(openedBuffer.timestampOffset, 30)
+    assert.equal(current.sources.length, 1)
+    assert.equal(current.media.loads, 0)
+
+    controller.abort()
+    await buffer.return()
   },
 )
 
@@ -669,7 +745,6 @@ test(
     const stateController = new AbortController()
     const states = current.context.player_test.page_states(
       stateController.signal,
-      buffer,
       10,
     )
     await states.next()
