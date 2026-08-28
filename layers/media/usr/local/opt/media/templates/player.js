@@ -518,8 +518,7 @@ const mse = (signal, media, position) => {
           if (ranges === undefined) {
             return
           }
-          const expired =
-            end > 0 && ranges.length && ranges.start(0) < end
+          const expired = end > 0 && ranges.length && ranges.start(0) < end
           if (
             expired &&
             !(await update(opened_buffer, () => opened_buffer.remove(0, end)))
