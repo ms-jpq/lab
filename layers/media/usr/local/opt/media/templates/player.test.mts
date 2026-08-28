@@ -1233,14 +1233,10 @@ test(
   options,
   async () => {
     const current = await fixture()
-    const finalRequest = Promise.withResolvers<string>()
     const requests: string[] = []
     current.context.fetch = async (url, { signal }) => {
       const request = String(url)
       requests.push(request)
-      if (new URL(request).searchParams.get("t") === "163") {
-        finalRequest.resolve(request)
-      }
       return {
         body: new ReadableStream({
           start: (controller) => {
@@ -1269,9 +1265,17 @@ test(
         current.media.seeking = true
         current.media.dispatchEvent(new Event("seeking"))
       }
+      for (
+        let turn = 0;
+        turn < 128 &&
+        !requests.some(
+          (url) => new URL(url).searchParams.get("t") === "163",
+        );
+        turn += 1
+      ) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
 
-      const request = new URL(await finalRequest.promise)
-      assert.equal(request.searchParams.get("t"), "163")
       assert.deepEqual(
         requests.map((url) => new URL(url).searchParams.get("t")),
         ["40", "163"],

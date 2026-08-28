@@ -1,6 +1,6 @@
 /** @typedef {"end" | number | Uint8Array} MseOperation */
 /** @typedef {AsyncGenerator<void, void, MseOperation | undefined>} Mse */
-/** @typedef {{error: MediaError | null, position: number, seek: number | undefined}} PageChange */
+/** @typedef {{error: MediaError | null, position: number, queued: boolean, seek: number | undefined}} PageChange */
 /** @typedef {{buffer: Mse, position: number, signal: AbortSignal}} PlaybackSource */
 /** @typedef {{error?: unknown, position: number, reset: boolean}} SourceChange */
 /** @typedef {{error: unknown}} Failure */
@@ -271,6 +271,7 @@ const page_states = async function* (signal, position) {
           ? current.error
           : null,
       position: target,
+      queued: events.length !== 0,
       seek: restart ? target : undefined,
     }
     previous = current
@@ -500,6 +501,7 @@ const play_attempt = async (signal, buffer, states, page, position) => {
   const current = session(attempt_signal, buffer, position)
   /** @type {Promise<IteratorResult<void, Failure | void>> | undefined} */
   let progress = current.next()
+  let seeking = false
   try {
     for (;;) {
       const selected = await Promise.race([
@@ -529,6 +531,14 @@ const play_attempt = async (signal, buffer, states, page, position) => {
       }
       page.next = states.next()
       if (state.value.seek !== undefined) {
+        attempt.abort()
+        progress = undefined
+        seeking = true
+      }
+      if (state.value.queued) {
+        continue
+      }
+      if (seeking) {
         return { action: "seek", position }
       }
       if (progress === undefined) {
@@ -544,6 +554,7 @@ const play_attempt = async (signal, buffer, states, page, position) => {
 /** @param {AbortSignal} signal @param {AsyncGenerator<PageChange, void, void>} states @param {PageReader} page @param {number} position @returns {Promise<number | undefined>} */
 const wait_to_retry = async (signal, states, page, position) => {
   const delay = retry_delay(signal)
+  let seeking = false
   for (;;) {
     const selected = await Promise.race([
       page.next.then((result) => ({ page: result })),
@@ -561,6 +572,13 @@ const wait_to_retry = async (signal, states, page, position) => {
       throw state.value.error
     }
     page.next = states.next()
+    seeking ||= state.value.seek !== undefined
+    if (state.value.queued) {
+      continue
+    }
+    if (seeking) {
+      return position
+    }
   }
 }
 
@@ -572,6 +590,7 @@ const play_source = async ({ buffer, position, signal }) => {
     position,
   )
   const page = { next: states.next() }
+  let failure_reported = false
   try {
     for (;;) {
       const change = await play_attempt(signal, buffer, states, page, position)
@@ -580,7 +599,10 @@ const play_source = async ({ buffer, position, signal }) => {
         return { position, reset: false }
       }
       if (change.action === "retry") {
-        report(change.error)
+        if (!failure_reported) {
+          report(change.error)
+          failure_reported = true
+        }
         const waiting = await wait_to_retry(signal, states, page, position)
         if (waiting === undefined) {
           return { position, reset: false }
