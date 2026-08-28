@@ -1,4 +1,4 @@
-import { event_race } from "./util.ts"
+import { events } from "./util.ts"
 
 export type MseOperation = "end" | number | Uint8Array
 export type Mse = AsyncGenerator<void, void, MseOperation>
@@ -18,7 +18,7 @@ export const mse = async function* (
   const update = async (mutate: () => void) => {
     const operation = new AbortController()
     try {
-      const settled = event_race(operation.signal, buffer, "updateend", "error")
+      const settled = events(operation.signal, buffer, "updateend", "error")
       mutate()
       const event = await settled
       if (event?.type === "error") {

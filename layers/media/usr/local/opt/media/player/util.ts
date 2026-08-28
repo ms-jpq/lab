@@ -1,3 +1,15 @@
+export const defer = <T>(f: () => T) => ({
+  [Symbol.dispose]: f,
+  [Symbol.asyncDispose]: f,
+})
+
+export const abortion = (...parents: AbortSignal[]) => {
+  const controller = new AbortController()
+  const signal = AbortSignal.any([controller.signal, ...parents])
+
+  return { signal, [Symbol.dispose]: () => controller.abort() }
+}
+
 type EventMap<T> = {
   [K in keyof T as K extends `on${infer E}` ? E : never]: NonNullable<
     T[K]
@@ -8,18 +20,23 @@ type EventMap<T> = {
 
 type EventName<T> = keyof EventMap<T> & string
 
-export const once = <T extends EventTarget, E extends EventName<T>>(
+export const once = <
+  T extends EventTarget,
+  E extends EventName<T>,
+  R extends EventMap<T>[E],
+>(
   signal: AbortSignal,
   target: T,
   event: E,
-): Promise<EventMap<T>[E]> => {
-  const { promise, reject, resolve } = Promise.withResolvers<EventMap<T>[E]>()
-  const cancelled = () => reject(signal.reason)
+): Promise<R | undefined> => {
+  const { promise, resolve } = Promise.withResolvers<R | undefined>()
+
+  const cancelled = () => resolve(undefined)
   target.addEventListener(
     event,
     (received) => {
       signal.removeEventListener("abort", cancelled)
-      resolve(received as EventMap<T>[E])
+      resolve(received as R)
     },
     { signal, once: true },
   )
@@ -30,27 +47,45 @@ export const once = <T extends EventTarget, E extends EventName<T>>(
   return promise
 }
 
-export const event_race = <
+export const readableIterator = async function* <T>(
+  stream: ReadableStream<T>,
+): AsyncIteratorObject<T> {
+  const reader = stream.getReader()
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) {
+        return
+      }
+      yield value
+    }
+  } finally {
+    await reader.cancel()
+    reader.releaseLock()
+  }
+}
+
+export const events = async function* <
   T extends EventTarget,
-  const E extends EventName<T>[],
+  E extends EventName<T>,
+  R extends EventMap<T>[E],
 >(
   signal: AbortSignal,
   target: T,
-  ...events: E
-): Promise<EventMap<T>[E[number]]> =>
-  Promise.race(events.map((event) => once(signal, target, event)))
+  event: E,
+): AsyncIteratorObject<R, undefined, undefined> {
+  using a = abortion(signal)
 
-export const defer = <T>(f: () => T) => ({
-  [Symbol.dispose]: f,
-  [Symbol.asyncDispose]: f,
-})
+  const stream = new ReadableStream<R>({
+    start: (controller) => {
+      target.addEventListener(
+        event,
+        (received) => controller.enqueue(received as R),
+        { signal: a.signal },
+      )
+    },
+  })
 
-export const abortion = (parent?: AbortSignal) => {
-  const controller = new AbortController()
-  const signal = AbortSignal.any([
-    ...(parent ? [parent] : []),
-    controller.signal,
-  ])
-
-  return { signal, [Symbol.dispose]: () => controller.abort() }
+  yield* readableIterator(stream)
+  return
 }
