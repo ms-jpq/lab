@@ -327,28 +327,12 @@ const fixture = async (position = 40) => {
   })
   const source = await readFile(PLAYER, "utf8")
   vm.runInContext(
-    `${source}\nglobalThis.player_test = { available, contains, mse, page_states, playback_page, playable_position, session, source_url, stream_position }`,
+    `${source}\nglobalThis.player_test = { available, mse, page_states, playback_page, playable_position, session, source_url, stream_position }`,
     context,
   )
   const { ranges } = media.buffered
-  const buffer = {
-    available: (value) => {
-      for (const [start, end] of ranges) {
-        if (start <= value && value < end) {
-          return value
-        }
-        if (value < start && start - value <= 0.1) {
-          return start
-        }
-      }
-      return undefined
-    },
-    contains: (value) =>
-      ranges.some(([start, end]) => start <= value && value < end),
-  }
 
   return {
-    buffer,
     context,
     errors,
     media,
@@ -600,7 +584,7 @@ test(
 )
 
 test(
-  "containment is exact and teardown releases the owned source",
+  "availability aligns adjacent seeks and teardown releases the owned source",
   { concurrency: true },
   async () => {
     const current = await fixture()
@@ -616,14 +600,38 @@ test(
     await buffer.next(10)
     await buffer.next(new Uint8Array([1]))
 
-    assert.equal(current.context.player_test.contains(10), true)
-    assert.equal(current.context.player_test.contains(9.95), false)
+    assert.equal(current.context.player_test.available(10), 10)
     assert.equal(current.context.player_test.available(9.95), 10)
     controller.abort()
     await buffer.return()
     assert.equal(current.media.src, "")
     assert.equal(current.media.loads, 1)
     assert.equal(current.revoked.length, 1)
+  },
+)
+
+test(
+  "append evicts media more than thirty seconds behind",
+  { concurrency: true },
+  async () => {
+    const current = await fixture()
+    const controller = new AbortController()
+    const buffer = current.context.player_test.mse(
+      controller.signal,
+      current.media,
+      10,
+    )
+    assert.equal((await buffer.next()).done, false)
+    await buffer.next(10)
+    await buffer.next(new Uint8Array([1]))
+
+    current.media.currentTime = 100
+    await buffer.next(new Uint8Array([2]))
+    const [openedBuffer] = current.sources[0].sourceBuffers
+    assert.deepEqual(openedBuffer.removes, [[0, 70]])
+
+    controller.abort()
+    await buffer.return()
   },
 )
 
@@ -676,6 +684,9 @@ test(
     const source = current.media.src
     current.media.currentTime = 30
     assert.equal((await buffer.next(30)).done, false)
+    const [openedBuffer] = current.sources[0].sourceBuffers
+    assert.equal(openedBuffer.aborts, 1)
+    assert.deepEqual(openedBuffer.removes, [[20, 20.001]])
     assert.equal(current.media.src, source)
     assert.equal(current.media.currentTime, 30)
     assert.equal(current.media.loads, 0)

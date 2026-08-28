@@ -125,16 +125,11 @@ const available = (position) => {
   if (range.start <= position) {
     return position
   }
-  return range.start - position <= POSITION_TOLERANCE
-    ? range.start
-    : undefined
+  return range.start - position <= POSITION_TOLERANCE ? range.start : undefined
 }
 
-/** @param {number} position */
-const contains = (position) => available(position) === position
-
-/** @param {number} position */
-const play_ahead = (position) => {
+const play_ahead = () => {
+  const position = media.currentTime
   const range = buffered_range(position)
   return range && range.start - position <= POSITION_TOLERANCE
     ? range.end - position
@@ -265,7 +260,7 @@ const page_states = (signal, position) => {
           !user_seek &&
           requested_position === undefined &&
           moved &&
-          contains(current.time)
+          available(current.time) === current.time
         ) {
           set_position(current.time)
         }
@@ -292,11 +287,11 @@ const mse = (signal, media, position) => {
       globalThis
     )
   const source = new (ManagedMediaSource ?? MediaSource)()
+  const type = /** @type {string} */ (media.dataset.mseType)
+  const duration = Number(media.dataset.duration)
 
   /** @returns {AsyncGenerator<void, void, MseOperation | undefined>} */
   const operations = async function* () {
-    const type = /** @type {string} */ (media.dataset.mseType)
-    const duration = Number(media.dataset.duration)
     const opened = select(
       signal,
       (s) => once(source, s, "sourceopen"),
@@ -352,7 +347,9 @@ const mse = (signal, media, position) => {
             if (source.readyState === "ended") {
               const ranges = opened_buffer.buffered
               const end = ranges.length ? ranges.end(ranges.length - 1) : 0
-              if (!(await update(() => opened_buffer.remove(end, end + 0.001)))) {
+              if (
+                !(await update(() => opened_buffer.remove(end, end + 0.001)))
+              ) {
                 return
               }
             }
@@ -414,7 +411,7 @@ const source_stream = async function* (signal, time) {
 const session = async function* (signal, buffer, time) {
   const start = stream_position(time)
 
-  while (play_ahead(media.currentTime) >= BUFFER.LO) {
+  while (play_ahead() >= BUFFER.LO) {
     yield undefined
   }
   if ((await buffer.next(start)).done) {
@@ -424,10 +421,10 @@ const session = async function* (signal, buffer, time) {
     if ((await buffer.next(bytes)).done) {
       return
     }
-    if (play_ahead(media.currentTime) >= BUFFER.HI) {
+    if (play_ahead() >= BUFFER.HI) {
       do {
         yield undefined
-      } while (play_ahead(media.currentTime) >= BUFFER.LO)
+      } while (play_ahead() >= BUFFER.LO)
     }
   }
   if (!signal.aborted && !(await buffer.next("end")).done) {
@@ -491,10 +488,7 @@ const play_source = async (source) => {
               /** @type {IteratorSelection} */ ([states, await change]),
             progress
               ? async () =>
-                  /** @type {IteratorSelection} */ ([
-                    current,
-                    await progress,
-                  ])
+                  /** @type {IteratorSelection} */ ([current, await progress])
               : undefined,
           )
         )
