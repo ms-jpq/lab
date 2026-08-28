@@ -26,31 +26,36 @@ const op_lock = (
   cancel?: AbortSignal,
 ): AsyncDisposable => {
   const a = abortion()
-  const settled = merge<Event>(
-    events(a.signal, buffer, "updateend"),
-    events(a.signal, buffer, "error"),
-    ...(cancel ? [events(a.signal, cancel, "abort")] : []),
-  )
+  const updated = events(a.signal, buffer, "updateend")
+  const failed = events(a.signal, buffer, "error")
+  const cancelled = cancel ? events(a.signal, cancel, "abort") : undefined
+
+  const settled = merge(updated, failed, ...(cancelled ? [cancelled] : []))
   const changed = settled.next()
 
-  cancel?.addEventListener(
-    "abort",
-    () => {
+  const wait = async (selected: typeof changed): Promise<void> => {
+    const result = await selected
+    if (result.done) {
+      return
+    }
+
+    const [source, event] = result.value
+    if (source === cancelled) {
       if (buffer.updating) {
         buffer.abort()
       }
-    },
-    { once: true, signal: a.signal },
-  )
+      await wait(settled.next())
+      return
+    }
+    if (event.type === "error") {
+      throw event
+    }
+  }
 
   return {
     [Symbol.asyncDispose]: async (): Promise<void> => {
       try {
-        const result = await changed
-        const event = result.done ? undefined : result.value
-        if (event?.type === "error") {
-          throw event
-        }
+        await wait(changed)
       } finally {
         a[Symbol.dispose]()
         await settled.return?.()
@@ -133,7 +138,7 @@ export const media_sources = (media: HTMLMediaElement) => {
       const previous = state.url
       const next = URL.createObjectURL(source)
       using opening = abortion(signal)
-      const opened = merge<Event>(
+      const opened = merge(
         events(opening.signal, source, "sourceopen"),
         events(opening.signal, source, "sourceclose"),
       )
@@ -155,7 +160,7 @@ export const media_sources = (media: HTMLMediaElement) => {
       try {
         seek()
         const result = await selected
-        const event = result.done ? undefined : result.value
+        const event = result.done ? undefined : result.value[1]
         if (!event || signal.aborted) {
           return undefined
         }

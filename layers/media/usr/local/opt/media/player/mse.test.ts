@@ -147,6 +147,7 @@ const cases = [
       const appending = values.next(new Uint8Array([5]))
       await entered
       lifetime.abort()
+      await setImmediate()
       deepEqual(mutations, [["append", [5]], ["abort"]])
 
       const closed = await Promise.race([

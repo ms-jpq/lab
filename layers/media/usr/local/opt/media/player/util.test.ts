@@ -81,16 +81,37 @@ const cases = [
     run: async () => {
       const left = Promise.withResolvers<number>()
       const right = Promise.withResolvers<number>()
-      const values = merge(delayed(left.promise), delayed(right.promise))
+      const leftValues = delayed(left.promise)
+      const rightValues = delayed(right.promise)
+      const values = merge(leftValues, rightValues)
       const first = values.next()
 
       right.resolve(2)
-      deepEqual(await first, { done: false, value: 2 })
+      deepEqual(await first, { done: false, value: [rightValues, 2] })
 
       const second = values.next()
       left.resolve(1)
-      deepEqual(await second, { done: false, value: 1 })
+      deepEqual(await second, { done: false, value: [leftValues, 1] })
       deepEqual(await values.next(), { done: true, value: undefined })
+    },
+  },
+  {
+    name: "merge preserves each source's value type",
+    run: async () => {
+      const numbers = delayed(Promise.resolve(1))
+      const dogs = (async function* (): AsyncGenerator<string> {
+        yield "dog"
+        return
+      })()
+      const values: AsyncIteratorObject<
+        [typeof numbers, number] | [typeof dogs, string]
+      > = merge(numbers, dogs)
+
+      deepEqual(await values.next(), {
+        done: false,
+        value: [numbers, 1],
+      })
+      await values.return?.(undefined)
     },
   },
   {
@@ -108,9 +129,11 @@ const cases = [
         }
         return
       }
-      const values = merge(tracked(1, "left"), tracked(2, "right"))
+      const left = tracked(1, "left")
+      const right = tracked(2, "right")
+      const values = merge(left, right)
 
-      deepEqual(await values.next(), { done: false, value: 1 })
+      deepEqual(await values.next(), { done: false, value: [left, 1] })
       const closed = values.return?.(undefined)
       assert(closed)
       await closed
@@ -129,9 +152,14 @@ const cases = [
           throw error
         },
       })
-      const values = merge(failing(1, left), failing(2, right))
+      const leftValues = failing(1, left)
+      const rightValues = failing(2, right)
+      const values = merge(leftValues, rightValues)
 
-      deepEqual(await values.next(), { done: false, value: 1 })
+      deepEqual(await values.next(), {
+        done: false,
+        value: [leftValues, 1],
+      })
       const closed = values.return?.(undefined)
       assert(closed)
       const failure = await closed.then(

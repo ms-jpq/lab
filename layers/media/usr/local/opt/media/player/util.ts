@@ -21,9 +21,9 @@ type EventMap<T> = {
 type EventName<T> = keyof EventMap<T> & string
 
 export const once = <
-  T extends EventTarget,
-  E extends EventName<T>,
-  R extends EventMap<T>[E],
+  const T extends EventTarget,
+  const E extends EventName<T>,
+  const R extends EventMap<T>[E],
 >(
   signal: AbortSignal,
   target: T,
@@ -47,7 +47,7 @@ export const once = <
   return promise
 }
 
-export const readableIterator = async function* <T>(
+export const readableIterator = async function* <const T>(
   stream: ReadableStream<T>,
 ): AsyncIteratorObject<T> {
   const reader = stream.getReader()
@@ -69,9 +69,9 @@ export const readableIterator = async function* <T>(
 }
 
 export const events = async function* <
-  T extends EventTarget,
-  E extends EventName<T>,
-  R extends EventMap<T>[E],
+  const T extends EventTarget,
+  const E extends EventName<T>,
+  const R extends EventMap<T>[E],
 >(signal: AbortSignal, target: T, event: E): AsyncIteratorObject<R> {
   using a = abortion(signal)
 
@@ -98,7 +98,7 @@ export const events = async function* <
   return
 }
 
-const select = async <T>(
+const select = async <const T>(
   source: AsyncIterator<T>,
 ): Promise<readonly [AsyncIterator<T>, IteratorResult<T>]> => [
   source,
@@ -117,9 +117,11 @@ const close = async <T>(sources: Iterable<AsyncIterator<T>>): Promise<void> => {
   }
 }
 
-export const merge = async function* <T>(
-  ...sources: AsyncIterator<T>[]
-): AsyncIteratorObject<[AsyncIterator<T>, T]> {
+type Selection<T> = T extends AsyncIterator<infer U> ? [T, U] : never
+
+export const merge = async function* <
+  const T extends readonly AsyncIterator<unknown>[],
+>(...sources: T): AsyncIteratorObject<Selection<T[number]>> {
   const pending = new Map(
     sources.map((source) => [source, select(source)] as const),
   )
@@ -132,7 +134,7 @@ export const merge = async function* <T>(
       continue
     }
 
-    yield [source, result.value]
+    yield [source, result.value] as Selection<T[number]>
     pending.set(source, select(source))
   }
   return
@@ -159,12 +161,12 @@ const stream = async function* (
 export const logical_stream = async function* (
   request: Request,
 ): AsyncGenerator<Uint8Array<ArrayBuffer>, undefined, Request | undefined> {
-  requests: for (;;) {
+  l1: for (;;) {
     for await (const bytes of stream(request)) {
       const next = yield bytes
       if (next !== undefined) {
         request = next
-        continue requests
+        continue l1
       }
     }
     return
