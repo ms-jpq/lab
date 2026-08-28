@@ -2898,6 +2898,37 @@ test(
 )
 
 test(
+  "a synchronous source attachment failure releases its MSE acquisition",
+  options,
+  async () => {
+    const current = await fixture()
+    const clock = frozenClock(current.context)
+    const failure = new Error("source attachment failed")
+    Object.defineProperty(current.media, "src", {
+      get: () => "",
+      set: () => {
+        throw failure
+      },
+    })
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+
+    try {
+      await eventually(() => clock.length === 1)
+      assert.deepEqual(current.errors.map(([error]) => error), [failure])
+      assert.equal(current.sources.length, 1)
+      assert.equal(current.revoked.length, 1)
+    } finally {
+      controller.abort()
+      await playback
+      clock.dispose()
+    }
+  },
+)
+
+test(
   "an unbuffered seek supersedes frozen MSE setup backoff immediately",
   options,
   async () => {

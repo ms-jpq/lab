@@ -79,6 +79,9 @@ const retry_delay = (signal) => {
 /** @param {unknown} error */
 const report = (error) => console.error(error)
 
+/** @param {string | undefined} url */
+const revoke_url = (url) => url && URL.revokeObjectURL(url)
+
 /** @returns {FailureStorm} */
 const failure_storm = () => {
   let failed = false
@@ -681,16 +684,14 @@ const play_media = async (signal) => {
           "sourceclose",
         )
         loose_url = URL.createObjectURL(source)
-        previous_url = attached_url
         media.src = loose_url
+        previous_url = attached_url
         attached_url = loose_url
         loose_url = undefined
         media.currentTime = position
         const selected = await opened
-        if (previous_url) {
-          URL.revokeObjectURL(previous_url)
-          previous_url = undefined
-        }
+        revoke_url(previous_url)
+        previous_url = undefined
         if (!selected) {
           return
         }
@@ -726,12 +727,8 @@ const play_media = async (signal) => {
       } finally {
         lifetime.abort()
         await buffer?.return()
-        if (loose_url) {
-          URL.revokeObjectURL(loose_url)
-        }
-        if (previous_url) {
-          URL.revokeObjectURL(previous_url)
-        }
+        revoke_url(loose_url)
+        revoke_url(previous_url)
       }
       if (!failure) {
         return
@@ -756,9 +753,7 @@ const play_media = async (signal) => {
   } finally {
     media.removeAttribute("src")
     media.load()
-    if (attached_url) {
-      URL.revokeObjectURL(attached_url)
-    }
+    revoke_url(attached_url)
     observation.abort()
     await changes.return()
   }
