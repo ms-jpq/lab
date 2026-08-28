@@ -14,6 +14,12 @@ type MutableTimeRanges = {
   end: (index: number) => number
 }
 type MediaFailure = { code: number; message?: string }
+type MediaState = {
+  ended: boolean
+  error: MediaFailure | null
+  seeking: boolean
+  time: number
+}
 type MseOperation = "end" | number | Uint8Array
 type Mse = AsyncGenerator<void, void, MseOperation | undefined>
 type SourceChange = {
@@ -23,11 +29,13 @@ type SourceChange = {
 type PageChange = {
   error: MediaFailure | null
   position: number
-  queued: boolean
   seek: number | undefined
 }
 type PlayerTest = {
   available: (position: number) => number | undefined
+  media_state_batches: (
+    signal: AbortSignal,
+  ) => AsyncGenerator<MediaState[], void, void>
   media_sources: AsyncGeneratorFactory<
     { buffer: Mse; position: number; signal: AbortSignal },
     SourceChange | undefined
@@ -67,6 +75,7 @@ type MockFetch = (
   init: { signal: AbortSignal },
 ) => Promise<MockResponse>
 type PlayerContext = vm.Context & {
+  clearTimeout: (timeout: ReturnType<typeof setTimeout>) => void
   fetch: MockFetch
   MediaError: { MEDIA_ERR_ABORTED: number }
   player_test: PlayerTest
@@ -484,7 +493,7 @@ const fixture = async (position = 40) => {
   }) as PlayerContext
   const source = await readFile(PLAYER, "utf8")
   vm.runInContext(
-    `${source}\nglobalThis.player_test = { available, media_sources, mse, page_states, playback_page, playable_position, session, source_stream, source_url, stream_position }`,
+    `${source}\nglobalThis.player_test = { available, media_sources, media_state_batches, mse, page_states, playback_page, playable_position, session, source_stream, source_url, stream_position }`,
     context,
   )
   const { ranges } = media.buffered
@@ -704,6 +713,55 @@ test(
 )
 
 test(
+  "media state batches preserve synchronous event order",
+  options,
+  async () => {
+    const current = await fixture()
+    const controller = new AbortController()
+    const batches = current.context.player_test.media_state_batches(
+      controller.signal,
+    )
+    await batches.next()
+
+    current.media.currentTime = 110
+    current.media.seeking = true
+    current.media.dispatchEvent(new Event("seeking"))
+    current.media.seeking = false
+    current.media.dispatchEvent(new Event("seeked"))
+
+    const states = await nextValue(batches)
+    assert.equal(states.length, 2)
+    assert.equal(states[0]?.seeking, true)
+    assert.equal(states[0]?.time, 110)
+    assert.equal(states[1]?.seeking, false)
+    assert.equal(states[1]?.time, 110)
+    controller.abort()
+    await batches.return(undefined)
+  },
+)
+
+test("subtitle events stay outside media state batches", options, async () => {
+  const current = await fixture()
+  const controller = new AbortController()
+  const batches = current.context.player_test.media_state_batches(
+    controller.signal,
+  )
+  await batches.next()
+  let observed = false
+  const pending = batches.next().then((result) => {
+    observed = true
+    return result
+  })
+
+  current.subtitle.dispatchEvent(new Event("error"))
+  await new Promise((resolve) => setImmediate(resolve))
+  assert.equal(observed, false)
+
+  controller.abort()
+  assert.equal((await pending).done, true)
+})
+
+test(
   "a user seek supersedes an unacknowledged startup position",
   options,
   async () => {
@@ -751,49 +809,33 @@ test(
     current.media.seeking = false
     current.media.dispatchEvent(new Event("seeked"))
     current.media.dispatchEvent(new Event("timeupdate"))
-    const changes = await Promise.all([
-      nextValue(states),
-      nextValue(states),
-      nextValue(states),
-    ])
+    const change = await nextValue(states)
 
-    assert.deepEqual(
-      changes.map(({ position }) => position),
-      [40, 40, 40],
-    )
-    assert.deepEqual(
-      changes.map(({ seek }) => seek),
-      [undefined, undefined, undefined],
-    )
+    assert.equal(change.position, 40)
+    assert.equal(change.seek, undefined)
     assert.equal(current.timeInput.value, "40")
     controller.abort()
   },
 )
 
-const queuedSeekCases = [
+const synchronousSeekCases = [
   {
     events: ["seeking", "seeked"],
     name: "seeking-seeked",
-    positions: [110, 110],
-    seeks: [110, undefined],
   },
   {
     events: ["seeking", "timeupdate"],
     name: "seeking-timeupdate",
-    positions: [110, 110],
-    seeks: [110, undefined],
   },
   {
     events: ["timeupdate", "seeking"],
     name: "timeupdate-seeking",
-    positions: [40, 110],
-    seeks: [undefined, 110],
   },
 ] as const
 
-for (const { events, name, positions, seeks } of queuedSeekCases) {
+for (const { events, name } of synchronousSeekCases) {
   test(
-    `an unbuffered seek preserves synchronous ${name} order`,
+    `an unbuffered seek collapses synchronous ${name} to one seek`,
     options,
     async () => {
       const current = await fixture()
@@ -808,15 +850,9 @@ for (const { events, name, positions, seeks } of queuedSeekCases) {
         current.media.dispatchEvent(new Event(event))
       }
 
-      const changes = await Promise.all(events.map(() => nextValue(states)))
-      assert.deepEqual(
-        changes.map(({ seek }) => seek),
-        seeks,
-      )
-      assert.deepEqual(
-        changes.map(({ position }) => position),
-        positions,
-      )
+      const change = await nextValue(states)
+      assert.equal(change.seek, 110)
+      assert.equal(change.position, 110)
       assert.equal(current.timeInput.value, "110")
       controller.abort()
     },
@@ -899,7 +935,7 @@ test(
   },
 )
 
-test("a queued event storm emits one media failure", options, async () => {
+test("a synchronous event batch emits one media failure", options, async () => {
   const current = await fixture()
   const { controller, states } = await ready(current)
   const failure = { code: 3, message: "decode failed" }
@@ -907,16 +943,9 @@ test("a queued event storm emits one media failure", options, async () => {
   current.media.dispatchEvent(new Event("error"))
   current.media.dispatchEvent(new Event("timeupdate"))
   current.media.dispatchEvent(new Event("progress"))
-  const changes = await Promise.all([
-    nextValue(states),
-    nextValue(states),
-    nextValue(states),
-  ])
+  const change = await nextValue(states)
 
-  assert.deepEqual(
-    changes.flatMap(({ error }) => (error ? [error] : [])),
-    [failure],
-  )
+  assert.equal(change.error, failure)
   controller.abort()
 })
 
@@ -1189,15 +1218,8 @@ test(
       current.media.dispatchEvent(new Event("progress"))
       current.media.dispatchEvent(new Event("timeupdate"))
       current.media.dispatchEvent(new Event("seeking"))
-      const changes = [
-        await nextValue({ next: () => observed }),
-        await nextValue(states),
-        await nextValue(states),
-      ]
-      assert.deepEqual(
-        changes.flatMap(({ seek }) => (seek === undefined ? [] : [seek])),
-        [position],
-      )
+      const change = await nextValue({ next: () => observed })
+      assert.equal(change.seek, position)
     }
 
     stateController.abort()
@@ -1470,7 +1492,12 @@ test(
     const current = await fixture()
     const requests: string[] = []
     let timerCallbacks = 0
+    let timerCancellations = 0
     let timers = 0
+    current.context.clearTimeout = (timeout) => {
+      timerCancellations += 1
+      clearTimeout(timeout)
+    }
     current.context.setTimeout = (run) => {
       timers += 1
       return setTimeout(() => {
@@ -1519,6 +1546,7 @@ test(
       )
       assert.equal(timers, 1)
       assert.equal(timerCallbacks, 0)
+      assert.equal(timerCancellations, 1)
       assert.equal(current.timeInput.value, "110")
       assert.equal(current.media.currentTime, 110)
       assert.equal(current.sources.length, 1)

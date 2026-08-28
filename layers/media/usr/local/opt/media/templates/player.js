@@ -1,6 +1,6 @@
 /** @typedef {"end" | number | Uint8Array} MseOperation */
 /** @typedef {AsyncGenerator<void, void, MseOperation | undefined>} Mse */
-/** @typedef {{error: MediaError | null, position: number, queued: boolean, seek: number | undefined}} PageChange */
+/** @typedef {{error: MediaError | null, position: number, seek: number | undefined}} PageChange */
 /** @typedef {{buffer: Mse, position: number, signal: AbortSignal}} PlaybackSource */
 /** @typedef {{error?: unknown, position: number}} SourceChange */
 /** @typedef {{error: unknown}} Failure */
@@ -169,25 +169,25 @@ const persist_position = (value) => {
   } catch {}
 }
 
-const page_state = () => ({
+const media_state = () => ({
   ended: media.ended,
   error: media.error,
   seeking: media.seeking,
   time: media.currentTime,
 })
 
-/** @param {AbortSignal} signal @returns {AsyncGenerator<{queued: boolean, state: ReturnType<typeof page_state>}, void, void>} */
-const page_events = async function* (signal) {
+/** @param {AbortSignal} signal @returns {AsyncGenerator<ReturnType<typeof media_state>[], void, void>} */
+const media_state_batches = async function* (signal) {
   const types =
     "canplay ended error loadedmetadata progress seeked seeking timeupdate".split(
       " ",
     )
-  /** @type {ReturnType<typeof page_state>[]} */
+  /** @type {ReturnType<typeof media_state>[]} */
   const events = []
   let changed = Promise.withResolvers()
 
   const observe = () => {
-    events.push(page_state())
+    events.push(media_state())
     changed.resolve(true)
   }
   const cancelled = () => changed.resolve(false)
@@ -203,13 +203,9 @@ const page_events = async function* (signal) {
       if ((events.length === 0 && !(await changed.promise)) || signal.aborted) {
         return
       }
-      const state = /** @type {ReturnType<typeof page_state>} */ (
-        events.shift()
-      )
-      if (events.length === 0) {
-        changed = Promise.withResolvers()
-      }
-      yield { queued: events.length !== 0, state }
+      const states = events.splice(0)
+      changed = Promise.withResolvers()
+      yield states
     }
   } finally {
     signal.removeEventListener("abort", cancelled)
@@ -221,74 +217,88 @@ const page_events = async function* (signal) {
 
 /** @param {AbortSignal} signal @param {number} position @returns {AsyncGenerator<PageChange, void, void>} */
 const page_states = async function* (signal, position) {
-  let previous = page_state()
+  let previous = media_state()
   /** @type {number | undefined} */
   let pending_seek = position
   let target = position
 
-  for await (const { queued, state: observed } of page_events(signal)) {
-    let current = observed
-    let moved =
-      current.time !== previous.time || current.seeking !== previous.seeking
-    const internal_seek =
-      pending_seek !== undefined &&
-      Math.abs(current.time - pending_seek) <= POSITION_TOLERANCE
-    const user_seek = current.seeking && moved && !internal_seek
-    let restart = false
+  for await (const observed_states of media_state_batches(signal)) {
+    /** @type {MediaError | null} */
+    let error = null
+    /** @type {number | undefined} */
+    let seek = undefined
 
-    if (user_seek) {
-      target = playable_position(current.time)
-      const playable = available(target)
-      target = playable ?? target
-      restart = playable === undefined
-      pending_seek =
-        restart || Math.abs(current.time - target) > POSITION_TOLERANCE
-          ? target
-          : undefined
-      persist_position(target)
-    } else if (pending_seek !== undefined) {
-      const playable = available(pending_seek)
-      if (playable !== undefined) {
-        pending_seek = playable
-        target = playable
-      }
-      if (!media.seeking) {
-        const positioned =
-          Math.abs(media.currentTime - pending_seek) <= POSITION_TOLERANCE
-        if (!positioned && (media.readyState !== 0 || playable !== undefined)) {
-          media.currentTime = pending_seek
-        } else if (positioned && playable !== undefined) {
-          pending_seek = undefined
-        }
-      }
-      current = page_state()
-      moved =
+    for (const observed of observed_states) {
+      let current = observed
+      let moved =
         current.time !== previous.time || current.seeking !== previous.seeking
-    }
+      const internal_seek =
+        pending_seek !== undefined &&
+        Math.abs(current.time - pending_seek) <= POSITION_TOLERANCE
+      const user_seek = current.seeking && moved && !internal_seek
+      let restart = false
 
-    if (current.ended && !previous.ended) {
-      persist_position(0)
-    } else if (
-      !user_seek &&
-      pending_seek === undefined &&
-      moved &&
-      available(current.time) === current.time
-    ) {
-      persist_position(current.time)
-    }
+      if (user_seek) {
+        target = playable_position(current.time)
+        const playable = available(target)
+        target = playable ?? target
+        restart = playable === undefined
+        pending_seek =
+          restart || Math.abs(current.time - target) > POSITION_TOLERANCE
+            ? target
+            : undefined
+        seek = restart ? target : undefined
+        persist_position(target)
+      } else if (pending_seek !== undefined) {
+        const playable = available(pending_seek)
+        if (playable !== undefined) {
+          pending_seek = playable
+          target = playable
+        }
+        if (!media.seeking) {
+          const positioned =
+            Math.abs(media.currentTime - pending_seek) <= POSITION_TOLERANCE
+          if (
+            !positioned &&
+            (media.readyState !== 0 || playable !== undefined)
+          ) {
+            media.currentTime = pending_seek
+          } else if (positioned && playable !== undefined) {
+            pending_seek = undefined
+          }
+        }
+        current = media_state()
+        moved =
+          current.time !== previous.time || current.seeking !== previous.seeking
+      }
 
-    yield {
-      error:
+      if (current.ended && !previous.ended) {
+        persist_position(0)
+      } else if (
+        !user_seek &&
+        pending_seek === undefined &&
+        moved &&
+        available(current.time) === current.time
+      ) {
+        persist_position(current.time)
+      }
+
+      if (
+        error === null &&
         current.error !== previous.error &&
         current.error !== null &&
         current.error.code !== MediaError.MEDIA_ERR_ABORTED
-          ? current.error
-          : null,
-      position: target,
-      queued,
-      seek: restart ? target : undefined,
+      ) {
+        error = current.error
+      }
+      previous = current
     }
-    previous = current
+
+    yield {
+      error,
+      position: target,
+      seek,
+    }
   }
 }
 
@@ -394,11 +404,7 @@ const source_stream = async function* (signal, time) {
       request.abort()
       try {
         await reader.cancel()
-      } catch (error) {
-        if (!request_signal.aborted) {
-          throw error
-        }
-      }
+      } catch {}
     }
   }
 }
@@ -518,7 +524,6 @@ const play_attempt = async (signal, buffer, states, page, position) => {
   const current = session(attempt_signal, buffer, position)
   /** @type {Promise<IteratorResult<void, Failure | void>> | undefined} */
   let progress = current.next()
-  let seeking = false
   try {
     for (;;) {
       const selected = await Promise.race([
@@ -548,14 +553,6 @@ const play_attempt = async (signal, buffer, states, page, position) => {
       }
       page.next = states.next()
       if (state.value.seek !== undefined) {
-        attempt.abort()
-        progress = undefined
-        seeking = true
-      }
-      if (state.value.queued) {
-        continue
-      }
-      if (seeking) {
         return { action: "seek", position }
       }
       if (progress === undefined) {
@@ -570,32 +567,32 @@ const play_attempt = async (signal, buffer, states, page, position) => {
 
 /** @param {AbortSignal} signal @param {AsyncGenerator<PageChange, void, void>} states @param {PageReader} page @param {number} position @returns {Promise<number | undefined>} */
 const wait_to_retry = async (signal, states, page, position) => {
-  const delay = retry_delay(signal)
-  let seeking = false
-  for (;;) {
-    const selected = await Promise.race([
-      page.next.then((result) => ({ page: result })),
-      delay.then((result) => ({ delay: result })),
-    ])
-    if ("delay" in selected) {
-      return selected.delay ? position : undefined
+  const timer = new AbortController()
+  const delay = retry_delay(AbortSignal.any([signal, timer.signal]))
+  try {
+    for (;;) {
+      const selected = await Promise.race([
+        page.next.then((result) => ({ page: result })),
+        delay.then((result) => ({ delay: result })),
+      ])
+      if ("delay" in selected) {
+        return selected.delay ? position : undefined
+      }
+      const state = selected.page
+      if (state.done) {
+        return undefined
+      }
+      position = state.value.position
+      if (state.value.error) {
+        throw state.value.error
+      }
+      page.next = states.next()
+      if (state.value.seek !== undefined) {
+        return position
+      }
     }
-    const state = selected.page
-    if (state.done) {
-      return undefined
-    }
-    position = state.value.position
-    if (state.value.error) {
-      throw state.value.error
-    }
-    page.next = states.next()
-    seeking ||= state.value.seek !== undefined
-    if (state.value.queued) {
-      continue
-    }
-    if (seeking) {
-      return position
-    }
+  } finally {
+    timer.abort()
   }
 }
 
