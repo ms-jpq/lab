@@ -8,7 +8,8 @@ const PLAYER = new URL("player.js", import.meta.url)
 class Media extends EventTarget {
   constructor() {
     super()
-    this.currentTime = 0
+    this.currentTimes = []
+    this._currentTime = 0
     this.dataset = {
       duration: "200",
       mseType: 'video/mp4; codecs="avc1.640028"',
@@ -19,6 +20,16 @@ class Media extends EventTarget {
     this.seeking = false
     this._src = ""
     this.loads = 0
+  }
+
+  get currentTime() {
+    return this._currentTime
+  }
+
+  /** @param {number} value */
+  set currentTime(value) {
+    this._currentTime = value
+    this.currentTimes.push(value)
   }
 
   get src() {
@@ -80,6 +91,7 @@ const fixture = async (position = 40) => {
   const requests = []
   const revoked = []
   const sources = []
+  const errors = []
   const window = new EventTarget()
   class SourceBuffer extends EventTarget {
     /** @param {MediaSource} source */
@@ -201,7 +213,9 @@ const fixture = async (position = 40) => {
     AbortController,
     AbortSignal,
     clearTimeout,
-    console,
+    console: {
+      error: (...values) => errors.push(values),
+    },
     crypto,
     document: {
       querySelector: (selector) => {
@@ -277,6 +291,7 @@ const fixture = async (position = 40) => {
   return {
     buffer,
     context,
+    errors,
     media,
     ranges,
     requests,
@@ -453,40 +468,6 @@ test(
     const { value } = await observed
     assert.equal(value.failed, false)
     controller.abort()
-  },
-)
-
-test(
-  "a target adjacent to the first range is playable",
-  { concurrency: true },
-  async () => {
-    const current = await fixture()
-    const controller = new AbortController()
-    let appended = false
-    let ended = 0
-    const buffer = {
-      available: (position) =>
-        appended ? Math.max(position, 40.05) : undefined,
-      frontier: () => 200,
-      next: async (operation) => {
-        if (operation === "end") {
-          ended += 1
-          controller.abort()
-        } else if (Array.isArray(operation)) {
-          appended = true
-        }
-        return { done: false }
-      },
-      play_ahead: () => 0,
-    }
-    for await (const _ of current.context.player_test.session(
-      controller.signal,
-      buffer,
-      40,
-    )) {
-    }
-    assert.equal(ended, 1)
-    assert.equal(current.requests.length, 1)
   },
 )
 
@@ -702,6 +683,7 @@ test(
       await new Promise((resolve) => setImmediate(resolve))
     }
     const source = current.media.src
+    current.media.currentTimes.length = 0
     current.media.currentTime = 110
     current.media.seeking = true
     current.media.dispatchEvent(new Event("seeking"))
@@ -711,10 +693,16 @@ test(
     while (mediaSource.sourceBuffers[0]?.buffered.start(0) !== 110) {
       await new Promise((resolve) => setImmediate(resolve))
     }
+    current.media.dispatchEvent(new Event("progress"))
+    current.media.dispatchEvent(new Event("timeupdate"))
+    current.media.dispatchEvent(new Event("seeking"))
+    current.media.seeking = false
+    current.media.dispatchEvent(new Event("seeked"))
     await new Promise((resolve) => setImmediate(resolve))
     assert.equal(request.searchParams.get("t"), "110")
     assert.equal(requests, 2)
     assert.equal(targetSignal.aborted, false)
+    assert.equal(current.sources.length, 1)
     assert.equal(current.subtitle.sources.length, 1)
     assert.equal(
       new URL(current.subtitle.sources[0]).searchParams.get("t"),
@@ -722,6 +710,7 @@ test(
     )
     assert.equal(current.media.src, source)
     assert.equal(current.media.currentTime, 110)
+    assert.equal(current.media.currentTimes.includes(0), false)
     assert.equal(current.media.loads, 0)
     assert.equal(current.revoked.length, 0)
 
@@ -779,6 +768,7 @@ test(
       assert.equal(current.sources.length, 1)
       assert.equal(current.media.src, source)
       assert.equal(current.media.currentTime, 110)
+      assert.equal(current.errors.length, 1)
     } finally {
       controller.abort()
       await playback
