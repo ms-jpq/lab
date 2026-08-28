@@ -1,4 +1,4 @@
-import { mse, type Mse, type MseOperation } from "./mse.ts"
+import { media_sources, type Mse, type MseOperation } from "./mse.ts"
 
 type Failure = { failure: unknown }
 type Result<T> = Failure | { value: T }
@@ -51,13 +51,6 @@ const media = document.querySelector("video, audio") as HTMLMediaElement
 const subtitle = document.querySelector("#subtitle") as HTMLTrackElement | null
 const form = document.querySelector("form") as HTMLFormElement
 const time_input = form.elements.namedItem("t") as HTMLInputElement
-const MediaSourceConstructor =
-  (
-    globalThis as typeof globalThis & {
-      ManagedMediaSource?: typeof MediaSource
-    }
-  ).ManagedMediaSource ?? MediaSource
-
 const first_event = (
   target: EventTarget,
   signal: AbortSignal,
@@ -105,8 +98,6 @@ const result = <T>(promise: Promise<T>): Promise<Result<T>> =>
     (value) => ({ value }),
     (failure) => ({ failure }),
   )
-
-const revoke_url = (url: string | undefined) => url && URL.revokeObjectURL(url)
 
 const diagnostics = (): Diagnostics => {
   let failed = false
@@ -685,74 +676,13 @@ const play_source = async (
   }
 }
 
-const media_sources = () => {
-  let url: string | undefined = undefined
-  return {
-    close: () => {
-      try {
-        media.removeAttribute("src")
-        media.load()
-      } finally {
-        revoke_url(url)
-      }
-    },
-    open: async (signal: AbortSignal, page: PageReader) => {
-      const source = new MediaSourceConstructor()
-      const previous = url
-      const next = URL.createObjectURL(source)
-      const opening = new AbortController()
-      const opened = first_event(
-        source,
-        AbortSignal.any([signal, opening.signal]),
-        "sourceopen",
-        "sourceclose",
-      )
-      try {
-        media.src = next
-      } catch (error) {
-        opening.abort()
-        revoke_url(next)
-        throw error
-      }
-      url = next
-      try {
-        page.seek()
-        const event = await opened
-        if (!event || signal.aborted) {
-          return undefined
-        }
-        if (event.type !== "sourceopen") {
-          throw event
-        }
-        const duration = Number(media.dataset["duration"])
-        if (duration > 0) {
-          source.duration = duration
-        }
-        const buffer = mse(
-          source.addSourceBuffer(media.dataset["mseType"] as string),
-          {
-            currentTime: () => media.currentTime,
-            signal,
-            source,
-          },
-        )
-        await buffer.next()
-        return buffer
-      } finally {
-        opening.abort()
-        revoke_url(previous)
-      }
-    },
-  }
-}
-
 const play_attempt = async (
   signal: AbortSignal,
   sources: ReturnType<typeof media_sources>,
   failures: Diagnostics,
   page: PageReader,
 ) => {
-  const opened = await result(sources.open(signal, page))
+  const opened = await result(sources.open(signal, page.seek))
   if ("failure" in opened) {
     return signal.aborted
       ? undefined
@@ -778,7 +708,7 @@ const play_attempt = async (
 const play_media = async (signal: AbortSignal): Promise<void> => {
   const page = page_reader(signal, playable_position(Number(time_input.value)))
   const failures = diagnostics()
-  const sources = media_sources()
+  const sources = media_sources(media)
   try {
     while (!signal.aborted) {
       const page_failure = page.take_error()

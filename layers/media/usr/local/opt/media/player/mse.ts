@@ -1,4 +1,4 @@
-import { events } from "./util.js"
+import { abortion, events, merge } from "./util.ts"
 
 export type MseOperation = "end" | number | Uint8Array
 export type Mse = AsyncGenerator<void, void, MseOperation>
@@ -11,21 +11,41 @@ type MseContext = {
 
 const BEHIND = 30
 
+const media_source = (): MediaSource => {
+  const constructor = (
+    globalThis as typeof globalThis & {
+      ManagedMediaSource?: typeof MediaSource
+    }
+  ).ManagedMediaSource
+  return new (constructor ?? MediaSource)()
+}
+
+const revoke = (url: string | undefined): void => {
+  if (url !== undefined) {
+    URL.revokeObjectURL(url)
+  }
+}
+
 export const mse = async function* (
   buffer: SourceBuffer,
   { currentTime, signal, source }: MseContext,
 ): Mse {
   const update = async (mutate: () => void) => {
-    const operation = new AbortController()
+    using operation = abortion()
+    const settled = merge<Event>(
+      events(operation.signal, buffer, "updateend"),
+      events(operation.signal, buffer, "error"),
+    )
+    const changed = settled.next()
     try {
-      const settled = events(operation.signal, buffer, "updateend", "error")
       mutate()
-      const event = await settled
+      const { value: event } = await changed
       if (event?.type === "error") {
         throw event
       }
     } finally {
-      operation.abort()
+      operation[Symbol.dispose]()
+      await settled.return?.()
     }
   }
 
@@ -60,5 +80,76 @@ export const mse = async function* (
     await update(() =>
       buffer.appendBuffer(operation as Uint8Array<ArrayBuffer>),
     )
+  }
+}
+
+export const media_sources = (media: HTMLMediaElement) => {
+  const state: { url: string | undefined } = { url: undefined }
+
+  return {
+    close: (): void => {
+      try {
+        media.removeAttribute("src")
+        media.load()
+      } finally {
+        revoke(state.url)
+      }
+    },
+    open: async (
+      signal: AbortSignal,
+      seek: () => void,
+    ): Promise<Mse | undefined> => {
+      const source = media_source()
+      const previous = state.url
+      const next = URL.createObjectURL(source)
+      using opening = abortion(signal)
+      const opened = merge<Event>(
+        events(opening.signal, source, "sourceopen"),
+        events(opening.signal, source, "sourceclose"),
+      )
+      const selected = opened.next()
+      const stop = async (): Promise<void> => {
+        opening[Symbol.dispose]()
+        await opened.return?.()
+      }
+
+      try {
+        media.src = next
+      } catch (error) {
+        await stop()
+        revoke(next)
+        throw error
+      }
+
+      state.url = next
+      try {
+        seek()
+        const { value: event } = await selected
+        if (!event || signal.aborted) {
+          return undefined
+        }
+        if (event.type !== "sourceopen") {
+          throw event
+        }
+
+        const duration = Number(media.dataset["duration"])
+        if (duration > 0) {
+          source.duration = duration
+        }
+        const buffer = mse(
+          source.addSourceBuffer(media.dataset["mseType"] as string),
+          {
+            currentTime: () => media.currentTime,
+            signal,
+            source,
+          },
+        )
+        await buffer.next()
+        return buffer
+      } finally {
+        await stop()
+        revoke(previous)
+      }
+    },
   }
 }
