@@ -104,6 +104,7 @@ type PlayerContext = vm.Context & {
   MediaSource: new () => TestMseSource
   player_test: PlayerTest
   setTimeout: (run: () => void, delay?: number) => ReturnType<typeof setTimeout>
+  URL: typeof URL
 }
 type TestBody = (context: TestContext) => void | Promise<void>
 type TestCase = { name: string; run: TestBody }
@@ -525,7 +526,7 @@ const fixture = async (position = 40) => {
       })
     }
   }
-  class MediaSource extends EventTarget {
+  class MediaSource extends TrackedEventTarget {
     duration: number
     ends: number
     readyState: "closed" | "open" | "ended"
@@ -4002,6 +4003,40 @@ test(
       deepEqual(current.sources.length, 2)
       deepEqual(current.errors, [[undefined]])
     } finally {
+      controller.abort()
+      await playback
+      clock.dispose()
+    }
+  },
+)
+
+test(
+  "a failed object URL acquisition installs no source observers",
+  options,
+  async () => {
+    const current = await fixture()
+    const clock = frozenClock(current.context)
+    const failure = new Error("object URL acquisition failed")
+    const createObjectURL = current.context.URL.createObjectURL
+    current.context.URL.createObjectURL = () => {
+      throw failure
+    }
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+
+    try {
+      await eventually(() => clock.length === 1)
+      const source = present(current.sources[0])
+      const calls = source.listenerCalls
+      source.dispatchEvent(new Event("sourceopen"))
+      source.dispatchEvent(new Event("sourceclose"))
+
+      deepEqual(source.listenerCalls, calls)
+      deepEqual(current.errors.map(([error]) => error), [failure])
+    } finally {
+      current.context.URL.createObjectURL = createObjectURL
       controller.abort()
       await playback
       clock.dispose()
