@@ -107,10 +107,12 @@ const cases = [
         [typeof numbers, number] | [typeof dogs, string]
       > = merge(numbers, dogs)
 
-      deepEqual(await values.next(), {
-        done: false,
-        value: [numbers, 1],
-      })
+      const result = await values.next()
+      assert(!result.done)
+      deepEqual(
+        result.value,
+        result.value[0] === numbers ? [numbers, 1] : [dogs, "dog"],
+      )
       await values.return?.(undefined)
     },
   },

@@ -23,39 +23,26 @@ const revoke = (url: string | undefined): void => {
 
 const op_lock = (
   buffer: SourceBuffer,
-  cancel?: AbortSignal,
+  signal: AbortSignal,
 ): AsyncDisposable => {
-  const a = abortion()
-  const updated = events(a.signal, buffer, "updateend")
-  const failed = events(a.signal, buffer, "error")
-  const cancelled = cancel ? events(a.signal, cancel, "abort") : undefined
-
-  const settled = merge(updated, failed, ...(cancelled ? [cancelled] : []))
+  const a = abortion(signal)
+  const settled = merge(
+    events(a.signal, buffer, "updateend"),
+    events(a.signal, buffer, "error"),
+  )
   const changed = settled.next()
 
-  const wait = async (selected: typeof changed): Promise<void> => {
-    const result = await selected
-    if (result.done) {
-      return
-    }
-
-    const [source, event] = result.value
-    if (source === cancelled) {
-      if (buffer.updating) {
-        buffer.abort()
-      }
-      await wait(settled.next())
-      return
-    }
-    if (event.type === "error") {
-      throw event
-    }
-  }
-
   return {
-    [Symbol.asyncDispose]: async (): Promise<void> => {
+    [Symbol.asyncDispose]: async () => {
       try {
-        await wait(changed)
+        const { done, value } = await changed
+        if (done) {
+          return
+        }
+        const [_, event] = value
+        if (event.type === "error") {
+          throw event
+        }
       } finally {
         a[Symbol.dispose]()
         await settled.return?.()
@@ -95,7 +82,7 @@ export const media_source = async function* ({
           const ranges = buffer.buffered
           const end = ranges.length ? ranges.end(ranges.length - 1) : 0
 
-          await using _ = op_lock(buffer)
+          await using _ = op_lock(buffer, a.signal)
           buffer.remove(end, end + 0.001)
         }
         buffer.abort()
@@ -109,12 +96,16 @@ export const media_source = async function* ({
     const ranges = buffer.buffered
 
     if (cutoff > 0 && ranges.length && ranges.start(0) < cutoff) {
-      await using _ = op_lock(buffer)
+      await using _ = op_lock(buffer, a.signal)
       buffer.remove(0, cutoff)
     }
-
-    await using _ = op_lock(buffer, a.signal)
-    buffer.appendBuffer(operation as Uint8Array<ArrayBuffer>)
+    {
+      await using _ = op_lock(buffer, a.signal)
+      buffer.appendBuffer(operation as Uint8Array<ArrayBuffer>)
+    }
+    if (a.signal.aborted && buffer.updating) {
+      buffer.abort()
+    }
   }
 }
 

@@ -117,11 +117,15 @@ const close = async <T>(sources: Iterable<AsyncIterator<T>>): Promise<void> => {
   }
 }
 
-type Selection<T> = T extends AsyncIterator<infer U> ? [T, U] : never
+type Selection<T extends readonly AsyncIterator<unknown>[]> = {
+  [K in keyof T]: T[K] extends AsyncIterator<infer U>
+    ? [source: T[K], value: U]
+    : never
+}[number]
 
 export const merge = async function* <
   const T extends readonly AsyncIterator<unknown>[],
->(...sources: T): AsyncIteratorObject<Selection<T[number]>> {
+>(...sources: T): AsyncIteratorObject<Selection<T>> {
   const pending = new Map(
     sources.map((source) => [source, select(source)] as const),
   )
@@ -134,7 +138,7 @@ export const merge = async function* <
       continue
     }
 
-    yield [source, result.value] as Selection<T[number]>
+    yield [source, result.value] as Selection<T>
     pending.set(source, select(source))
   }
   return

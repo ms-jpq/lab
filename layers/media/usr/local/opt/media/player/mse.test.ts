@@ -1,7 +1,6 @@
 import { deepEqual, ok as assert } from "node:assert/strict"
 import { randomUUID } from "node:crypto"
 import nodeTest from "node:test"
-import { setImmediate } from "node:timers/promises"
 
 import { media_source } from "./mse.ts"
 
@@ -74,10 +73,6 @@ const fixture = (
     entered: entered.promise,
     lifetime,
     mutations,
-    release: () => {
-      buffer.updating = false
-      return buffer.dispatchEvent(new Event("updateend"))
-    },
     types,
     values,
   }
@@ -135,9 +130,9 @@ const cases = [
     },
   },
   {
-    name: "an entered SourceBuffer mutation drains before lifetime teardown",
+    name: "lifetime cancellation aborts an entered SourceBuffer mutation",
     run: async () => {
-      const { entered, lifetime, mutations, release, values } = fixture(
+      const { entered, lifetime, mutations, values } = fixture(
         timeRanges(),
         undefined,
         true,
@@ -147,17 +142,8 @@ const cases = [
       const appending = values.next(new Uint8Array([5]))
       await entered
       lifetime.abort()
-      await setImmediate()
-      deepEqual(mutations, [["append", [5]], ["abort"]])
-
-      const closed = await Promise.race([
-        appending.then(() => true),
-        setImmediate(false),
-      ])
-      deepEqual(closed, false)
-
-      release()
       await appending
+      deepEqual(mutations, [["append", [5]], ["abort"]])
       await values.return?.(undefined)
     },
   },
