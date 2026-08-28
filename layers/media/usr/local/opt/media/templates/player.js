@@ -178,6 +178,8 @@ const page_state = () => ({
 
 /** @param {AbortSignal} signal @param {number} position @returns {AsyncGenerator<PageChange, void, void>} */
 const page_states = async function* (signal, position) {
+  const listeners = new AbortController()
+  const listener_signal = AbortSignal.any([signal, listeners.signal])
   /** @type {ReturnType<typeof page_state>[]} */
   const events = []
   let changed = Promise.withResolvers()
@@ -191,90 +193,100 @@ const page_states = async function* (signal, position) {
     changed.resolve(true)
   }
 
-  signal.addEventListener("abort", () => changed.resolve(false), {
+  listener_signal.addEventListener("abort", () => changed.resolve(false), {
     once: true,
   })
 
   for (const type of "canplay ended error loadedmetadata progress seeked seeking timeupdate".split(
     " ",
   )) {
-    media.addEventListener(type, observe, { signal })
+    media.addEventListener(type, observe, { signal: listener_signal })
   }
   observe()
 
-  for (;;) {
-    if ((events.length === 0 && !(await changed.promise)) || signal.aborted) {
-      return
-    }
-
-    const observed = /** @type {ReturnType<typeof page_state>} */ (
-      events.shift()
-    )
-    if (events.length === 0) {
-      changed = Promise.withResolvers()
-    }
-    let current = observed
-    let moved =
-      current.time !== previous.time || current.seeking !== previous.seeking
-    const internal_seek =
-      pending_seek !== undefined &&
-      Math.abs(current.time - pending_seek) <= POSITION_TOLERANCE
-    const user_seek = current.seeking && moved && !internal_seek
-    let restart = false
-
-    if (user_seek) {
-      target = playable_position(current.time)
-      const playable = available(target)
-      target = playable ?? target
-      restart = playable === undefined
-      pending_seek =
-        restart || Math.abs(current.time - target) > POSITION_TOLERANCE
-          ? target
-          : undefined
-      persist_position(target)
-    } else if (pending_seek !== undefined) {
-      const playable = available(pending_seek)
-      if (playable !== undefined) {
-        pending_seek = playable
-        target = playable
+  try {
+    for (;;) {
+      if (
+        (events.length === 0 && !(await changed.promise)) ||
+        listener_signal.aborted
+      ) {
+        return
       }
-      if (!media.seeking) {
-        const positioned =
-          Math.abs(media.currentTime - pending_seek) <= POSITION_TOLERANCE
-        if (!positioned && (media.readyState !== 0 || playable !== undefined)) {
-          media.currentTime = pending_seek
-        } else if (positioned && playable !== undefined) {
-          pending_seek = undefined
-        }
+
+      const observed = /** @type {ReturnType<typeof page_state>} */ (
+        events.shift()
+      )
+      if (events.length === 0) {
+        changed = Promise.withResolvers()
       }
-      current = page_state()
-      moved =
+      let current = observed
+      let moved =
         current.time !== previous.time || current.seeking !== previous.seeking
-    }
+      const internal_seek =
+        pending_seek !== undefined &&
+        Math.abs(current.time - pending_seek) <= POSITION_TOLERANCE
+      const user_seek = current.seeking && moved && !internal_seek
+      let restart = false
 
-    if (current.ended && !previous.ended) {
-      persist_position(0)
-    } else if (
-      !user_seek &&
-      pending_seek === undefined &&
-      moved &&
-      available(current.time) === current.time
-    ) {
-      persist_position(current.time)
-    }
+      if (user_seek) {
+        target = playable_position(current.time)
+        const playable = available(target)
+        target = playable ?? target
+        restart = playable === undefined
+        pending_seek =
+          restart || Math.abs(current.time - target) > POSITION_TOLERANCE
+            ? target
+            : undefined
+        persist_position(target)
+      } else if (pending_seek !== undefined) {
+        const playable = available(pending_seek)
+        if (playable !== undefined) {
+          pending_seek = playable
+          target = playable
+        }
+        if (!media.seeking) {
+          const positioned =
+            Math.abs(media.currentTime - pending_seek) <= POSITION_TOLERANCE
+          if (
+            !positioned &&
+            (media.readyState !== 0 || playable !== undefined)
+          ) {
+            media.currentTime = pending_seek
+          } else if (positioned && playable !== undefined) {
+            pending_seek = undefined
+          }
+        }
+        current = page_state()
+        moved =
+          current.time !== previous.time || current.seeking !== previous.seeking
+      }
 
-    yield {
-      error:
-        current.error !== previous.error &&
-        current.error !== null &&
-        current.error.code !== MediaError.MEDIA_ERR_ABORTED
-          ? current.error
-          : null,
-      position: target,
-      queued: events.length !== 0,
-      seek: restart ? target : undefined,
+      if (current.ended && !previous.ended) {
+        persist_position(0)
+      } else if (
+        !user_seek &&
+        pending_seek === undefined &&
+        moved &&
+        available(current.time) === current.time
+      ) {
+        persist_position(current.time)
+      }
+
+      yield {
+        error:
+          current.error !== previous.error &&
+          current.error !== null &&
+          current.error.code !== MediaError.MEDIA_ERR_ABORTED
+            ? current.error
+            : null,
+        position: target,
+        queued: events.length !== 0,
+        seek: restart ? target : undefined,
+      }
+      previous = current
     }
-    previous = current
+  } finally {
+    listeners.abort()
   }
 }
 
