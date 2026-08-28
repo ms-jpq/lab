@@ -9,3 +9,5 @@ $(TMP)/$1.lock: ./node_modules/.bin $(TMP)/$1
 	./node_modules/.bin/tsc --project '$(TMP)/$1'
 	touch -- '$$@'
 endef
+
+$(foreach proj,$(TS_PROJ),$(eval $(call LOCAL_TS_TEMPLATE, proj)))
