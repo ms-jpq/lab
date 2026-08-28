@@ -64,6 +64,9 @@ const select = async (signal, ...cases) => {
 const retry_delay = (signal) =>
   select(signal, (s) => once(AbortSignal.timeout(RETRY_DELAY), s, "abort"))
 
+/** @param {AbortSignal} signal */
+const wait_for_abort = (signal) => select(signal)
+
 /** @template T @param {AbortSignal} signal @param {(signal: AbortSignal) => AsyncIterable<T>} source @returns {AsyncGenerator<T, void, void>} */
 const retrying = async function* (signal, source) {
   for (;;) {
@@ -336,11 +339,13 @@ const source_stream = async function* (signal, time) {
 const read1 = (signal, create_buffer) => {
   const buffer = create_buffer(signal)
   const time = Number(time_input.value)
-  let subtitle_loaded = false
 
   const run = async function* () {
     try {
       await buffer.next()
+      if (subtitle) {
+        subtitle.src = source_url(subtitle, time)
+      }
       if (Math.abs(media.currentTime - time) > POSITION_TOLERANCE) {
         media.currentTime = time
       }
@@ -358,18 +363,13 @@ const read1 = (signal, create_buffer) => {
           if ((await buffer.next([media.currentTime, bytes])).done) {
             break streaming
           }
-          if (subtitle && !subtitle_loaded) {
-            subtitle_loaded = true
-            subtitle.src = source_url(subtitle, time)
-          }
           if (buffer.play_ahead(media.currentTime) >= BUFFER.HI) {
             continue streaming
           }
         }
         await buffer.next()
-        for (;;) {
-          yield undefined
-        }
+        await wait_for_abort(signal)
+        return
       }
     } finally {
       await buffer.return()
