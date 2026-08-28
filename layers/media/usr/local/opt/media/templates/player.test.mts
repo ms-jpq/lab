@@ -625,85 +625,77 @@ test(
   },
 )
 
-test(
-  "a user seek survives a synchronous seeking and seeked storm",
-  options,
-  async () => {
-    const current = await fixture()
-    const { controller, states } = await ready(current)
-    current.media.currentTime = 110
-    current.media.seeking = true
-    const observed = states.next()
-    current.media.dispatchEvent(new Event("seeking"))
-    current.media.seeking = false
-    current.media.dispatchEvent(new Event("seeked"))
-
-    assert.equal((await nextValue({ next: () => observed })).seek, 110)
-    assert.equal(current.timeInput.value, "110")
-    controller.abort()
+const queuedSeekCases = [
+  {
+    events: ["seeking", "seeked"],
+    name: "seeking-seeked",
+    seeks: [110, undefined],
   },
-)
+  {
+    events: ["seeking", "timeupdate"],
+    name: "seeking-timeupdate",
+    seeks: [110, undefined],
+  },
+  {
+    events: ["timeupdate", "seeking"],
+    name: "timeupdate-seeking",
+    seeks: [undefined, 110],
+  },
+] as const
 
-for (const order of ["seeking-timeupdate", "timeupdate-seeking"]) {
+for (const { events, name, seeks } of queuedSeekCases) {
   test(
-    `an unbuffered seek restarts once with ${order} ordering`,
+    `an unbuffered seek preserves synchronous ${name} order`,
     options,
     async () => {
       const current = await fixture()
       const { controller, states } = await ready(current)
       current.media.currentTime = 110
-
-      if (order === "timeupdate-seeking") {
-        const observed = states.next()
-        current.media.dispatchEvent(new Event("timeupdate"))
-        assert.equal((await nextValue({ next: () => observed })).seek, undefined)
+      for (const event of events) {
+        if (event === "seeking") {
+          current.media.seeking = true
+        } else if (event === "seeked") {
+          current.media.seeking = false
+        }
+        current.media.dispatchEvent(new Event(event))
       }
 
-      current.media.seeking = true
-      const observed = states.next()
-      current.media.dispatchEvent(new Event("seeking"))
-      const value = await nextValue({ next: () => observed })
-      assert.equal(value.seek, 110)
+      const changes = await Promise.all(events.map(() => nextValue(states)))
+      assert.deepEqual(
+        changes.map(({ seek }) => seek),
+        seeks,
+      )
+      assert.deepEqual(
+        changes.map(({ position }) => position),
+        events.map(() => 110),
+      )
       assert.equal(current.timeInput.value, "110")
       controller.abort()
     },
   )
 }
 
-test(
-  "a buffered seek persists without restarting",
-  options,
-  async () => {
-    const current = await fixture()
-    const { controller, states } = await ready(current)
-    current.media.currentTime = 70
-    current.media.seeking = true
-    const observed = states.next()
-    current.media.dispatchEvent(new Event("seeking"))
-    const value = await nextValue({ next: () => observed })
-    assert.equal(value.seek, undefined)
-    assert.equal(current.timeInput.value, "70")
-    controller.abort()
-  },
-)
+const bufferedSeekCases = [
+  { name: "contained", range: [70, 100], target: 70 },
+  { name: "adjacent", range: [70.05, 100], target: 70.05 },
+] as const
 
-test(
-  "a seek adjacent to buffered media aligns without restarting",
-  options,
-  async () => {
+for (const { name, range, target } of bufferedSeekCases) {
+  test(`a ${name} buffered seek aligns without restarting`, options, async () => {
     const current = await fixture()
     const { controller, states } = await ready(current)
-    current.ranges.length = 0
-    current.ranges.push([70.05, 100])
+    current.ranges.splice(0, current.ranges.length, [...range])
     current.media.currentTime = 70
     current.media.seeking = true
-    const observed = states.next()
     current.media.dispatchEvent(new Event("seeking"))
-    const value = await nextValue({ next: () => observed })
-    assert.equal(value.seek, undefined)
+    const change = await nextValue(states)
+
+    assert.equal(change.position, target)
+    assert.equal(change.seek, undefined)
+    assert.equal(current.timeInput.value, String(target))
     controller.abort()
-  },
-)
+  })
+}
 
 test(
   "ended resets resume position and exact-end startup stays playable",

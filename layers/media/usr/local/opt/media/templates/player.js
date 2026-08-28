@@ -179,9 +179,7 @@ const page_state = () => ({
 })
 
 /** @param {AbortSignal} signal @param {number} position @returns {AsyncGenerator<PageChange, void, void>} */
-const page_states = (signal, position) => {
-  const observation = new AbortController()
-  const observation_signal = AbortSignal.any([signal, observation.signal])
+const page_states = async function* (signal, position) {
   /** @type {ReturnType<typeof page_state>[]} */
   const events = []
   let changed = Promise.withResolvers()
@@ -195,107 +193,94 @@ const page_states = (signal, position) => {
     changed.resolve(true)
   }
 
-  observation_signal.addEventListener("abort", () => changed.resolve(false), {
+  signal.addEventListener("abort", () => changed.resolve(false), {
     once: true,
   })
 
   for (const type of "canplay ended error loadedmetadata progress seeked seeking timeupdate".split(
     " ",
   )) {
-    media.addEventListener(type, observe, { signal: observation_signal })
+    media.addEventListener(type, observe, { signal })
   }
   if (subtitle && subtitle.src === "") {
     subtitle.src = source_url(subtitle, 0)
   }
   observe()
 
-  return (async function* () {
-    try {
-      for (;;) {
-        if (
-          (events.length === 0 && !(await changed.promise)) ||
-          observation_signal.aborted
-        ) {
-          return
-        }
-
-        const observed = /** @type {ReturnType<typeof page_state>} */ (
-          events.shift()
-        )
-        if (events.length === 0) {
-          changed = Promise.withResolvers()
-        }
-        let current = observed
-        let moved =
-          current.time !== previous.time || current.seeking !== previous.seeking
-        const internal_seek =
-          requested_position !== undefined &&
-          Math.abs(current.time - requested_position) <= POSITION_TOLERANCE
-        const user_seek = current.seeking && moved && !internal_seek
-        let restart = false
-
-        if (user_seek) {
-          target = playable_position(current.time)
-          const playable = available(target)
-          target = playable ?? target
-          restart = playable === undefined
-          requested_position =
-            restart || Math.abs(current.time - target) > POSITION_TOLERANCE
-              ? target
-              : undefined
-          set_position(target)
-        } else if (requested_position !== undefined) {
-          const playable = available(requested_position)
-          if (playable !== undefined) {
-            requested_position = playable
-            target = playable
-          }
-          if (!media.seeking) {
-            const positioned =
-              Math.abs(media.currentTime - requested_position) <=
-              POSITION_TOLERANCE
-            if (
-              !positioned &&
-              (media.readyState !== 0 || playable !== undefined)
-            ) {
-              media.currentTime = requested_position
-            } else if (positioned && playable !== undefined) {
-              requested_position = undefined
-            }
-          }
-          current = page_state()
-          moved =
-            current.time !== previous.time ||
-            current.seeking !== previous.seeking
-        }
-
-        if (current.ended && !previous.ended) {
-          set_position(0)
-        } else if (
-          !user_seek &&
-          requested_position === undefined &&
-          moved &&
-          available(current.time) === current.time
-        ) {
-          set_position(current.time)
-        }
-
-        yield {
-          error:
-            current.error !== previous.error &&
-            current.error !== null &&
-            current.error.code !== MediaError.MEDIA_ERR_ABORTED
-              ? current.error
-              : null,
-          position: target,
-          seek: restart ? target : undefined,
-        }
-        previous = current
-      }
-    } finally {
-      observation.abort()
+  for (;;) {
+    if ((events.length === 0 && !(await changed.promise)) || signal.aborted) {
+      return
     }
-  })()
+
+    const observed = /** @type {ReturnType<typeof page_state>} */ (events.shift())
+    if (events.length === 0) {
+      changed = Promise.withResolvers()
+    }
+    let current = observed
+    let moved =
+      current.time !== previous.time || current.seeking !== previous.seeking
+    const internal_seek =
+      requested_position !== undefined &&
+      Math.abs(current.time - requested_position) <= POSITION_TOLERANCE
+    const user_seek = current.seeking && moved && !internal_seek
+    let restart = false
+
+    if (user_seek) {
+      target = playable_position(current.time)
+      const playable = available(target)
+      target = playable ?? target
+      restart = playable === undefined
+      requested_position =
+        restart || Math.abs(current.time - target) > POSITION_TOLERANCE
+          ? target
+          : undefined
+      set_position(target)
+    } else if (requested_position !== undefined) {
+      const playable = available(requested_position)
+      if (playable !== undefined) {
+        requested_position = playable
+        target = playable
+      }
+      if (!media.seeking) {
+        const positioned =
+          Math.abs(media.currentTime - requested_position) <= POSITION_TOLERANCE
+        if (
+          !positioned &&
+          (media.readyState !== 0 || playable !== undefined)
+        ) {
+          media.currentTime = requested_position
+        } else if (positioned && playable !== undefined) {
+          requested_position = undefined
+        }
+      }
+      current = page_state()
+      moved =
+        current.time !== previous.time || current.seeking !== previous.seeking
+    }
+
+    if (current.ended && !previous.ended) {
+      set_position(0)
+    } else if (
+      !user_seek &&
+      requested_position === undefined &&
+      moved &&
+      available(current.time) === current.time
+    ) {
+      set_position(current.time)
+    }
+
+    yield {
+      error:
+        current.error !== previous.error &&
+        current.error !== null &&
+        current.error.code !== MediaError.MEDIA_ERR_ABORTED
+          ? current.error
+          : null,
+      position: target,
+      seek: restart ? target : undefined,
+    }
+    previous = current
+  }
 }
 
 /** @param {AbortSignal} signal @param {HTMLMediaElement} media @param {MediaSource} source @param {SourceBuffer} buffer @returns {Mse} */
