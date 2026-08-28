@@ -704,20 +704,14 @@ test(
   { concurrency: true },
   async () => {
     const current = await fixture()
-    const controller = new AbortController()
-    const buffer = current.context.player_test.mse(
-      controller.signal,
-      current.media,
-    )
-    const opened = buffer.next()
-    assert.equal((await opened).done, false)
+    const { buffer, controller, lifetime } = await open_mse(current)
     await buffer.next(10)
     await buffer.next(new Uint8Array([1]))
 
     assert.equal(current.context.player_test.available(10), 10)
     assert.equal(current.context.player_test.available(9.95), 10)
     controller.abort()
-    await buffer.return()
+    await lifetime.return()
     assert.equal(current.media.src, "")
     assert.equal(current.media.loads, 1)
     assert.equal(current.revoked.length, 1)
@@ -729,12 +723,7 @@ test(
   { concurrency: true },
   async () => {
     const current = await fixture()
-    const controller = new AbortController()
-    const buffer = current.context.player_test.mse(
-      controller.signal,
-      current.media,
-    )
-    assert.equal((await buffer.next()).done, false)
+    const { buffer, controller, lifetime } = await open_mse(current)
     await buffer.next(10)
     await buffer.next(new Uint8Array([1]))
 
@@ -744,7 +733,7 @@ test(
     assert.deepEqual(openedBuffer.removes, [[0, 70]])
 
     controller.abort()
-    await buffer.return()
+    await lifetime.return()
   },
 )
 
@@ -753,12 +742,7 @@ test(
   { concurrency: true, timeout: 1_000 },
   async () => {
     const current = await fixture()
-    const controller = new AbortController()
-    const buffer = current.context.player_test.mse(
-      controller.signal,
-      current.media,
-    )
-    assert.equal((await buffer.next()).done, false)
+    const { buffer, controller, lifetime } = await open_mse(current)
     await buffer.next(10)
     await buffer.next(new Uint8Array([1]))
 
@@ -773,7 +757,7 @@ test(
     assert.equal(current.media.loads, 0)
 
     controller.abort()
-    await buffer.return()
+    await lifetime.return()
   },
 )
 
@@ -782,12 +766,7 @@ test(
   { concurrency: true },
   async () => {
     const current = await fixture()
-    const controller = new AbortController()
-    const buffer = current.context.player_test.mse(
-      controller.signal,
-      current.media,
-    )
-    assert.equal((await buffer.next()).done, false)
+    const { buffer, controller, lifetime } = await open_mse(current)
     await buffer.next(10)
     await buffer.next(new Uint8Array([1]))
     assert.equal((await buffer.next("end")).done, false)
@@ -804,7 +783,7 @@ test(
     assert.equal(current.revoked.length, 0)
 
     controller.abort()
-    await buffer.return()
+    await lifetime.return()
   },
 )
 
@@ -813,12 +792,7 @@ test(
   { concurrency: true, timeout: 1_000 },
   async () => {
     const current = await fixture()
-    const controller = new AbortController()
-    const buffer = current.context.player_test.mse(
-      controller.signal,
-      current.media,
-    )
-    assert.equal((await buffer.next()).done, false)
+    const { buffer, controller, lifetime } = await open_mse(current)
     await buffer.next(10)
 
     const [source] = current.sources
@@ -831,7 +805,7 @@ test(
 
     controller.abort()
     let closed = false
-    const closing = buffer.return().then(() => {
+    const closing = lifetime.return().then(() => {
       closed = true
     })
     await new Promise((resolve) => setImmediate(resolve))
@@ -853,12 +827,7 @@ test(
   { concurrency: true, timeout: 1_000 },
   async () => {
     const current = await fixture()
-    const bufferController = new AbortController()
-    const buffer = current.context.player_test.mse(
-      bufferController.signal,
-      current.media,
-    )
-    assert.equal((await buffer.next()).done, false)
+    const { buffer, lifetime } = await open_mse(current)
     await buffer.next(10)
     await buffer.next(new Uint8Array([1]))
 
@@ -869,7 +838,7 @@ test(
     )
     await states.next()
     const [openedBuffer] = current.sources[0].sourceBuffers
-    await buffer.return()
+    await lifetime.return()
     assert.equal(openedBuffer.usable, false)
 
     for (let index = 0; index < 64; index += 1) {
@@ -1129,7 +1098,7 @@ test(
       }
       assert.equal(new URL(current.requests[1]).searchParams.get("t"), "110")
       assert.equal(current.sources.length, 2)
-      assert.equal(current.errors.length, 0)
+      assert.equal(current.errors.length, 1)
       assert.equal(
         current.requests.some(
           (url) => new URL(url).searchParams.get("t") === "0",
