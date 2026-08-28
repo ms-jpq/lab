@@ -1,6 +1,6 @@
 /** @typedef {"end" | number | Uint8Array} MseOperation */
 /** @typedef {AsyncGenerator<void, void, MseOperation>} Mse */
-/** @typedef {{error: (error: unknown) => void, escaped: (error: unknown) => boolean, progress: () => void}} Diagnostics */
+/** @typedef {{error: (error: unknown) => void, escaped: () => boolean, progress: () => void}} Diagnostics */
 /** @typedef {{position: number, restart: boolean, started: boolean}} Target */
 /** @template T @typedef {{error: unknown} | {result: IteratorResult<T, void>}} Selection */
 /** @typedef {{close: () => Promise<void>, next: <T>(work?: Promise<T>) => Promise<typeof PULSE | T | undefined>, seek: () => void, take_error: () => unknown, target: Target}} PageReader */
@@ -76,9 +76,6 @@ const delay = (signal, milliseconds) => {
     resolve(true)
   }, milliseconds)
   signal.addEventListener("abort", cancelled, { once: true })
-  if (signal.aborted) {
-    cancelled()
-  }
   return promise
 }
 
@@ -88,8 +85,7 @@ const revoke_url = (url) => url && URL.revokeObjectURL(url)
 /** @returns {Diagnostics} */
 const diagnostics = () => {
   let failed = false
-  /** @type {unknown} */
-  let escaped = undefined
+  let escaped = false
   return {
     error: (error) => {
       if (failed) {
@@ -99,13 +95,13 @@ const diagnostics = () => {
       try {
         console.error(error)
       } catch (error) {
-        escaped = error
+        escaped = true
         throw error
       }
     },
-    escaped: (error) => error === escaped,
+    escaped: () => escaped,
     progress: () => {
-      escaped = undefined
+      escaped = false
       failed = false
     },
   }
@@ -215,12 +211,12 @@ const observe_media = (signal, observe) => {
 const selector = (source) => {
   /** @type {Selection<T> | undefined} */
   let available = undefined
-  /** @type {() => void} */
-  let notify = () => undefined
+  /** @type {((value: unknown) => void) | undefined} */
+  let notify = undefined
   /** @param {Selection<T>} selection */
   const settle = (selection) => {
     available = selection
-    notify()
+    notify?.(SOURCE)
   }
   const advance = () =>
     source.next().then(
@@ -232,21 +228,19 @@ const selector = (source) => {
   /** @template W @param {Promise<W>} [work] @returns {Promise<T | W | undefined>} */
   return async (work) => {
     if (!available) {
-      const ready = /** @type {PromiseWithResolvers<typeof SOURCE | W>} */ (
-        Promise.withResolvers()
-      )
-      const awaken = () => ready.resolve(SOURCE)
-      notify = awaken
-      work?.then(ready.resolve, ready.reject)
-      try {
-        const selected = await ready.promise
-        if (selected !== SOURCE) {
-          return selected
+      const selected = await new Promise((resolve, reject) => {
+        /** @param {unknown} value */
+        const awaken = (value) => {
+          if (notify === awaken) {
+            notify = undefined
+            resolve(value)
+          }
         }
-      } finally {
-        if (notify === awaken) {
-          notify = () => undefined
-        }
+        notify = awaken
+        work?.then(awaken, reject)
+      })
+      if (selected !== SOURCE) {
+        return /** @type {W} */ (selected)
       }
     }
     const selection = /** @type {Selection<T>} */ (available)
@@ -541,9 +535,7 @@ const source_stream = async function* (failures, page) {
   }
 
   acquisition: for (;;) {
-    if (retarget(start)) {
-      continue
-    }
+    retarget(start)
 
     while (play_ahead(start) >= BUFFER.LO) {
       const change = await page.next()
@@ -703,7 +695,7 @@ const play_attempt = async (signal, sources, failures, page) => {
     await play_source(buffer, failures, page)
     return undefined
   } catch (error) {
-    if (failures.escaped(error)) {
+    if (failures.escaped()) {
       throw error
     }
     return attempt_signal.aborted

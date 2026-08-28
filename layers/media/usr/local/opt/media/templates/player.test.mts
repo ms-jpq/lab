@@ -49,7 +49,7 @@ type TestMseSource = Omit<MseSource, "addSourceBuffer"> & {
 }
 type Diagnostics = {
   error: (error: unknown) => void
-  escaped: (error: unknown) => boolean
+  escaped: () => boolean
   progress: () => void
 }
 type Target = { position: number; restart: boolean; started: boolean }
@@ -3982,6 +3982,47 @@ test(
         current.errors.map(([error]) => error),
         [failures[0]],
       )
+    } finally {
+      controller.abort()
+      await playback
+      clock.dispose()
+    }
+  },
+)
+
+test(
+  "an undefined MSE setup failure remains retryable",
+  options,
+  async () => {
+    const current = await fixture()
+    const clock = frozenClock(current.context)
+    let attempts = 0
+    const originalAddSourceBuffer =
+      current.context.MediaSource.prototype.addSourceBuffer
+    current.context.MediaSource.prototype.addSourceBuffer = function (
+      type: string,
+    ) {
+      attempts += 1
+      if (attempts === 1) {
+        throw undefined
+      }
+      return originalAddSourceBuffer.call(this, type)
+    }
+
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    try {
+      await eventually(() => clock.length === 1)
+      clock.advance(0)
+      await eventually(
+        () => current.sources[1]?.sourceBuffers[0]?.buffered.length === 1,
+      )
+
+      deepEqual(attempts, 2)
+      deepEqual(current.sources.length, 2)
+      deepEqual(current.errors, [[undefined]])
     } finally {
       controller.abort()
       await playback
