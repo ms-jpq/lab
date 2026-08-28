@@ -22,11 +22,22 @@ const fixture = (
   const types: string[] = []
   const entered = Promise.withResolvers<void>()
   const buffer = Object.assign(new EventTarget(), {
-    abort: () => mutations.push(["abort"]),
+    abort: () => {
+      mutations.push(["abort"])
+      if (buffer.updating) {
+        buffer.updating = false
+        buffer.dispatchEvent(new Event("abort"))
+        if (!hold) {
+          buffer.dispatchEvent(new Event("updateend"))
+        }
+      }
+    },
     appendBuffer: (bytes: Uint8Array<ArrayBuffer>) => {
       mutations.push(["append", [...bytes]])
+      buffer.updating = true
       entered.resolve()
       if (!hold) {
+        buffer.updating = false
         buffer.dispatchEvent(
           new Event(failure === "append" ? "error" : "updateend"),
         )
@@ -37,9 +48,12 @@ const fixture = (
     onupdateend: null,
     remove: (start: number, end: number) => {
       mutations.push(["remove", start, end])
+      buffer.updating = true
+      buffer.updating = false
       buffer.dispatchEvent(new Event("updateend"))
     },
     timestampOffset: 0,
+    updating: false,
   })
   const source = {
     addSourceBuffer: (type: string) => {
@@ -60,7 +74,10 @@ const fixture = (
     entered: entered.promise,
     lifetime,
     mutations,
-    release: () => buffer.dispatchEvent(new Event("updateend")),
+    release: () => {
+      buffer.updating = false
+      return buffer.dispatchEvent(new Event("updateend"))
+    },
     types,
     values,
   }
@@ -130,6 +147,7 @@ const cases = [
       const appending = values.next(new Uint8Array([5]))
       await entered
       lifetime.abort()
+      deepEqual(mutations, [["append", [5]], ["abort"]])
 
       const closed = await Promise.race([
         appending.then(() => true),
