@@ -55,10 +55,10 @@ export const media_source = async function* ({
 
   let started = false
   for (let operation = yield undefined; ; operation = yield undefined) {
-    using a = abortion(signal)
-    if (a.signal.aborted) {
+    if (signal.aborted) {
       return
     }
+    using a = abortion(signal)
 
     if (operation === undefined) {
       source.endOfStream()
@@ -66,6 +66,7 @@ export const media_source = async function* ({
     }
 
     if (typeof operation === "number") {
+      // i dont understand why we need started, is this just so we know the buffer has been drained?
       if (started) {
         using _ = defer(() => buffer.abort())
 
