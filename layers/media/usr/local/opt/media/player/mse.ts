@@ -21,6 +21,30 @@ const revoke = (url: string | undefined): void => {
   }
 }
 
+const op_lock = (buffer: SourceBuffer, signal: AbortSignal) => {
+  const a = abortion(signal)
+  const settled = merge<Event>(
+    events(a.signal, buffer, "updateend"),
+    events(a.signal, buffer, "error"),
+  )
+  const changed = settled.next()
+
+  return {
+    [Symbol.asyncDispose]: async () => {
+      try {
+        const result = await changed
+        const event = result.done ? undefined : result.value
+        if (event?.type === "error") {
+          throw event
+        }
+      } finally {
+        a[Symbol.dispose]()
+        await settled.return?.()
+      }
+    },
+  }
+}
+
 export const media_source = async function* ({
   evict_before,
   mime_type,
@@ -33,26 +57,6 @@ export const media_source = async function* ({
   source: MediaSource
 }): Mse {
   const buffer = source.addSourceBuffer(mime_type)
-
-  const update = async (mutate: () => void) => {
-    using operation = abortion()
-    const settled = merge<Event>(
-      events(operation.signal, buffer, "updateend"),
-      events(operation.signal, buffer, "error"),
-    )
-    const changed = settled.next()
-    try {
-      mutate()
-      const result = await changed
-      const event = result.done ? undefined : result.value
-      if (event?.type === "error") {
-        throw event
-      }
-    } finally {
-      operation[Symbol.dispose]()
-      await settled.return?.()
-    }
-  }
 
   let started = false
   for (let operation = yield undefined; ; operation = yield undefined) {
@@ -69,7 +73,9 @@ export const media_source = async function* ({
         if (source.readyState === "ended") {
           const ranges = buffer.buffered
           const end = ranges.length ? ranges.end(ranges.length - 1) : 0
-          await update(() => buffer.remove(end, end + 0.001))
+
+          await using _ = op_lock(buffer, signal)
+          buffer.remove(end, end + 0.001)
         }
         buffer.abort()
       }
@@ -81,11 +87,11 @@ export const media_source = async function* ({
     const cutoff = evict_before()
     const ranges = buffer.buffered
     if (cutoff > 0 && ranges.length && ranges.start(0) < cutoff) {
-      await update(() => buffer.remove(0, cutoff))
+      await using _ = op_lock(buffer, signal)
+      buffer.remove(0, cutoff)
     }
-    await update(() =>
-      buffer.appendBuffer(operation as Uint8Array<ArrayBuffer>),
-    )
+    await using _ = op_lock(buffer, signal)
+    buffer.appendBuffer(operation as Uint8Array<ArrayBuffer>)
   }
 }
 
