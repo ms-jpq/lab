@@ -1,11 +1,12 @@
 /** @typedef {"end" | number | Uint8Array} MseOperation */
 /** @typedef {AsyncGenerator<void, void, MseOperation>} Mse */
-/** @typedef {{error: (error: unknown) => void, progress: () => void}} Diagnostics */
+/** @typedef {{error: (error: unknown) => void, escaped: (error: unknown) => boolean, progress: () => void}} Diagnostics */
 /** @typedef {{position: number, restart: boolean, started: boolean}} Target */
 /** @template T @typedef {{error: unknown} | {result: IteratorResult<T, void>}} Selection */
 /** @typedef {{close: () => Promise<void>, next: <T>(work?: Promise<T>) => Promise<typeof PULSE | T | undefined>, seek: () => void, take_error: () => unknown, target: Target}} PageReader */
 
 const PULSE = Symbol()
+const SOURCE = Symbol()
 const BUFFER = {
   BEHIND: 30,
   // TODO: https://bugzilla.mozilla.org/show_bug.cgi?id=1808868
@@ -62,6 +63,9 @@ const first_event = (target, signal, ...types) => {
 
 /** @param {AbortSignal} signal @param {number} milliseconds */
 const delay = (signal, milliseconds) => {
+  if (signal.aborted) {
+    return Promise.resolve(false)
+  }
   const { promise, resolve } = Promise.withResolvers()
   const cancelled = () => {
     clearTimeout(timeout)
@@ -84,15 +88,26 @@ const revoke_url = (url) => url && URL.revokeObjectURL(url)
 /** @returns {Diagnostics} */
 const diagnostics = () => {
   let failed = false
+  /** @type {unknown} */
+  let escaped = undefined
   return {
     error: (error) => {
       if (failed) {
         return
       }
       failed = true
-      console.error(error)
+      try {
+        console.error(error)
+      } catch (error) {
+        escaped = error
+        throw error
+      }
     },
-    progress: () => (failed = false),
+    escaped: (error) => error === escaped,
+    progress: () => {
+      escaped = undefined
+      failed = false
+    },
   }
 }
 
@@ -198,29 +213,52 @@ const observe_media = (signal, observe) => {
 
 /** @template T @param {AsyncIterator<T, void, void>} source */
 const selector = (source) => {
+  /** @type {Selection<T> | undefined} */
+  let available = undefined
+  /** @type {() => void} */
+  let notify = () => undefined
+  /** @param {Selection<T>} selection */
+  const settle = (selection) => {
+    available = selection
+    notify()
+  }
   const advance = () =>
     source.next().then(
-      (result) => ({ result }),
-      (error) => ({ error }),
+      (result) => settle({ result }),
+      (error) => settle({ error }),
     )
-  let pending = advance()
+  advance()
 
   /** @template W @param {Promise<W>} [work] @returns {Promise<T | W | undefined>} */
   return async (work) => {
-    const selected = await (work === undefined
-      ? pending
-      : Promise.race([pending, work.then((value) => ({ value }))]))
-    if ("value" in selected) {
-      return selected.value
+    if (!available) {
+      const ready = /** @type {PromiseWithResolvers<typeof SOURCE | W>} */ (
+        Promise.withResolvers()
+      )
+      const awaken = () => ready.resolve(SOURCE)
+      notify = awaken
+      work?.then(ready.resolve, ready.reject)
+      try {
+        const selected = await ready.promise
+        if (selected !== SOURCE) {
+          return selected
+        }
+      } finally {
+        if (notify === awaken) {
+          notify = () => undefined
+        }
+      }
     }
-    if ("error" in selected) {
-      throw selected.error
+    const selection = /** @type {Selection<T>} */ (available)
+    if ("error" in selection) {
+      throw selection.error
     }
-    if (selected.result.done) {
+    if (selection.result.done) {
       return undefined
     }
-    pending = advance()
-    return selected.result.value
+    available = undefined
+    advance()
+    return selection.result.value
   }
 }
 
@@ -528,52 +566,49 @@ const source_stream = async function* (failures, page) {
 
       reading: for (;;) {
         const read = stream.next()
-        for (;;) {
-          const change = await page.next(read)
-          if (change === PULSE) {
-            if (retarget(frontier)) {
-              continue acquisition
-            }
-            continue
-          }
-          if (change === undefined) {
-            return
-          }
-
-          const next = change
-          if (next.done) {
-            if (!next.value) {
-              yield "end"
-              for (;;) {
-                const idle = await page.next()
-                if (idle === undefined) {
-                  return
-                }
-                if (retarget(frontier)) {
-                  continue acquisition
-                }
-              }
-            }
-            failures.error(next.value.error)
-            start = stream_position(buffered_end(frontier) ?? frontier)
-            break reading
-          }
-          yield next.value
-          const next_frontier = stream_position(
-            buffered_end(frontier) ?? frontier,
-          )
-          if (next_frontier > frontier) {
-            failures.progress()
-          }
-          frontier = next_frontier
+        let change = await page.next(read)
+        while (change === PULSE) {
           if (retarget(frontier)) {
             continue acquisition
           }
-          if (play_ahead(frontier) >= BUFFER.HI) {
-            start = frontier
-            continue acquisition
+          change = await page.next(read)
+        }
+        if (change === undefined) {
+          return
+        }
+
+        const next = change
+        if (next.done) {
+          if (!next.value) {
+            yield "end"
+            for (;;) {
+              const idle = await page.next()
+              if (idle === undefined) {
+                return
+              }
+              if (retarget(frontier)) {
+                continue acquisition
+              }
+            }
           }
-          break
+          failures.error(next.value.error)
+          start = stream_position(buffered_end(frontier) ?? frontier)
+          break reading
+        }
+        yield next.value
+        const next_frontier = stream_position(
+          buffered_end(frontier) ?? frontier,
+        )
+        if (next_frontier > frontier) {
+          failures.progress()
+        }
+        frontier = next_frontier
+        if (retarget(frontier)) {
+          continue acquisition
+        }
+        if (play_ahead(frontier) >= BUFFER.HI) {
+          start = frontier
+          continue acquisition
         }
       }
     } finally {
@@ -592,7 +627,6 @@ const source_stream = async function* (failures, page) {
     ) {
       return
     }
-    continue acquisition
   }
 }
 
@@ -622,12 +656,17 @@ const media_sources = () => {
       const next = URL.createObjectURL(source)
       try {
         media.src = next
-        page.seek()
       } catch (error) {
         revoke_url(next)
         throw error
       }
       url = next
+      try {
+        page.seek()
+      } catch (error) {
+        revoke_url(previous)
+        throw error
+      }
       const event = await opened.finally(() => revoke_url(previous))
       if (!event) {
         return undefined
@@ -664,6 +703,9 @@ const play_attempt = async (signal, sources, failures, page) => {
     await play_source(buffer, failures, page)
     return undefined
   } catch (error) {
+    if (failures.escaped(error)) {
+      throw error
+    }
     return attempt_signal.aborted
       ? undefined
       : {

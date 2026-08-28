@@ -47,7 +47,11 @@ type MseSource = EventTarget & {
 type TestMseSource = Omit<MseSource, "addSourceBuffer"> & {
   addSourceBuffer: (type: string) => TestMseBuffer
 }
-type Diagnostics = { error: (error: unknown) => void; progress: () => void }
+type Diagnostics = {
+  error: (error: unknown) => void
+  escaped: (error: unknown) => boolean
+  progress: () => void
+}
 type Target = { position: number; restart: boolean; started: boolean }
 type SourcePage = {
   next: <T>(work?: Promise<T>) => Promise<symbol | T | undefined>
@@ -1897,7 +1901,7 @@ test(
     }
     const playback = current.context.player_test.play_source(
       buffer,
-      { error: () => {}, progress: () => {} },
+      { error: () => {}, escaped: () => false, progress: () => {} },
       page.page,
     )
     try {
@@ -1981,7 +1985,7 @@ for (const { name, ranges } of unrelatedHighWaterCases) {
     const page = controlledPage(110, current.context.player_test.PULSE)
     const playback = current.context.player_test.play_source(
       { next: async () => ({ done: false as const, value: undefined }) },
-      { error: () => {}, progress: () => {} },
+      { error: () => {}, escaped: () => false, progress: () => {} },
       page.page,
     )
 
@@ -2107,7 +2111,7 @@ for (const { expected, name, range, target } of acquisitionPolicyCases) {
     current.media.currentTime = 40
     const playback = current.context.player_test.play_source(
       buffer,
-      { error: () => {}, progress: () => {} },
+      { error: () => {}, escaped: () => false, progress: () => {} },
       page.page,
     )
     try {
@@ -2181,7 +2185,7 @@ for (const { aborted, expected, name, target } of pendingFetchSeekCases) {
       {
         next: async () => ({ done: false as const, value: undefined }),
       },
-      { error: () => {}, progress: () => {} },
+      { error: () => {}, escaped: () => false, progress: () => {} },
       page.page,
     )
     try {
@@ -2236,7 +2240,7 @@ test(
       {
         next: async () => ({ done: false as const, value: undefined }),
       },
-      { error: () => {}, progress: () => {} },
+      { error: () => {}, escaped: () => false, progress: () => {} },
       page.page,
     )
     try {
@@ -2326,7 +2330,7 @@ for (const { expected, name, targets } of enteredAppendSeekCases) {
     opened.holdUpdate = true
     const playback = current.context.player_test.play_source(
       buffer,
-      { error: () => {}, progress: () => {} },
+      { error: () => {}, escaped: () => false, progress: () => {} },
       page.page,
     )
     try {
@@ -2424,7 +2428,7 @@ test(
     const page = controlledPage(40, current.context.player_test.PULSE)
     const playback = current.context.player_test.play_source(
       buffer,
-      { error: () => {}, progress: () => {} },
+      { error: () => {}, escaped: () => false, progress: () => {} },
       page.page,
     )
     try {
@@ -2852,7 +2856,7 @@ test(
     }
     const playback = current.context.player_test.play_source(
       buffer,
-      { error: () => {}, progress: () => {} },
+      { error: () => {}, escaped: () => false, progress: () => {} },
       page.page,
     )
     try {
@@ -4012,6 +4016,49 @@ test(
       )
       deepEqual(current.sources.length, 1)
       deepEqual(current.revoked.length, 1)
+    } finally {
+      controller.abort()
+      await playback
+      clock.dispose()
+    }
+  },
+)
+
+test(
+  "a failed initial seek retains ownership of its attached URL",
+  options,
+  async () => {
+    const current = await fixture()
+    const clock = frozenClock(current.context)
+    const failure = new Error("initial seek failed")
+    let currentTime = current.media.currentTime
+    Object.defineProperty(current.media, "currentTime", {
+      get: () => currentTime,
+      set: (value: number) => {
+        if (value === 40) {
+          throw failure
+        }
+        currentTime = value
+      },
+    })
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+
+    try {
+      await eventually(() => clock.length === 1)
+      const attached = current.media.src
+      match(attached, /^blob:player-/)
+      deepEqual(current.errors.map(([error]) => error), [failure])
+      deepEqual(current.sources.length, 1)
+      deepEqual(current.revoked, [])
+
+      controller.abort()
+      await playback
+      deepEqual(current.media.src, "")
+      deepEqual(current.media.loads, 1)
+      deepEqual(current.revoked, [attached])
     } finally {
       controller.abort()
       await playback
