@@ -17,6 +17,9 @@ type MediaFailure = { code: number; message?: string }
 type MediaObservation = {
   ended: boolean
   error: MediaFailure | null
+  future: boolean
+  metadata: boolean
+  paused: boolean
   seeking: boolean
   time: number
 }
@@ -84,7 +87,10 @@ type PlayerContext = vm.Context & {
   fetch: MockFetch
   MediaError: { MEDIA_ERR_ABORTED: number }
   player_test: PlayerTest
-  setTimeout: (run: () => void) => ReturnType<typeof setTimeout>
+  setTimeout: (
+    run: () => void,
+    delay?: number,
+  ) => ReturnType<typeof setTimeout>
 }
 type TestBody = (context: TestContext) => void | Promise<void>
 type TestCase = { name: string; run: TestBody }
@@ -109,23 +115,31 @@ const eventually = async (predicate: () => boolean): Promise<void> => {
     await new Promise((resolve) => setImmediate(resolve))
   }
 }
+const nextTask = () => new Promise((resolve) => setTimeout(resolve, 0))
 const frozenClock = (context: PlayerContext) => {
   const scheduled: Array<{
     invoke: () => void
     timeout: ReturnType<typeof setTimeout>
   }> = []
+  const retries = new Set<ReturnType<typeof setTimeout>>()
   let callbacks = 0
   let cancellations = 0
   context.clearTimeout = (timeout) => {
-    cancellations += 1
+    if (retries.has(timeout)) {
+      cancellations += 1
+    }
     clearTimeout(timeout)
   }
-  context.setTimeout = (run) => {
+  context.setTimeout = (run, delay = 0) => {
+    if (delay === 0) {
+      return setTimeout(run, 0)
+    }
     const invoke = () => {
       callbacks += 1
       run()
     }
     const timeout = setTimeout(invoke, 10_000)
+    retries.add(timeout)
     scheduled.push({
       invoke: () => {
         clearTimeout(timeout)
@@ -167,7 +181,81 @@ const timeRanges = (): MutableTimeRanges => ({
   },
 })
 
-class Media extends EventTarget {
+const listenerCapture = (
+  options: EventListenerOptions | boolean | undefined,
+): boolean => (typeof options === "boolean" ? options : (options?.capture ?? false))
+
+class TrackedEventTarget extends EventTarget {
+  listenerCalls: number
+  private listenerWrappers: WeakMap<
+    EventListenerOrEventListenerObject,
+    Map<string, Map<boolean, EventListener>>
+  >
+
+  constructor() {
+    super()
+    this.listenerCalls = 0
+    this.listenerWrappers = new WeakMap()
+  }
+
+  override addEventListener(
+    type: string,
+    callback: EventListenerOrEventListenerObject | null,
+    options?: AddEventListenerOptions | boolean,
+  ): void {
+    if (callback === null) {
+      super.addEventListener(type, callback, options)
+      return
+    }
+    const capture = listenerCapture(options)
+    const types = this.listenerWrappers.get(callback) ?? new Map()
+    const captures = types.get(type) ?? new Map()
+    const wrapped =
+      captures.get(capture) ??
+      ((event: Event) => {
+        this.listenerCalls += 1
+        if (typeof callback === "function") {
+          callback.call(this, event)
+        } else {
+          callback.handleEvent(event)
+        }
+      })
+    captures.set(capture, wrapped)
+    types.set(type, captures)
+    this.listenerWrappers.set(callback, types)
+    super.addEventListener(type, wrapped, options)
+  }
+
+  override removeEventListener(
+    type: string,
+    callback: EventListenerOrEventListenerObject | null,
+    options?: EventListenerOptions | boolean,
+  ): void {
+    if (callback === null) {
+      super.removeEventListener(type, callback, options)
+      return
+    }
+    const capture = listenerCapture(options)
+    const types = this.listenerWrappers.get(callback)
+    const captures = types?.get(type)
+    const wrapped = captures?.get(capture)
+    super.removeEventListener(type, wrapped ?? callback, options)
+    if (wrapped === undefined) {
+      return
+    }
+    captures?.delete(capture)
+    if (captures?.size === 0) {
+      types?.delete(type)
+    }
+    if (types?.size === 0) {
+      this.listenerWrappers.delete(callback)
+    }
+  }
+}
+
+class Media extends TrackedEventTarget {
+  readonly HAVE_FUTURE_DATA: number
+  readonly HAVE_METADATA: number
   currentTimes: number[]
   private _currentTime: number
   buffered: MutableTimeRanges
@@ -177,15 +265,19 @@ class Media extends EventTarget {
   seeking: boolean
   private _src: string
   loads: number
-  listenerCalls: number
-  listenerWrappers: WeakMap<EventListenerOrEventListenerObject, EventListener>
   removals: number
+  paused: boolean
+  pauses: number
+  playResult: Promise<void>
+  plays: number
   readyState: number
   onLoad: (() => void) | undefined
   topology: string[]
 
   constructor() {
     super()
+    this.HAVE_FUTURE_DATA = 3
+    this.HAVE_METADATA = 1
     this.currentTimes = []
     this._currentTime = 0
     this.buffered = timeRanges()
@@ -199,44 +291,13 @@ class Media extends EventTarget {
     this.seeking = false
     this._src = ""
     this.loads = 0
-    this.listenerCalls = 0
-    this.listenerWrappers = new WeakMap()
     this.removals = 0
+    this.paused = true
+    this.pauses = 0
+    this.playResult = Promise.resolve()
+    this.plays = 0
     this.readyState = 0
     this.topology = []
-  }
-
-  override addEventListener(
-    type: string,
-    callback: EventListenerOrEventListenerObject | null,
-    options?: AddEventListenerOptions | boolean,
-  ): void {
-    if (!callback) {
-      super.addEventListener(type, callback, options)
-      return
-    }
-    const wrapped = (event: Event) => {
-      this.listenerCalls += 1
-      if (typeof callback === "function") {
-        callback.call(this, event)
-      } else {
-        callback.handleEvent(event)
-      }
-    }
-    this.listenerWrappers.set(callback, wrapped)
-    super.addEventListener(type, wrapped, options)
-  }
-
-  override removeEventListener(
-    type: string,
-    callback: EventListenerOrEventListenerObject | null,
-    options?: EventListenerOptions | boolean,
-  ): void {
-    super.removeEventListener(
-      type,
-      callback ? (this.listenerWrappers.get(callback) ?? callback) : null,
-      options,
-    )
   }
 
   get currentTime() {
@@ -267,6 +328,19 @@ class Media extends EventTarget {
     this.onLoad?.()
   }
 
+  pause(): void {
+    this.paused = true
+    this.pauses += 1
+    this.topology.push("pause")
+  }
+
+  play(): Promise<void> {
+    this.paused = false
+    this.plays += 1
+    this.topology.push("play")
+    return this.playResult
+  }
+
   removeAttribute(name: string): void {
     if (name === "src") {
       this.removals += 1
@@ -276,53 +350,16 @@ class Media extends EventTarget {
   }
 }
 
-class Subtitle extends EventTarget {
+class Subtitle extends TrackedEventTarget {
   dataset: { src: string }
-  listenerCalls: number
-  listenerWrappers: WeakMap<EventListenerOrEventListenerObject, EventListener>
   sources: string[]
   private _src: string
 
   constructor() {
     super()
     this.dataset = { src: "/movie/subtitle" }
-    this.listenerCalls = 0
-    this.listenerWrappers = new WeakMap()
     this.sources = []
     this._src = ""
-  }
-
-  override addEventListener(
-    type: string,
-    callback: EventListenerOrEventListenerObject | null,
-    options?: AddEventListenerOptions | boolean,
-  ): void {
-    if (!callback) {
-      super.addEventListener(type, callback, options)
-      return
-    }
-    const wrapped = (event: Event) => {
-      this.listenerCalls += 1
-      if (typeof callback === "function") {
-        callback.call(this, event)
-      } else {
-        callback.handleEvent(event)
-      }
-    }
-    this.listenerWrappers.set(callback, wrapped)
-    super.addEventListener(type, wrapped, options)
-  }
-
-  override removeEventListener(
-    type: string,
-    callback: EventListenerOrEventListenerObject | null,
-    options?: EventListenerOptions | boolean,
-  ): void {
-    super.removeEventListener(
-      type,
-      callback ? (this.listenerWrappers.get(callback) ?? callback) : null,
-      options,
-    )
   }
 
   get src() {
@@ -504,7 +541,6 @@ const fixture = async (position = 40) => {
       this.ends += 1
       this.readyState = "ended"
     }
-
   }
   class PlayerURL extends URL {
     static override createObjectURL(
@@ -620,18 +656,33 @@ const open_mse = async (current: Awaited<ReturnType<typeof fixture>>) => {
   return { buffer: opened.value.buffer, controller, lifetime }
 }
 
-test(
-  "source stream reads and releases a reader-only response body",
-  options,
-  async () => {
+const readerTeardownCases = [
+  {
+    abortParent: false,
+    cancelRejects: false,
+    name: "source stream reads and releases a reader-only response body",
+  },
+  {
+    abortParent: true,
+    cancelRejects: true,
+    name: "an aborted reader cannot reject stream teardown",
+  },
+] as const
+
+for (const { abortParent, cancelRejects, name } of readerTeardownCases) {
+  test(name, options, async () => {
     const current = await fixture()
-    let cancelled = 0
+    let cancellations = 0
     let reads = 0
-    current.context.fetch = async () => ({
+    current.context.fetch = async (_url, { signal }) => ({
       body: {
         getReader: () => ({
           cancel: async () => {
-            cancelled += 1
+            cancellations += 1
+            assert.equal(signal.aborted, true)
+            if (cancelRejects) {
+              throw new DOMException("The operation was aborted", "AbortError")
+            }
           },
           read: async () => {
             reads += 1
@@ -652,12 +703,15 @@ test(
     const chunk = await stream.next()
     assert.equal(chunk.done, false)
     assert.deepEqual([...chunk.value], [1])
-    await stream.return(undefined)
+    if (abortParent) {
+      controller.abort()
+    }
+    await assert.doesNotReject(stream.return(undefined))
 
     assert.equal(reads, 1)
-    assert.equal(cancelled, 1)
-  },
-)
+    assert.equal(cancellations, 1)
+  })
+}
 
 test(
   "source stream clean EOF does not cancel its completed request",
@@ -709,41 +763,6 @@ test(
   },
 )
 
-test("an aborted reader cannot reject stream teardown", options, async () => {
-  const current = await fixture()
-  let requestSignal: AbortSignal | undefined = undefined
-  current.context.fetch = async (_url, { signal }) => {
-    requestSignal = signal
-    return {
-      body: {
-        getReader: () => ({
-          cancel: async () => {
-            assert.equal(present(requestSignal).aborted, true)
-            throw new DOMException("The operation was aborted", "AbortError")
-          },
-          read: async () => ({
-            done: false,
-            value: new Uint8Array([1]),
-          }),
-        }),
-      },
-      ok: true,
-      status: 200,
-      statusText: "OK",
-    }
-  }
-
-  const controller = new AbortController()
-  const stream = current.context.player_test.source_stream(
-    controller.signal,
-    40,
-  )
-  await stream.next()
-  controller.abort()
-
-  await assert.doesNotReject(stream.return(undefined))
-})
-
 const ready = async (
   current: Awaited<ReturnType<typeof fixture>>,
   position = 40,
@@ -763,6 +782,17 @@ const ready = async (
   current.media.dispatchEvent(new Event("timeupdate"))
   await acknowledged
   return { controller, states }
+}
+
+const runningPlayback = async (
+  current: Awaited<ReturnType<typeof fixture>>,
+) => {
+  const controller = new AbortController()
+  const playback = current.context.player_test.playback_page(controller.signal)
+  await eventually(
+    () => current.sources[0]?.sourceBuffers[0]?.buffered.length === 1,
+  )
+  return { controller, playback }
 }
 
 test(
@@ -858,6 +888,187 @@ test("subtitle events stay outside media state batches", options, async () => {
   controller.abort()
   assert.equal((await pending).done, true)
 })
+
+test(
+  "ready playback crossing below future data pauses one owned attempt",
+  options,
+  async () => {
+    const current = await fixture()
+    const { controller, playback } = await runningPlayback(current)
+    try {
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.paused = false
+      current.media.dispatchEvent(new Event("playing"))
+      await nextTask()
+
+      current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
+      current.media.dispatchEvent(new Event("waiting"))
+      await nextTask()
+
+      assert.equal(current.media.pauses, 1)
+      assert.equal(current.media.paused, true)
+      assert.deepEqual(
+        current.media.topology.filter(
+          (operation) => operation === "pause" || operation === "play",
+        ),
+        ["pause"],
+      )
+    } finally {
+      controller.abort()
+      await playback
+    }
+  },
+)
+
+test(
+  "initial low readiness does not abort a pending play operation",
+  options,
+  async () => {
+    const current = await fixture()
+    const { controller, playback } = await runningPlayback(current)
+    try {
+      current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
+      current.media.paused = false
+      current.media.dispatchEvent(new Event("play"))
+      current.media.dispatchEvent(new Event("waiting"))
+      await nextTask()
+
+      assert.equal(current.media.pauses, 0)
+      assert.equal(current.media.paused, false)
+    } finally {
+      controller.abort()
+      await playback
+    }
+  },
+)
+
+test(
+  "canplay resumes one owned pause and awaits the play promise",
+  options,
+  async () => {
+    const current = await fixture()
+    const resumed = Promise.withResolvers<void>()
+    current.media.playResult = resumed.promise
+    const { controller, playback } = await runningPlayback(current)
+    try {
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.paused = false
+      current.media.dispatchEvent(new Event("playing"))
+      await nextTask()
+
+      current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
+      current.media.dispatchEvent(new Event("waiting"))
+      await nextTask()
+      assert.equal(current.media.pauses, 1)
+
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.dispatchEvent(new Event("canplay"))
+      current.media.dispatchEvent(new Event("canplay"))
+      await nextTask()
+      assert.equal(current.media.plays, 1)
+      assert.deepEqual(
+        current.media.topology.filter(
+          (operation) => operation === "pause" || operation === "play",
+        ),
+        ["pause", "play"],
+      )
+
+      let closed = false
+      const closing = playback.then(() => {
+        closed = true
+      })
+      controller.abort()
+      await new Promise((resolve) => setImmediate(resolve))
+      assert.equal(closed, false)
+      resumed.resolve()
+      await closing
+      assert.equal(closed, true)
+    } finally {
+      controller.abort()
+      resumed.resolve()
+      await playback
+    }
+  },
+)
+
+test("an ordinary user pause is never auto-resumed", options, async () => {
+  const current = await fixture()
+  const { controller, playback } = await runningPlayback(current)
+  try {
+    current.media.readyState = current.media.HAVE_FUTURE_DATA
+    current.media.paused = false
+    current.media.dispatchEvent(new Event("play"))
+    await new Promise((resolve) => setImmediate(resolve))
+
+    current.media.pause()
+    current.media.dispatchEvent(new Event("pause"))
+    current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
+    current.media.dispatchEvent(new Event("waiting"))
+    current.media.readyState = current.media.HAVE_FUTURE_DATA
+    current.media.dispatchEvent(new Event("canplay"))
+    await new Promise((resolve) => setImmediate(resolve))
+
+    assert.equal(current.media.pauses, 1)
+    assert.equal(current.media.plays, 0)
+    assert.equal(current.media.paused, true)
+    assert.deepEqual(
+      current.media.topology.filter(
+        (operation) => operation === "pause" || operation === "play",
+      ),
+      ["pause"],
+    )
+  } finally {
+    controller.abort()
+    await playback
+  }
+})
+
+test(
+  "owner cancellation drains a rejecting pending play promise",
+  options,
+  async () => {
+    const current = await fixture()
+    const resumed = Promise.withResolvers<void>()
+    current.media.playResult = resumed.promise
+    const { controller, playback } = await runningPlayback(current)
+    let released = false
+    try {
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.paused = false
+      current.media.dispatchEvent(new Event("playing"))
+      await nextTask()
+
+      current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
+      current.media.dispatchEvent(new Event("waiting"))
+      await nextTask()
+      assert.equal(current.media.pauses, 1)
+
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.dispatchEvent(new Event("canplay"))
+      await nextTask()
+      assert.equal(current.media.plays, 1)
+
+      let settled = false
+      const observed = playback.then(() => {
+        settled = true
+      })
+      controller.abort()
+      await new Promise((resolve) => setImmediate(resolve))
+      assert.equal(settled, false)
+
+      released = true
+      resumed.reject(new DOMException("playback cancelled", "AbortError"))
+      await observed
+      assert.equal(settled, true)
+    } finally {
+      controller.abort()
+      if (!released) {
+        resumed.resolve()
+      }
+      await playback
+    }
+  },
+)
 
 test(
   "a subtitle error storm retries once without touching media",
@@ -1268,6 +1479,29 @@ test("a synchronous event batch emits one media failure", options, async () => {
 })
 
 test(
+  "page state retains a seek following an error in one synchronous batch",
+  options,
+  async () => {
+    const current = await fixture()
+    const { controller, states } = await ready(current)
+    const pending = states.next()
+    const failure = { code: 3, message: "decode failed" }
+
+    current.media.error = failure
+    current.media.dispatchEvent(new Event("error"))
+    current.media.currentTime = 110
+    current.media.seeking = true
+    current.media.dispatchEvent(new Event("seeking"))
+
+    const change = await nextValue({ next: () => pending })
+    assert.equal(change.error, failure)
+    assert.equal(change.position, 110)
+    assert.equal(change.restart, true)
+    controller.abort()
+  },
+)
+
+test(
   "a media failure storm produces one diagnostic and one same-target reset",
   options,
   async () => {
@@ -1309,6 +1543,77 @@ test(
     }
   },
 )
+
+const synchronousFailureSeekCases = [
+  {
+    events: ["error", "seeking"],
+    name: "error-seeking",
+  },
+  {
+    events: ["seeking", "error"],
+    name: "seeking-error",
+  },
+] as const
+
+for (const { events, name } of synchronousFailureSeekCases) {
+  test(
+    `a simultaneous media error and unbuffered seek rebuilds once for ${name}`,
+    options,
+    async () => {
+      const current = await fixture()
+      const clock = frozenClock(current.context)
+      const controller = new AbortController()
+      const playback = current.context.player_test.playback_page(
+        controller.signal,
+      )
+      try {
+        await eventually(
+          () => current.sources[0]?.sourceBuffers[0]?.buffered.length === 1,
+        )
+        const failure = { code: 3, message: "decode failed" }
+        for (const event of events) {
+          if (event === "error") {
+            current.media.error = failure
+          } else {
+            current.media.currentTime = 110
+            current.media.seeking = true
+          }
+          current.media.dispatchEvent(new Event(event))
+        }
+
+        await eventually(
+          () => current.sources.length === 2 && current.requests.length === 2,
+        )
+        assert.deepEqual(
+          {
+            callbacks: clock.callbacks,
+            diagnostics: current.errors.map(([error]) => error),
+            loads: current.media.loads,
+            requests: current.requests.map((url) =>
+              new URL(url).searchParams.get("t"),
+            ),
+            sources: current.sources.length,
+            target: current.timeInput.value,
+            timers: clock.length,
+          },
+          {
+            callbacks: 0,
+            diagnostics: [failure],
+            loads: 0,
+            requests: ["40", "110"],
+            sources: 2,
+            target: "110",
+            timers: 0,
+          },
+        )
+      } finally {
+        controller.abort()
+        await playback
+        clock.dispose()
+      }
+    },
+  )
+}
 
 test(
   "high water stops an eager transport from growing while paused",
@@ -1775,8 +2080,10 @@ test(
   async () => {
     const current = await fixture()
     let retryDelays = 0
-    current.context.setTimeout = (run) => {
-      retryDelays += 1
+    current.context.setTimeout = (run, delay = 0) => {
+      if (delay > 0) {
+        retryDelays += 1
+      }
       return setTimeout(run, 0)
     }
     const controller = new AbortController()
@@ -1918,6 +2225,72 @@ test(
 )
 
 test(
+  "an asynchronous SourceBuffer error closes the mutation before MSE rebuild",
+  options,
+  async () => {
+    const current = await fixture()
+    let retryDelays = 0
+    current.context.setTimeout = (run, delay = 0) => {
+      if (delay > 0) {
+        retryDelays += 1
+      }
+      return setTimeout(run, 0)
+    }
+    const controller = new AbortController()
+    const sources = current.context.player_test.media_sources(
+      controller.signal,
+      40,
+    )
+
+    try {
+      const opened = await sources.next()
+      assert.equal(opened.done, false)
+      const first = opened.value
+      const source = present(current.sources[0])
+      const openedBuffer = present(source.sourceBuffers[0])
+      const entered = Promise.withResolvers<void>()
+      openedBuffer.appendBuffer = () => {
+        openedBuffer.updating = true
+        openedBuffer.appendState = "parsing"
+        entered.resolve()
+      }
+
+      await first.buffer.next(40)
+      const appending = first.buffer.next(new Uint8Array([1]))
+      await entered.promise
+      const later = first.buffer.next(80)
+      const failure = new Event("error")
+      openedBuffer.usable = false
+      openedBuffer.dispatchEvent(failure)
+
+      await assert.rejects(appending, (error) => error === failure)
+      assert.equal((await later).done, true)
+      assert.equal(openedBuffer.timestampOffset, 40)
+      assert.equal(openedBuffer.aborts, 0)
+
+      const rebuilt = await sources.next({ error: failure, position: 40 })
+      assert.equal(rebuilt.done, false)
+      assert.equal(first.signal.aborted, true)
+      assert.equal(rebuilt.value.position, 40)
+      assert.equal(current.sources.length, 2)
+      assert.equal(retryDelays, 0)
+      assert.deepEqual(
+        current.errors.map(([error]) => error),
+        [failure],
+      )
+    } finally {
+      controller.abort()
+      await sources.return(undefined)
+    }
+
+    assert.equal(current.media.src, "")
+    assert.equal(current.media.removals, 1)
+    assert.equal(current.media.loads, 1)
+    assert.equal(current.revoked.length, 2)
+  },
+)
+
+test(
   "a queued SourceBuffer epoch does not enter after lifetime cancellation",
   options,
   async () => {
@@ -2026,9 +2399,7 @@ test(
 
     await eventually(() => requests >= 1)
     const mediaSource = present(current.sources[0])
-    await eventually(
-      () => mediaSource.sourceBuffers[0]?.buffered.length === 1,
-    )
+    await eventually(() => mediaSource.sourceBuffers[0]?.buffered.length === 1)
     const source = current.media.src
     current.media.currentTimes.length = 0
     current.media.currentTime = 110
@@ -2482,9 +2853,8 @@ test(
       current.media.currentTime = 110
       current.media.seeking = true
       current.media.dispatchEvent(new Event("seeking"))
-      for (let turn = 0; turn < 8 && requests.length !== 2; turn += 1) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
+      await nextTask()
+      await eventually(() => requests.length === 2)
 
       assert.deepEqual(
         requests.map((url) => new URL(url).searchParams.get("t")),
@@ -2516,8 +2886,10 @@ test(
     let retryDelays = 0
     let firstResponse: ReadableStreamDefaultController<Uint8Array> | undefined =
       undefined
-    current.context.setTimeout = (run) => {
-      retryDelays += 1
+    current.context.setTimeout = (run, delay = 0) => {
+      if (delay > 0) {
+        retryDelays += 1
+      }
       return setTimeout(run, 0)
     }
     current.context.fetch = async (url) => {
