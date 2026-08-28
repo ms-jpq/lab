@@ -1,10 +1,10 @@
 /** @typedef {"end" | number | Uint8Array} MseOperation */
 /** @typedef {AsyncGenerator<void, void, MseOperation | undefined>} Mse */
 /** @typedef {{error: MediaError | null, position: number, seek: number | undefined}} PageChange */
-/** @typedef {readonly [AsyncIterator<unknown, unknown, void>, IteratorResult<unknown, unknown>]} IteratorSelection */
 /** @typedef {{buffer: Mse, position: number, signal: AbortSignal}} PlaybackSource */
 /** @typedef {{error?: unknown, position: number, reset: boolean}} SourceChange */
 /** @typedef {{error: unknown}} Failure */
+/** @typedef {{kind: "page", result: IteratorResult<PageChange, void>} | {kind: "progress", result: IteratorResult<void, Failure | void>}} AttemptSelection */
 /** @typedef {Promise<IteratorResult<PageChange, void>>} PageResult */
 /** @typedef {{action: "done" | "reset" | "retry" | "seek", error?: unknown, page: PageResult, position: number}} AttemptChange */
 
@@ -211,27 +211,22 @@ const page_states = (signal, position) => {
   return (async function* () {
     try {
       for (;;) {
-        if (events.length === 0) {
-          if (!(await changed.promise)) {
-            return
-          }
-        }
-        if (observation_signal.aborted) {
+        if (
+          (events.length === 0 && !(await changed.promise)) ||
+          observation_signal.aborted
+        ) {
           return
         }
 
-        const observed = events.shift()
-        if (!observed) {
-          continue
-        }
+        const observed = /** @type {ReturnType<typeof page_state>} */ (
+          events.shift()
+        )
         if (events.length === 0) {
           changed = Promise.withResolvers()
         }
         let current = observed
         let moved =
-          Number.isFinite(current.time) &&
-          (current.time !== previous.time ||
-            current.seeking !== previous.seeking)
+          current.time !== previous.time || current.seeking !== previous.seeking
         const internal_seek =
           requested_position !== undefined &&
           Math.abs(current.time - requested_position) <= POSITION_TOLERANCE
@@ -241,40 +236,36 @@ const page_states = (signal, position) => {
         if (user_seek) {
           target = playable_position(current.time)
           const playable = available(target)
-          if (playable !== undefined) {
-            target = playable
-          }
-          const positioned =
-            Math.abs(current.time - target) <= POSITION_TOLERANCE
+          target = playable ?? target
           restart = playable === undefined
-          requested_position = restart || !positioned ? target : undefined
+          requested_position =
+            restart || Math.abs(current.time - target) > POSITION_TOLERANCE
+              ? target
+              : undefined
           set_position(target)
         } else if (requested_position !== undefined) {
           const playable = available(requested_position)
-          if (playable !== undefined && playable !== requested_position) {
+          if (playable !== undefined) {
             requested_position = playable
             target = playable
           }
-          if (
-            (media.readyState !== 0 || playable !== undefined) &&
-            !media.seeking &&
-            Math.abs(media.currentTime - requested_position) >
+          if (!media.seeking) {
+            const positioned =
+              Math.abs(media.currentTime - requested_position) <=
               POSITION_TOLERANCE
-          ) {
-            media.currentTime = requested_position
-          } else if (
-            playable !== undefined &&
-            Math.abs(media.currentTime - requested_position) <=
-              POSITION_TOLERANCE &&
-            !media.seeking
-          ) {
-            requested_position = undefined
+            if (
+              !positioned &&
+              (media.readyState !== 0 || playable !== undefined)
+            ) {
+              media.currentTime = requested_position
+            } else if (positioned && playable !== undefined) {
+              requested_position = undefined
+            }
           }
           current = page_state()
           moved =
-            Number.isFinite(current.time) &&
-            (current.time !== previous.time ||
-              current.seeking !== previous.seeking)
+            current.time !== previous.time ||
+            current.seeking !== previous.seeking
         }
 
         if (current.ended && !previous.ended) {
@@ -529,24 +520,26 @@ const play_attempt = async (signal, buffer, states, page, position) => {
   let progress = current.next()
   try {
     for (;;) {
-      const selected = /** @type {IteratorSelection | undefined} */ (
-        await select(
-          attempt_signal,
-          async () => /** @type {IteratorSelection} */ ([states, await page]),
-          progress
-            ? async () =>
-                /** @type {IteratorSelection} */ ([current, await progress])
-            : undefined,
-        )
+      const selected = await select(
+        attempt_signal,
+        async () =>
+          /** @type {AttemptSelection} */ ({
+            kind: "page",
+            result: await page,
+          }),
+        progress
+          ? async () =>
+              /** @type {AttemptSelection} */ ({
+                kind: "progress",
+                result: await progress,
+              })
+          : undefined,
       )
       if (!selected) {
         return { action: "done", page, position }
       }
-      const [selected_source, selected_result] = selected
-      if (selected_source === current) {
-        const result = /** @type {IteratorResult<void, Failure | void>} */ (
-          selected_result
-        )
+      if (selected.kind === "progress") {
+        const { result } = selected
         progress = undefined
         if (result.done) {
           return result.value
@@ -556,9 +549,7 @@ const play_attempt = async (signal, buffer, states, page, position) => {
         continue
       }
 
-      const state = /** @type {IteratorResult<PageChange, void>} */ (
-        selected_result
-      )
+      const state = selected.result
       if (state.done) {
         return { action: "done", page, position }
       }

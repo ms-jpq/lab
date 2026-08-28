@@ -1157,6 +1157,75 @@ test(
 )
 
 test(
+  "a seek pending during network retry becomes the next request",
+  options,
+  async () => {
+    const current = await fixture()
+    const retry = Promise.withResolvers<() => void>()
+    const resumed = Promise.withResolvers<string>()
+    const requests: string[] = []
+    current.context.setTimeout = (run) => {
+      const timeout = setTimeout(run, 10_000)
+      retry.resolve(() => {
+        clearTimeout(timeout)
+        run()
+      })
+      return timeout
+    }
+    current.context.fetch = async (url, { signal }) => {
+      requests.push(String(url))
+      if (requests.length === 1) {
+        throw new Error("source request failed")
+      }
+      resumed.resolve(String(url))
+      return {
+        body: new ReadableStream({
+          start: (controller) => {
+            controller.enqueue(new Uint8Array([1]))
+            signal.addEventListener("abort", () => controller.close(), {
+              once: true,
+            })
+          },
+        }),
+        ok: true,
+        status: 200,
+        statusText: "OK",
+      }
+    }
+
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    try {
+      const resume = await retry.promise
+      current.media.currentTime = 110
+      current.media.seeking = true
+      current.media.dispatchEvent(new Event("seeking"))
+      await new Promise((resolve) => setImmediate(resolve))
+      assert.deepEqual(
+        requests.map((url) => new URL(url).searchParams.get("t")),
+        ["40"],
+      )
+
+      resume()
+      const request = new URL(await resumed.promise)
+      assert.equal(request.searchParams.get("t"), "110")
+      assert.equal(current.timeInput.value, "110")
+      assert.equal(current.media.currentTime, 110)
+      assert.deepEqual(
+        requests.map((url) => new URL(url).searchParams.get("t")),
+        ["40", "110"],
+      )
+      assert.equal(current.errors.length, 1)
+    } finally {
+      controller.abort()
+      await playback
+    }
+  },
+)
+
+test(
   "MediaSource replacement cannot turn its native reset into a zero seek",
   options,
   async () => {
