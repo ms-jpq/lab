@@ -291,6 +291,7 @@ class Media extends TrackedEventTarget {
   plays: number
   readyState: number
   onLoad: (() => void) | undefined
+  onSourceChange: ((previous: string, current: string) => void) | undefined
   topology: string[]
 
   constructor() {
@@ -316,6 +317,7 @@ class Media extends TrackedEventTarget {
     this.playResult = Promise.resolve()
     this.plays = 0
     this.readyState = 0
+    this.onSourceChange = undefined
     this.topology = []
   }
 
@@ -334,11 +336,13 @@ class Media extends TrackedEventTarget {
   }
 
   set src(value: string) {
+    const previous = this._src
     this._src = value
     this.topology.push(`src:${value}`)
     this.buffered.ranges = []
     this.readyState = 0
     this.currentTime = 0
+    this.onSourceChange?.(previous, value)
   }
 
   load(): void {
@@ -1201,6 +1205,52 @@ test(
 )
 
 test(
+  "a readiness play owns its rejection before yielding",
+  options,
+  async () => {
+    const current = await fixture()
+    const resumed = Promise.withResolvers<void>()
+    const then = resumed.promise.then.bind(resumed.promise)
+    let rejectionOwned = false
+    resumed.promise.then = ((fulfilled, rejected) => {
+      rejectionOwned = typeof rejected === "function"
+      return then(fulfilled, rejected)
+    }) as typeof resumed.promise.then
+    current.media.playResult = resumed.promise
+    const { controller, states } = await ready(current)
+
+    try {
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.paused = false
+      const established = states.next()
+      current.media.dispatchEvent(new Event("playing"))
+      await established
+
+      current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
+      const starved = states.next()
+      current.media.dispatchEvent(new Event("waiting"))
+      await starved
+
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      const resumedState = states.next()
+      current.media.dispatchEvent(new Event("canplay"))
+      await resumedState
+
+      assert.equal(rejectionOwned, true)
+    } finally {
+      controller.abort()
+      resumed.reject(
+        new DOMException(
+          "The fetching process for the media resource was aborted by the user agent at the user's request.",
+          "AbortError",
+        ),
+      )
+      await states.return(undefined)
+    }
+  },
+)
+
+test(
   "an owned readiness pause survives an MSE failure rebuild",
   options,
   async () => {
@@ -1245,6 +1295,90 @@ test(
       )
       assert.equal(current.sources.length, 2)
     } finally {
+      controller.abort()
+      await playback
+    }
+  },
+)
+
+test(
+  "a live MSE replacement keeps an aborted readiness attempt local",
+  options,
+  async () => {
+    const current = await fixture()
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    const resumed = Promise.withResolvers<void>()
+    const playAbort = new DOMException(
+      "The fetching process for the media resource was aborted by the user agent at the user's request.",
+      "AbortError",
+    )
+    let replacements = 0
+    let thirdSource = false
+
+    try {
+      await eventually(
+        () => current.sources[0]?.sourceBuffers[0]?.buffered.length === 1,
+      )
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.paused = false
+      current.media.dispatchEvent(new Event("playing"))
+      await nextTask()
+
+      current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
+      current.media.dispatchEvent(new Event("waiting"))
+      await nextTask()
+      current.media.playResult = resumed.promise
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.dispatchEvent(new Event("canplay"))
+      await nextTask()
+      assert.equal(current.media.plays, 1)
+
+      current.media.onSourceChange = (previous, next) => {
+        if (!previous.startsWith("blob:") || !next.startsWith("blob:")) {
+          return
+        }
+        replacements += 1
+        if (replacements === 1) {
+          resumed.reject(playAbort)
+        } else {
+          thirdSource = true
+          controller.abort()
+        }
+      }
+      const mediaFailure = { code: 3, message: "decode failed" }
+      current.media.error = mediaFailure
+      current.media.dispatchEvent(new Event("error"))
+
+      await eventually(
+        () =>
+          thirdSource ||
+          current.sources[1]?.sourceBuffers[0]?.buffered.length === 1,
+      )
+      assert.equal(thirdSource, false)
+      assert.equal(controller.signal.aborted, false)
+      assert.equal(current.sources.length, 2)
+
+      current.media.error = null
+      current.media.playResult = Promise.resolve()
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.dispatchEvent(new Event("canplay"))
+      await eventually(() => current.media.plays === 2)
+
+      assert.deepEqual(
+        current.errors.map(([error]) => error),
+        [mediaFailure],
+      )
+      assert.equal(
+        current.requests.some(
+          (url) => new URL(url).searchParams.get("t") === "0",
+        ),
+        false,
+      )
+    } finally {
+      current.media.onSourceChange = undefined
       controller.abort()
       await playback
     }

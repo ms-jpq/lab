@@ -223,7 +223,7 @@ const page_changes = async function* (signal, position) {
   }
   pending.push(media_observation())
   changed.resolve(true)
-  /** @type {Promise<{played: true}> | undefined} */
+  /** @type {Promise<{played: true} | {play_error: unknown}> | undefined} */
   let playing = undefined
   let previous = media_observation()
   let established = false
@@ -238,6 +238,9 @@ const page_changes = async function* (signal, position) {
         changed.promise.then((result) => ({ changed: result })),
         ...(playing ? [playing] : []),
       ])
+      if ("play_error" in selected) {
+        throw selected.play_error
+      }
       if ("played" in selected) {
         playing = undefined
         continue
@@ -275,9 +278,10 @@ const page_changes = async function* (signal, position) {
           current.future
         ) {
           resume = false
-          playing = media
-            .play()
-            .then(() => ({ played: /** @type {const} */ (true) }))
+          playing = media.play().then(
+            () => ({ played: /** @type {const} */ (true) }),
+            (play_error) => ({ play_error }),
+          )
         }
         let moved =
           current.time !== previous.time || current.seeking !== previous.seeking
@@ -653,29 +657,34 @@ const play_media = async (signal) => {
     for (;;) {
       const lifetime = new AbortController()
       const lifetime_signal = AbortSignal.any([signal, lifetime.signal])
-      const source = new MediaSourceConstructor()
-      const opened = first_event(
-        lifetime_signal,
-        source,
-        "sourceopen",
-        "sourceclose",
-      )
-      const url = URL.createObjectURL(source)
-      const previous_url = attached_url
-      media.src = url
-      media.currentTime = position
-      attached_url = url
       /** @type {Mse | undefined} */
       let buffer = undefined
       /** @type {SourceFailure | {setup: unknown} | undefined} */
       let failure = undefined
+      /** @type {string | undefined} */
+      let loose_url = undefined
+      /** @type {string | undefined} */
+      let previous_url = undefined
 
       try {
-        const selected = await opened.finally(() => {
-          if (previous_url) {
-            URL.revokeObjectURL(previous_url)
-          }
-        })
+        const source = new MediaSourceConstructor()
+        const opened = first_event(
+          lifetime_signal,
+          source,
+          "sourceopen",
+          "sourceclose",
+        )
+        loose_url = URL.createObjectURL(source)
+        previous_url = attached_url
+        media.src = loose_url
+        attached_url = loose_url
+        loose_url = undefined
+        media.currentTime = position
+        const selected = await opened
+        if (previous_url) {
+          URL.revokeObjectURL(previous_url)
+          previous_url = undefined
+        }
         if (!selected) {
           return
         }
@@ -711,6 +720,12 @@ const play_media = async (signal) => {
       } finally {
         lifetime.abort()
         await buffer?.return()
+        if (loose_url) {
+          URL.revokeObjectURL(loose_url)
+        }
+        if (previous_url) {
+          URL.revokeObjectURL(previous_url)
+        }
       }
       if (!failure) {
         return
