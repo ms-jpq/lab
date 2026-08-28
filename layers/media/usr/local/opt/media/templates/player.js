@@ -4,6 +4,7 @@
 /** @typedef {readonly [AsyncIterator<unknown, unknown, void>, IteratorResult<unknown, unknown>]} IteratorSelection */
 /** @typedef {{buffer: Mse, position: number, signal: AbortSignal}} PlaybackSource */
 /** @typedef {{error?: unknown, position: number, reset: boolean}} SourceChange */
+/** @typedef {{error: unknown}} Failure */
 
 const BUFFER = {
   BEHIND: 30,
@@ -334,9 +335,7 @@ const mse = (signal, media, source, opened_buffer) => {
           if (source.readyState === "ended") {
             const ranges = opened_buffer.buffered
             const end = ranges.length ? ranges.end(ranges.length - 1) : 0
-            if (
-              !(await update(() => opened_buffer.remove(end, end + 0.001)))
-            ) {
+            if (!(await update(() => opened_buffer.remove(end, end + 0.001)))) {
               return
             }
           }
@@ -371,7 +370,7 @@ const mse = (signal, media, source, opened_buffer) => {
   })()
 }
 
-/** @param {AbortSignal} signal @param {number} time @returns {AsyncGenerator<Uint8Array, boolean, void>} */
+/** @param {AbortSignal} signal @param {number} time @returns {AsyncGenerator<Uint8Array, Failure | void, void>} */
 const source_stream = async function* (signal, time) {
   const request = new AbortController()
   const request_signal = AbortSignal.any([signal, request.signal])
@@ -388,14 +387,13 @@ const source_stream = async function* (signal, time) {
     for (;;) {
       const { done, value } = await reader.read()
       if (done) {
-        return false
+        return
       }
       yield value
     }
   } catch (error) {
     if (!request_signal.aborted) {
-      console.error(error)
-      return true
+      return { error }
     }
   } finally {
     request.abort()
@@ -407,10 +405,10 @@ const source_stream = async function* (signal, time) {
       }
     }
   }
-  return false
+  return
 }
 
-/** @param {AbortSignal} signal @param {Mse} buffer @param {number} time @returns {AsyncGenerator<void, "retry" | void, void>} */
+/** @param {AbortSignal} signal @param {Mse} buffer @param {number} time @returns {AsyncGenerator<void, Failure | void, void>} */
 const session = async function* (signal, buffer, time) {
   const start = stream_position(time)
 
@@ -426,7 +424,7 @@ const session = async function* (signal, buffer, time) {
       const next = await stream.next()
       if (next.done) {
         if (next.value) {
-          return "retry"
+          return next.value
         }
         break
       }
@@ -440,7 +438,7 @@ const session = async function* (signal, buffer, time) {
       }
     }
   } finally {
-    await stream.return(false)
+    await stream.return()
   }
   if (!signal.aborted && !(await buffer.next("end")).done) {
     await select(signal)
@@ -533,80 +531,79 @@ const play_source = async (source) => {
   })
 
   try {
-    try {
-      for (;;) {
-        const attempt = new AbortController()
-        const attempt_signal = AbortSignal.any([signal, attempt.signal])
-        const current = session(attempt_signal, buffer, target)
-        /** @type {Promise<IteratorResult<void, "retry" | void>> | undefined} */
-        let progress = current.next()
-        let retry = false
+    for (;;) {
+      const attempt = new AbortController()
+      const attempt_signal = AbortSignal.any([signal, attempt.signal])
+      const current = session(attempt_signal, buffer, target)
+      /** @type {Promise<IteratorResult<void, Failure | void>> | undefined} */
+      let progress = current.next()
+      let retry = false
 
-        try {
-          for (;;) {
-            const selected = /** @type {IteratorSelection | undefined} */ (
-              await select(
-                attempt_signal,
-                async () =>
-                  /** @type {IteratorSelection} */ ([states, await change]),
-                progress
-                  ? async () =>
-                      /** @type {IteratorSelection} */ ([
-                        current,
-                        await progress,
-                      ])
-                  : undefined,
-              )
+      try {
+        for (;;) {
+          const selected = /** @type {IteratorSelection | undefined} */ (
+            await select(
+              attempt_signal,
+              async () =>
+                /** @type {IteratorSelection} */ ([states, await change]),
+              progress
+                ? async () =>
+                    /** @type {IteratorSelection} */ ([current, await progress])
+                : undefined,
             )
-            if (!selected) {
-              return result()
-            }
-            const [selected_source, selected_result] = selected
-            if (selected_source === current) {
-              progress = undefined
-              if (selected_result.done) {
-                if (selected_result.value === "retry") {
-                  retry = true
-                  break
-                }
-                return result()
-              }
-              continue
-            }
-
-            const state = /** @type {IteratorResult<PageChange, void>} */ (
+          )
+          if (!selected) {
+            return result()
+          }
+          const [selected_source, selected_result] = selected
+          if (selected_source === current) {
+            const progress_result = /** @type {IteratorResult<void, Failure | void>} */ (
               selected_result
             )
-            if (state.done) {
+            progress = undefined
+            if (progress_result.done) {
+              if (progress_result.value) {
+                console.error(progress_result.value.error)
+                retry = true
+                break
+              }
               return result()
             }
-            target = state.value.position
-            if (state.value.failed) {
-              return result()
-            }
-            change = states.next()
-            if (state.value.seek !== undefined) {
-              break
-            }
-            if (progress === undefined) {
-              progress = current.next()
-            }
+            continue
           }
-        } finally {
-          attempt.abort()
-          await current.return()
-        }
 
-        if (signal.aborted) {
-          return result()
+          const state = /** @type {IteratorResult<PageChange, void>} */ (
+            selected_result
+          )
+          if (state.done) {
+            return result()
+          }
+          target = state.value.position
+          if (state.value.failed) {
+            return result()
+          }
+          change = states.next()
+          if (state.value.seek !== undefined) {
+            break
+          }
+          if (progress === undefined) {
+            progress = current.next()
+          }
         }
-        if (retry && !(await retry_delay(signal))) {
-          return result()
-        }
+      } finally {
+        attempt.abort()
+        await current.return()
       }
-    } catch (error) {
-      return signal.aborted ? result() : result(true, error)
+
+      if (signal.aborted) {
+        return result()
+      }
+      if (retry && !(await retry_delay(signal))) {
+        return result()
+      }
     }
+  } catch (error) {
+    return signal.aborted ? result() : result(true, error)
   } finally {
     observation.abort()
     await states.return()
