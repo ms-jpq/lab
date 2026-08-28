@@ -15,7 +15,7 @@ export default {
         session.off(EVENT)
 
         const isSsh = acc.subarray(0, PREFIX.length).equals(PREFIX)
-        session.variables.x_ssh_detect = isSsh ? "ssh" : "ovpn"
+        session.variables["x_ssh_detect"] = isSsh ? "ssh" : "ovpn"
         session.done()
       }
     })

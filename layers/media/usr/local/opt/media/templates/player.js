@@ -111,7 +111,7 @@ const diagnostics = () => {
 
 /** @param {HTMLMediaElement | HTMLTrackElement} resource @param {number} time */
 const source_url = (resource, time) => {
-  const path = /** @type {string} */ (resource.dataset.src)
+  const path = /** @type {string} */ (resource.dataset["src"])
   const source = new URL(path, location.href)
   source.searchParams.set("t", String(time))
   source.searchParams.set("page", PAGE)
@@ -121,7 +121,7 @@ const source_url = (resource, time) => {
 
 /** @param {number} value */
 const playable_position = (value) => {
-  const duration = Number(media.dataset.duration)
+  const duration = Number(media.dataset["duration"])
   const position = Number.isFinite(value) ? Math.max(0, value) : 0
   return duration > 0 && position >= duration
     ? Math.max(0, duration - END_TOLERANCE)
@@ -698,14 +698,16 @@ const media_sources = () => {
         if (event.type !== "sourceopen") {
           throw event
         }
-        const duration = Number(media.dataset.duration)
+        const duration = Number(media.dataset["duration"])
         if (duration > 0) {
           source.duration = duration
         }
         const buffer = mse(
           signal,
           source,
-          source.addSourceBuffer(/** @type {string} */ (media.dataset.mseType)),
+          source.addSourceBuffer(
+            /** @type {string} */ (media.dataset["mseType"]),
+          ),
         )
         await buffer.next()
         return buffer

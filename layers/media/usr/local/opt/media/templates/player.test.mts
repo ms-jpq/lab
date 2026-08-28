@@ -1025,7 +1025,7 @@ test(
   async () => {
     const current = await fixture()
     const clock = frozenClock(current.context)
-    current.context.window.dispatchEvent(new Event("pageshow"))
+    current.context["window"].dispatchEvent(new Event("pageshow"))
     try {
       await eventually(
         () =>
@@ -1079,7 +1079,7 @@ test(
       deepEqual(current.errors.length, 1)
       deepEqual(mediaBoundary(), beforeError)
     } finally {
-      current.context.window.dispatchEvent(new Event("pagehide"))
+      current.context["window"].dispatchEvent(new Event("pagehide"))
       clock.dispose()
     }
   },
@@ -1131,7 +1131,7 @@ test(
     const clock = frozenClock(current.context)
     let hidden = false
     try {
-      current.context.window.dispatchEvent(new Event("pageshow"))
+      current.context["window"].dispatchEvent(new Event("pageshow"))
       await eventually(
         () =>
           current.subtitle.sources.length !== 0 &&
@@ -1142,7 +1142,7 @@ test(
       deepEqual(clock.length, 1)
       const subtitleRequests = current.subtitle.sources.length
 
-      current.context.window.dispatchEvent(new Event("pagehide"))
+      current.context["window"].dispatchEvent(new Event("pagehide"))
       hidden = true
       await eventually(() => clock.cancellations === 1)
       deepEqual(clock.cancellations, 1)
@@ -1156,7 +1156,7 @@ test(
       deepEqual(current.subtitle.listenerCalls, listenerCalls)
     } finally {
       if (!hidden) {
-        current.context.window.dispatchEvent(new Event("pagehide"))
+        current.context["window"].dispatchEvent(new Event("pagehide"))
       }
       clock.dispose()
     }
@@ -1213,7 +1213,7 @@ test(
       const source = present(current.sources[0])
       const buffer = present(source.sourceBuffers[0])
       const diagnostic = new Error("subtitle diagnostic failed")
-      current.context.console = {
+      current.context["console"] = {
         error: () => {
           throw diagnostic
         },
@@ -4667,7 +4667,7 @@ test(
       const subtitleRequests = current.subtitle.sources.length
       const reporterFailure = new Error("media diagnostic failed")
       let reports = 0
-      current.context.console = {
+      current.context["console"] = {
         error: () => {
           reports += 1
           throw reporterFailure
@@ -4714,7 +4714,7 @@ test(
     }
     const reporterFailure = new Error("transport diagnostic failed")
     let reports = 0
-    current.context.console = {
+    current.context["console"] = {
       error: () => {
         reports += 1
         throw reporterFailure

@@ -10,7 +10,7 @@ const COOKIE_NAME = "htpasswd"
 const COOKIE_TTL = 60 * 60 * 24 * 7 * 2
 const DOMAIN_PARTS = 2
 const HMAC_SECRET =
-  process.env.HTPASSWD_SECRET ||
+  process.env["HTPASSWD_SECRET"] ||
   (() => {
     throw new Error()
   })()
@@ -205,8 +205,8 @@ const parseAuth = (o) => {
  */
 const validate = async (r, creds, o) => {
   const ip = o.remoteAddress ?? ""
-  r.variables.htpasswd_authz = `Basic ${creds}`
-  r.variables.htpasswd_ip = ip === "unix:" ? "::" : ip
+  r.variables["htpasswd_authz"] = `Basic ${creds}`
+  r.variables["htpasswd_ip"] = ip === "unix:" ? "::" : ip
 
   const reply = await r.subrequest(SUBREQ, { method: "GET" })
   return reply.status >= 200 && reply.status < 300
@@ -249,9 +249,9 @@ export default {
     }
 
     const params = qs.parse(r.requestText ?? "")
-    const username = removeWs(firstString(params.username))
+    const username = removeWs(firstString(params["username"]))
 
-    const password = firstString(params.password)
+    const password = firstString(params["password"])
     const creds = Buffer.from(`${username}:${password}`).toString("base64")
     if (!(await validate(r, creds, o))) {
       return r.return(401)
@@ -259,7 +259,7 @@ export default {
 
     r.headersOut["Set-Cookie"] = [buildCookie(o, username, DOMAIN_PARTS)]
 
-    const redirect = removeWs(firstString(params.redirect)) || "/"
+    const redirect = removeWs(firstString(params["redirect"])) || "/"
     return r.return(303, redirect)
   },
 }
