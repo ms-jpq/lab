@@ -2,6 +2,7 @@
 /** @typedef {AsyncGenerator<void, void, MseOperation>} Mse */
 /** @typedef {{failure: unknown}} Failure */
 /** @template T @typedef {Failure | {value: T}} Result */
+/** @typedef {{next: () => Promise<IteratorResult<Uint8Array, {error: unknown} | void>>, return: () => Promise<IteratorResult<Uint8Array, {error: unknown} | void>>}} RequestStream */
 /** @typedef {MseOperation | Failure} SourceOperation */
 /** @typedef {{error: (error: unknown) => void, progress: () => void}} Diagnostics */
 /** @typedef {{position: number, restart: boolean, started: boolean}} Target */
@@ -440,38 +441,58 @@ const mse = async function* (signal, source, buffer) {
   }
 }
 
-/** @param {AbortController} request @param {number} time @returns {AsyncGenerator<Uint8Array, {error: unknown} | void, void>} */
-const request_stream = async function* (request, time) {
+/** @param {number} time @returns {RequestStream} */
+const request_stream = (time) => {
+  const request = new AbortController()
+  let active = true
   /** @type {ReadableStreamDefaultReader<Uint8Array> | undefined} */
   let reader = undefined
-  try {
-    const response = await fetch(source_url(media, time), {
-      signal: request.signal,
-    })
-    if (!response.body) {
-      throw new Error(`${response.statusText} - ${response.status}`)
-    }
-    reader = response.body.getReader()
-    if (!response.ok) {
-      throw new Error(`${response.statusText} - ${response.status}`)
-    }
-    for (;;) {
-      const { done, value } = await reader.read()
-      if (done) {
-        reader = undefined
-        return
+  const stream = (async function* () {
+    try {
+      const response = await fetch(source_url(media, time), {
+        signal: request.signal,
+      })
+      if (!response.body) {
+        throw new Error(`${response.statusText} - ${response.status}`)
       }
-      yield value
+      reader = response.body.getReader()
+      if (!response.ok) {
+        throw new Error(`${response.statusText} - ${response.status}`)
+      }
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) {
+          reader = undefined
+          return
+        }
+        yield value
+      }
+    } catch (error) {
+      return request.signal.aborted ? undefined : { error }
+    } finally {
+      if (reader) {
+        request.abort()
+        try {
+          await reader.cancel()
+        } catch {}
+      }
     }
-  } catch (error) {
-    return request.signal.aborted ? undefined : { error }
-  } finally {
-    if (reader) {
-      request.abort()
-      try {
-        await reader.cancel()
-      } catch {}
-    }
+  })()
+  return {
+    next: async () => {
+      const next = await stream.next()
+      if (next.done) {
+        active = false
+      }
+      return next
+    },
+    return: async () => {
+      if (active) {
+        active = false
+        request.abort()
+      }
+      return stream.return(undefined)
+    },
   }
 }
 
@@ -550,8 +571,7 @@ const source_stream = async function* (failures, page) {
         continue acquisition
       }
     }
-    const request = new AbortController()
-    const stream = request_stream(request, start)
+    const stream = request_stream(start)
     let frontier = stream_position(start)
 
     try {
@@ -608,7 +628,6 @@ const source_stream = async function* (failures, page) {
         }
       }
     } finally {
-      request.abort()
       await stream.return()
     }
     if (

@@ -78,9 +78,11 @@ type PlayerTest = {
     source: AsyncIterator<T, void, void>,
   ) => <W>(work?: Promise<W>) => Promise<T | W | undefined>
   request_stream: (
-    request: AbortController,
     position: number,
-  ) => AsyncGenerator<Uint8Array, unknown, undefined>
+  ) => {
+    next: () => Promise<IteratorResult<Uint8Array, unknown>>
+    return: () => Promise<IteratorResult<Uint8Array, unknown>>
+  }
 }
 type MockResponse = {
   body: {
@@ -733,18 +735,16 @@ test(
 
 const readerTeardownCases = [
   {
-    abortParent: false,
     cancelRejects: false,
     name: "source stream reads and releases a reader-only response body",
   },
   {
-    abortParent: true,
     cancelRejects: true,
     name: "an aborted reader cannot reject stream teardown",
   },
 ] as const
 
-for (const { abortParent, cancelRejects, name } of readerTeardownCases) {
+for (const { cancelRejects, name } of readerTeardownCases) {
   test(name, options, async () => {
     const current = await fixture()
     let cancellations = 0
@@ -766,15 +766,11 @@ for (const { abortParent, cancelRejects, name } of readerTeardownCases) {
         }),
       })
 
-    const controller = new AbortController()
-    const stream = current.context.player_test.request_stream(controller, 40)
+    const stream = current.context.player_test.request_stream(40)
     const chunk = await stream.next()
     deepEqual(chunk.done, false)
     deepEqual([...chunk.value], [1])
-    if (abortParent) {
-      controller.abort()
-    }
-    await doesNotReject(stream.return(undefined))
+    await doesNotReject(stream.return())
 
     deepEqual(reads, 1)
     deepEqual(cancellations, 1)
@@ -808,8 +804,7 @@ test(
       })
     }
 
-    const controller = new AbortController()
-    const stream = current.context.player_test.request_stream(controller, 40)
+    const stream = current.context.player_test.request_stream(40)
     const chunk = await stream.next()
     deepEqual(chunk.done, false)
     deepEqual([...chunk.value], [1])
