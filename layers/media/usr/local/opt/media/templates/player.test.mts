@@ -37,7 +37,9 @@ type PlayerTest = {
   playable_position: (position: number) => number
   session: (
     signal: AbortSignal,
-    buffer: { next: (operation: MseOperation) => Promise<IteratorResult<void>> },
+    buffer: {
+      next: (operation: MseOperation) => Promise<IteratorResult<void>>
+    },
     position: number,
   ) => AsyncGenerator<void, unknown, undefined>
   source_stream: (
@@ -113,6 +115,7 @@ class Media extends EventTarget {
   private _src: string
   loads: number
   listenerCalls: number
+  listenerWrappers: WeakMap<EventListenerOrEventListenerObject, EventListener>
   readyState: number
   onLoad: (() => void) | undefined
 
@@ -132,6 +135,7 @@ class Media extends EventTarget {
     this._src = ""
     this.loads = 0
     this.listenerCalls = 0
+    this.listenerWrappers = new WeakMap()
     this.readyState = 0
   }
 
@@ -144,16 +148,26 @@ class Media extends EventTarget {
       super.addEventListener(type, callback, options)
       return
     }
-    super.addEventListener(
+    const wrapped = (event: Event) => {
+      this.listenerCalls += 1
+      if (typeof callback === "function") {
+        callback.call(this, event)
+      } else {
+        callback.handleEvent(event)
+      }
+    }
+    this.listenerWrappers.set(callback, wrapped)
+    super.addEventListener(type, wrapped, options)
+  }
+
+  override removeEventListener(
+    type: string,
+    callback: EventListenerOrEventListenerObject | null,
+    options?: EventListenerOptions | boolean,
+  ): void {
+    super.removeEventListener(
       type,
-      (event) => {
-        this.listenerCalls += 1
-        if (typeof callback === "function") {
-          callback.call(this, event)
-        } else {
-          callback.handleEvent(event)
-        }
-      },
+      callback ? (this.listenerWrappers.get(callback) ?? callback) : null,
       options,
     )
   }
@@ -588,44 +602,40 @@ test(
   },
 )
 
-test(
-  "an aborted reader cannot reject stream teardown",
-  options,
-  async () => {
-    const current = await fixture()
-    let requestSignal: AbortSignal | undefined = undefined
-    current.context.fetch = async (_url, { signal }) => {
-      requestSignal = signal
-      return {
-        body: {
-          getReader: () => ({
-            cancel: async () => {
-              assert.equal(present(requestSignal).aborted, true)
-              throw new DOMException("The operation was aborted", "AbortError")
-            },
-            read: async () => ({
-              done: false,
-              value: new Uint8Array([1]),
-            }),
+test("an aborted reader cannot reject stream teardown", options, async () => {
+  const current = await fixture()
+  let requestSignal: AbortSignal | undefined = undefined
+  current.context.fetch = async (_url, { signal }) => {
+    requestSignal = signal
+    return {
+      body: {
+        getReader: () => ({
+          cancel: async () => {
+            assert.equal(present(requestSignal).aborted, true)
+            throw new DOMException("The operation was aborted", "AbortError")
+          },
+          read: async () => ({
+            done: false,
+            value: new Uint8Array([1]),
           }),
-        },
-        ok: true,
-        status: 200,
-        statusText: "OK",
-      }
+        }),
+      },
+      ok: true,
+      status: 200,
+      statusText: "OK",
     }
+  }
 
-    const controller = new AbortController()
-    const stream = current.context.player_test.source_stream(
-      controller.signal,
-      40,
-    )
-    await stream.next()
-    controller.abort()
+  const controller = new AbortController()
+  const stream = current.context.player_test.source_stream(
+    controller.signal,
+    40,
+  )
+  await stream.next()
+  controller.abort()
 
-    await assert.doesNotReject(stream.return(undefined))
-  },
-)
+  await assert.doesNotReject(stream.return(undefined))
+})
 
 const ready = async (
   current: Awaited<ReturnType<typeof fixture>>,
@@ -1312,9 +1322,7 @@ test(
       for (
         let turn = 0;
         turn < 128 &&
-        !requests.some(
-          (url) => new URL(url).searchParams.get("t") === "163",
-        );
+        !requests.some((url) => new URL(url).searchParams.get("t") === "163");
         turn += 1
       ) {
         await new Promise((resolve) => setImmediate(resolve))
@@ -1650,6 +1658,4 @@ const shuffled = cases
   .sort((left, right) => left.order.localeCompare(right.order))
   .map(({ testCase }) => testCase)
 
-await Promise.all(
-  shuffled.map(({ name, run }) => nodeTest(name, options, run)),
-)
+await Promise.all(shuffled.map(({ name, run }) => nodeTest(name, options, run)))
