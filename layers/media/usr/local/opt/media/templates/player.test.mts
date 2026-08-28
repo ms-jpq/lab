@@ -923,7 +923,7 @@ test("subtitle events stay outside media state batches", options, async () => {
 })
 
 test(
-  "ready playback crossing below future data pauses one owned attempt",
+  "a starved seek preserves native play intent",
   options,
   async () => {
     const current = await fixture()
@@ -938,13 +938,25 @@ test(
       current.media.dispatchEvent(new Event("waiting"))
       await nextTask()
 
-      assert.equal(current.media.pauses, 1)
-      assert.equal(current.media.paused, true)
+      current.media.currentTime = 110
+      current.media.seeking = true
+      current.media.dispatchEvent(new Event("seeking"))
+      await eventually(() => current.requests.length === 2)
+
+      assert.equal(current.media.pauses, 0)
+      assert.equal(current.media.plays, 0)
+      assert.equal(current.media.paused, false)
+      assert.equal(current.sources.length, 1)
+      assert.deepEqual(
+        current.requests.map((url) => new URL(url).searchParams.get("t")),
+        ["40", "110"],
+      )
+      assert.deepEqual(current.errors, [])
       assert.deepEqual(
         current.media.topology.filter(
           (operation) => operation === "pause" || operation === "play",
         ),
-        ["pause"],
+        [],
       )
     } finally {
       controller.abort()
