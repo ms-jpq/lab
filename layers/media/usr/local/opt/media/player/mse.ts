@@ -4,6 +4,7 @@ export type MseOperation = undefined | number | Uint8Array
 export type Mse = AsyncGenerator<void, void, MseOperation>
 
 const BEHIND = 30
+const EPSILON = 0.001
 
 const MSE = (): MediaSource => {
   return new (
@@ -51,6 +52,7 @@ const op_lock = (
   }
 }
 
+// check the ordering in this entire fn, pin with tests
 export const media_source = async function* ({
   evict_before,
   mime_type,
@@ -78,7 +80,6 @@ export const media_source = async function* ({
 
     if (typeof operation === "number") {
       if (started) {
-        // this logic right?
         using _ = defer(() => buffer.abort())
 
         if (source.readyState === "ended") {
@@ -87,7 +88,7 @@ export const media_source = async function* ({
 
           {
             await using _ = op_lock(buffer)
-            buffer.remove(end, end + 0.001)
+            buffer.remove(end, end + EPSILON)
           }
           if (a.signal.aborted) {
             return
