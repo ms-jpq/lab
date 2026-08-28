@@ -63,6 +63,20 @@ const select = async (signal, ...cases) => {
 const retry_delay = (signal) =>
   select(signal, (s) => once(AbortSignal.timeout(RETRY_DELAY), s, "abort"))
 
+/** @template T @param {AbortSignal} signal @param {() => AsyncIterable<T>} source @returns {AsyncGenerator<T, void, void>} */
+const retrying = async function* (signal, source) {
+  for (;;) {
+    try {
+      yield* source()
+    } catch (error) {
+      console.error(error)
+    }
+    if (!(await retry_delay(signal))) {
+      return
+    }
+  }
+}
+
 /** @param {HTMLMediaElement | HTMLTrackElement} resource @param {number} time */
 const source_url = (resource, time) => {
   const source = new URL(
@@ -117,21 +131,12 @@ const changes = (signal) => {
   let previous = page_state()
   const wake = () => changed.resolve(true)
 
-  for (const type of [
-    "canplay",
-    "error",
-    "loadedmetadata",
-    "pause",
-    "play",
-    "playing",
-    "seeked",
-    "seeking",
-    "timeupdate",
-    "waiting",
-  ]) {
+  for (const type of "canplay error loadedmetadata pause play playing seeked seeking timeupdate waiting".split(
+    " ",
+  )) {
     media.addEventListener(type, wake, { signal })
   }
-  for (const type of ["error", "load"]) {
+  for (const type of "error load".split(" ")) {
     subtitle?.addEventListener(type, wake, { signal })
   }
   wake()
@@ -191,6 +196,7 @@ const mse = async function* (signal) {
       source.duration = duration
     }
 
+    // this inner fn smells off, it contains 2 more inline fns like what
     /** @type {MseBufferFactory} */
     const create_buffer = (buffer_signal) => {
       const buffer = source.addSourceBuffer(type)
@@ -431,74 +437,65 @@ const playback_page = async (signal) => {
     return
   }
 
-  for (;;) {
+  for await (const create_buffer of retrying(signal, () => mse(signal))) {
+    const current = new AbortController()
+    const attempt_signal = AbortSignal.any([signal, current.signal])
+    const session = attempt(attempt_signal, create_buffer)
+    /** @type {Promise<IteratorResult<void, void>> | undefined} */
+    let progress = session.next()
+    let transition = undefined
+
     try {
-      for await (const create_buffer of mse(signal)) {
-        const current = new AbortController()
-        const attempt_signal = AbortSignal.any([signal, current.signal])
-        const session = attempt(attempt_signal, create_buffer)
-        /** @type {Promise<IteratorResult<void, void>> | undefined} */
-        let progress = session.next()
-        let transition = undefined
+      for (;;) {
+        const pending = progress
+        const selected = await select(
+          attempt_signal,
+          () =>
+            changed.then(
+              (state) => /** @type {PlaybackSelection} */ ({ state }),
+            ),
+          ...(pending
+            ? [
+                () =>
+                  pending.then(
+                    (attempt) => /** @type {PlaybackSelection} */ ({ attempt }),
+                  ),
+              ]
+            : []),
+        )
 
-        try {
-          for (;;) {
-            const pending = progress
-            const selected = await select(
-              attempt_signal,
-              () =>
-                changed.then(
-                  (state) => /** @type {PlaybackSelection} */ ({ state }),
-                ),
-              ...(pending
-                ? [
-                    () =>
-                      pending.then(
-                        (attempt) =>
-                          /** @type {PlaybackSelection} */ ({ attempt }),
-                      ),
-                  ]
-                : []),
-            )
-
-            if (!selected) {
-              break
-            } else if ("state" in selected) {
-              const { state } = selected
-              if (state.done) {
-                return
-              }
-              changed = states.next()
-              transition = await update(state.value, session.buffer)
-              if (transition === restart || transition === retry) {
-                current.abort()
-                break
-              }
-              if (transition === resume && progress === undefined) {
-                progress = session.next()
-              }
-            } else {
-              progress = undefined
-              if (selected.attempt.done) {
-                break
-              }
-            }
+        if (!selected) {
+          break
+        }
+        if ("attempt" in selected) {
+          progress = undefined
+          if (selected.attempt.done) {
+            break
           }
-        } catch (error) {
-          console.error(error)
-        } finally {
-          current.abort()
-          await session.return()
+          continue
         }
 
-        if (transition !== restart && !(await retry_delay(signal))) {
+        const { state } = selected
+        if (state.done) {
           return
+        }
+        changed = states.next()
+        transition = await update(state.value, session.buffer)
+        if (transition === restart || transition === retry) {
+          break
+        }
+        if (transition === resume && progress === undefined) {
+          progress = session.next()
         }
       }
     } catch (error) {
       console.error(error)
+    } finally {
+      current.abort()
+      await session.return()
     }
-    if (!(await retry_delay(signal))) {
+
+    if (transition !== restart && !(await retry_delay(signal))) {
       return
     }
   }
