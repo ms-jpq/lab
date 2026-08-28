@@ -541,6 +541,78 @@ test(
 )
 
 test(
+  "high water pauses one response instead of canceling and retrying",
+  { concurrency: true },
+  async () => {
+    const current = await fixture()
+    current.media.currentTime = 40
+    current.media.dataset.duration = "60"
+    const firstAppend = Promise.withResolvers()
+    let requests = 0
+    let cancellations = 0
+    current.context.fetch = async () => {
+      requests += 1
+      return {
+        body: new ReadableStream({
+          start: (controller) => {
+            controller.enqueue(new Uint8Array([1]))
+            controller.enqueue(new Uint8Array([2]))
+            controller.close()
+          },
+          cancel: () => {
+            cancellations += 1
+          },
+        }),
+        ok: true,
+        status: 200,
+        statusText: "OK",
+      }
+    }
+    const controller = new AbortController()
+    let appends = 0
+    let ended = 0
+    let offset = 0
+    let released = false
+    let tail = 40
+    const buffer = {
+      available: (position) => (tail > position ? position : undefined),
+      frontier: () => tail,
+      next: async (operation) => {
+        if (operation === "end") {
+          ended += 1
+          controller.abort()
+        } else if (typeof operation === "number") {
+          offset = operation
+        } else if (Array.isArray(operation)) {
+          appends += 1
+          tail = offset + appends * 10
+          if (appends === 1) {
+            firstAppend.resolve()
+          }
+        }
+        return { done: false }
+      },
+      play_ahead: () => (appends === 1 && !released ? 60 : 0),
+    }
+    const playback = current.context.player_test.session(
+      controller.signal,
+      buffer,
+      40,
+    )
+    await firstAppend.promise
+    assert.equal(requests, 1)
+
+    released = true
+    current.media.dispatchEvent(new Event("timeupdate"))
+    await playback
+    assert.equal(appends, 2)
+    assert.equal(cancellations, 0)
+    assert.equal(ended, 1)
+    assert.equal(requests, 1)
+  },
+)
+
+test(
   "a short clean response continues from its frontier before EOS",
   { concurrency: true },
   async () => {

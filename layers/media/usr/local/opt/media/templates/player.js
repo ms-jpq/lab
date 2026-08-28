@@ -610,9 +610,11 @@ const session = async (signal, buffer, time) => {
           return
         }
         playable ||= buffer.available(time) !== undefined
-        if (buffer.play_ahead(media.currentTime) >= BUFFER.HI) {
-          start = stream_position(buffer.frontier(media.currentTime) ?? start)
-          continue streaming
+        if (
+          buffer.play_ahead(media.currentTime) >= BUFFER.HI &&
+          !(await wait_for_demand(signal, buffer))
+        ) {
+          return
         }
       }
     } catch (error) {
