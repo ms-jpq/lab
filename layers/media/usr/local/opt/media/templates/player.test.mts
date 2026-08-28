@@ -1,25 +1,120 @@
 import { readFile } from "node:fs/promises"
 import { strict as assert } from "node:assert"
-import test from "node:test"
+import nodeTest, { type TestContext } from "node:test"
 import vm from "node:vm"
 
 const PLAYER = new URL("player.js", import.meta.url)
 const options = { concurrency: true, timeout: 2_000 }
 
-const timeRanges = () => ({
+type Range = [number, number]
+type MutableTimeRanges = {
+  ranges: Range[]
+  readonly length: number
+  start: (index: number) => number
+  end: (index: number) => number
+}
+type MediaFailure = { code: number; message?: string }
+type MseOperation = "end" | number | Uint8Array
+type Mse = AsyncGenerator<void, void, MseOperation | undefined>
+type SourceChange = {
+  error?: unknown
+  position: number
+  reset: boolean
+}
+type PageChange = {
+  error: MediaFailure | null
+  position: number
+  seek: number | undefined
+}
+type PlayerTest = {
+  available: (position: number) => number | undefined
+  media_sources: AsyncGeneratorFactory<
+    { buffer: Mse; position: number; signal: AbortSignal },
+    SourceChange | undefined
+  >
+  page_states: AsyncGeneratorFactory<PageChange>
+  playback_page: (signal: AbortSignal) => Promise<void>
+  playable_position: (position: number) => number
+  session: (
+    signal: AbortSignal,
+    buffer: { next: (operation: MseOperation) => Promise<IteratorResult<void>> },
+    position: number,
+  ) => AsyncGenerator<void, unknown, undefined>
+  source_stream: (
+    signal: AbortSignal,
+    position: number,
+  ) => AsyncGenerator<Uint8Array, unknown, undefined>
+}
+type AsyncGeneratorFactory<TYield, TNext = undefined> = (
+  signal: AbortSignal,
+  position: number,
+) => AsyncGenerator<TYield, void, TNext>
+type MockResponse = {
+  body: {
+    getReader: () => {
+      cancel: () => Promise<void>
+      read: () => Promise<ReadableStreamReadResult<Uint8Array>>
+    }
+  }
+  ok: boolean
+  status: number
+  statusText: string
+}
+type MockFetch = (
+  url: string | URL | Request,
+  init: { signal: AbortSignal },
+) => Promise<MockResponse>
+type PlayerContext = vm.Context & {
+  fetch: MockFetch
+  MediaError: { MEDIA_ERR_ABORTED: number }
+  player_test: PlayerTest
+  setTimeout: (run: () => void) => ReturnType<typeof setTimeout>
+}
+type TestBody = (context: TestContext) => void | Promise<void>
+type TestCase = { name: string; run: TestBody }
+
+const cases: TestCase[] = []
+const test = (name: string, _options: typeof options, run: TestBody): void => {
+  cases.push({ name, run })
+}
+const present = <T>(value: T | undefined): T => {
+  assert.notEqual(value, undefined)
+  return value
+}
+const nextValue = async <T>(
+  iterator: AsyncIterator<T, unknown, undefined>,
+): Promise<T> => {
+  const result = await iterator.next()
+  assert.equal(result.done, false)
+  return result.value
+}
+
+const timeRanges = (): MutableTimeRanges => ({
   ranges: [],
   get length() {
     return this.ranges.length
   },
-  start(index) {
-    return this.ranges[index][0]
+  start(index: number) {
+    return this.ranges[index]![0]
   },
-  end(index) {
-    return this.ranges[index][1]
+  end(index: number) {
+    return this.ranges[index]![1]
   },
 })
 
 class Media extends EventTarget {
+  currentTimes: number[]
+  private _currentTime: number
+  buffered: MutableTimeRanges
+  dataset: { duration: string; mseType: string; src: string }
+  ended: boolean
+  error: MediaFailure | null
+  seeking: boolean
+  private _src: string
+  loads: number
+  readyState: number
+  onLoad: (() => void) | undefined
+
   constructor() {
     super()
     this.currentTimes = []
@@ -42,8 +137,7 @@ class Media extends EventTarget {
     return this._currentTime
   }
 
-  /** @param {number} value */
-  set currentTime(value) {
+  set currentTime(value: number) {
     this._currentTime = value
     this.currentTimes.push(value)
   }
@@ -52,22 +146,20 @@ class Media extends EventTarget {
     return this._src
   }
 
-  /** @param {string} value */
-  set src(value) {
+  set src(value: string) {
     this._src = value
     this.buffered.ranges = []
     this.readyState = 0
     this.currentTime = 0
   }
 
-  load() {
+  load(): void {
     this.loads += 1
     this.buffered.ranges = []
     this.onLoad?.()
   }
 
-  /** @param {string} name */
-  removeAttribute(name) {
+  removeAttribute(name: string): void {
     if (name === "src") {
       this._src = ""
     }
@@ -75,6 +167,10 @@ class Media extends EventTarget {
 }
 
 class Subtitle extends EventTarget {
+  dataset: { src: string }
+  sources: string[]
+  private _src: string
+
   constructor() {
     super()
     this.dataset = { src: "/movie/subtitle" }
@@ -86,14 +182,12 @@ class Subtitle extends EventTarget {
     return this._src
   }
 
-  /** @param {string} value */
-  set src(value) {
+  set src(value: string) {
     this._src = value
     this.sources.push(value)
   }
 }
 
-/** @param {number} position */
 const fixture = async (position = 40) => {
   const media = new Media()
   const subtitle = new Subtitle()
@@ -108,14 +202,25 @@ const fixture = async (position = 40) => {
     pathname: "/movie",
     replace: () => {},
   }
-  const requests = []
-  const revoked = []
-  const sources = []
-  const errors = []
+  const requests: string[] = []
+  const revoked: string[] = []
+  const sources: MediaSource[] = []
+  const errors: unknown[][] = []
   const window = new EventTarget()
   class SourceBuffer extends EventTarget {
-    /** @param {MediaSource} source */
-    constructor(source) {
+    source: MediaSource
+    private _buffered: MutableTimeRanges
+    private _timestampOffset: number
+    aborts: number
+    abortError: unknown
+    appendState: string
+    holdUpdate: boolean
+    removes: Range[]
+    releaseUpdate: (() => void) | undefined
+    updating: boolean
+    usable: boolean
+
+    constructor(source: MediaSource) {
       super()
       this.source = source
       this._buffered = timeRanges()
@@ -144,8 +249,7 @@ const fixture = async (position = 40) => {
       return this._timestampOffset
     }
 
-    /** @param {number} value */
-    set timestampOffset(value) {
+    set timestampOffset(value: number) {
       if (!this.usable || this.updating) {
         throw new DOMException(
           "SourceBuffer is no longer usable",
@@ -165,7 +269,7 @@ const fixture = async (position = 40) => {
       this._timestampOffset = value
     }
 
-    abort() {
+    abort(): void {
       if (this.abortError) {
         throw this.abortError
       }
@@ -180,8 +284,7 @@ const fixture = async (position = 40) => {
       this.updating = false
     }
 
-    /** @param {Uint8Array} _bytes */
-    appendBuffer(_bytes) {
+    appendBuffer(_bytes: Uint8Array): void {
       if (!this.usable || this.updating) {
         throw new DOMException(
           "SourceBuffer is no longer usable",
@@ -191,7 +294,9 @@ const fixture = async (position = 40) => {
       this.updating = true
       this.appendState = "parsing"
       const complete = () => {
-        const ranges = [[this.timestampOffset, this.timestampOffset + 10]]
+        const ranges: Range[] = [
+          [this.timestampOffset, this.timestampOffset + 10],
+        ]
         this._buffered.ranges = ranges
         media.buffered.ranges = ranges
         if (media.readyState === 0) {
@@ -208,8 +313,7 @@ const fixture = async (position = 40) => {
       }
     }
 
-    /** @param {number} start @param {number} end */
-    remove(start, end) {
+    remove(start: number, end: number): void {
       if (!this.usable || this.updating) {
         throw new DOMException(
           "SourceBuffer is no longer usable",
@@ -229,6 +333,11 @@ const fixture = async (position = 40) => {
     }
   }
   class MediaSource extends EventTarget {
+    duration: number
+    ends: number
+    readyState: "closed" | "open" | "ended"
+    sourceBuffers: SourceBuffer[]
+
     constructor() {
       super()
       sources.push(this)
@@ -238,26 +347,26 @@ const fixture = async (position = 40) => {
       this.sourceBuffers = []
     }
 
-    /** @param {string} _type */
-    addSourceBuffer(_type) {
+    addSourceBuffer(_type: string): SourceBuffer {
       const buffer = new SourceBuffer(this)
       this.sourceBuffers.push(buffer)
       return buffer
     }
 
-    endOfStream() {
+    endOfStream(): void {
       this.ends += 1
       this.readyState = "ended"
     }
 
-    /** @param {SourceBuffer} buffer */
-    removeSourceBuffer(buffer) {
+    removeSourceBuffer(buffer: SourceBuffer): void {
       this.sourceBuffers = this.sourceBuffers.filter((item) => item !== buffer)
     }
   }
   class PlayerURL extends URL {
-    /** @param {MediaSource} source */
-    static createObjectURL(source) {
+    static createObjectURL(
+      source: Blob | globalThis.MediaSource | MediaSource,
+    ): string {
+      assert.ok(source instanceof MediaSource)
       const url = `blob:player-${crypto.randomUUID()}`
       queueMicrotask(() => {
         source.readyState = "open"
@@ -266,8 +375,7 @@ const fixture = async (position = 40) => {
       return url
     }
 
-    /** @param {string} url */
-    static revokeObjectURL(url) {
+    static revokeObjectURL(url: string): void {
       revoked.push(url)
     }
   }
@@ -283,11 +391,11 @@ const fixture = async (position = 40) => {
     AbortSignal,
     clearTimeout,
     console: {
-      error: (...values) => errors.push(values),
+      error: (...values: unknown[]) => errors.push(values),
     },
     crypto,
     document: {
-      querySelector: (selector) => {
+      querySelector: (selector: string) => {
         if (selector === "video, audio") {
           return media
         }
@@ -300,11 +408,11 @@ const fixture = async (position = 40) => {
     Event,
     EventTarget,
     DOMException,
-    fetch: async (url) => {
+    fetch: async (url: string | URL | Request) => {
       requests.push(String(url))
       return {
-        body: new ReadableStream({
-          start: (controller) => {
+        body: new ReadableStream<Uint8Array>({
+          start: (controller: ReadableStreamDefaultController<Uint8Array>) => {
             controller.enqueue(new Uint8Array([1]))
             controller.close()
           },
@@ -316,7 +424,7 @@ const fixture = async (position = 40) => {
     },
     FormData,
     history: {
-      replaceState: (_state, _unused, url) => {
+      replaceState: (_state: unknown, _unused: string, url: string | URL) => {
         location.href = String(url)
       },
     },
@@ -329,12 +437,12 @@ const fixture = async (position = 40) => {
     MediaSource,
     Promise,
     ReadableStream,
-    setTimeout: (run) => setTimeout(run, 0),
+    setTimeout: (run: () => void) => setTimeout(run, 0),
     URL: PlayerURL,
     URLSearchParams,
     Uint8Array,
     window,
-  })
+  }) as PlayerContext
   const source = await readFile(PLAYER, "utf8")
   vm.runInContext(
     `${source}\nglobalThis.player_test = { available, media_sources, mse, page_states, playback_page, playable_position, session, source_stream, source_url, stream_position }`,
@@ -355,8 +463,7 @@ const fixture = async (position = 40) => {
   }
 }
 
-/** @param {Awaited<ReturnType<typeof fixture>>} current */
-const open_mse = async (current) => {
+const open_mse = async (current: Awaited<ReturnType<typeof fixture>>) => {
   const controller = new AbortController()
   const lifetime = current.context.player_test.media_sources(
     controller.signal,
@@ -399,7 +506,7 @@ test(
     const chunk = await stream.next()
     assert.equal(chunk.done, false)
     assert.deepEqual([...chunk.value], [1])
-    await stream.return()
+    await stream.return(undefined)
 
     assert.equal(reads, 1)
     assert.equal(cancelled, 1)
@@ -411,14 +518,14 @@ test(
   options,
   async () => {
     const current = await fixture()
-    let requestSignal = undefined
+    let requestSignal: AbortSignal | undefined = undefined
     current.context.fetch = async (_url, { signal }) => {
       requestSignal = signal
       return {
         body: {
           getReader: () => ({
             cancel: async () => {
-              assert.equal(requestSignal.aborted, true)
+              assert.equal(present(requestSignal).aborted, true)
               throw new DOMException("The operation was aborted", "AbortError")
             },
             read: async () => ({
@@ -441,12 +548,14 @@ test(
     await stream.next()
     controller.abort()
 
-    await assert.doesNotReject(stream.return())
+    await assert.doesNotReject(stream.return(undefined))
   },
 )
 
-/** @param {Awaited<ReturnType<typeof fixture>>} current @param {number} position */
-const ready = async (current, position = 40) => {
+const ready = async (
+  current: Awaited<ReturnType<typeof fixture>>,
+  position = 40,
+) => {
   const controller = new AbortController()
   const states = current.context.player_test.page_states(
     controller.signal,
@@ -503,7 +612,7 @@ test(
     current.media.seeking = true
     const sought = states.next()
     current.media.dispatchEvent(new Event("seeking"))
-    const { value } = await sought
+    const value = await nextValue({ next: () => sought })
     assert.equal(value.seek, 37)
     assert.equal(current.timeInput.value, "37")
 
@@ -529,7 +638,7 @@ test(
     current.media.seeking = false
     current.media.dispatchEvent(new Event("seeked"))
 
-    assert.equal((await observed).value.seek, 110)
+    assert.equal((await nextValue({ next: () => observed })).seek, 110)
     assert.equal(current.timeInput.value, "110")
     controller.abort()
   },
@@ -547,13 +656,13 @@ for (const order of ["seeking-timeupdate", "timeupdate-seeking"]) {
       if (order === "timeupdate-seeking") {
         const observed = states.next()
         current.media.dispatchEvent(new Event("timeupdate"))
-        assert.equal((await observed).value.seek, undefined)
+        assert.equal((await nextValue({ next: () => observed })).seek, undefined)
       }
 
       current.media.seeking = true
       const observed = states.next()
       current.media.dispatchEvent(new Event("seeking"))
-      const { value } = await observed
+      const value = await nextValue({ next: () => observed })
       assert.equal(value.seek, 110)
       assert.equal(current.timeInput.value, "110")
       controller.abort()
@@ -571,7 +680,7 @@ test(
     current.media.seeking = true
     const observed = states.next()
     current.media.dispatchEvent(new Event("seeking"))
-    const { value } = await observed
+    const value = await nextValue({ next: () => observed })
     assert.equal(value.seek, undefined)
     assert.equal(current.timeInput.value, "70")
     controller.abort()
@@ -590,7 +699,7 @@ test(
     current.media.seeking = true
     const observed = states.next()
     current.media.dispatchEvent(new Event("seeking"))
-    const { value } = await observed
+    const value = await nextValue({ next: () => observed })
     assert.equal(value.seek, undefined)
     controller.abort()
   },
@@ -622,7 +731,7 @@ test(
     current.media.error = { code: current.context.MediaError.MEDIA_ERR_ABORTED }
     const observed = states.next()
     current.media.dispatchEvent(new Event("error"))
-    const { value } = await observed
+    const value = await nextValue({ next: () => observed })
     assert.equal(value.error, null)
     controller.abort()
   },
@@ -650,10 +759,13 @@ test(
       while (current.sources.length !== 2 || current.requests.length !== 2) {
         await new Promise((resolve) => setImmediate(resolve))
       }
-      assert.equal(new URL(current.requests[1]).searchParams.get("t"), "40")
+      assert.equal(
+        new URL(present(current.requests[1])).searchParams.get("t"),
+        "40",
+      )
       assert.equal(current.sources.length, 2)
       assert.equal(current.errors.length, 1)
-      assert.equal(current.errors[0][0], failure)
+      assert.equal(current.errors[0]?.[0], failure)
       assert.equal(current.media.loads, 1)
       assert.equal(
         current.requests.some(
@@ -675,7 +787,7 @@ test(
     const current = await fixture()
     current.media.currentTime = 40
     current.media.dataset.duration = "60"
-    const firstAppend = Promise.withResolvers()
+    const firstAppend = Promise.withResolvers<void>()
     let requests = 0
     let cancellations = 0
     current.context.fetch = async () => {
@@ -702,7 +814,7 @@ test(
     let offset = 0
     let tail = 40
     const buffer = {
-      next: async (operation) => {
+      next: async (operation: MseOperation) => {
         if (operation === "end") {
           ended += 1
           controller.abort()
@@ -718,7 +830,7 @@ test(
             firstAppend.resolve()
           }
         }
-        return { done: false }
+        return { done: false as const, value: undefined }
       },
     }
     const playback = current.context.player_test.session(
