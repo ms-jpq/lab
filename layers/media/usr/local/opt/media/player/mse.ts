@@ -21,8 +21,11 @@ const revoke = (url: string | undefined): void => {
   }
 }
 
-const op_lock = (buffer: SourceBuffer): AsyncDisposable => {
-  const a = abortion()
+const op_lock = (
+  buffer: SourceBuffer,
+  signal: AbortSignal,
+): AsyncDisposable => {
+  const a = abortion(signal)
   const settled = merge<Event>(
     events(a.signal, buffer, "updateend"),
     events(a.signal, buffer, "error"),
@@ -60,7 +63,8 @@ export const media_source = async function* ({
 
   let started = false
   for (let operation = yield undefined; ; operation = yield undefined) {
-    if (signal.aborted) {
+    using a = abortion(signal)
+    if (a.signal.aborted) {
       return
     }
 
@@ -75,7 +79,7 @@ export const media_source = async function* ({
           const ranges = buffer.buffered
           const end = ranges.length ? ranges.end(ranges.length - 1) : 0
 
-          await using _ = op_lock(buffer)
+          await using _ = op_lock(buffer, a.signal)
           buffer.remove(end, end + 0.001)
         }
         buffer.abort()
@@ -89,10 +93,10 @@ export const media_source = async function* ({
     const ranges = buffer.buffered
 
     if (cutoff > 0 && ranges.length && ranges.start(0) < cutoff) {
-      await using _ = op_lock(buffer)
+      await using _ = op_lock(buffer, a.signal)
       buffer.remove(0, cutoff)
     }
-    await using _ = op_lock(buffer)
+    await using _ = op_lock(buffer, a.signal)
     buffer.appendBuffer(operation as Uint8Array<ArrayBuffer>)
   }
 }
