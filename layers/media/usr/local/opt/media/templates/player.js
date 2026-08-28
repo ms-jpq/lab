@@ -1,8 +1,7 @@
 /** @typedef {number | readonly [position: number, bytes: Uint8Array]} MseOperation */
 /** @typedef {AsyncGenerator<void, void, MseOperation | undefined> & {active: () => boolean, contains: (position: number) => boolean, frontier: (position: number) => number | undefined, play_ahead: (position: number) => number}} Mse */
-/** @typedef {AsyncGenerator<void, void, void>} Session */
 /** @typedef {ReturnType<typeof page_state> & {failed: boolean, moved: boolean}} PageChange */
-/** @typedef {readonly [AsyncIterator<unknown, void, void>, IteratorResult<unknown, void>]} IteratorSelection */
+/** @typedef {{type: "complete"} | {type: "failure", error: unknown} | {type: "state", state: IteratorResult<PageChange, void>}} PlaybackSelection */
 
 const BUFFER = {
   BEHIND: 30,
@@ -93,8 +92,11 @@ const initial_position = (() => {
 /** @param {number} value */
 const set_position = (value) => {
   const page_url = new URL(location.href)
-  const rounded = Math.round(value * 1_000) / 1_000
-  time_input.value = String(rounded)
+  const position = Math.floor(value)
+  if (Number(time_input.value) === position) {
+    return
+  }
+  time_input.value = String(position)
   page_url.searchParams.set("t", time_input.value)
   history.replaceState(null, "", page_url)
   try {
@@ -104,7 +106,6 @@ const set_position = (value) => {
 
 const page_state = () => ({
   error: media.error,
-  paused: media.paused,
   seeking: media.seeking,
   subtitle_error: subtitle !== null && subtitle.readyState === subtitle.ERROR,
   time: media.currentTime,
@@ -119,9 +120,7 @@ const page_states = (signal) => {
 
   signal.addEventListener("abort", () => changed.resolve(false), { once: true })
 
-  for (const type of "canplay error loadedmetadata pause play playing seeked seeking timeupdate waiting".split(
-    " ",
-  )) {
+  for (const type of "error seeking".split(" ")) {
     media.addEventListener(type, wake, { signal })
   }
   for (const type of "error load".split(" ")) {
@@ -310,42 +309,52 @@ const source_stream = async function* (signal, time) {
   return
 }
 
-/** @param {AbortSignal} signal @param {Mse} buffer @param {number} time @returns {Session} */
-const session = (signal, buffer, time) => {
+/** @param {AbortSignal} signal @param {Mse} buffer */
+const wait_for_demand = async (signal, buffer) => {
+  while (buffer.play_ahead(media.currentTime) >= BUFFER.LO) {
+    if (!(await select(signal, (s) => once(media, s, "timeupdate")))) {
+      return false
+    }
+  }
+  return true
+}
+
+/** @param {AbortSignal} signal @param {Mse} buffer @param {number} time */
+const session = async (signal, buffer, time) => {
+  /** @type {number | undefined} */
+  let position = time
   let start = time
 
-  return (async function* () {
-    streaming: for (;;) {
-      while (buffer.play_ahead(media.currentTime) >= BUFFER.LO) {
-        yield undefined
-      }
-
-      if ((await buffer.next(start)).done) {
-        break
-      }
-      if (subtitle) {
-        subtitle.src = source_url(subtitle, time)
-      }
-      for await (const bytes of source_stream(signal, start)) {
-        if ((await buffer.next([media.currentTime, bytes])).done) {
-          break streaming
-        }
-        if (
-          buffer.contains(time) &&
-          Math.abs(media.currentTime - time) > POSITION_TOLERANCE
-        ) {
-          media.currentTime = time
-        }
-        if (buffer.play_ahead(media.currentTime) >= BUFFER.HI) {
-          start = buffer.frontier(media.currentTime) ?? start
-          continue streaming
-        }
-      }
-      await wait_for_abort(signal)
+  streaming: for (;;) {
+    if (!(await wait_for_demand(signal, buffer))) {
       return
     }
+
+    if ((await buffer.next(start)).done) {
+      return
+    }
+    if (subtitle) {
+      subtitle.src = source_url(subtitle, time)
+    }
+    for await (const bytes of source_stream(signal, start)) {
+      if ((await buffer.next([media.currentTime, bytes])).done) {
+        return
+      }
+      if (position !== undefined && buffer.contains(position)) {
+        const target = position
+        position = undefined
+        if (Math.abs(media.currentTime - target) > POSITION_TOLERANCE) {
+          media.currentTime = target
+        }
+      }
+      if (buffer.play_ahead(media.currentTime) >= BUFFER.HI) {
+        start = buffer.frontier(media.currentTime) ?? start
+        continue streaming
+      }
+    }
+    await wait_for_abort(signal)
     return
-  })()
+  }
 }
 
 /** @param {AbortSignal} signal */
@@ -373,41 +382,36 @@ const playback_page = async (signal) => {
           buffer,
           Number(time_input.value),
         )
+        const completed = current.then(
+          () => /** @type {PlaybackSelection} */ ({ type: "complete" }),
+          (error) =>
+            /** @type {PlaybackSelection} */ ({ type: "failure", error }),
+        )
         let immediate = false
-        /** @type {Promise<IteratorResult<void, void>> | undefined} */
-        let progress = current.next()
 
         try {
           for (;;) {
-            const selected = /** @type {IteratorSelection | undefined} */ (
+            const selected = /** @type {PlaybackSelection | undefined} */ (
               await select(
                 attempt_signal,
                 async () =>
-                  /** @type {IteratorSelection} */ ([states, await change]),
-                progress
-                  ? async () =>
-                      /** @type {IteratorSelection} */ ([
-                        current,
-                        await progress,
-                      ])
-                  : undefined,
+                  /** @type {PlaybackSelection} */ ({
+                    type: "state",
+                    state: await change,
+                  }),
+                async () => await completed,
               )
             )
             if (!selected) {
               return
             }
-            const [source, result] = selected
-            if (source === current) {
-              progress = undefined
-              if (result.done) {
-                break
-              }
-              continue
+            if (selected.type === "failure") {
+              throw selected.error
             }
-
-            const state = /** @type {IteratorResult<PageChange, void>} */ (
-              result
-            )
+            if (selected.type === "complete") {
+              break
+            }
+            const { state } = selected
             if (state.done) {
               return
             }
@@ -430,15 +434,13 @@ const playback_page = async (signal) => {
               immediate = true
               break
             }
-            if ((value.moved || !value.paused) && progress === undefined) {
-              progress = current.next()
-            }
           }
         } catch (error) {
           console.error(error)
+          break sessions
         } finally {
           attempt.abort()
-          await current.return()
+          await completed
         }
 
         if (!buffer.active()) {
@@ -477,6 +479,8 @@ form.onsubmit = (event) => {
   target.search = query.toString()
   location.replace(target)
 }
+
+media.ontimeupdate = () => set_position(media.currentTime)
 
 void (async () => {
   set_position(initial_position)
