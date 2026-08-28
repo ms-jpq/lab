@@ -430,7 +430,13 @@ const source_stream = async function* (signal, time) {
       throw error
     }
   } finally {
-    await reader?.cancel()
+    try {
+      await reader?.cancel()
+    } catch (error) {
+      if (!signal.aborted) {
+        throw error
+      }
+    }
   }
 }
 

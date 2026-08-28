@@ -120,6 +120,7 @@ const fixture = async (position = 40) => {
       this._buffered = timeRanges()
       this._timestampOffset = 0
       this.aborts = 0
+      this.abortError = undefined
       this.appendState = "waiting"
       this.holdUpdate = false
       this.removes = []
@@ -164,6 +165,9 @@ const fixture = async (position = 40) => {
     }
 
     abort() {
+      if (this.abortError) {
+        throw this.abortError
+      }
       if (!this.usable || this.source.readyState !== "open") {
         throw new DOMException(
           "SourceBuffer is no longer usable",
@@ -386,6 +390,40 @@ test(
 
     assert.equal(reads, 1)
     assert.equal(cancelled, 1)
+  },
+)
+
+test(
+  "an aborted reader cannot reject stream teardown",
+  { concurrency: true },
+  async () => {
+    const current = await fixture()
+    current.context.fetch = async () => ({
+      body: {
+        getReader: () => ({
+          cancel: async () => {
+            throw new DOMException("The operation was aborted", "AbortError")
+          },
+          read: async () => ({
+            done: false,
+            value: new Uint8Array([1]),
+          }),
+        }),
+      },
+      ok: true,
+      status: 200,
+      statusText: "OK",
+    })
+
+    const controller = new AbortController()
+    const stream = current.context.player_test.source_stream(
+      controller.signal,
+      40,
+    )
+    await stream.next()
+    controller.abort()
+
+    await assert.doesNotReject(stream.return())
   },
 )
 
@@ -1042,6 +1080,46 @@ test(
     } finally {
       controller.abort()
       await playback
+    }
+  },
+)
+
+test(
+  "a failed parser abort rebuilds once at the requested target",
+  { concurrency: true, timeout: 1_000 },
+  async () => {
+    const current = await fixture()
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    try {
+      while (current.sources[0]?.sourceBuffers[0]?.buffered.length !== 1) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+      current.sources[0].sourceBuffers[0].abortError = new DOMException(
+        "The operation was aborted",
+        "AbortError",
+      )
+      current.media.currentTime = 110
+      current.media.seeking = true
+      current.media.dispatchEvent(new Event("seeking"))
+
+      while (current.sources.length !== 2 || current.requests.length !== 2) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+      assert.equal(new URL(current.requests[1]).searchParams.get("t"), "110")
+      assert.equal(current.sources.length, 2)
+      assert.equal(current.errors.length, 0)
+      assert.equal(
+        current.requests.some(
+          (url) => new URL(url).searchParams.get("t") === "0",
+        ),
+        false,
+      )
+    } finally {
+      controller.abort()
+      await assert.doesNotReject(playback)
     }
   },
 )
