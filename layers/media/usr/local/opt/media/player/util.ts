@@ -1,3 +1,8 @@
+export const defer = <T>(f: () => T) => ({
+  [Symbol.dispose]: f,
+  [Symbol.asyncDispose]: f,
+})
+
 export const abortion = (parent?: AbortSignal) => {
   const controller = new AbortController()
   const signal = AbortSignal.any([
@@ -5,9 +10,5 @@ export const abortion = (parent?: AbortSignal) => {
     controller.signal,
   ])
 
-  return {
-    controller,
-    signal,
-    [Symbol.dispose]: async () => controller.abort(),
-  }
+  return { signal, [Symbol.dispose]: () => controller.abort() }
 }
