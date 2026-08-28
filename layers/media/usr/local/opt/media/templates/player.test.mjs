@@ -1023,6 +1023,8 @@ test(
     const current = await fixture()
     const replaced = Promise.withResolvers()
     const requests = []
+    let activeReaders = 0
+    const readersAtLoad = []
     let retryDelays = 0
     let firstResponse = undefined
     current.context.setTimeout = (run) => {
@@ -1037,10 +1039,14 @@ test(
       return {
         body: new ReadableStream({
           start: (controller) => {
+            activeReaders += 1
             if (!firstResponse) {
               firstResponse = controller
             }
             controller.enqueue(new Uint8Array([1]))
+          },
+          cancel: () => {
+            activeReaders -= 1
           },
         }),
         ok: true,
@@ -1050,6 +1056,7 @@ test(
     }
     const release = current.media.onLoad
     current.media.onLoad = () => {
+      readersAtLoad.push(activeReaders)
       release()
       current.media.currentTime = 0
       current.media.seeking = true
@@ -1071,6 +1078,7 @@ test(
       const request = new URL(await replaced.promise)
       assert.equal(request.searchParams.get("t"), "40")
       assert.equal(current.timeInput.value, "40")
+      assert.deepEqual(readersAtLoad, [0])
       assert.equal(retryDelays, 0)
       assert.equal(
         requests.some((url) => new URL(url).searchParams.get("t") === "0"),
