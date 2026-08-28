@@ -1106,14 +1106,34 @@ test(
       await nextTask()
       assert.equal(current.media.plays, 1)
 
+      const opened = present(current.sources[0]?.sourceBuffers[0])
+      const abort = opened.abort.bind(opened)
+      opened.abort = () => {
+        abort()
+        current.media.paused = true
+        resumed.reject(
+          new DOMException(
+            "The fetching process for the media resource was aborted by the user agent at the user's request.",
+            "AbortError",
+          ),
+        )
+      }
       current.media.currentTime = 110
       current.media.seeking = true
       current.media.dispatchEvent(new Event("seeking"))
-      await eventually(() => current.requests.length === 2)
+      await eventually(() => current.requests.length >= 2)
       assert.equal(
         new URL(present(current.requests[1])).searchParams.get("t"),
         "110",
       )
+      await nextTask()
+      assert.equal(current.sources.length, 1)
+      assert.deepEqual(current.errors, [])
+
+      current.media.playResult = Promise.resolve()
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.dispatchEvent(new Event("canplay"))
+      await eventually(() => current.media.plays === 2)
     } finally {
       resumed.resolve()
       controller.abort()

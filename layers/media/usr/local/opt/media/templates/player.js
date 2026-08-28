@@ -142,7 +142,7 @@ const buffered_range = (position, inclusive) => {
 /** @param {number} position */
 const buffered_position = (position) => {
   const range = buffered_range(position, false)
-  return range ? Math.max(position, range[0]) : undefined
+  return range ? Math.max(position, range[0] ?? -Infinity) : undefined
 }
 
 /** @param {number} position */
@@ -204,9 +204,6 @@ const page_changes = async function* (signal, position) {
 
   /** @param {Event} event */
   const observe = (event) => {
-    if (signal.aborted) {
-      return
-    }
     pending.push(media_observation(event.type))
     if (scheduled === undefined) {
       const gate = changed
@@ -226,7 +223,7 @@ const page_changes = async function* (signal, position) {
   }
   pending.push(media_observation())
   changed.resolve(true)
-  /** @type {Promise<{played: true} | {play_error: unknown, source: string}> | undefined} */
+  /** @type {Promise<{position: number, source: string} | {error: unknown, position: number, source: string}> | undefined} */
   let playing = undefined
   let previous = media_observation()
   let established = false
@@ -241,17 +238,17 @@ const page_changes = async function* (signal, position) {
         changed.promise.then((result) => ({ changed: result })),
         ...(playing ? [playing] : []),
       ])
-      if ("play_error" in selected) {
+      if ("source" in selected) {
         playing = undefined
-        if (selected.source === media.src) {
-          yield { error: selected.play_error, position: target, restart: false }
-          continue
+        if (
+          "error" in selected &&
+          selected.source === media.src &&
+          aligned(selected.position, media.currentTime)
+        ) {
+          yield { error: selected.error, position: target, restart: false }
+        } else if ("error" in selected) {
+          resume = true
         }
-        resume = true
-        continue
-      }
-      if ("played" in selected) {
-        playing = undefined
         continue
       }
       if (!selected.changed || signal.aborted) {
@@ -288,9 +285,10 @@ const page_changes = async function* (signal, position) {
         ) {
           resume = false
           const source = media.src
+          const position = media.currentTime
           playing = media.play().then(
-            () => ({ played: /** @type {const} */ (true) }),
-            (play_error) => ({ play_error, source }),
+            () => ({ position, source }),
+            (error) => ({ error, position, source }),
           )
         }
         let moved =
@@ -307,11 +305,6 @@ const page_changes = async function* (signal, position) {
           pending_seek =
             restart || !aligned(current.time, target) ? target : undefined
           persist_position(target)
-        } else if (pending_seek !== undefined) {
-          const playable = buffered_position(pending_seek)
-          if (playable !== undefined) {
-            target = pending_seek = playable
-          }
         }
 
         if (current.ended && !previous.ended) {
@@ -337,16 +330,18 @@ const page_changes = async function* (signal, position) {
       }
 
       const current = observations.at(-1)
-      if (current && pending_seek !== undefined && !current.seeking) {
+      if (pending_seek !== undefined) {
         const playable = buffered_position(pending_seek)
         if (playable !== undefined) {
           target = pending_seek = playable
         }
-        const positioned = aligned(current.time, pending_seek)
-        if (!positioned && (current.metadata || playable !== undefined)) {
-          media.currentTime = pending_seek
-        } else if (positioned && playable !== undefined) {
-          pending_seek = undefined
+        if (current && !current.seeking) {
+          const positioned = aligned(current.time, pending_seek)
+          if (!positioned && (current.metadata || playable !== undefined)) {
+            media.currentTime = pending_seek
+          } else if (positioned && playable !== undefined) {
+            pending_seek = undefined
+          }
         }
       }
 
@@ -672,8 +667,7 @@ const play_media = async (signal) => {
       /** @type {SourceFailure | {setup: unknown} | undefined} */
       let failure = undefined
       /** @type {string | undefined} */
-      let loose_url = undefined,
-        previous_url = undefined
+      let loose_url = undefined
 
       try {
         const source = new MediaSourceConstructor()
@@ -685,13 +679,11 @@ const play_media = async (signal) => {
         )
         loose_url = URL.createObjectURL(source)
         media.src = loose_url
-        previous_url = attached_url
+        media.currentTime = position
+        const previous_url = attached_url
         attached_url = loose_url
         loose_url = undefined
-        media.currentTime = position
-        const selected = await opened
-        revoke_url(previous_url)
-        previous_url = undefined
+        const selected = await opened.finally(() => revoke_url(previous_url))
         if (!selected) {
           return
         }
@@ -715,10 +707,6 @@ const play_media = async (signal) => {
           page,
           position,
         )
-        if (!failure) {
-          return
-        }
-        position = failure.position
       } catch (error) {
         if (lifetime_signal.aborted) {
           return
@@ -728,7 +716,6 @@ const play_media = async (signal) => {
         lifetime.abort()
         await buffer?.return()
         revoke_url(loose_url)
-        revoke_url(previous_url)
       }
       if (!failure) {
         return
@@ -744,6 +731,7 @@ const play_media = async (signal) => {
           failures.fail(waiting.error)
         }
       } else {
+        position = failure.position
         failures.fail(failure.error)
         if (signal.aborted) {
           return
