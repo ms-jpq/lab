@@ -24,7 +24,6 @@ const PAGE = crypto.randomUUID()
 /** @typedef {(signal: AbortSignal) => MseBuffer} MseBufferFactory */
 /** @typedef {AsyncGenerator<void, void, void> & {buffer: MseBuffer}} Attempt */
 /** @typedef {ReturnType<typeof page_state> & {failed: boolean, moved: boolean}} PageChange */
-/** @typedef {{state: IteratorResult<PageChange, void>} | {attempt: IteratorResult<void, void>}} PlaybackSelection */
 
 /** @param {EventTarget} target @param {AbortSignal | undefined} signal @param {string} type @returns {Promise<Event>} */
 const once = (target, signal, type) => {
@@ -56,6 +55,25 @@ const select = async (signal, ...cases) => {
     ])
   } finally {
     selection.abort()
+  }
+}
+
+/** @template K,V @param {AbortSignal} signal @param {Map<K, Promise<V>>} pending @returns {AsyncGenerator<readonly [K, V], void, void>} */
+const merge = async function* (signal, pending) {
+  for (;;) {
+    const selected = await select(
+      signal,
+      ...pending.entries().map(
+        ([key, value]) =>
+          async () =>
+            /** @type {const} */ ([key, await value]),
+      ),
+    )
+    if (!selected) {
+      return
+    }
+    pending.delete(selected[0])
+    yield selected
   }
 }
 
@@ -131,6 +149,8 @@ const changes = (signal) => {
   let previous = page_state()
   const wake = () => changed.resolve(true)
 
+  signal.addEventListener("abort", () => changed.resolve(false), { once: true })
+
   for (const type of "canplay error loadedmetadata pause play playing seeked seeking timeupdate waiting".split(
     " ",
   )) {
@@ -143,7 +163,7 @@ const changes = (signal) => {
 
   return (async function* () {
     for (;;) {
-      if (!(await select(signal, () => changed.promise))) {
+      if (!(await changed.promise)) {
         return
       }
       changed = Promise.withResolvers()
@@ -316,35 +336,25 @@ const source_stream = async function* (signal, time) {
   let reader = undefined
 
   try {
-    const response = await select(signal, () =>
-      fetch(source_url(media, time), {
-        signal: AbortSignal.any([signal, request.signal]),
-      }),
-    )
-    if (!response) {
-      return
-    }
+    const response = await fetch(source_url(media, time), {
+      signal: AbortSignal.any([signal, request.signal]),
+    })
     const current = (reader = response.body?.getReader())
     if (!response.ok || !current) {
       throw new Error(`${response.statusText} - ${response.status}`)
     }
     for (;;) {
-      const selected = await select(signal, () => current.read())
-      if (!selected) {
-        return
-      }
-      const { done, value } = selected
+      const { done, value } = await current.read()
       if (done) {
-        return
+        break
       }
       yield value
     }
   } finally {
-    if (!signal.aborted) {
-      await reader?.cancel()
-    }
+    await reader?.cancel()
     request.abort()
   }
+  return
 }
 
 /** @param {AbortSignal} signal @param {MseBufferFactory} create_buffer @returns {Attempt} */
@@ -383,10 +393,10 @@ const attempt = (signal, create_buffer) => {
             continue streaming
           }
         }
-        if (await select(signal, () => buffer.next())) {
-          await select(signal)
+        await buffer.next()
+        for (;;) {
+          yield undefined
         }
-        break
       }
     } finally {
       await buffer.return()
@@ -403,7 +413,9 @@ const playback_page = async (signal) => {
   const restart = Symbol("restart")
   const retry = Symbol("retry")
   const states = changes(signal)
-  let changed = states.next()
+  /** @type {Map<AsyncIterator<unknown, void, void>, Promise<IteratorResult<unknown, void>>>} */
+  const pending = new Map()
+  pending.set(states, states.next())
   let positioned = transformed
   let waiting = false
 
@@ -451,57 +463,36 @@ const playback_page = async (signal) => {
     const current = new AbortController()
     const attempt_signal = AbortSignal.any([signal, current.signal])
     const session = attempt(attempt_signal, create_buffer)
-    /** @type {Promise<IteratorResult<void, void>> | undefined} */
-    let progress = session.next()
+    pending.set(session, session.next())
     let transition = undefined
 
     try {
-      for (;;) {
-        const pending = progress
-        const selected = await select(
-          attempt_signal,
-          () =>
-            changed.then(
-              (state) => /** @type {PlaybackSelection} */ ({ state }),
-            ),
-          ...(pending
-            ? [
-                () =>
-                  pending.then(
-                    (attempt) => /** @type {PlaybackSelection} */ ({ attempt }),
-                  ),
-              ]
-            : []),
-        )
-
-        if (!selected) {
-          break
-        }
-        if ("attempt" in selected) {
-          progress = undefined
-          if (selected.attempt.done) {
+      for await (const [source, result] of merge(attempt_signal, pending)) {
+        if (source === session) {
+          if (result.done) {
             break
           }
           continue
         }
 
-        const { state } = selected
+        const state = /** @type {IteratorResult<PageChange, void>} */ (result)
         if (state.done) {
           return
         }
-        changed = states.next()
+        pending.set(states, states.next())
         transition = await update(state.value, session.buffer)
         if (transition === restart || transition === retry) {
           break
         }
-        if (transition === resume && progress === undefined) {
-          progress = session.next()
+        if (transition === resume && !pending.has(session)) {
+          pending.set(session, session.next())
         }
       }
     } catch (error) {
       console.error(error)
     } finally {
       current.abort()
+      pending.delete(session)
       await session.return()
     }
 
@@ -510,8 +501,6 @@ const playback_page = async (signal) => {
     }
   }
 }
-
-set_position(initial_position)
 
 /** @param {SubmitEvent} event */
 form.onsubmit = (event) => {
@@ -531,6 +520,7 @@ form.onsubmit = (event) => {
 }
 
 void (async () => {
+  set_position(initial_position)
   for (;;) {
     await once(window, undefined, "pageshow")
     const page = new AbortController()
