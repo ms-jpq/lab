@@ -646,10 +646,8 @@ test(
     const buffer = current.context.player_test.mse(
       controller.signal,
       current.media,
-      10,
     )
     const opened = buffer.next()
-    assert.equal(current.media.currentTime, 10)
     assert.equal((await opened).done, false)
     await buffer.next(10)
     await buffer.next(new Uint8Array([1]))
@@ -673,7 +671,6 @@ test(
     const buffer = current.context.player_test.mse(
       controller.signal,
       current.media,
-      10,
     )
     assert.equal((await buffer.next()).done, false)
     await buffer.next(10)
@@ -698,7 +695,6 @@ test(
     const buffer = current.context.player_test.mse(
       controller.signal,
       current.media,
-      10,
     )
     assert.equal((await buffer.next()).done, false)
     await buffer.next(10)
@@ -728,7 +724,6 @@ test(
     const buffer = current.context.player_test.mse(
       controller.signal,
       current.media,
-      10,
     )
     assert.equal((await buffer.next()).done, false)
     await buffer.next(10)
@@ -760,7 +755,6 @@ test(
     const buffer = current.context.player_test.mse(
       controller.signal,
       current.media,
-      10,
     )
     assert.equal((await buffer.next()).done, false)
     await buffer.next(10)
@@ -801,7 +795,6 @@ test(
     const buffer = current.context.player_test.mse(
       bufferController.signal,
       current.media,
-      10,
     )
     assert.equal((await buffer.next()).done, false)
     await buffer.next(10)

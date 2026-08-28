@@ -294,8 +294,8 @@ const page_states = (signal, position) => {
   })()
 }
 
-/** @param {AbortSignal} signal @param {HTMLMediaElement} media @param {number} position @returns {Mse} */
-const mse = (signal, media, position) => {
+/** @param {AbortSignal} signal @param {HTMLMediaElement} media @param {() => void} [disconnect] @returns {Mse} */
+const mse = (signal, media, disconnect = () => {}) => {
   const { ManagedMediaSource } =
     /** @type {typeof globalThis & { ManagedMediaSource?: typeof MediaSource }} */ (
       globalThis
@@ -316,7 +316,6 @@ const mse = (signal, media, position) => {
     )
     const url = URL.createObjectURL(source)
     media.src = url
-    media.currentTime = position
 
     try {
       const selected = await opened
@@ -396,6 +395,7 @@ const mse = (signal, media, position) => {
         }
       }
     } finally {
+      disconnect()
       media.removeAttribute("src")
       media.load()
       URL.revokeObjectURL(url)
@@ -464,7 +464,7 @@ const media_sources = async function* (signal) {
     const lifetime = new AbortController()
     const lifetime_signal = AbortSignal.any([signal, lifetime.signal])
     const position = playable_position(Number(time_input.value))
-    const buffer = mse(lifetime_signal, media, position)
+    const buffer = mse(lifetime_signal, media, () => lifetime.abort())
     let retry = false
 
     try {
