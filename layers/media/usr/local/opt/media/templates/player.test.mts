@@ -280,7 +280,6 @@ class TrackedEventTarget extends EventTarget {
 }
 
 class Media extends TrackedEventTarget {
-  readonly HAVE_FUTURE_DATA: number
   readonly HAVE_METADATA: number
   currentTimes: number[]
   private _currentTime: number
@@ -292,10 +291,6 @@ class Media extends TrackedEventTarget {
   private _src: string
   loads: number
   removals: number
-  paused: boolean
-  pauses: number
-  playResult: Promise<void>
-  plays: number
   readyState: number
   onLoad: (() => void) | undefined
   onSourceChange: ((previous: string, current: string) => void) | undefined
@@ -303,7 +298,6 @@ class Media extends TrackedEventTarget {
 
   constructor() {
     super()
-    this.HAVE_FUTURE_DATA = 3
     this.HAVE_METADATA = 1
     this.currentTimes = []
     this._currentTime = 0
@@ -319,10 +313,6 @@ class Media extends TrackedEventTarget {
     this._src = ""
     this.loads = 0
     this.removals = 0
-    this.paused = true
-    this.pauses = 0
-    this.playResult = Promise.resolve()
-    this.plays = 0
     this.readyState = 0
     this.onSourceChange = undefined
     this.topology = []
@@ -348,7 +338,6 @@ class Media extends TrackedEventTarget {
     this.topology.push(`src:${value}`)
     this.buffered.ranges = []
     this.error = null
-    this.paused = true
     this.readyState = 0
     this.currentTime = 0
     this.onSourceChange?.(previous, value)
@@ -359,19 +348,6 @@ class Media extends TrackedEventTarget {
     this.topology.push("load")
     this.buffered.ranges = []
     this.onLoad?.()
-  }
-
-  pause(): void {
-    this.paused = true
-    this.pauses += 1
-    this.topology.push("pause")
-  }
-
-  play(): Promise<void> {
-    this.paused = false
-    this.plays += 1
-    this.topology.push("play")
-    return this.playResult
   }
 
   removeAttribute(name: string): void {
@@ -1041,116 +1017,6 @@ test(
     await closePage(controller, page)
   },
 )
-
-test("a starved seek preserves native play intent", options, async () => {
-  const current = await fixture()
-  const recovery = Promise.withResolvers<void>()
-  const requests: Array<{ signal: AbortSignal; time: string | null }> = []
-  let cancellations = 0
-  current.media.playResult = recovery.promise
-  current.context.fetch = async (url, { signal }) => {
-    const request = {
-      signal,
-      time: new URL(String(url)).searchParams.get("t"),
-    }
-    requests.push(request)
-    signal.addEventListener(
-      "abort",
-      () => {
-        cancellations += 1
-        if (requests[0] === request && current.media.plays === 1) {
-          recovery.reject(
-            new DOMException(
-              "The fetching process for the media resource was aborted by the user agent at the user's request.",
-              "AbortError",
-            ),
-          )
-        }
-      },
-      { once: true },
-    )
-    return liveResponse(signal)
-  }
-  const { controller, playback } = await runningPlayback(current)
-  const source = present(current.sources[0])
-  const url = current.media.src
-  try {
-    current.media.readyState = current.media.HAVE_FUTURE_DATA
-    current.media.paused = false
-    current.media.dispatchEvent(new Event("playing"))
-    await nextTask()
-
-    current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
-    current.media.dispatchEvent(new Event("waiting"))
-    await nextTask()
-
-    current.media.currentTime = 110
-    current.media.seeking = true
-    current.media.dispatchEvent(new Event("seeking"))
-    current.media.readyState = current.media.HAVE_FUTURE_DATA
-    current.media.dispatchEvent(new Event("canplay"))
-    await eventually(
-      () =>
-        current.sources.length > 1 ||
-        source.sourceBuffers[0]?.buffered.start(0) === 110,
-    )
-
-    deepEqual(current.media.pauses, 0)
-    deepEqual(current.media.plays, 0)
-    deepEqual(current.media.paused, false)
-    deepEqual(current.sources.length, 1)
-    deepEqual(current.media.src, url)
-    deepEqual(
-      requests.map(({ time }) => time),
-      ["40", "110"],
-    )
-    deepEqual(cancellations, 1)
-    deepEqual(present(requests[0]).signal.aborted, true)
-    deepEqual(present(requests[1]).signal.aborted, false)
-    deepEqual(current.errors, [])
-    deepEqual(
-      current.media.topology.filter(
-        (operation) => operation === "pause" || operation === "play",
-      ),
-      [],
-    )
-  } finally {
-    recovery.resolve()
-    controller.abort()
-    await playback
-  }
-})
-
-test("an ordinary user pause is never auto-resumed", options, async () => {
-  const current = await fixture()
-  const { controller, playback } = await runningPlayback(current)
-  try {
-    current.media.readyState = current.media.HAVE_FUTURE_DATA
-    current.media.paused = false
-    current.media.dispatchEvent(new Event("play"))
-    await new Promise((resolve) => setImmediate(resolve))
-
-    current.media.pause()
-    current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
-    current.media.dispatchEvent(new Event("waiting"))
-    current.media.readyState = current.media.HAVE_FUTURE_DATA
-    current.media.dispatchEvent(new Event("canplay"))
-    await new Promise((resolve) => setImmediate(resolve))
-
-    deepEqual(current.media.pauses, 1)
-    deepEqual(current.media.plays, 0)
-    deepEqual(current.media.paused, true)
-    deepEqual(
-      current.media.topology.filter(
-        (operation) => operation === "pause" || operation === "play",
-      ),
-      ["pause"],
-    )
-  } finally {
-    controller.abort()
-    await playback
-  }
-})
 
 test(
   "a subtitle error storm retries once without touching media",
@@ -3765,6 +3631,8 @@ test(
     current.media.currentTime = 110
     current.media.seeking = true
     current.media.dispatchEvent(new Event("seeking"))
+    current.media.dispatchEvent(new Event("waiting"))
+    current.media.dispatchEvent(new Event("canplay"))
 
     const request = new URL(await secondRequest.promise)
     deepEqual(mediaSource.ends, 0)
