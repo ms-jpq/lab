@@ -319,23 +319,17 @@ const mse = (signal, media, position) => {
           if (signal.aborted) {
             return false
           }
-          mutate()
-          return Boolean(
-            await select(
-              signal,
-              (s) => once(opened_buffer, s, "updateend"),
-              (s) => once(opened_buffer, s, "error"),
-            ),
-          )
-        }
-
-        const reopen = () => {
-          if (source.readyState === "open") {
+          const settled = new AbortController()
+          try {
+            mutate()
+            await Promise.race([
+              once(opened_buffer, settled.signal, "updateend"),
+              once(opened_buffer, settled.signal, "error"),
+            ])
             return true
+          } finally {
+            settled.abort()
           }
-          const ranges = opened_buffer.buffered
-          const start = ranges.length ? ranges.end(ranges.length - 1) : 0
-          return update(() => opened_buffer.remove(start, start + 0.001))
         }
 
         for (
@@ -348,9 +342,6 @@ const mse = (signal, media, position) => {
             continue
           }
           if (typeof operation === "number") {
-            if (!(await reopen())) {
-              return
-            }
             opened_buffer.timestampOffset = operation
             continue
           }
@@ -379,10 +370,8 @@ const mse = (signal, media, position) => {
         buffer = undefined
       }
     } finally {
-      if (media.src === url) {
-        media.removeAttribute("src")
-        media.load()
-      }
+      media.removeAttribute("src")
+      media.load()
       URL.revokeObjectURL(url)
     }
     return
@@ -399,11 +388,17 @@ const mse = (signal, media, position) => {
 
 /** @param {AbortSignal} signal @param {number} time */
 const source_stream = async function* (signal, time) {
-  const response = await fetch(source_url(media, time), { signal })
-  if (!response.ok || !response.body) {
-    throw new Error(`${response.statusText} - ${response.status}`)
+  try {
+    const response = await fetch(source_url(media, time), { signal })
+    if (!response.ok || !response.body) {
+      throw new Error(`${response.statusText} - ${response.status}`)
+    }
+    yield* response.body
+  } catch (error) {
+    if (!signal.aborted) {
+      throw error
+    }
   }
-  yield* response.body
   return
 }
 
@@ -427,7 +422,7 @@ const session = async function* (signal, buffer, time) {
       } while (buffer.play_ahead(media.currentTime) >= BUFFER.LO)
     }
   }
-  if (!(await buffer.next("end")).done) {
+  if (!signal.aborted && !(await buffer.next("end")).done) {
     await select(signal)
   }
   return

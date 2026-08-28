@@ -99,6 +99,8 @@ const fixture = async (position = 40) => {
         },
       }
       this._timestampOffset = 0
+      this.holdUpdate = false
+      this.releaseUpdate = undefined
       this.updating = false
     }
 
@@ -109,7 +111,8 @@ const fixture = async (position = 40) => {
     /** @param {number} value */
     set timestampOffset(value) {
       if (this.source.readyState === "ended") {
-        throw new Error("timestampOffset requires an open MediaSource")
+        this.source.readyState = "open"
+        queueMicrotask(() => this.source.dispatchEvent(new Event("sourceopen")))
       }
       this._timestampOffset = value
     }
@@ -121,13 +124,18 @@ const fixture = async (position = 40) => {
     /** @param {Uint8Array} _bytes */
     appendBuffer(_bytes) {
       this.updating = true
-      queueMicrotask(() => {
+      const complete = () => {
         this.buffered.ranges = [
           [this.timestampOffset, this.timestampOffset + 10],
         ]
         this.updating = false
         this.dispatchEvent(new Event("updateend"))
-      })
+      }
+      if (this.holdUpdate) {
+        this.releaseUpdate = complete
+      } else {
+        queueMicrotask(complete)
+      }
     }
 
     /** @param {number} start @param {number} end */
@@ -151,6 +159,7 @@ const fixture = async (position = 40) => {
       super()
       sources.push(this)
       this.duration = Number.NaN
+      this.ends = 0
       this.readyState = "closed"
       this.sourceBuffers = []
     }
@@ -163,6 +172,7 @@ const fixture = async (position = 40) => {
     }
 
     endOfStream() {
+      this.ends += 1
       this.readyState = "ended"
     }
 
@@ -611,6 +621,47 @@ test(
 )
 
 test(
+  "an entered SourceBuffer mutation drains before lifetime teardown",
+  { concurrency: true, timeout: 1_000 },
+  async () => {
+    const current = await fixture()
+    const controller = new AbortController()
+    const buffer = current.context.player_test.mse(
+      controller.signal,
+      current.media,
+      10,
+    )
+    assert.equal((await buffer.next()).done, false)
+    await buffer.next(10)
+
+    const [source] = current.sources
+    const [openedBuffer] = source.sourceBuffers
+    openedBuffer.holdUpdate = true
+    const appending = buffer.next([10, new Uint8Array([1])])
+    while (!openedBuffer.updating) {
+      await new Promise((resolve) => setImmediate(resolve))
+    }
+
+    controller.abort()
+    let closed = false
+    const closing = buffer.return().then(() => {
+      closed = true
+    })
+    await new Promise((resolve) => setImmediate(resolve))
+
+    assert.equal(closed, false)
+    assert.notEqual(current.media.src, "")
+    assert.equal(current.media.loads, 0)
+
+    openedBuffer.releaseUpdate()
+    await appending
+    await closing
+    assert.equal(current.media.src, "")
+    assert.equal(current.media.loads, 1)
+  },
+)
+
+test(
   "an ordinary unbuffered seek keeps one target request and one MediaSource",
   { concurrency: true },
   async () => {
@@ -656,6 +707,7 @@ test(
     current.media.dispatchEvent(new Event("seeking"))
 
     const request = new URL(await secondRequest.promise)
+    assert.equal(mediaSource.ends, 0)
     while (mediaSource.sourceBuffers[0]?.buffered.start(0) !== 110) {
       await new Promise((resolve) => setImmediate(resolve))
     }
@@ -675,5 +727,59 @@ test(
 
     controller.abort()
     await playback
+  },
+)
+
+test(
+  "a failed target request waits for new user intent",
+  { concurrency: true, timeout: 1_000 },
+  async () => {
+    const current = await fixture()
+    const failed = Promise.withResolvers()
+    let requests = 0
+    current.context.fetch = async (_url, { signal }) => {
+      requests += 1
+      if (requests > 1) {
+        failed.resolve()
+        throw new Error("target request failed")
+      }
+      return {
+        body: new ReadableStream({
+          start: (controller) => {
+            controller.enqueue(new Uint8Array([1]))
+            signal.addEventListener("abort", () => controller.close(), {
+              once: true,
+            })
+          },
+        }),
+        ok: true,
+        status: 200,
+        statusText: "OK",
+      }
+    }
+
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    try {
+      while (current.sources[0]?.sourceBuffers[0]?.buffered.length !== 1) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+      const source = current.media.src
+      current.media.currentTime = 110
+      current.media.seeking = true
+      current.media.dispatchEvent(new Event("seeking"))
+
+      await failed.promise
+      await new Promise((resolve) => setImmediate(resolve))
+      assert.equal(requests, 2)
+      assert.equal(current.sources.length, 1)
+      assert.equal(current.media.src, source)
+      assert.equal(current.media.currentTime, 110)
+    } finally {
+      controller.abort()
+      await playback
+    }
   },
 )
