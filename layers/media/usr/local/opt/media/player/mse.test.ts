@@ -137,7 +137,7 @@ const cases = [
   {
     name: "an entered SourceBuffer mutation drains before lifetime teardown",
     run: async () => {
-      const { entered, lifetime, release, values } = fixture(
+      const { entered, lifetime, mutations, release, values } = fixture(
         timeRanges(),
         undefined,
         true,
