@@ -1229,6 +1229,64 @@ test(
 )
 
 test(
+  "a synchronous playback seek storm fetches only its final target",
+  options,
+  async () => {
+    const current = await fixture()
+    const finalRequest = Promise.withResolvers<string>()
+    const requests: string[] = []
+    current.context.fetch = async (url, { signal }) => {
+      const request = String(url)
+      requests.push(request)
+      if (new URL(request).searchParams.get("t") === "163") {
+        finalRequest.resolve(request)
+      }
+      return {
+        body: new ReadableStream({
+          start: (controller) => {
+            controller.enqueue(new Uint8Array([1]))
+            signal.addEventListener("abort", () => controller.close(), {
+              once: true,
+            })
+          },
+        }),
+        ok: true,
+        status: 200,
+        statusText: "OK",
+      }
+    }
+
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    try {
+      while (current.sources[0]?.sourceBuffers[0]?.buffered.length !== 1) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+      for (let position = 100; position < 164; position += 1) {
+        current.media.currentTime = position
+        current.media.seeking = true
+        current.media.dispatchEvent(new Event("seeking"))
+      }
+
+      const request = new URL(await finalRequest.promise)
+      assert.equal(request.searchParams.get("t"), "163")
+      assert.deepEqual(
+        requests.map((url) => new URL(url).searchParams.get("t")),
+        ["40", "163"],
+      )
+      assert.equal(current.timeInput.value, "163")
+      assert.equal(current.sources.length, 1)
+      assert.equal(current.errors.length, 0)
+    } finally {
+      controller.abort()
+      await playback
+    }
+  },
+)
+
+test(
   "a failed target request retries on the same MediaSource",
   options,
   async () => {
