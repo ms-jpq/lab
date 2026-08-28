@@ -1,4 +1,4 @@
-import { events } from "./util.ts"
+import { events } from "./util.js"
 
 export type MseOperation = "end" | number | Uint8Array
 export type Mse = AsyncGenerator<void, void, MseOperation>
