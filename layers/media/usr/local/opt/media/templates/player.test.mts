@@ -22,6 +22,7 @@ type MediaObservation = {
   paused: boolean
   seeking: boolean
   time: number
+  type: string | undefined
 }
 type MseOperation = "end" | number | Uint8Array
 type Mse = AsyncGenerator<void, void, MseOperation | undefined>
@@ -87,10 +88,7 @@ type PlayerContext = vm.Context & {
   fetch: MockFetch
   MediaError: { MEDIA_ERR_ABORTED: number }
   player_test: PlayerTest
-  setTimeout: (
-    run: () => void,
-    delay?: number,
-  ) => ReturnType<typeof setTimeout>
+  setTimeout: (run: () => void, delay?: number) => ReturnType<typeof setTimeout>
 }
 type TestBody = (context: TestContext) => void | Promise<void>
 type TestCase = { name: string; run: TestBody }
@@ -183,7 +181,8 @@ const timeRanges = (): MutableTimeRanges => ({
 
 const listenerCapture = (
   options: EventListenerOptions | boolean | undefined,
-): boolean => (typeof options === "boolean" ? options : (options?.capture ?? false))
+): boolean =>
+  typeof options === "boolean" ? options : (options?.capture ?? false)
 
 class TrackedEventTarget extends EventTarget {
   listenerCalls: number
@@ -868,6 +867,51 @@ test(
   },
 )
 
+test(
+  "a suspended observation batch awaits its captured task boundary",
+  options,
+  async () => {
+    const current = await fixture()
+    const scheduled: Array<() => void> = []
+    current.context.setTimeout = (run) => {
+      const timeout = setTimeout(() => {}, 10_000)
+      scheduled.push(() => {
+        clearTimeout(timeout)
+        run()
+      })
+      return timeout
+    }
+    const controller = new AbortController()
+    const batches = current.context.player_test.media_observation_batches(
+      controller.signal,
+    )
+    await batches.next()
+
+    current.media.dispatchEvent(new Event("error"))
+    let settled = false
+    const pending = batches.next().then((result) => {
+      settled = true
+      return result
+    })
+    await Promise.resolve()
+    assert.equal(settled, false)
+
+    current.media.currentTime = 110
+    current.media.seeking = true
+    current.media.dispatchEvent(new Event("seeking"))
+    assert.equal(scheduled.length, 1)
+    present(scheduled[0])()
+
+    const observations = await nextValue({ next: () => pending })
+    assert.deepEqual(
+      Array.from(observations, ({ type }) => type),
+      ["error", "seeking"],
+    )
+    controller.abort()
+    await batches.return(undefined)
+  },
+)
+
 test("subtitle events stay outside media state batches", options, async () => {
   const current = await fixture()
   const controller = new AbortController()
@@ -935,6 +979,99 @@ test(
 
       assert.equal(current.media.pauses, 0)
       assert.equal(current.media.paused, false)
+    } finally {
+      controller.abort()
+      await playback
+    }
+  },
+)
+
+test(
+  "prior readiness does not make a pending play established",
+  options,
+  async () => {
+    const current = await fixture()
+    const { controller, playback } = await runningPlayback(current)
+    try {
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.dispatchEvent(new Event("canplay"))
+      await nextTask()
+
+      current.media.paused = false
+      current.media.dispatchEvent(new Event("play"))
+      current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
+      current.media.dispatchEvent(new Event("waiting"))
+      await nextTask()
+
+      assert.equal(current.media.pauses, 0)
+      assert.equal(current.media.paused, false)
+    } finally {
+      controller.abort()
+      await playback
+    }
+  },
+)
+
+test(
+  "a user play-pause override revokes an owned readiness resume",
+  options,
+  async () => {
+    const current = await fixture()
+    const { controller, playback } = await runningPlayback(current)
+    try {
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.paused = false
+      current.media.dispatchEvent(new Event("playing"))
+      await nextTask()
+
+      current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
+      current.media.dispatchEvent(new Event("waiting"))
+      await nextTask()
+      assert.equal(current.media.pauses, 1)
+
+      await current.media.play()
+      current.media.dispatchEvent(new Event("play"))
+      current.media.pause()
+      current.media.dispatchEvent(new Event("pause"))
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.dispatchEvent(new Event("canplay"))
+      await nextTask()
+
+      assert.equal(current.media.plays, 1)
+      assert.equal(current.media.pauses, 2)
+      assert.equal(current.media.paused, true)
+    } finally {
+      controller.abort()
+      await playback
+    }
+  },
+)
+
+test(
+  "a user pause after the owned pause revokes readiness resume",
+  options,
+  async () => {
+    const current = await fixture()
+    const { controller, playback } = await runningPlayback(current)
+    try {
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.paused = false
+      current.media.dispatchEvent(new Event("playing"))
+      await nextTask()
+
+      current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
+      current.media.dispatchEvent(new Event("waiting"))
+      await nextTask()
+      assert.equal(current.media.pauses, 1)
+
+      current.media.dispatchEvent(new Event("pause"))
+      current.media.dispatchEvent(new Event("pause"))
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.dispatchEvent(new Event("canplay"))
+      await nextTask()
+
+      assert.equal(current.media.plays, 0)
+      assert.equal(current.media.paused, true)
     } finally {
       controller.abort()
       await playback
@@ -1063,6 +1200,120 @@ test(
     } finally {
       controller.abort()
       if (!released) {
+        resumed.resolve()
+      }
+      await playback
+    }
+  },
+)
+
+test(
+  "an owned readiness pause survives an MSE failure rebuild",
+  options,
+  async () => {
+    const current = await fixture()
+    const { controller, playback } = await runningPlayback(current)
+    try {
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.paused = false
+      current.media.dispatchEvent(new Event("playing"))
+      await nextTask()
+
+      current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
+      current.media.dispatchEvent(new Event("waiting"))
+      await nextTask()
+      assert.equal(current.media.pauses, 1)
+
+      const failure = { code: 3, message: "decode failed while waiting" }
+      current.media.error = failure
+      current.media.dispatchEvent(new Event("error"))
+      await eventually(
+        () => current.sources[1]?.sourceBuffers[0]?.buffered.length === 1,
+      )
+      assert.equal(current.media.plays, 0)
+
+      current.media.error = null
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.dispatchEvent(new Event("canplay"))
+      current.media.dispatchEvent(new Event("canplay"))
+      await nextTask()
+
+      assert.equal(current.media.plays, 1)
+      assert.equal(current.media.paused, false)
+      assert.deepEqual(
+        current.media.topology.filter(
+          (operation) => operation === "pause" || operation === "play",
+        ),
+        ["pause", "play"],
+      )
+      assert.deepEqual(
+        current.errors.map(([error]) => error),
+        [failure],
+      )
+      assert.equal(current.sources.length, 2)
+    } finally {
+      controller.abort()
+      await playback
+    }
+  },
+)
+
+test(
+  "owner teardown settles its pending readiness play promise",
+  options,
+  async () => {
+    const current = await fixture()
+    const resumed = Promise.withResolvers<void>()
+    current.media.playResult = resumed.promise
+    let ownerSettled = false
+    const settlePlay = () => {
+      if (current.media.plays === 0 || ownerSettled) {
+        return
+      }
+      ownerSettled = true
+      resumed.reject(new DOMException("playback cancelled", "AbortError"))
+    }
+    const pause = current.media.pause.bind(current.media)
+    current.media.pause = () => {
+      pause()
+      settlePlay()
+    }
+    const load = current.media.onLoad
+    current.media.onLoad = () => {
+      load?.()
+      settlePlay()
+    }
+
+    const { controller, playback } = await runningPlayback(current)
+    try {
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.paused = false
+      current.media.dispatchEvent(new Event("playing"))
+      await nextTask()
+
+      current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
+      current.media.dispatchEvent(new Event("waiting"))
+      await nextTask()
+      assert.equal(current.media.pauses, 1)
+
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.dispatchEvent(new Event("canplay"))
+      await nextTask()
+      assert.equal(current.media.plays, 1)
+
+      let completed = false
+      const observed = playback.then(() => {
+        completed = true
+      })
+      controller.abort()
+      await nextTask()
+
+      assert.equal(ownerSettled, true)
+      await observed
+      assert.equal(completed, true)
+    } finally {
+      controller.abort()
+      if (!ownerSettled) {
         resumed.resolve()
       }
       await playback
@@ -1862,6 +2113,11 @@ const partialFailureCases = [
     name: "a stalled playhead retains its exact buffered frontier for retry",
     playhead: 55,
   },
+  {
+    failure: "request failed beside an unrelated playhead range",
+    name: "acquisition progress uses its own buffered range",
+    playhead: 5,
+  },
 ] as const
 
 for (const { failure, name, playhead } of partialFailureCases) {
@@ -1923,8 +2179,15 @@ for (const { failure, name, playhead } of partialFailureCases) {
       )
       const source = present(current.sources[0])
       const buffer = present(source.sourceBuffers[0])
-      buffer.buffered.ranges = [[40, 55]]
-      current.media.buffered.ranges = [[40, 55]]
+      const ranges: Range[] =
+        playhead === 5
+          ? [
+              [0, 10],
+              [40, 55],
+            ]
+          : [[40, 55]]
+      buffer.buffered.ranges = ranges
+      current.media.buffered.ranges = ranges
       await eventually(() => current.media.currentTime === 40)
       current.media.currentTime = playhead
 
