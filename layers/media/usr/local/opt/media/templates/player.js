@@ -174,7 +174,7 @@ const page_state = () => ({
 const page_states = (signal, position) => {
   const observation = new AbortController()
   const observation_signal = AbortSignal.any([signal, observation.signal])
-  /** @type {{state: ReturnType<typeof page_state>, type: string}[]} */
+  /** @type {ReturnType<typeof page_state>[]} */
   const events = []
   let changed = Promise.withResolvers()
   let previous = page_state()
@@ -182,9 +182,8 @@ const page_states = (signal, position) => {
   let requested_position = position
   let target = position
 
-  /** @param {Event} event */
-  const observe = (event) => {
-    events.push({ state: page_state(), type: event.type })
+  const observe = () => {
+    events.push(page_state())
     changed.resolve(true)
   }
 
@@ -200,7 +199,7 @@ const page_states = (signal, position) => {
   if (subtitle && subtitle.src === "") {
     subtitle.src = source_url(subtitle, 0)
   }
-  observe(new Event("initial"))
+  observe()
 
   return (async function* () {
     try {
@@ -209,17 +208,19 @@ const page_states = (signal, position) => {
           if (!(await changed.promise)) {
             return
           }
-          changed = Promise.withResolvers()
         }
         if (observation_signal.aborted) {
           return
         }
 
-        const event = events.shift()
-        if (!event) {
+        const observed = events.shift()
+        if (!observed) {
           continue
         }
-        let current = event.state
+        if (events.length === 0) {
+          changed = Promise.withResolvers()
+        }
+        let current = observed
         let moved =
           Number.isFinite(current.time) &&
           (current.time !== previous.time ||
@@ -443,6 +444,7 @@ const source_stream = async function* (signal, time) {
       }
     }
   }
+  return
 }
 
 /** @param {AbortSignal} signal @param {Mse} buffer @param {number} time @returns {AsyncGenerator<void, void, void>} */
@@ -591,18 +593,22 @@ const play_source = async (source) => {
 /** @param {AbortSignal} signal */
 const playback_page = async (signal) => {
   const sources = media_sources(signal, initial_position)
-  let next = await sources.next()
-  while (!next.done) {
-    const source = next.value
-    let position = source.position
-    try {
-      position = await play_source(source)
-    } catch (error) {
-      if (!source.signal.aborted) {
-        console.error(error)
+  try {
+    let next = await sources.next()
+    while (!next.done) {
+      const source = next.value
+      let position = source.position
+      try {
+        position = await play_source(source)
+      } catch (error) {
+        if (!source.signal.aborted) {
+          console.error(error)
+        }
       }
+      next = await sources.next(position)
     }
-    next = await sources.next(position)
+  } finally {
+    await sources.return()
   }
 }
 

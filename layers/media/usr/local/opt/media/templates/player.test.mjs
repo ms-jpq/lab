@@ -398,22 +398,27 @@ test(
   { concurrency: true },
   async () => {
     const current = await fixture()
-    current.context.fetch = async () => ({
-      body: {
-        getReader: () => ({
-          cancel: async () => {
-            throw new DOMException("The operation was aborted", "AbortError")
-          },
-          read: async () => ({
-            done: false,
-            value: new Uint8Array([1]),
+    let requestSignal = undefined
+    current.context.fetch = async (_url, { signal }) => {
+      requestSignal = signal
+      return {
+        body: {
+          getReader: () => ({
+            cancel: async () => {
+              assert.equal(requestSignal.aborted, true)
+              throw new DOMException("The operation was aborted", "AbortError")
+            },
+            read: async () => ({
+              done: false,
+              value: new Uint8Array([1]),
+            }),
           }),
-        }),
-      },
-      ok: true,
-      status: 200,
-      statusText: "OK",
-    })
+        },
+        ok: true,
+        status: 200,
+        statusText: "OK",
+      }
+    }
 
     const controller = new AbortController()
     const stream = current.context.player_test.source_stream(
@@ -863,11 +868,7 @@ test(
       current.media.dispatchEvent(new Event("progress"))
       current.media.dispatchEvent(new Event("timeupdate"))
       current.media.dispatchEvent(new Event("seeking"))
-      const changes = [
-        await observed,
-        await states.next(),
-        await states.next(),
-      ]
+      const changes = [await observed, await states.next(), await states.next()]
       assert.deepEqual(
         changes.flatMap(({ value }) =>
           value.seek === undefined ? [] : [value.seek],
@@ -1072,9 +1073,7 @@ test(
       assert.equal(current.timeInput.value, "40")
       assert.equal(retryDelays, 0)
       assert.equal(
-        requests.some(
-          (url) => new URL(url).searchParams.get("t") === "0",
-        ),
+        requests.some((url) => new URL(url).searchParams.get("t") === "0"),
         false,
       )
     } finally {
