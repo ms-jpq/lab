@@ -8,5 +8,8 @@
     "prettier-plugin-nginx": "*",
     "typescript": "*"
   },
+  "scripts": {
+    "test": "node --test"
+  },
   "type": "module"
 }
