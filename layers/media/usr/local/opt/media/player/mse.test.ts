@@ -24,12 +24,30 @@ const fixture = (
   hold: "append" | "remove" | undefined = undefined,
   readyState: "open" | "ended" = "open",
   cancelOnAbort = false,
+  cancelOnObserve = false,
 ) => {
   const mutations: unknown[] = []
   const types: string[] = []
   const entered = Promise.withResolvers<void>()
   const lifetime = new AbortController()
+  const observation = { cancel: cancelOnObserve }
   const buffer = Object.assign(new EventTarget(), {
+    addEventListener: (
+      type: string,
+      listener: EventListenerOrEventListenerObject | null,
+      options?: AddEventListenerOptions | boolean,
+    ) => {
+      EventTarget.prototype.addEventListener.call(
+        buffer,
+        type,
+        listener,
+        options,
+      )
+      if (observation.cancel) {
+        observation.cancel = false
+        lifetime.abort()
+      }
+    },
     abort: () => {
       mutations.push(["abort"])
       if (cancelOnAbort) {
@@ -114,6 +132,19 @@ const start = async (values: Mse, position = 0): Promise<void> => {
 }
 
 const cases = [
+  {
+    name: "lifetime cancellation prevents initial position entry",
+    run: async () => {
+      const { buffer, lifetime, values } = fixture()
+      await values.next()
+
+      lifetime.abort()
+      const positioning = values.next(10)
+
+      deepEqual(await positioning, { done: true, value: undefined })
+      deepEqual(buffer.timestampOffset, 0)
+    },
+  },
   {
     name: "MSE observes a synchronous append completion",
     run: async () => {
@@ -237,11 +268,17 @@ const cases = [
   {
     name: "lifetime cancellation prevents append entry",
     run: async () => {
-      const { lifetime, mutations, values } = fixture()
+      const { mutations, values } = fixture(
+        timeRanges(),
+        undefined,
+        undefined,
+        "open",
+        false,
+        true,
+      )
       await start(values)
 
       const appending = values.next(new Uint8Array([5]))
-      lifetime.abort()
 
       deepEqual(await appending, { done: true, value: undefined })
       deepEqual(mutations, [])
@@ -278,11 +315,17 @@ const cases = [
   {
     name: "lifetime cancellation prevents eviction entry",
     run: async () => {
-      const { lifetime, mutations, values } = fixture(timeRanges([0, 120]))
+      const { mutations, values } = fixture(
+        timeRanges([0, 120]),
+        undefined,
+        undefined,
+        "open",
+        false,
+        true,
+      )
       await start(values)
 
       const appending = values.next(new Uint8Array([6]))
-      lifetime.abort()
 
       deepEqual(await appending, { done: true, value: undefined })
       deepEqual(mutations, [])
@@ -317,16 +360,17 @@ const cases = [
   {
     name: "lifetime cancellation prevents ended-source removal entry",
     run: async () => {
-      const { buffer, lifetime, mutations, values } = fixture(
+      const { buffer, mutations, values } = fixture(
         timeRanges([0, 20]),
         undefined,
         undefined,
         "ended",
+        false,
+        true,
       )
       await start(values, 10)
 
       const seeking = values.next(30)
-      lifetime.abort()
 
       deepEqual(await seeking, { done: true, value: undefined })
       deepEqual(mutations, [["abort"]])

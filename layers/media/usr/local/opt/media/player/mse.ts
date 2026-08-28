@@ -56,7 +56,11 @@ export const media_source = async function* ({
 }): Mse {
   const buffer = source.addSourceBuffer(mime_type)
 
-  buffer.timestampOffset = (yield undefined) as unknown as number
+  const position = (yield undefined) as unknown as number
+  if (signal.aborted) {
+    return
+  }
+  buffer.timestampOffset = position
 
   for (let operation = yield undefined; ; operation = yield undefined) {
     if (signal.aborted) {
