@@ -4,10 +4,12 @@ const stream = async function* (
   request: Request,
 ): AsyncIteratorObject<Uint8Array<ArrayBuffer>> {
   using a = abortion(request.signal)
-  const response = await fetch({ ...request, signal: a.signal })
+  const response = await fetch(new Request(request, { signal: a.signal }))
 
   if (!response.ok) {
-    throw new Error([response.status, response.statusText].join(" "))
+    throw new Error([response.status, response.statusText].join(" "), {
+      cause: response,
+    })
   }
 
   if (response.body) {
@@ -20,8 +22,7 @@ export const water_stream = async function* (
   request: Request,
   lo: () => true,
   hi: () => true,
-): AsyncIteratorObject<Uint8Array<ArrayBuffer>> {
-    // humm what should the logic be to support this? like we do need to stream at a different location right?
+): Generator<Uint8Array<ArrayBuffer>, undefined, Request> {
   for (;;) {
     for await (const bytes of stream(request)) {
       yield bytes
