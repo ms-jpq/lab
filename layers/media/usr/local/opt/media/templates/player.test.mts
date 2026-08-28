@@ -1344,6 +1344,70 @@ test(
 )
 
 test(
+  "a contiguous request outage reports once across retries",
+  options,
+  async () => {
+    const current = await fixture()
+    const succeeded = Promise.withResolvers<void>()
+    const advance: Array<() => void> = []
+    const requests: string[] = []
+    current.context.setTimeout = (run) => {
+      const timeout = setTimeout(run, 10_000)
+      advance.push(() => {
+        clearTimeout(timeout)
+        run()
+      })
+      return timeout
+    }
+    current.context.fetch = async (url, { signal }) => {
+      requests.push(String(url))
+      if (requests.length <= 3) {
+        throw new Error("source unavailable")
+      }
+      succeeded.resolve()
+      return {
+        body: new ReadableStream({
+          start: (controller) => {
+            controller.enqueue(new Uint8Array([1]))
+            signal.addEventListener("abort", () => controller.close(), {
+              once: true,
+            })
+          },
+        }),
+        ok: true,
+        status: 200,
+        statusText: "OK",
+      }
+    }
+
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    try {
+      for (let retry = 0; retry < 3; retry += 1) {
+        while (advance.length <= retry) {
+          await new Promise((resolve) => setImmediate(resolve))
+        }
+        present(advance[retry])()
+      }
+      await succeeded.promise
+
+      assert.equal(requests.length, 4)
+      assert.deepEqual(
+        requests.map((url) => new URL(url).searchParams.get("t")),
+        ["40", "40", "40", "40"],
+      )
+      assert.equal(current.sources.length, 1)
+      assert.equal(current.errors.length, 1)
+    } finally {
+      controller.abort()
+      await playback
+    }
+  },
+)
+
+test(
   "an unbuffered seek supersedes frozen network backoff immediately",
   options,
   async () => {
