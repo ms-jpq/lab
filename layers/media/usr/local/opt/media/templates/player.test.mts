@@ -1900,7 +1900,7 @@ test(
     }
     const playback = current.context.player_test.play_source(
       buffer,
-      { error: () => {}, escaped: () => false, progress: () => {} },
+      { error: () => {}, progress: () => {} },
       page.page,
     )
     try {
@@ -1984,7 +1984,7 @@ for (const { name, ranges } of unrelatedHighWaterCases) {
     const page = controlledPage(110, current.context.player_test.PULSE)
     const playback = current.context.player_test.play_source(
       { next: async () => ({ done: false as const, value: undefined }) },
-      { error: () => {}, escaped: () => false, progress: () => {} },
+      { error: () => {}, progress: () => {} },
       page.page,
     )
 
@@ -2110,7 +2110,7 @@ for (const { expected, name, range, target } of acquisitionPolicyCases) {
     current.media.currentTime = 40
     const playback = current.context.player_test.play_source(
       buffer,
-      { error: () => {}, escaped: () => false, progress: () => {} },
+      { error: () => {}, progress: () => {} },
       page.page,
     )
     try {
@@ -2184,7 +2184,7 @@ for (const { aborted, expected, name, target } of pendingFetchSeekCases) {
       {
         next: async () => ({ done: false as const, value: undefined }),
       },
-      { error: () => {}, escaped: () => false, progress: () => {} },
+      { error: () => {}, progress: () => {} },
       page.page,
     )
     try {
@@ -2239,7 +2239,7 @@ test(
       {
         next: async () => ({ done: false as const, value: undefined }),
       },
-      { error: () => {}, escaped: () => false, progress: () => {} },
+      { error: () => {}, progress: () => {} },
       page.page,
     )
     try {
@@ -2329,7 +2329,7 @@ for (const { expected, name, targets } of enteredAppendSeekCases) {
     opened.holdUpdate = true
     const playback = current.context.player_test.play_source(
       buffer,
-      { error: () => {}, escaped: () => false, progress: () => {} },
+      { error: () => {}, progress: () => {} },
       page.page,
     )
     try {
@@ -2427,7 +2427,7 @@ test(
     const page = controlledPage(40, current.context.player_test.PULSE)
     const playback = current.context.player_test.play_source(
       buffer,
-      { error: () => {}, escaped: () => false, progress: () => {} },
+      { error: () => {}, progress: () => {} },
       page.page,
     )
     try {

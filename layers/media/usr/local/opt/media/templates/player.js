@@ -716,12 +716,6 @@ const play_attempt = async (signal, sources, failures, page) => {
   let buffer = undefined
   try {
     buffer = await sources.open(signal, page)
-    return signal.aborted
-      ? undefined
-      : {
-          failure: error,
-          opened: false,
-        }
   } catch (error) {
     return signal.aborted ? undefined : { failure: error, opened: false }
   }
