@@ -410,10 +410,14 @@ const mse = (signal, media, disconnect = () => {}) => {
 
 /** @param {AbortSignal} signal @param {number} time */
 const source_stream = async function* (signal, time) {
+  const request = new AbortController()
+  const request_signal = AbortSignal.any([signal, request.signal])
   /** @type {ReadableStreamDefaultReader<Uint8Array> | undefined} */
   let reader = undefined
   try {
-    const response = await fetch(source_url(media, time), { signal })
+    const response = await fetch(source_url(media, time), {
+      signal: request_signal,
+    })
     if (!response.ok || !response.body) {
       throw new Error(`${response.statusText} - ${response.status}`)
     }
@@ -426,14 +430,15 @@ const source_stream = async function* (signal, time) {
       yield value
     }
   } catch (error) {
-    if (!signal.aborted) {
+    if (!request_signal.aborted) {
       throw error
     }
   } finally {
+    request.abort()
     try {
       await reader?.cancel()
     } catch (error) {
-      if (!signal.aborted) {
+      if (!request_signal.aborted) {
         throw error
       }
     }
