@@ -825,7 +825,17 @@ test(
       current.media.dispatchEvent(new Event("progress"))
       current.media.dispatchEvent(new Event("timeupdate"))
       current.media.dispatchEvent(new Event("seeking"))
-      assert.equal((await observed).value.seek, position)
+      const changes = [
+        await observed,
+        await states.next(),
+        await states.next(),
+      ]
+      assert.deepEqual(
+        changes.flatMap(({ value }) =>
+          value.seek === undefined ? [] : [value.seek],
+        ),
+        [position],
+      )
     }
 
     stateController.abort()
@@ -960,6 +970,69 @@ test(
       assert.equal(current.media.src, source)
       assert.equal(current.media.currentTime, 110)
       assert.equal(current.errors.length, 1)
+    } finally {
+      controller.abort()
+      await playback
+    }
+  },
+)
+
+test(
+  "MediaSource replacement cannot turn its native reset into a zero seek",
+  { concurrency: true, timeout: 1_000 },
+  async () => {
+    const current = await fixture()
+    const replaced = Promise.withResolvers()
+    const requests = []
+    let firstResponse = undefined
+    current.context.fetch = async (url) => {
+      requests.push(String(url))
+      if (firstResponse) {
+        replaced.resolve(String(url))
+      }
+      return {
+        body: new ReadableStream({
+          start: (controller) => {
+            if (!firstResponse) {
+              firstResponse = controller
+            }
+            controller.enqueue(new Uint8Array([1]))
+          },
+        }),
+        ok: true,
+        status: 200,
+        statusText: "OK",
+      }
+    }
+    const release = current.media.onLoad
+    current.media.onLoad = () => {
+      release()
+      current.media.currentTime = 0
+      current.media.seeking = true
+      current.media.dispatchEvent(new Event("seeking"))
+      current.media.dispatchEvent(new Event("timeupdate"))
+    }
+
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    try {
+      while (current.sources[0]?.sourceBuffers[0]?.buffered.length !== 1) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+      current.sources[0].sourceBuffers[0].usable = false
+      firstResponse.enqueue(new Uint8Array([2]))
+
+      const request = new URL(await replaced.promise)
+      assert.equal(request.searchParams.get("t"), "40")
+      assert.equal(current.timeInput.value, "40")
+      assert.equal(
+        requests.some(
+          (url) => new URL(url).searchParams.get("t") === "0",
+        ),
+        false,
+      )
     } finally {
       controller.abort()
       await playback

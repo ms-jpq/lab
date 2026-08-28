@@ -174,13 +174,18 @@ const page_state = () => ({
 const page_states = (signal, position) => {
   const observation = new AbortController()
   const observation_signal = AbortSignal.any([signal, observation.signal])
+  const events = []
   let changed = Promise.withResolvers()
   let previous = page_state()
   /** @type {number | undefined} */
   let requested_position = position
   let target = position
 
-  const wake = () => changed.resolve(true)
+  /** @param {Event} event */
+  const observe = (event) => {
+    events.push({ state: page_state(), type: event.type })
+    changed.resolve(true)
+  }
 
   observation_signal.addEventListener("abort", () => changed.resolve(false), {
     once: true,
@@ -189,22 +194,31 @@ const page_states = (signal, position) => {
   for (const type of "canplay ended error loadedmetadata progress seeked seeking timeupdate".split(
     " ",
   )) {
-    media.addEventListener(type, wake, { signal: observation_signal })
+    media.addEventListener(type, observe, { signal: observation_signal })
   }
   if (subtitle && subtitle.src === "") {
     subtitle.src = source_url(subtitle, 0)
   }
-  wake()
+  observe(new Event("initial"))
 
   return (async function* () {
     try {
       for (;;) {
-        if (!(await changed.promise)) {
+        if (events.length === 0) {
+          if (!(await changed.promise)) {
+            return
+          }
+          changed = Promise.withResolvers()
+        }
+        if (observation_signal.aborted) {
           return
         }
-        changed = Promise.withResolvers()
 
-        let current = page_state()
+        const event = events.shift()
+        if (!event) {
+          continue
+        }
+        let current = event.state
         let moved =
           Number.isFinite(current.time) &&
           (current.time !== previous.time ||
