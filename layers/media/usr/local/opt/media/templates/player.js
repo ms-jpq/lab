@@ -81,6 +81,9 @@ const retry_delay = (signal) => {
   return promise
 }
 
+/** @param {unknown} error */
+const report = (error) => console.error(error)
+
 /** @param {HTMLMediaElement | HTMLTrackElement} resource @param {number} time */
 const source_url = (resource, time) => {
   const source = new URL(
@@ -493,12 +496,12 @@ const media_sources = async function* (signal, position) {
       const change = yield { buffer, position, signal: lifetime_signal }
       position = change?.position ?? position
       if (change?.error !== undefined) {
-        console.error(change.error)
+        report(change.error)
       }
       retry = change?.reset ? !signal.aborted : await retry_delay(signal)
     } catch (error) {
       if (!lifetime_signal.aborted) {
-        console.error(error)
+        report(error)
       }
       retry = await retry_delay(signal)
     } finally {
@@ -565,7 +568,7 @@ const play_source = async (source) => {
             progress = undefined
             if (progress_result.done) {
               if (progress_result.value) {
-                console.error(progress_result.value.error)
+                report(progress_result.value.error)
                 retry = true
                 break
               }
@@ -665,4 +668,4 @@ void (async () => {
       await playback
     }
   }
-})().catch(console.error)
+})().catch(report)
