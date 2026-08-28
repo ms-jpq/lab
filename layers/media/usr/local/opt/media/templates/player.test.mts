@@ -514,6 +514,56 @@ test(
 )
 
 test(
+  "source stream clean EOF does not cancel its completed request",
+  options,
+  async () => {
+    const current = await fixture()
+    let aborts = 0
+    let cancellations = 0
+    let reads = 0
+    current.context.fetch = async (_url, { signal }) => {
+      signal.addEventListener("abort", () => {
+        aborts += 1
+      })
+      return {
+        body: {
+          getReader: () => ({
+            cancel: async () => {
+              cancellations += 1
+            },
+            read: async () => {
+              reads += 1
+              return reads === 1
+                ? { done: false as const, value: new Uint8Array([1]) }
+                : { done: true as const, value: undefined }
+            },
+          }),
+        },
+        ok: true,
+        status: 200,
+        statusText: "OK",
+      }
+    }
+
+    const controller = new AbortController()
+    const stream = current.context.player_test.source_stream(
+      controller.signal,
+      40,
+    )
+    const chunk = await stream.next()
+    assert.equal(chunk.done, false)
+    assert.deepEqual([...chunk.value], [1])
+    const end = await stream.next()
+
+    assert.equal(end.done, true)
+    assert.deepEqual(
+      { aborts, cancellations, reads },
+      { aborts: 0, cancellations: 0, reads: 2 },
+    )
+  },
+)
+
+test(
   "an aborted reader cannot reject stream teardown",
   options,
   async () => {
@@ -1236,27 +1286,25 @@ test(
 )
 
 test(
-  "a seek pending during network retry becomes the next request",
+  "an unbuffered seek supersedes frozen network backoff immediately",
   options,
   async () => {
     const current = await fixture()
-    const retry = Promise.withResolvers<() => void>()
-    const resumed = Promise.withResolvers<string>()
     const requests: string[] = []
+    let timerCallbacks = 0
+    let timers = 0
     current.context.setTimeout = (run) => {
-      const timeout = setTimeout(run, 10_000)
-      retry.resolve(() => {
-        clearTimeout(timeout)
+      timers += 1
+      return setTimeout(() => {
+        timerCallbacks += 1
         run()
-      })
-      return timeout
+      }, 10_000)
     }
     current.context.fetch = async (url, { signal }) => {
       requests.push(String(url))
       if (requests.length === 1) {
         throw new Error("source request failed")
       }
-      resumed.resolve(String(url))
       return {
         body: new ReadableStream({
           start: (controller) => {
@@ -1277,25 +1325,25 @@ test(
       controller.signal,
     )
     try {
-      const resume = await retry.promise
+      while (timers !== 1) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
       current.media.currentTime = 110
       current.media.seeking = true
       current.media.dispatchEvent(new Event("seeking"))
-      await new Promise((resolve) => setImmediate(resolve))
-      assert.deepEqual(
-        requests.map((url) => new URL(url).searchParams.get("t")),
-        ["40"],
-      )
+      for (let turn = 0; turn < 8 && requests.length !== 2; turn += 1) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
 
-      resume()
-      const request = new URL(await resumed.promise)
-      assert.equal(request.searchParams.get("t"), "110")
-      assert.equal(current.timeInput.value, "110")
-      assert.equal(current.media.currentTime, 110)
       assert.deepEqual(
         requests.map((url) => new URL(url).searchParams.get("t")),
         ["40", "110"],
       )
+      assert.equal(timers, 1)
+      assert.equal(timerCallbacks, 0)
+      assert.equal(current.timeInput.value, "110")
+      assert.equal(current.media.currentTime, 110)
+      assert.equal(current.sources.length, 1)
       assert.equal(current.errors.length, 1)
     } finally {
       controller.abort()

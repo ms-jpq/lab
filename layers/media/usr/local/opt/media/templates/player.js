@@ -365,6 +365,7 @@ const source_stream = async function* (signal, time) {
     for (;;) {
       const { done, value } = await reader.read()
       if (done) {
+        reader = undefined
         return
       }
       yield value
@@ -374,16 +375,17 @@ const source_stream = async function* (signal, time) {
       return { error }
     }
   } finally {
-    request.abort()
-    try {
-      await reader?.cancel()
-    } catch (error) {
-      if (!request_signal.aborted) {
-        throw error
+    if (reader) {
+      request.abort()
+      try {
+        await reader.cancel()
+      } catch (error) {
+        if (!request_signal.aborted) {
+          throw error
+        }
       }
     }
   }
-  return
 }
 
 /** @param {AbortSignal} signal @param {Mse} buffer @param {number} time @returns {AsyncGenerator<void, Failure | void, void>} */
