@@ -371,7 +371,7 @@ const mse = (signal, media, source, opened_buffer) => {
   })()
 }
 
-/** @param {AbortSignal} signal @param {number} time */
+/** @param {AbortSignal} signal @param {number} time @returns {AsyncGenerator<Uint8Array, boolean, void>} */
 const source_stream = async function* (signal, time) {
   const request = new AbortController()
   const request_signal = AbortSignal.any([signal, request.signal])
@@ -388,13 +388,14 @@ const source_stream = async function* (signal, time) {
     for (;;) {
       const { done, value } = await reader.read()
       if (done) {
-        return
+        return false
       }
       yield value
     }
   } catch (error) {
     if (!request_signal.aborted) {
-      throw error
+      console.error(error)
+      return true
     }
   } finally {
     request.abort()
@@ -406,10 +407,10 @@ const source_stream = async function* (signal, time) {
       }
     }
   }
-  return
+  return false
 }
 
-/** @param {AbortSignal} signal @param {Mse} buffer @param {number} time @returns {AsyncGenerator<void, void, void>} */
+/** @param {AbortSignal} signal @param {Mse} buffer @param {number} time @returns {AsyncGenerator<void, "retry" | void, void>} */
 const session = async function* (signal, buffer, time) {
   const start = stream_position(time)
 
@@ -419,15 +420,27 @@ const session = async function* (signal, buffer, time) {
   if ((await buffer.next(start)).done) {
     return
   }
-  for await (const bytes of source_stream(signal, start)) {
-    if ((await buffer.next(bytes)).done) {
-      return
+  const stream = source_stream(signal, start)
+  try {
+    for (;;) {
+      const next = await stream.next()
+      if (next.done) {
+        if (next.value) {
+          return "retry"
+        }
+        break
+      }
+      if ((await buffer.next(next.value)).done) {
+        return
+      }
+      if (play_ahead() >= BUFFER.HI) {
+        do {
+          yield undefined
+        } while (play_ahead() >= BUFFER.LO)
+      }
     }
-    if (play_ahead() >= BUFFER.HI) {
-      do {
-        yield undefined
-      } while (play_ahead() >= BUFFER.LO)
-    }
+  } finally {
+    await stream.return()
   }
   if (!signal.aborted && !(await buffer.next("end")).done) {
     await select(signal)
@@ -515,7 +528,7 @@ const play_source = async (source) => {
       const attempt = new AbortController()
       const attempt_signal = AbortSignal.any([signal, attempt.signal])
       const current = session(attempt_signal, buffer, target)
-      /** @type {Promise<IteratorResult<void, void>> | undefined} */
+      /** @type {Promise<IteratorResult<void, "retry" | void>> | undefined} */
       let progress = current.next()
       let retry = false
 
@@ -539,6 +552,10 @@ const play_source = async (source) => {
           if (selected_source === current) {
             progress = undefined
             if (result.done) {
+              if (result.value === "retry") {
+                retry = true
+                break
+              }
               return target
             }
             continue
@@ -559,11 +576,6 @@ const play_source = async (source) => {
           if (progress === undefined) {
             progress = current.next()
           }
-        }
-      } catch (error) {
-        if (!attempt_signal.aborted) {
-          console.error(error)
-          retry = true
         }
       } finally {
         attempt.abort()
@@ -591,14 +603,16 @@ const playback_page = async (signal) => {
     while (!next.done) {
       const source = next.value
       let position = source.position
+      let reset = false
       try {
         position = await play_source(source)
       } catch (error) {
         if (!source.signal.aborted) {
           console.error(error)
+          reset = true
         }
       }
-      next = await sources.next(position)
+      next = await sources.next({ position, reset })
     }
   } finally {
     await sources.return()

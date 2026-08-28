@@ -336,7 +336,7 @@ const fixture = async (position = 40) => {
   })
   const source = await readFile(PLAYER, "utf8")
   vm.runInContext(
-    `${source}\nglobalThis.player_test = { available, mse, page_states, playback_page, playable_position, session, source_stream, source_url, stream_position }`,
+    `${source}\nglobalThis.player_test = { available, media_sources, mse, page_states, playback_page, playable_position, session, source_stream, source_url, stream_position }`,
     context,
   )
   const { ranges } = media.buffered
@@ -352,6 +352,18 @@ const fixture = async (position = 40) => {
     subtitle,
     timeInput,
   }
+}
+
+/** @param {Awaited<ReturnType<typeof fixture>>} current */
+const open_mse = async (current) => {
+  const controller = new AbortController()
+  const lifetime = current.context.player_test.media_sources(
+    controller.signal,
+    10,
+  )
+  const opened = await lifetime.next()
+  assert.equal(opened.done, false)
+  return { buffer: opened.value.buffer, controller, lifetime }
 }
 
 test(
