@@ -24,18 +24,14 @@ const revoke = (url: string | undefined): void => {
 
 const op_lock = async function* (
   buffer: SourceBuffer,
-  ...signals: AbortSignal[]
 ): AsyncIteratorObject<undefined> {
-  using a = abortion(...signals)
+  using a = abortion()
   const changed = Promise.race([
     once(a.signal, buffer, "updateend"),
     once(a.signal, buffer, "error"),
   ])
 
-  if (!a.signal.aborted) {
-    yield
-  }
-
+  yield
   const event = await changed
   if (event?.type === "error") {
     throw event
@@ -46,28 +42,18 @@ const op_lock = async function* (
 export const media_source = async function* ({
   evict_before,
   mime_type,
-  signal,
   source,
 }: {
   evict_before: () => number
   mime_type: string
-  signal: AbortSignal
   source: MediaSource
 }): Mse {
   const buffer = source.addSourceBuffer(mime_type)
 
   const position = (yield undefined) as unknown as number
-  if (signal.aborted) {
-    return
-  }
   buffer.timestampOffset = position
 
   for (let operation = yield undefined; ; operation = yield undefined) {
-    if (signal.aborted) {
-      return
-    }
-    using a = abortion(signal)
-
     if (operation === undefined) {
       source.endOfStream()
       continue
@@ -86,9 +72,6 @@ export const media_source = async function* ({
           }
         }
       }
-      if (a.signal.aborted) {
-        return
-      }
       buffer.timestampOffset = operation
       continue
     }
@@ -104,19 +87,14 @@ export const media_source = async function* ({
           buffer.remove(0, cutoff)
         }
       }
-      if (a.signal.aborted) {
-        return
-      }
     }
-    for await (const _ of op_lock(buffer, a.signal)) {
+    for await (const _ of op_lock(buffer)) {
       buffer.appendBuffer(operation as Uint8Array<ArrayBuffer>)
     }
-    if (a.signal.aborted) {
-      if (buffer.updating) {
-        buffer.abort()
-      }
-      return
+    if (buffer.updating) {
+      buffer.abort()
     }
+    return
   }
 }
 
