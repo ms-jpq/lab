@@ -165,6 +165,108 @@ const changes = (signal) => {
   })()
 }
 
+/** @param {MediaSource} source @param {SourceBuffer} buffer */
+const abort_mse_update = async (source, buffer) => {
+  if (source.readyState !== "open" || !buffer.updating) {
+    return
+  }
+  const aborted = once(buffer, undefined, "updateend")
+  buffer.abort()
+  await aborted
+}
+
+/** @param {AbortSignal} signal @param {MediaSource} source @param {SourceBuffer} buffer @param {() => void} mutate */
+const mse_update = async (signal, source, buffer, mutate) => {
+  if (signal.aborted) {
+    return false
+  }
+  const settled = select(
+    signal,
+    (s) => once(buffer, s, "updateend"),
+    (s) => once(buffer, s, "error"),
+  )
+  mutate()
+  if (await settled) {
+    return true
+  }
+  await abort_mse_update(source, buffer)
+  return false
+}
+
+/** @param {SourceBuffer} buffer */
+const mse_frontier = (buffer) => {
+  const ranges = buffer.buffered
+  const last = ranges.length - 1
+  return last < 0 ? undefined : ranges.end(last)
+}
+
+/** @param {SourceBuffer} buffer @param {number} position */
+const mse_contains = (buffer, position) => {
+  const ranges = buffer.buffered
+  for (let index = 0; index < ranges.length; index += 1) {
+    if (ranges.start(index) <= position && position < ranges.end(index)) {
+      return true
+    }
+  }
+  return false
+}
+
+/** @param {AbortSignal} signal @param {MediaSource} source @param {SourceBuffer} buffer @returns {AsyncGenerator<void, void, MseOperation | undefined>} */
+const mse_operations = async function* (signal, source, buffer) {
+  try {
+    for (
+      let operation = yield undefined;
+      operation !== undefined;
+      operation = yield undefined
+    ) {
+      if (typeof operation === "number") {
+        buffer.timestampOffset = operation
+      } else {
+        const [position, bytes] = operation
+        const end = position - BUFFER.BEHIND
+        const expired =
+          end > 0 && buffer.buffered.length && buffer.buffered.start(0) < end
+        if (
+          expired &&
+          !(await mse_update(signal, source, buffer, () =>
+            buffer.remove(0, end),
+          ))
+        ) {
+          return
+        }
+        if (
+          !(await mse_update(signal, source, buffer, () =>
+            buffer.appendBuffer(bytes),
+          ))
+        ) {
+          return
+        }
+      }
+    }
+    if (source.readyState === "open") {
+      source.endOfStream()
+    }
+  } finally {
+    await abort_mse_update(source, buffer)
+    if (source.readyState !== "closed") {
+      source.removeSourceBuffer(buffer)
+    }
+  }
+  return
+}
+
+/** @param {AbortSignal} signal @param {MediaSource} source @param {string} type @returns {MseBuffer} */
+const mse_buffer = (signal, source, type) => {
+  const buffer = source.addSourceBuffer(type)
+  return Object.assign(mse_operations(signal, source, buffer), {
+    /** @param {number} position */
+    contains: (position) => mse_contains(buffer, position),
+    frontier: () => mse_frontier(buffer),
+    /** @param {number} position */
+    play_ahead: (position) => (mse_frontier(buffer) ?? position) - position,
+  })
+}
+
 /** @param {AbortSignal} signal @returns {AsyncGenerator<MseBufferFactory, void, void>} */
 const mse = async function* (signal) {
   const { ManagedMediaSource } =
@@ -196,101 +298,9 @@ const mse = async function* (signal) {
       source.duration = duration
     }
 
-    // this inner fn smells off, it contains 2 more inline fns like what
     /** @type {MseBufferFactory} */
-    const create_buffer = (buffer_signal) => {
-      const buffer = source.addSourceBuffer(type)
-
-      const abort_update = async () => {
-        if (source.readyState !== "open" || !buffer.updating) {
-          return
-        }
-        const aborted = once(buffer, undefined, "updateend")
-        buffer.abort()
-        await aborted
-      }
-
-      /** @param {() => void} mutate */
-      const update = async (mutate) => {
-        if (buffer_signal.aborted) {
-          return false
-        }
-        const settled = select(
-          buffer_signal,
-          (s) => once(buffer, s, "updateend"),
-          (s) => once(buffer, s, "error"),
-        )
-        mutate()
-        if (await settled) {
-          return true
-        }
-        await abort_update()
-        return false
-      }
-
-      const frontier = () => {
-        const ranges = buffer.buffered
-        const last = ranges.length - 1
-        return last < 0 ? undefined : ranges.end(last)
-      }
-
-      /** @returns {AsyncGenerator<void, void, MseOperation | undefined>} */
-      const operations = async function* () {
-        try {
-          for (
-            let operation = yield undefined;
-            operation !== undefined;
-            operation = yield undefined
-          ) {
-            if (typeof operation === "number") {
-              buffer.timestampOffset = operation
-            } else {
-              const [position, bytes] = operation
-              const end = position - BUFFER.BEHIND
-              const expired =
-                end > 0 &&
-                buffer.buffered.length &&
-                buffer.buffered.start(0) < end
-              if (expired && !(await update(() => buffer.remove(0, end)))) {
-                return
-              }
-              if (!(await update(() => buffer.appendBuffer(bytes)))) {
-                return
-              }
-            }
-          }
-          if (source.readyState === "open") {
-            source.endOfStream()
-          }
-        } finally {
-          await abort_update()
-          if (source.readyState !== "closed") {
-            source.removeSourceBuffer(buffer)
-          }
-        }
-        return
-      }
-
-      return Object.assign(operations(), {
-        /** @param {number} position */
-        contains: (position) => {
-          const ranges = buffer.buffered
-          for (let index = 0; index < ranges.length; index += 1) {
-            if (
-              ranges.start(index) <= position &&
-              position < ranges.end(index)
-            ) {
-              return true
-            }
-          }
-          return false
-        },
-        frontier,
-        /** @param {number} position */
-        play_ahead: (position) => (frontier() ?? position) - position,
-      })
-    }
-
+    const create_buffer = (buffer_signal) =>
+      mse_buffer(buffer_signal, source, type)
     for (;;) {
       yield create_buffer
     }
