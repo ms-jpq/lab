@@ -922,237 +922,84 @@ test("subtitle events stay outside media state batches", options, async () => {
   await states.return(undefined)
 })
 
-test(
-  "a starved seek preserves native play intent",
-  options,
-  async () => {
-    const current = await fixture()
-    const { controller, playback } = await runningPlayback(current)
-    try {
-      current.media.readyState = current.media.HAVE_FUTURE_DATA
-      current.media.paused = false
-      current.media.dispatchEvent(new Event("playing"))
-      await nextTask()
-
-      current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
-      current.media.dispatchEvent(new Event("waiting"))
-      await nextTask()
-
-      current.media.currentTime = 110
-      current.media.seeking = true
-      current.media.dispatchEvent(new Event("seeking"))
-      await eventually(() => current.requests.length === 2)
-
-      assert.equal(current.media.pauses, 0)
-      assert.equal(current.media.plays, 0)
-      assert.equal(current.media.paused, false)
-      assert.equal(current.sources.length, 1)
-      assert.deepEqual(
-        current.requests.map((url) => new URL(url).searchParams.get("t")),
-        ["40", "110"],
-      )
-      assert.deepEqual(current.errors, [])
-      assert.deepEqual(
-        current.media.topology.filter(
-          (operation) => operation === "pause" || operation === "play",
-        ),
-        [],
-      )
-    } finally {
-      controller.abort()
-      await playback
+test("a starved seek preserves native play intent", options, async () => {
+  const current = await fixture()
+  const recovery = Promise.withResolvers<void>()
+  const requests: Array<{ signal: AbortSignal; time: string | null }> = []
+  let cancellations = 0
+  current.media.playResult = recovery.promise
+  current.context.fetch = async (url, { signal }) => {
+    const request = {
+      signal,
+      time: new URL(String(url)).searchParams.get("t"),
     }
-  },
-)
+    requests.push(request)
+    signal.addEventListener(
+      "abort",
+      () => {
+        cancellations += 1
+        if (requests[0] === request && current.media.plays === 1) {
+          recovery.reject(
+            new DOMException(
+              "The fetching process for the media resource was aborted by the user agent at the user's request.",
+              "AbortError",
+            ),
+          )
+        }
+      },
+      { once: true },
+    )
+    return liveResponse(signal)
+  }
+  const { controller, playback } = await runningPlayback(current)
+  const source = present(current.sources[0])
+  const url = current.media.src
+  try {
+    current.media.readyState = current.media.HAVE_FUTURE_DATA
+    current.media.paused = false
+    current.media.dispatchEvent(new Event("playing"))
+    await nextTask()
 
-test(
-  "initial low readiness does not abort a pending play operation",
-  options,
-  async () => {
-    const current = await fixture()
-    const { controller, playback } = await runningPlayback(current)
-    try {
-      current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
-      current.media.paused = false
-      current.media.dispatchEvent(new Event("play"))
-      current.media.dispatchEvent(new Event("waiting"))
-      await nextTask()
+    current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
+    current.media.dispatchEvent(new Event("waiting"))
+    await nextTask()
 
-      assert.equal(current.media.pauses, 0)
-      assert.equal(current.media.paused, false)
-    } finally {
-      controller.abort()
-      await playback
-    }
-  },
-)
+    current.media.currentTime = 110
+    current.media.seeking = true
+    current.media.dispatchEvent(new Event("seeking"))
+    current.media.readyState = current.media.HAVE_FUTURE_DATA
+    current.media.dispatchEvent(new Event("canplay"))
+    await eventually(
+      () =>
+        current.sources.length > 1 ||
+        source.sourceBuffers[0]?.buffered.start(0) === 110,
+    )
 
-test(
-  "prior readiness does not make a pending play established",
-  options,
-  async () => {
-    const current = await fixture()
-    const { controller, playback } = await runningPlayback(current)
-    try {
-      current.media.readyState = current.media.HAVE_FUTURE_DATA
-      current.media.dispatchEvent(new Event("canplay"))
-      await nextTask()
-
-      current.media.paused = false
-      current.media.dispatchEvent(new Event("play"))
-      current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
-      current.media.dispatchEvent(new Event("waiting"))
-      await nextTask()
-
-      assert.equal(current.media.pauses, 0)
-      assert.equal(current.media.paused, false)
-    } finally {
-      controller.abort()
-      await playback
-    }
-  },
-)
-
-test(
-  "a user play-pause override revokes an owned readiness resume",
-  options,
-  async () => {
-    const current = await fixture()
-    const { controller, playback } = await runningPlayback(current)
-    try {
-      current.media.readyState = current.media.HAVE_FUTURE_DATA
-      current.media.paused = false
-      current.media.dispatchEvent(new Event("playing"))
-      await nextTask()
-
-      current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
-      current.media.dispatchEvent(new Event("waiting"))
-      await nextTask()
-      assert.equal(current.media.pauses, 1)
-
-      await current.media.play()
-      current.media.dispatchEvent(new Event("play"))
-      current.media.pause()
-      current.media.readyState = current.media.HAVE_FUTURE_DATA
-      current.media.dispatchEvent(new Event("canplay"))
-      await nextTask()
-
-      assert.equal(current.media.plays, 1)
-      assert.equal(current.media.pauses, 2)
-      assert.equal(current.media.paused, true)
-    } finally {
-      controller.abort()
-      await playback
-    }
-  },
-)
-
-test(
-  "canplay resumes one owned pause and awaits the play promise",
-  options,
-  async () => {
-    const current = await fixture()
-    const resumed = Promise.withResolvers<void>()
-    current.media.playResult = resumed.promise
-    const { controller, playback } = await runningPlayback(current)
-    try {
-      current.media.readyState = current.media.HAVE_FUTURE_DATA
-      current.media.paused = false
-      current.media.dispatchEvent(new Event("playing"))
-      await nextTask()
-
-      current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
-      current.media.dispatchEvent(new Event("waiting"))
-      await nextTask()
-      assert.equal(current.media.pauses, 1)
-
-      current.media.readyState = current.media.HAVE_FUTURE_DATA
-      current.media.dispatchEvent(new Event("canplay"))
-      current.media.dispatchEvent(new Event("canplay"))
-      await nextTask()
-      assert.equal(current.media.plays, 1)
-      assert.deepEqual(
-        current.media.topology.filter(
-          (operation) => operation === "pause" || operation === "play",
-        ),
-        ["pause", "play"],
-      )
-
-      let closed = false
-      const closing = playback.then(() => {
-        closed = true
-      })
-      controller.abort()
-      await new Promise((resolve) => setImmediate(resolve))
-      assert.equal(closed, false)
-      resumed.resolve()
-      await closing
-      assert.equal(closed, true)
-    } finally {
-      controller.abort()
-      resumed.resolve()
-      await playback
-    }
-  },
-)
-
-test(
-  "a pending readiness resume does not block a later seek",
-  options,
-  async () => {
-    const current = await fixture()
-    const resumed = Promise.withResolvers<void>()
-    current.media.playResult = resumed.promise
-    const { controller, playback } = await runningPlayback(current)
-    try {
-      current.media.readyState = current.media.HAVE_FUTURE_DATA
-      current.media.paused = false
-      current.media.dispatchEvent(new Event("playing"))
-      await nextTask()
-
-      current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
-      current.media.dispatchEvent(new Event("waiting"))
-      await nextTask()
-      current.media.readyState = current.media.HAVE_FUTURE_DATA
-      current.media.dispatchEvent(new Event("canplay"))
-      await nextTask()
-      assert.equal(current.media.plays, 1)
-
-      const opened = present(current.sources[0]?.sourceBuffers[0])
-      const abort = opened.abort.bind(opened)
-      opened.abort = () => {
-        abort()
-        current.media.paused = true
-        resumed.reject(
-          new DOMException(
-            "The fetching process for the media resource was aborted by the user agent at the user's request.",
-            "AbortError",
-          ),
-        )
-      }
-      current.media.currentTime = 110
-      current.media.seeking = true
-      current.media.dispatchEvent(new Event("seeking"))
-      await eventually(() => current.requests.length >= 2)
-      assert.equal(
-        new URL(present(current.requests[1])).searchParams.get("t"),
-        "110",
-      )
-      await nextTask()
-      assert.equal(current.sources.length, 1)
-      assert.deepEqual(current.errors, [])
-
-      current.media.playResult = Promise.resolve()
-      current.media.readyState = current.media.HAVE_FUTURE_DATA
-      current.media.dispatchEvent(new Event("canplay"))
-      await eventually(() => current.media.plays === 2)
-    } finally {
-      resumed.resolve()
-      controller.abort()
-      await playback
-    }
-  },
-)
+    assert.equal(current.media.pauses, 0)
+    assert.equal(current.media.plays, 0)
+    assert.equal(current.media.paused, false)
+    assert.equal(current.sources.length, 1)
+    assert.equal(current.media.src, url)
+    assert.deepEqual(
+      requests.map(({ time }) => time),
+      ["40", "110"],
+    )
+    assert.equal(cancellations, 1)
+    assert.equal(present(requests[0]).signal.aborted, true)
+    assert.equal(present(requests[1]).signal.aborted, false)
+    assert.deepEqual(current.errors, [])
+    assert.deepEqual(
+      current.media.topology.filter(
+        (operation) => operation === "pause" || operation === "play",
+      ),
+      [],
+    )
+  } finally {
+    recovery.resolve()
+    controller.abort()
+    await playback
+  }
+})
 
 test("an ordinary user pause is never auto-resumed", options, async () => {
   const current = await fixture()

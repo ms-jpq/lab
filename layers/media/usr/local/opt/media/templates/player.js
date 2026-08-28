@@ -1,6 +1,6 @@
 /** @typedef {"end" | number | Uint8Array} MseOperation */
 /** @typedef {AsyncGenerator<void, void, MseOperation | undefined>} Mse */
-/** @typedef {{error: unknown | null, position: number, restart: boolean}} PageChange */
+/** @typedef {{error: MediaError | null, position: number, restart: boolean}} PageChange */
 /** @typedef {{fail: (error: unknown) => void, recover: () => void}} FailureStorm */
 /** @typedef {{error: unknown, position: number}} SourceFailure */
 /** @typedef {{error: unknown, start: number}} SessionFailure */
@@ -182,9 +182,7 @@ const persist_position = (value) => {
 const media_observation = (type) => ({
   ended: media.ended,
   error: media.error,
-  future: media.readyState >= media.HAVE_FUTURE_DATA,
   metadata: media.readyState >= media.HAVE_METADATA,
-  paused: media.paused,
   seeking: media.seeking,
   time: media.currentTime,
   type,
@@ -193,7 +191,7 @@ const media_observation = (type) => ({
 /** @param {AbortSignal} signal @param {number} position @returns {AsyncGenerator<PageChange, void, void>} */
 const page_changes = async function* (signal, position) {
   const types =
-    "canplay ended error loadedmetadata play playing progress seeked seeking timeupdate waiting".split(
+    "canplay ended error loadedmetadata progress seeked seeking timeupdate waiting".split(
       " ",
     )
   /** @type {ReturnType<typeof media_observation>[]} */
@@ -223,35 +221,14 @@ const page_changes = async function* (signal, position) {
   }
   pending.push(media_observation())
   changed.resolve(true)
-  /** @type {Promise<{position: number, source: string} | {error: unknown, position: number, source: string}> | undefined} */
-  let playing = undefined
   let previous = media_observation()
-  let established = false
-  let resume = false
   /** @type {number | undefined} */
   let pending_seek = position
   let target = position
 
   try {
     for (;;) {
-      const selected = await Promise.race([
-        changed.promise.then((result) => ({ changed: result })),
-        ...(playing ? [playing] : []),
-      ])
-      if ("source" in selected) {
-        playing = undefined
-        if (
-          "error" in selected &&
-          selected.source === media.src &&
-          aligned(selected.position, media.currentTime)
-        ) {
-          yield { error: selected.error, position: target, restart: false }
-        } else if ("error" in selected) {
-          resume = true
-        }
-        continue
-      }
-      if (!selected.changed || signal.aborted) {
+      if (!(await changed.promise) || signal.aborted) {
         return
       }
       const observations = pending.splice(0)
@@ -263,34 +240,6 @@ const page_changes = async function* (signal, position) {
 
       for (const observed of observations) {
         const current = observed
-        if (current.type === "playing") {
-          established = true
-        } else if (current.type === "play") {
-          resume = false
-        }
-        if (
-          established &&
-          current.type === "waiting" &&
-          !current.future &&
-          !current.paused
-        ) {
-          established = false
-          resume = true
-          media.pause()
-        } else if (
-          resume &&
-          current.type === "canplay" &&
-          current.paused &&
-          current.future
-        ) {
-          resume = false
-          const source = media.src
-          const position = media.currentTime
-          playing = media.play().then(
-            () => ({ position, source }),
-            (error) => ({ error, position, source }),
-          )
-        }
         let moved =
           current.time !== previous.time || current.seeking !== previous.seeking
         const internal_seek =
@@ -355,7 +304,6 @@ const page_changes = async function* (signal, position) {
     for (const type of types) {
       media.removeEventListener(type, observe)
     }
-    await playing
   }
 }
 
