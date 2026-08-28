@@ -1,11 +1,10 @@
-/** @typedef {"end" | number | readonly [position: number, bytes: Uint8Array]} MseOperation */
+/** @typedef {"end" | number | Uint8Array} MseOperation */
 /** @typedef {AsyncGenerator<void, void, MseOperation | undefined> & {available: (position: number) => number | undefined, contains: (position: number) => boolean, play_ahead: (position: number) => number}} Mse */
 /** @typedef {{failed: boolean, seek: number | undefined}} PageChange */
 /** @typedef {readonly [AsyncIterator<unknown, void, void>, IteratorResult<unknown, void>]} IteratorSelection */
 /** @typedef {{buffer: Mse, position: number, signal: AbortSignal}} PlaybackSource */
 
 const BUFFER = {
-  BEHIND: 30,
   // TODO: https://bugzilla.mozilla.org/show_bug.cgi?id=1808868
   LO: 45,
   HI: 60,
@@ -346,20 +345,10 @@ const mse = (signal, media, position) => {
           continue
         }
 
-        const [position, bytes] = operation
-        const end = position - BUFFER.BEHIND
-        const ranges = opened_buffer.buffered
-        const expired = end > 0 && ranges.length && ranges.start(0) < end
-        if (
-          expired &&
-          !(await update(() => opened_buffer.remove(0, end)))
-        ) {
-          return
-        }
         if (
           !(await update(() =>
             opened_buffer.appendBuffer(
-              /** @type {Uint8Array<ArrayBuffer>} */ (bytes),
+              /** @type {Uint8Array<ArrayBuffer>} */ (operation),
             ),
           ))
         ) {
@@ -409,7 +398,7 @@ const session = async function* (signal, buffer, time) {
     return
   }
   for await (const bytes of source_stream(signal, start)) {
-    if ((await buffer.next([media.currentTime, bytes])).done) {
+    if ((await buffer.next(bytes)).done) {
       return
     }
     if (buffer.play_ahead(media.currentTime) >= BUFFER.HI) {

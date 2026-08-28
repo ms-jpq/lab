@@ -167,23 +167,6 @@ const fixture = async (position = 40) => {
       }
     }
 
-    /** @param {number} start @param {number} end */
-    remove(start, end) {
-      if (this.source.readyState === "ended") {
-        this.source.readyState = "open"
-        queueMicrotask(() => this.source.dispatchEvent(new Event("sourceopen")))
-      }
-      this.updating = true
-      queueMicrotask(() => {
-        const ranges = this._buffered.ranges.flatMap(([left, right]) =>
-          right <= start || end <= left ? [[left, right]] : [],
-        )
-        this._buffered.ranges = ranges
-        media.buffered.ranges = ranges
-        this.updating = false
-        this.dispatchEvent(new Event("updateend"))
-      })
-    }
   }
   class MediaSource extends EventTarget {
     constructor() {
@@ -540,7 +523,7 @@ test(
           controller.abort()
         } else if (typeof operation === "number") {
           offset = operation
-        } else if (Array.isArray(operation)) {
+        } else if (operation instanceof Uint8Array) {
           appends += 1
           tail = offset + appends * 10
           if (appends === 1) {
@@ -585,7 +568,7 @@ test(
     assert.equal(current.media.currentTime, 10)
     assert.equal((await opened).done, false)
     await buffer.next(10)
-    await buffer.next([10, new Uint8Array([1])])
+    await buffer.next(new Uint8Array([1]))
 
     assert.equal(buffer.contains(10), true)
     assert.equal(buffer.contains(9.95), false)
@@ -611,7 +594,7 @@ test(
     )
     assert.equal((await buffer.next()).done, false)
     await buffer.next(10)
-    await buffer.next([10, new Uint8Array([1])])
+    await buffer.next(new Uint8Array([1]))
     assert.equal((await buffer.next("end")).done, false)
 
     const source = current.media.src
@@ -644,7 +627,7 @@ test(
     const [source] = current.sources
     const [openedBuffer] = source.sourceBuffers
     openedBuffer.holdUpdate = true
-    const appending = buffer.next([10, new Uint8Array([1])])
+    const appending = buffer.next(new Uint8Array([1]))
     while (!openedBuffer.updating) {
       await new Promise((resolve) => setImmediate(resolve))
     }
@@ -665,6 +648,48 @@ test(
     await closing
     assert.equal(current.media.src, "")
     assert.equal(current.media.loads, 1)
+  },
+)
+
+test(
+  "page state survives an event storm after SourceBuffer release",
+  { concurrency: true, timeout: 1_000 },
+  async () => {
+    const current = await fixture()
+    const bufferController = new AbortController()
+    const buffer = current.context.player_test.mse(
+      bufferController.signal,
+      current.media,
+      10,
+    )
+    assert.equal((await buffer.next()).done, false)
+    await buffer.next(10)
+    await buffer.next(new Uint8Array([1]))
+
+    const stateController = new AbortController()
+    const states = current.context.player_test.page_states(
+      stateController.signal,
+      buffer,
+      10,
+    )
+    await states.next()
+    const [openedBuffer] = current.sources[0].sourceBuffers
+    await buffer.return()
+    assert.equal(openedBuffer.usable, false)
+
+    for (let index = 0; index < 64; index += 1) {
+      const position = 100 + index
+      current.media.currentTime = position
+      current.media.seeking = true
+      const observed = states.next()
+      current.media.dispatchEvent(new Event("progress"))
+      current.media.dispatchEvent(new Event("timeupdate"))
+      current.media.dispatchEvent(new Event("seeking"))
+      assert.equal((await observed).value.seek, position)
+    }
+
+    stateController.abort()
+    await states.return()
   },
 )
 
