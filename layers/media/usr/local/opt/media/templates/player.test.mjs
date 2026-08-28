@@ -622,8 +622,48 @@ test(
     const observed = states.next()
     current.media.dispatchEvent(new Event("error"))
     const { value } = await observed
-    assert.equal(value.failed, false)
+    assert.equal(value.error, null)
     controller.abort()
+  },
+)
+
+test(
+  "a media failure storm produces one diagnostic and one same-target reset",
+  { concurrency: true, timeout: 1_000 },
+  async () => {
+    const current = await fixture()
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    try {
+      while (current.sources[0]?.sourceBuffers[0]?.buffered.length !== 1) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+      const failure = { code: 3, message: "decode failed" }
+      current.media.error = failure
+      current.media.dispatchEvent(new Event("error"))
+      current.media.dispatchEvent(new Event("timeupdate"))
+      current.media.dispatchEvent(new Event("progress"))
+
+      while (current.sources.length !== 2 || current.requests.length !== 2) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+      assert.equal(new URL(current.requests[1]).searchParams.get("t"), "40")
+      assert.equal(current.sources.length, 2)
+      assert.equal(current.errors.length, 1)
+      assert.equal(current.errors[0][0], failure)
+      assert.equal(current.media.loads, 1)
+      assert.equal(
+        current.requests.some(
+          (url) => new URL(url).searchParams.get("t") === "0",
+        ),
+        false,
+      )
+    } finally {
+      controller.abort()
+      await playback
+    }
   },
 )
 

@@ -1,6 +1,6 @@
 /** @typedef {"end" | number | Uint8Array} MseOperation */
 /** @typedef {AsyncGenerator<void, void, MseOperation | undefined>} Mse */
-/** @typedef {{failed: boolean, position: number, seek: number | undefined}} PageChange */
+/** @typedef {{error: MediaError | null, position: number, seek: number | undefined}} PageChange */
 /** @typedef {readonly [AsyncIterator<unknown, unknown, void>, IteratorResult<unknown, unknown>]} IteratorSelection */
 /** @typedef {{buffer: Mse, position: number, signal: AbortSignal}} PlaybackSource */
 /** @typedef {{error?: unknown, position: number, reset: boolean}} SourceChange */
@@ -284,10 +284,12 @@ const page_states = (signal, position) => {
         }
 
         yield {
-          failed:
+          error:
             current.error !== previous.error &&
             current.error !== null &&
-            current.error.code !== MediaError.MEDIA_ERR_ABORTED,
+            current.error.code !== MediaError.MEDIA_ERR_ABORTED
+              ? current.error
+              : null,
           position: target,
           seek: restart ? target : undefined,
         }
@@ -579,8 +581,8 @@ const play_source = async (source) => {
             return result()
           }
           target = state.value.position
-          if (state.value.failed) {
-            return result()
+          if (state.value.error) {
+            return result(true, state.value.error)
           }
           change = states.next()
           if (state.value.seek !== undefined) {
