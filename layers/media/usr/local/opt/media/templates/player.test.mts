@@ -625,6 +625,47 @@ test(
   },
 )
 
+test(
+  "an internal seek acknowledgement cannot become a user seek",
+  options,
+  async () => {
+    const current = await fixture()
+    const controller = new AbortController()
+    const states = current.context.player_test.page_states(
+      controller.signal,
+      40,
+    )
+    await states.next()
+
+    current.media.readyState = 1
+    current.media.dispatchEvent(new Event("loadedmetadata"))
+    await states.next()
+    assert.equal(current.media.currentTime, 40)
+
+    current.media.seeking = true
+    current.media.dispatchEvent(new Event("seeking"))
+    current.media.seeking = false
+    current.media.dispatchEvent(new Event("seeked"))
+    current.media.dispatchEvent(new Event("timeupdate"))
+    const changes = await Promise.all([
+      nextValue(states),
+      nextValue(states),
+      nextValue(states),
+    ])
+
+    assert.deepEqual(
+      changes.map(({ position }) => position),
+      [40, 40, 40],
+    )
+    assert.deepEqual(
+      changes.map(({ seek }) => seek),
+      [undefined, undefined, undefined],
+    )
+    assert.equal(current.timeInput.value, "40")
+    controller.abort()
+  },
+)
+
 const queuedSeekCases = [
   {
     events: ["seeking", "seeked"],
@@ -684,7 +725,7 @@ for (const { name, range, target } of bufferedSeekCases) {
   test(`a ${name} buffered seek aligns without restarting`, options, async () => {
     const current = await fixture()
     const { controller, states } = await ready(current)
-    current.ranges.splice(0, current.ranges.length, [...range])
+    current.ranges.splice(0, current.ranges.length, [range[0], range[1]])
     current.media.currentTime = 70
     current.media.seeking = true
     current.media.dispatchEvent(new Event("seeking"))
@@ -696,6 +737,23 @@ for (const { name, range, target } of bufferedSeekCases) {
     controller.abort()
   })
 }
+
+test("page progress persists only playable positions", options, async () => {
+  const current = await fixture()
+  const { controller, states } = await ready(current)
+
+  current.media.currentTime = 110
+  current.media.dispatchEvent(new Event("timeupdate"))
+  await states.next()
+  assert.equal(current.timeInput.value, "40")
+
+  current.ranges.push([110, 120])
+  current.media.currentTime = 111
+  current.media.dispatchEvent(new Event("timeupdate"))
+  await states.next()
+  assert.equal(current.timeInput.value, "111")
+  controller.abort()
+})
 
 test(
   "ended resets resume position and exact-end startup stays playable",
@@ -728,6 +786,27 @@ test(
     controller.abort()
   },
 )
+
+test("a queued event storm emits one media failure", options, async () => {
+  const current = await fixture()
+  const { controller, states } = await ready(current)
+  const failure = { code: 3, message: "decode failed" }
+  current.media.error = failure
+  current.media.dispatchEvent(new Event("error"))
+  current.media.dispatchEvent(new Event("timeupdate"))
+  current.media.dispatchEvent(new Event("progress"))
+  const changes = await Promise.all([
+    nextValue(states),
+    nextValue(states),
+    nextValue(states),
+  ])
+
+  assert.deepEqual(
+    changes.flatMap(({ error }) => (error ? [error] : [])),
+    [failure],
+  )
+  controller.abort()
+})
 
 test(
   "a media failure storm produces one diagnostic and one same-target reset",
