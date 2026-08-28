@@ -1,6 +1,7 @@
 import { deepEqual, ok as assert } from "node:assert/strict"
 import { randomUUID } from "node:crypto"
 import nodeTest from "node:test"
+import { setImmediate } from "node:timers/promises"
 
 import { media_source } from "./mse.ts"
 
@@ -15,16 +16,21 @@ const timeRanges = (...ranges: [number, number][]): TimeRanges => ({
 const fixture = (
   buffered: TimeRanges = timeRanges(),
   failure: "append" | undefined = undefined,
+  hold = false,
 ) => {
   const mutations: unknown[] = []
   const types: string[] = []
+  const entered = Promise.withResolvers<void>()
   const buffer = Object.assign(new EventTarget(), {
     abort: () => mutations.push(["abort"]),
     appendBuffer: (bytes: Uint8Array<ArrayBuffer>) => {
       mutations.push(["append", [...bytes]])
-      buffer.dispatchEvent(
-        new Event(failure === "append" ? "error" : "updateend"),
-      )
+      entered.resolve()
+      if (!hold) {
+        buffer.dispatchEvent(
+          new Event(failure === "append" ? "error" : "updateend"),
+        )
+      }
     },
     buffered,
     onerror: null,
@@ -50,7 +56,14 @@ const fixture = (
     signal: lifetime.signal,
     source: source as unknown as MediaSource,
   })
-  return { lifetime, mutations, types, values }
+  return {
+    entered: entered.promise,
+    lifetime,
+    mutations,
+    release: () => buffer.dispatchEvent(new Event("updateend")),
+    types,
+    values,
+  }
 }
 
 const cases = [
@@ -102,6 +115,31 @@ const cases = [
 
       assert(failure instanceof Event)
       deepEqual(failure.type, "error")
+    },
+  },
+  {
+    name: "an entered SourceBuffer mutation drains before lifetime teardown",
+    run: async () => {
+      const { entered, lifetime, release, values } = fixture(
+        timeRanges(),
+        undefined,
+        true,
+      )
+      await values.next()
+
+      const appending = values.next(new Uint8Array([5]))
+      await entered
+      lifetime.abort()
+
+      const closed = await Promise.race([
+        appending.then(() => true),
+        setImmediate(false),
+      ])
+      deepEqual(closed, false)
+
+      release()
+      await appending
+      await values.return?.(undefined)
     },
   },
 ]
