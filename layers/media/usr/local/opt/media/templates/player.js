@@ -444,7 +444,7 @@ const playback_page = async (signal) => {
           media.pause()
         } else if (value.paused && waiting && value.future) {
           waiting = false
-          await media.play().catch(console.error)
+          await media.play()
         }
         if (value.failed) {
           break

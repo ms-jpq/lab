@@ -249,7 +249,7 @@ def _stream(
         request.send_error(HTTPStatus.BAD_REQUEST)
         return
 
-    profile, height = selected
+    _, height = selected
     audio = _audio(media, query=query, preferences=cookies(request))
     audio_index = audio.index if audio else None
 

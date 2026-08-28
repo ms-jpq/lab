@@ -142,8 +142,6 @@ def _clean_subtitles(source: Iterator[bytes]) -> Iterator[bytes]:
 @dataclass(frozen=True, slots=True)
 class Probe:
     path: PathLike[str]
-    formats: frozenset[str]
-    container: str
     duration: str | None
     videos: tuple[Stream, ...]
     audios: tuple[Stream, ...]
@@ -243,11 +241,7 @@ def _duration(*, data: Mapping[Any, Any]) -> str | None:
 def _parse(*, path: Path, raw: dict[str, Any]) -> Probe:
     match raw:
         case {
-            "format": {
-                "format_name": str(format_name),
-                "format_long_name": str(container),
-                **format,
-            },
+            "format": dict() as format,
             "streams": list() as streams,
         }:
             parsed = tuple(
@@ -264,8 +258,6 @@ def _parse(*, path: Path, raw: dict[str, Any]) -> Probe:
             )
             return Probe(
                 path=path,
-                formats=frozenset(format_name.split(",")),
-                container=container,
                 duration=_duration(data=format),
                 videos=videos,
                 audios=audios,
