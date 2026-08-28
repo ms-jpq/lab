@@ -310,9 +310,8 @@ const source_stream = async function* (signal, time) {
   return
 }
 
-/** @param {AbortSignal} signal @param {Mse} buffer @returns {Session} */
-const session = (signal, buffer) => {
-  const time = Number(time_input.value)
+/** @param {AbortSignal} signal @param {Mse} buffer @param {number} time @returns {Session} */
+const session = (signal, buffer, time) => {
   let start = time
 
   return (async function* () {
@@ -369,7 +368,11 @@ const playback_page = async (signal) => {
           lifetime_signal,
           attempt.signal,
         ])
-        const current = session(attempt_signal, buffer)
+        const current = session(
+          attempt_signal,
+          buffer,
+          Number(time_input.value),
+        )
         let immediate = false
         /** @type {Promise<IteratorResult<void, void>> | undefined} */
         let progress = current.next()
