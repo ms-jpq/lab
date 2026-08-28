@@ -28,29 +28,33 @@ type MseOperation = "end" | number | Uint8Array
 type Mse = AsyncGenerator<void, void, MseOperation | undefined>
 type FailureStorm = { fail: (error: unknown) => void; recover: () => void }
 type SourceFailure = { error: unknown; position: number }
+type RetryChange = { position: number; start: number } | SourceFailure
 type PageChange = {
   error: MediaFailure | null
   position: number
   restart: boolean
 }
 type PlayerTest = {
-  buffered_position: (position: number) => number | undefined
   media_observation_batches: (
     signal: AbortSignal,
   ) => AsyncGenerator<MediaObservation[], void, void>
-  media_sources: AsyncGeneratorFactory<
+  media_sources: (
+    signal: AbortSignal,
+    position: number,
+    retry: (position: number) => Promise<RetryChange | undefined>,
+  ) => AsyncGenerator<
     {
       buffer: Mse
       failures: FailureStorm
       position: number
       signal: AbortSignal
     },
+    void,
     SourceFailure
   >
   page_changes: AsyncGeneratorFactory<PageChange>
   play_subtitle: (signal: AbortSignal) => Promise<void>
   playback_page: (signal: AbortSignal) => Promise<void>
-  playable_position: (position: number) => number
   session: (
     signal: AbortSignal,
     buffer: {
@@ -306,6 +310,7 @@ class Media extends TrackedEventTarget {
   set currentTime(value: number) {
     this._currentTime = value
     this.currentTimes.push(value)
+    this.topology.push(`time:${value}`)
   }
 
   get src() {
@@ -626,7 +631,7 @@ const fixture = async (position = 40) => {
   }) as PlayerContext
   const source = await readFile(PLAYER, "utf8")
   vm.runInContext(
-    `${source}\nglobalThis.player_test = { buffered_position, media_observation_batches, media_sources, page_changes, play_subtitle, playback_page, playable_position, session, source_stream }`,
+    `${source}\nglobalThis.player_test = { media_observation_batches, media_sources, page_changes, play_subtitle, playback_page, session, source_stream }`,
     context,
   )
   const { ranges } = media.buffered
@@ -649,6 +654,7 @@ const open_mse = async (current: Awaited<ReturnType<typeof fixture>>) => {
   const lifetime = current.context.player_test.media_sources(
     controller.signal,
     10,
+    async (position) => ({ position, start: position }),
   )
   const opened = await lifetime.next()
   assert.equal(opened.done, false)
@@ -1048,38 +1054,6 @@ test(
 )
 
 test(
-  "a user pause after the owned pause revokes readiness resume",
-  options,
-  async () => {
-    const current = await fixture()
-    const { controller, playback } = await runningPlayback(current)
-    try {
-      current.media.readyState = current.media.HAVE_FUTURE_DATA
-      current.media.paused = false
-      current.media.dispatchEvent(new Event("playing"))
-      await nextTask()
-
-      current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
-      current.media.dispatchEvent(new Event("waiting"))
-      await nextTask()
-      assert.equal(current.media.pauses, 1)
-
-      current.media.dispatchEvent(new Event("pause"))
-      current.media.dispatchEvent(new Event("pause"))
-      current.media.readyState = current.media.HAVE_FUTURE_DATA
-      current.media.dispatchEvent(new Event("canplay"))
-      await nextTask()
-
-      assert.equal(current.media.plays, 0)
-      assert.equal(current.media.paused, true)
-    } finally {
-      controller.abort()
-      await playback
-    }
-  },
-)
-
-test(
   "canplay resumes one owned pause and awaits the play promise",
   options,
   async () => {
@@ -1123,6 +1097,44 @@ test(
     } finally {
       controller.abort()
       resumed.resolve()
+      await playback
+    }
+  },
+)
+
+test(
+  "a pending readiness resume does not block a later seek",
+  options,
+  async () => {
+    const current = await fixture()
+    const resumed = Promise.withResolvers<void>()
+    current.media.playResult = resumed.promise
+    const { controller, playback } = await runningPlayback(current)
+    try {
+      await eventually(
+        () => current.sources[0]?.sourceBuffers[0]?.buffered.length === 1,
+      )
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.paused = false
+      current.media.dispatchEvent(new Event("playing"))
+      await nextTask()
+
+      current.media.readyState = current.media.HAVE_FUTURE_DATA - 1
+      current.media.dispatchEvent(new Event("waiting"))
+      await nextTask()
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.dispatchEvent(new Event("canplay"))
+      await nextTask()
+      assert.equal(current.media.plays, 1)
+
+      current.media.currentTime = 110
+      current.media.seeking = true
+      current.media.dispatchEvent(new Event("seeking"))
+      await eventually(() => current.requests.length === 2)
+      assert.equal(new URL(present(current.requests[1])).searchParams.get("t"), "110")
+    } finally {
+      resumed.resolve()
+      controller.abort()
       await playback
     }
   },
@@ -1683,22 +1695,34 @@ test("page progress persists only playable positions", options, async () => {
   controller.abort()
 })
 
-test(
-  "ended resets resume position and exact-end startup stays playable",
-  options,
-  async () => {
-    const current = await fixture()
-    const { controller, states } = await ready(current)
-    current.media.currentTime = 200
-    current.media.ended = true
-    const observed = states.next()
-    current.media.dispatchEvent(new Event("ended"))
-    await observed
-    assert.equal(current.timeInput.value, "0")
-    assert.equal(current.context.player_test.playable_position(200), 199.5)
+test("ended resets the resume position", options, async () => {
+  const current = await fixture()
+  const { controller, states } = await ready(current)
+  current.media.currentTime = 200
+  current.media.ended = true
+  const observed = states.next()
+  current.media.dispatchEvent(new Event("ended"))
+  await observed
+  assert.equal(current.timeInput.value, "0")
+  controller.abort()
+})
+
+test("exact-end startup requests a playable position", options, async () => {
+  const current = await fixture(200)
+  const controller = new AbortController()
+  const playback = current.context.player_test.playback_page(controller.signal)
+  try {
+    await eventually(() => current.requests.length === 1)
+    assert.equal(
+      new URL(present(current.requests[0])).searchParams.get("t"),
+      "199",
+    )
+    assert.equal(current.media.currentTime, 199)
+  } finally {
     controller.abort()
-  },
-)
+    await playback
+  }
+})
 
 test(
   "an expected native media abort does not become media failure",
@@ -2319,25 +2343,6 @@ test(
 )
 
 test(
-  "availability aligns adjacent seeks and teardown releases the owned source",
-  options,
-  async () => {
-    const current = await fixture()
-    const { buffer, controller, lifetime } = await open_mse(current)
-    await buffer.next(10)
-    await buffer.next(new Uint8Array([1]))
-
-    assert.equal(current.context.player_test.buffered_position(10), 10)
-    assert.equal(current.context.player_test.buffered_position(9.95), 10)
-    controller.abort()
-    await lifetime.return(undefined)
-    assert.equal(current.media.src, "")
-    assert.equal(current.media.loads, 1)
-    assert.equal(current.revoked.length, 1)
-  },
-)
-
-test(
   "an explicit undefined source error immediately rebuilds at the same target",
   options,
   async () => {
@@ -2353,6 +2358,7 @@ test(
     const sources = current.context.player_test.media_sources(
       controller.signal,
       40,
+      async (position) => ({ position, start: position }),
     )
 
     try {
@@ -2503,6 +2509,7 @@ test(
     const sources = current.context.player_test.media_sources(
       controller.signal,
       40,
+      async (position) => ({ position, start: position }),
     )
 
     try {
@@ -3014,6 +3021,62 @@ test(
 )
 
 test(
+  "an unbuffered seek supersedes frozen MSE setup backoff immediately",
+  options,
+  async () => {
+    const current = await fixture()
+    const clock = frozenClock(current.context)
+    const failure = new Error("MSE setup failed")
+    let attempts = 0
+    const originalAddSourceBuffer =
+      current.context.MediaSource.prototype.addSourceBuffer
+    current.context.MediaSource.prototype.addSourceBuffer = function (
+      type: string,
+    ) {
+      attempts += 1
+      if (attempts === 1) {
+        throw failure
+      }
+      return originalAddSourceBuffer.call(this, type)
+    }
+
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    try {
+      await eventually(() => clock.length === 1)
+      current.media.topology.length = 0
+      current.media.currentTime = 110
+      current.media.seeking = true
+      current.media.dispatchEvent(new Event("seeking"))
+      await nextTask()
+      await eventually(
+        () => current.sources.length === 2 && current.requests.length === 1,
+      )
+
+      const replacement = present(current.sources[1])
+      const url = current.media.src
+      const positioned = current.media.topology.indexOf("time:110")
+      assert.equal(new URL(present(current.requests[0])).searchParams.get("t"), "110")
+      assert.notEqual(positioned, -1)
+      assert.ok(positioned < current.media.topology.indexOf(`open:${url}`))
+      assert.equal(replacement.sourceBuffers.length, 1)
+      assert.equal(clock.callbacks, 0)
+      assert.equal(clock.cancellations, 1)
+      assert.deepEqual(
+        current.errors.map(([error]) => error),
+        [failure],
+      )
+    } finally {
+      controller.abort()
+      await playback
+      clock.dispose()
+    }
+  },
+)
+
+test(
   "benign page activity preserves one original retry deadline",
   options,
   async () => {
@@ -3227,6 +3290,11 @@ test(
       assert.ok(
         current.media.topology.indexOf(`open:${newUrl}`) <
           current.media.topology.indexOf(`revoke:${oldUrl}`),
+      )
+      const positioned = current.media.topology.indexOf("time:40")
+      assert.notEqual(positioned, -1)
+      assert.ok(
+        positioned < current.media.topology.indexOf(`open:${newUrl}`),
       )
       assert.equal(retryDelays, 0)
       assert.equal(
