@@ -3,9 +3,11 @@
 /** @typedef {{error: MediaError | null, position: number, restart: boolean}} PageChange */
 /** @typedef {{buffer: Mse, position: number, signal: AbortSignal}} PlaybackSource */
 /** @typedef {{position: number} | {error: unknown, position: number}} SourceChange */
-/** @typedef {{error: unknown}} Failure */
+/** @typedef {{error: unknown}} StreamFailure */
+/** @typedef {{error: unknown, start: number}} Failure */
 /** @typedef {{pending: Promise<IteratorResult<PageChange, void>>}} PageReader */
-/** @typedef {{action: "done" | "restart", position: number} | {action: "retry", error: unknown, position: number}} AttemptChange */
+/** @typedef {{action: "done" | "restart", position: number} | {action: "retry", error: unknown, position: number, start: number}} AttemptChange */
+/** @typedef {{position: number, restart: boolean}} RetryChange */
 
 const BUFFER = {
   BEHIND: 30,
@@ -139,13 +141,16 @@ const buffered_position = (position) => {
       : undefined
 }
 
-const play_ahead = () => {
+const buffered_end = () => {
   const position = media.currentTime
   const range = buffered_range(position)
   return range && range.start - position <= POSITION_TOLERANCE
-    ? range.end - position
-    : 0
+    ? range.end
+    : undefined
 }
+
+const play_ahead = () =>
+  (buffered_end() ?? media.currentTime) - media.currentTime
 
 const initial_position = (() => {
   if (new URL(location.href).searchParams.has("t")) {
@@ -347,7 +352,7 @@ const mse = (signal, source, buffer) => {
   })()
 }
 
-/** @param {AbortSignal} signal @param {number} time @returns {AsyncGenerator<Uint8Array, Failure | void, void>} */
+/** @param {AbortSignal} signal @param {number} time @returns {AsyncGenerator<Uint8Array, StreamFailure | void, void>} */
 const source_stream = async function* (signal, time) {
   const request = new AbortController()
   const request_signal = AbortSignal.any([signal, request.signal])
@@ -425,7 +430,10 @@ const session = async function* (signal, buffer, time) {
         const next = await stream.next()
         if (next.done) {
           if (next.value) {
-            return next.value
+            return {
+              error: next.value.error,
+              start: stream_position(buffered_end() ?? start),
+            }
           }
           break streaming
         }
@@ -433,9 +441,7 @@ const session = async function* (signal, buffer, time) {
           return
         }
         if (play_ahead() >= BUFFER.HI) {
-          start = stream_position(
-            buffered_range(media.currentTime)?.end ?? start,
-          )
+          start = stream_position(buffered_end() ?? start)
           continue streaming
         }
       }
@@ -509,11 +515,11 @@ const media_sources = async function* (signal, position) {
   }
 }
 
-/** @param {AbortSignal} signal @param {Mse} buffer @param {AsyncGenerator<PageChange, void, void>} changes @param {PageReader} page @param {number} position @returns {Promise<AttemptChange>} */
-const play_attempt = async (signal, buffer, changes, page, position) => {
+/** @param {AbortSignal} signal @param {Mse} buffer @param {AsyncGenerator<PageChange, void, void>} changes @param {PageReader} page @param {number} position @param {number} start @returns {Promise<AttemptChange>} */
+const play_attempt = async (signal, buffer, changes, page, position, start) => {
   const attempt = new AbortController()
   const attempt_signal = AbortSignal.any([signal, attempt.signal])
-  const current = session(attempt_signal, buffer, position)
+  const current = session(attempt_signal, buffer, start)
   /** @type {Promise<IteratorResult<void, Failure | void>> | undefined} */
   let progress = current.next()
   try {
@@ -529,7 +535,12 @@ const play_attempt = async (signal, buffer, changes, page, position) => {
         progress = undefined
         if (result.done) {
           return result.value
-            ? { action: "retry", error: result.value.error, position }
+            ? {
+                action: "retry",
+                error: result.value.error,
+                position,
+                start: result.value.start,
+              }
             : { action: "done", position }
         }
         continue
@@ -557,7 +568,7 @@ const play_attempt = async (signal, buffer, changes, page, position) => {
   }
 }
 
-/** @param {AbortSignal} signal @param {AsyncGenerator<PageChange, void, void>} changes @param {PageReader} page @param {number} position @returns {Promise<number | undefined>} */
+/** @param {AbortSignal} signal @param {AsyncGenerator<PageChange, void, void>} changes @param {PageReader} page @param {number} position @returns {Promise<RetryChange | undefined>} */
 const wait_to_retry = async (signal, changes, page, position) => {
   const timer = new AbortController()
   const delay = retry_delay(AbortSignal.any([signal, timer.signal]))
@@ -568,7 +579,7 @@ const wait_to_retry = async (signal, changes, page, position) => {
         delay.then((result) => ({ delay: result })),
       ])
       if ("delay" in selected) {
-        return selected.delay ? position : undefined
+        return selected.delay ? { position, restart: false } : undefined
       }
       const change = selected.page
       if (change.done) {
@@ -580,7 +591,7 @@ const wait_to_retry = async (signal, changes, page, position) => {
       }
       page.pending = changes.next()
       if (change.value.restart) {
-        return position
+        return { position, restart: true }
       }
     }
   } finally {
@@ -597,12 +608,24 @@ const play_source = async ({ buffer, position, signal }) => {
   )
   const page = { pending: changes.next() }
   let failure_reported = false
+  let start = position
   try {
     for (;;) {
-      const change = await play_attempt(signal, buffer, changes, page, position)
+      const change = await play_attempt(
+        signal,
+        buffer,
+        changes,
+        page,
+        position,
+        start,
+      )
       position = change.position
       if (change.action === "done") {
         return { position }
+      }
+      if (change.action === "restart") {
+        start = position
+        continue
       }
       if (change.action === "retry") {
         if (!failure_reported) {
@@ -613,7 +636,8 @@ const play_source = async ({ buffer, position, signal }) => {
         if (waiting === undefined) {
           return { position }
         }
-        position = waiting
+        position = waiting.position
+        start = waiting.restart ? position : change.start
       }
     }
   } catch (error) {

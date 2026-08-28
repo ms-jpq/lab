@@ -1284,8 +1284,8 @@ test(
     const firstAppend = Promise.withResolvers<void>()
     const queued: Uint8Array[] = []
     let pendingRead:
-      ((result: ReadableStreamReadResult<Uint8Array>) => void) | undefined =
-      undefined
+      | ((result: ReadableStreamReadResult<Uint8Array>) => void)
+      | undefined = undefined
     let requests = 0
     let aborts = 0
     let cancellations = 0
