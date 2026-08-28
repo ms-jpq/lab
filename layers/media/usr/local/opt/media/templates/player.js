@@ -4,8 +4,6 @@
 /** @typedef {{buffer: Mse, position: number, signal: AbortSignal}} PlaybackSource */
 /** @typedef {{error?: unknown, position: number, reset: boolean}} SourceChange */
 /** @typedef {{error: unknown}} Failure */
-/** @typedef {{kind: "page", result: IteratorResult<PageChange, void>} | {kind: "progress", result: IteratorResult<void, Failure | void>}} AttemptSelection */
-/** @typedef {{kind: "delay", result: boolean} | {kind: "page", result: IteratorResult<PageChange, void>}} RetrySelection */
 /** @typedef {{next: Promise<IteratorResult<PageChange, void>>}} PageReader */
 /** @typedef {{action: "done" | "retry" | "seek", error?: unknown, position: number}} AttemptChange */
 
@@ -505,26 +503,14 @@ const play_attempt = async (signal, buffer, states, page, position) => {
   let progress = current.next()
   try {
     for (;;) {
-      const selected = await select(
-        attempt_signal,
-        async () =>
-          /** @type {AttemptSelection} */ ({
-            kind: "page",
-            result: await page.next,
-          }),
-        progress
-          ? async () =>
-              /** @type {AttemptSelection} */ ({
-                kind: "progress",
-                result: await progress,
-              })
-          : undefined,
-      )
-      if (!selected) {
-        return { action: "done", position }
-      }
-      if (selected.kind === "progress") {
-        const { result } = selected
+      const selected = await Promise.race([
+        page.next.then((result) => ({ page: result })),
+        ...(progress
+          ? [progress.then((result) => ({ progress: result }))]
+          : []),
+      ])
+      if ("progress" in selected) {
+        const { progress: result } = selected
         progress = undefined
         if (result.done) {
           return result.value
@@ -534,7 +520,7 @@ const play_attempt = async (signal, buffer, states, page, position) => {
         continue
       }
 
-      const state = selected.result
+      const state = selected.page
       if (state.done) {
         return { action: "done", position }
       }
@@ -556,32 +542,20 @@ const play_attempt = async (signal, buffer, states, page, position) => {
   }
 }
 
-/** @param {AbortSignal} signal @param {AsyncGenerator<PageChange, void, void>} states @param {PageReader} page @param {number} position @returns {Promise<AttemptChange>} */
+/** @param {AbortSignal} signal @param {AsyncGenerator<PageChange, void, void>} states @param {PageReader} page @param {number} position @returns {Promise<number | undefined>} */
 const wait_to_retry = async (signal, states, page, position) => {
   const delay = retry_delay(signal)
   for (;;) {
-    const selected = await select(
-      signal,
-      async () =>
-        /** @type {RetrySelection} */ ({
-          kind: "page",
-          result: await page.next,
-        }),
-      async () =>
-        /** @type {RetrySelection} */ ({
-          kind: "delay",
-          result: await delay,
-        }),
-    )
-    if (!selected || (selected.kind === "delay" && !selected.result)) {
-      return { action: "done", position }
+    const selected = await Promise.race([
+      page.next.then((result) => ({ page: result })),
+      delay.then((result) => ({ delay: result })),
+    ])
+    if ("delay" in selected) {
+      return selected.delay ? position : undefined
     }
-    if (selected.kind === "delay") {
-      return { action: "seek", position }
-    }
-    const state = selected.result
+    const state = selected.page
     if (state.done) {
-      return { action: "done", position }
+      return undefined
     }
     position = state.value.position
     if (state.value.error) {
@@ -609,10 +583,10 @@ const play_source = async ({ buffer, position, signal }) => {
       if (change.action === "retry") {
         report(change.error)
         const waiting = await wait_to_retry(signal, states, page, position)
-        position = waiting.position
-        if (waiting.action === "done") {
+        if (waiting === undefined) {
           return { position, reset: false }
         }
+        position = waiting
       }
     }
   } catch (error) {
