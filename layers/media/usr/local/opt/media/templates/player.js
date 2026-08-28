@@ -672,6 +672,8 @@ const media_sources = () => {
     /** @param {AbortSignal} signal @param {PageReader} page */
     open: async (signal, page) => {
       const source = new MediaSourceConstructor()
+      const previous = url
+      const next = URL.createObjectURL(source)
       const opening = new AbortController()
       const opened = first_event(
         source,
@@ -679,8 +681,6 @@ const media_sources = () => {
         "sourceopen",
         "sourceclose",
       )
-      const previous = url
-      const next = URL.createObjectURL(source)
       try {
         media.src = next
       } catch (error) {
