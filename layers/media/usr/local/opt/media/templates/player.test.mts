@@ -38,6 +38,7 @@ type PlayerTest = {
     SourceChange
   >
   page_changes: AsyncGeneratorFactory<PageChange>
+  play_subtitle: (signal: AbortSignal) => Promise<void>
   playback_page: (signal: AbortSignal) => Promise<void>
   playable_position: (position: number) => number
   session: (
@@ -51,7 +52,6 @@ type PlayerTest = {
     signal: AbortSignal,
     position: number,
   ) => AsyncGenerator<Uint8Array, unknown, undefined>
-  subtitle_sources: (signal: AbortSignal) => AsyncGenerator<unknown, void, void>
 }
 type AsyncGeneratorFactory<TYield, TNext = undefined> = (
   signal: AbortSignal,
@@ -528,7 +528,7 @@ const fixture = async (position = 40) => {
   }) as PlayerContext
   const source = await readFile(PLAYER, "utf8")
   vm.runInContext(
-    `${source}\nglobalThis.player_test = { buffered_position, media_observation_batches, media_sources, page_changes, playback_page, playable_position, session, source_stream, source_url, stream_position, subtitle_sources }`,
+    `${source}\nglobalThis.player_test = { buffered_position, media_observation_batches, media_sources, page_changes, play_subtitle, playback_page, playable_position, session, source_stream, source_url, stream_position }`,
     context,
   )
   const { ranges } = media.buffered
@@ -942,14 +942,12 @@ test(
     const owned = await fixture()
     const parent = new AbortController()
     const owner = new AbortController()
-    const attempt = owned.context.player_test.subtitle_sources(
+    const attempt = owned.context.player_test.play_subtitle(
       AbortSignal.any([parent.signal, owner.signal]),
     )
-    const pending = attempt.next()
     await new Promise((resolve) => setImmediate(resolve))
     owner.abort()
-    assert.equal((await pending).done, true)
-    await attempt.return(undefined)
+    await attempt
     assert.equal(parent.signal.aborted, false)
     const ownedCalls = owned.subtitle.listenerCalls
     owned.subtitle.dispatchEvent(new Event("error"))
@@ -1516,8 +1514,7 @@ test(
   options,
   async () => {
     const current = await fixture()
-    const failed =
-      Promise.withResolvers<ReadableStreamReadResult<Uint8Array>>()
+    const failed = Promise.withResolvers<ReadableStreamReadResult<Uint8Array>>()
     const retried = Promise.withResolvers<string>()
     const retry: Array<() => void> = []
     const requests: string[] = []

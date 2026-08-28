@@ -174,12 +174,13 @@ const persist_position = (value) => {
   } catch {}
 }
 
-const media_observation = () => Object.freeze({
-  ended: media.ended,
-  error: media.error,
-  seeking: media.seeking,
-  time: media.currentTime,
-})
+const media_observation = () =>
+  Object.freeze({
+    ended: media.ended,
+    error: media.error,
+    seeking: media.seeking,
+    time: media.currentTime,
+  })
 
 /** @param {AbortSignal} signal @returns {AsyncGenerator<ReturnType<typeof media_observation>[], void, void>} */
 const media_observation_batches = async function* (signal) {
@@ -380,11 +381,12 @@ const source_stream = async function* (signal, time) {
   }
 }
 
-/** @param {AbortSignal} signal @returns {AsyncGenerator<unknown, void, void>} */
-const subtitle_sources = async function* (signal) {
+/** @param {AbortSignal} signal */
+const play_subtitle = async (signal) => {
   if (!subtitle) {
     return
   }
+  let reported = false
   while (!signal.aborted) {
     try {
       const loaded = resource_event(signal, subtitle, "load", "error")
@@ -395,21 +397,13 @@ const subtitle_sources = async function* (signal) {
       if (signal.aborted) {
         return
       }
-      yield error
-    }
-  }
-}
-
-/** @param {AbortSignal} signal */
-const play_subtitle = async (signal) => {
-  let reported = false
-  for await (const error of subtitle_sources(signal)) {
-    if (!reported) {
-      report(error)
-      reported = true
-    }
-    if (!(await retry_delay(signal))) {
-      return
+      if (!reported) {
+        report(error)
+        reported = true
+      }
+      if (!(await retry_delay(signal))) {
+        return
+      }
     }
   }
 }
@@ -631,8 +625,7 @@ const play_source = async ({ buffer, position, signal }) => {
 }
 
 /** @param {AbortSignal} signal */
-const playback_page = async (signal) => {
-  const captions = play_subtitle(signal)
+const play_media = async (signal) => {
   const sources = media_sources(
     signal,
     playable_position(Number(time_input.value)),
@@ -644,7 +637,21 @@ const playback_page = async (signal) => {
       next = await sources.next(change)
     }
   } finally {
-    await Promise.all([captions, sources.return()])
+    await sources.return()
+  }
+}
+
+/** @param {AbortSignal} signal */
+const playback_page = async (signal) => {
+  const lifetime = new AbortController()
+  const lifetime_signal = AbortSignal.any([signal, lifetime.signal])
+  const playback = play_media(lifetime_signal)
+  const captions = play_subtitle(lifetime_signal).then(() => playback)
+  try {
+    await Promise.race([playback, captions])
+  } finally {
+    lifetime.abort()
+    await Promise.allSettled([playback, captions])
   }
 }
 
