@@ -1102,7 +1102,9 @@ test(
     const current = await fixture()
     const clock = frozenClock(current.context)
     const controller = new AbortController()
-    const playback = current.context.player_test.play_subtitle(controller.signal)
+    const playback = current.context.player_test.play_subtitle(
+      controller.signal,
+    )
     try {
       await eventually(() => current.subtitle.sources.length === 1)
       current.subtitle.dispatchEvent(new Event("error"))
@@ -3969,46 +3971,40 @@ test(
   },
 )
 
-test(
-  "an undefined MSE setup failure remains retryable",
-  options,
-  async () => {
-    const current = await fixture()
-    const clock = frozenClock(current.context)
-    let attempts = 0
-    const originalAddSourceBuffer =
-      current.context.MediaSource.prototype.addSourceBuffer
-    current.context.MediaSource.prototype.addSourceBuffer = function (
-      type: string,
-    ) {
-      attempts += 1
-      if (attempts === 1) {
-        throw undefined
-      }
-      return originalAddSourceBuffer.call(this, type)
+test("an undefined MSE setup failure remains retryable", options, async () => {
+  const current = await fixture()
+  const clock = frozenClock(current.context)
+  let attempts = 0
+  const originalAddSourceBuffer =
+    current.context.MediaSource.prototype.addSourceBuffer
+  current.context.MediaSource.prototype.addSourceBuffer = function (
+    type: string,
+  ) {
+    attempts += 1
+    if (attempts === 1) {
+      throw undefined
     }
+    return originalAddSourceBuffer.call(this, type)
+  }
 
-    const controller = new AbortController()
-    const playback = current.context.player_test.playback_page(
-      controller.signal,
+  const controller = new AbortController()
+  const playback = current.context.player_test.playback_page(controller.signal)
+  try {
+    await eventually(() => clock.length === 1)
+    clock.advance(0)
+    await eventually(
+      () => current.sources[1]?.sourceBuffers[0]?.buffered.length === 1,
     )
-    try {
-      await eventually(() => clock.length === 1)
-      clock.advance(0)
-      await eventually(
-        () => current.sources[1]?.sourceBuffers[0]?.buffered.length === 1,
-      )
 
-      deepEqual(attempts, 2)
-      deepEqual(current.sources.length, 2)
-      deepEqual(current.errors, [[undefined]])
-    } finally {
-      controller.abort()
-      await playback
-      clock.dispose()
-    }
-  },
-)
+    deepEqual(attempts, 2)
+    deepEqual(current.sources.length, 2)
+    deepEqual(current.errors, [[undefined]])
+  } finally {
+    controller.abort()
+    await playback
+    clock.dispose()
+  }
+})
 
 test(
   "a failed object URL acquisition installs no source observers",
@@ -4034,7 +4030,10 @@ test(
       source.dispatchEvent(new Event("sourceclose"))
 
       deepEqual(source.listenerCalls, calls)
-      deepEqual(current.errors.map(([error]) => error), [failure])
+      deepEqual(
+        current.errors.map(([error]) => error),
+        [failure],
+      )
     } finally {
       current.context.URL.createObjectURL = createObjectURL
       controller.abort()
@@ -4104,7 +4103,10 @@ test(
       await eventually(() => clock.length === 1)
       const attached = current.media.src
       match(attached, /^blob:player-/)
-      deepEqual(current.errors.map(([error]) => error), [failure])
+      deepEqual(
+        current.errors.map(([error]) => error),
+        [failure],
+      )
       deepEqual(current.sources.length, 1)
       deepEqual(current.revoked, [])
 
@@ -4734,7 +4736,9 @@ test(
     )
 
     try {
-      await eventually(() => outcome !== undefined || current.sources.length > 1)
+      await eventually(
+        () => outcome !== undefined || current.sources.length > 1,
+      )
       deepEqual(outcome, {
         error: reporterFailure,
         status: "rejected",

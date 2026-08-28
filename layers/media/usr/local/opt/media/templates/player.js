@@ -705,9 +705,7 @@ const media_sources = () => {
         const buffer = mse(
           signal,
           source,
-          source.addSourceBuffer(
-            /** @type {string} */ (media.dataset.mseType),
-          ),
+          source.addSourceBuffer(/** @type {string} */ (media.dataset.mseType)),
         )
         await buffer.next()
         return buffer
