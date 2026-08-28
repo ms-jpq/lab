@@ -1,3 +1,10 @@
+/** @typedef {number | readonly [position: number, bytes: Uint8Array]} MseOperation */
+/** @typedef {AsyncGenerator<void, void, MseOperation | undefined> & {contains: (position: number) => boolean, frontier: () => number | undefined, play_ahead: (position: number) => number}} MseBuffer */
+/** @typedef {(signal: AbortSignal) => MseBuffer} MseBufferFactory */
+/** @typedef {AsyncGenerator<void, void, void> & {buffer: MseBuffer}} Attempt */
+/** @typedef {ReturnType<typeof page_state> & {failed: boolean, moved: boolean}} PageChange */
+/** @typedef {readonly [AsyncIterator<unknown, void, void>, IteratorResult<unknown, void>]} IteratorSelection */
+
 const media = /** @type {HTMLMediaElement} */ (
   document.querySelector("video, audio")
 )
@@ -19,11 +26,6 @@ const RETRY_DELAY = 1_000
 const POSITION_TOLERANCE = 0.1
 const POSITION = `media:position:${location.pathname}`
 const PAGE = crypto.randomUUID()
-/** @typedef {number | readonly [position: number, bytes: Uint8Array]} MseOperation */
-/** @typedef {AsyncGenerator<void, void, MseOperation | undefined> & {contains: (position: number) => boolean, frontier: () => number | undefined, play_ahead: (position: number) => number}} MseBuffer */
-/** @typedef {(signal: AbortSignal) => MseBuffer} MseBufferFactory */
-/** @typedef {AsyncGenerator<void, void, void> & {buffer: MseBuffer}} Attempt */
-/** @typedef {ReturnType<typeof page_state> & {failed: boolean, moved: boolean}} PageChange */
 
 /** @param {EventTarget} target @param {AbortSignal | undefined} signal @param {string} type @returns {Promise<Event>} */
 const once = (target, signal, type) => {
@@ -39,7 +41,7 @@ const once = (target, signal, type) => {
 /**
  * @template T
  * @param {AbortSignal} signal
- * @param {...((signal: AbortSignal) => Promise<T>)} cases
+ * @param {...(((signal: AbortSignal) => Promise<T>) | undefined)} cases
  * @returns {Promise<T | undefined>}
  */
 const select = async (signal, ...cases) => {
@@ -51,12 +53,16 @@ const select = async (signal, ...cases) => {
   try {
     return await Promise.race([
       once(signal, selection.signal, "abort").then(() => undefined),
-      ...cases.map((run) => run(selection.signal)),
+      ...cases.flatMap((run) => (run ? [run(selection.signal)] : [])),
     ])
   } finally {
     selection.abort()
   }
 }
+
+/** @param {AbortSignal} signal */
+const retry_delay = (signal) =>
+  select(signal, (s) => once(AbortSignal.timeout(RETRY_DELAY), s, "abort"))
 
 /** @template T @param {AbortSignal} signal @param {(signal: AbortSignal) => AsyncIterable<T>} source @returns {AsyncGenerator<T, void, void>} */
 const retrying = async function* (signal, source) {
@@ -66,11 +72,7 @@ const retrying = async function* (signal, source) {
     } catch (error) {
       console.error(error)
     }
-    if (
-      !(await select(signal, (s) =>
-        once(AbortSignal.timeout(RETRY_DELAY), s, "abort"),
-      ))
-    ) {
+    if (!(await retry_delay(signal))) {
       return
     }
   }
@@ -395,12 +397,16 @@ const playback_page = async (signal) => {
 
     try {
       for (;;) {
-        const selected = await select(
-          attempt_signal,
-          async () => /** @type {const} */ ([changed, await change]),
-          ...(progress
-            ? [async () => /** @type {const} */ ([session, await progress])]
-            : []),
+        const selected = /** @type {IteratorSelection | undefined} */ (
+          await select(
+            attempt_signal,
+            async () =>
+              /** @type {IteratorSelection} */ ([changed, await change]),
+            progress
+              ? async () =>
+                  /** @type {IteratorSelection} */ ([session, await progress])
+              : undefined,
+          )
         )
         if (!selected) {
           break
@@ -452,6 +458,10 @@ const playback_page = async (signal) => {
     } finally {
       current.abort()
       await session.return()
+    }
+
+    if (!(await retry_delay(signal))) {
+      return
     }
   }
 }
