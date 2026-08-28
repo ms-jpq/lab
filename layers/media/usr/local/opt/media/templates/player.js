@@ -143,10 +143,15 @@ const buffered_position = (position) => {
 
 const buffered_end = () => {
   const position = media.currentTime
-  const range = buffered_range(position)
-  return range && range.start - position <= POSITION_TOLERANCE
-    ? range.end
-    : undefined
+  const ranges = media.buffered
+  for (let index = 0; index < ranges.length; index += 1) {
+    const start = ranges.start(index)
+    const end = ranges.end(index)
+    if (start - position <= POSITION_TOLERANCE && position <= end) {
+      return end
+    }
+  }
+  return undefined
 }
 
 const play_ahead = () =>
