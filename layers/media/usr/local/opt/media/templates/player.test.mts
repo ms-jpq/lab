@@ -49,7 +49,6 @@ type TestMseSource = Omit<MseSource, "addSourceBuffer"> & {
 }
 type Diagnostics = {
   error: (error: unknown) => void
-  escaped: () => boolean
   progress: () => void
 }
 type Target = { position: number; restart: boolean; started: boolean }
@@ -72,7 +71,7 @@ type PlayerTest = {
     },
     failures: Diagnostics,
     page: SourcePage,
-  ) => Promise<void>
+  ) => Promise<{ failure: unknown } | void>
   play_subtitle: (signal: AbortSignal) => Promise<void>
   playback_page: (signal: AbortSignal) => Promise<void>
   selector: <T>(

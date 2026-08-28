@@ -1,6 +1,8 @@
 /** @typedef {"end" | number | Uint8Array} MseOperation */
 /** @typedef {AsyncGenerator<void, void, MseOperation>} Mse */
-/** @typedef {{error: (error: unknown) => void, escaped: () => boolean, progress: () => void}} Diagnostics */
+/** @typedef {{failure: unknown}} Failure */
+/** @typedef {MseOperation | Failure} SourceOperation */
+/** @typedef {{error: (error: unknown) => void, progress: () => void}} Diagnostics */
 /** @typedef {{position: number, restart: boolean, started: boolean}} Target */
 /** @template T @typedef {{error: unknown} | {result: IteratorResult<T, void>}} Selection */
 /** @typedef {{close: () => Promise<void>, next: <T>(work?: Promise<T>) => Promise<typeof PULSE | T | undefined>, seek: () => void, take_error: () => unknown, target: Target}} PageReader */
@@ -85,23 +87,15 @@ const revoke_url = (url) => url && URL.revokeObjectURL(url)
 /** @returns {Diagnostics} */
 const diagnostics = () => {
   let failed = false
-  let escaped = false
   return {
     error: (error) => {
       if (failed) {
         return
       }
       failed = true
-      try {
-        console.error(error)
-      } catch (error) {
-        escaped = true
-        throw error
-      }
+      console.error(error)
     },
-    escaped: () => escaped,
     progress: () => {
-      escaped = false
       failed = false
     },
   }
@@ -512,7 +506,7 @@ const retry_when = async (page, interrupted) => {
   }
 }
 
-/** @param {Diagnostics} failures @param {PageReader} page @returns {AsyncGenerator<MseOperation, void, void>} */
+/** @param {Diagnostics} failures @param {PageReader} page @returns {AsyncGenerator<SourceOperation, void, void>} */
 const source_stream = async function* (failures, page) {
   let target = page.target
   let start = target.position
@@ -585,7 +579,7 @@ const source_stream = async function* (failures, page) {
               }
             }
           }
-          failures.error(next.value.error)
+          yield { failure: next.value.error }
           start = stream_position(buffered_end(frontier) ?? frontier)
           break reading
         }
@@ -624,12 +618,36 @@ const source_stream = async function* (failures, page) {
   }
 }
 
-/** @param {Mse} buffer @param {Diagnostics} failures @param {PageReader} page */
+/** @param {Mse} buffer @param {Diagnostics} failures @param {PageReader} page @returns {Promise<Failure | void>} */
 const play_source = async (buffer, failures, page) => {
-  for await (const operation of source_stream(failures, page)) {
-    if ((await buffer.next(operation)).done) {
-      return
+  const stream = source_stream(failures, page)
+  try {
+    for (;;) {
+      /** @type {IteratorResult<SourceOperation, void>} */
+      let next
+      try {
+        next = await stream.next()
+      } catch (failure) {
+        return { failure }
+      }
+      if (next.done) {
+        return
+      }
+      const operation = next.value
+      if (typeof operation === "object" && "failure" in operation) {
+        failures.error(operation.failure)
+        continue
+      }
+      try {
+        if ((await buffer.next(operation)).done) {
+          return
+        }
+      } catch (failure) {
+        return { failure }
+      }
     }
+  } finally {
+    await stream.return()
   }
 }
 
@@ -698,23 +716,28 @@ const play_attempt = async (signal, sources, failures, page) => {
   let buffer = undefined
   try {
     buffer = await sources.open(signal, page)
-    if (!buffer) {
-      return undefined
-    }
-    await play_source(buffer, failures, page)
-    return undefined
-  } catch (error) {
-    if (failures.escaped()) {
-      throw error
-    }
     return signal.aborted
       ? undefined
       : {
-          failure: buffer ? (page.take_error() ?? error) : error,
-          opened: buffer !== undefined,
+          failure: error,
+          opened: false,
+        }
+  } catch (error) {
+    return signal.aborted ? undefined : { failure: error, opened: false }
+  }
+  if (!buffer) {
+    return undefined
+  }
+  try {
+    const result = await play_source(buffer, failures, page)
+    return !result || signal.aborted
+      ? undefined
+      : {
+          failure: page.take_error() ?? result.failure,
+          opened: true,
         }
   } finally {
-    await buffer?.return()
+    await buffer.return()
   }
 }
 
