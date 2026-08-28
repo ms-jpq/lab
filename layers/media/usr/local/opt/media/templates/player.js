@@ -36,21 +36,22 @@ const MediaSourceConstructor =
 
 /** @param {EventTarget} target @param {AbortSignal | undefined} signal @param {...string} types */
 const first_event = (target, signal, ...types) => {
-  const listeners = new AbortController()
   const { promise, resolve } = Promise.withResolvers()
   /** @param {Event | undefined} event */
   const finish = (event) => {
-    listeners.abort()
+    signal?.removeEventListener("abort", cancelled)
+    for (const type of types) {
+      target.removeEventListener(type, finish)
+    }
     resolve(event)
   }
   const cancelled = () => finish(undefined)
-  const options = { once: true, signal: listeners.signal }
-  signal?.addEventListener("abort", cancelled, options)
+  for (const type of types) {
+    target.addEventListener(type, finish, { once: true })
+  }
+  signal?.addEventListener("abort", cancelled, { once: true })
   if (signal?.aborted) {
     cancelled()
-  }
-  for (const type of types) {
-    target.addEventListener(type, finish, options)
   }
   return promise
 }

@@ -2335,6 +2335,110 @@ test(
 )
 
 test(
+  "an owned replacement seek cannot bypass setup backoff",
+  options,
+  async () => {
+    const current = await fixture()
+    const clock = frozenClock(current.context)
+    const laterChunk =
+      Promise.withResolvers<ReadableStreamReadResult<Uint8Array>>()
+    const requests: Array<{ signal: AbortSignal; time: string | null }> = []
+    let targetReads = 0
+    current.context.fetch = async (url, { signal }) => {
+      requests.push({
+        signal,
+        time: new URL(String(url)).searchParams.get("t"),
+      })
+      if (requests.length !== 2) {
+        return liveResponse(signal)
+      }
+      return mockResponse({
+        getReader: () => ({
+          cancel: async () => {},
+          read: async () => {
+            targetReads += 1
+            return targetReads === 1
+              ? { done: false, value: new Uint8Array([1]) }
+              : laterChunk.promise
+          },
+        }),
+      })
+    }
+
+    const originalAddSourceBuffer =
+      current.context.MediaSource.prototype.addSourceBuffer
+    const setupFailure = new Error("replacement setup failed")
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    try {
+      await eventually(
+        () => current.sources[0]?.sourceBuffers[0]?.buffered.length === 1,
+      )
+      current.media.currentTime = 110
+      current.media.seeking = true
+      current.media.dispatchEvent(new Event("seeking"))
+      await eventually(
+        () =>
+          requests.length === 2 &&
+          current.sources[0]?.sourceBuffers[0]?.buffered.start(0) === 110 &&
+          targetReads === 2,
+      )
+      current.media.seeking = false
+      current.media.dispatchEvent(new Event("seeked"))
+      await nextTask()
+
+      current.sourceOpen.hold = true
+      present(current.sources[0]?.sourceBuffers[0]).usable = false
+      laterChunk.resolve({ done: false, value: new Uint8Array([2]) })
+      await eventually(
+        () =>
+          current.sources.length === 2 &&
+          current.sourceOpen.pending.length === 1,
+      )
+      current.media.seeking = true
+      current.media.dispatchEvent(new Event("seeking"))
+      await nextTask()
+
+      const replacement = present(current.sources[1])
+      current.context.MediaSource.prototype.addSourceBuffer = function (
+        type: string,
+      ) {
+        if (this === replacement) {
+          throw setupFailure
+        }
+        return originalAddSourceBuffer.call(this, type)
+      }
+      current.sourceOpen.hold = false
+      current.sourceOpen.release()
+      await eventually(() => clock.length === 1)
+      for (let turn = 0; turn < 4; turn += 1) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+
+      deepEqual(current.sources.length, 2)
+      deepEqual(clock.callbacks, 0)
+      deepEqual(clock.cancellations, 0)
+      deepEqual(
+        requests.map(({ time }) => time),
+        ["40", "110"],
+      )
+      deepEqual(current.errors.length, 1)
+    } finally {
+      current.context.MediaSource.prototype.addSourceBuffer =
+        originalAddSourceBuffer
+      controller.abort()
+      while (current.sourceOpen.pending.length) {
+        current.sourceOpen.release()
+      }
+      await playback
+      clock.dispose()
+    }
+  },
+)
+
+test(
   "an ordinary unbuffered seek keeps one target request and one MediaSource",
   options,
   async () => {
