@@ -453,6 +453,25 @@ test(
   },
 )
 
+test(
+  "a user seek survives a synchronous seeking and seeked storm",
+  { concurrency: true },
+  async () => {
+    const current = await fixture()
+    const { controller, states } = await ready(current)
+    current.media.currentTime = 110
+    current.media.seeking = true
+    const observed = states.next()
+    current.media.dispatchEvent(new Event("seeking"))
+    current.media.seeking = false
+    current.media.dispatchEvent(new Event("seeked"))
+
+    assert.equal((await observed).value.seek, 110)
+    assert.equal(current.timeInput.value, "110")
+    controller.abort()
+  },
+)
+
 for (const order of ["seeking-timeupdate", "timeupdate-seeking"]) {
   test(
     `an unbuffered seek restarts once with ${order} ordering`,

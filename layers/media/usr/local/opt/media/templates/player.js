@@ -295,7 +295,10 @@ const mse = (signal, media, position) => {
     const opened = select(
       signal,
       (s) => once(source, s, "sourceopen"),
-      (s) => once(source, s, "sourceclose"),
+      (s) =>
+        once(source, s, "sourceclose").then((e) => {
+          throw e
+        }),
     )
     const url = URL.createObjectURL(source)
     media.src = url
@@ -306,12 +309,10 @@ const mse = (signal, media, position) => {
       if (!selected) {
         return
       }
-      if (selected.type === "sourceclose") {
-        throw selected
-      }
       if (duration > 0) {
         source.duration = duration
       }
+
       const opened_buffer = source.addSourceBuffer(type)
 
       /** @param {() => void} mutate */
