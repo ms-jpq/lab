@@ -1,13 +1,32 @@
-.PHONY: compile
+.PHONY: compile clobber.compile
 
-TS_PROJ := $(shell shopt -u failglob && printf -- '%s ' ./{layers,machines}/**/tsconfig.json)
+clobber: clobber.compile
 
-define LOCAL_TS_TEMPLATE
-LOCAL.$1.FLAG := $1.lock
+TS_PROJECTS := $(shell shopt -u failglob && printf -- '%s\n' ./{layers,machines}/**/tsconfig.json)
+TS_COMPILED :=
+TS_TMP := $(TMP)/compile
 
-$(TMP)/$1.lock: ./node_modules/.bin $(TMP)/$1
-	./node_modules/.bin/tsc --project '$(TMP)/$1'
+$(TS_TMP): | $(TMP)
+	mkdir -v -p -- '$@'
+
+define COMPILE_TS_TEMPLATE
+COMPILE.$1.DIR := $(TS_TMP)/$(patsubst ./%,%,$(patsubst %/,%,$(dir $1)))
+COMPILE.$1.FLAG := $$(COMPILE.$1.DIR)/.compiled
+COMPILE.$1.SOURCES := $(shell shopt -u failglob && printf -- '%s\n' $(dir $1)**/*.{cts,mts,ts,tsx})
+TS_COMPILED += $$(COMPILE.$1.FLAG)
+
+$$(COMPILE.$1.DIR): | $(TS_TMP)
+	mkdir -v -p -- '$$@'
+
+$$(COMPILE.$1.FLAG): $1 tsconfig.json package.json $$(COMPILE.$1.SOURCES) | ./node_modules/.bin $$(COMPILE.$1.DIR)
+	'./node_modules/.bin/tsc' --project '$1' --outDir '$$(COMPILE.$1.DIR)'
 	touch -- '$$@'
 endef
 
-$(foreach proj,$(TS_PROJ),$(eval $(call LOCAL_TS_TEMPLATE, $(proj))))
+$(foreach project,$(TS_PROJECTS),$(eval $(call COMPILE_TS_TEMPLATE,$(project))))
+
+compile: $(TS_COMPILED)
+
+clobber.compile:
+	shopt -u failglob
+	rm -v -rf -- '$(TS_TMP)'
