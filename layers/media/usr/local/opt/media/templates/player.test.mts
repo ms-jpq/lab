@@ -1138,7 +1138,10 @@ test(
       current.media.seeking = true
       current.media.dispatchEvent(new Event("seeking"))
       await eventually(() => current.requests.length === 2)
-      assert.equal(new URL(present(current.requests[1])).searchParams.get("t"), "110")
+      assert.equal(
+        new URL(present(current.requests[1])).searchParams.get("t"),
+        "110",
+      )
     } finally {
       resumed.resolve()
       controller.abort()
@@ -1916,28 +1919,28 @@ test(
       )
       setImmediate(produce)
       return mockResponse({
-          getReader: () => ({
-            cancel: async () => {
-              cancellations += 1
-              stop()
-            },
-            read: async () => {
-              const chunk = queued.shift()
-              if (chunk) {
-                return { done: false as const, value: chunk }
-              }
-              if (!producing) {
-                completed = true
-                return { done: true as const, value: undefined }
-              }
-              return new Promise<ReadableStreamReadResult<Uint8Array>>(
-                (resolve) => {
-                  pendingRead = resolve
-                },
-              )
-            },
-          }),
-        })
+        getReader: () => ({
+          cancel: async () => {
+            cancellations += 1
+            stop()
+          },
+          read: async () => {
+            const chunk = queued.shift()
+            if (chunk) {
+              return { done: false as const, value: chunk }
+            }
+            if (!producing) {
+              completed = true
+              return { done: true as const, value: undefined }
+            }
+            return new Promise<ReadableStreamReadResult<Uint8Array>>(
+              (resolve) => {
+                pendingRead = resolve
+              },
+            )
+          },
+        }),
+      })
     }
     const controller = new AbortController()
     let appends = 0
@@ -2009,34 +2012,34 @@ test(
         { once: true },
       )
       return mockResponse({
-          getReader: () => ({
-            cancel: async () => {
-              if (index === 0) {
-                firstCancellations += 1
+        getReader: () => ({
+          cancel: async () => {
+            if (index === 0) {
+              firstCancellations += 1
+            }
+          },
+          read: async () => {
+            if (index === 0) {
+              return {
+                done: false as const,
+                value: new Uint8Array([1]),
               }
-            },
-            read: async () => {
-              if (index === 0) {
-                return {
-                  done: false as const,
-                  value: new Uint8Array([1]),
-                }
-              }
-              if (signal.aborted) {
-                return { done: true as const, value: undefined }
-              }
-              return new Promise<ReadableStreamReadResult<Uint8Array>>(
-                (resolve) => {
-                  signal.addEventListener(
-                    "abort",
-                    () => resolve({ done: true, value: undefined }),
-                    { once: true },
-                  )
-                },
-              )
-            },
-          }),
-        })
+            }
+            if (signal.aborted) {
+              return { done: true as const, value: undefined }
+            }
+            return new Promise<ReadableStreamReadResult<Uint8Array>>(
+              (resolve) => {
+                signal.addEventListener(
+                  "abort",
+                  () => resolve({ done: true, value: undefined }),
+                  { once: true },
+                )
+              },
+            )
+          },
+        }),
+      })
     }
 
     const controller = new AbortController()
@@ -2126,33 +2129,33 @@ for (const { failure, name, playhead } of partialFailureCases) {
         retried.resolve(request)
       }
       return mockResponse({
-          getReader: () => ({
-            cancel: async () => {},
-            read: async () => {
-              if (index === 0) {
-                firstReads += 1
-                return firstReads === 1
-                  ? {
-                      done: false as const,
-                      value: new Uint8Array([1]),
-                    }
-                  : failed.promise
-              }
-              if (signal.aborted) {
-                return { done: true as const, value: undefined }
-              }
-              return new Promise<ReadableStreamReadResult<Uint8Array>>(
-                (resolve) => {
-                  signal.addEventListener(
-                    "abort",
-                    () => resolve({ done: true, value: undefined }),
-                    { once: true },
-                  )
-                },
-              )
-            },
-          }),
-        })
+        getReader: () => ({
+          cancel: async () => {},
+          read: async () => {
+            if (index === 0) {
+              firstReads += 1
+              return firstReads === 1
+                ? {
+                    done: false as const,
+                    value: new Uint8Array([1]),
+                  }
+                : failed.promise
+            }
+            if (signal.aborted) {
+              return { done: true as const, value: undefined }
+            }
+            return new Promise<ReadableStreamReadResult<Uint8Array>>(
+              (resolve) => {
+                signal.addEventListener(
+                  "abort",
+                  () => resolve({ done: true, value: undefined }),
+                  { once: true },
+                )
+              },
+            )
+          },
+        }),
+      })
     }
 
     const controller = new AbortController()
@@ -2229,26 +2232,26 @@ test(
         { once: true },
       )
       return mockResponse({
-          getReader: () => ({
-            cancel: async () => {
-              if (index === 0) {
-                firstCancellations += 1
-              }
-            },
-            read: async () => {
-              if (index === 0) {
-                firstReads += 1
-                return firstReads === 1
-                  ? {
-                      done: false as const,
-                      value: new Uint8Array([1]),
-                    }
-                  : { done: true as const, value: undefined }
-              }
-              return { done: true as const, value: undefined }
-            },
-          }),
-        })
+        getReader: () => ({
+          cancel: async () => {
+            if (index === 0) {
+              firstCancellations += 1
+            }
+          },
+          read: async () => {
+            if (index === 0) {
+              firstReads += 1
+              return firstReads === 1
+                ? {
+                    done: false as const,
+                    value: new Uint8Array([1]),
+                  }
+                : { done: true as const, value: undefined }
+            }
+            return { done: true as const, value: undefined }
+          },
+        }),
+      })
     }
 
     const controller = new AbortController()
@@ -2824,19 +2827,19 @@ test(
         throw firstFailure
       }
       return mockResponse({
-          getReader: () => ({
-            cancel: async () => {},
-            read: async () => {
-              recoveredReads += 1
-              return recoveredReads === 1
-                ? {
-                    done: false as const,
-                    value: new Uint8Array([1]),
-                  }
-                : failAfterProgress.promise
-            },
-          }),
-        })
+        getReader: () => ({
+          cancel: async () => {},
+          read: async () => {
+            recoveredReads += 1
+            return recoveredReads === 1
+              ? {
+                  done: false as const,
+                  value: new Uint8Array([1]),
+                }
+              : failAfterProgress.promise
+          },
+        }),
+      })
     }
 
     const controller = new AbortController()
@@ -2957,7 +2960,10 @@ test(
       const replacement = present(current.sources[1])
       const url = current.media.src
       const positioned = current.media.topology.indexOf("time:110")
-      assert.equal(new URL(present(current.requests[0])).searchParams.get("t"), "110")
+      assert.equal(
+        new URL(present(current.requests[0])).searchParams.get("t"),
+        "110",
+      )
       assert.notEqual(positioned, -1)
       assert.ok(positioned < current.media.topology.indexOf(`open:${url}`))
       assert.equal(replacement.sourceBuffers.length, 1)
@@ -3165,9 +3171,7 @@ test(
       )
       const positioned = current.media.topology.indexOf("time:40")
       assert.notEqual(positioned, -1)
-      assert.ok(
-        positioned < current.media.topology.indexOf(`open:${newUrl}`),
-      )
+      assert.ok(positioned < current.media.topology.indexOf(`open:${newUrl}`))
       assert.equal(retryDelays, 0)
       assert.equal(
         requests.some((url) => new URL(url).searchParams.get("t") === "0"),
@@ -3271,20 +3275,20 @@ test(
       }
       let reads = 0
       return mockResponse({
-          getReader: () => ({
-            cancel: async () => {},
-            read: async () => {
-              reads += 1
-              if (reads === 1) {
-                return {
-                  done: false as const,
-                  value: new Uint8Array([requests]),
-                }
+        getReader: () => ({
+          cancel: async () => {},
+          read: async () => {
+            reads += 1
+            if (reads === 1) {
+              return {
+                done: false as const,
+                value: new Uint8Array([requests]),
               }
-              throw requests === 2 ? parserFailure : recoveredFailure
-            },
-          }),
-        })
+            }
+            throw requests === 2 ? parserFailure : recoveredFailure
+          },
+        }),
+      })
     }
 
     const controller = new AbortController()

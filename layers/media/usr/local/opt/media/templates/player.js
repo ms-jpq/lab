@@ -263,7 +263,7 @@ const page_changes = async function* (signal, position) {
   const batches = media_observation_batches(signal)
   /** @type {Promise<IteratorResult<ReturnType<typeof media_observation>[], void>> | undefined} */
   let batch = undefined
-  /** @type {Promise<{played: true} | {played: true, error: unknown}> | undefined} */
+  /** @type {Promise<{played: true}> | undefined} */
   let playing = undefined
   let previous = media_observation()
   /** @type {"idle" | "established" | "pausing" | "waiting"} */
@@ -281,9 +281,6 @@ const page_changes = async function* (signal, position) {
       ])
       if ("played" in selected) {
         playing = undefined
-        if ("error" in selected) {
-          throw selected.error
-        }
         continue
       }
       const next = selected.observations
@@ -324,13 +321,9 @@ const page_changes = async function* (signal, position) {
           current.future
         ) {
           readiness = "idle"
-          playing = media.play().then(
-            () => ({ played: /** @type {const} */ (true) }),
-            (play_error) => ({
-              error: play_error,
-              played: /** @type {const} */ (true),
-            }),
-          )
+          playing = media
+            .play()
+            .then(() => ({ played: /** @type {const} */ (true) }))
         }
         let moved =
           current.time !== previous.time || current.seeking !== previous.seeking
@@ -393,12 +386,7 @@ const page_changes = async function* (signal, position) {
     }
   } finally {
     await batches.return()
-    if (playing) {
-      const result = await playing
-      if ("error" in result) {
-        throw result.error
-      }
-    }
+    await playing
   }
 }
 
@@ -513,7 +501,7 @@ const play_subtitle = async (signal) => {
     return
   }
   const failures = failure_storm()
-  while (!signal.aborted) {
+  for (;;) {
     try {
       const loaded = first_event(signal, subtitle, "load", "error")
       subtitle.src = source_url(subtitle, 0)
@@ -610,6 +598,8 @@ const media_sources = async function* (signal, position, retry) {
       let buffer = undefined
       /** @type {SourceFailure | undefined} */
       let failure = undefined
+      /** @type {{error: unknown} | undefined} */
+      let setup_failure = undefined
 
       try {
         const selected = await opened.finally(() => {
@@ -644,7 +634,13 @@ const media_sources = async function* (signal, position, retry) {
         if (lifetime_signal.aborted) {
           return
         }
-        failures.fail(error)
+        setup_failure = { error }
+      } finally {
+        lifetime.abort()
+        await buffer?.return()
+      }
+      if (setup_failure) {
+        failures.fail(setup_failure.error)
         const waiting = await retry(position)
         if (waiting === undefined) {
           return
@@ -653,9 +649,7 @@ const media_sources = async function* (signal, position, retry) {
         if ("error" in waiting) {
           failures.fail(waiting.error)
         }
-      } finally {
-        lifetime.abort()
-        await buffer?.return()
+        continue
       }
       if (failure) {
         failures.fail(failure.error)
@@ -837,13 +831,7 @@ const play_media = async (signal) => {
   )
   const page = { pending: changes.next() }
   const sources = media_sources(signal, position, (failed_position) =>
-    wait_to_retry(
-      signal,
-      changes,
-      page,
-      failed_position,
-      failed_position,
-    ),
+    wait_to_retry(signal, changes, page, failed_position, failed_position),
   )
   try {
     let next = await sources.next()
