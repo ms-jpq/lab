@@ -178,14 +178,12 @@ const persist_position = (value) => {
   } catch {}
 }
 
-/** @param {string | undefined} [type] */
-const media_observation = (type) => ({
+const media_observation = () => ({
   ended: media.ended,
   error: media.error,
   metadata: media.readyState >= media.HAVE_METADATA,
   seeking: media.seeking,
   time: media.currentTime,
-  type,
 })
 
 /** @param {AbortSignal} signal @param {number} position @returns {AsyncGenerator<PageChange, void, void>} */
@@ -200,9 +198,8 @@ const page_changes = async function* (signal, position) {
   /** @type {ReturnType<typeof setTimeout> | undefined} */
   let scheduled = undefined
 
-  /** @param {Event} event */
-  const observe = (event) => {
-    pending.push(media_observation(event.type))
+  const observe = () => {
+    pending.push(media_observation())
     if (scheduled === undefined) {
       const gate = changed
       scheduled = setTimeout(() => gate.resolve(true), 0)
@@ -240,7 +237,7 @@ const page_changes = async function* (signal, position) {
 
       for (const observed of observations) {
         const current = observed
-        let moved =
+        const moved =
           current.time !== previous.time || current.seeking !== previous.seeking
         const internal_seek =
           pending_seek !== undefined && aligned(current.time, pending_seek)
