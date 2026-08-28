@@ -682,33 +682,28 @@ const play_attempt = async (
   failures: Diagnostics,
   page: PageReader,
 ) => {
-  const opened = await result(sources.open(signal, page.seek))
+  const opened = await result(sources.next())
   if ("failure" in opened) {
     return signal.aborted
       ? undefined
       : { failure: opened.failure, opened: false }
   }
-  const buffer = opened.value
-  if (!buffer) {
+  if (opened.value.done) {
     return undefined
   }
-  try {
-    const played = await play_source(buffer, failures, page)
-    return !played || signal.aborted
-      ? undefined
-      : {
-          failure: page.take_error() ?? played.failure,
-          opened: true,
-        }
-  } finally {
-    await buffer.return()
-  }
+  const played = await play_source(opened.value.value, failures, page)
+  return !played || signal.aborted
+    ? undefined
+    : {
+        failure: page.take_error() ?? played.failure,
+        opened: true,
+      }
 }
 
 const play_media = async (signal: AbortSignal): Promise<void> => {
   const page = page_reader(signal, playable_position(Number(time_input.value)))
   const failures = diagnostics()
-  const sources = media_sources(media)
+  const sources = media_sources(media, { seek: page.seek, signal })
   try {
     while (!signal.aborted) {
       const page_failure = page.take_error()
@@ -735,7 +730,7 @@ const play_media = async (signal: AbortSignal): Promise<void> => {
     }
   } finally {
     try {
-      sources.close()
+      await sources.return?.()
     } finally {
       await page.return()
     }

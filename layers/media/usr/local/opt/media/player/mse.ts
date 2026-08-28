@@ -1,9 +1,8 @@
-import { abortion, defer, events, merge, once } from "./util.ts"
+import { abortion, once } from "./util.ts"
 
 export type MseOperation = undefined | number | Uint8Array
 export type Mse = AsyncGenerator<void, void, MseOperation>
 
-const BEHIND = 30
 const EPSILON = 0.001
 
 const MSE = (): MediaSource => {
@@ -14,12 +13,6 @@ const MSE = (): MediaSource => {
       }
     ).ManagedMediaSource ?? MediaSource
   )()
-}
-
-const revoke = (url: string | undefined): void => {
-  if (url !== undefined) {
-    URL.revokeObjectURL(url)
-  }
 }
 
 const op_lock = async function* (
@@ -40,13 +33,13 @@ const op_lock = async function* (
 }
 
 export const media_source = async function* ({
-  evict_before,
   mime_type,
   source,
+  evict_before,
 }: {
-  evict_before: () => number
   mime_type: string
   source: MediaSource
+  evict_before: () => number
 }): Mse {
   const buffer = source.addSourceBuffer(mime_type)
 
@@ -88,78 +81,88 @@ export const media_source = async function* ({
     for await (const _ of op_lock(buffer)) {
       buffer.appendBuffer(operation as Uint8Array<ArrayBuffer>)
     }
-    if (buffer.updating) {
-      buffer.abort()
-    }
-    return
   }
 }
 
-export const media_sources = (media: HTMLMediaElement) => {
-  const state: { url: string | undefined } = { url: undefined }
-
-  return {
-    close: (): void => {
-      try {
-        media.removeAttribute("src")
-        media.load()
-      } finally {
-        revoke(state.url)
-      }
-    },
-    open: async (
-      signal: AbortSignal,
-      seek: () => void,
-    ): Promise<Mse | undefined> => {
-      const source = MSE()
-      const previous = state.url
-      const next = URL.createObjectURL(source)
-      using opening = abortion(signal)
-      const opened = merge(
-        events(opening.signal, source, "sourceopen"),
-        events(opening.signal, source, "sourceclose"),
-      )
-      const selected = opened.next()
-      const stop = async (): Promise<void> => {
-        opening[Symbol.dispose]()
-        await opened.return?.()
-      }
-
-      try {
-        media.src = next
-      } catch (error) {
-        await stop()
-        revoke(next)
-        throw error
-      }
-
-      state.url = next
-      try {
-        seek()
-        const result = await selected
-        const event = result.done ? undefined : result.value[1]
-        if (!event || signal.aborted) {
-          return undefined
-        }
-        if (event.type !== "sourceopen") {
-          throw event
-        }
-
-        const duration = Number(media.dataset["duration"])
-        if (duration > 0) {
-          source.duration = duration
-        }
-        const buffer = media_source({
-          evict_before: () => media.currentTime - BEHIND,
-          mime_type: media.dataset["mseType"] as string,
-          source,
-        })
-        await buffer.next()
-        return buffer
-      } finally {
-        await stop()
-        revoke(previous)
-      }
-    },
+export const attach = async function* (
+  media: HTMLMediaElement,
+  source: MediaSource,
+) {
+  using a = abortion()
+  const opened = Promise.race([
+    once(a.signal, source, "sourceopen"),
+    once(a.signal, source, "sourceclose"),
+  ])
+  if (media.src) {
+    URL.revokeObjectURL(media.src)
   }
+  const next = URL.createObjectURL(source)
+  try {
+    media.src = next
+  } catch {
+    URL.revokeObjectURL(next)
+  }
+  await opened
+}
+
+const BEHIND = 30
+
+export const media_sources = async function* (
+  media: HTMLMediaElement,
+  { seek, signal }: { seek: () => void; signal: AbortSignal },
+): AsyncIteratorObject<Mse> {
+  let url: string | undefined
+
+  try {
+    while (!signal.aborted) {
+      const source = MSE()
+      const previous = url
+      const next = URL.createObjectURL(source)
+      const event = await attach(media, {
+        seek,
+        signal,
+        source,
+        url: next,
+      }).then(
+        (value) => value,
+        (error: unknown) => {
+          revoke(next)
+          throw error
+        },
+      )
+
+      url = next
+      revoke(previous)
+      if (!event || signal.aborted) {
+        return
+      }
+      if (event.type !== "sourceopen") {
+        throw event
+      }
+
+      const duration = Number(media.dataset["duration"])
+      if (duration > 0) {
+        source.duration = duration
+      }
+      const buffer = media_source({
+        evict_before: () => media.currentTime - BEHIND,
+        mime_type: media.dataset["mseType"] as string,
+        source,
+      })
+      await buffer.next()
+      try {
+        yield buffer
+      } finally {
+        await buffer.return()
+      }
+    }
+  } finally {
+    try {
+      media.removeAttribute("src")
+      media.load()
+    } finally {
+      revoke(url)
+    }
+  }
+  return
 }
