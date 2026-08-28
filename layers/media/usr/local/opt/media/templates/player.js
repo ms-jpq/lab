@@ -1,20 +1,9 @@
 /** @typedef {number | readonly [position: number, bytes: Uint8Array]} MseOperation */
 /** @typedef {AsyncGenerator<void, void, MseOperation | undefined> & {contains: (position: number) => boolean, frontier: () => number | undefined, play_ahead: (position: number) => number}} MseBuffer */
 /** @typedef {(signal: AbortSignal) => MseBuffer} MseBufferFactory */
-/** @typedef {AsyncGenerator<void, void, void> & {buffer: MseBuffer}} Attempt */
+/** @typedef {AsyncGenerator<void, void, void> & {buffer: MseBuffer}} Session */
 /** @typedef {ReturnType<typeof page_state> & {failed: boolean, moved: boolean}} PageChange */
 /** @typedef {readonly [AsyncIterator<unknown, void, void>, IteratorResult<unknown, void>]} IteratorSelection */
-
-const media = /** @type {HTMLMediaElement} */ (
-  document.querySelector("video, audio")
-)
-const subtitle = /** @type {HTMLTrackElement | null} */ (
-  document.querySelector("#subtitle")
-)
-const form = /** @type {HTMLFormElement} */ (document.querySelector("form"))
-const time_input = /** @type {HTMLInputElement} */ (
-  form.elements.namedItem("t")
-)
 
 const BUFFER = {
   BEHIND: 30,
@@ -26,6 +15,17 @@ const RETRY_DELAY = 1_000
 const POSITION_TOLERANCE = 0.1
 const POSITION = `media:position:${location.pathname}`
 const PAGE = crypto.randomUUID()
+
+const media = /** @type {HTMLMediaElement} */ (
+  document.querySelector("video, audio")
+)
+const subtitle = /** @type {HTMLTrackElement | null} */ (
+  document.querySelector("#subtitle")
+)
+const form = /** @type {HTMLFormElement} */ (document.querySelector("form"))
+const time_input = /** @type {HTMLInputElement} */ (
+  form.elements.namedItem("t")
+)
 
 /** @param {EventTarget} target @param {AbortSignal | undefined} signal @param {string} type @returns {Promise<Event>} */
 const once = (target, signal, type) => {
@@ -127,7 +127,7 @@ const page_state = () => ({
 })
 
 /** @param {AbortSignal} signal @returns {AsyncGenerator<PageChange, void, void>} */
-const changes = (signal) => {
+const page_states = (signal) => {
   let changed = Promise.withResolvers()
   let previous = page_state()
   const wake = () => changed.resolve(true)
@@ -335,8 +335,8 @@ const source_stream = async function* (signal, time) {
   return
 }
 
-/** @param {AbortSignal} signal @param {MseBufferFactory} create_buffer @returns {Attempt} */
-const read1 = (signal, create_buffer) => {
+/** @param {AbortSignal} signal @param {MseBufferFactory} create_buffer @returns {Session} */
+const sessions = (signal, create_buffer) => {
   const buffer = create_buffer(signal)
   const time = Number(time_input.value)
 
@@ -382,8 +382,8 @@ const read1 = (signal, create_buffer) => {
 
 /** @param {AbortSignal} signal */
 const playback_page = async (signal) => {
-  const changed = changes(signal)
-  let change = changed.next()
+  const states = page_states(signal)
+  let change = states.next()
   let resume_when_ready = false
 
   attempts: for await (const create_buffer of retrying(signal, (signal) =>
@@ -391,7 +391,7 @@ const playback_page = async (signal) => {
   )) {
     const attempt = new AbortController()
     const attempt_signal = AbortSignal.any([signal, attempt.signal])
-    const session = read1(attempt_signal, create_buffer)
+    const session = sessions(attempt_signal, create_buffer)
     /** @type {Promise<IteratorResult<void, void>> | undefined} */
     let progress = session.next()
 
@@ -401,7 +401,7 @@ const playback_page = async (signal) => {
           await select(
             attempt_signal,
             async () =>
-              /** @type {IteratorSelection} */ ([changed, await change]),
+              /** @type {IteratorSelection} */ ([states, await change]),
             progress
               ? async () =>
                   /** @type {IteratorSelection} */ ([session, await progress])
@@ -424,7 +424,7 @@ const playback_page = async (signal) => {
         if (state.done) {
           return
         }
-        change = changed.next()
+        change = states.next()
 
         const value = state.value
         if (value.moved) {
