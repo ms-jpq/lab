@@ -119,7 +119,7 @@ const close = async <T>(sources: Iterable<AsyncIterator<T>>): Promise<void> => {
 
 export const merge = async function* <T>(
   ...sources: AsyncIterator<T>[]
-): AsyncIteratorObject<T> {
+): AsyncIteratorObject<[AsyncIterator<T>, T]> {
   const pending = new Map(
     sources.map((source) => [source, select(source)] as const),
   )
@@ -132,7 +132,7 @@ export const merge = async function* <T>(
       continue
     }
 
-    yield result.value
+    yield [source, result.value]
     pending.set(source, select(source))
   }
   return

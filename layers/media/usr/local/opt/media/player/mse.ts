@@ -23,16 +23,17 @@ const revoke = (url: string | undefined): void => {
 
 const op_lock = (
   buffer: SourceBuffer,
-  cancellation?: AbortSignal,
+  cancel?: AbortSignal,
 ): AsyncDisposable => {
   const a = abortion()
   const settled = merge<Event>(
     events(a.signal, buffer, "updateend"),
     events(a.signal, buffer, "error"),
+    ...(cancel ? [events(a.signal, cancel, "abort")] : []),
   )
   const changed = settled.next()
 
-  cancellation?.addEventListener(
+  cancel?.addEventListener(
     "abort",
     () => {
       if (buffer.updating) {
