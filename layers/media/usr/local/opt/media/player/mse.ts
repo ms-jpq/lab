@@ -1,4 +1,4 @@
-import { abortion, events, defer, merge } from "./util.ts"
+import { abortion, defer, events, merge, once } from "./util.ts"
 
 export type MseOperation = undefined | number | Uint8Array
 export type Mse = AsyncGenerator<void, void, MseOperation>
@@ -22,37 +22,24 @@ const revoke = (url: string | undefined): void => {
   }
 }
 
-const op_lock = (
+const op_lock = async function* (
   buffer: SourceBuffer,
   ...signals: AbortSignal[]
-): AsyncDisposable => {
-  const a = abortion(...signals)
-  const settled = merge(
-    events(a.signal, buffer, "updateend"),
-    events(a.signal, buffer, "error"),
-  )
-  const changed = settled.next()
+): AsyncIteratorObject<undefined> {
+  using a = abortion(...signals)
+  const changed = Promise.race([
+    once(a.signal, buffer, "updateend"),
+    once(a.signal, buffer, "error"),
+  ])
 
-  return {
-    [Symbol.asyncDispose]: async () => {
-      try {
-        const { done, value } = await changed
-        if (done) {
-          return
-        }
-        const [_, event] = value
-        if (event.type === "error") {
-          throw event
-        }
-      } finally {
-        a[Symbol.dispose]()
-        await settled.return?.()
-      }
-    },
+  yield
+  const event = await changed
+  if (event?.type === "error") {
+    throw event
   }
+  return
 }
 
-// check the ordering in this entire fn, pin with tests
 export const media_source = async function* ({
   evict_before,
   mime_type,
@@ -86,14 +73,19 @@ export const media_source = async function* ({
           const ranges = buffer.buffered
           const end = ranges.length ? ranges.end(ranges.length - 1) : 0
 
-          {
-            await using _ = op_lock(buffer)
+          for await (const _ of op_lock(buffer)) {
+            if (a.signal.aborted) {
+              return
+            }
             buffer.remove(end, end + EPSILON)
           }
           if (a.signal.aborted) {
             return
           }
         }
+      }
+      if (a.signal.aborted) {
+        return
       }
       buffer.timestampOffset = operation
       started = true
@@ -107,21 +99,28 @@ export const media_source = async function* ({
         buffer.buffered.length &&
         buffer.buffered.start(0) < cutoff
       ) {
-        await using _ = op_lock(buffer)
-        buffer.remove(0, cutoff)
+        for await (const _ of op_lock(buffer)) {
+          if (a.signal.aborted) {
+            return
+          }
+          buffer.remove(0, cutoff)
+        }
       }
       if (a.signal.aborted) {
         return
       }
     }
-    {
-      await using _ = op_lock(buffer, a.signal)
+    for await (const _ of op_lock(buffer, a.signal)) {
+      if (a.signal.aborted) {
+        return
+      }
       buffer.appendBuffer(operation as Uint8Array<ArrayBuffer>)
     }
     if (a.signal.aborted) {
       if (buffer.updating) {
         buffer.abort()
       }
+      return
     }
   }
 }

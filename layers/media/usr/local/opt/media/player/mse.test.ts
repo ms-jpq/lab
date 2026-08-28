@@ -15,16 +15,26 @@ const timeRanges = (...ranges: [number, number][]): TimeRanges => ({
 
 const fixture = (
   buffered: TimeRanges = timeRanges(),
-  failure: "append" | undefined = undefined,
+  failure:
+    | "append"
+    | "append-sync"
+    | "remove"
+    | "remove-sync"
+    | undefined = undefined,
   hold: "append" | "remove" | undefined = undefined,
   readyState: "open" | "ended" = "open",
+  cancelOnAbort = false,
 ) => {
   const mutations: unknown[] = []
   const types: string[] = []
   const entered = Promise.withResolvers<void>()
+  const lifetime = new AbortController()
   const buffer = Object.assign(new EventTarget(), {
     abort: () => {
       mutations.push(["abort"])
+      if (cancelOnAbort) {
+        lifetime.abort()
+      }
       if (buffer.updating) {
         buffer.updating = false
         buffer.dispatchEvent(new Event("abort"))
@@ -34,6 +44,9 @@ const fixture = (
       }
     },
     appendBuffer: (bytes: Uint8Array<ArrayBuffer>) => {
+      if (failure === "append-sync") {
+        throw new DOMException("append failed", "InvalidStateError")
+      }
       if (buffer.updating) {
         throw new DOMException("SourceBuffer is updating", "InvalidStateError")
       }
@@ -51,12 +64,17 @@ const fixture = (
     onerror: null,
     onupdateend: null,
     remove: (start: number, end: number) => {
+      if (failure === "remove-sync") {
+        throw new DOMException("remove failed", "InvalidStateError")
+      }
       mutations.push(["remove", start, end])
       buffer.updating = true
       entered.resolve()
       if (hold !== "remove") {
         buffer.updating = false
-        buffer.dispatchEvent(new Event("updateend"))
+        buffer.dispatchEvent(
+          new Event(failure === "remove" ? "error" : "updateend"),
+        )
       }
     },
     timestampOffset: 0,
@@ -70,7 +88,6 @@ const fixture = (
     endOfStream: () => mutations.push(["end"]),
     readyState,
   }
-  const lifetime = new AbortController()
   const values = media_source({
     evict_before: () => 70,
     mime_type: "video/test",
@@ -78,6 +95,7 @@ const fixture = (
     source: source as unknown as MediaSource,
   })
   return {
+    buffer,
     entered: entered.promise,
     lifetime,
     mutations,
@@ -91,6 +109,16 @@ const fixture = (
 }
 
 const cases = [
+  {
+    name: "a pre-aborted lifetime acquires no SourceBuffer",
+    run: async () => {
+      const { lifetime, types, values } = fixture()
+      lifetime.abort()
+
+      deepEqual(await values.next(), { done: true, value: undefined })
+      deepEqual(types, [])
+    },
+  },
   {
     name: "MSE observes a synchronous append completion",
     run: async () => {
@@ -142,6 +170,58 @@ const cases = [
     },
   },
   {
+    name: "MSE surfaces a synchronous append failure without waiting",
+    run: async () => {
+      const { values } = fixture(timeRanges(), "append-sync")
+      await values.next()
+
+      const failure = await Promise.race([
+        values.next(new Uint8Array([4])).then(
+          () => undefined,
+          (error: unknown) => error,
+        ),
+        setImmediate("pending"),
+      ])
+
+      assert(failure instanceof DOMException)
+      deepEqual(failure.name, "InvalidStateError")
+    },
+  },
+  {
+    name: "MSE surfaces a synchronous removal failure without waiting",
+    run: async () => {
+      const { values } = fixture(timeRanges([0, 120]), "remove-sync")
+      await values.next()
+
+      const failure = await Promise.race([
+        values.next(new Uint8Array([4])).then(
+          () => undefined,
+          (error: unknown) => error,
+        ),
+        setImmediate("pending"),
+      ])
+
+      assert(failure instanceof DOMException)
+      deepEqual(failure.name, "InvalidStateError")
+    },
+  },
+  {
+    name: "MSE surfaces an asynchronous removal failure before appending",
+    run: async () => {
+      const { mutations, values } = fixture(timeRanges([0, 120]), "remove")
+      await values.next()
+
+      const failure = await values.next(new Uint8Array([4])).then(
+        () => undefined,
+        (error: unknown) => error,
+      )
+
+      assert(failure instanceof Event)
+      deepEqual(failure.type, "error")
+      deepEqual(mutations, [["remove", 0, 70]])
+    },
+  },
+  {
     name: "lifetime cancellation aborts an entered SourceBuffer mutation",
     run: async () => {
       const { entered, lifetime, mutations, values } = fixture(
@@ -154,9 +234,22 @@ const cases = [
       const appending = values.next(new Uint8Array([5]))
       await entered
       lifetime.abort()
-      await appending
+      deepEqual(await appending, { done: true, value: undefined })
       deepEqual(mutations, [["append", [5]], ["abort"]])
       await values.return?.(undefined)
+    },
+  },
+  {
+    name: "lifetime cancellation prevents append entry",
+    run: async () => {
+      const { lifetime, mutations, values } = fixture()
+      await values.next()
+
+      const appending = values.next(new Uint8Array([5]))
+      lifetime.abort()
+
+      deepEqual(await appending, { done: true, value: undefined })
+      deepEqual(mutations, [])
     },
   },
   {
@@ -188,6 +281,19 @@ const cases = [
     },
   },
   {
+    name: "lifetime cancellation prevents eviction entry",
+    run: async () => {
+      const { lifetime, mutations, values } = fixture(timeRanges([0, 120]))
+      await values.next()
+
+      const appending = values.next(new Uint8Array([6]))
+      lifetime.abort()
+
+      deepEqual(await appending, { done: true, value: undefined })
+      deepEqual(mutations, [])
+    },
+  },
+  {
     name: "lifetime cancellation is observed after reopening an ended source",
     run: async () => {
       const { entered, lifetime, mutations, release, values } = fixture(
@@ -211,7 +317,136 @@ const cases = [
 
       release()
       deepEqual(await seeking, { done: true, value: undefined })
-      deepEqual(mutations, [["remove", 20, 20.001]])
+      deepEqual(mutations, [["remove", 20, 20.001], ["abort"]])
+    },
+  },
+  {
+    name: "lifetime cancellation prevents ended-source removal entry",
+    run: async () => {
+      const { buffer, lifetime, mutations, values } = fixture(
+        timeRanges([0, 20]),
+        undefined,
+        undefined,
+        "ended",
+      )
+      await values.next()
+      await values.next(10)
+
+      const seeking = values.next(30)
+      lifetime.abort()
+
+      deepEqual(await seeking, { done: true, value: undefined })
+      deepEqual(mutations, [["abort"]])
+      deepEqual(buffer.timestampOffset, 10)
+    },
+  },
+  {
+    name: "a second timestamp resets the parser before changing its offset",
+    run: async () => {
+      const { buffer, mutations, values } = fixture()
+      await values.next()
+
+      await values.next(10)
+      deepEqual(buffer.timestampOffset, 10)
+      deepEqual(mutations, [])
+
+      await values.next(30)
+      deepEqual(mutations, [["abort"]])
+      deepEqual(buffer.timestampOffset, 30)
+      await values.return?.(undefined)
+    },
+  },
+  {
+    name: "parser reset cancellation prevents a timestamp write",
+    run: async () => {
+      const { buffer, mutations, values } = fixture(
+        timeRanges(),
+        undefined,
+        undefined,
+        "open",
+        true,
+      )
+      await values.next()
+      await values.next(10)
+
+      deepEqual(await values.next(30), { done: true, value: undefined })
+      deepEqual(mutations, [["abort"]])
+      deepEqual(buffer.timestampOffset, 10)
+    },
+  },
+  {
+    name: "an ended source reopens before resetting its timestamp",
+    run: async () => {
+      const { buffer, mutations, values } = fixture(
+        timeRanges([0, 20]),
+        undefined,
+        undefined,
+        "ended",
+      )
+      await values.next()
+      await values.next(10)
+
+      await values.next(30)
+      deepEqual(mutations, [["remove", 20, 20.001], ["abort"]])
+      deepEqual(buffer.timestampOffset, 30)
+      await values.return?.(undefined)
+    },
+  },
+  {
+    name: "end-of-stream follows the final settled append",
+    run: async () => {
+      const { mutations, values } = fixture()
+      await values.next()
+
+      await values.next(new Uint8Array([7]))
+      deepEqual(await values.next(undefined), {
+        done: false,
+        value: undefined,
+      })
+      deepEqual(mutations, [["append", [7]], ["end"]])
+      await values.return?.(undefined)
+    },
+  },
+  {
+    name: "queued end-of-stream waits for an entered append",
+    run: async () => {
+      const { entered, mutations, release, values } = fixture(
+        timeRanges(),
+        undefined,
+        "append",
+      )
+      await values.next()
+
+      const appending = values.next(new Uint8Array([8]))
+      await entered
+      const ending = values.next(undefined)
+
+      const ended = await Promise.race([
+        ending.then(() => true),
+        setImmediate(false),
+      ])
+      deepEqual(ended, false)
+      deepEqual(mutations, [["append", [8]]])
+
+      release()
+      await appending
+      await ending
+      deepEqual(mutations, [["append", [8]], ["end"]])
+      await values.return?.(undefined)
+    },
+  },
+  {
+    name: "lifetime cancellation prevents end-of-stream entry",
+    run: async () => {
+      const { lifetime, mutations, values } = fixture()
+      await values.next()
+      lifetime.abort()
+
+      deepEqual(await values.next(undefined), {
+        done: true,
+        value: undefined,
+      })
+      deepEqual(mutations, [])
     },
   },
 ]
