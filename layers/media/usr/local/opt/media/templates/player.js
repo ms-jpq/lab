@@ -431,27 +431,11 @@ const mse = (signal, media, position) => {
 
 /** @param {AbortSignal} signal @param {number} time */
 const source_stream = async function* (signal, time) {
-  /** @type {ReadableStreamDefaultReader<Uint8Array> | undefined} */
-  let reader = undefined
-
-  try {
-    const response = await fetch(source_url(media, time), {
-      signal,
-    })
-    reader = response.body?.getReader()
-    if (!response.ok || !reader) {
-      throw new Error(`${response.statusText} - ${response.status}`)
-    }
-    for (;;) {
-      const { done, value } = await reader.read()
-      if (done) {
-        break
-      }
-      yield value
-    }
-  } finally {
-    await reader?.cancel()
+  const response = await fetch(source_url(media, time), { signal })
+  if (!response.ok || !response.body) {
+    throw new Error(`${response.statusText} - ${response.status}`)
   }
+  yield* response.body
   return
 }
 
@@ -467,63 +451,32 @@ const wait_for_demand = async (signal, buffer) => {
 
 /** @param {AbortSignal} signal @param {Mse} buffer @param {number} time */
 const session = async (signal, buffer, time) => {
-  let start = stream_position(time)
+  const start = stream_position(time)
   let playable = false
 
-  streaming: for (;;) {
-    if (!(await wait_for_demand(signal, buffer))) {
-      return
-    }
-
-    if ((await buffer.next(start)).done) {
-      return
-    }
-    try {
-      for await (const bytes of source_stream(signal, start)) {
-        if ((await buffer.next([media.currentTime, bytes])).done) {
-          return
-        }
-        playable ||= buffer.available(time) !== undefined
-        if (
-          buffer.play_ahead(media.currentTime) >= BUFFER.HI &&
-          !(await wait_for_demand(signal, buffer))
-        ) {
-          return
-        }
-      }
-    } catch (error) {
-      if (signal.aborted) {
-        return
-      }
-      const next = stream_position(buffer.frontier(media.currentTime) ?? start)
-      if (next <= start) {
-        throw error
-      }
-      start = next
-      if (!(await retry_delay(signal))) {
-        return
-      }
-      continue streaming
-    }
-    if (!playable) {
-      throw new Error(`stream ended before position ${time} became playable`)
-    }
-    const duration = Number(media.dataset.duration)
-    const tail = buffer.frontier(media.currentTime)
-    if (
-      duration > 0 &&
-      (tail === undefined || tail < duration - END_TOLERANCE)
-    ) {
-      if (tail === undefined || !(await retry_delay(signal))) {
-        return
-      }
-      start = stream_position(tail)
-      continue streaming
-    }
-    if (!(await buffer.next("end")).done) {
-      await wait_for_abort(signal)
-    }
+  if (!(await wait_for_demand(signal, buffer))) {
     return
+  }
+  if ((await buffer.next(start)).done) {
+    return
+  }
+  for await (const bytes of source_stream(signal, start)) {
+    if ((await buffer.next([media.currentTime, bytes])).done) {
+      return
+    }
+    playable ||= buffer.available(time) !== undefined
+    if (
+      buffer.play_ahead(media.currentTime) >= BUFFER.HI &&
+      !(await wait_for_demand(signal, buffer))
+    ) {
+      return
+    }
+  }
+  if (!playable) {
+    throw new Error(`stream ended before position ${time} became playable`)
+  }
+  if (!(await buffer.next("end")).done) {
+    await wait_for_abort(signal)
   }
 }
 

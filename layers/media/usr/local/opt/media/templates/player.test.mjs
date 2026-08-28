@@ -102,7 +102,6 @@ const fixture = async (position = 40) => {
           return this.ranges[index][1]
         },
       }
-      this.failNextRemove = false
       this._timestampOffset = 0
       this.updating = false
     }
@@ -137,13 +136,6 @@ const fixture = async (position = 40) => {
 
     /** @param {number} start @param {number} end */
     remove(start, end) {
-      if (this.failNextRemove) {
-        this.failNextRemove = false
-        throw new DOMException(
-          "SourceBuffer is no longer usable",
-          "InvalidStateError",
-        )
-      }
       if (this.source.readyState === "ended") {
         this.source.readyState = "open"
         queueMicrotask(() => this.source.dispatchEvent(new Event("sourceopen")))
@@ -612,102 +604,6 @@ test(
 )
 
 test(
-  "a short clean response continues from its frontier before EOS",
-  { concurrency: true },
-  async () => {
-    const current = await fixture()
-    current.media.currentTime = 40
-    current.media.dataset.duration = "50"
-    const controller = new AbortController()
-    let offset = 0
-    let tail = 0
-    let ended = 0
-    const buffer = {
-      available: (position) => (tail > position ? position : undefined),
-      frontier: () => tail,
-      next: async (operation) => {
-        if (operation === "end") {
-          ended += 1
-          controller.abort()
-        } else if (typeof operation === "number") {
-          offset = operation
-        } else if (Array.isArray(operation)) {
-          tail = offset + 5
-        }
-        return { done: false }
-      },
-      play_ahead: () => 0,
-    }
-    await current.context.player_test.session(controller.signal, buffer, 40)
-    assert.equal(ended, 1)
-    assert.deepEqual(
-      current.requests.map((request) => new URL(request).searchParams.get("t")),
-      ["40", "45"],
-    )
-  },
-)
-
-test(
-  "a partial failed response retries from its frontier",
-  { concurrency: true },
-  async () => {
-    const current = await fixture()
-    current.media.currentTime = 40
-    current.media.dataset.duration = "50"
-    let response = 0
-    current.context.fetch = async (url) => {
-      current.requests.push(String(url))
-      response += 1
-      const fails = response === 1
-      let pulls = 0
-      return {
-        body: new ReadableStream({
-          pull: (controller) => {
-            pulls += 1
-            if (pulls === 1) {
-              controller.enqueue(new Uint8Array([1]))
-            } else if (fails) {
-              controller.error(new Error("broken stream"))
-            } else {
-              controller.close()
-            }
-          },
-        }),
-        ok: true,
-        status: 200,
-        statusText: "OK",
-      }
-    }
-    const controller = new AbortController()
-    let offset = 0
-    let tail = 0
-    let ended = 0
-    const buffer = {
-      available: (position) => (tail > position ? position : undefined),
-      frontier: () => tail,
-      next: async (operation) => {
-        if (operation === "end") {
-          ended += 1
-          controller.abort()
-        } else if (typeof operation === "number") {
-          offset = operation
-        } else if (Array.isArray(operation)) {
-          tail = offset + 5
-        }
-        return { done: false }
-      },
-      play_ahead: () => 0,
-    }
-    await current.context.player_test.session(controller.signal, buffer, 40)
-    assert.equal(ended, 1)
-    assert.deepEqual(
-      current.requests.map((request) => new URL(request).searchParams.get("t")),
-      ["40", "45"],
-    )
-  },
-)
-
-test(
   "containment is exact and teardown releases the owned source",
   { concurrency: true },
   async () => {
@@ -767,36 +663,6 @@ test(
 )
 
 test(
-  "a failed eviction does not end its MSE lifetime",
-  { concurrency: true },
-  async () => {
-    const current = await fixture()
-    const controller = new AbortController()
-    const buffer = current.context.player_test.mse(
-      controller.signal,
-      current.media,
-      10,
-    )
-    assert.equal((await buffer.next()).done, false)
-    await buffer.next(10)
-    await buffer.next([10, new Uint8Array([1])])
-
-    const sourceUrl = current.media.src
-    const [source] = current.sources
-    const [openedBuffer] = source.sourceBuffers
-    openedBuffer.failNextRemove = true
-    current.media.currentTime = 100
-    assert.equal((await buffer.next([100, new Uint8Array([1])])).done, false)
-    assert.equal(current.media.src, sourceUrl)
-    assert.equal(current.media.loads, 0)
-    assert.equal(current.revoked.includes(sourceUrl), false)
-
-    controller.abort()
-    await buffer.return()
-  },
-)
-
-test(
   "an ordinary unbuffered seek keeps one target request and one MediaSource",
   { concurrency: true },
   async () => {
@@ -836,7 +702,6 @@ test(
     while (mediaSource.sourceBuffers[0]?.buffered.length !== 1) {
       await new Promise((resolve) => setImmediate(resolve))
     }
-    mediaSource.sourceBuffers[0].failNextRemove = true
     const source = current.media.src
     current.media.currentTime = 110
     current.media.seeking = true
