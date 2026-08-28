@@ -306,8 +306,8 @@ const page_states = (signal, position) => {
   })()
 }
 
-/** @param {AbortSignal} signal @param {HTMLMediaElement} media @param {MediaSource} source @param {SourceBuffer} opened_buffer @returns {Mse} */
-const mse = (signal, media, source, opened_buffer) => {
+/** @param {AbortSignal} signal @param {HTMLMediaElement} media @param {MediaSource} source @param {SourceBuffer} buffer @returns {Mse} */
+const mse = (signal, media, source, buffer) => {
   /** @param {() => void} mutate */
   const update = async (mutate) => {
     if (signal.aborted) {
@@ -317,8 +317,8 @@ const mse = (signal, media, source, opened_buffer) => {
     try {
       mutate()
       await Promise.race([
-        once(opened_buffer, settled.signal, "updateend"),
-        once(opened_buffer, settled.signal, "error"),
+        once(buffer, settled.signal, "updateend"),
+        once(buffer, settled.signal, "error"),
       ])
       return true
     } finally {
@@ -340,32 +340,32 @@ const mse = (signal, media, source, opened_buffer) => {
       if (typeof operation === "number") {
         if (started) {
           if (source.readyState === "ended") {
-            const ranges = opened_buffer.buffered
+            const ranges = buffer.buffered
             const end = ranges.length ? ranges.end(ranges.length - 1) : 0
-            if (!(await update(() => opened_buffer.remove(end, end + 0.001)))) {
+            if (!(await update(() => buffer.remove(end, end + 0.001)))) {
               return
             }
           }
-          opened_buffer.abort()
+          buffer.abort()
         }
-        opened_buffer.timestampOffset = operation
+        buffer.timestampOffset = operation
         started = true
         continue
       }
 
       const expired = media.currentTime - BUFFER.BEHIND
-      const ranges = opened_buffer.buffered
+      const ranges = buffer.buffered
       if (
         expired > 0 &&
         ranges.length &&
         ranges.start(0) < expired &&
-        !(await update(() => opened_buffer.remove(0, expired)))
+        !(await update(() => buffer.remove(0, expired)))
       ) {
         return
       }
       if (
         !(await update(() =>
-          opened_buffer.appendBuffer(
+          buffer.appendBuffer(
             /** @type {Uint8Array<ArrayBuffer>} */ (operation),
           ),
         ))
