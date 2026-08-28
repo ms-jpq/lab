@@ -1,5 +1,12 @@
 import { readFile } from "node:fs/promises"
-import { strict as assert } from "node:assert"
+import {
+  deepEqual,
+  doesNotReject,
+  match,
+  notEqual,
+  ok as assert,
+  rejects,
+} from "node:assert/strict"
 import nodeTest, { type TestContext } from "node:test"
 import vm from "node:vm"
 
@@ -15,7 +22,7 @@ type MutableTimeRanges = {
 }
 type MediaFailure = { code: number; message?: string }
 type MseOperation = "end" | number | Uint8Array
-type Mse = AsyncGenerator<void, void, MseOperation | undefined>
+type Mse = AsyncGenerator<void, void, MseOperation>
 type MseBuffer = EventTarget & {
   abort: () => void
   appendBuffer: (bytes: Uint8Array) => void
@@ -99,14 +106,14 @@ const test = (name: string, _options: typeof options, run: TestBody): void => {
   cases.push({ name, run })
 }
 const present = <T,>(value: T | undefined): T => {
-  assert.ok(value !== undefined)
+  assert(value !== undefined)
   return value
 }
 const nextValue = async <T,>(
   iterator: AsyncIterator<T, unknown, undefined>,
 ): Promise<T> => {
   const result = await iterator.next()
-  assert.equal(result.done, false)
+  deepEqual(result.done, false)
   return result.value
 }
 const eventually = async (predicate: () => boolean): Promise<void> => {
@@ -571,7 +578,7 @@ const fixture = async (position = 40) => {
     static override createObjectURL(
       source: Blob | globalThis.MediaSource | MediaSource,
     ): string {
-      assert.ok(source instanceof MediaSource)
+      assert(source instanceof MediaSource)
       const url = `blob:player-${crypto.randomUUID()}`
       queueMicrotask(() => {
         source.readyState = "open"
@@ -704,7 +711,7 @@ for (const { abortParent, cancelRejects, name } of readerTeardownCases) {
         getReader: () => ({
           cancel: async () => {
             cancellations += 1
-            assert.equal(signal.aborted, true)
+            deepEqual(signal.aborted, true)
             if (cancelRejects) {
               throw new DOMException("The operation was aborted", "AbortError")
             }
@@ -722,15 +729,15 @@ for (const { abortParent, cancelRejects, name } of readerTeardownCases) {
       40,
     )
     const chunk = await stream.next()
-    assert.equal(chunk.done, false)
-    assert.deepEqual([...chunk.value], [1])
+    deepEqual(chunk.done, false)
+    deepEqual([...chunk.value], [1])
     if (abortParent) {
       controller.abort()
     }
-    await assert.doesNotReject(stream.return(undefined))
+    await doesNotReject(stream.return(undefined))
 
-    assert.equal(reads, 1)
-    assert.equal(cancellations, 1)
+    deepEqual(reads, 1)
+    deepEqual(cancellations, 1)
   })
 }
 
@@ -767,12 +774,12 @@ test(
       40,
     )
     const chunk = await stream.next()
-    assert.equal(chunk.done, false)
-    assert.deepEqual([...chunk.value], [1])
+    deepEqual(chunk.done, false)
+    deepEqual([...chunk.value], [1])
     const end = await stream.next()
 
-    assert.equal(end.done, true)
-    assert.deepEqual(
+    deepEqual(end.done, true)
+    deepEqual(
       { aborts, cancellations, reads },
       { aborts: 0, cancellations: 0, reads: 2 },
     )
@@ -826,13 +833,13 @@ test(
     const transient = states.next()
     current.media.dispatchEvent(new Event("timeupdate"))
     await transient
-    assert.equal(current.timeInput.value, "40")
+    deepEqual(current.timeInput.value, "40")
 
     const aligned = states.next()
     current.media.readyState = 1
     current.media.dispatchEvent(new Event("loadedmetadata"))
     await aligned
-    assert.equal(current.media.currentTime, 40)
+    deepEqual(current.media.currentTime, 40)
     controller.abort()
   },
 )
@@ -848,11 +855,11 @@ test(
     const calls = current.media.listenerCalls
 
     await states.return(undefined)
-    assert.equal(parent.signal.aborted, false)
+    deepEqual(parent.signal.aborted, false)
     current.media.dispatchEvent(new Event("timeupdate"))
 
-    assert.equal(current.media.listenerCalls, calls)
-    assert.equal((await states.next()).done, true)
+    deepEqual(current.media.listenerCalls, calls)
+    deepEqual((await states.next()).done, true)
   },
 )
 
@@ -885,18 +892,18 @@ test(
       return result
     })
     await Promise.resolve()
-    assert.equal(settled, false)
+    deepEqual(settled, false)
 
     current.media.currentTime = 110
     current.media.seeking = true
     current.media.dispatchEvent(new Event("seeking"))
-    assert.equal(scheduled.length, 1)
+    deepEqual(scheduled.length, 1)
     present(scheduled[0])()
 
     const change = await nextValue({ next: () => pending })
-    assert.equal(change.error, current.media.error)
-    assert.equal(change.position, 110)
-    assert.equal(change.restart, true)
+    deepEqual(change.error, current.media.error)
+    deepEqual(change.position, 110)
+    deepEqual(change.restart, true)
     controller.abort()
     await states.return(undefined)
   },
@@ -915,10 +922,10 @@ test("subtitle events stay outside media state batches", options, async () => {
 
   current.subtitle.dispatchEvent(new Event("error"))
   await new Promise((resolve) => setImmediate(resolve))
-  assert.equal(observed, false)
+  deepEqual(observed, false)
 
   controller.abort()
-  assert.equal((await pending).done, true)
+  deepEqual((await pending).done, true)
   await states.return(undefined)
 })
 
@@ -975,20 +982,20 @@ test("a starved seek preserves native play intent", options, async () => {
         source.sourceBuffers[0]?.buffered.start(0) === 110,
     )
 
-    assert.equal(current.media.pauses, 0)
-    assert.equal(current.media.plays, 0)
-    assert.equal(current.media.paused, false)
-    assert.equal(current.sources.length, 1)
-    assert.equal(current.media.src, url)
-    assert.deepEqual(
+    deepEqual(current.media.pauses, 0)
+    deepEqual(current.media.plays, 0)
+    deepEqual(current.media.paused, false)
+    deepEqual(current.sources.length, 1)
+    deepEqual(current.media.src, url)
+    deepEqual(
       requests.map(({ time }) => time),
       ["40", "110"],
     )
-    assert.equal(cancellations, 1)
-    assert.equal(present(requests[0]).signal.aborted, true)
-    assert.equal(present(requests[1]).signal.aborted, false)
-    assert.deepEqual(current.errors, [])
-    assert.deepEqual(
+    deepEqual(cancellations, 1)
+    deepEqual(present(requests[0]).signal.aborted, true)
+    deepEqual(present(requests[1]).signal.aborted, false)
+    deepEqual(current.errors, [])
+    deepEqual(
       current.media.topology.filter(
         (operation) => operation === "pause" || operation === "play",
       ),
@@ -1017,10 +1024,10 @@ test("an ordinary user pause is never auto-resumed", options, async () => {
     current.media.dispatchEvent(new Event("canplay"))
     await new Promise((resolve) => setImmediate(resolve))
 
-    assert.equal(current.media.pauses, 1)
-    assert.equal(current.media.plays, 0)
-    assert.equal(current.media.paused, true)
-    assert.deepEqual(
+    deepEqual(current.media.pauses, 1)
+    deepEqual(current.media.plays, 0)
+    deepEqual(current.media.paused, true)
+    deepEqual(
       current.media.topology.filter(
         (operation) => operation === "pause" || operation === "play",
       ),
@@ -1066,31 +1073,31 @@ test(
       }
       await eventually(() => clock.length === 1)
 
-      assert.equal(current.errors.length, 1)
-      assert.equal(clock.length, 1)
-      assert.deepEqual(mediaBoundary(), beforeError)
+      deepEqual(current.errors.length, 1)
+      deepEqual(clock.length, 1)
+      deepEqual(mediaBoundary(), beforeError)
       clock.advance(0)
       await eventually(
         () => current.subtitle.sources.length === subtitleRequests + 1,
       )
 
-      assert.equal(current.subtitle.sources.length, subtitleRequests + 1)
+      deepEqual(current.subtitle.sources.length, subtitleRequests + 1)
       const initial = new URL(
         present(current.subtitle.sources[subtitleRequests - 1]),
       )
       const retried = new URL(
         present(current.subtitle.sources[subtitleRequests]),
       )
-      assert.equal(retried.searchParams.get("t"), "0")
-      assert.notEqual(
+      deepEqual(retried.searchParams.get("t"), "0")
+      notEqual(
         retried.searchParams.get("request"),
         initial.searchParams.get("request"),
       )
       current.subtitle.dispatchEvent(new Event("load"))
       await new Promise((resolve) => setImmediate(resolve))
-      assert.equal(clock.length, 1)
-      assert.equal(current.errors.length, 1)
-      assert.deepEqual(mediaBoundary(), beforeError)
+      deepEqual(clock.length, 1)
+      deepEqual(current.errors.length, 1)
+      deepEqual(mediaBoundary(), beforeError)
     } finally {
       current.context.window.dispatchEvent(new Event("pagehide"))
       clock.dispose()
@@ -1114,20 +1121,20 @@ test(
       )
       current.subtitle.dispatchEvent(new Event("error"))
       await eventually(() => clock.length === 1)
-      assert.equal(clock.length, 1)
+      deepEqual(clock.length, 1)
       const subtitleRequests = current.subtitle.sources.length
 
       current.context.window.dispatchEvent(new Event("pagehide"))
       hidden = true
       await eventually(() => clock.cancellations === 1)
-      assert.equal(clock.cancellations, 1)
+      deepEqual(clock.cancellations, 1)
       clock.advance(0)
       await new Promise((resolve) => setImmediate(resolve))
-      assert.equal(current.subtitle.sources.length, subtitleRequests)
+      deepEqual(current.subtitle.sources.length, subtitleRequests)
       const listenerCalls = current.subtitle.listenerCalls
       current.subtitle.dispatchEvent(new Event("error"))
       current.subtitle.dispatchEvent(new Event("load"))
-      assert.equal(current.subtitle.listenerCalls, listenerCalls)
+      deepEqual(current.subtitle.listenerCalls, listenerCalls)
     } finally {
       if (!hidden) {
         current.context.window.dispatchEvent(new Event("pagehide"))
@@ -1144,11 +1151,11 @@ test(
     await new Promise((resolve) => setImmediate(resolve))
     owner.abort()
     await attempt
-    assert.equal(parent.signal.aborted, false)
+    deepEqual(parent.signal.aborted, false)
     const ownedCalls = owned.subtitle.listenerCalls
     owned.subtitle.dispatchEvent(new Event("error"))
     owned.subtitle.dispatchEvent(new Event("load"))
-    assert.equal(owned.subtitle.listenerCalls, ownedCalls)
+    deepEqual(owned.subtitle.listenerCalls, ownedCalls)
   },
 )
 
@@ -1195,22 +1202,22 @@ test(
       current.subtitle.dispatchEvent(new Event("error"))
       await eventually(() => outcome !== undefined)
 
-      assert.deepEqual(outcome, { error: diagnostic, status: "rejected" })
-      assert.equal(parent.signal.aborted, false)
-      assert.equal(present<AbortSignal>(requestSignal).aborted, true)
-      assert.equal(current.media.src, "")
-      assert.equal(current.media.loads, 1)
-      assert.equal(current.revoked.length, 1)
-      assert.equal(buffer.usable, false)
-      assert.equal(clock.length, 0)
+      deepEqual(outcome, { error: diagnostic, status: "rejected" })
+      deepEqual(parent.signal.aborted, false)
+      deepEqual(present<AbortSignal>(requestSignal).aborted, true)
+      deepEqual(current.media.src, "")
+      deepEqual(current.media.loads, 1)
+      deepEqual(current.revoked.length, 1)
+      deepEqual(buffer.usable, false)
+      deepEqual(clock.length, 0)
 
       const mediaCalls = current.media.listenerCalls
       const subtitleCalls = current.subtitle.listenerCalls
       current.media.dispatchEvent(new Event("timeupdate"))
       current.subtitle.dispatchEvent(new Event("error"))
       current.subtitle.dispatchEvent(new Event("load"))
-      assert.equal(current.media.listenerCalls, mediaCalls)
-      assert.equal(current.subtitle.listenerCalls, subtitleCalls)
+      deepEqual(current.media.listenerCalls, mediaCalls)
+      deepEqual(current.subtitle.listenerCalls, subtitleCalls)
     } finally {
       parent.abort()
       await observed
@@ -1236,14 +1243,14 @@ test(
     const sought = states.next()
     current.media.dispatchEvent(new Event("seeking"))
     const value = await nextValue({ next: () => sought })
-    assert.equal(value.restart, true)
-    assert.equal(current.timeInput.value, "37")
+    deepEqual(value.restart, true)
+    deepEqual(current.timeInput.value, "37")
 
     current.ranges.push([0, 10])
     const stale = states.next()
     current.media.dispatchEvent(new Event("canplay"))
     await stale
-    assert.equal(current.media.currentTime, 37)
+    deepEqual(current.media.currentTime, 37)
     controller.abort()
   },
 )
@@ -1263,7 +1270,7 @@ test(
     current.media.readyState = 1
     current.media.dispatchEvent(new Event("loadedmetadata"))
     await states.next()
-    assert.equal(current.media.currentTime, 40)
+    deepEqual(current.media.currentTime, 40)
 
     current.media.seeking = true
     current.media.dispatchEvent(new Event("seeking"))
@@ -1272,9 +1279,9 @@ test(
     current.media.dispatchEvent(new Event("timeupdate"))
     const change = await nextValue(states)
 
-    assert.equal(change.position, 40)
-    assert.equal(change.restart, false)
-    assert.equal(current.timeInput.value, "40")
+    deepEqual(change.position, 40)
+    deepEqual(change.restart, false)
+    deepEqual(current.timeInput.value, "40")
     controller.abort()
   },
 )
@@ -1312,9 +1319,9 @@ for (const { events, name } of synchronousSeekCases) {
       }
 
       const change = await nextValue(states)
-      assert.equal(change.restart, true)
-      assert.equal(change.position, 110)
-      assert.equal(current.timeInput.value, "110")
+      deepEqual(change.restart, true)
+      deepEqual(change.position, 110)
+      deepEqual(current.timeInput.value, "110")
       controller.abort()
     },
   )
@@ -1339,9 +1346,9 @@ for (const { name, range, target } of bufferedSeekCases) {
       current.media.dispatchEvent(new Event("seeking"))
       const change = await nextValue(states)
 
-      assert.equal(change.position, target)
-      assert.equal(change.restart, false)
-      assert.equal(current.timeInput.value, String(Math.floor(target)))
+      deepEqual(change.position, target)
+      deepEqual(change.restart, false)
+      deepEqual(current.timeInput.value, String(Math.floor(target)))
       controller.abort()
     },
   )
@@ -1354,13 +1361,13 @@ test("page progress persists only playable positions", options, async () => {
   current.media.currentTime = 110
   current.media.dispatchEvent(new Event("timeupdate"))
   await states.next()
-  assert.equal(current.timeInput.value, "40")
+  deepEqual(current.timeInput.value, "40")
 
   current.ranges.push([110, 120])
   current.media.currentTime = 111
   current.media.dispatchEvent(new Event("timeupdate"))
   await states.next()
-  assert.equal(current.timeInput.value, "111")
+  deepEqual(current.timeInput.value, "111")
   controller.abort()
 })
 
@@ -1372,7 +1379,7 @@ test("ended resets the resume position", options, async () => {
   const observed = states.next()
   current.media.dispatchEvent(new Event("ended"))
   await observed
-  assert.equal(current.timeInput.value, "0")
+  deepEqual(current.timeInput.value, "0")
   controller.abort()
 })
 
@@ -1382,11 +1389,11 @@ test("exact-end startup requests a playable position", options, async () => {
   const playback = current.context.player_test.playback_page(controller.signal)
   try {
     await eventually(() => current.requests.length === 1)
-    assert.equal(
+    deepEqual(
       new URL(present(current.requests[0])).searchParams.get("t"),
       "199",
     )
-    assert.equal(current.media.currentTime, 199)
+    deepEqual(current.media.currentTime, 199)
   } finally {
     controller.abort()
     await playback
@@ -1403,7 +1410,7 @@ test(
     const observed = states.next()
     current.media.dispatchEvent(new Event("error"))
     const value = await nextValue({ next: () => observed })
-    assert.equal(value.error, null)
+    deepEqual(value.error, null)
     controller.abort()
   },
 )
@@ -1418,7 +1425,7 @@ test("a synchronous event batch emits one media failure", options, async () => {
   current.media.dispatchEvent(new Event("progress"))
   const change = await nextValue(states)
 
-  assert.equal(change.error, failure)
+  deepEqual(change.error, failure)
   controller.abort()
 })
 
@@ -1438,9 +1445,9 @@ test(
     current.media.dispatchEvent(new Event("seeking"))
 
     const change = await nextValue({ next: () => pending })
-    assert.equal(change.error, failure)
-    assert.equal(change.position, 110)
-    assert.equal(change.restart, true)
+    deepEqual(change.error, failure)
+    deepEqual(change.position, 110)
+    deepEqual(change.restart, true)
     controller.abort()
   },
 )
@@ -1467,15 +1474,15 @@ test(
       await eventually(
         () => current.sources.length === 2 && current.requests.length === 2,
       )
-      assert.equal(
+      deepEqual(
         new URL(present(current.requests[1])).searchParams.get("t"),
         "40",
       )
-      assert.equal(current.sources.length, 2)
-      assert.equal(current.errors.length, 1)
-      assert.equal(current.errors[0]?.[0], failure)
-      assert.equal(current.media.loads, 0)
-      assert.equal(
+      deepEqual(current.sources.length, 2)
+      deepEqual(current.errors.length, 1)
+      deepEqual(current.errors[0]?.[0], failure)
+      deepEqual(current.media.loads, 0)
+      deepEqual(
         current.requests.some(
           (url) => new URL(url).searchParams.get("t") === "0",
         ),
@@ -1528,7 +1535,7 @@ for (const { events, name } of synchronousFailureSeekCases) {
         await eventually(
           () => current.sources.length === 2 && current.requests.length === 2,
         )
-        assert.deepEqual(
+        deepEqual(
           {
             callbacks: clock.callbacks,
             diagnostics: current.errors.map(([error]) => error),
@@ -1653,8 +1660,8 @@ test(
       const paused = playback.next()
       await firstAppend.promise
       await paused
-      assert.equal(requests, 1)
-      assert.equal(appends, 1)
+      deepEqual(requests, 1)
+      deepEqual(appends, 1)
 
       for (let turn = 0; turn < 8; turn += 1) {
         await new Promise((resolve) => setImmediate(resolve))
@@ -1664,13 +1671,67 @@ test(
         await new Promise((resolve) => setImmediate(resolve))
       }
 
-      assert.equal(produced, settled)
-      assert.ok(completed || aborts > 0 || cancellations > 0)
+      deepEqual(produced, settled)
+      assert(completed || aborts > 0 || cancellations > 0)
     } finally {
       producing = false
       controller.abort()
       await playback.return(undefined)
     }
+  },
+)
+
+test(
+  "owner cancellation drains a page suspended at high water",
+  options,
+  async () => {
+    const current = await fixture()
+    const chunk = Promise.withResolvers<ReadableStreamReadResult<Uint8Array>>()
+    let cancellations = 0
+    let requestSignal: AbortSignal | undefined = undefined
+    current.context.fetch = async (_url, { signal }) => {
+      requestSignal = signal
+      return mockResponse({
+        getReader: () => ({
+          cancel: async () => {
+            cancellations += 1
+          },
+          read: () => chunk.promise,
+        }),
+      })
+    }
+
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    await eventually(() => current.sources[0]?.sourceBuffers.length === 1)
+    const source = present(current.sources[0])
+    const buffer = present(source.sourceBuffers[0])
+    buffer.appendBuffer = () => {
+      buffer.updating = true
+      buffer.appendState = "parsing"
+      queueMicrotask(() => {
+        buffer.buffered.ranges = [[40, 100]]
+        current.media.buffered.ranges = [[40, 100]]
+        buffer.updating = false
+        buffer.dispatchEvent(new Event("updateend"))
+      })
+    }
+    chunk.resolve({ done: false, value: new Uint8Array([1]) })
+    await eventually(() => cancellations === 1)
+
+    controller.abort()
+    await playback
+
+    deepEqual(present<AbortSignal>(requestSignal).aborted, true)
+    deepEqual(current.media.loads, 1)
+    deepEqual(current.media.src, "")
+    deepEqual(current.revoked.length, 1)
+    deepEqual(buffer.usable, false)
+    const calls = current.media.listenerCalls
+    current.media.dispatchEvent(new Event("timeupdate"))
+    deepEqual(current.media.listenerCalls, calls)
   },
 )
 
@@ -1756,9 +1817,9 @@ test(
     try {
       const paused = playback.next()
       await firstAppend.promise
-      assert.equal((await paused).done, false)
-      assert.ok(firstAborts > 0 || firstCancellations > 0)
-      assert.deepEqual(
+      deepEqual((await paused).done, false)
+      assert(firstAborts > 0 || firstCancellations > 0)
+      deepEqual(
         requests.map((url) => new URL(url).searchParams.get("t")),
         ["40"],
       )
@@ -1767,16 +1828,16 @@ test(
       resumed = playback.next()
       const request = new URL(await secondRequest.promise)
 
-      assert.equal(request.searchParams.get("t"), "100")
-      assert.deepEqual(
+      deepEqual(request.searchParams.get("t"), "100")
+      deepEqual(
         requests.map((url) => new URL(url).searchParams.get("t")),
         ["40", "100"],
       )
-      assert.deepEqual(
+      deepEqual(
         operations.filter((operation) => typeof operation === "number"),
         [40, 100],
       )
-      assert.equal(ends, 0)
+      deepEqual(ends, 0)
     } finally {
       controller.abort()
       await resumed
@@ -1874,7 +1935,7 @@ for (const { failure, name, playhead } of partialFailureCases) {
       clock.advance(0)
       const request = new URL(await retried.promise)
 
-      assert.deepEqual(
+      deepEqual(
         {
           acquisition: request.searchParams.get("t"),
           offset: buffer.timestampOffset,
@@ -1888,8 +1949,8 @@ for (const { failure, name, playhead } of partialFailureCases) {
           targetInput: "40",
         },
       )
-      assert.equal(current.sources.length, 1)
-      assert.equal(current.errors.length, 1)
+      deepEqual(current.sources.length, 1)
+      deepEqual(current.errors.length, 1)
     } finally {
       controller.abort()
       await playback
@@ -1965,24 +2026,24 @@ test(
     )
     let ending: Promise<IteratorResult<void, unknown>> | undefined = undefined
     try {
-      assert.equal((await playback.next()).done, false)
-      assert.equal(firstReads, 1)
-      assert.ok(firstAborts > 0 || firstCancellations > 0)
+      deepEqual((await playback.next()).done, false)
+      deepEqual(firstReads, 1)
+      assert(firstAborts > 0 || firstCancellations > 0)
 
       current.media.currentTime = 60
       ending = playback.next()
       await eventually(() => ends === 1)
 
-      assert.deepEqual(
+      deepEqual(
         requests.map((url) => new URL(url).searchParams.get("t")),
         ["40", "100"],
       )
-      assert.deepEqual(
+      deepEqual(
         operations.filter((operation) => typeof operation === "number"),
         [40, 100],
       )
-      assert.equal(firstReads, 1)
-      assert.equal(ends, 1)
+      deepEqual(firstReads, 1)
+      deepEqual(ends, 1)
     } finally {
       controller.abort()
       await ending
@@ -2002,7 +2063,7 @@ test(
 
     current.media.currentTime = 100
     await buffer.next(new Uint8Array([2]))
-    assert.deepEqual(opened.removes, [[0, 70]])
+    deepEqual(opened.removes, [[0, 70]])
 
     controller.abort()
     await buffer.return(undefined)
@@ -2018,14 +2079,14 @@ test(
     await buffer.next(10)
     await buffer.next(new Uint8Array([1]))
 
-    assert.equal(opened.updating, false)
-    assert.equal(opened.appendState, "parsing")
-    assert.equal((await buffer.next(30)).done, false)
-    assert.equal(opened.aborts, 1)
-    assert.equal(opened.appendState, "waiting")
-    assert.equal(opened.timestampOffset, 30)
-    assert.equal(current.sources.length, 1)
-    assert.equal(current.media.loads, 0)
+    deepEqual(opened.updating, false)
+    deepEqual(opened.appendState, "parsing")
+    deepEqual((await buffer.next(30)).done, false)
+    deepEqual(opened.aborts, 1)
+    deepEqual(opened.appendState, "waiting")
+    deepEqual(opened.timestampOffset, 30)
+    deepEqual(current.sources.length, 1)
+    deepEqual(current.media.loads, 0)
 
     controller.abort()
     await buffer.return(undefined)
@@ -2040,17 +2101,17 @@ test(
     const { buffer, controller, opened } = await open_mse(current)
     await buffer.next(10)
     await buffer.next(new Uint8Array([1]))
-    assert.equal((await buffer.next("end")).done, false)
+    deepEqual((await buffer.next("end")).done, false)
 
     const source = current.media.src
     current.media.currentTime = 30
-    assert.equal((await buffer.next(30)).done, false)
-    assert.equal(opened.aborts, 1)
-    assert.deepEqual(opened.removes, [[20, 20.001]])
-    assert.equal(current.media.src, source)
-    assert.equal(current.media.currentTime, 30)
-    assert.equal(current.media.loads, 0)
-    assert.equal(current.revoked.length, 0)
+    deepEqual((await buffer.next(30)).done, false)
+    deepEqual(opened.aborts, 1)
+    deepEqual(opened.removes, [[20, 20.001]])
+    deepEqual(current.media.src, source)
+    deepEqual(current.media.currentTime, 30)
+    deepEqual(current.media.loads, 0)
+    deepEqual(current.revoked.length, 0)
 
     controller.abort()
     await buffer.return(undefined)
@@ -2076,7 +2137,7 @@ test(
     })
     await new Promise((resolve) => setImmediate(resolve))
 
-    assert.equal(closed, false)
+    deepEqual(closed, false)
 
     present(opened.releaseUpdate)()
     await appending
@@ -2107,10 +2168,10 @@ test(
       opened.usable = false
       opened.dispatchEvent(failure)
 
-      await assert.rejects(appending, (error) => error === failure)
-      assert.equal((await later).done, true)
-      assert.equal(opened.timestampOffset, 40)
-      assert.equal(opened.aborts, 0)
+      await rejects(appending, (error) => error === failure)
+      deepEqual((await later).done, true)
+      deepEqual(opened.timestampOffset, 40)
+      deepEqual(opened.aborts, 0)
     } finally {
       controller.abort()
       await buffer.return(undefined)
@@ -2138,17 +2199,17 @@ test(
     })
     await new Promise((resolve) => setImmediate(resolve))
 
-    assert.equal(closed, false)
-    assert.equal(opened.timestampOffset, 10)
-    assert.equal(opened.aborts, 0)
+    deepEqual(closed, false)
+    deepEqual(opened.timestampOffset, 10)
+    deepEqual(opened.aborts, 0)
 
     present(opened.releaseUpdate)()
-    assert.equal((await appending).done, false)
+    deepEqual((await appending).done, false)
     await offsetting
     await closing
 
-    assert.equal(opened.timestampOffset, 10)
-    assert.equal(opened.aborts, 0)
+    deepEqual(opened.timestampOffset, 10)
+    deepEqual(opened.aborts, 0)
   },
 )
 
@@ -2183,7 +2244,7 @@ test(
     current.media.dispatchEvent(new Event("seeking"))
 
     const request = new URL(await secondRequest.promise)
-    assert.equal(mediaSource.ends, 0)
+    deepEqual(mediaSource.ends, 0)
     await eventually(
       () => mediaSource.sourceBuffers[0]?.buffered.start(0) === 110,
     )
@@ -2193,20 +2254,20 @@ test(
     current.media.seeking = false
     current.media.dispatchEvent(new Event("seeked"))
     await new Promise((resolve) => setImmediate(resolve))
-    assert.equal(request.searchParams.get("t"), "110")
-    assert.equal(requests, 2)
-    assert.equal(present<AbortSignal>(targetSignal).aborted, false)
-    assert.equal(current.sources.length, 1)
-    assert.equal(current.subtitle.sources.length, 1)
-    assert.equal(
+    deepEqual(request.searchParams.get("t"), "110")
+    deepEqual(requests, 2)
+    deepEqual(present<AbortSignal>(targetSignal).aborted, false)
+    deepEqual(current.sources.length, 1)
+    deepEqual(current.subtitle.sources.length, 1)
+    deepEqual(
       new URL(present(current.subtitle.sources[0])).searchParams.get("t"),
       "0",
     )
-    assert.equal(current.media.src, source)
-    assert.equal(current.media.currentTime, 110)
-    assert.equal(current.media.currentTimes.includes(0), false)
-    assert.equal(current.media.loads, 0)
-    assert.equal(current.revoked.length, 0)
+    deepEqual(current.media.src, source)
+    deepEqual(current.media.currentTime, 110)
+    deepEqual(current.media.currentTimes.includes(0), false)
+    deepEqual(current.media.loads, 0)
+    deepEqual(current.revoked.length, 0)
 
     controller.abort()
     await playback
@@ -2225,7 +2286,7 @@ test(
     )
     try {
       await eventually(() => current.requests.length !== 0)
-      assert.equal(
+      deepEqual(
         new URL(present(current.requests[0])).searchParams.get("t"),
         "110",
       )
@@ -2265,13 +2326,13 @@ test(
         requests.some((url) => new URL(url).searchParams.get("t") === "163"),
       )
 
-      assert.deepEqual(
+      deepEqual(
         requests.map((url) => new URL(url).searchParams.get("t")),
         ["40", "163"],
       )
-      assert.equal(current.timeInput.value, "163")
-      assert.equal(current.sources.length, 1)
-      assert.equal(current.errors.length, 0)
+      deepEqual(current.timeInput.value, "163")
+      deepEqual(current.sources.length, 1)
+      deepEqual(current.errors.length, 0)
     } finally {
       controller.abort()
       await playback
@@ -2311,12 +2372,12 @@ test(
       current.media.dispatchEvent(new Event("seeking"))
 
       const request = new URL(await retried.promise)
-      assert.equal(request.searchParams.get("t"), "110")
-      assert.equal(requests, 3)
-      assert.equal(current.sources.length, 1)
-      assert.equal(current.media.src, source)
-      assert.equal(current.media.currentTime, 110)
-      assert.equal(current.errors.length, 1)
+      deepEqual(request.searchParams.get("t"), "110")
+      deepEqual(requests, 3)
+      deepEqual(current.sources.length, 1)
+      deepEqual(current.media.src, source)
+      deepEqual(current.media.currentTime, 110)
+      deepEqual(current.errors.length, 1)
     } finally {
       controller.abort()
       await playback
@@ -2352,13 +2413,13 @@ test(
       }
       await succeeded.promise
 
-      assert.equal(requests.length, 4)
-      assert.deepEqual(
+      deepEqual(requests.length, 4)
+      deepEqual(
         requests.map((url) => new URL(url).searchParams.get("t")),
         ["40", "40", "40", "40"],
       )
-      assert.equal(current.sources.length, 1)
-      assert.equal(current.errors.length, 1)
+      deepEqual(current.sources.length, 1)
+      deepEqual(current.errors.length, 1)
     } finally {
       controller.abort()
       await playback
@@ -2414,12 +2475,12 @@ test(
       failAfterProgress.reject(secondFailure)
       await eventually(() => clock.length >= 2)
 
-      assert.deepEqual(
+      deepEqual(
         current.errors.map(([error]) => error),
         [firstFailure, secondFailure],
       )
-      assert.equal(requests.length, 2)
-      assert.equal(current.sources.length, 1)
+      deepEqual(requests.length, 2)
+      deepEqual(current.sources.length, 1)
     } finally {
       controller.abort()
       await playback
@@ -2466,9 +2527,9 @@ test(
         () => current.sources[3]?.sourceBuffers[0]?.buffered.length === 1,
       )
 
-      assert.equal(attempts, 4)
-      assert.equal(current.sources.length, 4)
-      assert.deepEqual(
+      deepEqual(attempts, 4)
+      deepEqual(current.sources.length, 4)
+      deepEqual(
         current.errors.map(([error]) => error),
         [failures[0]],
       )
@@ -2500,12 +2561,12 @@ test(
 
     try {
       await eventually(() => clock.length === 1)
-      assert.deepEqual(
+      deepEqual(
         current.errors.map(([error]) => error),
         [failure],
       )
-      assert.equal(current.sources.length, 1)
-      assert.equal(current.revoked.length, 1)
+      deepEqual(current.sources.length, 1)
+      deepEqual(current.revoked.length, 1)
     } finally {
       controller.abort()
       await playback
@@ -2552,18 +2613,70 @@ test(
       const replacement = present(current.sources[1])
       const url = current.media.src
       const positioned = current.media.topology.indexOf("time:110")
-      assert.equal(
+      deepEqual(
         new URL(present(current.requests[0])).searchParams.get("t"),
         "110",
       )
-      assert.notEqual(positioned, -1)
-      assert.ok(positioned < current.media.topology.indexOf(`open:${url}`))
-      assert.equal(replacement.sourceBuffers.length, 1)
-      assert.equal(clock.callbacks, 0)
-      assert.equal(clock.cancellations, 1)
-      assert.deepEqual(
+      notEqual(positioned, -1)
+      assert(positioned < current.media.topology.indexOf(`open:${url}`))
+      deepEqual(replacement.sourceBuffers.length, 1)
+      deepEqual(clock.callbacks, 0)
+      deepEqual(clock.cancellations, 1)
+      deepEqual(
         current.errors.map(([error]) => error),
         [failure],
+      )
+    } finally {
+      controller.abort()
+      await playback
+      clock.dispose()
+    }
+  },
+)
+
+test(
+  "a media failure supersedes MSE setup backoff without a second diagnostic",
+  options,
+  async () => {
+    const current = await fixture()
+    const clock = frozenClock(current.context)
+    const setupFailure = new Error("MSE setup failed")
+    const mediaFailure = { code: 3, message: "media failed during backoff" }
+    let attempts = 0
+    const originalAddSourceBuffer =
+      current.context.MediaSource.prototype.addSourceBuffer
+    current.context.MediaSource.prototype.addSourceBuffer = function (
+      type: string,
+    ) {
+      attempts += 1
+      if (attempts === 1) {
+        throw setupFailure
+      }
+      return originalAddSourceBuffer.call(this, type)
+    }
+
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    try {
+      await eventually(() => clock.length === 1)
+      current.media.error = mediaFailure
+      current.media.dispatchEvent(new Event("error"))
+      await eventually(
+        () => current.sources[1]?.sourceBuffers[0]?.buffered.length === 1,
+      )
+
+      deepEqual(attempts, 2)
+      deepEqual(clock.callbacks, 0)
+      deepEqual(clock.cancellations, 1)
+      deepEqual(
+        current.errors.map(([error]) => error),
+        [setupFailure],
+      )
+      deepEqual(
+        new URL(present(current.requests[0])).searchParams.get("t"),
+        "40",
       )
     } finally {
       controller.abort()
@@ -2600,10 +2713,10 @@ test(
         await new Promise((resolve) => setImmediate(resolve))
       }
 
-      assert.equal(clock.length, 1)
-      assert.equal(clock.callbacks, 0)
-      assert.equal(clock.cancellations, 0)
-      assert.deepEqual(
+      deepEqual(clock.length, 1)
+      deepEqual(clock.callbacks, 0)
+      deepEqual(clock.cancellations, 0)
+      deepEqual(
         requests.map((url) => new URL(url).searchParams.get("t")),
         ["40"],
       )
@@ -2611,15 +2724,15 @@ test(
       clock.advance(0)
       await eventually(() => requests.length === 2)
 
-      assert.equal(clock.length, 1)
-      assert.equal(clock.callbacks, 1)
-      assert.equal(clock.cancellations, 0)
-      assert.deepEqual(
+      deepEqual(clock.length, 1)
+      deepEqual(clock.callbacks, 1)
+      deepEqual(clock.cancellations, 0)
+      deepEqual(
         requests.map((url) => new URL(url).searchParams.get("t")),
         ["40", "40"],
       )
-      assert.equal(current.sources.length, 1)
-      assert.equal(current.errors.length, 1)
+      deepEqual(current.sources.length, 1)
+      deepEqual(current.errors.length, 1)
     } finally {
       controller.abort()
       await playback
@@ -2655,17 +2768,17 @@ test(
       await nextTask()
       await eventually(() => requests.length === 2)
 
-      assert.deepEqual(
+      deepEqual(
         requests.map((url) => new URL(url).searchParams.get("t")),
         ["40", "110"],
       )
-      assert.equal(clock.length, 1)
-      assert.equal(clock.callbacks, 0)
-      assert.equal(clock.cancellations, 1)
-      assert.equal(current.timeInput.value, "110")
-      assert.equal(current.media.currentTime, 110)
-      assert.equal(current.sources.length, 1)
-      assert.equal(current.errors.length, 1)
+      deepEqual(clock.length, 1)
+      deepEqual(clock.callbacks, 0)
+      deepEqual(clock.cancellations, 1)
+      deepEqual(current.timeInput.value, "110")
+      deepEqual(current.media.currentTime, 110)
+      deepEqual(current.sources.length, 1)
+      deepEqual(current.errors.length, 1)
     } finally {
       controller.abort()
       await playback
@@ -2731,24 +2844,24 @@ test(
 
       const request = new URL(await replaced.promise)
       newUrl = current.media.src
-      assert.equal(request.searchParams.get("t"), "40")
-      assert.equal(current.timeInput.value, "40")
-      assert.match(oldUrl, /^blob:player-/)
-      assert.match(newUrl, /^blob:player-/)
-      assert.notEqual(newUrl, oldUrl)
-      assert.equal(current.media.loads, 0)
-      assert.equal(current.media.removals, 0)
-      assert.equal(activeReaders, 1)
-      assert.deepEqual(current.revoked, [oldUrl])
-      assert.ok(
+      deepEqual(request.searchParams.get("t"), "40")
+      deepEqual(current.timeInput.value, "40")
+      match(oldUrl, /^blob:player-/)
+      match(newUrl, /^blob:player-/)
+      notEqual(newUrl, oldUrl)
+      deepEqual(current.media.loads, 0)
+      deepEqual(current.media.removals, 0)
+      deepEqual(activeReaders, 1)
+      deepEqual(current.revoked, [oldUrl])
+      assert(
         current.media.topology.indexOf(`open:${newUrl}`) <
           current.media.topology.indexOf(`revoke:${oldUrl}`),
       )
       const positioned = current.media.topology.indexOf("time:40")
-      assert.notEqual(positioned, -1)
-      assert.ok(positioned < current.media.topology.indexOf(`open:${newUrl}`))
-      assert.equal(retryDelays, 0)
-      assert.equal(
+      notEqual(positioned, -1)
+      assert(positioned < current.media.topology.indexOf(`open:${newUrl}`))
+      deepEqual(retryDelays, 0)
+      deepEqual(
         requests.some((url) => new URL(url).searchParams.get("t") === "0"),
         false,
       )
@@ -2757,13 +2870,13 @@ test(
       await playback
     }
 
-    assert.equal(current.media.src, "")
-    assert.equal(current.media.removals, 1)
-    assert.equal(current.media.loads, 1)
-    assert.equal(activeReaders, 0)
-    assert.equal(current.sources.length, 2)
-    assert.equal(retryDelays, 0)
-    assert.deepEqual(current.revoked, [oldUrl, newUrl])
+    deepEqual(current.media.src, "")
+    deepEqual(current.media.removals, 1)
+    deepEqual(current.media.loads, 1)
+    deepEqual(activeReaders, 0)
+    deepEqual(current.sources.length, 2)
+    deepEqual(retryDelays, 0)
+    deepEqual(current.revoked, [oldUrl, newUrl])
   },
 )
 
@@ -2792,13 +2905,13 @@ test(
       await eventually(
         () => current.sources.length === 2 && current.requests.length === 2,
       )
-      assert.equal(
+      deepEqual(
         new URL(present(current.requests[1])).searchParams.get("t"),
         "110",
       )
-      assert.equal(current.sources.length, 2)
-      assert.equal(current.errors.length, 1)
-      assert.equal(
+      deepEqual(current.sources.length, 2)
+      deepEqual(current.errors.length, 1)
+      deepEqual(
         current.requests.some(
           (url) => new URL(url).searchParams.get("t") === "0",
         ),
@@ -2806,7 +2919,7 @@ test(
       )
     } finally {
       controller.abort()
-      await assert.doesNotReject(playback)
+      await doesNotReject(playback)
     }
   },
 )
@@ -2875,13 +2988,13 @@ test(
       clock.advance(1)
       await eventually(() => clock.length === 3)
 
-      assert.deepEqual(
+      deepEqual(
         current.errors.map(([error]) => error),
         [firstFailure, recoveredFailure],
       )
-      assert.equal(requests, 3)
-      assert.equal(current.sources.length, 1)
-      assert.deepEqual(current.media.buffered.ranges, [[40, 50]])
+      deepEqual(requests, 3)
+      deepEqual(current.sources.length, 1)
+      deepEqual(current.media.buffered.ranges, [[40, 50]])
     } finally {
       controller.abort()
       await playback
@@ -2935,23 +3048,23 @@ test(
       current.media.dispatchEvent(new Event("error"))
       await eventually(() => outcome !== undefined)
 
-      assert.deepEqual(outcome, {
+      deepEqual(outcome, {
         error: reporterFailure,
         status: "rejected",
       })
-      assert.equal(reports, 1)
-      assert.equal(parent.signal.aborted, false)
-      assert.equal(clock.cancellations, 1)
-      assert.equal(current.subtitle.sources.length, subtitleRequests)
-      assert.equal(current.media.src, "")
-      assert.equal(current.media.loads, 1)
-      assert.equal(current.revoked.length, 1)
-      assert.equal(buffer.usable, false)
+      deepEqual(reports, 1)
+      deepEqual(parent.signal.aborted, false)
+      deepEqual(clock.cancellations, 1)
+      deepEqual(current.subtitle.sources.length, subtitleRequests)
+      deepEqual(current.media.src, "")
+      deepEqual(current.media.loads, 1)
+      deepEqual(current.revoked.length, 1)
+      deepEqual(buffer.usable, false)
 
       const subtitleCalls = current.subtitle.listenerCalls
       current.subtitle.dispatchEvent(new Event("error"))
       current.subtitle.dispatchEvent(new Event("load"))
-      assert.equal(current.subtitle.listenerCalls, subtitleCalls)
+      deepEqual(current.subtitle.listenerCalls, subtitleCalls)
     } finally {
       parent.abort()
       await observed

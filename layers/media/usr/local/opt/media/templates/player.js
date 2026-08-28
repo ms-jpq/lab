@@ -1,11 +1,11 @@
 /** @typedef {"end" | number | Uint8Array} MseOperation */
-/** @typedef {AsyncGenerator<void, void, MseOperation | undefined>} Mse */
+/** @typedef {AsyncGenerator<void, void, MseOperation>} Mse */
 /** @typedef {{error: MediaError | null, position: number, restart: boolean}} PageChange */
 /** @typedef {{fail: (error: unknown) => void, recover: () => void}} FailureStorm */
-/** @typedef {{error: unknown, position: number}} SourceFailure */
+/** @typedef {{error: unknown}} SourceFailure */
 /** @typedef {{error: unknown, start: number}} SessionFailure */
-/** @typedef {{changes: AsyncGenerator<PageChange, void, void>, pending: Promise<IteratorResult<PageChange, void>>}} PageReader */
-/** @typedef {{position: number, start: number} | SourceFailure} RetryChange */
+/** @typedef {{changes: AsyncGenerator<PageChange, void, void>, pending: Promise<IteratorResult<PageChange, void>>, position: number}} PageReader */
+/** @typedef {number | SourceFailure} RetryChange */
 
 const BUFFER = {
   BEHIND: 30,
@@ -29,12 +29,10 @@ const form = /** @type {HTMLFormElement} */ (document.querySelector("form"))
 const time_input = /** @type {HTMLInputElement} */ (
   form.elements.namedItem("t")
 )
-const media_source_api =
+const MediaSourceConstructor =
   /** @type {typeof globalThis & {ManagedMediaSource?: typeof MediaSource}} */ (
     globalThis
-  )
-const MediaSourceConstructor =
-  media_source_api.ManagedMediaSource ?? MediaSource
+  ).ManagedMediaSource ?? MediaSource
 
 /** @param {EventTarget} target @param {AbortSignal | undefined} signal @param {string} type @returns {Promise<Event>} */
 const once = (target, signal, type) => {
@@ -205,12 +203,7 @@ const page_changes = async function* (signal, position) {
       scheduled = setTimeout(() => gate.resolve(true), 0)
     }
   }
-  const cancelled = () => {
-    if (scheduled !== undefined) {
-      clearTimeout(scheduled)
-    }
-    changed.resolve(false)
-  }
+  const cancelled = () => changed.resolve(false)
 
   signal.addEventListener("abort", cancelled, { once: true })
   for (const type of types) {
@@ -235,8 +228,7 @@ const page_changes = async function* (signal, position) {
       let error = null
       let restart = false
 
-      for (const observed of observations) {
-        const current = observed
+      for (const current of observations) {
         const moved =
           current.time !== previous.time || current.seeking !== previous.seeking
         const internal_seek =
@@ -275,15 +267,14 @@ const page_changes = async function* (signal, position) {
         previous = current
       }
 
-      const current = observations.at(-1)
       if (pending_seek !== undefined) {
         const playable = buffered_position(pending_seek)
         if (playable !== undefined) {
           target = pending_seek = playable
         }
-        if (current && !current.seeking) {
-          const positioned = aligned(current.time, pending_seek)
-          if (!positioned && (current.metadata || playable !== undefined)) {
+        if (!previous.seeking) {
+          const positioned = aligned(previous.time, pending_seek)
+          if (!positioned && (previous.metadata || playable !== undefined)) {
             media.currentTime = pending_seek
           } else if (positioned && playable !== undefined) {
             pending_seek = undefined
@@ -310,6 +301,7 @@ const advance_page = (page, result) => {
     return undefined
   }
   page.pending = page.changes.next()
+  page.position = result.value.position
   return result.value
 }
 
@@ -337,11 +329,7 @@ const mse = (signal, source, buffer) => {
 
   return (async function* () {
     let started = false
-    for (
-      let operation = yield undefined;
-      operation !== undefined;
-      operation = yield undefined
-    ) {
+    for (let operation = yield undefined; ; operation = yield undefined) {
       if (signal.aborted) {
         return
       }
@@ -477,8 +465,8 @@ const session = async function* (signal, buffer, time, failures) {
   }
 }
 
-/** @param {AbortSignal} signal @param {PageReader} page @param {number} position @param {number} start @returns {Promise<RetryChange | undefined>} */
-const wait_to_retry = async (signal, page, position, start) => {
+/** @param {AbortSignal} signal @param {PageReader} page @param {number} start @returns {Promise<RetryChange | undefined>} */
+const wait_to_retry = async (signal, page, start) => {
   const timer = new AbortController()
   const delay = retry_delay(AbortSignal.any([signal, timer.signal]))
   const deadline = delay.then((result) => ({ delay: result }))
@@ -489,18 +477,17 @@ const wait_to_retry = async (signal, page, position, start) => {
         deadline,
       ])
       if ("delay" in selected) {
-        return selected.delay ? { position, start } : undefined
+        return selected.delay ? start : undefined
       }
       const change = advance_page(page, selected.page)
       if (change === undefined) {
         return undefined
       }
-      position = change.position
       if (change.error) {
-        return { error: change.error, position }
+        return { error: change.error }
       }
       if (change.restart) {
-        return { position, start: position }
+        return page.position
       }
     }
   } finally {
@@ -508,19 +495,14 @@ const wait_to_retry = async (signal, page, position, start) => {
   }
 }
 
-/** @param {AbortSignal} signal @param {Mse} buffer @param {FailureStorm} failures @param {PageReader} page @param {number} position @returns {Promise<SourceFailure | undefined>} */
-const play_source = async (signal, buffer, failures, page, position) => {
-  let start = position
+/** @param {AbortSignal} signal @param {Mse} buffer @param {FailureStorm} failures @param {PageReader} page @returns {Promise<SourceFailure | undefined>} */
+const play_source = async (signal, buffer, failures, page) => {
+  let start = page.position
   try {
     for (;;) {
       const attempt = new AbortController()
       const attempt_signal = AbortSignal.any([signal, attempt.signal])
       const current = session(attempt_signal, buffer, start, failures)
-      const cancelled = attempt_signal.aborted
-        ? Promise.resolve({ cancelled: true })
-        : once(attempt_signal, undefined, "abort").then(() => ({
-            cancelled: true,
-          }))
       /** @type {Promise<IteratorResult<void, SessionFailure | void>> | undefined} */
       let progress = current.next()
       /** @type {SessionFailure | undefined} */
@@ -533,11 +515,7 @@ const play_source = async (signal, buffer, failures, page, position) => {
             ...(progress
               ? [progress.then((result) => ({ progress: result }))]
               : []),
-            cancelled,
           ])
-          if ("cancelled" in selected) {
-            return undefined
-          }
           if ("progress" in selected) {
             const result = selected.progress
             progress = undefined
@@ -555,12 +533,11 @@ const play_source = async (signal, buffer, failures, page, position) => {
           if (change === undefined) {
             return undefined
           }
-          position = change.position
           if (change.error) {
-            return { error: change.error, position }
+            return { error: change.error }
           }
           if (change.restart) {
-            start = position
+            start = page.position
             break
           }
           if (progress === undefined) {
@@ -576,30 +553,29 @@ const play_source = async (signal, buffer, failures, page, position) => {
       }
 
       failures.fail(failure.error)
-      const waiting = await wait_to_retry(signal, page, position, failure.start)
+      const waiting = await wait_to_retry(signal, page, failure.start)
       if (waiting === undefined) {
         return undefined
       }
-      if ("error" in waiting) {
+      if (typeof waiting !== "number") {
         return waiting
       }
-      position = waiting.position
-      start = waiting.start
+      start = waiting
     }
   } catch (error) {
-    return signal.aborted ? undefined : { error, position }
+    return signal.aborted ? undefined : { error }
   }
 }
 
 /** @param {AbortSignal} signal */
 const play_media = async (signal) => {
-  let position = playable_position(Number(time_input.value))
+  const position = playable_position(Number(time_input.value))
   const observation = new AbortController()
   const changes = page_changes(
     AbortSignal.any([signal, observation.signal]),
     position,
   )
-  const page = { changes, pending: changes.next() }
+  const page = { changes, pending: changes.next(), position }
   const failures = failure_storm()
   /** @type {string | undefined} */
   let attached_url = undefined
@@ -624,7 +600,7 @@ const play_media = async (signal) => {
         )
         loose_url = URL.createObjectURL(source)
         media.src = loose_url
-        media.currentTime = position
+        media.currentTime = page.position
         const previous_url = attached_url
         attached_url = loose_url
         loose_url = undefined
@@ -645,13 +621,7 @@ const play_media = async (signal) => {
           source.addSourceBuffer(/** @type {string} */ (media.dataset.mseType)),
         )
         await buffer.next()
-        failure = await play_source(
-          lifetime_signal,
-          buffer,
-          failures,
-          page,
-          position,
-        )
+        failure = await play_source(lifetime_signal, buffer, failures, page)
       } catch (error) {
         if (lifetime_signal.aborted) {
           return
@@ -667,16 +637,10 @@ const play_media = async (signal) => {
       }
       if ("setup" in failure) {
         failures.fail(failure.setup)
-        const waiting = await wait_to_retry(signal, page, position, position)
-        if (!waiting) {
+        if ((await wait_to_retry(signal, page, page.position)) === undefined) {
           return
         }
-        position = waiting.position
-        if ("error" in waiting) {
-          failures.fail(waiting.error)
-        }
       } else {
-        position = failure.position
         failures.fail(failure.error)
         if (signal.aborted) {
           return
