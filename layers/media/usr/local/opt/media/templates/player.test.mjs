@@ -216,7 +216,6 @@ const fixture = async (position = 40) => {
         this.dispatchEvent(new Event("updateend"))
       })
     }
-
   }
   class MediaSource extends EventTarget {
     constructor() {
@@ -395,10 +394,7 @@ test(
   async () => {
     const current = await fixture(0)
     const controller = new AbortController()
-    const states = current.context.player_test.page_states(
-      controller.signal,
-      0,
-    )
+    const states = current.context.player_test.page_states(controller.signal, 0)
     await states.next()
 
     current.media.currentTime = 37
