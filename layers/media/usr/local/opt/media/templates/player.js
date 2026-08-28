@@ -7,7 +7,7 @@
 /** @typedef {{kind: "page", result: IteratorResult<PageChange, void>} | {kind: "progress", result: IteratorResult<void, Failure | void>}} AttemptSelection */
 /** @typedef {{kind: "delay", result: boolean} | {kind: "page", result: IteratorResult<PageChange, void>}} RetrySelection */
 /** @typedef {{next: Promise<IteratorResult<PageChange, void>>}} PageReader */
-/** @typedef {{action: "done" | "reset" | "retry" | "seek", error?: unknown, position: number}} AttemptChange */
+/** @typedef {{action: "done" | "retry" | "seek", error?: unknown, position: number}} AttemptChange */
 
 const BUFFER = {
   BEHIND: 30,
@@ -541,11 +541,7 @@ const play_attempt = async (signal, buffer, states, page, position) => {
       }
       position = state.value.position
       if (state.value.error) {
-        return {
-          action: "reset",
-          error: state.value.error,
-          position,
-        }
+        throw state.value.error
       }
       page.next = states.next()
       if (state.value.seek !== undefined) {
@@ -590,7 +586,7 @@ const wait_to_retry = async (signal, states, page, position) => {
     }
     position = state.value.position
     if (state.value.error) {
-      return { action: "reset", error: state.value.error, position }
+      throw state.value.error
     }
     page.next = states.next()
   }
@@ -611,18 +607,12 @@ const play_source = async ({ buffer, position, signal }) => {
       if (change.action === "done") {
         return { position, reset: false }
       }
-      if (change.action === "reset") {
-        return { error: change.error, position, reset: true }
-      }
       if (change.action === "retry") {
         report(change.error)
         const waiting = await wait_to_retry(signal, states, page, position)
         position = waiting.position
         if (waiting.action === "done") {
           return { position, reset: false }
-        }
-        if (waiting.action === "reset") {
-          return { error: waiting.error, position, reset: true }
         }
       }
     }

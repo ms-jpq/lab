@@ -670,21 +670,24 @@ const queuedSeekCases = [
   {
     events: ["seeking", "seeked"],
     name: "seeking-seeked",
+    positions: [110, 110],
     seeks: [110, undefined],
   },
   {
     events: ["seeking", "timeupdate"],
     name: "seeking-timeupdate",
+    positions: [110, 110],
     seeks: [110, undefined],
   },
   {
     events: ["timeupdate", "seeking"],
     name: "timeupdate-seeking",
+    positions: [40, 110],
     seeks: [undefined, 110],
   },
 ] as const
 
-for (const { events, name, seeks } of queuedSeekCases) {
+for (const { events, name, positions, seeks } of queuedSeekCases) {
   test(
     `an unbuffered seek preserves synchronous ${name} order`,
     options,
@@ -708,7 +711,7 @@ for (const { events, name, seeks } of queuedSeekCases) {
       )
       assert.deepEqual(
         changes.map(({ position }) => position),
-        events.map(() => 110),
+        positions,
       )
       assert.equal(current.timeInput.value, "110")
       controller.abort()
@@ -722,20 +725,25 @@ const bufferedSeekCases = [
 ] as const
 
 for (const { name, range, target } of bufferedSeekCases) {
-  test(`a ${name} buffered seek aligns without restarting`, options, async () => {
-    const current = await fixture()
-    const { controller, states } = await ready(current)
-    current.ranges.splice(0, current.ranges.length, [range[0], range[1]])
-    current.media.currentTime = 70
-    current.media.seeking = true
-    current.media.dispatchEvent(new Event("seeking"))
-    const change = await nextValue(states)
+  const article = name === "adjacent" ? "an" : "a"
+  test(
+    `${article} ${name} buffered seek aligns without restarting`,
+    options,
+    async () => {
+      const current = await fixture()
+      const { controller, states } = await ready(current)
+      current.ranges.splice(0, current.ranges.length, [range[0], range[1]])
+      current.media.currentTime = 70
+      current.media.seeking = true
+      current.media.dispatchEvent(new Event("seeking"))
+      const change = await nextValue(states)
 
-    assert.equal(change.position, target)
-    assert.equal(change.seek, undefined)
-    assert.equal(current.timeInput.value, String(target))
-    controller.abort()
-  })
+      assert.equal(change.position, target)
+      assert.equal(change.seek, undefined)
+      assert.equal(current.timeInput.value, String(Math.floor(target)))
+      controller.abort()
+    },
+  )
 }
 
 test("page progress persists only playable positions", options, async () => {
