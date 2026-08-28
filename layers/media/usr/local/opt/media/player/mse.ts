@@ -1,4 +1,4 @@
-import { abortion, events, merge } from "./util.ts"
+import { abortion, events, defer, merge } from "./util.ts"
 
 export type MseOperation = undefined | number | Uint8Array
 export type Mse = AsyncGenerator<void, void, MseOperation>
@@ -78,6 +78,9 @@ export const media_source = async function* ({
 
     if (typeof operation === "number") {
       if (started) {
+        // this logic right?
+        using _ = defer(() => buffer.abort())
+
         if (source.readyState === "ended") {
           const ranges = buffer.buffered
           const end = ranges.length ? ranges.end(ranges.length - 1) : 0
@@ -90,7 +93,6 @@ export const media_source = async function* ({
             return
           }
         }
-        buffer.abort()
       }
       buffer.timestampOffset = operation
       started = true

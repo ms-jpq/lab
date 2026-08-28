@@ -17,6 +17,7 @@ const fixture = (
   buffered: TimeRanges = timeRanges(),
   failure: "append" | undefined = undefined,
   hold: "append" | "remove" | undefined = undefined,
+  readyState: "open" | "ended" = "open",
 ) => {
   const mutations: unknown[] = []
   const types: string[] = []
@@ -67,7 +68,7 @@ const fixture = (
       return buffer
     },
     endOfStream: () => mutations.push(["end"]),
-    readyState: "open",
+    readyState,
   }
   const lifetime = new AbortController()
   const values = media_source({
@@ -184,6 +185,33 @@ const cases = [
       release()
       deepEqual(await appending, { done: true, value: undefined })
       deepEqual(mutations, [["remove", 0, 70]])
+    },
+  },
+  {
+    name: "lifetime cancellation is observed after reopening an ended source",
+    run: async () => {
+      const { entered, lifetime, mutations, release, values } = fixture(
+        timeRanges([0, 20]),
+        undefined,
+        "remove",
+        "ended",
+      )
+      await values.next()
+      await values.next(10)
+
+      const seeking = values.next(30)
+      await entered
+      lifetime.abort()
+
+      const stopped = await Promise.race([
+        seeking.then(() => true),
+        setImmediate(false),
+      ])
+      deepEqual(stopped, false)
+
+      release()
+      deepEqual(await seeking, { done: true, value: undefined })
+      deepEqual(mutations, [["remove", 20, 20.001]])
     },
   },
 ]
