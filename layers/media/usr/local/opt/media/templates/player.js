@@ -311,12 +311,12 @@ const source_stream = async function* (signal, time) {
     const response = await fetch(source_url(media, time), {
       signal: AbortSignal.any([signal, request.signal]),
     })
-    const current = (reader = response.body?.getReader())
-    if (!response.ok || !current) {
+    reader = response.body?.getReader()
+    if (!response.ok || !reader) {
       throw new Error(`${response.statusText} - ${response.status}`)
     }
     for (;;) {
-      const { done, value } = await current.read()
+      const { done, value } = await reader.read()
       if (done) {
         break
       }
@@ -333,7 +333,7 @@ const source_stream = async function* (signal, time) {
 }
 
 /** @param {AbortSignal} signal @param {MseBufferFactory} create_buffer @returns {Attempt} */
-const attempt = (signal, create_buffer) => {
+const read1 = (signal, create_buffer) => {
   const buffer = create_buffer(signal)
   const time = Number(time_input.value)
   let subtitle_loaded = false
@@ -389,9 +389,9 @@ const playback_page = async (signal) => {
   attempts: for await (const create_buffer of retrying(signal, (signal) =>
     mse(signal, media),
   )) {
-    const current = new AbortController()
-    const attempt_signal = AbortSignal.any([signal, current.signal])
-    const session = attempt(attempt_signal, create_buffer)
+    const attempt = new AbortController()
+    const attempt_signal = AbortSignal.any([signal, attempt.signal])
+    const session = read1(attempt_signal, create_buffer)
     /** @type {Promise<IteratorResult<void, void>> | undefined} */
     let progress = session.next()
 
@@ -456,7 +456,7 @@ const playback_page = async (signal) => {
     } catch (error) {
       console.error(error)
     } finally {
-      current.abort()
+      attempt.abort()
       await session.return()
     }
 
