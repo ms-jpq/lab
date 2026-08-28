@@ -11,7 +11,7 @@ type MseContext = {
 
 const BEHIND = 30
 
-const media_source = (): MediaSource => {
+const MSE = (): MediaSource => {
   const constructor = (
     globalThis as typeof globalThis & {
       ManagedMediaSource?: typeof MediaSource
@@ -26,7 +26,7 @@ const revoke = (url: string | undefined): void => {
   }
 }
 
-export const mse = async function* (
+export const media_source = async function* (
   buffer: SourceBuffer,
   { currentTime, signal, source }: MseContext,
 ): Mse {
@@ -39,7 +39,8 @@ export const mse = async function* (
     const changed = settled.next()
     try {
       mutate()
-      const { value: event } = await changed
+      const result = await changed
+      const event = result.done ? undefined : result.value
       if (event?.type === "error") {
         throw event
       }
@@ -99,7 +100,7 @@ export const media_sources = (media: HTMLMediaElement) => {
       signal: AbortSignal,
       seek: () => void,
     ): Promise<Mse | undefined> => {
-      const source = media_source()
+      const source = MSE()
       const previous = state.url
       const next = URL.createObjectURL(source)
       using opening = abortion(signal)
@@ -124,7 +125,8 @@ export const media_sources = (media: HTMLMediaElement) => {
       state.url = next
       try {
         seek()
-        const { value: event } = await selected
+        const result = await selected
+        const event = result.done ? undefined : result.value
         if (!event || signal.aborted) {
           return undefined
         }

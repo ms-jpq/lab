@@ -2,7 +2,7 @@ import { deepEqual, ok as assert } from "node:assert/strict"
 import { randomUUID } from "node:crypto"
 import nodeTest from "node:test"
 
-import { mse } from "./mse.ts"
+import { media_source } from "./mse.ts"
 
 const options = { concurrency: true, timeout: 2_000 }
 
@@ -39,7 +39,7 @@ const fixture = (
     readyState: "open",
   }
   const lifetime = new AbortController()
-  const values = mse(buffer as unknown as SourceBuffer, {
+  const values = media_source(buffer as unknown as SourceBuffer, {
     currentTime: () => 100,
     signal: lifetime.signal,
     source: source as unknown as MediaSource,
