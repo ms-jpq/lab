@@ -1,7 +1,7 @@
 /** @typedef {number | readonly [position: number, bytes: Uint8Array]} MseOperation */
 /** @typedef {AsyncGenerator<void, void, MseOperation | undefined> & {contains: (position: number) => boolean, frontier: () => number | undefined, play_ahead: (position: number) => number}} MseBuffer */
 /** @typedef {(signal: AbortSignal) => MseBuffer} MseBufferFactory */
-/** @typedef {AsyncGenerator<void, void, void> & {buffer: MseBuffer}} Session */
+/** @typedef {AsyncGenerator<void, void, void> & {buffer: MseBuffer, ready: () => boolean}} Session */
 /** @typedef {ReturnType<typeof page_state> & {failed: boolean, moved: boolean}} PageChange */
 /** @typedef {readonly [AsyncIterator<unknown, void, void>, IteratorResult<unknown, void>]} IteratorSelection */
 
@@ -130,6 +130,7 @@ const page_state = () => ({
 const page_states = (signal) => {
   let changed = Promise.withResolvers()
   let previous = page_state()
+
   const wake = () => changed.resolve(true)
 
   signal.addEventListener("abort", () => changed.resolve(false), { once: true })
@@ -178,9 +179,9 @@ const abort_mse_update = async (source, buffer) => {
   await aborted
 }
 
-/** @param {AbortSignal} signal @param {SourceBuffer} buffer @param {() => void} mutate */
-const mse_update = async (signal, buffer, mutate) => {
-  if (signal.aborted) {
+/** @param {AbortSignal} signal @param {MediaSource} source @param {SourceBuffer} buffer @param {() => void} mutate */
+const mse_update = async (signal, source, buffer, mutate) => {
+  if (signal.aborted || source.readyState !== "open") {
     return false
   }
   const settled = select(
@@ -227,12 +228,16 @@ const mse_operations = async function* (signal, source, buffer) {
           end > 0 && buffer.buffered.length && buffer.buffered.start(0) < end
         if (
           expired &&
-          !(await mse_update(signal, buffer, () => buffer.remove(0, end)))
+          !(await mse_update(signal, source, buffer, () =>
+            buffer.remove(0, end),
+          ))
         ) {
           return
         }
         if (
-          !(await mse_update(signal, buffer, () => buffer.appendBuffer(bytes)))
+          !(await mse_update(signal, source, buffer, () =>
+            buffer.appendBuffer(bytes),
+          ))
         ) {
           return
         }
@@ -269,6 +274,7 @@ const mse = async function* (signal, media) {
       globalThis
     )
   const source = new (ManagedMediaSource ?? MediaSource)()
+  const detached = new AbortController()
   const type = /** @type {string} */ (media.dataset.mseType)
   const duration = Number(media.dataset.duration)
   const opened = select(
@@ -280,6 +286,10 @@ const mse = async function* (signal, media) {
   const previous = media.src
   media.src = url
   URL.revokeObjectURL(previous)
+  source.addEventListener("sourceclose", () => detached.abort(), {
+    once: true,
+    signal,
+  })
 
   try {
     const selected = await opened
@@ -295,9 +305,16 @@ const mse = async function* (signal, media) {
 
     /** @type {MseBufferFactory} */
     const create_buffer = (buffer_signal) =>
-      mse_buffer(buffer_signal, source, type)
+      mse_buffer(
+        AbortSignal.any([signal, detached.signal, buffer_signal]),
+        source,
+        type,
+      )
     for (;;) {
       yield create_buffer
+      if (detached.signal.aborted) {
+        return
+      }
     }
   } finally {
     URL.revokeObjectURL(url)
@@ -339,17 +356,11 @@ const source_stream = async function* (signal, time) {
 const sessions = (signal, create_buffer) => {
   const buffer = create_buffer(signal)
   const time = Number(time_input.value)
+  let ready = false
 
   const run = async function* () {
     try {
       await buffer.next()
-      if (subtitle) {
-        subtitle.src = source_url(subtitle, time)
-      }
-      if (Math.abs(media.currentTime - time) > POSITION_TOLERANCE) {
-        media.currentTime = time
-      }
-
       streaming: for (;;) {
         while (buffer.play_ahead(media.currentTime) >= BUFFER.LO) {
           yield undefined
@@ -362,6 +373,15 @@ const sessions = (signal, create_buffer) => {
         for await (const bytes of source_stream(signal, start)) {
           if ((await buffer.next([media.currentTime, bytes])).done) {
             break streaming
+          }
+          if (!ready && buffer.contains(time)) {
+            ready = true
+            if (subtitle) {
+              subtitle.src = source_url(subtitle, time)
+            }
+            if (Math.abs(media.currentTime - time) > POSITION_TOLERANCE) {
+              media.currentTime = time
+            }
           }
           if (buffer.play_ahead(media.currentTime) >= BUFFER.HI) {
             continue streaming
@@ -377,12 +397,13 @@ const sessions = (signal, create_buffer) => {
     return
   }
 
-  return Object.assign(run(), { buffer })
+  return Object.assign(run(), { buffer, ready: () => ready })
 }
 
 /** @param {AbortSignal} signal */
 const playback_page = async (signal) => {
   const states = page_states(signal)
+
   let change = states.next()
   let resume_when_ready = false
 
@@ -392,6 +413,7 @@ const playback_page = async (signal) => {
     const attempt = new AbortController()
     const attempt_signal = AbortSignal.any([signal, attempt.signal])
     const session = sessions(attempt_signal, create_buffer)
+
     /** @type {Promise<IteratorResult<void, void>> | undefined} */
     let progress = session.next()
 
@@ -427,7 +449,7 @@ const playback_page = async (signal) => {
         change = states.next()
 
         const value = state.value
-        if (value.moved) {
+        if (value.moved && session.ready()) {
           set_position(value.time)
         }
         if (resume_when_ready) {
@@ -444,6 +466,7 @@ const playback_page = async (signal) => {
         }
         if (
           value.moved &&
+          session.ready() &&
           value.seeking &&
           !session.buffer.contains(value.time)
         ) {
