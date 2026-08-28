@@ -1,6 +1,6 @@
 import { abortion, events, merge } from "./util.ts"
 
-export type MseOperation = "end" | number | Uint8Array
+export type MseOperation = undefined | number | Uint8Array
 export type Mse = AsyncGenerator<void, void, MseOperation>
 
 const BEHIND = 30
@@ -71,7 +71,7 @@ export const media_source = async function* ({
       return
     }
 
-    if (operation === "end") {
+    if (operation === undefined) {
       source.endOfStream()
       continue
     }

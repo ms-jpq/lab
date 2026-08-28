@@ -1,6 +1,7 @@
 import { deepEqual, ok as assert } from "node:assert/strict"
 import { randomUUID } from "node:crypto"
 import nodeTest from "node:test"
+import { setImmediate } from "node:timers/promises"
 
 import { media_source } from "./mse.ts"
 
@@ -15,7 +16,7 @@ const timeRanges = (...ranges: [number, number][]): TimeRanges => ({
 const fixture = (
   buffered: TimeRanges = timeRanges(),
   failure: "append" | undefined = undefined,
-  hold = false,
+  hold: "append" | "remove" | undefined = undefined,
 ) => {
   const mutations: unknown[] = []
   const types: string[] = []
@@ -32,10 +33,13 @@ const fixture = (
       }
     },
     appendBuffer: (bytes: Uint8Array<ArrayBuffer>) => {
+      if (buffer.updating) {
+        throw new DOMException("SourceBuffer is updating", "InvalidStateError")
+      }
       mutations.push(["append", [...bytes]])
       buffer.updating = true
       entered.resolve()
-      if (!hold) {
+      if (hold !== "append") {
         buffer.updating = false
         buffer.dispatchEvent(
           new Event(failure === "append" ? "error" : "updateend"),
@@ -48,8 +52,11 @@ const fixture = (
     remove: (start: number, end: number) => {
       mutations.push(["remove", start, end])
       buffer.updating = true
-      buffer.updating = false
-      buffer.dispatchEvent(new Event("updateend"))
+      entered.resolve()
+      if (hold !== "remove") {
+        buffer.updating = false
+        buffer.dispatchEvent(new Event("updateend"))
+      }
     },
     timestampOffset: 0,
     updating: false,
@@ -73,6 +80,10 @@ const fixture = (
     entered: entered.promise,
     lifetime,
     mutations,
+    release: () => {
+      buffer.updating = false
+      return buffer.dispatchEvent(new Event("updateend"))
+    },
     types,
     values,
   }
@@ -135,7 +146,7 @@ const cases = [
       const { entered, lifetime, mutations, values } = fixture(
         timeRanges(),
         undefined,
-        true,
+        "append",
       )
       await values.next()
 
@@ -145,6 +156,34 @@ const cases = [
       await appending
       deepEqual(mutations, [["append", [5]], ["abort"]])
       await values.return?.(undefined)
+    },
+  },
+  {
+    name: "lifetime cancellation drains an entered eviction before stopping",
+    run: async () => {
+      const { entered, lifetime, mutations, release, values } = fixture(
+        timeRanges([0, 120]),
+        undefined,
+        "remove",
+      )
+      await values.next()
+
+      const appending = values.next(new Uint8Array([6]))
+      await entered
+      lifetime.abort()
+
+      const stopped = await Promise.race([
+        appending.then(
+          () => true,
+          () => true,
+        ),
+        setImmediate(false),
+      ])
+      deepEqual(stopped, false)
+
+      release()
+      deepEqual(await appending, { done: true, value: undefined })
+      deepEqual(mutations, [["remove", 0, 70]])
     },
   },
 ]
