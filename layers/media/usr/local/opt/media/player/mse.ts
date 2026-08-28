@@ -53,7 +53,8 @@ export const media_source = async function* ({
 }): Mse {
   const buffer = source.addSourceBuffer(mime_type)
 
-  let positioned = false
+  buffer.timestampOffset = (yield undefined) as unknown as number
+
   for (let operation = yield undefined; ; operation = yield undefined) {
     if (signal.aborted) {
       return
@@ -66,26 +67,23 @@ export const media_source = async function* ({
     }
 
     if (typeof operation === "number") {
-      if (positioned) {
-        using _ = defer(() => buffer.abort())
+      using _ = defer(() => buffer.abort())
 
-        if (source.readyState === "ended") {
-          const ranges = buffer.buffered
-          const end = ranges.length ? ranges.end(ranges.length - 1) : 0
+      if (source.readyState === "ended") {
+        const ranges = buffer.buffered
+        const end = ranges.length ? ranges.end(ranges.length - 1) : 0
 
-          for await (const _ of op_lock(buffer)) {
-            if (a.signal.aborted) {
-              return
-            }
-            buffer.remove(end, end + EPSILON)
+        for await (const _ of op_lock(buffer)) {
+          if (a.signal.aborted) {
+            return
           }
+          buffer.remove(end, end + EPSILON)
         }
       }
       if (a.signal.aborted) {
         return
       }
       buffer.timestampOffset = operation
-      positioned = true
       continue
     }
 
