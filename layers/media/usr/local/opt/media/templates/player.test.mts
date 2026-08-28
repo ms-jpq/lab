@@ -959,6 +959,91 @@ test(
 )
 
 test(
+  "an unexpected subtitle failure cancels and drains its media sibling",
+  options,
+  async () => {
+    const current = await fixture()
+    let requestSignal: AbortSignal | undefined = undefined
+    current.context.fetch = async (_url, { signal }) => {
+      requestSignal = signal
+      return {
+        body: new ReadableStream({
+          start: (controller) => {
+            controller.enqueue(new Uint8Array([1]))
+            signal.addEventListener("abort", () => controller.close(), {
+              once: true,
+            })
+          },
+        }),
+        ok: true,
+        status: 200,
+        statusText: "OK",
+      }
+    }
+    let timers = 0
+    current.context.setTimeout = (run) => {
+      timers += 1
+      return setTimeout(run, 10_000)
+    }
+    const parent = new AbortController()
+    const playback = current.context.player_test.playback_page(parent.signal)
+    let outcome:
+      | { error: unknown; status: "rejected" }
+      | { status: "fulfilled" }
+      | undefined = undefined
+    const observed = playback.then(
+      () => {
+        outcome = { status: "fulfilled" }
+      },
+      (error: unknown) => {
+        outcome = { error, status: "rejected" }
+      },
+    )
+
+    try {
+      while (
+        current.subtitle.sources.length === 0 ||
+        current.sources[0]?.sourceBuffers[0]?.buffered.length !== 1
+      ) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+      const source = present(current.sources[0])
+      const buffer = present(source.sourceBuffers[0])
+      const diagnostic = new Error("subtitle diagnostic failed")
+      current.context.console = {
+        error: () => {
+          throw diagnostic
+        },
+      }
+      current.subtitle.dispatchEvent(new Event("error"))
+      for (let turn = 0; turn < 64 && outcome === undefined; turn += 1) {
+        await Promise.resolve()
+      }
+
+      assert.deepEqual(outcome, { error: diagnostic, status: "rejected" })
+      assert.equal(parent.signal.aborted, false)
+      assert.equal(present<AbortSignal>(requestSignal).aborted, true)
+      assert.equal(current.media.src, "")
+      assert.equal(current.media.loads, 1)
+      assert.equal(current.revoked.length, 1)
+      assert.equal(buffer.usable, false)
+      assert.equal(timers, 0)
+
+      const mediaCalls = current.media.listenerCalls
+      const subtitleCalls = current.subtitle.listenerCalls
+      current.media.dispatchEvent(new Event("timeupdate"))
+      current.subtitle.dispatchEvent(new Event("error"))
+      current.subtitle.dispatchEvent(new Event("load"))
+      assert.equal(current.media.listenerCalls, mediaCalls)
+      assert.equal(current.subtitle.listenerCalls, subtitleCalls)
+    } finally {
+      parent.abort()
+      await observed
+    }
+  },
+)
+
+test(
   "a user seek supersedes an unacknowledged startup position",
   options,
   async () => {
@@ -1306,6 +1391,326 @@ test(
     } finally {
       producing = false
       controller.abort()
+      await playback.return(undefined)
+    }
+  },
+)
+
+test(
+  "low water resumes the same session from its buffered frontier",
+  options,
+  async () => {
+    const current = await fixture()
+    current.media.currentTime = 40
+    const firstAppend = Promise.withResolvers<void>()
+    const secondRequest = Promise.withResolvers<string>()
+    const requests: string[] = []
+    let firstAborts = 0
+    let firstCancellations = 0
+    current.context.fetch = async (url, { signal }) => {
+      const request = String(url)
+      const index = requests.push(request) - 1
+      if (index === 1) {
+        secondRequest.resolve(request)
+      }
+      signal.addEventListener(
+        "abort",
+        () => {
+          if (index === 0) {
+            firstAborts += 1
+          }
+        },
+        { once: true },
+      )
+      return {
+        body: {
+          getReader: () => ({
+            cancel: async () => {
+              if (index === 0) {
+                firstCancellations += 1
+              }
+            },
+            read: async () => {
+              if (index === 0) {
+                return {
+                  done: false as const,
+                  value: new Uint8Array([1]),
+                }
+              }
+              if (signal.aborted) {
+                return { done: true as const, value: undefined }
+              }
+              return new Promise<ReadableStreamReadResult<Uint8Array>>(
+                (resolve) => {
+                  signal.addEventListener(
+                    "abort",
+                    () => resolve({ done: true, value: undefined }),
+                    { once: true },
+                  )
+                },
+              )
+            },
+          }),
+        },
+        ok: true,
+        status: 200,
+        statusText: "OK",
+      }
+    }
+
+    const controller = new AbortController()
+    const operations: MseOperation[] = []
+    let ends = 0
+    const buffer = {
+      next: async (operation: MseOperation) => {
+        operations.push(operation)
+        if (operation === "end") {
+          ends += 1
+        } else if (operation instanceof Uint8Array) {
+          current.media.buffered.ranges = [[40, 100]]
+          firstAppend.resolve()
+        }
+        return { done: false as const, value: undefined }
+      },
+    }
+    const playback = current.context.player_test.session(
+      controller.signal,
+      buffer,
+      40,
+    )
+    let resumed: Promise<IteratorResult<void, unknown>> | undefined = undefined
+    try {
+      const paused = playback.next()
+      await firstAppend.promise
+      assert.equal((await paused).done, false)
+      assert.ok(firstAborts > 0 || firstCancellations > 0)
+      assert.deepEqual(
+        requests.map((url) => new URL(url).searchParams.get("t")),
+        ["40"],
+      )
+
+      current.media.currentTime = 60
+      resumed = playback.next()
+      const request = new URL(await secondRequest.promise)
+
+      assert.equal(request.searchParams.get("t"), "100")
+      assert.deepEqual(
+        requests.map((url) => new URL(url).searchParams.get("t")),
+        ["40", "100"],
+      )
+      assert.deepEqual(
+        operations.filter((operation) => typeof operation === "number"),
+        [40, 100],
+      )
+      assert.equal(ends, 0)
+    } finally {
+      controller.abort()
+      await resumed
+      await playback.return(undefined)
+    }
+  },
+)
+
+test(
+  "a partial request failure retries acquisition from the buffered frontier",
+  options,
+  async () => {
+    const current = await fixture()
+    const failed =
+      Promise.withResolvers<ReadableStreamReadResult<Uint8Array>>()
+    const retried = Promise.withResolvers<string>()
+    const retry: Array<() => void> = []
+    const requests: string[] = []
+    let firstReads = 0
+    current.context.setTimeout = (run) => {
+      const timeout = setTimeout(run, 10_000)
+      retry.push(() => {
+        clearTimeout(timeout)
+        run()
+      })
+      return timeout
+    }
+    current.context.fetch = async (url, { signal }) => {
+      const request = String(url)
+      const index = requests.push(request) - 1
+      if (index === 1) {
+        retried.resolve(request)
+      }
+      return {
+        body: {
+          getReader: () => ({
+            cancel: async () => {},
+            read: async () => {
+              if (index === 0) {
+                firstReads += 1
+                return firstReads === 1
+                  ? {
+                      done: false as const,
+                      value: new Uint8Array([1]),
+                    }
+                  : failed.promise
+              }
+              if (signal.aborted) {
+                return { done: true as const, value: undefined }
+              }
+              return new Promise<ReadableStreamReadResult<Uint8Array>>(
+                (resolve) => {
+                  signal.addEventListener(
+                    "abort",
+                    () => resolve({ done: true, value: undefined }),
+                    { once: true },
+                  )
+                },
+              )
+            },
+          }),
+        },
+        ok: true,
+        status: 200,
+        statusText: "OK",
+      }
+    }
+
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    try {
+      while (current.sources[0]?.sourceBuffers[0]?.buffered.length !== 1) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+      const source = present(current.sources[0])
+      const buffer = present(source.sourceBuffers[0])
+      buffer.buffered.ranges = [[40, 55]]
+      current.media.buffered.ranges = [[40, 55]]
+      while (current.media.currentTime !== 40) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+
+      failed.reject(new Error("request failed after partial progress"))
+      while (retry.length !== 1) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+      present(retry[0])()
+      const request = new URL(await retried.promise)
+
+      assert.deepEqual(
+        {
+          acquisition: request.searchParams.get("t"),
+          offset: buffer.timestampOffset,
+          target: current.media.currentTime,
+          targetInput: current.timeInput.value,
+        },
+        {
+          acquisition: "55",
+          offset: 55,
+          target: 40,
+          targetInput: "40",
+        },
+      )
+      assert.equal(current.sources.length, 1)
+      assert.equal(current.errors.length, 1)
+    } finally {
+      controller.abort()
+      await playback
+    }
+  },
+)
+
+test(
+  "a final chunk canceled at high water gets one EOF frontier probe",
+  options,
+  async () => {
+    const current = await fixture()
+    current.media.currentTime = 40
+    const requests: string[] = []
+    let firstAborts = 0
+    let firstCancellations = 0
+    let firstReads = 0
+    current.context.fetch = async (url, { signal }) => {
+      const request = String(url)
+      const index = requests.push(request) - 1
+      signal.addEventListener(
+        "abort",
+        () => {
+          if (index === 0) {
+            firstAborts += 1
+          }
+        },
+        { once: true },
+      )
+      return {
+        body: {
+          getReader: () => ({
+            cancel: async () => {
+              if (index === 0) {
+                firstCancellations += 1
+              }
+            },
+            read: async () => {
+              if (index === 0) {
+                firstReads += 1
+                return firstReads === 1
+                  ? {
+                      done: false as const,
+                      value: new Uint8Array([1]),
+                    }
+                  : { done: true as const, value: undefined }
+              }
+              return { done: true as const, value: undefined }
+            },
+          }),
+        },
+        ok: true,
+        status: 200,
+        statusText: "OK",
+      }
+    }
+
+    const controller = new AbortController()
+    const operations: MseOperation[] = []
+    let ends = 0
+    const buffer = {
+      next: async (operation: MseOperation) => {
+        operations.push(operation)
+        if (operation === "end") {
+          ends += 1
+        } else if (operation instanceof Uint8Array) {
+          current.media.buffered.ranges = [[40, 100]]
+        }
+        return { done: false as const, value: undefined }
+      },
+    }
+    const playback = current.context.player_test.session(
+      controller.signal,
+      buffer,
+      40,
+    )
+    let ending: Promise<IteratorResult<void, unknown>> | undefined = undefined
+    try {
+      assert.equal((await playback.next()).done, false)
+      assert.equal(firstReads, 1)
+      assert.ok(firstAborts > 0 || firstCancellations > 0)
+
+      current.media.currentTime = 60
+      ending = playback.next()
+      while (ends !== 1) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+
+      assert.deepEqual(
+        requests.map((url) => new URL(url).searchParams.get("t")),
+        ["40", "100"],
+      )
+      assert.deepEqual(
+        operations.filter((operation) => typeof operation === "number"),
+        [40, 100],
+      )
+      assert.equal(firstReads, 1)
+      assert.equal(ends, 1)
+    } finally {
+      controller.abort()
+      await ending
       await playback.return(undefined)
     }
   },

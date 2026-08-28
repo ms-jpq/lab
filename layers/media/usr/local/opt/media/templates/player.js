@@ -174,7 +174,7 @@ const persist_position = (value) => {
   } catch {}
 }
 
-const media_observation = () => ({
+const media_observation = () => Object.freeze({
   ended: media.ended,
   error: media.error,
   seeking: media.seeking,
