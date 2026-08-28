@@ -60,8 +60,11 @@ export const readableIterator = async function* <T>(
       yield value
     }
   } finally {
-    await reader.cancel()
-    reader.releaseLock()
+    try {
+      await reader.cancel()
+    } finally {
+      reader.releaseLock()
+    }
   }
 }
 
@@ -86,6 +89,7 @@ export const events = async function* <
     },
   })
 
+  a.signal.addEventListener("abort", () => stream.cancel(), { once: true })
   yield* readableIterator(stream)
   return
 }
