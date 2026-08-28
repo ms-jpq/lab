@@ -22,6 +22,7 @@ type MediaObservation = {
 }
 type MseOperation = "end" | number | Uint8Array
 type Mse = AsyncGenerator<void, void, MseOperation | undefined>
+type FailureStorm = { fail: (error: unknown) => void; recover: () => void }
 type SourceFailure = { error: unknown; position: number }
 type PageChange = {
   error: MediaFailure | null
@@ -34,7 +35,12 @@ type PlayerTest = {
     signal: AbortSignal,
   ) => AsyncGenerator<MediaObservation[], void, void>
   media_sources: AsyncGeneratorFactory<
-    { buffer: Mse; position: number; signal: AbortSignal },
+    {
+      buffer: Mse
+      failures: FailureStorm
+      position: number
+      signal: AbortSignal
+    },
     SourceFailure
   >
   page_changes: AsyncGeneratorFactory<PageChange>
@@ -47,6 +53,7 @@ type PlayerTest = {
       next: (operation: MseOperation) => Promise<IteratorResult<void>>
     },
     position: number,
+    failures: FailureStorm,
   ) => AsyncGenerator<void, unknown, undefined>
   source_stream: (
     signal: AbortSignal,
@@ -96,6 +103,55 @@ const nextValue = async <T,>(
   const result = await iterator.next()
   assert.equal(result.done, false)
   return result.value
+}
+const eventually = async (predicate: () => boolean): Promise<void> => {
+  while (!predicate()) {
+    await new Promise((resolve) => setImmediate(resolve))
+  }
+}
+const frozenClock = (context: PlayerContext) => {
+  const scheduled: Array<{
+    invoke: () => void
+    timeout: ReturnType<typeof setTimeout>
+  }> = []
+  let callbacks = 0
+  let cancellations = 0
+  context.clearTimeout = (timeout) => {
+    cancellations += 1
+    clearTimeout(timeout)
+  }
+  context.setTimeout = (run) => {
+    const invoke = () => {
+      callbacks += 1
+      run()
+    }
+    const timeout = setTimeout(invoke, 10_000)
+    scheduled.push({
+      invoke: () => {
+        clearTimeout(timeout)
+        invoke()
+      },
+      timeout,
+    })
+    return timeout
+  }
+  return {
+    advance: (index: number) => present(scheduled[index]).invoke(),
+    get callbacks() {
+      return callbacks
+    },
+    get cancellations() {
+      return cancellations
+    },
+    dispose: () => {
+      for (const { timeout } of scheduled) {
+        clearTimeout(timeout)
+      }
+    },
+    get length() {
+      return scheduled.length
+    },
+  }
 }
 
 const timeRanges = (): MutableTimeRanges => ({
@@ -808,23 +864,14 @@ test(
   options,
   async () => {
     const current = await fixture()
-    const advance: Array<() => void> = []
-    current.context.setTimeout = (run) => {
-      const timeout = setTimeout(run, 10_000)
-      advance.push(() => {
-        clearTimeout(timeout)
-        run()
-      })
-      return timeout
-    }
+    const clock = frozenClock(current.context)
     current.context.window.dispatchEvent(new Event("pageshow"))
     try {
-      while (
-        current.subtitle.sources.length === 0 ||
-        current.sources[0]?.sourceBuffers[0]?.buffered.length !== 1
-      ) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
+      await eventually(
+        () =>
+          current.subtitle.sources.length !== 0 &&
+          current.sources[0]?.sourceBuffers[0]?.buffered.length === 1,
+      )
       await new Promise((resolve) => setImmediate(resolve))
       const subtitleRequests = current.subtitle.sources.length
       const mediaRequests = current.requests.length
@@ -844,17 +891,17 @@ test(
       for (let event = 0; event < 64; event += 1) {
         current.subtitle.dispatchEvent(new Event("error"))
       }
-      for (let turn = 0; turn < 32 && advance.length === 0; turn += 1) {
+      for (let turn = 0; turn < 32 && clock.length === 0; turn += 1) {
         await new Promise((resolve) => setImmediate(resolve))
       }
 
       assert.equal(current.errors.length, 1)
-      assert.equal(advance.length, 1)
+      assert.equal(clock.length, 1)
       assert.equal(current.requests.length, mediaRequests)
       assert.equal(current.sources.length, mediaSources)
       assert.equal(current.media.src, mediaSource)
       assert.deepEqual(mseState(), beforeError)
-      present(advance[0])()
+      clock.advance(0)
       for (
         let turn = 0;
         turn < 32 && current.subtitle.sources.length === subtitleRequests;
@@ -877,7 +924,7 @@ test(
       )
       current.subtitle.dispatchEvent(new Event("load"))
       await new Promise((resolve) => setImmediate(resolve))
-      assert.equal(advance.length, 1)
+      assert.equal(clock.length, 1)
       assert.equal(current.errors.length, 1)
       assert.equal(current.requests.length, mediaRequests)
       assert.equal(current.sources.length, mediaSources)
@@ -885,6 +932,7 @@ test(
       assert.deepEqual(mseState(), beforeError)
     } finally {
       current.context.window.dispatchEvent(new Event("pagehide"))
+      clock.dispose()
     }
   },
 )
@@ -894,43 +942,29 @@ test(
   options,
   async () => {
     const current = await fixture()
-    const scheduled: Array<{
-      run: () => void
-      timeout: ReturnType<typeof setTimeout>
-    }> = []
-    let timerCancellations = 0
-    current.context.clearTimeout = (timeout) => {
-      timerCancellations += 1
-      clearTimeout(timeout)
-    }
-    current.context.setTimeout = (run) => {
-      const timeout = setTimeout(run, 10_000)
-      scheduled.push({ run, timeout })
-      return timeout
-    }
+    const clock = frozenClock(current.context)
     let hidden = false
     try {
       current.context.window.dispatchEvent(new Event("pageshow"))
-      while (
-        current.subtitle.sources.length === 0 ||
-        current.sources[0]?.sourceBuffers[0]?.buffered.length !== 1
-      ) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
+      await eventually(
+        () =>
+          current.subtitle.sources.length !== 0 &&
+          current.sources[0]?.sourceBuffers[0]?.buffered.length === 1,
+      )
       current.subtitle.dispatchEvent(new Event("error"))
-      for (let turn = 0; turn < 32 && scheduled.length === 0; turn += 1) {
+      for (let turn = 0; turn < 32 && clock.length === 0; turn += 1) {
         await new Promise((resolve) => setImmediate(resolve))
       }
-      assert.equal(scheduled.length, 1)
+      assert.equal(clock.length, 1)
       const subtitleRequests = current.subtitle.sources.length
 
       current.context.window.dispatchEvent(new Event("pagehide"))
       hidden = true
-      for (let turn = 0; turn < 32 && timerCancellations === 0; turn += 1) {
+      for (let turn = 0; turn < 32 && clock.cancellations === 0; turn += 1) {
         await new Promise((resolve) => setImmediate(resolve))
       }
-      assert.equal(timerCancellations, 1)
-      present(scheduled[0]).run()
+      assert.equal(clock.cancellations, 1)
+      clock.advance(0)
       await new Promise((resolve) => setImmediate(resolve))
       assert.equal(current.subtitle.sources.length, subtitleRequests)
       const listenerCalls = current.subtitle.listenerCalls
@@ -941,9 +975,7 @@ test(
       if (!hidden) {
         current.context.window.dispatchEvent(new Event("pagehide"))
       }
-      for (const { timeout } of scheduled) {
-        clearTimeout(timeout)
-      }
+      clock.dispose()
     }
 
     const owned = await fixture()
@@ -985,11 +1017,7 @@ test(
         statusText: "OK",
       }
     }
-    let timers = 0
-    current.context.setTimeout = (run) => {
-      timers += 1
-      return setTimeout(run, 10_000)
-    }
+    const clock = frozenClock(current.context)
     const parent = new AbortController()
     const playback = current.context.player_test.playback_page(parent.signal)
     let outcome:
@@ -1006,12 +1034,11 @@ test(
     )
 
     try {
-      while (
-        current.subtitle.sources.length === 0 ||
-        current.sources[0]?.sourceBuffers[0]?.buffered.length !== 1
-      ) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
+      await eventually(
+        () =>
+          current.subtitle.sources.length !== 0 &&
+          current.sources[0]?.sourceBuffers[0]?.buffered.length === 1,
+      )
       const source = present(current.sources[0])
       const buffer = present(source.sourceBuffers[0])
       const diagnostic = new Error("subtitle diagnostic failed")
@@ -1032,7 +1059,7 @@ test(
       assert.equal(current.media.loads, 1)
       assert.equal(current.revoked.length, 1)
       assert.equal(buffer.usable, false)
-      assert.equal(timers, 0)
+      assert.equal(clock.length, 0)
 
       const mediaCalls = current.media.listenerCalls
       const subtitleCalls = current.subtitle.listenerCalls
@@ -1044,6 +1071,7 @@ test(
     } finally {
       parent.abort()
       await observed
+      clock.dispose()
     }
   },
 )
@@ -1249,18 +1277,18 @@ test(
       controller.signal,
     )
     try {
-      while (current.sources[0]?.sourceBuffers[0]?.buffered.length !== 1) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
+      await eventually(
+        () => current.sources[0]?.sourceBuffers[0]?.buffered.length === 1,
+      )
       const failure = { code: 3, message: "decode failed" }
       current.media.error = failure
       current.media.dispatchEvent(new Event("error"))
       current.media.dispatchEvent(new Event("timeupdate"))
       current.media.dispatchEvent(new Event("progress"))
 
-      while (current.sources.length !== 2 || current.requests.length !== 2) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
+      await eventually(
+        () => current.sources.length === 2 && current.requests.length === 2,
+      )
       assert.equal(
         new URL(present(current.requests[1])).searchParams.get("t"),
         "40",
@@ -1375,6 +1403,7 @@ test(
       controller.signal,
       buffer,
       40,
+      { fail: () => {}, recover: () => {} },
     )
     try {
       const paused = playback.next()
@@ -1482,6 +1511,7 @@ test(
       controller.signal,
       buffer,
       40,
+      { fail: () => {}, recover: () => {} },
     )
     let resumed: Promise<IteratorResult<void, unknown>> | undefined = undefined
     try {
@@ -1516,129 +1546,27 @@ test(
   },
 )
 
-test(
-  "a partial request failure retries acquisition from the buffered frontier",
-  options,
-  async () => {
-    const current = await fixture()
-    const failed = Promise.withResolvers<ReadableStreamReadResult<Uint8Array>>()
-    const retried = Promise.withResolvers<string>()
-    const retry: Array<() => void> = []
-    const requests: string[] = []
-    let firstReads = 0
-    current.context.setTimeout = (run) => {
-      const timeout = setTimeout(run, 10_000)
-      retry.push(() => {
-        clearTimeout(timeout)
-        run()
-      })
-      return timeout
-    }
-    current.context.fetch = async (url, { signal }) => {
-      const request = String(url)
-      const index = requests.push(request) - 1
-      if (index === 1) {
-        retried.resolve(request)
-      }
-      return {
-        body: {
-          getReader: () => ({
-            cancel: async () => {},
-            read: async () => {
-              if (index === 0) {
-                firstReads += 1
-                return firstReads === 1
-                  ? {
-                      done: false as const,
-                      value: new Uint8Array([1]),
-                    }
-                  : failed.promise
-              }
-              if (signal.aborted) {
-                return { done: true as const, value: undefined }
-              }
-              return new Promise<ReadableStreamReadResult<Uint8Array>>(
-                (resolve) => {
-                  signal.addEventListener(
-                    "abort",
-                    () => resolve({ done: true, value: undefined }),
-                    { once: true },
-                  )
-                },
-              )
-            },
-          }),
-        },
-        ok: true,
-        status: 200,
-        statusText: "OK",
-      }
-    }
-
-    const controller = new AbortController()
-    const playback = current.context.player_test.playback_page(
-      controller.signal,
-    )
-    try {
-      while (current.sources[0]?.sourceBuffers[0]?.buffered.length !== 1) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
-      const source = present(current.sources[0])
-      const buffer = present(source.sourceBuffers[0])
-      buffer.buffered.ranges = [[40, 55]]
-      current.media.buffered.ranges = [[40, 55]]
-      while (current.media.currentTime !== 40) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
-
-      failed.reject(new Error("request failed after partial progress"))
-      while (retry.length !== 1) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
-      present(retry[0])()
-      const request = new URL(await retried.promise)
-
-      assert.deepEqual(
-        {
-          acquisition: request.searchParams.get("t"),
-          offset: buffer.timestampOffset,
-          target: current.media.currentTime,
-          targetInput: current.timeInput.value,
-        },
-        {
-          acquisition: "55",
-          offset: 55,
-          target: 40,
-          targetInput: "40",
-        },
-      )
-      assert.equal(current.sources.length, 1)
-      assert.equal(current.errors.length, 1)
-    } finally {
-      controller.abort()
-      await playback
-    }
+const partialFailureCases = [
+  {
+    failure: "request failed after partial progress",
+    name: "a partial request failure retries acquisition from the buffered frontier",
+    playhead: 40,
   },
-)
+  {
+    failure: "request failed at the buffered frontier",
+    name: "a stalled playhead retains its exact buffered frontier for retry",
+    playhead: 55,
+  },
+] as const
 
-test(
-  "a stalled playhead retains its exact buffered frontier for retry",
-  options,
-  async () => {
+for (const { failure, name, playhead } of partialFailureCases) {
+  test(name, options, async () => {
     const current = await fixture()
     const failed = Promise.withResolvers<ReadableStreamReadResult<Uint8Array>>()
     const retried = Promise.withResolvers<string>()
-    const retry: Array<() => void> = []
+    const clock = frozenClock(current.context)
     const requests: string[] = []
     let firstReads = 0
-    current.context.setTimeout = (run) => {
-      const timeout = setTimeout(run, 10_000)
-      retry.push(() => {
-        clearTimeout(timeout)
-        run()
-      })
-      return timeout
-    }
     current.context.fetch = async (url, { signal }) => {
       const request = String(url)
       const index = requests.push(request) - 1
@@ -1685,23 +1613,19 @@ test(
       controller.signal,
     )
     try {
-      while (current.sources[0]?.sourceBuffers[0]?.buffered.length !== 1) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
+      await eventually(
+        () => current.sources[0]?.sourceBuffers[0]?.buffered.length === 1,
+      )
       const source = present(current.sources[0])
       const buffer = present(source.sourceBuffers[0])
       buffer.buffered.ranges = [[40, 55]]
       current.media.buffered.ranges = [[40, 55]]
-      while (current.media.currentTime !== 40) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
-      current.media.currentTime = 55
+      await eventually(() => current.media.currentTime === 40)
+      current.media.currentTime = playhead
 
-      failed.reject(new Error("request failed at the buffered frontier"))
-      while (retry.length !== 1) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
-      present(retry[0])()
+      failed.reject(new Error(failure))
+      await eventually(() => clock.length === 1)
+      clock.advance(0)
       const request = new URL(await retried.promise)
 
       assert.deepEqual(
@@ -1714,7 +1638,7 @@ test(
         {
           acquisition: "55",
           offset: 55,
-          playhead: 55,
+          playhead,
           targetInput: "40",
         },
       )
@@ -1723,9 +1647,10 @@ test(
     } finally {
       controller.abort()
       await playback
+      clock.dispose()
     }
-  },
-)
+  })
+}
 
 test(
   "a final chunk canceled at high water gets one EOF frontier probe",
@@ -1795,6 +1720,7 @@ test(
       controller.signal,
       buffer,
       40,
+      { fail: () => {}, recover: () => {} },
     )
     let ending: Promise<IteratorResult<void, unknown>> | undefined = undefined
     try {
@@ -1804,9 +1730,7 @@ test(
 
       current.media.currentTime = 60
       ending = playback.next()
-      while (ends !== 1) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
+      await eventually(() => ends === 1)
 
       assert.deepEqual(
         requests.map((url) => new URL(url).searchParams.get("t")),
@@ -1972,9 +1896,7 @@ test(
     const openedBuffer = present(source.sourceBuffers[0])
     openedBuffer.holdUpdate = true
     const appending = buffer.next(new Uint8Array([1]))
-    while (!openedBuffer.updating) {
-      await new Promise((resolve) => setImmediate(resolve))
-    }
+    await eventually(() => openedBuffer.updating)
 
     controller.abort()
     let closed = false
@@ -2007,9 +1929,7 @@ test(
     const openedBuffer = present(source.sourceBuffers[0])
     openedBuffer.holdUpdate = true
     const appending = buffer.next(new Uint8Array([1]))
-    while (!openedBuffer.updating) {
-      await new Promise((resolve) => setImmediate(resolve))
-    }
+    await eventually(() => openedBuffer.updating)
 
     const offsetting = buffer.next(30)
     controller.abort()
@@ -2104,13 +2024,11 @@ test(
       controller.signal,
     )
 
-    while (requests < 1) {
-      await new Promise((resolve) => setImmediate(resolve))
-    }
+    await eventually(() => requests >= 1)
     const mediaSource = present(current.sources[0])
-    while (mediaSource.sourceBuffers[0]?.buffered.length !== 1) {
-      await new Promise((resolve) => setImmediate(resolve))
-    }
+    await eventually(
+      () => mediaSource.sourceBuffers[0]?.buffered.length === 1,
+    )
     const source = current.media.src
     current.media.currentTimes.length = 0
     current.media.currentTime = 110
@@ -2119,9 +2037,9 @@ test(
 
     const request = new URL(await secondRequest.promise)
     assert.equal(mediaSource.ends, 0)
-    while (mediaSource.sourceBuffers[0]?.buffered.start(0) !== 110) {
-      await new Promise((resolve) => setImmediate(resolve))
-    }
+    await eventually(
+      () => mediaSource.sourceBuffers[0]?.buffered.start(0) === 110,
+    )
     current.media.dispatchEvent(new Event("progress"))
     current.media.dispatchEvent(new Event("timeupdate"))
     current.media.dispatchEvent(new Event("seeking"))
@@ -2159,9 +2077,7 @@ test(
       controller.signal,
     )
     try {
-      while (current.requests.length === 0) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
+      await eventually(() => current.requests.length !== 0)
       assert.equal(
         new URL(present(current.requests[0])).searchParams.get("t"),
         "110",
@@ -2202,9 +2118,9 @@ test(
       controller.signal,
     )
     try {
-      while (current.sources[0]?.sourceBuffers[0]?.buffered.length !== 1) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
+      await eventually(
+        () => current.sources[0]?.sourceBuffers[0]?.buffered.length === 1,
+      )
       for (let position = 100; position < 164; position += 1) {
         current.media.currentTime = position
         current.media.seeking = true
@@ -2268,9 +2184,9 @@ test(
       controller.signal,
     )
     try {
-      while (current.sources[0]?.sourceBuffers[0]?.buffered.length !== 1) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
+      await eventually(
+        () => current.sources[0]?.sourceBuffers[0]?.buffered.length === 1,
+      )
       const source = current.media.src
       current.media.currentTime = 110
       current.media.seeking = true
@@ -2296,16 +2212,8 @@ test(
   async () => {
     const current = await fixture()
     const succeeded = Promise.withResolvers<void>()
-    const advance: Array<() => void> = []
+    const clock = frozenClock(current.context)
     const requests: string[] = []
-    current.context.setTimeout = (run) => {
-      const timeout = setTimeout(run, 10_000)
-      advance.push(() => {
-        clearTimeout(timeout)
-        run()
-      })
-      return timeout
-    }
     current.context.fetch = async (url, { signal }) => {
       requests.push(String(url))
       if (requests.length <= 3) {
@@ -2333,10 +2241,8 @@ test(
     )
     try {
       for (let retry = 0; retry < 3; retry += 1) {
-        while (advance.length <= retry) {
-          await new Promise((resolve) => setImmediate(resolve))
-        }
-        present(advance[retry])()
+        await eventually(() => clock.length > retry)
+        clock.advance(retry)
       }
       await succeeded.promise
 
@@ -2350,6 +2256,125 @@ test(
     } finally {
       controller.abort()
       await playback
+      clock.dispose()
+    }
+  },
+)
+
+test(
+  "successful buffered progress starts a new request failure storm",
+  options,
+  async () => {
+    const current = await fixture()
+    const firstFailure = new Error("first request outage")
+    const secondFailure = new Error("later request outage")
+    const failAfterProgress =
+      Promise.withResolvers<ReadableStreamReadResult<Uint8Array>>()
+    const clock = frozenClock(current.context)
+    const requests: string[] = []
+    let recoveredReads = 0
+    current.context.fetch = async (url) => {
+      requests.push(String(url))
+      if (requests.length === 1) {
+        throw firstFailure
+      }
+      return {
+        body: {
+          getReader: () => ({
+            cancel: async () => {},
+            read: async () => {
+              recoveredReads += 1
+              return recoveredReads === 1
+                ? {
+                    done: false as const,
+                    value: new Uint8Array([1]),
+                  }
+                : failAfterProgress.promise
+            },
+          }),
+        },
+        ok: true,
+        status: 200,
+        statusText: "OK",
+      }
+    }
+
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    try {
+      await eventually(() => clock.length === 1)
+      clock.advance(0)
+      await eventually(
+        () => current.sources[0]?.sourceBuffers[0]?.buffered.length === 1,
+      )
+
+      failAfterProgress.reject(secondFailure)
+      await eventually(() => clock.length >= 2)
+
+      assert.deepEqual(
+        current.errors.map(([error]) => error),
+        [firstFailure, secondFailure],
+      )
+      assert.equal(requests.length, 2)
+      assert.equal(current.sources.length, 1)
+    } finally {
+      controller.abort()
+      await playback
+      clock.dispose()
+    }
+  },
+)
+
+test(
+  "a contiguous MSE setup outage reports once and keeps retrying",
+  options,
+  async () => {
+    const current = await fixture()
+    const failures = [
+      new Error("first MSE setup failure"),
+      new Error("second MSE setup failure"),
+      new Error("third MSE setup failure"),
+    ]
+    const clock = frozenClock(current.context)
+    let attempts = 0
+    const originalAddSourceBuffer =
+      current.context.MediaSource.prototype.addSourceBuffer
+    current.context.MediaSource.prototype.addSourceBuffer = function (
+      type: string,
+    ) {
+      const failure = failures[attempts]
+      attempts += 1
+      if (failure) {
+        throw failure
+      }
+      return originalAddSourceBuffer.call(this, type)
+    }
+
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    try {
+      for (let retry = 0; retry < failures.length; retry += 1) {
+        await eventually(() => clock.length > retry)
+        clock.advance(retry)
+      }
+      await eventually(
+        () => current.sources[3]?.sourceBuffers[0]?.buffered.length === 1,
+      )
+
+      assert.equal(attempts, 4)
+      assert.equal(current.sources.length, 4)
+      assert.deepEqual(
+        current.errors.map(([error]) => error),
+        [failures[0]],
+      )
+    } finally {
+      controller.abort()
+      await playback
+      clock.dispose()
     }
   },
 )
@@ -2406,9 +2431,7 @@ test(
       controller.signal,
     )
     try {
-      while (timers !== 1) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
+      await eventually(() => timers === 1)
       for (let event = 0; event < 64; event += 1) {
         current.media.dispatchEvent(new Event("timeupdate"))
         current.media.dispatchEvent(new Event("progress"))
@@ -2424,9 +2447,7 @@ test(
       )
 
       present<() => void>(advance)()
-      while (requests.length !== 2) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
+      await eventually(() => requests.length === 2)
 
       assert.equal(timers, 1)
       assert.equal(timerCallbacks, 1)
@@ -2489,9 +2510,7 @@ test(
       controller.signal,
     )
     try {
-      while (timers !== 1) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
+      await eventually(() => timers === 1)
       current.media.currentTime = 110
       current.media.seeking = true
       current.media.dispatchEvent(new Event("seeking"))
@@ -2578,9 +2597,9 @@ test(
     let oldUrl = ""
     let newUrl = ""
     try {
-      while (current.sources[0]?.sourceBuffers[0]?.buffered.length !== 1) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
+      await eventually(
+        () => current.sources[0]?.sourceBuffers[0]?.buffered.length === 1,
+      )
       oldUrl = current.media.src
       current.media.topology.length = 0
       const source = present(current.sources[0])
@@ -2637,9 +2656,9 @@ test(
       controller.signal,
     )
     try {
-      while (current.sources[0]?.sourceBuffers[0]?.buffered.length !== 1) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
+      await eventually(
+        () => current.sources[0]?.sourceBuffers[0]?.buffered.length === 1,
+      )
       const source = present(current.sources[0])
       present(source.sourceBuffers[0]).abortError = new DOMException(
         "The operation was aborted",
@@ -2649,9 +2668,9 @@ test(
       current.media.seeking = true
       current.media.dispatchEvent(new Event("seeking"))
 
-      while (current.sources.length !== 2 || current.requests.length !== 2) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
+      await eventually(
+        () => current.sources.length === 2 && current.requests.length === 2,
+      )
       assert.equal(
         new URL(present(current.requests[1])).searchParams.get("t"),
         "110",
@@ -2667,6 +2686,176 @@ test(
     } finally {
       controller.abort()
       await assert.doesNotReject(playback)
+    }
+  },
+)
+
+test(
+  "parser progress without a buffered frontier stays in one failure storm",
+  options,
+  async () => {
+    const current = await fixture()
+    const firstFailure = new Error("first request outage")
+    const parserFailure = new Error("parser-only retry outage")
+    const recoveredFailure = new Error("post-recovery outage")
+    const advance: Array<() => void> = []
+    let requests = 0
+    current.context.setTimeout = (run) => {
+      const timeout = setTimeout(run, 10_000)
+      advance.push(() => {
+        clearTimeout(timeout)
+        run()
+      })
+      return timeout
+    }
+    const originalAddSourceBuffer =
+      current.context.MediaSource.prototype.addSourceBuffer
+    current.context.MediaSource.prototype.addSourceBuffer = function (
+      type: string,
+    ) {
+      const buffer = originalAddSourceBuffer.call(this, type)
+      const originalAppendBuffer = buffer.appendBuffer
+      buffer.appendBuffer = function (bytes: Uint8Array) {
+        if (bytes[0] !== 2) {
+          originalAppendBuffer.call(this, bytes)
+          return
+        }
+        this.updating = true
+        queueMicrotask(() => {
+          this.updating = false
+          this.dispatchEvent(new Event("updateend"))
+        })
+      }
+      return buffer
+    }
+    current.context.fetch = async () => {
+      requests += 1
+      if (requests === 1) {
+        throw firstFailure
+      }
+      let reads = 0
+      return {
+        body: {
+          getReader: () => ({
+            cancel: async () => {},
+            read: async () => {
+              reads += 1
+              if (reads === 1) {
+                return {
+                  done: false as const,
+                  value: new Uint8Array([requests]),
+                }
+              }
+              throw requests === 2 ? parserFailure : recoveredFailure
+            },
+          }),
+        },
+        ok: true,
+        status: 200,
+        statusText: "OK",
+      }
+    }
+
+    const controller = new AbortController()
+    const playback = current.context.player_test.playback_page(
+      controller.signal,
+    )
+    try {
+      await eventually(() => advance.length === 1)
+      present(advance[0])()
+      await eventually(() => advance.length === 2)
+      present(advance[1])()
+      await eventually(() => advance.length === 3)
+
+      assert.deepEqual(
+        current.errors.map(([error]) => error),
+        [firstFailure, recoveredFailure],
+      )
+      assert.equal(requests, 3)
+      assert.equal(current.sources.length, 1)
+      assert.deepEqual(current.media.buffered.ranges, [[40, 50]])
+    } finally {
+      controller.abort()
+      await playback
+    }
+  },
+)
+
+test(
+  "a throwing media reporter escapes once and drains both siblings",
+  options,
+  async () => {
+    const current = await fixture()
+    const scheduled: Array<ReturnType<typeof setTimeout>> = []
+    let timerCancellations = 0
+    current.context.clearTimeout = (timeout) => {
+      timerCancellations += 1
+      clearTimeout(timeout)
+    }
+    current.context.setTimeout = (run) => {
+      const timeout = setTimeout(run, 10_000)
+      scheduled.push(timeout)
+      return timeout
+    }
+    const parent = new AbortController()
+    const playback = current.context.player_test.playback_page(parent.signal)
+    let outcome:
+      | { error: unknown; status: "rejected" }
+      | { status: "fulfilled" }
+      | undefined = undefined
+    const observed = playback.then(
+      () => {
+        outcome = { status: "fulfilled" }
+      },
+      (error: unknown) => {
+        outcome = { error, status: "rejected" }
+      },
+    )
+
+    try {
+      await eventually(
+        () =>
+          current.subtitle.sources.length !== 0 &&
+          current.sources[0]?.sourceBuffers[0]?.buffered.length === 1,
+      )
+      const source = present(current.sources[0])
+      const buffer = present(source.sourceBuffers[0])
+      current.subtitle.dispatchEvent(new Event("error"))
+      await eventually(() => scheduled.length === 1)
+      const subtitleRequests = current.subtitle.sources.length
+      const reporterFailure = new Error("media diagnostic failed")
+      let reports = 0
+      current.context.console = {
+        error: () => {
+          reports += 1
+          throw reporterFailure
+        },
+      }
+
+      current.media.error = { code: 3, message: "decode failed" }
+      current.media.dispatchEvent(new Event("error"))
+      await eventually(() => outcome !== undefined)
+
+      assert.deepEqual(outcome, {
+        error: reporterFailure,
+        status: "rejected",
+      })
+      assert.equal(reports, 1)
+      assert.equal(parent.signal.aborted, false)
+      assert.equal(timerCancellations, 1)
+      assert.equal(current.subtitle.sources.length, subtitleRequests)
+      assert.equal(current.media.src, "")
+      assert.equal(current.media.loads, 1)
+      assert.equal(current.revoked.length, 1)
+      assert.equal(buffer.usable, false)
+
+      const subtitleCalls = current.subtitle.listenerCalls
+      current.subtitle.dispatchEvent(new Event("error"))
+      current.subtitle.dispatchEvent(new Event("load"))
+      assert.equal(current.subtitle.listenerCalls, subtitleCalls)
+    } finally {
+      parent.abort()
+      await observed
     }
   },
 )
