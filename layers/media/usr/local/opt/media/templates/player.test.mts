@@ -1215,7 +1215,8 @@ test(
       }
       const source = present(current.sources[0])
       present(source.sourceBuffers[0]).usable = false
-      const response = present(firstResponse)
+      const response =
+        present<ReadableStreamDefaultController<Uint8Array>>(firstResponse)
       response.enqueue(new Uint8Array([2]))
 
       const request = new URL(await replaced.promise)

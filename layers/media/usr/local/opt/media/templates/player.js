@@ -5,7 +5,8 @@
 /** @typedef {{buffer: Mse, position: number, signal: AbortSignal}} PlaybackSource */
 /** @typedef {{error?: unknown, position: number, reset: boolean}} SourceChange */
 /** @typedef {{error: unknown}} Failure */
-/** @typedef {{action: "done" | "reset" | "retry" | "seek", error?: unknown, position: number}} AttemptChange */
+/** @typedef {Promise<IteratorResult<PageChange, void>>} PageResult */
+/** @typedef {{action: "done" | "reset" | "retry" | "seek", error?: unknown, page: PageResult, position: number}} AttemptChange */
 
 const BUFFER = {
   BEHIND: 30,
@@ -519,20 +520,19 @@ const media_sources = async function* (signal, position) {
   }
 }
 
-/** @param {AbortSignal} signal @param {Mse} buffer @param {AsyncGenerator<PageChange, void, void>} states @param {number} position @returns {Promise<AttemptChange>} */
-const play_attempt = async (signal, buffer, states, position) => {
+/** @param {AbortSignal} signal @param {Mse} buffer @param {AsyncGenerator<PageChange, void, void>} states @param {PageResult} page @param {number} position @returns {Promise<AttemptChange>} */
+const play_attempt = async (signal, buffer, states, page, position) => {
   const attempt = new AbortController()
   const attempt_signal = AbortSignal.any([signal, attempt.signal])
   const current = session(attempt_signal, buffer, position)
   /** @type {Promise<IteratorResult<void, Failure | void>> | undefined} */
   let progress = current.next()
-  let change = states.next()
   try {
     for (;;) {
       const selected = /** @type {IteratorSelection | undefined} */ (
         await select(
           attempt_signal,
-          async () => /** @type {IteratorSelection} */ ([states, await change]),
+          async () => /** @type {IteratorSelection} */ ([states, await page]),
           progress
             ? async () =>
                 /** @type {IteratorSelection} */ ([current, await progress])
@@ -540,7 +540,7 @@ const play_attempt = async (signal, buffer, states, position) => {
         )
       )
       if (!selected) {
-        return { action: "done", position }
+        return { action: "done", page, position }
       }
       const [selected_source, selected_result] = selected
       if (selected_source === current) {
@@ -550,8 +550,8 @@ const play_attempt = async (signal, buffer, states, position) => {
         progress = undefined
         if (result.done) {
           return result.value
-            ? { action: "retry", error: result.value.error, position }
-            : { action: "done", position }
+            ? { action: "retry", error: result.value.error, page, position }
+            : { action: "done", page, position }
         }
         continue
       }
@@ -560,24 +560,29 @@ const play_attempt = async (signal, buffer, states, position) => {
         selected_result
       )
       if (state.done) {
-        return { action: "done", position }
+        return { action: "done", page, position }
       }
       position = state.value.position
       if (state.value.error) {
-        return { action: "reset", error: state.value.error, position }
+        return {
+          action: "reset",
+          error: state.value.error,
+          page,
+          position,
+        }
       }
+      page = states.next()
       if (state.value.seek !== undefined) {
-        return { action: "seek", position }
+        return { action: "seek", page, position }
       }
-      change = states.next()
       if (progress === undefined) {
         progress = current.next()
       }
     }
   } catch (error) {
     return signal.aborted
-      ? { action: "done", position }
-      : { action: "reset", error, position }
+      ? { action: "done", page, position }
+      : { action: "reset", error, page, position }
   } finally {
     attempt.abort()
     await current.return()
@@ -591,9 +596,11 @@ const play_source = async ({ buffer, position, signal }) => {
     AbortSignal.any([signal, observation.signal]),
     position,
   )
+  let page = states.next()
   try {
     for (;;) {
-      const change = await play_attempt(signal, buffer, states, position)
+      const change = await play_attempt(signal, buffer, states, page, position)
+      page = change.page
       position = change.position
       if (change.action === "done") {
         return { position, reset: false }
