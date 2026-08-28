@@ -170,6 +170,25 @@ const frozenClock = (context: PlayerContext) => {
   }
 }
 
+const mockResponse = (body: MockResponse["body"]): MockResponse => ({
+  body,
+  ok: true,
+  status: 200,
+  statusText: "OK",
+})
+
+const liveResponse = (signal: AbortSignal): MockResponse =>
+  mockResponse(
+    new ReadableStream<Uint8Array>({
+      start: (controller) => {
+        controller.enqueue(new Uint8Array([1]))
+        signal.addEventListener("abort", () => controller.close(), {
+          once: true,
+        })
+      },
+    }),
+  )
+
 const timeRanges = (): MutableTimeRanges => ({
   ranges: [],
   get length() {

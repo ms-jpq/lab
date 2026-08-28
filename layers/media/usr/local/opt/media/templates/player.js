@@ -6,7 +6,7 @@
 /** @typedef {{error: unknown, position: number}} SourceFailure */
 /** @typedef {{error: unknown, start: number}} SessionFailure */
 /** @typedef {{pending: Promise<IteratorResult<PageChange, void>>}} PageReader */
-/** @typedef {{action: "cancel" | "restart", position: number} | {action: "failure", error: unknown, position: number} | {action: "retry", error: unknown, position: number, start: number}} AttemptChange */
+/** @typedef {SourceFailure | {action: "cancel" | "restart", position: number} | {action: "retry", error: unknown, position: number, start: number}} AttemptChange */
 /** @typedef {{position: number, start: number} | SourceFailure} RetryChange */
 
 const BUFFER = {
@@ -31,8 +31,6 @@ const form = /** @type {HTMLFormElement} */ (document.querySelector("form"))
 const time_input = /** @type {HTMLInputElement} */ (
   form.elements.namedItem("t")
 )
-const MediaSourceConstructor =
-  /** @type {typeof globalThis & { ManagedMediaSource?: typeof MediaSource }} */ (
     globalThis
   ).ManagedMediaSource ?? MediaSource
 
@@ -402,6 +400,15 @@ const page_changes = async function* (signal, position) {
   }
 }
 
+/** @param {AsyncGenerator<PageChange, void, void>} changes @param {PageReader} page @param {IteratorResult<PageChange, void>} result */
+const advance_page = (changes, page, result) => {
+  if (result.done) {
+    return undefined
+  }
+  page.pending = changes.next()
+  return result.value
+}
+
 /** @param {AbortSignal} signal @param {MediaSource} source @param {SourceBuffer} buffer @returns {Mse} */
 const mse = (signal, source, buffer) => {
   /** @param {() => void} mutate */
@@ -712,16 +719,15 @@ const play_attempt = async (
         continue
       }
 
-      const change = selected.page
-      if (change.done) {
+      const change = advance_page(changes, page, selected.page)
+      if (change === undefined) {
         return { action: "cancel", position }
       }
-      position = change.value.position
-      page.pending = changes.next()
-      if (change.value.error) {
-        return { action: "failure", error: change.value.error, position }
+      position = change.position
+      if (change.error) {
+        return { error: change.error, position }
       }
-      if (change.value.restart) {
+      if (change.restart) {
         return { action: "restart", position }
       }
       if (progress === undefined) {
@@ -748,16 +754,15 @@ const wait_to_retry = async (signal, changes, page, position, start) => {
       if ("delay" in selected) {
         return selected.delay ? { position, start } : undefined
       }
-      const change = selected.page
-      if (change.done) {
+      const change = advance_page(changes, page, selected.page)
+      if (change === undefined) {
         return undefined
       }
-      position = change.value.position
-      page.pending = changes.next()
-      if (change.value.error) {
-        return { error: change.value.error, position }
+      position = change.position
+      if (change.error) {
+        return { error: change.error, position }
       }
-      if (change.value.restart) {
+      if (change.restart) {
         return { position, start: position }
       }
     }
@@ -785,11 +790,12 @@ const play_source = async (
         failures,
       )
       position = change.position
+      if (!("action" in change)) {
+        return change
+      }
       switch (change.action) {
         case "cancel":
           return undefined
-        case "failure":
-          return { error: change.error, position }
         case "restart":
           start = position
           continue
