@@ -63,7 +63,14 @@ type PageReader = SourcePage & {
 }
 type PlayerTest = {
   PULSE: symbol
-  mse: (signal: AbortSignal, source: MseSource, buffer: MseBuffer) => Mse
+  mse: (
+    buffer: MseBuffer,
+    context: {
+      currentTime: () => number
+      signal: AbortSignal
+      source: MseSource
+    },
+  ) => Mse
   page_reader: (signal: AbortSignal, position: number) => PageReader
   play_source: (
     buffer: {
@@ -74,12 +81,10 @@ type PlayerTest = {
   ) => Promise<{ failure: unknown } | void>
   play_subtitle: (signal: AbortSignal) => Promise<void>
   playback_page: (signal: AbortSignal) => Promise<void>
-  selector: <T>(
-    source: {
-      next: () => Promise<IteratorResult<T, void>>
-      return: () => Promise<IteratorResult<T, void>>
-    },
-  ) => {
+  selector: <T>(source: {
+    next: () => Promise<IteratorResult<T, void>>
+    return: () => Promise<IteratorResult<T, void>>
+  }) => {
     next: <W>(work?: Promise<W>) => Promise<T | W | undefined>
     return: () => Promise<IteratorResult<T, void>>
   }
@@ -119,7 +124,7 @@ const cases: TestCase[] = []
 const test = (name: string, _options: typeof options, run: TestBody): void => {
   cases.push({ name, run })
 }
-const present = <T,>(value: T | undefined): T => {
+const present = <T>(value: T | undefined): T => {
   assert(value !== undefined)
   return value
 }
@@ -675,11 +680,11 @@ const open_mse = async (current: Awaited<ReturnType<typeof fixture>>) => {
   const source = new current.context.MediaSource()
   source.readyState = "open"
   const opened = source.addSourceBuffer(current.media.dataset.mseType)
-  const buffer = current.context.player_test.mse(
-    controller.signal,
+  const buffer = current.context.player_test.mse(opened, {
+    currentTime: () => current.media.currentTime,
+    signal: controller.signal,
     source,
-    opened,
-  )
+  })
   await buffer.next()
   return { buffer, controller, opened, source }
 }
@@ -729,10 +734,12 @@ test(
 
     const source = Promise.withResolvers<IteratorResult<number, void>>()
     const losing = Promise.withResolvers<number>()
-    const sourceFirst = current.context.player_test.selector({
-      next: () => source.promise,
-      return: async () => ({ done: true, value: undefined }),
-    }).next(losing.promise)
+    const sourceFirst = current.context.player_test
+      .selector({
+        next: () => source.promise,
+        return: async () => ({ done: true, value: undefined }),
+      })
+      .next(losing.promise)
     source.resolve({ done: false, value: 2_000 })
     losing.reject(new Error("losing work"))
     deepEqual(await sourceFirst, 2_000)
@@ -1699,7 +1706,7 @@ const controlledPage = (position: number, pulse: symbol) => {
   let closed = false
   let changed = Promise.withResolvers<symbol | undefined>()
   const page: SourcePage = {
-    next: async <T,>(work?: Promise<T>) => {
+    next: async <T>(work?: Promise<T>) => {
       const selected = await Promise.race([
         changed.promise,
         ...(work ? [work] : []),

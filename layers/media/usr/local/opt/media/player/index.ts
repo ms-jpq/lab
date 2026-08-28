@@ -1,5 +1,5 @@
-type MseOperation = "end" | number | Uint8Array
-type Mse = AsyncGenerator<void, void, MseOperation>
+import { mse, type Mse, type MseOperation } from "./mse.ts"
+
 type Failure = { failure: unknown }
 type Result<T> = Failure | { value: T }
 type RequestOutcome =
@@ -33,7 +33,6 @@ type PageReader = {
 const SOURCE = Symbol()
 const WAIT = Symbol()
 const BUFFER = {
-  BEHIND: 30,
   // TODO: https://bugzilla.mozilla.org/show_bug.cgi?id=1808868
   LO: 45,
   HI: 60,
@@ -411,64 +410,6 @@ const page_reader = (signal: AbortSignal, position: number): PageReader => {
   }
 }
 
-const mse = async function* (
-  signal: AbortSignal,
-  source: MediaSource,
-  buffer: SourceBuffer,
-): Mse {
-  const update = async (mutate: () => void) => {
-    const operation = new AbortController()
-    try {
-      const settled = first_event(
-        buffer,
-        operation.signal,
-        "updateend",
-        "error",
-      )
-      mutate()
-      const event = await settled
-      if (event?.type === "error") {
-        throw event
-      }
-    } finally {
-      operation.abort()
-    }
-  }
-
-  let started = false
-  for (let operation = yield undefined; ; operation = yield undefined) {
-    if (signal.aborted) {
-      return
-    }
-    if (operation === "end") {
-      source.endOfStream()
-      continue
-    }
-    if (typeof operation === "number") {
-      if (started) {
-        if (source.readyState === "ended") {
-          const ranges = buffer.buffered
-          const end = ranges.length ? ranges.end(ranges.length - 1) : 0
-          await update(() => buffer.remove(end, end + 0.001))
-        }
-        buffer.abort()
-      }
-      buffer.timestampOffset = operation
-      started = true
-      continue
-    }
-
-    const expired = media.currentTime - BUFFER.BEHIND
-    const ranges = buffer.buffered
-    if (expired > 0 && ranges.length && ranges.start(0) < expired) {
-      await update(() => buffer.remove(0, expired))
-    }
-    await update(() =>
-      buffer.appendBuffer(operation as Uint8Array<ArrayBuffer>),
-    )
-  }
-}
-
 const request_stream = (time: number): RequestStream => {
   const request = new AbortController()
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined = undefined
@@ -788,9 +729,12 @@ const media_sources = () => {
           source.duration = duration
         }
         const buffer = mse(
-          signal,
-          source,
           source.addSourceBuffer(media.dataset["mseType"] as string),
+          {
+            currentTime: () => media.currentTime,
+            signal,
+            source,
+          },
         )
         await buffer.next()
         return buffer
