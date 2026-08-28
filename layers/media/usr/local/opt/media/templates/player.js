@@ -2,6 +2,7 @@
 /** @typedef {AsyncGenerator<void, void, MseOperation>} Mse */
 /** @typedef {{failure: unknown}} Failure */
 /** @template T @typedef {Failure | {value: T}} Result */
+/** @typedef {{action: "done"} | {action: "restart", start?: number} | {action: "retry", start: number}} RequestOutcome */
 /** @typedef {{next: () => Promise<IteratorResult<Uint8Array, {error: unknown} | void>>, return: () => Promise<IteratorResult<Uint8Array, {error: unknown} | void>>}} RequestStream */
 /** @typedef {MseOperation | Failure} SourceOperation */
 /** @typedef {{error: (error: unknown) => void, progress: () => void}} Diagnostics */
@@ -11,6 +12,7 @@
 
 const PULSE = Symbol()
 const SOURCE = Symbol()
+const WAIT = Symbol()
 const BUFFER = {
   BEHIND: 30,
   // TODO: https://bugzilla.mozilla.org/show_bug.cgi?id=1808868
@@ -516,22 +518,106 @@ const play_subtitle = async (signal) => {
   }
 }
 
+/** @template T, R @param {PageReader} page @param {Promise<T> | undefined} work @param {(change: typeof PULSE | T | undefined) => R | typeof WAIT} decide @returns {Promise<R>} */
+const wait_until = async (page, work, decide) => {
+  for (;;) {
+    const decision = decide(await page.next(work))
+    if (decision !== WAIT) {
+      return /** @type {R} */ (decision)
+    }
+  }
+}
+
 /** @param {PageReader} page @param {() => boolean} interrupted */
 const retry_when = async (page, interrupted) => {
   const timer = new AbortController()
-  const deadline = delay(timer.signal, RETRY_DELAY)
   try {
-    for (;;) {
-      const change = await page.next(deadline)
-      if (change === undefined) {
-        return false
-      }
-      if (change !== PULSE || interrupted()) {
-        return true
-      }
-    }
+    return await wait_until(
+      page,
+      delay(timer.signal, RETRY_DELAY),
+      (change) => {
+        if (change === undefined) {
+          return false
+        }
+        if (change !== PULSE || interrupted()) {
+          return true
+        }
+        return WAIT
+      },
+    )
   } finally {
     timer.abort()
+  }
+}
+
+/** @param {PageReader} page @param {number} start @param {(frontier: number) => boolean} retarget @returns {Promise<"ready" | "restart" | undefined>} */
+const wait_for_demand = (page, start, retarget) =>
+  play_ahead(start) < BUFFER.LO
+    ? Promise.resolve("ready")
+    : wait_until(page, undefined, (change) => {
+        if (change === undefined) {
+          return undefined
+        }
+        if (retarget(start)) {
+          return "restart"
+        }
+        return play_ahead(start) < BUFFER.LO ? "ready" : WAIT
+      })
+
+/** @param {Diagnostics} failures @param {PageReader} page @param {RequestStream} stream @param {number} start @param {(frontier: number) => boolean} retarget @returns {AsyncGenerator<SourceOperation, RequestOutcome, void>} */
+const request_operations = async function* (
+  failures,
+  page,
+  stream,
+  start,
+  retarget,
+) {
+  let frontier = stream_position(start)
+  yield frontier
+  if (retarget(frontier)) {
+    return { action: "restart" }
+  }
+
+  for (;;) {
+    const change = await wait_until(page, stream.next(), (change) =>
+      change !== PULSE || retarget(frontier) ? change : WAIT,
+    )
+    if (change === undefined) {
+      return { action: "done" }
+    }
+    if (change === PULSE) {
+      return { action: "restart" }
+    }
+    if (change.done) {
+      if (!change.value) {
+        yield "end"
+        const action = await wait_until(page, undefined, (change) => {
+          if (change === undefined) {
+            return "done"
+          }
+          return retarget(frontier) ? "restart" : WAIT
+        })
+        return { action }
+      }
+      yield { failure: change.value.error }
+      return {
+        action: "retry",
+        start: stream_position(buffered_end(frontier) ?? frontier),
+      }
+    }
+
+    yield change.value
+    const next = stream_position(buffered_end(frontier) ?? frontier)
+    if (next > frontier) {
+      failures.progress()
+    }
+    frontier = next
+    if (retarget(frontier)) {
+      return { action: "restart" }
+    }
+    if (play_ahead(frontier) >= BUFFER.HI) {
+      return { action: "restart", start: frontier }
+    }
   }
 }
 
@@ -559,73 +645,33 @@ const source_stream = async function* (failures, page) {
     return false
   }
 
-  acquisition: for (;;) {
+  for (;;) {
     retarget(start)
-
-    while (play_ahead(start) >= BUFFER.LO) {
-      const change = await page.next()
-      if (change === undefined) {
-        return
-      }
-      if (retarget(start)) {
-        continue acquisition
-      }
+    const demanded = await wait_for_demand(page, start, retarget)
+    if (demanded === undefined) {
+      return
+    }
+    if (demanded === "restart") {
+      continue
     }
     const stream = request_stream(start)
-    let frontier = stream_position(start)
 
     try {
-      yield frontier
-      if (retarget(frontier)) {
-        continue acquisition
+      const outcome = yield* request_operations(
+        failures,
+        page,
+        stream,
+        start,
+        retarget,
+      )
+      if (outcome.action === "done") {
+        return
       }
-
-      reading: for (;;) {
-        const read = stream.next()
-        let change = await page.next(read)
-        while (change === PULSE) {
-          if (retarget(frontier)) {
-            continue acquisition
-          }
-          change = await page.next(read)
-        }
-        if (change === undefined) {
-          return
-        }
-
-        const next = change
-        if (next.done) {
-          if (!next.value) {
-            yield "end"
-            for (;;) {
-              const idle = await page.next()
-              if (idle === undefined) {
-                return
-              }
-              if (retarget(frontier)) {
-                continue acquisition
-              }
-            }
-          }
-          yield { failure: next.value.error }
-          start = stream_position(buffered_end(frontier) ?? frontier)
-          break reading
-        }
-        yield next.value
-        const next_frontier = stream_position(
-          buffered_end(frontier) ?? frontier,
-        )
-        if (next_frontier > frontier) {
-          failures.progress()
-        }
-        frontier = next_frontier
-        if (retarget(frontier)) {
-          continue acquisition
-        }
-        if (play_ahead(frontier) >= BUFFER.HI) {
-          start = frontier
-          continue acquisition
-        }
+      if (outcome.start !== undefined) {
+        start = outcome.start
+      }
+      if (outcome.action === "restart") {
+        continue
       }
     } finally {
       await stream.return()

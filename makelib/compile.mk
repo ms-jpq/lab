@@ -19,7 +19,7 @@ $$(COMPILE.$1.DIR): | $(TS_TMP)
 	mkdir -v -p -- '$$@'
 
 $$(COMPILE.$1.FLAG): $1 tsconfig.json package.json $$(COMPILE.$1.SOURCES) | ./node_modules/.bin $$(COMPILE.$1.DIR)
-	'./node_modules/.bin/tsc' --project '$1' --outDir '$$(COMPILE.$1.DIR)'
+	'./node_modules/.bin/tsc' --project '$1'
 	touch -- '$$@'
 endef
 
