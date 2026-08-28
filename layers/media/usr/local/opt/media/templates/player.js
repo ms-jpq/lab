@@ -631,25 +631,25 @@ const play_source = async ({ buffer, position, signal }) => {
         start,
       )
       position = change.position
-      // this is a switch right
-      if (change.action === "done") {
-        return { position }
-      }
-      if (change.action === "restart") {
-        start = position
-        continue
-      }
-      if (change.action === "retry") {
-        if (!failure_reported) {
-          report(change.error)
-          failure_reported = true
-        }
-        const waiting = await wait_to_retry(signal, changes, page, position)
-        if (waiting === undefined) {
+      switch (change.action) {
+        case "done":
           return { position }
+        case "restart":
+          start = position
+          continue
+        case "retry": {
+          if (!failure_reported) {
+            report(change.error)
+            failure_reported = true
+          }
+          const waiting = await wait_to_retry(signal, changes, page, position)
+          if (waiting === undefined) {
+            return { position }
+          }
+          position = waiting.position
+          start = waiting.restart ? position : change.start
+          break
         }
-        position = waiting.position
-        start = waiting.restart ? position : change.start
       }
     }
   } catch (error) {

@@ -1031,7 +1031,7 @@ test(
       assert.equal(parent.signal.aborted, false)
       assert.equal(present<AbortSignal>(requestSignal).aborted, true)
       assert.equal(current.media.src, "")
-      assert.equal(current.media.loads, 0)
+      assert.equal(current.media.loads, 1)
       assert.equal(current.revoked.length, 1)
       assert.equal(buffer.usable, false)
       assert.equal(timers, 0)
@@ -1270,7 +1270,7 @@ test(
       assert.equal(current.sources.length, 2)
       assert.equal(current.errors.length, 1)
       assert.equal(current.errors[0]?.[0], failure)
-      assert.equal(current.media.loads, 1)
+      assert.equal(current.media.loads, 0)
       assert.equal(
         current.requests.some(
           (url) => new URL(url).searchParams.get("t") === "0",
