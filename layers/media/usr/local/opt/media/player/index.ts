@@ -1,17 +1,35 @@
-/** @typedef {"end" | number | Uint8Array} MseOperation */
-/** @typedef {AsyncGenerator<void, void, MseOperation>} Mse */
-/** @typedef {{failure: unknown}} Failure */
-/** @template T @typedef {Failure | {value: T}} Result */
-/** @typedef {{action: "done"} | {action: "restart", start?: number} | {action: "retry", start: number}} RequestOutcome */
-/** @template T, R @typedef {{next: () => Promise<IteratorResult<T, R>>, return: () => Promise<IteratorResult<T, R>>}} OwnedStream */
-/** @typedef {OwnedStream<Uint8Array, {error: unknown} | void>} RequestStream */
-/** @typedef {MseOperation | Failure} SourceOperation */
-/** @typedef {{error: (error: unknown) => void, progress: () => void}} Diagnostics */
-/** @typedef {{position: number, restart: boolean, started: boolean}} Target */
-/** @template T @typedef {{error: unknown} | {result: IteratorResult<T, void>}} Selection */
-/** @typedef {{next: <T>(work?: Promise<T>) => Promise<typeof PULSE | T | undefined>, return: () => Promise<IteratorResult<typeof PULSE, void>>, seek: () => void, take_error: () => unknown, target: Target}} PageReader */
+type MseOperation = "end" | number | Uint8Array
+type Mse = AsyncGenerator<void, void, MseOperation>
+type Failure = { failure: unknown }
+type Result<T> = Failure | { value: T }
+type RequestOutcome =
+  | { action: "done" }
+  | { action: "restart"; start?: number }
+  | { action: "retry"; start: number }
+type OwnedStream<T, R> = {
+  next: () => Promise<IteratorResult<T, R>>
+  return: () => Promise<IteratorResult<T, R>>
+}
+type RequestStream = OwnedStream<Uint8Array, { error: unknown } | void>
+type SourceOperation = MseOperation | Failure
+type Diagnostics = {
+  error: (error: unknown) => void
+  progress: () => void
+}
+type Target = { position: number; restart: boolean; started: boolean }
+type StreamSelection<T> =
+  { error: unknown } | { result: IteratorResult<T, void> }
 
 const PULSE = Symbol()
+
+type PageReader = {
+  next: <T>(work?: Promise<T>) => Promise<typeof PULSE | T | undefined>
+  return: () => Promise<IteratorResult<typeof PULSE, void>>
+  seek: () => void
+  take_error: () => unknown
+  target: Target
+}
+
 const SOURCE = Symbol()
 const WAIT = Symbol()
 const BUFFER = {
@@ -30,28 +48,31 @@ const MEDIA_EVENTS =
     " ",
   )
 
-const media =
-  /** @type {HTMLMediaElement} */ document.querySelector("video, audio")
-const subtitle =
-  /** @type {HTMLTrackElement | null} */ document.querySelector("#subtitle")
-const form = /** @type {HTMLFormElement} */ document.querySelector("form")
-const time_input = /** @type {HTMLInputElement} */ form.elements.namedItem("t")
+const media = document.querySelector("video, audio") as HTMLMediaElement
+const subtitle = document.querySelector("#subtitle") as HTMLTrackElement | null
+const form = document.querySelector("form") as HTMLFormElement
+const time_input = form.elements.namedItem("t") as HTMLInputElement
 const MediaSourceConstructor =
-  /** @type {typeof globalThis & {ManagedMediaSource?: typeof MediaSource}} */ globalThis.ManagedMediaSource ??
-  MediaSource
+  (
+    globalThis as typeof globalThis & {
+      ManagedMediaSource?: typeof MediaSource
+    }
+  ).ManagedMediaSource ?? MediaSource
 
-/** @param {EventTarget} target @param {AbortSignal} signal @param {...string} types */
-const first_event = (target, signal, ...types) => {
-  const { promise, resolve } = Promise.withResolvers()
-  /** @param {Event} [event] */
-  const close = (event) => {
+const first_event = (
+  target: EventTarget,
+  signal: AbortSignal,
+  ...types: string[]
+): Promise<Event | undefined> => {
+  const { promise, resolve } = Promise.withResolvers<Event | undefined>()
+  const close = (event?: Event) => {
     signal.removeEventListener("abort", cancelled)
     for (const type of types) {
       target.removeEventListener(type, observe)
     }
     resolve(event)
   }
-  const observe = /** @param {Event} event */ (event) => close(event)
+  const observe = (event: Event) => close(event)
   const cancelled = () => close()
   for (const type of types) {
     target.addEventListener(type, observe)
@@ -63,12 +84,11 @@ const first_event = (target, signal, ...types) => {
   return promise
 }
 
-/** @param {AbortSignal} signal @param {number} milliseconds */
-const delay = (signal, milliseconds) => {
+const delay = (signal: AbortSignal, milliseconds: number): Promise<boolean> => {
   if (signal.aborted) {
     return Promise.resolve(false)
   }
-  const { promise, resolve } = Promise.withResolvers()
+  const { promise, resolve } = Promise.withResolvers<boolean>()
   const cancelled = () => {
     clearTimeout(timeout)
     resolve(false)
@@ -81,18 +101,15 @@ const delay = (signal, milliseconds) => {
   return promise
 }
 
-/** @template T @param {Promise<T>} promise @returns {Promise<Result<T>>} */
-const result = (promise) =>
+const result = <T>(promise: Promise<T>): Promise<Result<T>> =>
   promise.then(
     (value) => ({ value }),
     (failure) => ({ failure }),
   )
 
-/** @param {string | undefined} url */
-const revoke_url = (url) => url && URL.revokeObjectURL(url)
+const revoke_url = (url: string | undefined) => url && URL.revokeObjectURL(url)
 
-/** @returns {Diagnostics} */
-const diagnostics = () => {
+const diagnostics = (): Diagnostics => {
   let failed = false
   return {
     error: (error) => {
@@ -108,9 +125,11 @@ const diagnostics = () => {
   }
 }
 
-/** @param {HTMLMediaElement | HTMLTrackElement} resource @param {number} time */
-const source_url = (resource, time) => {
-  const path = /** @type {string} */ resource.dataset["src"]
+const source_url = (
+  resource: HTMLMediaElement | HTMLTrackElement,
+  time: number,
+) => {
+  const path = resource.dataset["src"] as string
   const source = new URL(path, location.href)
   source.searchParams.set("t", String(time))
   source.searchParams.set("page", PAGE)
@@ -118,8 +137,7 @@ const source_url = (resource, time) => {
   return source.toString()
 }
 
-/** @param {number} value */
-const playable_position = (value) => {
+const playable_position = (value: number) => {
   const duration = Number(media.dataset["duration"])
   const position = Number.isFinite(value) ? Math.max(0, value) : 0
   return duration > 0 && position >= duration
@@ -127,14 +145,15 @@ const playable_position = (value) => {
     : position
 }
 
-/** @param {number} value */
-const stream_position = (value) => Math.round(value * 1_000) / 1_000
+const stream_position = (value: number) => Math.round(value * 1_000) / 1_000
 
-/** @param {number} left @param {number} right */
-const aligned = (left, right) => Math.abs(left - right) <= POSITION_TOLERANCE
+const aligned = (left: number, right: number) =>
+  Math.abs(left - right) <= POSITION_TOLERANCE
 
-/** @param {number} position @param {boolean} inclusive */
-const buffered_range = (position, inclusive) => {
+const buffered_range = (
+  position: number,
+  inclusive: boolean,
+): [number, number] | undefined => {
   const ranges = media.buffered
   for (let index = 0; index < ranges.length; index += 1) {
     const start = ranges.start(index)
@@ -149,17 +168,14 @@ const buffered_range = (position, inclusive) => {
   return undefined
 }
 
-/** @param {number} position */
-const buffered_position = (position) => {
+const buffered_position = (position: number) => {
   const range = buffered_range(position, false)
   return range ? Math.max(position, range.at(0) ?? -Infinity) : undefined
 }
 
-/** @param {number} position */
-const buffered_end = (position) => buffered_range(position, true)?.at(1)
+const buffered_end = (position: number) => buffered_range(position, true)?.at(1)
 
-/** @param {number} frontier */
-const play_ahead = (frontier) => {
+const play_ahead = (frontier: number) => {
   const end = buffered_end(media.currentTime)
   const frontier_end = buffered_end(frontier)
   return end !== undefined && aligned(end, frontier_end ?? NaN)
@@ -179,8 +195,7 @@ const initial_position = (() => {
   }
 })()
 
-/** @param {number} value */
-const persist_position = (value) => {
+const persist_position = (value: number) => {
   const page_url = new URL(location.href)
   const position = Math.floor(value)
   if (Number(time_input.value) === position) {
@@ -201,15 +216,19 @@ const media_observation = () => ({
   time: media.currentTime,
 })
 
-/** @param {AbortSignal} signal @param {(event: Event) => void} observe */
-const observe_media = (signal, observe) => {
+const observe_media = (
+  signal: AbortSignal,
+  observe: (event: Event) => void,
+) => {
   for (const type of MEDIA_EVENTS) {
     media.addEventListener(type, observe, { signal })
   }
 }
 
-/** @template T, R @param {AsyncGenerator<T, R, void>} stream @param {() => void} cancel @returns {OwnedStream<T, R>} */
-const owned_stream = (stream, cancel) => {
+const owned_stream = <T, R>(
+  stream: AsyncGenerator<T, R, void>,
+  cancel: () => void,
+): OwnedStream<T, R> => {
   let active = true
   return {
     next: async () => {
@@ -222,19 +241,15 @@ const owned_stream = (stream, cancel) => {
         active = false
         cancel()
       }
-      return stream.return(/** @type {R} */ undefined)
+      return stream.return(undefined as R)
     },
   }
 }
 
-/** @template T @param {OwnedStream<T, void>} source */
-const selector = (source) => {
-  /** @type {Selection<T> | undefined} */
-  let available = undefined
-  /** @type {((value: unknown) => void) | undefined} */
-  let notify = undefined
-  /** @param {Selection<T>} selection */
-  const settle = (selection) => {
+const selector = <T>(source: OwnedStream<T, void>) => {
+  let available: StreamSelection<T> | undefined = undefined
+  let notify: ((value: unknown) => void) | undefined = undefined
+  const settle = (selection: StreamSelection<T>) => {
     available = selection
     notify?.(SOURCE)
   }
@@ -246,12 +261,10 @@ const selector = (source) => {
   advance()
 
   return {
-    /** @template W @param {Promise<W>} [work] @returns {Promise<T | W | undefined>} */
-    next: async (work) => {
+    next: async <W>(work?: Promise<W>): Promise<T | W | undefined> => {
       if (!available) {
-        const selected = await new Promise((resolve, reject) => {
-          /** @param {unknown} value */
-          const awaken = (value) => {
+        const selected = await new Promise<unknown>((resolve, reject) => {
+          const awaken = (value: unknown) => {
             if (notify === awaken) {
               notify = undefined
               resolve(value)
@@ -261,10 +274,10 @@ const selector = (source) => {
           work?.then(awaken, reject)
         })
         if (selected !== SOURCE) {
-          return /** @type {W} */ selected
+          return selected as W
         }
       }
-      const selection = /** @type {Selection<T>} */ available
+      const selection = available as StreamSelection<T>
       if ("error" in selection) {
         throw selection.error
       }
@@ -279,18 +292,15 @@ const selector = (source) => {
   }
 }
 
-/** @param {AbortSignal} signal @param {number} position @returns {PageReader} */
-const page_reader = (signal, position) => {
+const page_reader = (signal: AbortSignal, position: number): PageReader => {
   const lifetime = new AbortController()
   const page_signal = AbortSignal.any([signal, lifetime.signal])
   let target = { position, restart: false, started: false }
-  /** @type {Target | undefined} */
-  let positioning = target
-  /** @type {unknown | undefined} */
-  let failure = undefined
+  let positioning: Target | undefined = target
+  let failure: unknown | undefined = undefined
   let current = media_observation()
   let previous = current
-  let changed = Promise.withResolvers()
+  let changed = Promise.withResolvers<boolean>()
   const seek = () => {
     target.started = false
     positioning = target
@@ -301,8 +311,7 @@ const page_reader = (signal, position) => {
     failure = undefined
     return error
   }
-  /** @param {Event} event */
-  const observe = (event) => {
+  const observe = (event: Event) => {
     current = media_observation()
     const error = media.error
     if (
@@ -335,7 +344,7 @@ const page_reader = (signal, position) => {
   observe_media(page_signal, observe)
 
   const pulses = owned_stream(
-    /** @type {AsyncGenerator<typeof PULSE, void, void>} */ (async function* () {
+    (async function* (): AsyncGenerator<typeof PULSE, void, void> {
       let handled = target
       yield PULSE
       for (;;) {
@@ -402,10 +411,12 @@ const page_reader = (signal, position) => {
   }
 }
 
-/** @param {AbortSignal} signal @param {MediaSource} source @param {SourceBuffer} buffer @returns {Mse} */
-const mse = async function* (signal, source, buffer) {
-  /** @param {() => void} mutate */
-  const update = async (mutate) => {
+const mse = async function* (
+  signal: AbortSignal,
+  source: MediaSource,
+  buffer: SourceBuffer,
+): Mse {
+  const update = async (mutate: () => void) => {
     const operation = new AbortController()
     try {
       const settled = first_event(
@@ -453,17 +464,19 @@ const mse = async function* (signal, source, buffer) {
       await update(() => buffer.remove(0, expired))
     }
     await update(() =>
-      buffer.appendBuffer(/** @type {Uint8Array<ArrayBuffer>} */ operation),
+      buffer.appendBuffer(operation as Uint8Array<ArrayBuffer>),
     )
   }
 }
 
-/** @param {number} time @returns {RequestStream} */
-const request_stream = (time) => {
+const request_stream = (time: number): RequestStream => {
   const request = new AbortController()
-  /** @type {ReadableStreamDefaultReader<Uint8Array> | undefined} */
-  let reader = undefined
-  const stream = (async function* () {
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined = undefined
+  const stream = (async function* (): AsyncGenerator<
+    Uint8Array,
+    { error: unknown } | void,
+    void
+  > {
     try {
       const response = await fetch(source_url(media, time), {
         signal: request.signal,
@@ -497,8 +510,7 @@ const request_stream = (time) => {
   return owned_stream(stream, () => request.abort())
 }
 
-/** @param {AbortSignal} signal */
-const play_subtitle = async (signal) => {
+const play_subtitle = async (signal: AbortSignal): Promise<void> => {
   if (!subtitle) {
     return
   }
@@ -517,18 +529,23 @@ const play_subtitle = async (signal) => {
   }
 }
 
-/** @template T, R @param {PageReader} page @param {Promise<T> | undefined} work @param {(change: typeof PULSE | T | undefined) => R | typeof WAIT} decide @returns {Promise<R>} */
-const wait_until = async (page, work, decide) => {
+const wait_until = async <T, R>(
+  page: PageReader,
+  work: Promise<T> | undefined,
+  decide: (change: typeof PULSE | T | undefined) => R | typeof WAIT,
+): Promise<R> => {
   for (;;) {
     const decision = decide(await page.next(work))
     if (decision !== WAIT) {
-      return /** @type {R} */ decision
+      return decision as R
     }
   }
 }
 
-/** @param {PageReader} page @param {() => boolean} interrupted */
-const retry_when = async (page, interrupted) => {
+const retry_when = async (
+  page: PageReader,
+  interrupted: () => boolean,
+): Promise<boolean> => {
   const timer = new AbortController()
   try {
     return await wait_until(
@@ -549,8 +566,11 @@ const retry_when = async (page, interrupted) => {
   }
 }
 
-/** @param {PageReader} page @param {number} start @param {(frontier: number) => boolean} retarget @returns {Promise<"ready" | "restart" | undefined>} */
-const wait_for_demand = (page, start, retarget) =>
+const wait_for_demand = (
+  page: PageReader,
+  start: number,
+  retarget: (frontier: number) => boolean,
+): Promise<"ready" | "restart" | undefined> =>
   play_ahead(start) < BUFFER.LO
     ? Promise.resolve("ready")
     : wait_until(page, undefined, (change) => {
@@ -563,14 +583,13 @@ const wait_for_demand = (page, start, retarget) =>
         return play_ahead(start) < BUFFER.LO ? "ready" : WAIT
       })
 
-/** @param {Diagnostics} failures @param {PageReader} page @param {RequestStream} stream @param {number} start @param {(frontier: number) => boolean} retarget @returns {AsyncGenerator<SourceOperation, RequestOutcome, void>} */
 const request_operations = async function* (
-  failures,
-  page,
-  stream,
-  start,
-  retarget,
-) {
+  failures: Diagnostics,
+  page: PageReader,
+  stream: RequestStream,
+  start: number,
+  retarget: (frontier: number) => boolean,
+): AsyncGenerator<SourceOperation, RequestOutcome, void> {
   let frontier = stream_position(start)
   yield frontier
   if (retarget(frontier)) {
@@ -620,12 +639,13 @@ const request_operations = async function* (
   }
 }
 
-/** @param {Diagnostics} failures @param {PageReader} page @returns {AsyncGenerator<SourceOperation, void, void>} */
-const source_stream = async function* (failures, page) {
+const source_stream = async function* (
+  failures: Diagnostics,
+  page: PageReader,
+): AsyncGenerator<SourceOperation, void, void> {
   let target = page.target
   let start = target.position
-  /** @param {number} frontier */
-  const retarget = (frontier) => {
+  const retarget = (frontier: number) => {
     const error = page.take_error()
     if (error !== undefined) {
       throw error
@@ -690,8 +710,11 @@ const source_stream = async function* (failures, page) {
   }
 }
 
-/** @param {Mse} buffer @param {Diagnostics} failures @param {PageReader} page @returns {Promise<Failure | void>} */
-const play_source = async (buffer, failures, page) => {
+const play_source = async (
+  buffer: Mse,
+  failures: Diagnostics,
+  page: PageReader,
+): Promise<Failure | void> => {
   const stream = source_stream(failures, page)
   try {
     for (;;) {
@@ -722,8 +745,7 @@ const play_source = async (buffer, failures, page) => {
 }
 
 const media_sources = () => {
-  /** @type {string | undefined} */
-  let url = undefined
+  let url: string | undefined = undefined
   return {
     close: () => {
       try {
@@ -733,8 +755,7 @@ const media_sources = () => {
         revoke_url(url)
       }
     },
-    /** @param {AbortSignal} signal @param {PageReader} page */
-    open: async (signal, page) => {
+    open: async (signal: AbortSignal, page: PageReader) => {
       const source = new MediaSourceConstructor()
       const previous = url
       const next = URL.createObjectURL(source)
@@ -769,9 +790,7 @@ const media_sources = () => {
         const buffer = mse(
           signal,
           source,
-          source.addSourceBuffer(
-            /** @type {string} */ media.dataset["mseType"],
-          ),
+          source.addSourceBuffer(media.dataset["mseType"] as string),
         )
         await buffer.next()
         return buffer
@@ -783,8 +802,12 @@ const media_sources = () => {
   }
 }
 
-/** @param {AbortSignal} signal @param {ReturnType<typeof media_sources>} sources @param {Diagnostics} failures @param {PageReader} page */
-const play_attempt = async (signal, sources, failures, page) => {
+const play_attempt = async (
+  signal: AbortSignal,
+  sources: ReturnType<typeof media_sources>,
+  failures: Diagnostics,
+  page: PageReader,
+) => {
   const opened = await result(sources.open(signal, page))
   if ("failure" in opened) {
     return signal.aborted
@@ -808,8 +831,7 @@ const play_attempt = async (signal, sources, failures, page) => {
   }
 }
 
-/** @param {AbortSignal} signal */
-const play_media = async (signal) => {
+const play_media = async (signal: AbortSignal): Promise<void> => {
   const page = page_reader(signal, playable_position(Number(time_input.value)))
   const failures = diagnostics()
   const sources = media_sources()
@@ -846,8 +868,7 @@ const play_media = async (signal) => {
   }
 }
 
-/** @param {AbortSignal} signal */
-const playback_page = async (signal) => {
+const playback_page = async (signal: AbortSignal): Promise<void> => {
   const lifetime = new AbortController()
   const lifetime_signal = AbortSignal.any([signal, lifetime.signal])
   const playback = play_media(lifetime_signal)
@@ -860,8 +881,7 @@ const playback_page = async (signal) => {
   }
 }
 
-/** @param {SubmitEvent} event */
-const submit = (event) => {
+const submit = (event: SubmitEvent): void => {
   if (event.submitter?.classList.contains("back")) {
     return
   }
@@ -877,914 +897,7 @@ const submit = (event) => {
   location.replace(target)
 }
 
-const main = async () => {
-  persist_position(initial_position)
-  for (;;) {
-    const page = new AbortController()
-    await first_event(window, page.signal, "pageshow")
-    const playback = playback_page(page.signal)
-    try {
-      await Promise.race([
-        first_event(window, page.signal, "pagehide"),
-        playback,
-      ])
-    } finally {
-      page.abort()
-      await playback
-    }
-  }
-}
-
-form.onsubmit = submit
-void main().catch(console.error)
-/** @typedef {"end" | number | Uint8Array} MseOperation */
-/** @typedef {AsyncGenerator<void, void, MseOperation>} Mse */
-/** @typedef {{failure: unknown}} Failure */
-/** @template T @typedef {Failure | {value: T}} Result */
-/** @typedef {{action: "done"} | {action: "restart", start?: number} | {action: "retry", start: number}} RequestOutcome */
-/** @template T, R @typedef {{next: () => Promise<IteratorResult<T, R>>, return: () => Promise<IteratorResult<T, R>>}} OwnedStream */
-/** @typedef {OwnedStream<Uint8Array, {error: unknown} | void>} RequestStream */
-/** @typedef {MseOperation | Failure} SourceOperation */
-/** @typedef {{error: (error: unknown) => void, progress: () => void}} Diagnostics */
-/** @typedef {{position: number, restart: boolean, started: boolean}} Target */
-/** @template T @typedef {{error: unknown} | {result: IteratorResult<T, void>}} Selection */
-/** @typedef {{next: <T>(work?: Promise<T>) => Promise<typeof PULSE | T | undefined>, return: () => Promise<IteratorResult<typeof PULSE, void>>, seek: () => void, take_error: () => unknown, target: Target}} PageReader */
-
-const PULSE = Symbol()
-const SOURCE = Symbol()
-const WAIT = Symbol()
-const BUFFER = {
-  BEHIND: 30,
-  // TODO: https://bugzilla.mozilla.org/show_bug.cgi?id=1808868
-  LO: 45,
-  HI: 60,
-}
-const RETRY_DELAY = 1_000
-const POSITION_TOLERANCE = 0.1
-const END_TOLERANCE = 0.5
-const POSITION = `media:position:${location.pathname}`
-const PAGE = crypto.randomUUID()
-const MEDIA_EVENTS =
-  "canplay ended error loadedmetadata progress seeked seeking timeupdate waiting".split(
-    " ",
-  )
-
-const media = /** @type {HTMLMediaElement} */ (
-  document.querySelector("video, audio")
-)
-const subtitle = /** @type {HTMLTrackElement | null} */ (
-  document.querySelector("#subtitle")
-)
-const form = /** @type {HTMLFormElement} */ (document.querySelector("form"))
-const time_input = /** @type {HTMLInputElement} */ (
-  form.elements.namedItem("t")
-)
-const MediaSourceConstructor =
-  /** @type {typeof globalThis & {ManagedMediaSource?: typeof MediaSource}} */ (
-    globalThis
-  ).ManagedMediaSource ?? MediaSource
-
-/** @param {EventTarget} target @param {AbortSignal} signal @param {...string} types */
-const first_event = (target, signal, ...types) => {
-  const { promise, resolve } = Promise.withResolvers()
-  /** @param {Event} [event] */
-  const close = (event) => {
-    signal.removeEventListener("abort", cancelled)
-    for (const type of types) {
-      target.removeEventListener(type, observe)
-    }
-    resolve(event)
-  }
-  const observe = /** @param {Event} event */ (event) => close(event)
-  const cancelled = () => close()
-  for (const type of types) {
-    target.addEventListener(type, observe)
-  }
-  signal.addEventListener("abort", cancelled, { once: true })
-  if (signal.aborted) {
-    cancelled()
-  }
-  return promise
-}
-
-/** @param {AbortSignal} signal @param {number} milliseconds */
-const delay = (signal, milliseconds) => {
-  if (signal.aborted) {
-    return Promise.resolve(false)
-  }
-  const { promise, resolve } = Promise.withResolvers()
-  const cancelled = () => {
-    clearTimeout(timeout)
-    resolve(false)
-  }
-  const timeout = setTimeout(() => {
-    signal.removeEventListener("abort", cancelled)
-    resolve(true)
-  }, milliseconds)
-  signal.addEventListener("abort", cancelled, { once: true })
-  return promise
-}
-
-/** @template T @param {Promise<T>} promise @returns {Promise<Result<T>>} */
-const result = (promise) =>
-  promise.then(
-    (value) => ({ value }),
-    (failure) => ({ failure }),
-  )
-
-/** @param {string | undefined} url */
-const revoke_url = (url) => url && URL.revokeObjectURL(url)
-
-/** @returns {Diagnostics} */
-const diagnostics = () => {
-  let failed = false
-  return {
-    error: (error) => {
-      if (failed) {
-        return
-      }
-      failed = true
-      console.error(error)
-    },
-    progress: () => {
-      failed = false
-    },
-  }
-}
-
-/** @param {HTMLMediaElement | HTMLTrackElement} resource @param {number} time */
-const source_url = (resource, time) => {
-  const path = /** @type {string} */ (resource.dataset["src"])
-  const source = new URL(path, location.href)
-  source.searchParams.set("t", String(time))
-  source.searchParams.set("page", PAGE)
-  source.searchParams.set("request", crypto.randomUUID())
-  return source.toString()
-}
-
-/** @param {number} value */
-const playable_position = (value) => {
-  const duration = Number(media.dataset["duration"])
-  const position = Number.isFinite(value) ? Math.max(0, value) : 0
-  return duration > 0 && position >= duration
-    ? Math.max(0, duration - END_TOLERANCE)
-    : position
-}
-
-/** @param {number} value */
-const stream_position = (value) => Math.round(value * 1_000) / 1_000
-
-/** @param {number} left @param {number} right */
-const aligned = (left, right) => Math.abs(left - right) <= POSITION_TOLERANCE
-
-/** @param {number} position @param {boolean} inclusive */
-const buffered_range = (position, inclusive) => {
-  const ranges = media.buffered
-  for (let index = 0; index < ranges.length; index += 1) {
-    const start = ranges.start(index)
-    const end = ranges.end(index)
-    if (
-      start - position <= POSITION_TOLERANCE &&
-      (inclusive ? position <= end : position < end)
-    ) {
-      return [start, end]
-    }
-  }
-  return undefined
-}
-
-/** @param {number} position */
-const buffered_position = (position) => {
-  const range = buffered_range(position, false)
-  return range ? Math.max(position, range.at(0) ?? -Infinity) : undefined
-}
-
-/** @param {number} position */
-const buffered_end = (position) => buffered_range(position, true)?.at(1)
-
-/** @param {number} frontier */
-const play_ahead = (frontier) => {
-  const end = buffered_end(media.currentTime)
-  const frontier_end = buffered_end(frontier)
-  return end !== undefined && aligned(end, frontier_end ?? NaN)
-    ? end - media.currentTime
-    : 0
-}
-
-const initial_position = (() => {
-  if (new URL(location.href).searchParams.has("t")) {
-    return playable_position(Number(time_input.value))
-  }
-  try {
-    const stored = Number(localStorage.getItem(POSITION))
-    return playable_position(stored)
-  } catch {
-    return 0
-  }
-})()
-
-/** @param {number} value */
-const persist_position = (value) => {
-  const page_url = new URL(location.href)
-  const position = Math.floor(value)
-  if (Number(time_input.value) === position) {
-    return
-  }
-  time_input.value = String(position)
-  page_url.searchParams.set("t", time_input.value)
-  history.replaceState(null, "", page_url)
-  try {
-    localStorage.setItem(POSITION, time_input.value)
-  } catch {}
-}
-
-const media_observation = () => ({
-  ended: media.ended,
-  metadata: media.readyState >= media.HAVE_METADATA,
-  seeking: media.seeking,
-  time: media.currentTime,
-})
-
-/** @param {AbortSignal} signal @param {(event: Event) => void} observe */
-const observe_media = (signal, observe) => {
-  for (const type of MEDIA_EVENTS) {
-    media.addEventListener(type, observe, { signal })
-  }
-}
-
-/** @template T, R @param {AsyncGenerator<T, R, void>} stream @param {() => void} cancel @returns {OwnedStream<T, R>} */
-const owned_stream = (stream, cancel) => {
-  let active = true
-  return {
-    next: async () => {
-      const next = await stream.next()
-      active = !next.done
-      return next
-    },
-    return: async () => {
-      if (active) {
-        active = false
-        cancel()
-      }
-      return stream.return(/** @type {R} */ (undefined))
-    },
-  }
-}
-
-/** @template T @param {OwnedStream<T, void>} source */
-const selector = (source) => {
-  /** @type {Selection<T> | undefined} */
-  let available = undefined
-  /** @type {((value: unknown) => void) | undefined} */
-  let notify = undefined
-  /** @param {Selection<T>} selection */
-  const settle = (selection) => {
-    available = selection
-    notify?.(SOURCE)
-  }
-  const advance = () =>
-    source.next().then(
-      (result) => settle({ result }),
-      (error) => settle({ error }),
-    )
-  advance()
-
-  return {
-    /** @template W @param {Promise<W>} [work] @returns {Promise<T | W | undefined>} */
-    next: async (work) => {
-      if (!available) {
-        const selected = await new Promise((resolve, reject) => {
-          /** @param {unknown} value */
-          const awaken = (value) => {
-            if (notify === awaken) {
-              notify = undefined
-              resolve(value)
-            }
-          }
-          notify = awaken
-          work?.then(awaken, reject)
-        })
-        if (selected !== SOURCE) {
-          return /** @type {W} */ (selected)
-        }
-      }
-      const selection = /** @type {Selection<T>} */ (available)
-      if ("error" in selection) {
-        throw selection.error
-      }
-      if (selection.result.done) {
-        return undefined
-      }
-      available = undefined
-      advance()
-      return selection.result.value
-    },
-    return: () => source.return(),
-  }
-}
-
-/** @param {AbortSignal} signal @param {number} position @returns {PageReader} */
-const page_reader = (signal, position) => {
-  const lifetime = new AbortController()
-  const page_signal = AbortSignal.any([signal, lifetime.signal])
-  let target = { position, restart: false, started: false }
-  /** @type {Target | undefined} */
-  let positioning = target
-  /** @type {unknown | undefined} */
-  let failure = undefined
-  let current = media_observation()
-  let previous = current
-  let changed = Promise.withResolvers()
-  const seek = () => {
-    target.started = false
-    positioning = target
-    media.currentTime = target.position
-  }
-  const take_error = () => {
-    const error = failure
-    failure = undefined
-    return error
-  }
-  /** @param {Event} event */
-  const observe = (event) => {
-    current = media_observation()
-    const error = media.error
-    if (
-      event.type === "error" &&
-      error !== null &&
-      error.code !== MediaError.MEDIA_ERR_ABORTED
-    ) {
-      failure ??= error
-    }
-    const owned =
-      positioning !== undefined && aligned(current.time, positioning.position)
-        ? positioning
-        : undefined
-    if ((event.type === "seeking" || event.type === "seeked") && owned) {
-      owned.started = true
-    }
-    if (current.seeking && !owned) {
-      const position = playable_position(current.time)
-      target = {
-        position: buffered_position(position) ?? position,
-        restart: false,
-        started: true,
-      }
-    }
-    changed.resolve(true)
-  }
-  page_signal.addEventListener("abort", () => changed.resolve(false), {
-    once: true,
-  })
-  observe_media(page_signal, observe)
-
-  const pulses = owned_stream(
-    /** @type {AsyncGenerator<typeof PULSE, void, void>} */ (
-      (async function* () {
-        let handled = target
-        yield PULSE
-        for (;;) {
-          if (!(await changed.promise) || page_signal.aborted) {
-            return
-          }
-          changed = Promise.withResolvers()
-          const moved =
-            current.time !== previous.time ||
-            current.seeking !== previous.seeking
-          const user_seek = target !== handled
-
-          if (user_seek) {
-            const playable = buffered_position(target.position)
-            target.position = playable ?? target.position
-            target.restart = playable === undefined
-            positioning =
-              target.restart || !aligned(current.time, target.position)
-                ? target
-                : undefined
-            handled = target
-            persist_position(target.position)
-          }
-
-          if (current.ended && !previous.ended) {
-            persist_position(0)
-          } else if (
-            !user_seek &&
-            positioning === undefined &&
-            moved &&
-            buffered_position(current.time) === current.time
-          ) {
-            persist_position(current.time)
-          }
-
-          if (positioning !== undefined) {
-            const playable = buffered_position(positioning.position)
-            if (playable !== undefined) {
-              positioning.position = playable
-            }
-            if (!current.seeking) {
-              const positioned = aligned(current.time, positioning.position)
-              if (!positioned && (current.metadata || playable !== undefined)) {
-                seek()
-              } else if (positioned && positioning.started) {
-                positioning = undefined
-              }
-            }
-          }
-
-          previous = current
-          yield PULSE
-        }
-      })()
-    ),
-    () => lifetime.abort(),
-  )
-  const changes = selector(pulses)
-  return {
-    ...changes,
-    get target() {
-      return target
-    },
-    seek,
-    take_error,
-  }
-}
-
-/** @param {AbortSignal} signal @param {MediaSource} source @param {SourceBuffer} buffer @returns {Mse} */
-const mse = async function* (signal, source, buffer) {
-  /** @param {() => void} mutate */
-  const update = async (mutate) => {
-    const operation = new AbortController()
-    try {
-      const settled = first_event(
-        buffer,
-        operation.signal,
-        "updateend",
-        "error",
-      )
-      mutate()
-      const event = await settled
-      if (event?.type === "error") {
-        throw event
-      }
-    } finally {
-      operation.abort()
-    }
-  }
-
-  let started = false
-  for (let operation = yield undefined; ; operation = yield undefined) {
-    if (signal.aborted) {
-      return
-    }
-    if (operation === "end") {
-      source.endOfStream()
-      continue
-    }
-    if (typeof operation === "number") {
-      if (started) {
-        if (source.readyState === "ended") {
-          const ranges = buffer.buffered
-          const end = ranges.length ? ranges.end(ranges.length - 1) : 0
-          await update(() => buffer.remove(end, end + 0.001))
-        }
-        buffer.abort()
-      }
-      buffer.timestampOffset = operation
-      started = true
-      continue
-    }
-
-    const expired = media.currentTime - BUFFER.BEHIND
-    const ranges = buffer.buffered
-    if (expired > 0 && ranges.length && ranges.start(0) < expired) {
-      await update(() => buffer.remove(0, expired))
-    }
-    await update(() =>
-      buffer.appendBuffer(/** @type {Uint8Array<ArrayBuffer>} */ (operation)),
-    )
-  }
-}
-
-/** @param {number} time @returns {RequestStream} */
-const request_stream = (time) => {
-  const request = new AbortController()
-  /** @type {ReadableStreamDefaultReader<Uint8Array> | undefined} */
-  let reader = undefined
-  const stream = (async function* () {
-    try {
-      const response = await fetch(source_url(media, time), {
-        signal: request.signal,
-      })
-      if (!response.body) {
-        throw new Error(`${response.statusText} - ${response.status}`)
-      }
-      reader = response.body.getReader()
-      if (!response.ok) {
-        throw new Error(`${response.statusText} - ${response.status}`)
-      }
-      for (;;) {
-        const { done, value } = await reader.read()
-        if (done) {
-          reader = undefined
-          return
-        }
-        yield value
-      }
-    } catch (error) {
-      return request.signal.aborted ? undefined : { error }
-    } finally {
-      if (reader) {
-        request.abort()
-        try {
-          await reader.cancel()
-        } catch {}
-      }
-    }
-  })()
-  return owned_stream(stream, () => request.abort())
-}
-
-/** @param {AbortSignal} signal */
-const play_subtitle = async (signal) => {
-  if (!subtitle) {
-    return
-  }
-  const failures = diagnostics()
-  while (!signal.aborted) {
-    const loaded = first_event(subtitle, signal, "load", "error")
-    subtitle.src = source_url(subtitle, 0)
-    const event = await loaded
-    if (!event || event.type === "load") {
-      return
-    }
-    failures.error(event)
-    if (!(await delay(signal, RETRY_DELAY))) {
-      return
-    }
-  }
-}
-
-/** @template T, R @param {PageReader} page @param {Promise<T> | undefined} work @param {(change: typeof PULSE | T | undefined) => R | typeof WAIT} decide @returns {Promise<R>} */
-const wait_until = async (page, work, decide) => {
-  for (;;) {
-    const decision = decide(await page.next(work))
-    if (decision !== WAIT) {
-      return /** @type {R} */ (decision)
-    }
-  }
-}
-
-/** @param {PageReader} page @param {() => boolean} interrupted */
-const retry_when = async (page, interrupted) => {
-  const timer = new AbortController()
-  try {
-    return await wait_until(
-      page,
-      delay(timer.signal, RETRY_DELAY),
-      (change) => {
-        if (change === undefined) {
-          return false
-        }
-        if (change !== PULSE || interrupted()) {
-          return true
-        }
-        return WAIT
-      },
-    )
-  } finally {
-    timer.abort()
-  }
-}
-
-/** @param {PageReader} page @param {number} start @param {(frontier: number) => boolean} retarget @returns {Promise<"ready" | "restart" | undefined>} */
-const wait_for_demand = (page, start, retarget) =>
-  play_ahead(start) < BUFFER.LO
-    ? Promise.resolve("ready")
-    : wait_until(page, undefined, (change) => {
-        if (change === undefined) {
-          return undefined
-        }
-        if (retarget(start)) {
-          return "restart"
-        }
-        return play_ahead(start) < BUFFER.LO ? "ready" : WAIT
-      })
-
-/** @param {Diagnostics} failures @param {PageReader} page @param {RequestStream} stream @param {number} start @param {(frontier: number) => boolean} retarget @returns {AsyncGenerator<SourceOperation, RequestOutcome, void>} */
-const request_operations = async function* (
-  failures,
-  page,
-  stream,
-  start,
-  retarget,
-) {
-  let frontier = stream_position(start)
-  yield frontier
-  if (retarget(frontier)) {
-    return { action: "restart" }
-  }
-
-  for (;;) {
-    const change = await wait_until(page, stream.next(), (change) =>
-      change !== PULSE || retarget(frontier) ? change : WAIT,
-    )
-    if (change === undefined) {
-      return { action: "done" }
-    }
-    if (change === PULSE) {
-      return { action: "restart" }
-    }
-    if (change.done) {
-      if (!change.value) {
-        yield "end"
-        const action = await wait_until(page, undefined, (change) => {
-          if (change === undefined) {
-            return "done"
-          }
-          return retarget(frontier) ? "restart" : WAIT
-        })
-        return { action }
-      }
-      yield { failure: change.value.error }
-      return {
-        action: "retry",
-        start: stream_position(buffered_end(frontier) ?? frontier),
-      }
-    }
-
-    yield change.value
-    const next = stream_position(buffered_end(frontier) ?? frontier)
-    if (next > frontier) {
-      failures.progress()
-    }
-    frontier = next
-    if (retarget(frontier)) {
-      return { action: "restart" }
-    }
-    if (play_ahead(frontier) >= BUFFER.HI) {
-      return { action: "restart", start: frontier }
-    }
-  }
-}
-
-/** @param {Diagnostics} failures @param {PageReader} page @returns {AsyncGenerator<SourceOperation, void, void>} */
-const source_stream = async function* (failures, page) {
-  let target = page.target
-  let start = target.position
-  /** @param {number} frontier */
-  const retarget = (frontier) => {
-    const error = page.take_error()
-    if (error !== undefined) {
-      throw error
-    }
-    if (page.target === target) {
-      return false
-    }
-    target = page.target
-    if (
-      buffered_position(target.position) === undefined &&
-      !aligned(target.position, frontier)
-    ) {
-      start = target.position
-      return true
-    }
-    return false
-  }
-
-  for (;;) {
-    retarget(start)
-    const demanded = await wait_for_demand(page, start, retarget)
-    if (demanded === undefined) {
-      return
-    }
-    if (demanded === "restart") {
-      continue
-    }
-    const stream = request_stream(start)
-
-    try {
-      const outcome = yield* request_operations(
-        failures,
-        page,
-        stream,
-        start,
-        retarget,
-      )
-      if (outcome.action === "done") {
-        return
-      }
-      if (outcome.start !== undefined) {
-        start = outcome.start
-      }
-      if (outcome.action === "restart") {
-        continue
-      }
-    } finally {
-      await stream.return()
-    }
-    if (
-      !(await retry_when(page, () => {
-        const interrupted = page.target !== target && page.target.restart
-        if (retarget(start) || interrupted) {
-          start = page.target.position
-          return true
-        }
-        return false
-      }))
-    ) {
-      return
-    }
-  }
-}
-
-/** @param {Mse} buffer @param {Diagnostics} failures @param {PageReader} page @returns {Promise<Failure | void>} */
-const play_source = async (buffer, failures, page) => {
-  const stream = source_stream(failures, page)
-  try {
-    for (;;) {
-      const selected = await result(stream.next())
-      if ("failure" in selected) {
-        return selected
-      }
-      const next = selected.value
-      if (next.done) {
-        return
-      }
-      const operation = next.value
-      if (typeof operation === "object" && "failure" in operation) {
-        failures.error(operation.failure)
-        continue
-      }
-      const mutated = await result(buffer.next(operation))
-      if ("failure" in mutated) {
-        return mutated
-      }
-      if (mutated.value.done) {
-        return
-      }
-    }
-  } finally {
-    await stream.return()
-  }
-}
-
-const media_sources = () => {
-  /** @type {string | undefined} */
-  let url = undefined
-  return {
-    close: () => {
-      try {
-        media.removeAttribute("src")
-        media.load()
-      } finally {
-        revoke_url(url)
-      }
-    },
-    /** @param {AbortSignal} signal @param {PageReader} page */
-    open: async (signal, page) => {
-      const source = new MediaSourceConstructor()
-      const previous = url
-      const next = URL.createObjectURL(source)
-      const opening = new AbortController()
-      const opened = first_event(
-        source,
-        AbortSignal.any([signal, opening.signal]),
-        "sourceopen",
-        "sourceclose",
-      )
-      try {
-        media.src = next
-      } catch (error) {
-        opening.abort()
-        revoke_url(next)
-        throw error
-      }
-      url = next
-      try {
-        page.seek()
-        const event = await opened
-        if (!event || signal.aborted) {
-          return undefined
-        }
-        if (event.type !== "sourceopen") {
-          throw event
-        }
-        const duration = Number(media.dataset["duration"])
-        if (duration > 0) {
-          source.duration = duration
-        }
-        const buffer = mse(
-          signal,
-          source,
-          source.addSourceBuffer(
-            /** @type {string} */ (media.dataset["mseType"]),
-          ),
-        )
-        await buffer.next()
-        return buffer
-      } finally {
-        opening.abort()
-        revoke_url(previous)
-      }
-    },
-  }
-}
-
-/** @param {AbortSignal} signal @param {ReturnType<typeof media_sources>} sources @param {Diagnostics} failures @param {PageReader} page */
-const play_attempt = async (signal, sources, failures, page) => {
-  const opened = await result(sources.open(signal, page))
-  if ("failure" in opened) {
-    return signal.aborted
-      ? undefined
-      : { failure: opened.failure, opened: false }
-  }
-  const buffer = opened.value
-  if (!buffer) {
-    return undefined
-  }
-  try {
-    const played = await play_source(buffer, failures, page)
-    return !played || signal.aborted
-      ? undefined
-      : {
-          failure: page.take_error() ?? played.failure,
-          opened: true,
-        }
-  } finally {
-    await buffer.return()
-  }
-}
-
-/** @param {AbortSignal} signal */
-const play_media = async (signal) => {
-  const page = page_reader(signal, playable_position(Number(time_input.value)))
-  const failures = diagnostics()
-  const sources = media_sources()
-  try {
-    while (!signal.aborted) {
-      const page_failure = page.take_error()
-      if (page_failure !== undefined) {
-        failures.error(page_failure)
-      }
-      const target = page.target
-      const attempt = await play_attempt(signal, sources, failures, page)
-      if (!attempt) {
-        return
-      }
-      failures.error(attempt.failure)
-      if (
-        !attempt.opened &&
-        !(await retry_when(
-          page,
-          () =>
-            page.take_error() !== undefined ||
-            (page.target !== target && page.target.restart),
-        ))
-      ) {
-        return
-      }
-    }
-  } finally {
-    try {
-      sources.close()
-    } finally {
-      await page.return()
-    }
-  }
-}
-
-/** @param {AbortSignal} signal */
-const playback_page = async (signal) => {
-  const lifetime = new AbortController()
-  const lifetime_signal = AbortSignal.any([signal, lifetime.signal])
-  const playback = play_media(lifetime_signal)
-  const captions = play_subtitle(lifetime_signal).then(() => playback)
-  try {
-    await Promise.race([playback, captions])
-  } finally {
-    lifetime.abort()
-    await Promise.allSettled([playback, captions])
-  }
-}
-
-/** @param {SubmitEvent} event */
-const submit = (event) => {
-  if (event.submitter?.classList.contains("back")) {
-    return
-  }
-  event.preventDefault()
-  const target = new URL(form.action)
-  const query = new URLSearchParams()
-  for (const [name, value] of new FormData(form)) {
-    if (typeof value === "string") {
-      query.append(name, value)
-    }
-  }
-  target.search = query.toString()
-  location.replace(target)
-}
-
-const main = async () => {
+const main = async (): Promise<void> => {
   persist_position(initial_position)
   for (;;) {
     const page = new AbortController()
