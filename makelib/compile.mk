@@ -1,6 +1,6 @@
 .PHONY: compile
 
-TS_PROJ := ./libexec/m4.sh $(shell printf -- '%s ' ./{layers,machines}/**/tsconfig.json)
+TS_PROJ := ./libexec/m4.sh $(shell shopt -u failglob && printf -- '%s ' ./{layers,machines}/**/tsconfig.json)
 
 define LOCAL_TS_TEMPLATE
 LOCAL.$1.FLAG := $1.lock

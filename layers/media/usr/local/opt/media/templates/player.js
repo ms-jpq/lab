@@ -683,12 +683,10 @@ const media_sources = () => {
 
 /** @param {AbortSignal} signal @param {ReturnType<typeof media_sources>} sources @param {Diagnostics} failures @param {PageReader} page */
 const play_attempt = async (signal, sources, failures, page) => {
-  const lifetime = new AbortController()
-  const attempt_signal = AbortSignal.any([signal, lifetime.signal])
   /** @type {Mse | undefined} */
   let buffer = undefined
   try {
-    buffer = await sources.open(attempt_signal, page)
+    buffer = await sources.open(signal, page)
     if (!buffer) {
       return undefined
     }
@@ -698,14 +696,13 @@ const play_attempt = async (signal, sources, failures, page) => {
     if (failures.escaped()) {
       throw error
     }
-    return attempt_signal.aborted
+    return signal.aborted
       ? undefined
       : {
           failure: buffer ? (page.take_error() ?? error) : error,
           opened: buffer !== undefined,
         }
   } finally {
-    lifetime.abort()
     await buffer?.return()
   }
 }
