@@ -1,19 +1,9 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig.json",
   "compilerOptions": {
-    "allowImportingTsExtensions": false,
-    "alwaysStrict": false,
-    "composite": false,
-    "ignoreDeprecations": "6.0",
-    "module": "none",
-    "moduleResolution": "classic",
     "noEmit": false,
     "outFile": "../templates/player.js",
-    "resolveJsonModule": false,
     "rootDir": ".",
-    "sourceMap": false,
-    "types": [],
-    "verbatimModuleSyntax": false
   },
   "extends": "../../../../../../../tsconfig.json",
   "files": ["index.ts"],
