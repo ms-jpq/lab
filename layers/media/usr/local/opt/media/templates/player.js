@@ -1,11 +1,11 @@
 /** @typedef {"end" | number | Uint8Array} MseOperation */
 /** @typedef {AsyncGenerator<void, void, MseOperation | undefined>} Mse */
-/** @typedef {{error: MediaError | null, position: number, seek: number | undefined}} PageChange */
+/** @typedef {{error: MediaError | null, position: number, restart: boolean}} PageChange */
 /** @typedef {{buffer: Mse, position: number, signal: AbortSignal}} PlaybackSource */
 /** @typedef {{error?: unknown, position: number}} SourceChange */
 /** @typedef {{error: unknown}} Failure */
 /** @typedef {{next: Promise<IteratorResult<PageChange, void>>}} PageReader */
-/** @typedef {{action: "done" | "retry" | "seek", error?: unknown, position: number}} AttemptChange */
+/** @typedef {{action: "done" | "restart" | "retry", error?: unknown, position: number}} AttemptChange */
 
 const BUFFER = {
   BEHIND: 30,
@@ -109,6 +109,9 @@ const playable_position = (value) => {
 /** @param {number} value */
 const stream_position = (value) => Math.round(value * 1_000) / 1_000
 
+/** @param {number} left @param {number} right */
+const aligned = (left, right) => Math.abs(left - right) <= POSITION_TOLERANCE
+
 /** @param {number} position */
 const buffered_range = (position) => {
   const ranges = media.buffered
@@ -123,7 +126,7 @@ const buffered_range = (position) => {
 }
 
 /** @param {number} position */
-const available = (position) => {
+const buffered_position = (position) => {
   const range = buffered_range(position)
   if (!range) {
     return undefined
@@ -131,7 +134,7 @@ const available = (position) => {
   if (range.start <= position) {
     return position
   }
-  return range.start - position <= POSITION_TOLERANCE ? range.start : undefined
+  return aligned(range.start, position) ? range.start : undefined
 }
 
 const play_ahead = () => {
@@ -225,39 +228,32 @@ const page_states = async function* (signal, position) {
   for await (const observed_states of media_state_batches(signal)) {
     /** @type {MediaError | null} */
     let error = null
-    /** @type {number | undefined} */
-    let seek = undefined
+    let restart = false
 
     for (const observed of observed_states) {
       let current = observed
       let moved =
         current.time !== previous.time || current.seeking !== previous.seeking
       const internal_seek =
-        pending_seek !== undefined &&
-        Math.abs(current.time - pending_seek) <= POSITION_TOLERANCE
+        pending_seek !== undefined && aligned(current.time, pending_seek)
       const user_seek = current.seeking && moved && !internal_seek
-      let restart = false
 
       if (user_seek) {
         target = playable_position(current.time)
-        const playable = available(target)
+        const playable = buffered_position(target)
         target = playable ?? target
         restart = playable === undefined
         pending_seek =
-          restart || Math.abs(current.time - target) > POSITION_TOLERANCE
-            ? target
-            : undefined
-        seek = restart ? target : undefined
+          restart || !aligned(current.time, target) ? target : undefined
         persist_position(target)
       } else if (pending_seek !== undefined) {
-        const playable = available(pending_seek)
+        const playable = buffered_position(pending_seek)
         if (playable !== undefined) {
           pending_seek = playable
           target = playable
         }
         if (!media.seeking) {
-          const positioned =
-            Math.abs(media.currentTime - pending_seek) <= POSITION_TOLERANCE
+          const positioned = aligned(media.currentTime, pending_seek)
           if (
             !positioned &&
             (media.readyState !== 0 || playable !== undefined)
@@ -278,7 +274,7 @@ const page_states = async function* (signal, position) {
         !user_seek &&
         pending_seek === undefined &&
         moved &&
-        available(current.time) === current.time
+        buffered_position(current.time) === current.time
       ) {
         persist_position(current.time)
       }
@@ -297,7 +293,7 @@ const page_states = async function* (signal, position) {
     yield {
       error,
       position: target,
-      seek,
+      restart,
     }
   }
 }
@@ -552,8 +548,8 @@ const play_attempt = async (signal, buffer, states, page, position) => {
         throw state.value.error
       }
       page.next = states.next()
-      if (state.value.seek !== undefined) {
-        return { action: "seek", position }
+      if (state.value.restart) {
+        return { action: "restart", position }
       }
       if (progress === undefined) {
         progress = current.next()
@@ -587,7 +583,7 @@ const wait_to_retry = async (signal, states, page, position) => {
         throw state.value.error
       }
       page.next = states.next()
-      if (state.value.seek !== undefined) {
+      if (state.value.restart) {
         return position
       }
     }

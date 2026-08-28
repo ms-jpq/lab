@@ -29,10 +29,10 @@ type SourceChange = {
 type PageChange = {
   error: MediaFailure | null
   position: number
-  seek: number | undefined
+  restart: boolean
 }
 type PlayerTest = {
-  available: (position: number) => number | undefined
+  buffered_position: (position: number) => number | undefined
   media_state_batches: (
     signal: AbortSignal,
   ) => AsyncGenerator<MediaState[], void, void>
@@ -493,7 +493,7 @@ const fixture = async (position = 40) => {
   }) as PlayerContext
   const source = await readFile(PLAYER, "utf8")
   vm.runInContext(
-    `${source}\nglobalThis.player_test = { available, media_sources, media_state_batches, mse, page_states, playback_page, playable_position, session, source_stream, source_url, stream_position }`,
+    `${source}\nglobalThis.player_test = { buffered_position, media_sources, media_state_batches, mse, page_states, playback_page, playable_position, session, source_stream, source_url, stream_position }`,
     context,
   )
   const { ranges } = media.buffered
@@ -775,7 +775,7 @@ test(
     const sought = states.next()
     current.media.dispatchEvent(new Event("seeking"))
     const value = await nextValue({ next: () => sought })
-    assert.equal(value.seek, 37)
+    assert.equal(value.restart, true)
     assert.equal(current.timeInput.value, "37")
 
     current.ranges.push([0, 10])
@@ -812,7 +812,7 @@ test(
     const change = await nextValue(states)
 
     assert.equal(change.position, 40)
-    assert.equal(change.seek, undefined)
+    assert.equal(change.restart, false)
     assert.equal(current.timeInput.value, "40")
     controller.abort()
   },
@@ -851,7 +851,7 @@ for (const { events, name } of synchronousSeekCases) {
       }
 
       const change = await nextValue(states)
-      assert.equal(change.seek, 110)
+      assert.equal(change.restart, true)
       assert.equal(change.position, 110)
       assert.equal(current.timeInput.value, "110")
       controller.abort()
@@ -879,7 +879,7 @@ for (const { name, range, target } of bufferedSeekCases) {
       const change = await nextValue(states)
 
       assert.equal(change.position, target)
-      assert.equal(change.seek, undefined)
+      assert.equal(change.restart, false)
       assert.equal(current.timeInput.value, String(Math.floor(target)))
       controller.abort()
     },
@@ -1073,8 +1073,8 @@ test(
     await buffer.next(10)
     await buffer.next(new Uint8Array([1]))
 
-    assert.equal(current.context.player_test.available(10), 10)
-    assert.equal(current.context.player_test.available(9.95), 10)
+    assert.equal(current.context.player_test.buffered_position(10), 10)
+    assert.equal(current.context.player_test.buffered_position(9.95), 10)
     controller.abort()
     await lifetime.return(undefined)
     assert.equal(current.media.src, "")
@@ -1219,7 +1219,7 @@ test(
       current.media.dispatchEvent(new Event("timeupdate"))
       current.media.dispatchEvent(new Event("seeking"))
       const change = await nextValue({ next: () => observed })
-      assert.equal(change.seek, position)
+      assert.equal(change.restart, true)
     }
 
     stateController.abort()
