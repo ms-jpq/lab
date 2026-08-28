@@ -1193,28 +1193,77 @@ test(
 )
 
 test(
-  "high water pauses one response instead of canceling and retrying",
+  "high water stops an eager transport from growing while paused",
   options,
   async () => {
     const current = await fixture()
     current.media.currentTime = 40
-    current.media.dataset.duration = "60"
     const firstAppend = Promise.withResolvers<void>()
+    const queued: Uint8Array[] = []
+    let pendingRead:
+      | ((result: ReadableStreamReadResult<Uint8Array>) => void)
+      | undefined = undefined
     let requests = 0
+    let aborts = 0
     let cancellations = 0
-    current.context.fetch = async () => {
+    let completed = false
+    let producing = true
+    let produced = 0
+    const stop = () => {
+      producing = false
+      pendingRead?.({ done: true, value: undefined })
+      pendingRead = undefined
+    }
+    const produce = () => {
+      if (!producing) {
+        return
+      }
+      produced += 1
+      const chunk = new Uint8Array([produced])
+      const resolve = pendingRead
+      if (resolve) {
+        pendingRead = undefined
+        resolve({ done: false, value: chunk })
+      } else {
+        queued.push(chunk)
+      }
+      setImmediate(produce)
+    }
+    current.context.fetch = async (_url, { signal }) => {
       requests += 1
+      signal.addEventListener(
+        "abort",
+        () => {
+          aborts += 1
+          stop()
+        },
+        { once: true },
+      )
+      setImmediate(produce)
       return {
-        body: new ReadableStream({
-          start: (controller) => {
-            controller.enqueue(new Uint8Array([1]))
-            controller.enqueue(new Uint8Array([2]))
-            controller.close()
-          },
-          cancel: () => {
-            cancellations += 1
-          },
-        }),
+        body: {
+          getReader: () => ({
+            cancel: async () => {
+              cancellations += 1
+              stop()
+            },
+            read: async () => {
+              const chunk = queued.shift()
+              if (chunk) {
+                return { done: false as const, value: chunk }
+              }
+              if (!producing) {
+                completed = true
+                return { done: true as const, value: undefined }
+              }
+              return new Promise<ReadableStreamReadResult<Uint8Array>>(
+                (resolve) => {
+                  pendingRead = resolve
+                },
+              )
+            },
+          }),
+        },
         ok: true,
         status: 200,
         statusText: "OK",
@@ -1222,25 +1271,12 @@ test(
     }
     const controller = new AbortController()
     let appends = 0
-    let ended = 0
-    let offset = 0
-    let tail = 40
     const buffer = {
       next: async (operation: MseOperation) => {
-        if (operation === "end") {
-          ended += 1
-          controller.abort()
-        } else if (typeof operation === "number") {
-          offset = operation
-        } else if (operation instanceof Uint8Array) {
+        if (operation instanceof Uint8Array) {
           appends += 1
-          tail = offset + appends * 10
-          current.media.buffered.ranges = [
-            [current.media.currentTime, appends === 1 ? 100 : tail],
-          ]
-          if (appends === 1) {
-            firstAppend.resolve()
-          }
+          current.media.buffered.ranges = [[40, 100]]
+          firstAppend.resolve()
         }
         return { done: false as const, value: undefined }
       },
@@ -1250,17 +1286,28 @@ test(
       buffer,
       40,
     )
-    const paused = playback.next()
-    await firstAppend.promise
-    assert.equal((await paused).done, false)
-    assert.equal(requests, 1)
+    try {
+      const paused = playback.next()
+      await firstAppend.promise
+      await paused
+      assert.equal(requests, 1)
+      assert.equal(appends, 1)
 
-    current.media.buffered.ranges = []
-    assert.equal((await playback.next()).done, true)
-    assert.equal(appends, 2)
-    assert.equal(cancellations, 0)
-    assert.equal(ended, 1)
-    assert.equal(requests, 1)
+      for (let turn = 0; turn < 8; turn += 1) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+      const settled = produced
+      for (let turn = 0; turn < 8; turn += 1) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+
+      assert.equal(produced, settled)
+      assert.ok(completed || aborts > 0 || cancellations > 0)
+    } finally {
+      producing = false
+      controller.abort()
+      await playback.return(undefined)
+    }
   },
 )
 

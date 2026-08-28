@@ -416,35 +416,38 @@ const play_subtitle = async (signal) => {
 
 /** @param {AbortSignal} signal @param {Mse} buffer @param {number} time @returns {AsyncGenerator<void, Failure | void, void>} */
 const session = async function* (signal, buffer, time) {
-  const start = stream_position(time)
+  let start = stream_position(time)
 
-  while (play_ahead() >= BUFFER.LO) {
-    yield undefined
-  }
-  if ((await buffer.next(start)).done) {
-    return
-  }
-  const stream = source_stream(signal, start)
-  try {
-    for (;;) {
-      const next = await stream.next()
-      if (next.done) {
-        if (next.value) {
-          return next.value
-        }
-        break
-      }
-      if ((await buffer.next(next.value)).done) {
-        return
-      }
-      if (play_ahead() >= BUFFER.HI) {
-        do {
-          yield undefined
-        } while (play_ahead() >= BUFFER.LO)
-      }
+  streaming: for (;;) {
+    while (play_ahead() >= BUFFER.LO) {
+      yield undefined
     }
-  } finally {
-    await stream.return()
+    if ((await buffer.next(start)).done) {
+      return
+    }
+    const stream = source_stream(signal, start)
+    try {
+      for (;;) {
+        const next = await stream.next()
+        if (next.done) {
+          if (next.value) {
+            return next.value
+          }
+          break streaming
+        }
+        if ((await buffer.next(next.value)).done) {
+          return
+        }
+        if (play_ahead() >= BUFFER.HI) {
+          start = stream_position(
+            buffered_range(media.currentTime)?.end ?? start,
+          )
+          continue streaming
+        }
+      }
+    } finally {
+      await stream.return()
+    }
   }
   if (signal.aborted) {
     return
