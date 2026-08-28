@@ -5,7 +5,6 @@ from contextlib import nullcontext, suppress
 from http import HTTPStatus
 from http.cookies import CookieError, Morsel, SimpleCookie
 from http.server import BaseHTTPRequestHandler
-from io import BufferedReader
 from logging import getLogger
 from os import unlink
 from pathlib import Path
@@ -64,77 +63,6 @@ def html(
 
     if not head:
         request.wfile.write(encoded)
-
-
-with nullcontext():
-
-    def _integer(value: str) -> int | None:
-        return int(value) if value.isascii() and value.isdecimal() else None
-
-    def _range(header: str | None, *, size: int) -> tuple[HTTPStatus, int, int] | None:
-        if header is None:
-            return HTTPStatus.OK, 0, size - 1
-
-        match header.split("=", 1):
-            case ["bytes", raw] if "," not in raw:
-                match raw.split("-", 1):
-                    case [start_raw, end_raw]:
-                        match _integer(start_raw), _integer(end_raw):
-                            case None, int(suffix) if not start_raw:
-                                start, end = max(0, size - suffix), size - 1
-                            case int(start), None if not end_raw:
-                                end = size - 1
-                            case int(start), int(end):
-                                end = min(end, size - 1)
-                            case _:
-                                return HTTPStatus.OK, 0, size - 1
-                    case _:
-                        return HTTPStatus.OK, 0, size - 1
-                return (
-                    (HTTPStatus.PARTIAL_CONTENT, start, end)
-                    if 0 <= start <= end < size
-                    else None
-                )
-            case _:
-                return HTTPStatus.OK, 0, size - 1
-
-    def _chunks(*, source: BufferedReader, size: int) -> Iterator[bytes]:
-        while size and (chunk := source.read1()):
-            chunk = chunk[:size]
-            size -= len(chunk)
-            yield chunk
-
-    def file(
-        request: BaseHTTPRequestHandler,
-        *,
-        path: Path,
-        size: int,
-        content_type: str,
-        head: bool,
-    ) -> None:
-        if (selected := _range(request.headers.get("Range"), size=size)) is None:
-            request.send_response(HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
-            request.send_header("Content-Range", f"bytes */{size}")
-            request.send_header("Content-Length", "0")
-            request.end_headers()
-            return
-        status, start, end = selected
-
-        request.send_response(status)
-        request.send_header("Accept-Ranges", "bytes")
-        request.send_header("Content-Length", str(end - start + 1))
-        request.send_header("Content-Type", content_type)
-        if status is HTTPStatus.PARTIAL_CONTENT:
-            request.send_header("Content-Range", f"bytes {start}-{end}/{size}")
-        request.end_headers()
-
-        if head:
-            return
-
-        with path.open("rb") as source:
-            source.seek(start)
-            for chunk in _chunks(source=source, size=end - start + 1):
-                request.wfile.write(chunk)
 
 
 def stream(

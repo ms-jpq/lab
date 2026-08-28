@@ -98,7 +98,6 @@ def _player_element(
     has_video: bool,
     stream_url: str,
     track: str,
-    transformed: bool,
 ) -> str:
     return _render(
         "player-video.html" if has_video else "player-audio.html",
@@ -106,7 +105,6 @@ def _player_element(
         mse_type=_mse_type(has_audio=has_audio, has_video=has_video),
         stream_url=escape(stream_url, quote=True),
         track=track,
-        transformed=str(transformed).lower(),
     )
 
 
@@ -179,7 +177,6 @@ def player(
     subtitle: Stream | None,
     time: str,
     title: str,
-    transformed: bool,
 ) -> str:
     play_query = {
         "audio": audio.language if audio else Selection.NONE,
@@ -188,15 +185,12 @@ def player(
     }
     track = ""
     if subtitle:
-        subtitle_query = {"stream": str(subtitle.index)}
-        if transformed:
-            subtitle_query["t"] = time
         track = _subtitle_track(
             language=subtitle.language,
             url=_child(
                 relative=relative,
                 endpoint="subtitle",
-                query=subtitle_query,
+                query={"stream": str(subtitle.index), "t": time},
             ),
         )
     return _render(
@@ -215,7 +209,6 @@ def player(
                 query=play_query,
             ),
             track=track,
-            transformed=transformed,
         ),
         profile_options=_options(
             ((value, value) for value in profiles), selected=profile

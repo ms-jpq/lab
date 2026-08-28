@@ -22,7 +22,6 @@ from .http import (
     Query,
     _Server,
     cookies,
-    file,
     html,
     redirect,
     set_cookie,
@@ -207,7 +206,6 @@ def _player(
     profile, _ = selected
     preferences = cookies(request)
     audio = _audio(media, query=query, preferences=preferences)
-    audio_index = audio.index if audio else None
     subtitle = _subtitle(
         media,
         audio=audio,
@@ -216,10 +214,6 @@ def _player(
         request=request,
     )
 
-    transformed = (
-        profile != _NATIVE_PROFILE
-        or media.direct_content_type(audio=audio_index) is None
-    )
     html(
         request,
         cookies=_set_preferences(query),
@@ -232,7 +226,6 @@ def _player(
             subtitle=subtitle,
             time=_time(query),
             title=path.name,
-            transformed=transformed,
         ),
         head=head,
     )
@@ -260,27 +253,16 @@ def _stream(
     audio = _audio(media, query=query, preferences=cookies(request))
     audio_index = audio.index if audio else None
 
-    match profile, media.direct_content_type(audio=audio_index):
-        case _NATIVE_PROFILE, str(content_type):
-            path, data = entry
-            file(
-                request,
-                path=path,
-                size=data.st_size,
-                content_type=content_type,
-                head=head,
-            )
-        case _:
-            stream(
-                request,
-                source=media.stream(
-                    audio=audio_index,
-                    height=height,
-                    time=_time(query),
-                ),
-                content_type="video/mp4" if media.videos else "audio/mp4",
-                head=head,
-            )
+    stream(
+        request,
+        source=media.stream(
+            audio=audio_index,
+            height=height,
+            time=_time(query),
+        ),
+        content_type="video/mp4" if media.videos else "audio/mp4",
+        head=head,
+    )
 
 
 def _subtitle_stream(

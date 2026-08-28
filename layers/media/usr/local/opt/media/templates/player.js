@@ -99,8 +99,6 @@ const source_url = (resource, time) => {
   return source.toString()
 }
 
-const transformed = media.dataset.transformed === "true"
-
 const initial_position = (() => {
   if (new URL(location.href).searchParams.has("t")) {
     return Number(time_input.value)
@@ -128,7 +126,6 @@ const set_position = (value) => {
 const page_state = () => ({
   error: media.error,
   future: media.readyState >= media.HAVE_FUTURE_DATA,
-  metadata: media.readyState >= media.HAVE_METADATA,
   paused: media.paused,
   seeking: media.seeking,
   subtitle_error: subtitle !== null && subtitle.readyState === subtitle.ERROR,
@@ -401,53 +398,9 @@ const attempt = (signal, create_buffer) => {
 
 /** @param {AbortSignal} signal */
 const playback_page = async (signal) => {
-  const resume = Symbol("resume")
-  const restart = Symbol("restart")
-  const retry = Symbol("retry")
   const changed = changes(signal)
   let change = changed.next()
-  let positioned = transformed
   let waiting = false
-
-  /** @param {PageChange} state @param {MseBuffer | undefined} buffer */
-  const update = async (state, buffer) => {
-    if (!positioned && state.metadata) {
-      positioned = true
-      if (initial_position > 0) {
-        media.currentTime = initial_position
-      }
-    }
-
-    const action =
-      buffer && state.failed
-        ? retry
-        : buffer && state.moved && state.seeking && !buffer.contains(state.time)
-          ? restart
-          : buffer && (state.moved || !state.paused)
-            ? resume
-            : undefined
-
-    if (state.moved && (buffer || !transformed)) {
-      set_position(state.time)
-    }
-    if (!state.paused && !state.future) {
-      waiting = true
-      media.pause()
-    } else if (state.paused && waiting && state.future) {
-      waiting = false
-      await media.play().catch(console.error)
-    }
-    return action
-  }
-
-  if (!transformed) {
-    media.src = source_url(media, media.currentTime)
-    media.load()
-    for await (const state of changed) {
-      await update(state, undefined)
-    }
-    return
-  }
 
   for await (const create_buffer of retrying(signal, () => mse(signal))) {
     const current = new AbortController()
@@ -455,7 +408,7 @@ const playback_page = async (signal) => {
     const session = attempt(attempt_signal, create_buffer)
     /** @type {Promise<IteratorResult<void, void>> | undefined} */
     let progress = session.next()
-    let transition = undefined
+    let immediate = false
 
     try {
       for (;;) {
@@ -481,11 +434,30 @@ const playback_page = async (signal) => {
           return
         }
         change = changed.next()
-        transition = await update(state.value, session.buffer)
-        if (transition === restart || transition === retry) {
+
+        const value = state.value
+        if (value.moved) {
+          set_position(value.time)
+        }
+        if (!value.paused && !value.future) {
+          waiting = true
+          media.pause()
+        } else if (value.paused && waiting && value.future) {
+          waiting = false
+          await media.play().catch(console.error)
+        }
+        if (value.failed) {
           break
         }
-        if (transition === resume && progress === undefined) {
+        if (
+          value.moved &&
+          value.seeking &&
+          !session.buffer.contains(value.time)
+        ) {
+          immediate = true
+          break
+        }
+        if ((value.moved || !value.paused) && progress === undefined) {
           progress = session.next()
         }
       }
@@ -496,7 +468,7 @@ const playback_page = async (signal) => {
       await session.return()
     }
 
-    if (transition !== restart && !(await retry_delay(signal))) {
+    if (!immediate && !(await retry_delay(signal))) {
       return
     }
   }

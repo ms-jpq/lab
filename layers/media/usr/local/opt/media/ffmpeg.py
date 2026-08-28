@@ -14,7 +14,6 @@ from typing import Any, cast
 TEXT_SUBTITLES = frozenset(
     {"ass", "mov_text", "srt", "ssa", "subrip", "text", "webvtt"}
 )
-MP4_FORMATS = frozenset({"3g2", "3gp", "mj2", "mov", "mp4", "m4a"})
 
 _COMMAND_PREFIX = ("nice", "--adjustment=19", "--", "ffmpeg", "-v", "error", "-nostdin")
 _VAAPI_DEVICE = "/dev/dri/renderD128"
@@ -150,30 +149,6 @@ class Probe:
     audios: tuple[Stream, ...]
     subtitles: tuple[Stream, ...]
     default_audio: Stream | None
-
-    def direct_content_type(self, *, audio: int | None) -> str | None:
-        match self.videos, self.default_audio:
-            case videos, None if (
-                audio is None
-                and self.formats & MP4_FORMATS
-                and all(stream.codec == "h264" for stream in videos)
-            ):
-                return "video/mp4"
-
-            case videos, Stream(index=index, codec="aac") if (
-                audio == index
-                and self.formats & MP4_FORMATS
-                and all(stream.codec == "h264" for stream in videos)
-            ):
-                return "video/mp4" if videos else "audio/mp4"
-
-            case (), Stream(index=index, codec="mp3") if (
-                audio == index and "mp3" in self.formats
-            ):
-                return "audio/mpeg"
-
-            case _:
-                return None
 
     def stream(
         self,
