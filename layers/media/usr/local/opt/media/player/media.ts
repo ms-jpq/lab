@@ -5,10 +5,13 @@ const END_TOLERANCE = 0.5
 
 export type MediaSnapshot = Readonly<{
   ended: boolean
+  error: MediaError | null
   metadata: boolean
   seeking: boolean
   time: number
 }>
+
+const EVENT_SNAPSHOTS = new WeakMap<Event, MediaSnapshot>()
 
 const EVENTS = [
   "canplay",
@@ -83,10 +86,14 @@ export const play_ahead = (
 
 export const media_snapshot = (media: HTMLMediaElement): MediaSnapshot => ({
   ended: media.ended,
+  error: media.error,
   metadata: media.readyState >= media.HAVE_METADATA,
   seeking: media.seeking,
   time: media.currentTime,
 })
+
+export const media_event_snapshot = (event: MediaEvent): MediaSnapshot =>
+  EVENT_SNAPSHOTS.get(event) as MediaSnapshot
 
 export const media_events = async function* (
   media: HTMLMediaElement,
@@ -102,6 +109,7 @@ export const media_events = async function* (
     fut.resolve(undefined)
   }
   const push = (event: MediaEvent) => {
+    EVENT_SNAPSHOTS.set(event, media_snapshot(media))
     events.push(event)
     fut.resolve(undefined)
   }
