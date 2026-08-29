@@ -1,7 +1,6 @@
 import {
   abortion,
   event_batches,
-  merge,
   type EventObservation,
 } from "./util.ts"
 
@@ -50,12 +49,10 @@ export type MediaDerived = Readonly<{
   resume: MediaResume | undefined
   seeks: readonly MediaSeek[]
 }>
-type ObservedMediaState = Readonly<{
+export type MediaState = Readonly<{
   current: MediaSnapshot
   derived: MediaDerived
 }>
-type InputMediaState<T> = ObservedMediaState & Readonly<{ input: T }>
-export type MediaState<T = never> = ObservedMediaState | InputMediaState<T>
 
 const playable = (duration: number, value: number): number => {
   const position = Number.isFinite(value) ? Math.max(0, value) : 0
@@ -165,12 +162,11 @@ const derive = (observations: readonly MediaObservation[]): MediaDerived => {
   return { failure, resume, seeks }
 }
 
-export const media_states = <T = never>(
+export const media_states = (
   media: HTMLMediaElement,
   signal: AbortSignal,
-  inputs?: AsyncIterator<T>,
-): AsyncIteratorObject<MediaState<T>> =>
-  (async function* (): AsyncIteratorObject<MediaState<T>> {
+): AsyncIteratorObject<MediaState> =>
+  (async function* (): AsyncIteratorObject<MediaState> {
     using a = abortion(signal)
 
     if (a.signal.aborted) {
@@ -180,48 +176,17 @@ export const media_states = <T = never>(
     const events = event_batches(a.signal, media, EVENTS, () =>
       media_snapshot(media),
     )
-    if (inputs === undefined) {
-      let pending = events.next()
-      yield { current: media_snapshot(media), derived: derive([]) }
-      for (;;) {
-        const next = await pending
-        if (next.done) {
-          return
-        }
-        pending = events.next()
-        const current = next.value.at(-1)?.[0]
-        if (current !== undefined) {
-          yield { current, derived: derive(next.value) }
-        }
-      }
-    }
-
-    const updates = merge(events, inputs)
-    let pending = updates.next()
+    let pending = events.next()
     yield { current: media_snapshot(media), derived: derive([]) }
-    try {
-      for (;;) {
-        const next = await pending
-        if (next.done) {
-          return
-        }
-        pending = updates.next()
-        if (next.value[0] === events) {
-          const observations = next.value[1] as MediaObservation[]
-          const current = observations.at(-1)?.[0]
-          if (current !== undefined) {
-            yield { current, derived: derive(observations) }
-          }
-        } else {
-          yield {
-            current: media_snapshot(media),
-            derived: derive([]),
-            input: next.value[1] as T,
-          }
-        }
+    for (;;) {
+      const next = await pending
+      if (next.done) {
+        return
       }
-    } finally {
-      a[Symbol.dispose]()
-      await updates.return?.()
+      pending = events.next()
+      const current = next.value.at(-1)?.[0]
+      if (current !== undefined) {
+        yield { current, derived: derive(next.value) }
+      }
     }
   })()

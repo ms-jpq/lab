@@ -208,37 +208,6 @@ const cases = [
       await states.return?.()
     },
   },
-  {
-    name: "an input completion carries a fresh media snapshot",
-    run: async () => {
-      const owner = new AbortController()
-      const media = new Media()
-      const input = Promise.withResolvers<string>()
-      const inputs = (async function* (): AsyncGenerator<string> {
-        yield await input.promise
-        return
-      })()
-      const states = media_states(
-        media as unknown as HTMLMediaElement,
-        owner.signal,
-        inputs,
-      )
-      await states.next()
-      const pending = states.next()
-
-      media.currentTime = 12
-      input.resolve("dog")
-
-      const received = await pending
-      ok(!received.done)
-      ok("input" in received.value)
-      deepEqual(
-        { input: received.value.input, time: received.value.current.time },
-        { input: "dog", time: 12 },
-      )
-      await states.return?.()
-    },
-  },
 ] as const
 
 for (const current of cases) {
