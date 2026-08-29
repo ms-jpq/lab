@@ -19,7 +19,7 @@ import {
   submit,
   subtitle,
 } from "./page.ts"
-import { abortion, delay, first, logical_stream } from "./util.ts"
+import { abortion, delay, logical_stream, once } from "./util.ts"
 
 type Failure = { failure: unknown }
 type Result<T> = Failure | { value: T }
@@ -572,9 +572,16 @@ const play_subtitle = async (signal: AbortSignal): Promise<void> => {
     return
   }
   while (!signal.aborted) {
-    const loaded = first(signal, subtitle, "load", "error")
-    subtitle.src = source_url(subtitle, 0)
-    const event = await loaded
+    let event: Event | undefined
+    {
+      using attempt = abortion(signal)
+      const loaded = Promise.race([
+        once(attempt.signal, subtitle, "load"),
+        once(attempt.signal, subtitle, "error"),
+      ])
+      subtitle.src = source_url(subtitle, 0)
+      event = await loaded
+    }
     if (!event || event.type === "load") {
       return
     }
