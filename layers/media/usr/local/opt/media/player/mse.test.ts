@@ -161,6 +161,17 @@ const start = async (values: Mse, position = 0): Promise<void> => {
 
 const cases = [
   {
+    name: "a pre-aborted MSE performs no work",
+    run: async () => {
+      const { controller, mutations, types, values } = fixture()
+      controller.abort()
+
+      deepEqual(await values.next(), { done: true, value: undefined })
+      deepEqual(mutations, [])
+      deepEqual(types, [])
+    },
+  },
+  {
     name: "MSE observes a synchronous append completion",
     run: async () => {
       const { mutations, types, values } = fixture()

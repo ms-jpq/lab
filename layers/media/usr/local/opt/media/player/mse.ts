@@ -44,16 +44,21 @@ export const media_source = async function* ({
   evict_before: () => number
   signal: AbortSignal
 }): Mse {
+  using a = abortion(signal)
+  if (a.signal.aborted) {
+    return
+  }
+
   const buffer = source.addSourceBuffer(mime_type)
 
   const position = (yield undefined) as number
-  if (signal.aborted) {
+  if (a.signal.aborted) {
     return
   }
   buffer.timestampOffset = position
 
   for (let operation = yield undefined; ; operation = yield undefined) {
-    if (signal.aborted) {
+    if (a.signal.aborted) {
       return
     }
 
@@ -67,7 +72,7 @@ export const media_source = async function* ({
         const ranges = buffer.buffered
         const end = ranges.length ? ranges.end(ranges.length - 1) : 0
 
-        for await (const _ of op_lock(buffer, signal)) {
+        for await (const _ of op_lock(buffer, a.signal)) {
           buffer.remove(end, end + EPSILON)
         }
       }
@@ -85,11 +90,11 @@ export const media_source = async function* ({
         buffer.buffered.length &&
         buffer.buffered.start(0) < cutoff
       ) {
-        for await (const _ of op_lock(buffer, signal)) {
+        for await (const _ of op_lock(buffer, a.signal)) {
           buffer.remove(0, cutoff)
         }
       }
-      for await (const _ of op_lock(buffer, signal)) {
+      for await (const _ of op_lock(buffer, a.signal)) {
         buffer.appendBuffer(operation as Uint8Array<ArrayBuffer>)
       }
     }
@@ -111,8 +116,9 @@ export const bond = async function* (
   media: HTMLMediaElement,
   signal: AbortSignal,
 ): AsyncIteratorObject<MediaSource> {
-  while (!signal.aborted) {
-    using a = abortion(signal)
+  using a = abortion(signal)
+
+  while (!a.signal.aborted) {
     const source = MSE()
     const url = URL.createObjectURL(source)
     const opened = Promise.race([
@@ -156,8 +162,10 @@ export const media_sources = async function* ({
   evict_behind: number
   signal: AbortSignal
 }): AsyncIteratorObject<[MediaSource, (_: AbortSignal) => Mse]> {
+  using a = abortion(signal)
+
   try {
-    for await (const source of bond(media, signal)) {
+    for await (const source of bond(media, a.signal)) {
       yield [
         source,
         (signal) =>
@@ -165,7 +173,7 @@ export const media_sources = async function* ({
             evict_before: () => media.currentTime - evict_behind,
             mime_type,
             source,
-            signal,
+            signal: AbortSignal.any([a.signal, signal]),
           }),
       ]
     }
