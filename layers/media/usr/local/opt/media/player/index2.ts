@@ -233,16 +233,12 @@ const request_stream = (time: number): RequestStream => {
   let active = true
 
   const finish = async (
-    value: { error: unknown } | void,
-    abort_first: boolean,
+    value?: { error: unknown },
   ): Promise<IteratorResult<Uint8Array, { error: unknown } | void>> => {
     if (!active) {
       return { done: true, value }
     }
     active = false
-    if (abort_first) {
-      lifetime[Symbol.dispose]()
-    }
     try {
       await stream.return(undefined)
     } finally {
@@ -260,15 +256,15 @@ const request_stream = (time: number): RequestStream => {
       }
       try {
         const next = await stream.next()
-        return next.done ? await finish(undefined, false) : next
+        return next.done ? await finish() : next
       } catch (error) {
-        return await finish(
-          lifetime.signal.aborted ? undefined : { error },
-          false,
-        )
+        return await finish(lifetime.signal.aborted ? undefined : { error })
       }
     },
-    return: () => finish(undefined, true),
+    return: () => {
+      lifetime[Symbol.dispose]()
+      return finish()
+    },
   }
 }
 
@@ -290,12 +286,9 @@ const retry_when = async (
   interrupted: () => boolean,
 ): Promise<boolean> => {
   using timer = abortion()
-  return await wait_until(page, delay(timer.signal, RETRY_DELAY), (change) => {
-    if (change === undefined) {
-      return false
-    }
-    return change !== PULSE || interrupted() ? true : WAIT
-  })
+  return await wait_until(page, delay(timer.signal, RETRY_DELAY), (change) =>
+    change === PULSE && !interrupted() ? WAIT : change !== undefined,
+  )
 }
 
 const wait_for_demand = (
