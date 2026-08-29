@@ -198,7 +198,7 @@ export const interleave = <const T>(source: AsyncIterator<T>) => {
   }
 }
 
-const next_result = async <const T>(
+const next = async <const T>(
   aiter: AsyncIterator<T>,
 ): Promise<readonly [AsyncIterator<T>, IteratorResult<T>]> => [
   aiter,
@@ -224,9 +224,7 @@ type Selection<T extends readonly AsyncIterator<unknown>[]> = {
 export const merge = async function* <
   const T extends readonly AsyncIterator<unknown>[],
 >(...aiters: T): AsyncIteratorObject<Selection<T>> {
-  const pending = new Map(
-    aiters.map((aiter) => [aiter, next_result(aiter)] as const),
-  )
+  const pending = new Map(aiters.map((aiter) => [aiter, next(aiter)] as const))
   await using _ = defer(() => close(pending.keys()))
 
   while (pending.size) {
@@ -237,7 +235,7 @@ export const merge = async function* <
     }
 
     yield [aiter, result.value] as Selection<T>
-    pending.set(aiter, next_result(aiter))
+    pending.set(aiter, next(aiter))
   }
   return
 }
