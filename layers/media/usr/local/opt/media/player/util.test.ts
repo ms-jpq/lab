@@ -1,8 +1,8 @@
 import { deepEqual, ok as assert } from "node:assert/strict"
 import { randomUUID } from "node:crypto"
-import nodeTest from "node:test"
+import nodeTest, { type TestContext } from "node:test"
 
-import { events, merge, readableIterator } from "./util.ts"
+import { delay, events, merge, readableIterator } from "./util.ts"
 
 const options = { concurrency: true, timeout: 2_000 }
 
@@ -14,6 +14,45 @@ const delayed = async function* (
 }
 
 const cases = [
+  {
+    name: "delay resolves true when its timer wins",
+    run: async (context: TestContext) => {
+      context.mock.timers.enable({ apis: ["setTimeout"] })
+      const owner = new AbortController()
+      const elapsed = delay(owner.signal, 100)
+
+      context.mock.timers.tick(100)
+
+      deepEqual(await elapsed, true)
+    },
+  },
+  {
+    name: "delay resolves false and clears its timer when abort wins",
+    run: async (context: TestContext) => {
+      context.mock.timers.enable({ apis: ["setTimeout"] })
+      const owner = new AbortController()
+      const removed = context.mock.method(owner.signal, "removeEventListener")
+      const elapsed = delay(owner.signal, 100)
+
+      owner.abort()
+
+      deepEqual(await elapsed, false)
+      context.mock.timers.tick(100)
+      deepEqual(removed.mock.callCount(), 0)
+    },
+  },
+  {
+    name: "delay resolves false without scheduling for a pre-aborted owner",
+    run: async (context: TestContext) => {
+      context.mock.timers.enable({ apis: ["setTimeout"] })
+      const scheduled = context.mock.method(globalThis, "setTimeout")
+      const owner = new AbortController()
+      owner.abort()
+
+      deepEqual(await delay(owner.signal, 100), false)
+      deepEqual(scheduled.mock.callCount(), 0)
+    },
+  },
   {
     name: "a readable iterator cancels its reader when iteration ends",
     run: async () => {

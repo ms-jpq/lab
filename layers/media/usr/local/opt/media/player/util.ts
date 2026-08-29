@@ -10,6 +10,24 @@ export const abortion = (...parents: AbortSignal[]) => {
   return { signal, [Symbol.dispose]: () => controller.abort() }
 }
 
+export const delay = (signal: AbortSignal, ms: number): Promise<boolean> => {
+  if (signal.aborted) {
+    return Promise.resolve(false)
+  }
+  const { promise, resolve } = Promise.withResolvers<boolean>()
+  const cancelled = () => {
+    clearTimeout(timeout)
+    resolve(false)
+  }
+  const timeout = setTimeout(() => {
+    signal.removeEventListener("abort", cancelled)
+    resolve(true)
+  }, ms)
+
+  signal.addEventListener("abort", cancelled, { once: true })
+  return promise
+}
+
 type EventMap<T> = {
   [K in keyof T as K extends `on${infer E}` ? E : never]: NonNullable<
     T[K]
