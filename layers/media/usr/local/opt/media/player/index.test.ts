@@ -3087,7 +3087,7 @@ test(
 )
 
 test(
-  "an entered SourceBuffer mutation drains before lifetime teardown",
+  "lifetime abort interrupts an entered SourceBuffer mutation",
   options,
   async () => {
     const current = await fixture()
@@ -3099,17 +3099,12 @@ test(
     await eventually(() => opened.updating)
 
     controller.abort()
-    let closed = false
-    const closing = buffer.return(undefined).then(() => {
-      closed = true
-    })
-    await new Promise((resolve) => setImmediate(resolve))
+    const closing = buffer.return(undefined)
 
-    deepEqual(closed, false)
-
-    present(opened.releaseUpdate)()
-    await appending
-    await closing
+    deepEqual(await appending, { done: false, value: undefined })
+    deepEqual(await closing, { done: true, value: undefined })
+    deepEqual(opened.aborts, 1)
+    deepEqual(opened.updating, false)
   },
 )
 
