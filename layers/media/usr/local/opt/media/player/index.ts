@@ -231,9 +231,9 @@ const page_reader = (signal: AbortSignal, position: number): PageReader => {
       owned.started = true
     }
     if (current.seeking && !owned) {
-      const position = playable_position(current.time)
+      const position = playable_position(media, current.time)
       target = {
-        position: buffered_position(position) ?? position,
+        position: buffered_position(media, position) ?? position,
         restart: false,
         started: true,
       }
@@ -259,7 +259,7 @@ const page_reader = (signal: AbortSignal, position: number): PageReader => {
         const user_seek = target !== handled
 
         if (user_seek) {
-          const playable = buffered_position(target.position)
+          const playable = buffered_position(media, target.position)
           target.position = playable ?? target.position
           target.restart = playable === undefined
           positioning =
@@ -276,13 +276,13 @@ const page_reader = (signal: AbortSignal, position: number): PageReader => {
           !user_seek &&
           positioning === undefined &&
           moved &&
-          buffered_position(current.time) === current.time
+          buffered_position(media, current.time) === current.time
         ) {
           persist_position(current.time)
         }
 
         if (positioning !== undefined) {
-          const playable = buffered_position(positioning.position)
+          const playable = buffered_position(media, positioning.position)
           if (playable !== undefined) {
             positioning.position = playable
           }
@@ -401,7 +401,7 @@ const wait_for_demand = (
   start: number,
   retarget: (frontier: number) => boolean,
 ): Promise<"ready" | "restart" | undefined> =>
-  play_ahead(start) < BUFFER.LO
+  play_ahead(media, start) < BUFFER.LO
     ? Promise.resolve("ready")
     : wait_until(page, undefined, (change) => {
         if (change === undefined) {
@@ -410,7 +410,7 @@ const wait_for_demand = (
         if (retarget(start)) {
           return "restart"
         }
-        return play_ahead(start) < BUFFER.LO ? "ready" : WAIT
+        return play_ahead(media, start) < BUFFER.LO ? "ready" : WAIT
       })
 
 const request_operations = async function* (
@@ -450,12 +450,12 @@ const request_operations = async function* (
       yield { failure: change.value.error }
       return {
         action: "retry",
-        start: stream_position(buffered_end(frontier) ?? frontier),
+        start: stream_position(buffered_end(media, frontier) ?? frontier),
       }
     }
 
     yield change.value
-    const next = stream_position(buffered_end(frontier) ?? frontier)
+    const next = stream_position(buffered_end(media, frontier) ?? frontier)
     if (next > frontier) {
       failures.progress()
     }
@@ -463,7 +463,7 @@ const request_operations = async function* (
     if (retarget(frontier)) {
       return { action: "restart" }
     }
-    if (play_ahead(frontier) >= BUFFER.HI) {
+    if (play_ahead(media, frontier) >= BUFFER.HI) {
       return { action: "restart", start: frontier }
     }
   }
@@ -485,7 +485,7 @@ const source_stream = async function* (
     }
     target = page.target
     if (
-      buffered_position(target.position) === undefined &&
+      buffered_position(media, target.position) === undefined &&
       !aligned(target.position, frontier)
     ) {
       start = target.position
@@ -621,7 +621,10 @@ const play_attempt = async (
 }
 
 const play_media = async (signal: AbortSignal): Promise<void> => {
-  const page = page_reader(signal, playable_position(Number(time_input.value)))
+  const page = page_reader(
+    signal,
+    playable_position(media, Number(time_input.value)),
+  )
   const failures = diagnostics()
   const sources = media_sources({
     evict_behind: BUFFER.BEHIND,
