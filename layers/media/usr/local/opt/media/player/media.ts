@@ -28,6 +28,19 @@ export type MediaObservation = readonly [
   snapshot: MediaSnapshot,
   event: MediaEvent,
 ]
+export type MediaTarget = {
+  position: number
+  restart: boolean
+  started: boolean
+}
+export type MediaState = {
+  readonly error: unknown
+  readonly target: MediaTarget
+  next: () => Promise<IteratorResult<void, void>>
+  return: () => Promise<IteratorResult<void, void>>
+  seek: () => void
+  take_error: () => unknown
+}
 
 export const playable_position = (
   media: HTMLMediaElement,
@@ -138,4 +151,121 @@ export const media_events = async function* (
     }
   }
   return
+}
+
+export const media_state = (
+  media: HTMLMediaElement,
+  {
+    persist,
+    position,
+    signal,
+  }: {
+    persist: (position: number) => void
+    position: number
+    signal: AbortSignal
+  },
+): MediaState => {
+  const events = media_events(media, signal)
+  let current = media_snapshot(media)
+  let previous = current
+  let target = { position, restart: false, started: false }
+  let handled = target
+  let positioning: MediaTarget | undefined = target
+  let failure: unknown | undefined
+
+  const observe = (batch: MediaObservation[]): void => {
+    for (const [snapshot, event] of batch) {
+      current = snapshot
+      if (
+        event.type === "error" &&
+        current.error !== null &&
+        current.error.code !== MediaError.MEDIA_ERR_ABORTED
+      ) {
+        failure ??= current.error
+      }
+      const owned =
+        positioning !== undefined && aligned(current.time, positioning.position)
+          ? positioning
+          : undefined
+      if ((event.type === "seeking" || event.type === "seeked") && owned) {
+        owned.started = true
+      }
+      if (current.seeking && owned === undefined) {
+        const native = playable_position(media, current.time)
+        const playable = buffered_position(media, native)
+        target = {
+          position: playable ?? native,
+          restart: playable === undefined,
+          started: true,
+        }
+      }
+    }
+
+    const moved =
+      current.time !== previous.time || current.seeking !== previous.seeking
+    const changed = target !== handled
+    if (changed) {
+      positioning =
+        target.restart || !aligned(current.time, target.position)
+          ? target
+          : undefined
+      handled = target
+      persist(target.position)
+    }
+    if (current.ended && !previous.ended) {
+      persist(0)
+    } else if (
+      !changed &&
+      positioning === undefined &&
+      moved &&
+      buffered_position(media, current.time) === current.time
+    ) {
+      persist(current.time)
+    }
+    if (positioning !== undefined) {
+      const playable = buffered_position(media, positioning.position)
+      positioning.position = playable ?? positioning.position
+      if (!current.seeking) {
+        const positioned = aligned(current.time, positioning.position)
+        if (!positioned && (current.metadata || playable !== undefined)) {
+          positioning.started = false
+          media.currentTime = positioning.position
+        } else if (positioned && positioning.started) {
+          positioning = undefined
+        }
+      }
+    }
+    previous = current
+  }
+
+  return {
+    next: async (): Promise<IteratorResult<void, void>> => {
+      const next = await events.next()
+      if (next.done) {
+        return { done: true, value: undefined }
+      }
+      observe(next.value)
+      return { done: false, value: undefined }
+    },
+    return: async (): Promise<IteratorResult<void, void>> => {
+      await events.return?.()
+      return { done: true, value: undefined }
+    },
+    seek: (): void => {
+      positioning = target
+      target.started = false
+      media.currentTime = target.position
+    },
+    take_error: (): unknown => {
+      const error = failure
+      failure = undefined
+      return error
+    },
+    get error(): unknown {
+      return failure
+    },
+    get target(): MediaTarget {
+      return target
+    },
+  }
 }

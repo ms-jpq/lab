@@ -122,3 +122,11 @@ export const run_page = async (
     }
   }
 }
+
+export const start_page = async (
+  playback: (signal: AbortSignal) => Promise<void>,
+): Promise<never> => {
+  form.onsubmit = submit
+  persist_position(initial_position)
+  return await run_page(playback)
+}
