@@ -16,10 +16,7 @@ type OwnedStream<T, R> = {
 type RequestStream = OwnedStream<Uint8Array, { error: unknown } | void>
 type SourceOperation = MseOperation | Failure
 type PlaybackFailure = Failure & { opened: boolean }
-type Diagnostics = {
-  error: (error: unknown) => void
-  progress: () => void
-}
+type Reporter = (error: unknown) => void
 type Target = { position: number; restart: boolean; started: boolean }
 type StreamSelection<T> =
   { error: unknown } | { result: IteratorResult<T, void> }
@@ -49,23 +46,6 @@ const result = <T>(promise: Promise<T>): Promise<Result<T>> =>
     (value) => ({ value }),
     (failure) => ({ failure }),
   )
-
-    // this should get removed, hiding errors is bad
-const diagnostics = (): Diagnostics => {
-  let failed = false
-  return {
-    error: (error) => {
-      if (failed) {
-        return
-      }
-      failed = true
-      console.error(error)
-    },
-    progress: () => {
-      failed = false
-    },
-  }
-}
 
 const stream_position = (value: number) => Math.round(value * 1_000) / 1_000
 
@@ -337,7 +317,6 @@ const wait_for_demand = (
       })
 
 const request_operations = async function* (
-  failures: Diagnostics,
   page: PageReader,
   stream: RequestStream,
   start: number,
@@ -379,9 +358,6 @@ const request_operations = async function* (
 
     yield change.value
     const next = stream_position(buffered_end(media, frontier) ?? frontier)
-    if (next > frontier) {
-      failures.progress()
-    }
     frontier = next
     if (retarget(frontier)) {
       return { action: "restart" }
@@ -393,7 +369,6 @@ const request_operations = async function* (
 }
 
 const source_stream = async function* (
-  failures: Diagnostics,
   page: PageReader,
 ): AsyncGenerator<SourceOperation, void, void> {
   let target = page.target
@@ -429,13 +404,7 @@ const source_stream = async function* (
     const stream = request_stream(start)
 
     try {
-      const outcome = yield* request_operations(
-        failures,
-        page,
-        stream,
-        start,
-        retarget,
-      )
+      const outcome = yield* request_operations(page, stream, start, retarget)
       if (outcome.action === "done") {
         return
       }
@@ -465,10 +434,10 @@ const source_stream = async function* (
 
 const play_source = async (
   buffer: Mse,
-  failures: Diagnostics,
+  report: Reporter,
   page: PageReader,
 ): Promise<Failure | void> => {
-  const stream = source_stream(failures, page)
+  const stream = source_stream(page)
   try {
     for (;;) {
       const selected = await result(stream.next())
@@ -481,7 +450,7 @@ const play_source = async (
       }
       const operation = next.value
       if (typeof operation === "object" && "failure" in operation) {
-        failures.error(operation.failure)
+        report(operation.failure)
         continue
       }
       const mutated = await result(buffer.next(operation))
@@ -500,7 +469,7 @@ const play_source = async (
 const play_attempt = async (
   signal: AbortSignal,
   sources: ReturnType<typeof media_sources>,
-  failures: Diagnostics,
+  report: Reporter,
   page: PageReader,
 ): Promise<PlaybackFailure | undefined> => {
   const opened = await result(
@@ -534,7 +503,7 @@ const play_attempt = async (
     return undefined
   }
 
-  const played = await play_source(opened.value, failures, page)
+  const played = await play_source(opened.value, report, page)
   return !played || signal.aborted
     ? undefined
     : {
@@ -545,7 +514,7 @@ const play_attempt = async (
 
 const play_media = async (signal: AbortSignal): Promise<void> => {
   const page = page_reader(signal, page_position())
-  const failures = diagnostics()
+  const report: Reporter = (error) => console.error(error)
   const sources = media_sources({
     evict_behind: BUFFER.BEHIND,
     media,
@@ -556,14 +525,14 @@ const play_media = async (signal: AbortSignal): Promise<void> => {
     while (!signal.aborted) {
       const page_failure = page.take_error()
       if (page_failure !== undefined) {
-        failures.error(page_failure)
+        report(page_failure)
       }
       const target = page.target
-      const attempt = await play_attempt(signal, sources, failures, page)
+      const attempt = await play_attempt(signal, sources, report, page)
       if (!attempt) {
         return
       }
-      failures.error(attempt.failure)
+      report(attempt.failure)
       if (
         !attempt.opened &&
         !(await retry_when(
@@ -589,7 +558,6 @@ const play_subtitle = async (signal: AbortSignal): Promise<void> => {
   if (!subtitle) {
     return
   }
-  const failures = diagnostics()
   while (!signal.aborted) {
     const loaded = first(signal, subtitle, "load", "error")
     subtitle.src = source_url(subtitle, 0)
@@ -597,7 +565,7 @@ const play_subtitle = async (signal: AbortSignal): Promise<void> => {
     if (!event || event.type === "load") {
       return
     }
-    failures.error(event)
+    console.error(event)
     if (!(await delay(signal, RETRY_DELAY))) {
       return
     }
