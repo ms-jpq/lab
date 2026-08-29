@@ -24,13 +24,17 @@ import { abortion, delay, logical_stream, once } from "./util.ts"
 
 type Effect = () => unknown | PromiseLike<unknown>
 type Target = { position: number; restart: boolean; started: boolean }
-type Choice<T> =
-  | { kind: "change" }
-  | { kind: "stop" }
-  | { kind: "work"; value: T }
 
 const BUFFER = { BEHIND: 30, LO: 45, HI: 60 }
 const RETRY_DELAY = 1_000
+const CHANGE = Symbol()
+const STOP = Symbol()
+type Choice<T> = T | typeof CHANGE | typeof STOP
+
+const yielded = <T, R>(
+  choice: Choice<IteratorResult<T, R>>,
+): choice is IteratorYieldResult<T> =>
+  choice !== STOP && choice !== CHANGE && !choice.done
 
 const stream_position = (value: number): number =>
   Math.round(value * 1_000) / 1_000
@@ -151,16 +155,16 @@ const decide = async function* (
         ready = undefined
         observed = undefined
         if (next.done) {
-          return { kind: "stop" }
+          return STOP
         }
         apply(next.value)
         if (interrupted()) {
-          return { kind: "change" }
+          return CHANGE
         }
         continue
       }
       if (worked) {
-        return { kind: "work", value: selected as T }
+        return selected as T
       }
     }
   }
@@ -191,10 +195,10 @@ const decide = async function* (
         const opened = (yield select(opening)) as Choice<
           IteratorResult<[MediaSource, (_: AbortSignal) => Mse]>
         >
-        if (opened.kind !== "work" || opened.value.done) {
+        if (!yielded(opened)) {
           return
         }
-        const [source, create_buffer] = opened.value.value
+        const [source, create_buffer] = opened.value
         const duration = Number(media.dataset["duration"])
         if (duration > 0) {
           source.duration = duration
@@ -203,7 +207,7 @@ const decide = async function* (
         const primed = (yield select(buffer.next())) as Choice<
           IteratorResult<void>
         >
-        if (primed.kind !== "work" || primed.value.done) {
+        if (!yielded(primed)) {
           return
         }
         setup_failure = take_failure()
@@ -221,10 +225,10 @@ const decide = async function* (
             failure !== undefined ||
             (target !== attempt && target.restart),
         )) as Choice<boolean>
-        if (waited.kind === "stop") {
+        if (waited === STOP) {
           return
         }
-        if (waited.kind === "change") {
+        if (waited === CHANGE) {
           take_failure()
         }
         continue
@@ -263,7 +267,7 @@ const decide = async function* (
             const demanded = (yield select(undefined, () =>
               changed(start) || play_ahead(media, start) < BUFFER.LO,
             )) as Choice<never>
-            if (demanded.kind === "stop") {
+            if (demanded === STOP) {
               return
             }
             if (retarget(start)) {
@@ -281,7 +285,7 @@ const decide = async function* (
             const positioned = (yield select(buffer.next(frontier))) as Choice<
               IteratorResult<void>
             >
-            if (positioned.kind !== "work" || positioned.value.done) {
+            if (!yielded(positioned)) {
               return
             }
             if (retarget(frontier)) {
@@ -298,32 +302,32 @@ const decide = async function* (
                 request_failure = error
                 break
               }
-              if (read.kind === "stop") {
+              if (read === STOP) {
                 return
               }
-              if (read.kind === "change") {
+              if (read === CHANGE) {
                 continue request
               }
-              if (read.value.done) {
+              if (read.done) {
                 const ended = (yield select(
                   buffer.next(undefined),
                 )) as Choice<IteratorResult<void>>
-                if (ended.kind !== "work" || ended.value.done) {
+                if (!yielded(ended)) {
                   return
                 }
                 const wake = (yield select(undefined, () =>
                   changed(frontier),
                 )) as Choice<never>
-                if (wake.kind === "stop") {
+                if (wake === STOP) {
                   return
                 }
                 continue request
               }
 
               const appended = (yield select(
-                buffer.next(read.value.value),
+                buffer.next(read.value),
               )) as Choice<IteratorResult<void>>
-              if (appended.kind !== "work" || appended.value.done) {
+              if (!yielded(appended)) {
                 return
               }
               frontier = stream_position(
@@ -350,7 +354,7 @@ const decide = async function* (
               delay(timer.signal, RETRY_DELAY),
               () => changed(start),
             )) as Choice<boolean>
-            if (waited.kind === "stop") {
+            if (waited === STOP) {
               return
             }
           }
