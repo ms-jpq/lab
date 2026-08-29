@@ -175,19 +175,73 @@ const cases = [
       const observed = await pending
       ok(!observed.done)
       deepEqual(
+        observed.value.derived,
         {
-          ended: observed.value.derived.ended,
-          failure: observed.value.derived.failure,
-          moved: observed.value.derived.moved,
-          seeks: observed.value.derived.seeks.map(([, event]) => event.type),
-        },
-        {
-          ended: true,
           failure: undefined,
-          moved: true,
-          seeks: ["seeking"],
+          resume: { reason: "ended", position: 0 },
+          seeks: [
+            {
+              candidate: { position: 12, restart: true },
+              position: 12,
+              seeking: true,
+            },
+          ],
         },
       )
+      await states.return?.()
+    },
+  },
+  {
+    name: "buffered movement derives a progress resume position",
+    run: async () => {
+      const owner = new AbortController()
+      const media = new Media()
+      media.buffered.values.push([10, 20])
+      const states = media_states(
+        media as unknown as HTMLMediaElement,
+        owner.signal,
+      )
+      await states.next()
+      const pending = states.next()
+
+      media.currentTime = 12
+      media.dispatchEvent(new Event("timeupdate"))
+
+      const observed = await pending
+      ok(!observed.done)
+      deepEqual(observed.value.derived.resume, {
+        reason: "progress",
+        position: 12,
+      })
+      await states.return?.()
+    },
+  },
+  {
+    name: "a seek derives its buffered playback target",
+    run: async () => {
+      const owner = new AbortController()
+      const media = new Media()
+      media.buffered.values.push([10, 20])
+      const states = media_states(
+        media as unknown as HTMLMediaElement,
+        owner.signal,
+      )
+      await states.next()
+      const pending = states.next()
+
+      media.currentTime = 9.95
+      media.seeking = true
+      media.dispatchEvent(new Event("seeking"))
+
+      const observed = await pending
+      ok(!observed.done)
+      deepEqual(observed.value.derived.seeks, [
+        {
+          candidate: { position: 10, restart: false },
+          position: 9.95,
+          seeking: true,
+        },
+      ])
       await states.return?.()
     },
   },

@@ -4,8 +4,8 @@ import {
   buffered_position,
   media_states,
   play_ahead,
-  playable_position,
   type MediaState,
+  type MediaTarget,
 } from "./media.ts"
 import { media_sources, type Mse } from "./mse.ts"
 import {
@@ -27,7 +27,6 @@ const WAKE = Symbol()
 type Choice<T> = T | typeof STOP | typeof WAKE
 type Handoff<T> = typeof STOP | { interrupted: boolean; value: T }
 type ReportFailure = { [REPORT]: unknown }
-type MediaTarget = { position: number; restart: boolean }
 type Work<T> = Readonly<{ result: Promise<PromiseSettledResult<T>> }>
 type WorkStream = Disposable & {
   events: AsyncIteratorObject<Work<unknown>>
@@ -103,26 +102,20 @@ const decide = async (signal: AbortSignal): Promise<void> => {
   }
   const observe = ({ current: latest, derived }: MediaState): void => {
     current = latest
-    const { ended, failure: media_failure, moved, seeks } = derived
+    const { failure: media_failure, resume, seeks } = derived
     failure ??= media_failure
     let retargeted = false
-    for (const [snapshot] of seeks) {
-      const { seeking, time } = snapshot
+    for (const { candidate, position, seeking } of seeks) {
       const owned_seek =
         pending_seek !== undefined &&
-        aligned(time, pending_seek.target.position)
+        aligned(position, pending_seek.target.position)
           ? pending_seek
           : undefined
       if (owned_seek) {
         owned_seek.acknowledged = true
       }
       if (seeking && owned_seek === undefined) {
-        const native = playable_position(media, time)
-        const playable = buffered_position(snapshot, native)
-        target = {
-          position: playable ?? native,
-          restart: playable === undefined,
-        }
+        target = candidate
         retargeted = true
       }
     }
@@ -135,15 +128,14 @@ const decide = async (signal: AbortSignal): Promise<void> => {
           : undefined
       persist_position(target.position)
     }
-    if (ended) {
-      persist_position(0)
+    if (resume?.reason === "ended") {
+      persist_position(resume.position)
     } else if (
       !retargeted &&
       pending_seek === undefined &&
-      moved &&
-      buffered_position(current, time) === time
+      resume !== undefined
     ) {
-      persist_position(time)
+      persist_position(resume.position)
     }
     if (pending_seek !== undefined) {
       const { target: seek_target } = pending_seek

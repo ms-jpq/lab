@@ -12,6 +12,7 @@ const END_TOLERANCE = 0.5
 export type BufferedRange = readonly [start: number, end: number]
 export type MediaSnapshot = Readonly<{
   buffered: readonly BufferedRange[]
+  duration: number
   ended: boolean
   error: MediaError | undefined
   metadata: boolean
@@ -37,11 +38,19 @@ export type MediaObservation = EventObservation<
   (typeof EVENTS)[number],
   MediaSnapshot
 >
+export type MediaTarget = { position: number; restart: boolean }
+export type MediaSeek = Readonly<{
+  candidate: MediaTarget
+  position: number
+  seeking: boolean
+}>
+type MediaResume =
+  | Readonly<{ reason: "ended"; position: 0 }>
+  | Readonly<{ reason: "progress"; position: number }>
 export type MediaDerived = Readonly<{
-  ended: boolean
   failure: MediaError | undefined
-  moved: boolean
-  seeks: readonly MediaObservation[]
+  resume: MediaResume | undefined
+  seeks: readonly MediaSeek[]
 }>
 type ObservedMediaState = Readonly<{
   current: MediaSnapshot
@@ -50,16 +59,17 @@ type ObservedMediaState = Readonly<{
 type InputMediaState<T> = ObservedMediaState & Readonly<{ input: T }>
 export type MediaState<T = never> = ObservedMediaState | InputMediaState<T>
 
-export const playable_position = (
-  media: HTMLMediaElement,
-  value: number,
-): number => {
-  const duration = Number(media.dataset["duration"])
+const playable = (duration: number, value: number): number => {
   const position = Number.isFinite(value) ? Math.max(0, value) : 0
   return duration > 0 && position >= duration
     ? Math.max(0, duration - END_TOLERANCE)
     : position
 }
+
+export const playable_position = (
+  media: HTMLMediaElement,
+  value: number,
+): number => playable(Number(media.dataset["duration"]), value)
 
 export const aligned = (left: number, right: number): boolean =>
   Math.abs(left - right) <= POSITION_TOLERANCE
@@ -107,6 +117,7 @@ const media_snapshot = (media: HTMLMediaElement): MediaSnapshot => ({
     (_, index) =>
       [media.buffered.start(index), media.buffered.end(index)] as const,
   ),
+  duration: Number(media.dataset["duration"]),
   ended: media.ended,
   error: media.error ?? undefined,
   metadata: media.readyState >= media.HAVE_METADATA,
@@ -114,21 +125,43 @@ const media_snapshot = (media: HTMLMediaElement): MediaSnapshot => ({
   time: media.currentTime,
 })
 
-const derive = (observations: readonly MediaObservation[]): MediaDerived => ({
-  ended: observations.some(([, event]) => event.type === "ended"),
-  failure: observations.find(
+const derive = (observations: readonly MediaObservation[]): MediaDerived => {
+  const current = observations.at(-1)?.[0]
+  const ended = observations.some(([, event]) => event.type === "ended")
+  const moved = observations.some(([, event]) =>
+    ["seeked", "seeking", "timeupdate"].includes(event.type),
+  )
+  const resume = ended
+    ? ({ reason: "ended", position: 0 } as const)
+    : moved &&
+        current !== undefined &&
+        buffered_position(current, current.time) === current.time
+      ? ({ reason: "progress", position: current.time } as const)
+      : undefined
+  const failure = observations.find(
     ([{ error }, event]) =>
       event.type === "error" &&
       error !== undefined &&
       error.code !== MediaError.MEDIA_ERR_ABORTED,
-  )?.[0].error,
-  moved: observations.some(([, event]) =>
-    ["seeked", "seeking", "timeupdate"].includes(event.type),
-  ),
-  seeks: observations.filter(([, event]) =>
-    ["seeked", "seeking"].includes(event.type),
-  ),
-})
+  )?.[0].error
+  const seeks = observations.flatMap(([snapshot, event]) => {
+    if (event.type !== "seeked" && event.type !== "seeking") return []
+    const { duration, seeking, time } = snapshot
+    const native = playable(duration, time)
+    const position = buffered_position(snapshot, native)
+    return [
+      {
+        candidate: {
+          position: position ?? native,
+          restart: position === undefined,
+        },
+        position: time,
+        seeking,
+      },
+    ]
+  })
+  return { failure, resume, seeks }
+}
 
 export const media_events = (
   media: HTMLMediaElement,
