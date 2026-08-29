@@ -129,6 +129,7 @@ const derive = (observations: readonly MediaObservation[]): MediaDerived => {
   const moved = observations.some(([, event]) =>
     ["seeked", "seeking", "timeupdate"].includes(event.type),
   )
+
   const resume = ended
     ? ({ reason: "ended", position: 0 } as const)
     : moved &&
@@ -136,12 +137,14 @@ const derive = (observations: readonly MediaObservation[]): MediaDerived => {
         buffered_position(current, current.time) === current.time
       ? ({ reason: "progress", position: current.time } as const)
       : undefined
+
   const failure = observations.find(
     ([{ error }, event]) =>
       event.type === "error" &&
       error !== undefined &&
       error.code !== MediaError.MEDIA_ERR_ABORTED,
   )?.[0].error
+
   const seeks = observations.flatMap(([snapshot, event]) => {
     if (event.type !== "seeked" && event.type !== "seeking") return []
     const { duration, seeking, time } = snapshot
@@ -158,6 +161,7 @@ const derive = (observations: readonly MediaObservation[]): MediaDerived => {
       },
     ]
   })
+
   return { failure, resume, seeks }
 }
 
