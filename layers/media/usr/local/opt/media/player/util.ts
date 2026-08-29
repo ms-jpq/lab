@@ -182,9 +182,6 @@ export const event_batches = async function* <
     }
   })
 
-  if (a.signal.aborted) {
-    return
-  }
   while (!a.signal.aborted) {
     await ready.promise
     if (a.signal.aborted) return
