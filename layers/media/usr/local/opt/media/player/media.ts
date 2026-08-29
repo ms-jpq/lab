@@ -1,8 +1,4 @@
-import {
-  abortion,
-  event_batches,
-  type EventObservation,
-} from "./util.ts"
+import { abortion, event_batches, type EventObservation } from "./util.ts"
 
 const POSITION_TOLERANCE = 0.1
 const END_TOLERANCE = 0.5
@@ -143,7 +139,10 @@ const derive = (observations: readonly MediaObservation[]): MediaDerived => {
   )?.[0].error
 
   const seeks = observations.flatMap(([snapshot, event]) => {
-    if (event.type !== "seeked" && event.type !== "seeking") return []
+    if (event.type !== "seeked" && event.type !== "seeking") {
+      return []
+    }
+
     const { duration, seeking, time } = snapshot
     const native = playable(duration, time)
     const position = buffered_position(snapshot, native)
