@@ -89,6 +89,7 @@ const MSE = (): MediaSource => {
 
 export const bond = async function* (
   media: HTMLMediaElement,
+  signal: AbortSignal,
 ): AsyncIteratorObject<MediaSource> {
   const source = MSE()
   const url = URL.createObjectURL(source)
@@ -96,7 +97,7 @@ export const bond = async function* (
     URL.revokeObjectURL(url)
   })
 
-  using a = abortion()
+  using a = abortion(signal)
   const opened = Promise.race([
     once(a.signal, source, "sourceopen"),
     once(a.signal, source, "sourceclose"),
@@ -108,10 +109,10 @@ export const bond = async function* (
     if (event?.type === "sourceclose") {
       throw event
     }
-
+    if (event === undefined) {
+      return
+    }
     yield source
-  } catch {
-    URL.revokeObjectURL(url)
   } finally {
     media.removeAttribute("src")
     media.load()
@@ -123,13 +124,15 @@ export const media_sources = async function* ({
   media,
   mime_type,
   evict_behind,
+  signal,
 }: {
   media: HTMLMediaElement
   mime_type: string
   evict_behind: number
+  signal: AbortSignal
 }): AsyncIteratorObject<[MediaSource, Mse]> {
   for (;;) {
-    for await (const source of bond(media)) {
+    for await (const source of bond(media, signal)) {
       const buffer = media_source({
         evict_before: () => media.currentTime - evict_behind,
         mime_type,
