@@ -33,7 +33,7 @@ export const media_source = async function* ({
 }): Mse {
   const buffer = source.addSourceBuffer(mime_type)
 
-  const position = (yield undefined) as unknown as number
+  const position = (yield undefined) as number
   buffer.timestampOffset = position
 
   for (let operation = yield undefined; ; operation = yield undefined) {
@@ -51,8 +51,10 @@ export const media_source = async function* ({
           buffer.remove(end, end + EPSILON)
         }
       }
-      buffer.abort()
-      buffer.timestampOffset = operation
+      {
+        buffer.abort()
+        buffer.timestampOffset = operation
+      }
       continue
     }
 
@@ -122,15 +124,15 @@ export const media_sources = async function* (
   mime_type: string,
   evict_behind: number,
 ): AsyncIteratorObject<[MediaSource, Mse]> {
-  for await (const source of bond(media)) {
-    const buffer = media_source({
-      evict_before: () => media.currentTime - evict_behind,
-      mime_type,
-      source,
-    })
+  for (;;) {
+    for await (const source of bond(media)) {
+      const buffer = media_source({
+        evict_before: () => media.currentTime - evict_behind,
+        mime_type,
+        source,
+      })
 
-    yield [source, buffer]
+      yield [source, buffer]
+    }
   }
-
-  return
 }
