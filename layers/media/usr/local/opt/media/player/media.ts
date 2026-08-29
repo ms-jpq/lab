@@ -30,6 +30,13 @@ export type MediaObservation = readonly [
   snapshot: MediaSnapshot,
   event: MediaEvent,
 ]
+export type MediaState = Readonly<{
+  current: MediaSnapshot
+  observations: readonly MediaObservation[]
+}>
+export type MediaStates = AsyncIteratorObject<MediaState> & {
+  read: () => MediaSnapshot
+}
 
 export const playable_position = (
   media: HTMLMediaElement,
@@ -85,7 +92,7 @@ export const play_ahead = (
     : 0
 }
 
-export const media_snapshot = (media: HTMLMediaElement): MediaSnapshot => ({
+const media_snapshot = (media: HTMLMediaElement): MediaSnapshot => ({
   buffered: Array.from(
     { length: media.buffered.length },
     (_, index) =>
@@ -142,4 +149,28 @@ export const media_events = async function* (
     }
   }
   return
+}
+
+export const media_states = (
+  media: HTMLMediaElement,
+  signal: AbortSignal,
+): MediaStates => {
+  const read = (): MediaSnapshot => media_snapshot(media)
+  const states = (async function* (): AsyncIteratorObject<MediaState> {
+    using a = abortion(signal)
+
+    if (a.signal.aborted) {
+      return
+    }
+
+    yield { current: read(), observations: [] }
+    for await (const observations of media_events(media, a.signal)) {
+      const current = observations.at(-1)?.[0]
+      if (current !== undefined) {
+        yield { current, observations }
+      }
+    }
+    return
+  })()
+  return Object.assign(states, { read })
 }

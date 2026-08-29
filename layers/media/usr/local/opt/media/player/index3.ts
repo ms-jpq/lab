@@ -2,11 +2,10 @@ import {
   aligned,
   buffered_end,
   buffered_position,
-  media_events,
-  media_snapshot,
+  media_states,
   play_ahead,
   playable_position,
-  type MediaObservation,
+  type MediaState,
 } from "./media.ts"
 import { media_sources, type Mse } from "./mse.ts"
 import {
@@ -45,10 +44,10 @@ const decide = async function* (
     mime_type: media.dataset["mseType"] as string,
     signal: lifetime.signal,
   })
-  const observations = media_events(media, lifetime.signal)
-  let observed: Promise<IteratorResult<MediaObservation[], unknown>> | undefined
-  let ready: IteratorResult<MediaObservation[], unknown> | undefined
-  let current = media_snapshot(media)
+  const states = media_states(media, lifetime.signal)
+  let observed: Promise<IteratorResult<MediaState, unknown>> | undefined
+  let ready: IteratorResult<MediaState, unknown> | undefined
+  let current = states.read()
   let target = { position: page_position(), restart: false }
   let pending_seek: { target: MediaTarget; acknowledged: boolean } | undefined =
     { target, acknowledged: false }
@@ -63,14 +62,14 @@ const decide = async function* (
     failure = undefined
     return error
   }
-  const observe = (batch: MediaObservation[]): void => {
-    const latest = batch.at(-1)?.[0]
-    if (latest === undefined) return
+  const observe = ({ current: latest, observations }: MediaState): void => {
+    current = latest
+    if (observations.length === 0) return
 
     let ended = false
     let moved = false
     let retargeted = false
-    for (const [snapshot, event] of batch) {
+    for (const [snapshot, event] of observations) {
       const { error, seeking, time } = snapshot
       const seek_event = event.type === "seeking" || event.type === "seeked"
       ended ||= event.type === "ended"
@@ -101,7 +100,6 @@ const decide = async function* (
       }
     }
 
-    current = latest
     const { metadata, seeking, time } = current
     if (retargeted) {
       pending_seek =
@@ -142,7 +140,7 @@ const decide = async function* (
     ): (() => Promise<Choice<T>>) =>
     async (): Promise<Choice<T>> => {
       for (;;) {
-        const observation = (observed ??= observations.next().then((value) => {
+        const observation = (observed ??= states.next().then((value) => {
           ready = value
           return value
         }))
@@ -151,7 +149,16 @@ const decide = async function* (
         if (ready === undefined && work !== undefined) {
           const winner = await Promise.race([
             observation,
-            work.then((value) => ({ value })),
+            work.then(
+              (value) => {
+                current = states.read()
+                return { value }
+              },
+              (error) => {
+                current = states.read()
+                throw error
+              },
+            ),
           ])
           if ("value" in winner) {
             selected = winner.value as T
@@ -369,7 +376,7 @@ const decide = async function* (
     try {
       await sources.return?.()
     } finally {
-      await observations.return?.()
+      await states.return?.()
     }
   }
 }
