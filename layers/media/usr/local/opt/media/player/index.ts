@@ -1,14 +1,4 @@
-import {
-  aligned,
-  buffered_end,
-  buffered_position,
-  media_snapshot,
-  observe_media,
-  play_ahead,
-  playable_position,
-  type MediaEvent,
-  type MediaSnapshot,
-} from "./media.ts"
+import { aligned, buffered_end, buffered_position, media_snapshot, observe_media, play_ahead, playable_position, type MediaEvent, type MediaSnapshot } from "./media.ts"
 import { media_sources, type Mse, type MseOperation } from "./mse.ts"
 import { player_page } from "./page.ts"
 import { abortion, delay, first, logical_stream } from "./util.ts"
@@ -53,9 +43,14 @@ const BUFFER = {
   HI: 60,
 }
 const RETRY_DELAY = 1_000
-const POSITION = `media:position:${location.pathname}`
-const PAGE = crypto.randomUUID()
-const { media, subtitle, time_input } = player_page
+const {
+  initial_position,
+  media,
+  page_position,
+  persist_position,
+  source_url,
+  subtitle,
+} = player_page
 
 const result = <T>(promise: Promise<T>): Promise<Result<T>> =>
   promise.then(
@@ -63,6 +58,7 @@ const result = <T>(promise: Promise<T>): Promise<Result<T>> =>
     (failure) => ({ failure }),
   )
 
+    // this should get removed, hiding errors is bad
 const diagnostics = (): Diagnostics => {
   let failed = false
   return {
@@ -79,45 +75,7 @@ const diagnostics = (): Diagnostics => {
   }
 }
 
-const source_url = (
-  resource: HTMLMediaElement | HTMLTrackElement,
-  time: number,
-) => {
-  const path = resource.dataset["src"] as string
-  const source = new URL(path, location.href)
-  source.searchParams.set("t", String(time))
-  source.searchParams.set("page", PAGE)
-  source.searchParams.set("request", crypto.randomUUID())
-  return source.toString()
-}
-
 const stream_position = (value: number) => Math.round(value * 1_000) / 1_000
-
-const initial_position = (() => {
-  if (new URL(location.href).searchParams.has("t")) {
-    return playable_position(media, Number(time_input.value))
-  }
-  try {
-    const stored = Number(localStorage.getItem(POSITION))
-    return playable_position(media, stored)
-  } catch {
-    return 0
-  }
-})()
-
-const persist_position = (value: number) => {
-  const page_url = new URL(location.href)
-  const position = Math.floor(value)
-  if (Number(time_input.value) === position) {
-    return
-  }
-  time_input.value = String(position)
-  page_url.searchParams.set("t", time_input.value)
-  history.replaceState(null, "", page_url)
-  try {
-    localStorage.setItem(POSITION, time_input.value)
-  } catch {}
-}
 
 const owned_stream = <T, R>(
   stream: AsyncGenerator<T, R, void>,
@@ -594,10 +552,7 @@ const play_attempt = async (
 }
 
 const play_media = async (signal: AbortSignal): Promise<void> => {
-  const page = page_reader(
-    signal,
-    playable_position(media, Number(time_input.value)),
-  )
+  const page = page_reader(signal, page_position())
   const failures = diagnostics()
   const sources = media_sources({
     evict_behind: BUFFER.BEHIND,
