@@ -1,11 +1,65 @@
 import { deepEqual, ok as assert } from "node:assert/strict"
 import { randomUUID } from "node:crypto"
-import nodeTest from "node:test"
+import nodeTest, { type TestContext } from "node:test"
 import { setImmediate } from "node:timers/promises"
 
-import { media_source, type Mse } from "./mse.ts"
+import { bond, media_source, media_sources, type Mse } from "./mse.ts"
 
 const options = { concurrency: true, timeout: 2_000 }
+
+const acquisitionFixture = (context: TestContext) => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, "MediaSource")
+  const sources: EventTarget[] = []
+  class Source extends EventTarget {
+    constructor() {
+      super()
+      sources.push(this)
+    }
+  }
+  Object.defineProperty(globalThis, "MediaSource", {
+    configurable: true,
+    value: Source,
+  })
+
+  let nextUrl = 0
+  const revoked: string[] = []
+  context.mock.method(
+    URL,
+    "createObjectURL",
+    (_object: Blob): string => `blob:test:${nextUrl++}`,
+  )
+  context.mock.method(URL, "revokeObjectURL", (url: string): void => {
+    revoked.push(url)
+  })
+
+  const state = { loads: 0, removals: 0 }
+  const media = {
+    load: (): void => {
+      state.loads += 1
+    },
+    removeAttribute: (name: string): void => {
+      if (name === "src") {
+        state.removals += 1
+        media.src = ""
+      }
+    },
+    src: "",
+  } as unknown as HTMLMediaElement
+
+  return {
+    media,
+    restore: (): void => {
+      if (descriptor) {
+        Object.defineProperty(globalThis, "MediaSource", descriptor)
+      } else {
+        Reflect.deleteProperty(globalThis, "MediaSource")
+      }
+    },
+    revoked,
+    sources,
+    state,
+  }
+}
 
 const timeRanges = (...ranges: [number, number][]): TimeRanges => ({
   length: ranges.length,
@@ -236,6 +290,58 @@ const cases = [
     },
   },
   {
+    name: "parent abort interrupts an entered SourceBuffer mutation",
+    run: async () => {
+      const { buffer, controller, entered, mutations, values } = fixture(
+        timeRanges(),
+        undefined,
+        "append",
+      )
+      await start(values)
+      const appending = values.next(new Uint8Array([6]))
+      await entered
+
+      controller.abort()
+
+      deepEqual(
+        await Promise.race([appending, setImmediate("pending")]),
+        { done: false, value: undefined },
+      )
+      deepEqual(mutations, [["append", [6]], ["abort"]])
+      deepEqual(buffer.updating, false)
+      deepEqual(await values.return?.(undefined), {
+        done: true,
+        value: undefined,
+      })
+    },
+  },
+  {
+    name: "parent abort interrupts an entered SourceBuffer removal",
+    run: async () => {
+      const { buffer, controller, entered, mutations, values } = fixture(
+        timeRanges([0, 120]),
+        undefined,
+        "remove",
+      )
+      await start(values)
+      const appending = values.next(new Uint8Array([6]))
+      await entered
+
+      controller.abort()
+
+      deepEqual(
+        await Promise.race([appending, setImmediate("pending")]),
+        { done: false, value: undefined },
+      )
+      deepEqual(mutations, [["remove", 0, 70], ["abort"]])
+      deepEqual(buffer.updating, false)
+      deepEqual(await values.return?.(undefined), {
+        done: true,
+        value: undefined,
+      })
+    },
+  },
+  {
     name: "a second timestamp resets the parser before changing its offset",
     run: async () => {
       const { buffer, mutations, values } = fixture()
@@ -307,6 +413,48 @@ const cases = [
       await ending
       deepEqual(mutations, [["append", [8]], ["end"]])
       await values.return?.(undefined)
+    },
+  },
+  {
+    name: "parent abort settles pending bond and media source acquisitions",
+    run: async (context: TestContext) => {
+      const current = acquisitionFixture(context)
+      try {
+        const bondOwner = new AbortController()
+        const bonded = bond(current.media, bondOwner.signal)
+        const pendingBond = bonded.next()
+
+        bondOwner.abort()
+
+        deepEqual(
+          await Promise.race([pendingBond, setImmediate("pending")]),
+          { done: true, value: undefined },
+        )
+        deepEqual(current.sources.length, 1)
+        await bonded.return?.()
+        current.media.src = ""
+
+        const sourcesOwner = new AbortController()
+        const sources = media_sources({
+          evict_behind: 30,
+          media: current.media,
+          mime_type: "video/test",
+          signal: sourcesOwner.signal,
+        })
+        const pendingSources = sources.next()
+
+        sourcesOwner.abort()
+
+        deepEqual(
+          await Promise.race([pendingSources, setImmediate("pending")]),
+          { done: true, value: undefined },
+        )
+        deepEqual(current.revoked, ["blob:test:1"])
+        deepEqual(current.state, { loads: 1, removals: 1 })
+        await sources.return?.()
+      } finally {
+        current.restore()
+      }
     },
   },
 ]
