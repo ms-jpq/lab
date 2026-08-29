@@ -9,15 +9,16 @@ const op_lock = async function* (
   buffer: SourceBuffer,
   signal: AbortSignal,
 ): AsyncIteratorObject<undefined> {
-  using a = abortion(signal)
+  if (signal.aborted) {
+    return
+  }
+  using a = abortion()
   const changed = Promise.race([
     once(a.signal, buffer, "updateend"),
     once(a.signal, buffer, "error"),
   ])
 
-  if (!signal.aborted) {
-    yield
-  }
+  yield
   const event = await changed
   if (event?.type === "error") {
     throw event
@@ -45,8 +46,7 @@ export const media_source = async function* ({
   buffer.timestampOffset = position
 
   for (let operation = yield undefined; ; operation = yield undefined) {
-    const a = abortion(signal)
-    if (a.signal.aborted) {
+    if (signal.aborted) {
       return
     }
 
@@ -60,7 +60,7 @@ export const media_source = async function* ({
         const ranges = buffer.buffered
         const end = ranges.length ? ranges.end(ranges.length - 1) : 0
 
-        for await (const _ of op_lock(buffer, a.signal)) {
+        for await (const _ of op_lock(buffer, signal)) {
           buffer.remove(end, end + EPSILON)
         }
       }
@@ -78,12 +78,12 @@ export const media_source = async function* ({
         buffer.buffered.length &&
         buffer.buffered.start(0) < cutoff
       ) {
-        for await (const _ of op_lock(buffer, a.signal)) {
+        for await (const _ of op_lock(buffer, signal)) {
           buffer.remove(0, cutoff)
         }
       }
     }
-    for await (const _ of op_lock(buffer, a.signal)) {
+    for await (const _ of op_lock(buffer, signal)) {
       buffer.appendBuffer(operation as Uint8Array<ArrayBuffer>)
     }
   }
@@ -114,9 +114,9 @@ export const bond = async function* (
     ])
 
     const prev = media.src
-    media.src = url
 
     try {
+      media.src = url
       const event = await opened
       if (event?.type === "sourceclose") {
         throw event
