@@ -231,9 +231,9 @@ const request_stream = (time: number): RequestStream => {
   )
   let active = true
 
-  const finish = async (
-    value?: { error: unknown },
-  ): Promise<IteratorResult<Uint8Array, { error: unknown } | void>> => {
+  const finish = async (value?: {
+    error: unknown
+  }): Promise<IteratorResult<Uint8Array, { error: unknown } | void>> => {
     if (!active) {
       return { done: true, value }
     }
