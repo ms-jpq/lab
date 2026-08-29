@@ -53,13 +53,13 @@ export const once = <
   }
 
   const { promise, resolve } = Promise.withResolvers<R | undefined>()
-  let open = true
 
+  let closed = false
   const finish = (value?: R): void => {
-    if (!open) {
+    if (closed) {
       return
     }
-    open = false
+    closed = true
     signal.removeEventListener("abort", cancelled)
     target.removeEventListener(event, received)
     resolve(value)
