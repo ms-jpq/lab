@@ -1826,6 +1826,20 @@ for (const { events, name } of synchronousFailureSeekCases) {
           current.media.dispatchEvent(new Event(event))
         }
 
+        for (let turn = 0; turn < 10; turn += 1) {
+          await nextTask()
+        }
+        throw new Error(
+          JSON.stringify({
+            diagnostics: current.errors.length,
+            requests: current.requests.map((url) =>
+              new URL(url).searchParams.get("t"),
+            ),
+            sources: current.sources.length,
+            target: current.timeInput.value,
+          }),
+        )
+
         await eventually(
           () =>
             current.sources.length === 2 &&

@@ -180,6 +180,7 @@ const decide = async function* (
       const attempt = target
       let buffer: Mse | undefined
       let setup_failure: unknown | undefined
+      let setup_failed = false
       try {
         positioning = target
         target.started = false
@@ -205,10 +206,12 @@ const decide = async function* (
           return
         }
         setup_failure = take_failure()
+        setup_failed = setup_failure !== undefined
       } catch (error) {
+        setup_failed = true
         setup_failure = error
       }
-      if (setup_failure !== undefined) {
+      if (setup_failed) {
         yield report(setup_failure)
         using timer = abortion(lifetime.signal)
         const waited = (yield select(
@@ -231,6 +234,11 @@ const decide = async function* (
 
       let accepted = target
       let start = accepted.position
+      const changed = (frontier: number): boolean =>
+        failure !== undefined ||
+        (target !== accepted &&
+          target.restart &&
+          !aligned(target.position, frontier))
       const retarget = (frontier: number): boolean => {
         const error = take_failure()
         if (error !== undefined) {
@@ -252,7 +260,7 @@ const decide = async function* (
           retarget(start)
           while (play_ahead(media, start) >= BUFFER.LO) {
             const demanded = (yield select(undefined, () =>
-              retarget(start) || play_ahead(media, start) < BUFFER.LO,
+              changed(start) || play_ahead(media, start) < BUFFER.LO,
             )) as Choice<never>
             if (demanded.kind === "stop") {
               return
@@ -283,7 +291,7 @@ const decide = async function* (
               let read: Choice<IteratorResult<Uint8Array>>
               try {
                 read = (yield select(request.next(), () =>
-                  retarget(frontier),
+                  changed(frontier),
                 )) as Choice<IteratorResult<Uint8Array>>
               } catch (error) {
                 request_failure = error
@@ -302,10 +310,10 @@ const decide = async function* (
                 if (ended.kind !== "work" || ended.value.done) {
                   return
                 }
-                const changed = (yield select(undefined, () =>
-                  retarget(frontier),
+                const wake = (yield select(undefined, () =>
+                  changed(frontier),
                 )) as Choice<never>
-                if (changed.kind === "stop") {
+                if (wake.kind === "stop") {
                   return
                 }
                 continue request
@@ -339,7 +347,7 @@ const decide = async function* (
             using timer = abortion(lifetime.signal)
             const waited = (yield select(
               delay(timer.signal, RETRY_DELAY),
-              () => retarget(start),
+              () => changed(start),
             )) as Choice<boolean>
             if (waited.kind === "stop") {
               return
