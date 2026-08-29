@@ -74,8 +74,7 @@ export const media_source = async function* ({
   }
 }
 
-// wehat do we need here?
-const MSE = async (): Promise<MediaSource> => {
+const MSE = (): MediaSource => {
   const source = new (
     (
       globalThis as typeof globalThis & {
@@ -83,23 +82,32 @@ const MSE = async (): Promise<MediaSource> => {
       }
     ).ManagedMediaSource ?? MediaSource
   )()
+  return source
+}
+
+export const setup = async function* (media: HTMLMediaElement) {
+  const source = MSE()
+  const url = URL.createObjectURL(source)
+  using _ = defer(() => {
+    URL.revokeObjectURL(url)
+  })
+
   using a = abortion()
   const opened = Promise.race([
     once(a.signal, source, "sourceopen"),
     once(a.signal, source, "sourceclose"),
   ])
 
-  await opened
-  return source
-}
-
-export const setup = (media: HTMLMediaElement, url: string) => {
-  media.src = url
-
-  return defer(() => {
+  try {
+    media.src = url
+    await opened
+    yield source
+  } catch {
+    URL.revokeObjectURL(url)
+  } finally {
     media.removeAttribute("src")
     media.load()
-  })
+  }
 }
 
 const BEHIND = 30
@@ -114,9 +122,6 @@ export const media_sources = async function* (
     while (!signal.aborted) {
       const source = MSE()
       const url = URL.createObjectURL(source)
-      using _ = defer(() => {
-        URL.revokeObjectURL(url)
-      })
       using _m = setup(media, url)
 
       const previous = url
