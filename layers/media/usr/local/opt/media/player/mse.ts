@@ -15,7 +15,9 @@ const op_lock = async function* (
     once(a.signal, buffer, "error"),
   ])
 
-  yield
+  if (!signal.aborted) {
+    yield
+  }
   const event = await changed
   if (event?.type === "error") {
     throw event
@@ -58,7 +60,7 @@ export const media_source = async function* ({
         const ranges = buffer.buffered
         const end = ranges.length ? ranges.end(ranges.length - 1) : 0
 
-        for await (const _ of op_lock(buffer)) {
+        for await (const _ of op_lock(buffer, a.signal)) {
           buffer.remove(end, end + EPSILON)
         }
       }
@@ -76,12 +78,12 @@ export const media_source = async function* ({
         buffer.buffered.length &&
         buffer.buffered.start(0) < cutoff
       ) {
-        for await (const _ of op_lock(buffer)) {
+        for await (const _ of op_lock(buffer, a.signal)) {
           buffer.remove(0, cutoff)
         }
       }
     }
-    for await (const _ of op_lock(buffer)) {
+    for await (const _ of op_lock(buffer, a.signal)) {
       buffer.appendBuffer(operation as Uint8Array<ArrayBuffer>)
     }
   }

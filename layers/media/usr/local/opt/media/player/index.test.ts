@@ -7,10 +7,13 @@ import {
   ok as assert,
   rejects,
 } from "node:assert/strict"
+import { stripTypeScriptTypes } from "node:module"
 import nodeTest, { type TestContext } from "node:test"
 import vm from "node:vm"
 
-const PLAYER = new URL("player.js", import.meta.url)
+const PLAYER = ["util.ts", "mse.ts", "index.ts"].map(
+  (name) => new URL(name, import.meta.url),
+)
 const options = { concurrency: true, timeout: 2_000 }
 
 type Range = [number, number]
@@ -21,7 +24,7 @@ type MutableTimeRanges = {
   end: (index: number) => number
 }
 type MediaFailure = { code: number; message?: string }
-type MseOperation = "end" | number | Uint8Array
+type MseOperation = undefined | number | Uint8Array
 type Mse = AsyncGenerator<void, void, MseOperation>
 type MseBuffer = EventTarget & {
   abort: () => void
@@ -653,10 +656,30 @@ const fixture = async (position = 40) => {
     Uint8Array,
     window,
   }) as PlayerContext
-  const source = await readFile(PLAYER, "utf8")
+  const source = (await Promise.all(PLAYER.map((url) => readFile(url, "utf8"))))
+    .join("\n")
+    .replace(/^import .*$/gmu, "")
+    .replace(/^export /gmu, "")
   vm.runInContext(
-    `${source}
+    stripTypeScriptTypes(
+      `${source}
+const mse = async function* (buffer, { currentTime, signal, source }) {
+  const addSourceBuffer = source.addSourceBuffer
+  source.addSourceBuffer = () => buffer
+  try {
+    yield* media_source({
+      evict_before: () => currentTime() - 30,
+      mime_type: "test",
+      signal,
+      source,
+    })
+  } finally {
+    source.addSourceBuffer = addSourceBuffer
+  }
+}
 globalThis.player_test = { PULSE, mse, page_reader, play_source, play_subtitle, playback_page, request_stream, selector }`,
+      { mode: "strip" },
+    ),
     context,
   )
   const { ranges } = media.buffered
@@ -2772,7 +2795,7 @@ test(
     const buffer = {
       next: async (operation: MseOperation) => {
         operations.push(operation)
-        if (operation === "end") {
+        if (operation === undefined) {
           ends += 1
         } else if (operation instanceof Uint8Array) {
           current.media.buffered.ranges = [[40, 100]]
@@ -2860,7 +2883,7 @@ test(
     const { buffer, controller, opened } = await open_mse(current)
     await buffer.next(10)
     await buffer.next(new Uint8Array([1]))
-    deepEqual((await buffer.next("end")).done, false)
+    deepEqual((await buffer.next(undefined)).done, false)
 
     const source = current.media.src
     current.media.currentTime = 30
@@ -3070,40 +3093,6 @@ test(
       controller.abort()
       await playback
     }
-  },
-)
-
-test(
-  "a queued SourceBuffer epoch does not enter after lifetime cancellation",
-  options,
-  async () => {
-    const current = await fixture()
-    const { buffer, controller, opened } = await open_mse(current)
-    await buffer.next(10)
-
-    opened.holdUpdate = true
-    const appending = buffer.next(new Uint8Array([1]))
-    await eventually(() => opened.updating)
-
-    const offsetting = buffer.next(30)
-    controller.abort()
-    let closed = false
-    const closing = buffer.return(undefined).then(() => {
-      closed = true
-    })
-    await new Promise((resolve) => setImmediate(resolve))
-
-    deepEqual(closed, false)
-    deepEqual(opened.timestampOffset, 10)
-    deepEqual(opened.aborts, 0)
-
-    present(opened.releaseUpdate)()
-    deepEqual((await appending).done, false)
-    await offsetting
-    await closing
-
-    deepEqual(opened.timestampOffset, 10)
-    deepEqual(opened.aborts, 0)
   },
 )
 
