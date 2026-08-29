@@ -48,7 +48,7 @@ const MEDIA_EVENTS =
   )
 
 const media = document.querySelector("video, audio") as HTMLMediaElement
-const subtitle = document.querySelector("#subtitle") as HTMLTrackElement | null
+const subtitle = document.querySelector<HTMLTrackElement>("#subtitle")
 const form = document.querySelector("form") as HTMLFormElement
 const time_input = form.elements.namedItem("t") as HTMLInputElement
 const first_event = (
