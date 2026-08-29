@@ -165,12 +165,11 @@ export const media_state = async function* (
   let previous = media_snapshot(media)
   let target = { position, restart: false }
   let applied_target = target
-  let pending_seek:
-    | { target: MediaTarget; acknowledged: boolean }
-    | undefined = { target, acknowledged: false }
+  let pending_seek: { target: MediaTarget; acknowledged: boolean } | undefined =
+    { target, acknowledged: false }
   let failure: unknown | undefined
 
-  const state: MediaState = {
+  const state = {
     seek: (): void => {
       pending_seek = { target, acknowledged: false }
       media.currentTime = target.position
@@ -186,7 +185,7 @@ export const media_state = async function* (
     get target(): MediaTarget {
       return target
     },
-  }
+  } satisfies MediaState
 
   if (signal.aborted) {
     return
@@ -208,10 +207,7 @@ export const media_state = async function* (
         aligned(current.time, pending_seek.target.position)
           ? pending_seek
           : undefined
-      if (
-        (event.type === "seeking" || event.type === "seeked") &&
-        owned_seek
-      ) {
+      if ((event.type === "seeking" || event.type === "seeked") && owned_seek) {
         owned_seek.acknowledged = true
       }
       if (current.seeking && owned_seek === undefined) {
