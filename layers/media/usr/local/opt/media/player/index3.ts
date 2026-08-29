@@ -16,15 +16,15 @@ import {
   source_url,
   start_page,
 } from "./page.ts"
-import { abortion, delay, logical_stream } from "./util.ts"
+import { abortion, delay, interleave, logical_stream } from "./util.ts"
 
 const BUFFER = { BEHIND: 30, LO: 45, HI: 60 }
 const RETRY_DELAY = 1_000
-const CHANGE = Symbol()
 const DONE = Symbol()
 const REPORT = Symbol()
 const STOP = Symbol()
-type Choice<T> = T | typeof CHANGE | typeof STOP
+const WAKE = Symbol()
+type Choice<T> = T | typeof STOP | typeof WAKE
 type ReportFailure = { [REPORT]: unknown }
 type MediaTarget = { position: number; restart: boolean }
 
@@ -40,8 +40,7 @@ const decide = async (signal: AbortSignal): Promise<void> => {
     signal: lifetime.signal,
   })
   const states = media_states(media, lifetime.signal)
-  let observed: Promise<IteratorResult<MediaState, unknown>> | undefined
-  let ready: IteratorResult<MediaState, unknown> | undefined
+  const next_state = interleave(states)
   let current = states.read()
   let target = { position: page_position(), restart: false }
   let pending_seek: { target: MediaTarget; acknowledged: boolean } | undefined =
@@ -57,31 +56,19 @@ const decide = async (signal: AbortSignal): Promise<void> => {
     failure = undefined
     return error
   }
-  const observe = ({ current: latest, observations }: MediaState): void => {
+  const observe = ({ current: latest, derived }: MediaState): void => {
     current = latest
-    if (observations.length === 0) return
-
-    let ended = false
-    let moved = false
+    const { ended, failure: media_failure, moved, seeks } = derived
+    failure ??= media_failure
     let retargeted = false
-    for (const [snapshot, event] of observations) {
-      const { error, seeking, time } = snapshot
-      const seek_event = event.type === "seeking" || event.type === "seeked"
-      ended ||= event.type === "ended"
-      moved ||= event.type === "timeupdate" || seek_event
-      if (
-        event.type === "error" &&
-        error !== undefined &&
-        error.code !== MediaError.MEDIA_ERR_ABORTED
-      ) {
-        failure ??= error
-      }
+    for (const [snapshot] of seeks) {
+      const { seeking, time } = snapshot
       const owned_seek =
         pending_seek !== undefined &&
         aligned(time, pending_seek.target.position)
           ? pending_seek
           : undefined
-      if (seek_event && owned_seek) {
+      if (owned_seek) {
         owned_seek.acknowledged = true
       }
       if (seeking && owned_seek === undefined) {
@@ -128,63 +115,36 @@ const decide = async (signal: AbortSignal): Promise<void> => {
     }
   }
 
-  const select = async <T>(
+  const wait = async <T>(
     work?: Promise<T>,
-    interrupted: () => boolean = () => false,
+    until: () => boolean = () => false,
   ): Promise<Choice<T>> => {
     for (;;) {
-      const observation = (observed ??= states.next().then((value) => {
-        ready = value
-        return value
-      }))
-      let selected: T | undefined
-      let worked = false
-      if (ready === undefined && work !== undefined) {
-        const winner = await Promise.race([
-          observation,
-          work.then(
-            (value) => {
-              current = states.read()
-              return { value }
-            },
-            (error) => {
-              current = states.read()
-              throw error
-            },
-          ),
-        ])
-        if ("value" in winner) {
-          selected = winner.value as T
-          worked = true
-        }
-      } else if (ready === undefined) {
-        await observation
-      }
-      if (ready !== undefined) {
-        const next = ready
-        ready = undefined
-        observed = undefined
-        if (next.done) {
+      const selected = await next_state(work)
+      if (selected.kind === "source") {
+        if (selected.result.done) {
           return STOP
         }
-        observe(next.value)
-        if (interrupted()) {
-          return CHANGE
+        observe(selected.result.value)
+        if (until()) {
+          return WAKE
         }
         continue
       }
-      if (worked) {
-        return selected as T
+      current = states.read()
+      if (selected.result.status === "rejected") {
+        throw selected.result.reason
       }
+      return selected.result.value
     }
   }
   const pull = async <T, R>(
     work: Promise<IteratorResult<T, R>>,
     done: typeof DONE | typeof STOP = STOP,
-    interrupted: () => boolean = () => false,
-  ): Promise<T | typeof CHANGE | typeof DONE | typeof STOP> => {
-    const choice = await select(work, interrupted)
-    return choice === STOP || choice === CHANGE
+    until: () => boolean = () => false,
+  ): Promise<T | typeof DONE | typeof STOP | typeof WAKE> => {
+    const choice = await wait(work, until)
+    return choice === STOP || choice === WAKE
       ? choice
       : choice.done
         ? done
@@ -192,11 +152,11 @@ const decide = async (signal: AbortSignal): Promise<void> => {
   }
   const handoff = async <T>(
     work: Promise<T>,
-    interrupted: () => boolean,
+    until: () => boolean,
   ): Promise<Choice<T>> => {
-    const choice = await select(work, interrupted)
-    if (choice === STOP || choice === CHANGE) return choice
-    return (await select(Promise.resolve())) === STOP ? STOP : choice
+    const choice = await wait(work, until)
+    if (choice === STOP || choice === WAKE) return choice
+    return (await wait(Promise.resolve())) === STOP ? STOP : choice
   }
 
   const report = (error: unknown): void => {
@@ -219,7 +179,7 @@ const decide = async (signal: AbortSignal): Promise<void> => {
         const opening = sources.next()
         seek(target)
         const opened = await pull(opening)
-        if (opened === STOP || opened === CHANGE || opened === DONE) return
+        if (opened === STOP || opened === WAKE || opened === DONE) return
         const [source, create_buffer] = opened
         const duration = Number(media.dataset["duration"])
         if (duration > 0) {
@@ -242,7 +202,7 @@ const decide = async (signal: AbortSignal): Promise<void> => {
           () => failure !== undefined || (target !== attempt && target.restart),
         )
         if (waited === STOP) return
-        if (waited === CHANGE) {
+        if (waited === WAKE) {
           take_failure()
         }
         continue
@@ -272,7 +232,7 @@ const decide = async (signal: AbortSignal): Promise<void> => {
         request: for (;;) {
           retarget(start)
           while (play_ahead(current, start) >= BUFFER.LO) {
-            const demanded = await select(
+            const demanded = await wait(
               undefined,
               () => changed(start) || play_ahead(current, start) < BUFFER.LO,
             )
@@ -295,7 +255,7 @@ const decide = async (signal: AbortSignal): Promise<void> => {
             }
 
             for (;;) {
-              let read: Uint8Array | typeof CHANGE | typeof DONE | typeof STOP
+              let read: Uint8Array | typeof DONE | typeof STOP | typeof WAKE
               try {
                 read = await pull(request.next(), DONE, () => changed(frontier))
               } catch (error) {
@@ -303,12 +263,12 @@ const decide = async (signal: AbortSignal): Promise<void> => {
                 break
               }
               if (read === STOP) return
-              if (read === CHANGE) {
+              if (read === WAKE) {
                 continue request
               }
               if (read === DONE) {
                 if ((await pull(buffer.next(undefined))) === STOP) return
-                const wake = await select(undefined, () => changed(frontier))
+                const wake = await wait(undefined, () => changed(frontier))
                 if (wake === STOP) return
                 continue request
               }

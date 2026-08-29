@@ -2,7 +2,7 @@ import { deepEqual, ok } from "node:assert/strict"
 import { getEventListeners } from "node:events"
 import nodeTest from "node:test"
 
-import { media_events } from "./media.ts"
+import { media_events, media_states } from "./media.ts"
 
 const options = { concurrency: true, timeout: 2_000 }
 
@@ -144,11 +144,51 @@ const cases = [
 
       const observed = await pending
       ok(!observed.done)
-      const [[snapshot]] = observed.value
+      const observation = observed.value.at(0)
+      ok(observation)
+      const [snapshot] = observation
       ok(snapshot)
       media.buffered.values[0]?.splice(0, 2, 30, 40)
       deepEqual(snapshot.buffered, [[10, 20]])
       await events.return?.()
+    },
+  },
+  {
+    name: "media state derives decision inputs from each event batch",
+    run: async () => {
+      const owner = new AbortController()
+      const media = new Media()
+      const states = media_states(
+        media as unknown as HTMLMediaElement,
+        owner.signal,
+      )
+      await states.next()
+      const pending = states.next()
+
+      media.currentTime = 12
+      media.seeking = true
+      media.dispatchEvent(new Event("seeking"))
+      media.dispatchEvent(new Event("timeupdate"))
+      media.ended = true
+      media.dispatchEvent(new Event("ended"))
+
+      const observed = await pending
+      ok(!observed.done)
+      deepEqual(
+        {
+          ended: observed.value.derived.ended,
+          failure: observed.value.derived.failure,
+          moved: observed.value.derived.moved,
+          seeks: observed.value.derived.seeks.map(([, event]) => event.type),
+        },
+        {
+          ended: true,
+          failure: undefined,
+          moved: true,
+          seeks: ["seeking"],
+        },
+      )
+      await states.return?.()
     },
   },
 ] as const

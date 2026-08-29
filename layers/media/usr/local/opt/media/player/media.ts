@@ -30,9 +30,15 @@ export type MediaObservation = readonly [
   snapshot: MediaSnapshot,
   event: MediaEvent,
 ]
+export type MediaDerived = Readonly<{
+  ended: boolean
+  failure: MediaError | undefined
+  moved: boolean
+  seeks: readonly MediaObservation[]
+}>
 export type MediaState = Readonly<{
   current: MediaSnapshot
-  observations: readonly MediaObservation[]
+  derived: MediaDerived
 }>
 export type MediaStates = AsyncIteratorObject<MediaState> & {
   read: () => MediaSnapshot
@@ -81,10 +87,7 @@ export const buffered_end = (
   position: number,
 ): number | undefined => buffered_range(state, position, true)?.at(1)
 
-export const play_ahead = (
-  state: MediaSnapshot,
-  frontier: number,
-): number => {
+export const play_ahead = (state: MediaSnapshot, frontier: number): number => {
   const end = buffered_end(state, state.time)
   const frontier_end = buffered_end(state, frontier)
   return end !== undefined && aligned(end, frontier_end ?? NaN)
@@ -103,6 +106,22 @@ const media_snapshot = (media: HTMLMediaElement): MediaSnapshot => ({
   metadata: media.readyState >= media.HAVE_METADATA,
   seeking: media.seeking,
   time: media.currentTime,
+})
+
+const derive = (observations: readonly MediaObservation[]): MediaDerived => ({
+  ended: observations.some(([, event]) => event.type === "ended"),
+  failure: observations.find(
+    ([{ error }, event]) =>
+      event.type === "error" &&
+      error !== undefined &&
+      error.code !== MediaError.MEDIA_ERR_ABORTED,
+  )?.[0].error,
+  moved: observations.some(([, event]) =>
+    ["seeked", "seeking", "timeupdate"].includes(event.type),
+  ),
+  seeks: observations.filter(([, event]) =>
+    ["seeked", "seeking"].includes(event.type),
+  ),
 })
 
 export const media_events = async function* (
@@ -163,14 +182,25 @@ export const media_states = (
       return
     }
 
-    yield { current: read(), observations: [] }
-    for await (const observations of media_events(media, a.signal)) {
-      const current = observations.at(-1)?.[0]
-      if (current !== undefined) {
-        yield { current, observations }
+    const events = media_events(media, a.signal)
+    let pending = events.next()
+    try {
+      yield { current: read(), derived: derive([]) }
+      for (;;) {
+        const next = await pending
+        if (next.done) {
+          return
+        }
+        pending = events.next()
+        const current = next.value.at(-1)?.[0]
+        if (current !== undefined) {
+          yield { current, derived: derive(next.value) }
+        }
       }
+    } finally {
+      a[Symbol.dispose]()
+      await events.return?.()
     }
-    return
   })()
   return Object.assign(states, { read })
 }
