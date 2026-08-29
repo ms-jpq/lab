@@ -1,5 +1,4 @@
-import type { EventOf } from "./util.ts"
-import { abortion } from "./util.ts"
+import { abortion, type EventOf } from "./util.ts"
 
 const POSITION_TOLERANCE = 0.1
 const END_TOLERANCE = 0.5
@@ -93,29 +92,35 @@ export const observe_media = async function* (
   media: HTMLMediaElement,
   signal: AbortSignal,
 ): AsyncIteratorObject<MediaEvent[]> {
-  const a = abortion(signal)
-  let acc = new Array<MediaEvent>()
+  using a = abortion(signal)
+
+  let events = new Array<MediaEvent>()
   let fut = Promise.withResolvers()
 
-  const push = (event: MediaEvent) => {
-    acc.push(event)
+  const aborted = (): void => {
+    events = []
     fut.resolve(undefined)
   }
-
+  const push = (event: MediaEvent) => {
+    events.push(event)
+    fut.resolve(undefined)
+  }
+  a.signal.addEventListener("abort", aborted, { once: true })
+  if (a.signal.aborted) {
+    return
+  }
   for (const type of EVENTS) {
     media.addEventListener(type, push, { signal: a.signal })
   }
-  try {
-    for (;;) {
-      await fut.promise
-      fut = Promise.withResolvers()
-      const batch = acc
-      acc = []
-      yield batch
+
+  for (;;) {
+    await fut.promise
+    if (a.signal.aborted) {
+      return
     }
-  } finally {
-    for (const type of EVENTS) {
-      media.removeEventListener(type, push)
-    }
+    const batch = events
+    events = []
+    fut = Promise.withResolvers()
+    yield batch
   }
 }
