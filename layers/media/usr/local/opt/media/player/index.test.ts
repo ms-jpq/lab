@@ -50,10 +50,7 @@ type MseSource = EventTarget & {
 type TestMseSource = Omit<MseSource, "addSourceBuffer"> & {
   addSourceBuffer: (type: string) => TestMseBuffer
 }
-type Diagnostics = {
-  error: (error: unknown) => void
-  progress: () => void
-}
+type Reporter = (error: unknown) => void
 type Target = { position: number; restart: boolean; started: boolean }
 type SourcePage = {
   next: <T>(work?: Promise<T>) => Promise<symbol | T | undefined>
@@ -79,7 +76,7 @@ type PlayerTest = {
     buffer: {
       next: (operation: MseOperation) => Promise<IteratorResult<void>>
     },
-    failures: Diagnostics,
+    report: Reporter,
     page: SourcePage,
   ) => Promise<{ failure: unknown } | void>
   play_subtitle: (signal: AbortSignal) => Promise<void>
@@ -1286,6 +1283,34 @@ test(
   },
 )
 
+test("each failed subtitle attempt is reported", options, async () => {
+  const current = await fixture()
+  const clock = frozenClock(current.context)
+  const controller = new AbortController()
+  const playback = current.context.player_test.play_subtitle(controller.signal)
+  const failures = [new Event("error"), new Event("error")]
+
+  try {
+    await eventually(() => current.subtitle.sources.length === 1)
+    current.subtitle.dispatchEvent(failures[0])
+    await eventually(() => current.errors.length === 1 && clock.length === 1)
+
+    clock.advance(0)
+    await eventually(() => current.subtitle.sources.length === 2)
+    current.subtitle.dispatchEvent(failures[1])
+    await eventually(() => current.errors.length === 2 && clock.length === 2)
+
+    deepEqual(
+      current.errors.map(([error]) => error),
+      failures,
+    )
+  } finally {
+    controller.abort()
+    await playback
+    clock.dispose()
+  }
+})
+
 test("a pre-cancelled subtitle owner starts no request", options, async () => {
   const current = await fixture()
   const controller = new AbortController()
@@ -2006,7 +2031,7 @@ test(
     }
     const playback = current.context.player_test.play_source(
       buffer,
-      { error: () => {}, progress: () => {} },
+      () => {},
       page.page,
     )
     try {
@@ -2090,7 +2115,7 @@ for (const { name, ranges } of unrelatedHighWaterCases) {
     const page = controlledPage(110, current.context.player_test.PULSE)
     const playback = current.context.player_test.play_source(
       { next: async () => ({ done: false as const, value: undefined }) },
-      { error: () => {}, progress: () => {} },
+      () => {},
       page.page,
     )
 
@@ -2216,7 +2241,7 @@ for (const { expected, name, range, target } of acquisitionPolicyCases) {
     current.media.currentTime = 40
     const playback = current.context.player_test.play_source(
       buffer,
-      { error: () => {}, progress: () => {} },
+      () => {},
       page.page,
     )
     try {
@@ -2290,7 +2315,7 @@ for (const { aborted, expected, name, target } of pendingFetchSeekCases) {
       {
         next: async () => ({ done: false as const, value: undefined }),
       },
-      { error: () => {}, progress: () => {} },
+      () => {},
       page.page,
     )
     try {
@@ -2345,7 +2370,7 @@ test(
       {
         next: async () => ({ done: false as const, value: undefined }),
       },
-      { error: () => {}, progress: () => {} },
+      () => {},
       page.page,
     )
     try {
@@ -2435,7 +2460,7 @@ for (const { expected, name, targets } of enteredAppendSeekCases) {
     opened.holdUpdate = true
     const playback = current.context.player_test.play_source(
       buffer,
-      { error: () => {}, progress: () => {} },
+      () => {},
       page.page,
     )
     try {
@@ -2533,7 +2558,7 @@ test(
     const page = controlledPage(40, current.context.player_test.PULSE)
     const playback = current.context.player_test.play_source(
       buffer,
-      { error: () => {}, progress: () => {} },
+      () => {},
       page.page,
     )
     try {
@@ -2961,7 +2986,7 @@ test(
     }
     const playback = current.context.player_test.play_source(
       buffer,
-      { error: () => {}, progress: () => {} },
+      () => {},
       page.page,
     )
     try {
@@ -3983,17 +4008,20 @@ test(
 )
 
 test(
-  "a contiguous request outage reports once across retries",
+  "a contiguous request outage reports every failed request",
   options,
   async () => {
     const current = await fixture()
     const succeeded = Promise.withResolvers<void>()
     const clock = frozenClock(current.context)
+    const failures: Error[] = []
     const requests: string[] = []
     current.context.fetch = async (url, { signal }) => {
       requests.push(String(url))
       if (requests.length <= 3) {
-        throw new Error("source unavailable")
+        const failure = new Error("source unavailable")
+        failures.push(failure)
+        throw failure
       }
       succeeded.resolve()
       return liveResponse(signal)
@@ -4016,7 +4044,10 @@ test(
         ["40", "40", "40", "40"],
       )
       deepEqual(current.sources.length, 1)
-      deepEqual(current.errors.length, 1)
+      deepEqual(
+        current.errors.map(([error]) => error),
+        failures,
+      )
     } finally {
       controller.abort()
       await playback
@@ -4026,7 +4057,7 @@ test(
 )
 
 test(
-  "successful buffered progress starts a new request failure storm",
+  "request failures are reported across successful buffered progress",
   options,
   async () => {
     const current = await fixture()
@@ -4087,7 +4118,7 @@ test(
 )
 
 test(
-  "a contiguous MSE setup outage reports once and keeps retrying",
+  "a contiguous MSE setup outage reports every failed attempt",
   options,
   async () => {
     const current = await fixture()
@@ -4128,7 +4159,7 @@ test(
       deepEqual(current.sources.length, 4)
       deepEqual(
         current.errors.map(([error]) => error),
-        [failures[0]],
+        failures,
       )
     } finally {
       controller.abort()
@@ -4722,7 +4753,7 @@ test(
 )
 
 test(
-  "parser progress without a buffered frontier stays in one failure storm",
+  "parser progress without a buffered frontier still reports each failure",
   options,
   async () => {
     const current = await fixture()
@@ -4787,7 +4818,7 @@ test(
 
       deepEqual(
         current.errors.map(([error]) => error),
-        [firstFailure, recoveredFailure],
+        [firstFailure, parserFailure, recoveredFailure],
       )
       deepEqual(requests, 3)
       deepEqual(current.sources.length, 1)
