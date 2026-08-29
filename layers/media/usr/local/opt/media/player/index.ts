@@ -1,5 +1,5 @@
 import { media_sources, type Mse, type MseOperation } from "./mse.ts"
-import { logical_stream } from "./util.ts"
+import { first, logical_stream } from "./util.ts"
 
 type Failure = { failure: unknown }
 type Result<T> = Failure | { value: T }
@@ -54,31 +54,6 @@ const media = document.querySelector("video, audio") as HTMLMediaElement
 const subtitle = document.querySelector("#subtitle") as HTMLTrackElement | null
 const form = document.querySelector("form") as HTMLFormElement
 const time_input = form.elements.namedItem("t") as HTMLInputElement
-const first_event = (
-  target: EventTarget,
-  signal: AbortSignal,
-  ...types: string[]
-): Promise<Event | undefined> => {
-  const { promise, resolve } = Promise.withResolvers<Event | undefined>()
-  const close = (event?: Event) => {
-    signal.removeEventListener("abort", cancelled)
-    for (const type of types) {
-      target.removeEventListener(type, observe)
-    }
-    resolve(event)
-  }
-  const observe = (event: Event) => close(event)
-  const cancelled = () => close()
-  for (const type of types) {
-    target.addEventListener(type, observe)
-  }
-  signal.addEventListener("abort", cancelled, { once: true })
-  if (signal.aborted) {
-    cancelled()
-  }
-  return promise
-}
-
 const delay = (signal: AbortSignal, milliseconds: number): Promise<boolean> => {
   if (signal.aborted) {
     return Promise.resolve(false)
@@ -437,7 +412,7 @@ const play_subtitle = async (signal: AbortSignal): Promise<void> => {
   }
   const failures = diagnostics()
   while (!signal.aborted) {
-    const loaded = first_event(subtitle, signal, "load", "error")
+    const loaded = first(signal, subtitle, "load", "error")
     subtitle.src = source_url(subtitle, 0)
     const event = await loaded
     if (!event || event.type === "load") {
@@ -786,13 +761,10 @@ const main = async (): Promise<void> => {
   persist_position(initial_position)
   for (;;) {
     const page = new AbortController()
-    await first_event(window, page.signal, "pageshow")
+    await first(page.signal, window, "pageshow")
     const playback = playback_page(page.signal)
     try {
-      await Promise.race([
-        first_event(window, page.signal, "pagehide"),
-        playback,
-      ])
+      await Promise.race([first(page.signal, window, "pagehide"), playback])
     } finally {
       page.abort()
       await playback
