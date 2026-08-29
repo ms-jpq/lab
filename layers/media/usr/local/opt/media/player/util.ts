@@ -152,7 +152,7 @@ const stream = async function* (
   request: Request,
 ): AsyncIteratorObject<Uint8Array<ArrayBuffer>> {
   using a = abortion(request.signal)
-  const response = await fetch(new Request(request, { signal: a.signal }))
+  const response = await fetch(request, { signal: a.signal })
 
   if (!response.ok) {
     throw new Error([response.status, response.statusText].join(" "), {
