@@ -192,7 +192,7 @@ export const media_state = async function* (
 
   yield state
   for await (const batch of media_events(media, signal)) {
-    const current = batch.at(-1)?.at(0)
+    const current = batch.at(-1)?.[0]
     if (current === undefined) {
       continue
     }
@@ -204,6 +204,7 @@ export const media_state = async function* (
       const seek_event = event.type === "seeking" || event.type === "seeked"
       ended ||= event.type === "ended"
       moved ||= event.type === "timeupdate" || seek_event
+
       if (
         event.type === "error" &&
         error !== null &&
