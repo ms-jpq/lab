@@ -1,4 +1,4 @@
-import { first } from "./util.ts"
+import { once } from "./util.ts"
 
 export type PlayerPage = {
   media: HTMLMediaElement
@@ -33,16 +33,13 @@ export const player_page = (() => {
     playback: (signal: AbortSignal) => Promise<void>,
   ): Promise<never> => {
     for (;;) {
-      const lifetime = new AbortController()
-      await first(lifetime.signal, window, "pageshow")
-      const running = playback(lifetime.signal)
+      const root = new AbortController()
+      await once(root.signal, window, "pageshow")
+      const running = playback(root.signal)
       try {
-        await Promise.race([
-          first(lifetime.signal, window, "pagehide"),
-          running,
-        ])
+        await Promise.race([once(root.signal, window, "pagehide"), running])
       } finally {
-        lifetime.abort()
+        root.abort()
         await running
       }
     }
@@ -50,10 +47,5 @@ export const player_page = (() => {
 
   form.onsubmit = submit
 
-  return {
-    media,
-    subtitle,
-    time_input,
-    run,
-  }
+  return { media, subtitle, time_input, run }
 })() satisfies PlayerPage
