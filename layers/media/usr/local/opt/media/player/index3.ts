@@ -16,7 +16,7 @@ import {
   source_url,
   start_page,
 } from "./page.ts"
-import { abortion, delay, logical_stream } from "./util.ts"
+import { abortion, delay, logical_stream, readableIterator } from "./util.ts"
 
 const BUFFER = { BEHIND: 30, LO: 45, HI: 60 }
 const RETRY_DELAY = 1_000
@@ -25,14 +25,54 @@ const REPORT = Symbol()
 const STOP = Symbol()
 const WAKE = Symbol()
 type Choice<T> = T | typeof STOP | typeof WAKE
+type Handoff<T> = typeof STOP | { interrupted: boolean; value: T }
 type ReportFailure = { [REPORT]: unknown }
 type MediaTarget = { position: number; restart: boolean }
-type RaceResult<T, R> =
-  | { kind: "source"; result: IteratorResult<T> }
-  | { kind: "work"; result: PromiseSettledResult<R> }
+type Work<T> = Readonly<{ result: Promise<PromiseSettledResult<T>> }>
+type WorkStream = Disposable & {
+  events: AsyncIteratorObject<Work<unknown>>
+  submit: <T>(promise: Promise<T>) => Work<T>
+}
 
 const stream_position = (value: number): number =>
   Math.round(value * 1_000) / 1_000
+
+const work_stream = (signal: AbortSignal): WorkStream => {
+  let controller: ReadableStreamDefaultController<Work<unknown>>
+  let open = true
+  const stream = new ReadableStream<Work<unknown>>({
+    start: (value) => {
+      controller = value
+    },
+    cancel: () => {
+      open = false
+    },
+  })
+  const close = (): void => {
+    if (!open) return
+    open = false
+    signal.removeEventListener("abort", close)
+    controller.close()
+  }
+  signal.addEventListener("abort", close, { once: true })
+  if (signal.aborted) close()
+
+  return {
+    events: readableIterator(stream),
+    submit: <T>(promise: Promise<T>): Work<T> => {
+      const result = promise.then(
+        (value) => ({ status: "fulfilled", value }) as const,
+        (reason) => ({ status: "rejected", reason }) as const,
+      )
+      const work = { result }
+      void result.then(() => {
+        if (open) controller.enqueue(work)
+      })
+      return work
+    },
+    [Symbol.dispose]: close,
+  }
+}
 
 const decide = async (signal: AbortSignal): Promise<void> => {
   using lifetime = abortion(signal)
@@ -42,44 +82,11 @@ const decide = async (signal: AbortSignal): Promise<void> => {
     mime_type: media.dataset["mseType"] as string,
     signal: lifetime.signal,
   })
-  const states = media_states(media, lifetime.signal)
-  let ready: RaceResult<MediaState, never> | undefined
-  const read_state = () =>
-    states.next().then((result) => {
-      ready = { kind: "source", result }
-      return ready
-    })
-  let pending_state = read_state()
-  const next_state = async <T>(work?: Promise<T>): Promise<RaceResult<MediaState, T>> => {
-    let selected: RaceResult<MediaState, T> =
-      work === undefined
-        ? await pending_state
-        : await Promise.race([
-            pending_state,
-            work.then(
-              (value) =>
-                ({
-                  kind: "work",
-                  result: { status: "fulfilled", value },
-                }) as const,
-              (reason) =>
-                ({
-                  kind: "work",
-                  result: { status: "rejected", reason },
-                }) as const,
-            ),
-          ])
-    if (selected.kind === "work") {
-      await Promise.resolve()
-      selected = ready ?? selected
-    }
-    if (selected.kind === "source" && !selected.result.done) {
-      ready = undefined
-      pending_state = read_state()
-    }
-    return selected
-  }
-  let current = states.read()
+  using work = work_stream(lifetime.signal)
+  const states = media_states(media, lifetime.signal, work.events)
+  const initial = await states.next()
+  if (initial.done) return
+  let current = initial.value.current
   let target = { position: page_position(), restart: false }
   let pending_seek: { target: MediaTarget; acknowledged: boolean } | undefined =
     { target, acknowledged: false }
@@ -154,26 +161,28 @@ const decide = async (signal: AbortSignal): Promise<void> => {
   }
 
   const wait = async <T>(
-    work?: Promise<T>,
+    promise?: Promise<T>,
     until: () => boolean = () => false,
   ): Promise<Choice<T>> => {
+    const submitted = promise === undefined ? undefined : work.submit(promise)
     for (;;) {
-      const selected = await next_state(work)
-      if (selected.kind === "source") {
-        if (selected.result.done) {
-          return STOP
-        }
-        observe(selected.result.value)
+      const selected = await states.next()
+      if (selected.done) return STOP
+      const state = selected.value
+      current = state.current
+      if (!("input" in state)) {
+        observe(state)
         if (until()) {
           return WAKE
         }
         continue
       }
-      current = states.read()
-      if (selected.result.status === "rejected") {
-        throw selected.result.reason
+      if (submitted === undefined || state.input !== submitted) continue
+      const result = await submitted.result
+      if (result.status === "rejected") {
+        throw result.reason
       }
-      return selected.result.value
+      return result.value
     }
   }
   const pull = async <T, R>(
@@ -189,12 +198,30 @@ const decide = async (signal: AbortSignal): Promise<void> => {
         : choice.value
   }
   const handoff = async <T>(
-    work: Promise<T>,
+    promise: Promise<T>,
     until: () => boolean,
-  ): Promise<Choice<T>> => {
-    const choice = await wait(work, until)
-    if (choice === STOP || choice === WAKE) return choice
-    return (await wait(Promise.resolve())) === STOP ? STOP : choice
+    interrupt: () => void = () => undefined,
+  ): Promise<Handoff<T>> => {
+    const submitted = work.submit(promise)
+    let interrupted = false
+    for (;;) {
+      const selected = await states.next()
+      if (selected.done) return STOP
+      const state = selected.value
+      current = state.current
+      if (!("input" in state)) {
+        observe(state)
+        if (!interrupted && until()) {
+          interrupted = true
+          interrupt()
+        }
+        continue
+      }
+      if (state.input !== submitted) continue
+      const result = await submitted.result
+      if (result.status === "rejected") throw result.reason
+      return { interrupted, value: result.value }
+    }
   }
 
   const report = (error: unknown): void => {
@@ -235,12 +262,14 @@ const decide = async (signal: AbortSignal): Promise<void> => {
       if (setup_failed) {
         report(setup_failure)
         using timer = abortion(lifetime.signal)
+        const retry = delay(timer.signal, RETRY_DELAY)
         const waited = await handoff(
-          delay(timer.signal, RETRY_DELAY),
+          retry,
           () => failure !== undefined || (target !== attempt && target.restart),
+          timer[Symbol.dispose],
         )
         if (waited === STOP) return
-        if (waited === WAKE) {
+        if (waited.interrupted && !waited.value) {
           take_failure()
         }
         continue
@@ -332,8 +361,10 @@ const decide = async (signal: AbortSignal): Promise<void> => {
             report(request_failure)
             start = stream_position(buffered_end(current, frontier) ?? frontier)
             using timer = abortion(lifetime.signal)
-            const waited = await handoff(delay(timer.signal, RETRY_DELAY), () =>
-              changed(start),
+            const waited = await handoff(
+              delay(timer.signal, RETRY_DELAY),
+              () => changed(start),
+              timer[Symbol.dispose],
             )
             if (waited === STOP) return
           }
