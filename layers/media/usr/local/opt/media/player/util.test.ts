@@ -19,11 +19,13 @@ const cases = [
     run: async (context: TestContext) => {
       context.mock.timers.enable({ apis: ["setTimeout"] })
       const owner = new AbortController()
+      const removed = context.mock.method(owner.signal, "removeEventListener")
       const elapsed = delay(owner.signal, 100)
 
       context.mock.timers.tick(100)
 
       deepEqual(await elapsed, true)
+      deepEqual(removed.mock.callCount(), 1)
     },
   },
   {
@@ -48,9 +50,11 @@ const cases = [
       const scheduled = context.mock.method(globalThis, "setTimeout")
       const owner = new AbortController()
       owner.abort()
+      const added = context.mock.method(owner.signal, "addEventListener")
 
       deepEqual(await delay(owner.signal, 100), false)
       deepEqual(scheduled.mock.callCount(), 0)
+      deepEqual(added.mock.callCount(), 0)
     },
   },
   {

@@ -1,4 +1,14 @@
-import { aligned, buffered_end, buffered_position, media_snapshot, observe_media, play_ahead, playable_position, type MediaEvent, type MediaSnapshot } from "./media.ts"
+import {
+  aligned,
+  buffered_end,
+  buffered_position,
+  media_snapshot,
+  observe_media,
+  play_ahead,
+  playable_position,
+  type MediaEvent,
+  type MediaSnapshot,
+} from "./media.ts"
 import { media_sources, type Mse, type MseOperation } from "./mse.ts"
 import { player_page } from "./page.ts"
 import { abortion, delay, first, logical_stream } from "./util.ts"
@@ -330,25 +340,6 @@ const request_stream = (time: number): RequestStream => {
   return owned_stream(stream, () => request[Symbol.dispose]())
 }
 
-const play_subtitle = async (signal: AbortSignal): Promise<void> => {
-  if (!subtitle) {
-    return
-  }
-  const failures = diagnostics()
-  while (!signal.aborted) {
-    const loaded = first(signal, subtitle, "load", "error")
-    subtitle.src = source_url(subtitle, 0)
-    const event = await loaded
-    if (!event || event.type === "load") {
-      return
-    }
-    failures.error(event)
-    if (!(await delay(signal, RETRY_DELAY))) {
-      return
-    }
-  }
-}
-
 const wait_until = async <T, R>(
   page: PageReader,
   work: Promise<T> | undefined,
@@ -367,19 +358,15 @@ const retry_when = async (
   interrupted: () => boolean,
 ): Promise<boolean> => {
   using timer = abortion()
-  return await wait_until(
-    page,
-    delay(timer.signal, RETRY_DELAY),
-    (change) => {
-      if (change === undefined) {
-        return false
-      }
-      if (change !== PULSE || interrupted()) {
-        return true
-      }
-      return WAIT
-    },
-  )
+  return await wait_until(page, delay(timer.signal, RETRY_DELAY), (change) => {
+    if (change === undefined) {
+      return false
+    }
+    if (change !== PULSE || interrupted()) {
+      return true
+    }
+    return WAIT
+  })
 }
 
 const wait_for_demand = (
@@ -647,6 +634,25 @@ const play_media = async (signal: AbortSignal): Promise<void> => {
       await sources.return?.()
     } finally {
       await page.return()
+    }
+  }
+}
+
+const play_subtitle = async (signal: AbortSignal): Promise<void> => {
+  if (!subtitle) {
+    return
+  }
+  const failures = diagnostics()
+  while (!signal.aborted) {
+    const loaded = first(signal, subtitle, "load", "error")
+    subtitle.src = source_url(subtitle, 0)
+    const event = await loaded
+    if (!event || event.type === "load") {
+      return
+    }
+    failures.error(event)
+    if (!(await delay(signal, RETRY_DELAY))) {
+      return
     }
   }
 }
