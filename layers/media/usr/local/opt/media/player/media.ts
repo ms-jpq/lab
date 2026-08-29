@@ -100,10 +100,14 @@ export const media_events = async function* (
 ): AsyncIteratorObject<MediaObservation[]> {
   using a = abortion(signal)
 
+  if (a.signal.aborted) {
+    return
+  }
+
   let events = new Array<MediaObservation>()
   let fut = Promise.withResolvers()
 
-  const aborted = (): void => {
+  const aborted = () => {
     events = []
     fut.resolve(undefined)
   }
@@ -112,19 +116,26 @@ export const media_events = async function* (
     fut.resolve(undefined)
   }
   a.signal.addEventListener("abort", aborted, { once: true })
-  for (const type of EVENTS) {
-    media.addEventListener(type, push, { signal: a.signal })
-  }
-
-  while (!a.signal.aborted) {
-    await fut.promise
-    if (a.signal.aborted) {
-      return
+  try {
+    for (const type of EVENTS) {
+      media.addEventListener(type, push)
     }
-    const batch = events
-    events = []
-    fut = Promise.withResolvers()
-    yield batch
+
+    while (!a.signal.aborted) {
+      await fut.promise
+      if (a.signal.aborted) {
+        return
+      }
+      const batch = events
+      events = []
+      fut = Promise.withResolvers()
+      yield batch
+    }
+  } finally {
+    a.signal.removeEventListener("abort", aborted)
+    for (const type of EVENTS) {
+      media.removeEventListener(type, push)
+    }
   }
   return
 }

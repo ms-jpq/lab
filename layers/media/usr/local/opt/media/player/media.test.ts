@@ -1,4 +1,5 @@
 import { deepEqual, ok } from "node:assert/strict"
+import { getEventListeners } from "node:events"
 import nodeTest from "node:test"
 
 import { media_events } from "./media.ts"
@@ -6,23 +7,12 @@ import { media_events } from "./media.ts"
 const options = { concurrency: true, timeout: 2_000 }
 
 class Media extends EventTarget {
-  deliveries = 0
-
-  override addEventListener(
-    type: string,
-    listener: EventListenerOrEventListenerObject | null,
-    options?: AddEventListenerOptions | boolean,
-  ): void {
-    const tracked = (event: Event): void => {
-      this.deliveries += 1
-      if (typeof listener === "function") {
-        listener.call(this, event)
-      } else {
-        listener?.handleEvent(event)
-      }
-    }
-    super.addEventListener(type, tracked, options)
-  }
+  readonly HAVE_METADATA = 1
+  currentTime = 0
+  ended = false
+  error: MediaError | null = null
+  readyState = 0
+  seeking = false
 }
 
 const fixture = (signal: AbortSignal) => {
@@ -85,7 +75,7 @@ const cases = [
 
       deepEqual(await events.next(), { done: true, value: undefined })
       media.dispatchEvent(new Event("progress"))
-      deepEqual(media.deliveries, 0)
+      deepEqual(getEventListeners(media, "progress").length, 0)
     },
   },
   {
@@ -99,9 +89,9 @@ const cases = [
       owner.abort()
 
       deepEqual(await pending, { done: true, value: undefined })
-      const deliveries = media.deliveries
+      deepEqual(getEventListeners(media, "timeupdate").length, 0)
       media.dispatchEvent(new Event("timeupdate"))
-      deepEqual(media.deliveries, deliveries)
+      deepEqual(await events.next(), { done: true, value: undefined })
     },
   },
   {
@@ -115,9 +105,8 @@ const cases = [
       ok(!received.done)
 
       deepEqual(await events.return?.(), { done: true, value: undefined })
-      const deliveries = media.deliveries
+      deepEqual(getEventListeners(media, "progress").length, 0)
       media.dispatchEvent(new Event("progress"))
-      deepEqual(media.deliveries, deliveries)
       deepEqual(await events.next(), { done: true, value: undefined })
     },
   },
