@@ -1,7 +1,7 @@
 import { aligned, buffered_end, buffered_position, media_snapshot, observe_media, play_ahead, playable_position, type MediaEvent, type MediaSnapshot } from "./media.ts"
 import { media_sources, type Mse, type MseOperation } from "./mse.ts"
 import { player_page } from "./page.ts"
-import { first, logical_stream } from "./util.ts"
+import { abortion, delay, first, logical_stream } from "./util.ts"
 
 type Failure = { failure: unknown }
 type Result<T> = Failure | { value: T }
@@ -46,22 +46,6 @@ const RETRY_DELAY = 1_000
 const POSITION = `media:position:${location.pathname}`
 const PAGE = crypto.randomUUID()
 const { media, subtitle, time_input } = player_page
-const delay = (signal: AbortSignal, milliseconds: number): Promise<boolean> => {
-  if (signal.aborted) {
-    return Promise.resolve(false)
-  }
-  const { promise, resolve } = Promise.withResolvers<boolean>()
-  const cancelled = () => {
-    clearTimeout(timeout)
-    resolve(false)
-  }
-  const timeout = setTimeout(() => {
-    signal.removeEventListener("abort", cancelled)
-    resolve(true)
-  }, milliseconds)
-  signal.addEventListener("abort", cancelled, { once: true })
-  return promise
-}
 
 const result = <T>(promise: Promise<T>): Promise<Result<T>> =>
   promise.then(
@@ -193,8 +177,7 @@ const selector = <T>(source: OwnedStream<T, void>) => {
 }
 
 const page_reader = (signal: AbortSignal, position: number): PageReader => {
-  const lifetime = new AbortController()
-  const page_signal = AbortSignal.any([signal, lifetime.signal])
+  const lifetime = abortion(signal)
   let target = { position, restart: false, started: false }
   let positioning: Target | undefined = target
   let failure: unknown | undefined = undefined
@@ -238,67 +221,72 @@ const page_reader = (signal: AbortSignal, position: number): PageReader => {
     }
     changed.resolve(true)
   }
-  page_signal.addEventListener("abort", () => changed.resolve(false), {
+  lifetime.signal.addEventListener("abort", () => changed.resolve(false), {
     once: true,
   })
-  observe_media(media, page_signal, observe)
+  observe_media(media, lifetime.signal, observe)
 
   const pulses = owned_stream(
     (async function* (): AsyncGenerator<typeof PULSE, void, void> {
-      let handled = target
-      yield PULSE
-      for (;;) {
-        if (!(await changed.promise) || page_signal.aborted) {
-          return
-        }
-        changed = Promise.withResolvers()
-        const moved =
-          current.time !== previous.time || current.seeking !== previous.seeking
-        const user_seek = target !== handled
-
-        if (user_seek) {
-          const playable = buffered_position(media, target.position)
-          target.position = playable ?? target.position
-          target.restart = playable === undefined
-          positioning =
-            target.restart || !aligned(current.time, target.position)
-              ? target
-              : undefined
-          handled = target
-          persist_position(target.position)
-        }
-
-        if (current.ended && !previous.ended) {
-          persist_position(0)
-        } else if (
-          !user_seek &&
-          positioning === undefined &&
-          moved &&
-          buffered_position(media, current.time) === current.time
-        ) {
-          persist_position(current.time)
-        }
-
-        if (positioning !== undefined) {
-          const playable = buffered_position(media, positioning.position)
-          if (playable !== undefined) {
-            positioning.position = playable
+      try {
+        let handled = target
+        yield PULSE
+        for (;;) {
+          if (!(await changed.promise) || lifetime.signal.aborted) {
+            return
           }
-          if (!current.seeking) {
-            const positioned = aligned(current.time, positioning.position)
-            if (!positioned && (current.metadata || playable !== undefined)) {
-              seek()
-            } else if (positioned && positioning.started) {
-              positioning = undefined
+          changed = Promise.withResolvers()
+          const moved =
+            current.time !== previous.time ||
+            current.seeking !== previous.seeking
+          const user_seek = target !== handled
+
+          if (user_seek) {
+            const playable = buffered_position(media, target.position)
+            target.position = playable ?? target.position
+            target.restart = playable === undefined
+            positioning =
+              target.restart || !aligned(current.time, target.position)
+                ? target
+                : undefined
+            handled = target
+            persist_position(target.position)
+          }
+
+          if (current.ended && !previous.ended) {
+            persist_position(0)
+          } else if (
+            !user_seek &&
+            positioning === undefined &&
+            moved &&
+            buffered_position(media, current.time) === current.time
+          ) {
+            persist_position(current.time)
+          }
+
+          if (positioning !== undefined) {
+            const playable = buffered_position(media, positioning.position)
+            if (playable !== undefined) {
+              positioning.position = playable
+            }
+            if (!current.seeking) {
+              const positioned = aligned(current.time, positioning.position)
+              if (!positioned && (current.metadata || playable !== undefined)) {
+                seek()
+              } else if (positioned && positioning.started) {
+                positioning = undefined
+              }
             }
           }
-        }
 
-        previous = current
-        yield PULSE
+          previous = current
+          yield PULSE
+        }
+      } finally {
+        lifetime[Symbol.dispose]()
       }
     })(),
-    () => lifetime.abort(),
+    () => lifetime[Symbol.dispose](),
   )
   const changes = selector(pulses)
   return {
@@ -312,7 +300,7 @@ const page_reader = (signal: AbortSignal, position: number): PageReader => {
 }
 
 const request_stream = (time: number): RequestStream => {
-  const request = new AbortController()
+  const request = abortion()
   const stream = (async function* (): AsyncGenerator<
     Uint8Array,
     { error: unknown } | void,
@@ -332,10 +320,14 @@ const request_stream = (time: number): RequestStream => {
     } catch (error) {
       return request.signal.aborted ? undefined : { error }
     } finally {
-      await logical.return(undefined)
+      try {
+        await logical.return(undefined)
+      } finally {
+        request[Symbol.dispose]()
+      }
     }
   })()
-  return owned_stream(stream, () => request.abort())
+  return owned_stream(stream, () => request[Symbol.dispose]())
 }
 
 const play_subtitle = async (signal: AbortSignal): Promise<void> => {
@@ -374,24 +366,20 @@ const retry_when = async (
   page: PageReader,
   interrupted: () => boolean,
 ): Promise<boolean> => {
-  const timer = new AbortController()
-  try {
-    return await wait_until(
-      page,
-      delay(timer.signal, RETRY_DELAY),
-      (change) => {
-        if (change === undefined) {
-          return false
-        }
-        if (change !== PULSE || interrupted()) {
-          return true
-        }
-        return WAIT
-      },
-    )
-  } finally {
-    timer.abort()
-  }
+  using timer = abortion()
+  return await wait_until(
+    page,
+    delay(timer.signal, RETRY_DELAY),
+    (change) => {
+      if (change === undefined) {
+        return false
+      }
+      if (change !== PULSE || interrupted()) {
+        return true
+      }
+      return WAIT
+    },
+  )
 }
 
 const wait_for_demand = (
@@ -664,14 +652,13 @@ const play_media = async (signal: AbortSignal): Promise<void> => {
 }
 
 const playback_page = async (signal: AbortSignal): Promise<void> => {
-  const lifetime = new AbortController()
-  const lifetime_signal = AbortSignal.any([signal, lifetime.signal])
-  const playback = play_media(lifetime_signal)
-  const captions = play_subtitle(lifetime_signal).then(() => playback)
+  using lifetime = abortion(signal)
+  const playback = play_media(lifetime.signal)
+  const captions = play_subtitle(lifetime.signal).then(() => playback)
   try {
     await Promise.race([playback, captions])
   } finally {
-    lifetime.abort()
+    lifetime[Symbol.dispose]()
     await Promise.allSettled([playback, captions])
   }
 }
