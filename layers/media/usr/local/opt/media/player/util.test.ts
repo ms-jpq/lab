@@ -2,7 +2,7 @@ import { deepEqual, ok as assert } from "node:assert/strict"
 import { randomUUID } from "node:crypto"
 import nodeTest, { type TestContext } from "node:test"
 
-import { delay, events, merge, readableIterator } from "./util.ts"
+import { delay, events, logical_stream, merge, readableIterator } from "./util.ts"
 
 const options = { concurrency: true, timeout: 2_000 }
 
@@ -11,6 +11,27 @@ const delayed = async function* (
 ): AsyncGenerator<number> {
   yield await value
   return
+}
+
+class ChangeTarget extends EventTarget {
+  onchange: ((event: Event) => unknown) | null = null
+  deliveries = 0
+
+  override addEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject | null,
+    options?: AddEventListenerOptions | boolean,
+  ): void {
+    const tracked = (event: Event): void => {
+      this.deliveries += 1
+      if (typeof listener === "function") {
+        listener.call(this, event)
+      } else {
+        listener?.handleEvent(event)
+      }
+    }
+    super.addEventListener(type, tracked, options)
+  }
 }
 
 const cases = [
@@ -108,6 +129,28 @@ const cases = [
     },
   },
   {
+    name: "return detaches an event stream before its parent later aborts",
+    run: async () => {
+      const owner = new AbortController()
+      const target = new ChangeTarget()
+      const values = events(owner.signal, target, "change")
+      const pending = values.next()
+      target.dispatchEvent(new Event("change"))
+
+      deepEqual((await pending).done, false)
+      deepEqual(await values.return?.(undefined), {
+        done: true,
+        value: undefined,
+      })
+      const deliveries = target.deliveries
+
+      owner.abort()
+      target.dispatchEvent(new Event("change"))
+
+      deepEqual(target.deliveries, deliveries)
+    },
+  },
+  {
     name: "a pre-aborted parent produces an empty event stream",
     run: async () => {
       const owner = new AbortController()
@@ -117,6 +160,44 @@ const cases = [
       const values = events(owner.signal, target.signal, "abort")
 
       deepEqual(await values.next(), { done: true, value: undefined })
+    },
+  },
+  {
+    name: "request abort settles a pending logical fetch",
+    run: async (context: TestContext) => {
+      const entered = Promise.withResolvers<void>()
+      context.mock.method(
+        globalThis,
+        "fetch",
+        async (_input: string | URL | Request, init?: RequestInit) => {
+          const signal = init?.signal
+          assert(signal instanceof AbortSignal)
+          return await new Promise<Response>((_resolve, reject) => {
+            signal.addEventListener(
+              "abort",
+              () => reject(signal.reason),
+              { once: true },
+            )
+            entered.resolve()
+          })
+        },
+      )
+      const owner = new AbortController()
+      const values = logical_stream(
+        new Request("https://example.test/stream", { signal: owner.signal }),
+      )
+      const pending = values.next()
+      await entered.promise
+
+      owner.abort()
+
+      const failure = await pending.then(
+        () => undefined,
+        (error: unknown) => error,
+      )
+      assert(failure instanceof DOMException)
+      deepEqual(failure.name, "AbortError")
+      await values.return(undefined)
     },
   },
   {
