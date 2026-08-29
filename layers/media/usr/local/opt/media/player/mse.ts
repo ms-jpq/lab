@@ -91,27 +91,35 @@ export const bond = async function* (
   media: HTMLMediaElement,
   signal: AbortSignal,
 ): AsyncIteratorObject<MediaSource> {
-  const source = MSE()
-  const url = URL.createObjectURL(source)
-  using _ = defer(() => {
-    URL.revokeObjectURL(url)
-  })
+  while (!signal.aborted) {
+    using a = abortion(signal)
+    const source = MSE()
+    const url = URL.createObjectURL(source)
+    const opened = Promise.race([
+      once(a.signal, source, "sourceopen"),
+      once(a.signal, source, "sourceclose"),
+    ])
 
-  using a = abortion(signal)
-  const opened = Promise.race([
-    once(a.signal, source, "sourceopen"),
-    once(a.signal, source, "sourceclose"),
-  ])
+    const prev = media.src
+    try {
+      media.src = url
+      const event = await opened
+      if (event?.type === "sourceclose") {
+        throw event
+      }
+      if (event === undefined) {
+        return
+      }
+    } catch (e) {
+      if (prev) {
+        URL.revokeObjectURL(prev)
+      }
+      throw e
+    }
 
-  media.src = url
-  const event = await opened
-  if (event?.type === "sourceclose") {
-    throw event
+    yield source
   }
-  if (event === undefined) {
-    return
-  }
-  yield source
+
   return
 }
 
@@ -126,20 +134,19 @@ export const media_sources = async function* ({
   evict_behind: number
   signal: AbortSignal
 }): AsyncIteratorObject<[MediaSource, Mse]> {
-  for (;;) {
-    try {
-      for await (const source of bond(media, signal)) {
-        const buffer = media_source({
-          evict_before: () => media.currentTime - evict_behind,
-          mime_type,
-          source,
-        })
+  try {
+    for await (const source of bond(media, signal)) {
+      const buffer = media_source({
+        evict_before: () => media.currentTime - evict_behind,
+        mime_type,
+        source,
+      })
 
-        yield [source, buffer]
-      }
-    } finally {
-      media.removeAttribute("src")
-      media.load()
+      yield [source, buffer]
     }
+  } finally {
+    media.removeAttribute("src")
+    media.load()
   }
+  return
 }
