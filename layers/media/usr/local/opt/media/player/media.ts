@@ -33,10 +33,10 @@ export type MediaTarget = {
   restart: boolean
 }
 export type MediaState = {
-  readonly error: unknown
+  readonly error: MediaError | undefined
   readonly target: MediaTarget
   seek: () => void
-  take_error: () => unknown
+  take_error: () => MediaError | undefined
 }
 
 export const playable_position = (
@@ -162,24 +162,28 @@ export const media_state = async function* (
     signal: AbortSignal
   },
 ): AsyncGenerator<MediaState, void, void> {
+  if (signal.aborted) {
+    return
+  }
+
+  // what i thought media wsa part of the events yields why do our own snapshot?
   let previous = media_snapshot(media)
   let target = { position, restart: false }
-  let applied_target = target
   let pending_seek: { target: MediaTarget; acknowledged: boolean } | undefined =
     { target, acknowledged: false }
-  let failure: unknown | undefined
+  let failure: MediaError | undefined
 
   const state = {
     seek: (): void => {
       pending_seek = { target, acknowledged: false }
       media.currentTime = target.position
     },
-    take_error: (): unknown => {
+    take_error: (): MediaError | undefined => {
       const error = failure
       failure = undefined
       return error
     },
-    get error(): unknown {
+    get error(): MediaError | undefined {
       return failure
     },
     get target(): MediaTarget {
@@ -187,12 +191,10 @@ export const media_state = async function* (
     },
   } satisfies MediaState
 
-  if (signal.aborted) {
-    return
-  }
   yield state
   for await (const batch of media_events(media, signal)) {
     let current = previous
+    let retargeted = false
     for (const [snapshot, event] of batch) {
       current = snapshot
       if (
@@ -217,18 +219,17 @@ export const media_state = async function* (
           position: playable ?? native,
           restart: playable === undefined,
         }
+        retargeted = true
       }
     }
 
     const moved =
       current.time !== previous.time || current.seeking !== previous.seeking
-    const retargeted = target !== applied_target
     if (retargeted) {
       pending_seek =
         target.restart || !aligned(current.time, target.position)
           ? { target, acknowledged: false }
           : undefined
-      applied_target = target
       persist(target.position)
     }
     if (current.ended && !previous.ended) {
