@@ -3,12 +3,12 @@ import { abortion, type EventOf } from "./util.ts"
 const POSITION_TOLERANCE = 0.1
 const END_TOLERANCE = 0.5
 
-export type MediaSnapshot = {
+export type MediaSnapshot = Readonly<{
   ended: boolean
   metadata: boolean
   seeking: boolean
   time: number
-}
+}>
 
 const EVENTS = [
   "canplay",
@@ -106,14 +106,11 @@ export const media_events = async function* (
     fut.resolve(undefined)
   }
   a.signal.addEventListener("abort", aborted, { once: true })
-  if (a.signal.aborted) {
-    return
-  }
   for (const type of EVENTS) {
     media.addEventListener(type, push, { signal: a.signal })
   }
 
-  for (;;) {
+  while (!a.signal.aborted) {
     await fut.promise
     if (a.signal.aborted) {
       return
@@ -123,4 +120,5 @@ export const media_events = async function* (
     fut = Promise.withResolvers()
     yield batch
   }
+  return
 }
