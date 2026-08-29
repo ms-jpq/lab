@@ -83,9 +83,9 @@ export const media_source = async function* ({
           buffer.remove(0, cutoff)
         }
       }
-    }
-    for await (const _ of op_lock(buffer, signal)) {
-      buffer.appendBuffer(operation as Uint8Array<ArrayBuffer>)
+      for await (const _ of op_lock(buffer, signal)) {
+        buffer.appendBuffer(operation as Uint8Array<ArrayBuffer>)
+      }
     }
   }
 }
