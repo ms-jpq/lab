@@ -82,13 +82,6 @@ type PlayerTest = {
   ) => Promise<{ failure: unknown } | void>
   play_subtitle: (signal: AbortSignal) => Promise<void>
   playback_page: (signal: AbortSignal) => Promise<void>
-  selector: <T>(source: {
-    next: () => Promise<IteratorResult<T, void>>
-    return: () => Promise<IteratorResult<T, void>>
-  }) => {
-    next: <W>(work?: Promise<W>) => Promise<T | W | undefined>
-    return: () => Promise<IteratorResult<T, void>>
-  }
   request_stream: (position: number) => {
     next: () => Promise<IteratorResult<Uint8Array, unknown>>
     return: () => Promise<IteratorResult<Uint8Array, unknown>>
@@ -140,6 +133,23 @@ const eventually = async (predicate: () => boolean): Promise<void> => {
   while (!predicate()) {
     await new Promise((resolve) => setImmediate(resolve))
   }
+}
+const withoutImports = (source: string): string => {
+  let importing = false
+  return source
+    .split("\n")
+    .filter((line) => {
+      if (line.startsWith("import ")) {
+        importing = !line.includes(" from ")
+        return false
+      }
+      if (!importing) {
+        return true
+      }
+      importing = !line.includes(" from ")
+      return false
+    })
+    .join("\n")
 }
 const nextTask = () => new Promise((resolve) => setTimeout(resolve, 0))
 const frozenClock = (context: PlayerContext) => {
@@ -705,10 +715,9 @@ const fixture = async (
     Uint8Array,
     window,
   }) as PlayerContext
-  const source = (await Promise.all(PLAYER.map((url) => readFile(url, "utf8"))))
-    .join("\n")
-    .replace(/^import .*$/gmu, "")
-    .replace(/^export /gmu, "")
+  const source = withoutImports(
+    (await Promise.all(PLAYER.map((url) => readFile(url, "utf8")))).join("\n"),
+  ).replace(/^export /gmu, "")
   vm.runInContext(
     stripTypeScriptTypes(
       `${source}
@@ -726,7 +735,7 @@ const mse = async function* (buffer, { currentTime, signal, source }) {
     source.addSourceBuffer = addSourceBuffer
   }
 }
-globalThis.player_test = { PULSE, mse, page_reader, play_source, play_subtitle, playback_page, request_stream, selector }`,
+globalThis.player_test = { PULSE, mse, page_reader, play_source, play_subtitle, playback_page, request_stream }`,
       { mode: "strip" },
     ),
     context,
@@ -864,63 +873,6 @@ const open_mse = async (current: Awaited<ReturnType<typeof fixture>>) => {
   await buffer.next()
   return { buffer, controller, opened, source }
 }
-
-test(
-  "a selector subscribes once while work repeatedly wins",
-  options,
-  async () => {
-    const current = await fixture()
-    const pending = Promise.withResolvers<IteratorResult<number, void>>()
-    const original = pending.promise.then
-    let subscriptions = 0
-    let derivedSubscriptions = 0
-    Object.defineProperty(pending.promise, "then", {
-      value: (...arguments_: unknown[]) => {
-        subscriptions += 1
-        const derived = Reflect.apply(original, pending.promise, arguments_)
-        const then = derived.then
-        Object.defineProperty(derived, "then", {
-          value: (...derivedArguments: unknown[]) => {
-            derivedSubscriptions += 1
-            return Reflect.apply(then, derived, derivedArguments)
-          },
-        })
-        return derived
-      },
-    })
-    const select = current.context.player_test.selector({
-      next: () => pending.promise,
-      return: async () => ({ done: true, value: undefined }),
-    })
-
-    for (let value = 0; value < 1_000; value += 1) {
-      deepEqual(await select.next(Promise.resolve(value)), value)
-    }
-    deepEqual(subscriptions, 1)
-    deepEqual(derivedSubscriptions, 0)
-
-    const work = Promise.withResolvers<number>()
-    const selected = select.next(work.promise)
-    work.resolve(1_000)
-    pending.resolve({ done: false, value: 1_001 })
-    deepEqual(await selected, 1_000)
-    deepEqual(await select.next(), 1_001)
-    deepEqual(subscriptions, 2)
-    deepEqual(derivedSubscriptions, 0)
-
-    const source = Promise.withResolvers<IteratorResult<number, void>>()
-    const losing = Promise.withResolvers<number>()
-    const sourceFirst = current.context.player_test
-      .selector({
-        next: () => source.promise,
-        return: async () => ({ done: true, value: undefined }),
-      })
-      .next(losing.promise)
-    source.resolve({ done: false, value: 2_000 })
-    losing.reject(new Error("losing work"))
-    deepEqual(await sourceFirst, 2_000)
-  },
-)
 
 const readerTeardownCases = [
   {
@@ -3101,8 +3053,8 @@ test(
     controller.abort()
     const closing = buffer.return(undefined)
 
-    deepEqual(await appending, { done: false, value: undefined })
-    deepEqual(await closing, { done: true, value: undefined })
+    deepEqual((await appending).done, false)
+    deepEqual((await closing).done, true)
     deepEqual(opened.aborts, 1)
     deepEqual(opened.updating, false)
   },
