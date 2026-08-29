@@ -175,7 +175,7 @@ export const media_states = (
   signal: AbortSignal,
 ): MediaStates => {
   const read = (): MediaSnapshot => media_snapshot(media)
-  const states = (async function* (): AsyncIteratorObject<MediaState> {
+  const aiter = (async function* (): AsyncIteratorObject<MediaState> {
     using a = abortion(signal)
 
     if (a.signal.aborted) {
@@ -184,8 +184,9 @@ export const media_states = (
 
     const events = media_events(media, a.signal)
     let pending = events.next()
+    yield { current: read(), derived: derive([]) }
+
     try {
-      yield { current: read(), derived: derive([]) }
       for (;;) {
         const next = await pending
         if (next.done) {
@@ -202,5 +203,5 @@ export const media_states = (
       await events.return?.()
     }
   })()
-  return Object.assign(states, { read })
+  return Object.assign(aiter, { read })
 }
