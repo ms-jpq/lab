@@ -184,10 +184,11 @@ const decide = async function* (
       try {
         positioning = target
         target.started = false
+        const opening = sources.next()
         yield () => {
           media.currentTime = target.position
         }
-        const opened = (yield select(sources.next())) as Choice<
+        const opened = (yield select(opening)) as Choice<
           IteratorResult<[MediaSource, (_: AbortSignal) => Mse]>
         >
         if (opened.kind !== "work" || opened.value.done) {
