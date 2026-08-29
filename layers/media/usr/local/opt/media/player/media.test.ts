@@ -45,7 +45,7 @@ const cases = [
       const received = await pending
       ok(!received.done)
       deepEqual(
-        received.value.map(({ type }) => type),
+        received.value.map(([, { type }]) => type),
         ["timeupdate", "progress"],
       )
       await events.return?.()
@@ -64,13 +64,13 @@ const cases = [
       media.dispatchEvent(new Event("progress"))
 
       deepEqual(
-        first.value.map(({ type }) => type),
+        first.value.map(([, { type }]) => type),
         ["timeupdate"],
       )
       const second = await events.next()
       ok(!second.done)
       deepEqual(
-        second.value.map(({ type }) => type),
+        second.value.map(([, { type }]) => type),
         ["progress"],
       )
       await events.return?.()

@@ -11,8 +11,6 @@ export type MediaSnapshot = Readonly<{
   time: number
 }>
 
-const EVENT_SNAPSHOTS = new WeakMap<Event, MediaSnapshot>()
-
 const EVENTS = [
   "canplay",
   "ended",
@@ -26,6 +24,10 @@ const EVENTS = [
 ] as const satisfies readonly (keyof HTMLMediaElementEventMap)[]
 
 export type MediaEvent = EventOf<HTMLMediaElement, (typeof EVENTS)[number]>
+export type MediaObservation = readonly [
+  snapshot: MediaSnapshot,
+  event: MediaEvent,
+]
 
 export const playable_position = (
   media: HTMLMediaElement,
@@ -92,16 +94,13 @@ export const media_snapshot = (media: HTMLMediaElement): MediaSnapshot => ({
   time: media.currentTime,
 })
 
-export const media_event_snapshot = (event: MediaEvent): MediaSnapshot =>
-  EVENT_SNAPSHOTS.get(event) as MediaSnapshot
-
 export const media_events = async function* (
   media: HTMLMediaElement,
   signal: AbortSignal,
-): AsyncIteratorObject<MediaEvent[]> {
+): AsyncIteratorObject<MediaObservation[]> {
   using a = abortion(signal)
 
-  let events = new Array<MediaEvent>()
+  let events = new Array<MediaObservation>()
   let fut = Promise.withResolvers()
 
   const aborted = (): void => {
@@ -109,8 +108,7 @@ export const media_events = async function* (
     fut.resolve(undefined)
   }
   const push = (event: MediaEvent) => {
-    EVENT_SNAPSHOTS.set(event, media_snapshot(media))
-    events.push(event)
+    events.push([media_snapshot(media), event])
     fut.resolve(undefined)
   }
   a.signal.addEventListener("abort", aborted, { once: true })
