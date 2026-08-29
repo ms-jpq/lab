@@ -1288,7 +1288,7 @@ test("each failed subtitle attempt is reported", options, async () => {
   const clock = frozenClock(current.context)
   const controller = new AbortController()
   const playback = current.context.player_test.play_subtitle(controller.signal)
-  const failures = [new Event("error"), new Event("error")]
+  const failures = [new Event("error"), new Event("error")] as const
 
   try {
     await eventually(() => current.subtitle.sources.length === 1)
@@ -1789,7 +1789,7 @@ test(
 )
 
 test(
-  "a media failure storm produces one diagnostic and one same-target reset",
+  "a media failure storm produces one report and one same-target reset",
   options,
   async () => {
     const current = await fixture()
@@ -3796,7 +3796,7 @@ test(
         requests.map(({ time }) => time),
         ["40", "110"],
       )
-      deepEqual(current.errors.length, 1)
+      deepEqual(current.errors.length, 2)
     } finally {
       current.context.MediaSource.prototype.addSourceBuffer =
         originalAddSourceBuffer
@@ -4459,7 +4459,7 @@ for (const { deadline, name } of setupBackoffMediaFailureCases) {
       deepEqual(clock.cancellations, deadline ? 0 : 1)
       deepEqual(
         current.errors.map(([error]) => error),
-        [setupFailure],
+        deadline ? [setupFailure, mediaFailure] : [setupFailure],
       )
       deepEqual(
         new URL(present(current.requests[0])).searchParams.get("t"),
@@ -4505,7 +4505,7 @@ test(
       deepEqual(retiring.aborts, 0)
       deepEqual(requests, 2)
       deepEqual(current.sources.length, 2)
-      deepEqual(current.errors, [[requestFailure]])
+      deepEqual(current.errors, [[requestFailure], [mediaFailure]])
     } finally {
       controller.abort()
       await playback
