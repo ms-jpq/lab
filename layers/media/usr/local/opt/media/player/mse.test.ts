@@ -20,6 +20,7 @@ const fixture = (
   hold: "append" | "remove" | undefined = undefined,
   readyState: "open" | "ended" = "open",
 ) => {
+  const controller = new AbortController()
   const mutations: unknown[] = []
   const types: string[] = []
   const entered = Promise.withResolvers<void>()
@@ -82,10 +83,12 @@ const fixture = (
   const values = media_source({
     evict_before: () => 70,
     mime_type: "video/test",
+    signal: controller.signal,
     source: source as unknown as MediaSource,
   })
   return {
     buffer,
+    controller,
     entered: entered.promise,
     mutations,
     release: () => {

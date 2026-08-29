@@ -7,8 +7,9 @@ const EPSILON = 0.001
 
 const op_lock = async function* (
   buffer: SourceBuffer,
+  signal: AbortSignal,
 ): AsyncIteratorObject<undefined> {
-  using a = abortion()
+  using a = abortion(signal)
   const changed = Promise.race([
     once(a.signal, buffer, "updateend"),
     once(a.signal, buffer, "error"),
@@ -42,7 +43,8 @@ export const media_source = async function* ({
   buffer.timestampOffset = position
 
   for (let operation = yield undefined; ; operation = yield undefined) {
-    if (signal.aborted) {
+    const a = abortion(signal)
+    if (a.signal.aborted) {
       return
     }
 
