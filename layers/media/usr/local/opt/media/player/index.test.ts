@@ -412,7 +412,12 @@ class Subtitle extends TrackedEventTarget {
   }
 }
 
-const fixture = async (position = 40) => {
+const fixture = async (
+  position = 40,
+  {
+    initialPersistenceFailure,
+  }: { initialPersistenceFailure?: unknown } = {},
+) => {
   const media = new Media()
   const subtitle = new Subtitle()
   const timeInput = { value: String(position) }
@@ -427,7 +432,10 @@ const fixture = async (position = 40) => {
   }
   const replacements: string[] = []
   const location = {
-    href: `https://media.test/movie?t=${position}`,
+    href:
+      initialPersistenceFailure === undefined
+        ? `https://media.test/movie?t=${position}`
+        : "https://media.test/movie",
     pathname: "/movie",
     replace: (target: string | URL) => replacements.push(String(target)),
   }
@@ -665,6 +673,9 @@ const fixture = async (position = 40) => {
     },
     history: {
       replaceState: (_state: unknown, _unused: string, url: string | URL) => {
+        if (initialPersistenceFailure !== undefined) {
+          throw initialPersistenceFailure
+        }
         location.href = String(url)
       },
     },
@@ -727,6 +738,20 @@ globalThis.player_test = { PULSE, mse, page_reader, play_source, play_subtitle, 
     timeInput,
   }
 }
+
+test(
+  "an initial persistence failure is reported by the async entry boundary",
+  options,
+  async () => {
+    const failure = new Error("persistence failed")
+    const current = await fixture(40, {
+      initialPersistenceFailure: failure,
+    })
+
+    await eventually(() => current.errors.length !== 0)
+    deepEqual(current.errors, [[failure]])
+  },
+)
 
 const formCases = [
   {

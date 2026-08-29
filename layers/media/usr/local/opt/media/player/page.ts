@@ -33,14 +33,14 @@ export const player_page = (() => {
     playback: (signal: AbortSignal) => Promise<void>,
   ): Promise<never> => {
     for (;;) {
-      using lifetime = abortion()
-      await once(lifetime.signal, window, "pageshow")
-      const running = playback(lifetime.signal)
+      using a = abortion()
+      await once(a.signal, window, "pageshow")
+      const running = playback(a.signal)
 
       try {
-        await Promise.race([once(lifetime.signal, window, "pagehide"), running])
+        await Promise.race([once(a.signal, window, "pagehide"), running])
       } finally {
-        lifetime[Symbol.dispose]()
+        a[Symbol.dispose]()
         await running
       }
     }

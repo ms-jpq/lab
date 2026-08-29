@@ -676,5 +676,9 @@ const playback_page = async (signal: AbortSignal): Promise<void> => {
   }
 }
 
-persist_position(initial_position)
-void player_page.run(playback_page).catch(console.error)
+const main = async (): Promise<void> => {
+  persist_position(initial_position)
+  await player_page.run(playback_page)
+}
+
+void main().catch(console.error)
