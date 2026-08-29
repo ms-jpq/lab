@@ -19,11 +19,12 @@ type EventMap<T> = {
 }
 
 type EventName<T> = keyof EventMap<T> & string
+type EventOf<T, E extends EventName<T>> = Extract<EventMap<T>[E], Event>
 
 export const once = <
   const T extends EventTarget,
   const E extends EventName<T>,
-  const R extends EventMap<T>[E],
+  const R extends EventOf<T, E> = EventOf<T, E>,
 >(
   signal: AbortSignal,
   target: T,
@@ -45,6 +46,22 @@ export const once = <
     cancelled()
   }
   return promise
+}
+
+export const first = async <
+  const T extends EventTarget,
+  const E extends EventName<T>,
+  const R extends EventOf<T, E> = EventOf<T, E>,
+>(
+  signal: AbortSignal,
+  target: T,
+  event: E,
+  ...events: E[]
+): Promise<R | undefined> => {
+  using a = abortion(signal)
+  return await Promise.race(
+    [event, ...events].map((event) => once<T, E, R>(a.signal, target, event)),
+  )
 }
 
 export const readableIterator = async function* <const T>(
