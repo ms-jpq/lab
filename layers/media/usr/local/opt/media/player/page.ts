@@ -95,13 +95,13 @@ export const run_playback = async (
   signal: AbortSignal,
   play_media: (signal: AbortSignal) => Promise<void>,
 ): Promise<void> => {
-  using lifetime = abortion(signal)
-  const playback = play_media(lifetime.signal)
-  const captions = play_subtitle(lifetime.signal).then(() => playback)
+  using a = abortion(signal)
+  const playback = play_media(a.signal)
+  const captions = play_subtitle(a.signal).then(() => playback)
   try {
     await Promise.race([playback, captions])
   } finally {
-    lifetime[Symbol.dispose]()
+    a[Symbol.dispose]()
     await Promise.allSettled([playback, captions])
   }
 }

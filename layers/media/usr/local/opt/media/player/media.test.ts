@@ -174,20 +174,17 @@ const cases = [
 
       const observed = await pending
       ok(!observed.done)
-      deepEqual(
-        observed.value.derived,
-        {
-          failure: undefined,
-          resume: { reason: "ended", position: 0 },
-          seeks: [
-            {
-              candidate: { position: 12, restart: true },
-              position: 12,
-              seeking: true,
-            },
-          ],
-        },
-      )
+      deepEqual(observed.value.derived, {
+        failure: undefined,
+        resume: { reason: "ended", position: 0 },
+        seeks: [
+          {
+            candidate: { position: 12, restart: true },
+            position: 12,
+            seeking: true,
+          },
+        ],
+      })
       await states.return?.()
     },
   },
