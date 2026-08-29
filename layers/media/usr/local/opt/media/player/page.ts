@@ -1,5 +1,5 @@
 import { playable_position } from "./media.ts"
-import { abortion, once } from "./util.ts"
+import { abortion, delay, once } from "./util.ts"
 
 const POSITION = `media:position:${location.pathname}`
 const PAGE = crypto.randomUUID()
@@ -64,6 +64,46 @@ export const submit = (event: SubmitEvent): void => {
   }
   target.search = query.toString()
   location.replace(target)
+}
+
+export const play_subtitle = async (signal: AbortSignal): Promise<void> => {
+  if (!subtitle || signal.aborted) {
+    return
+  }
+  for (;;) {
+    let event: Event | undefined
+    {
+      using attempt = abortion(signal)
+      const loaded = Promise.race([
+        once(attempt.signal, subtitle, "load"),
+        once(attempt.signal, subtitle, "error"),
+      ])
+      subtitle.src = source_url(subtitle, 0)
+      event = await loaded
+    }
+    if (event === undefined || event.type === "load") {
+      return
+    }
+    console.error(event)
+    if (!(await delay(signal, 1_000)) || signal.aborted) {
+      return
+    }
+  }
+}
+
+export const run_playback = async (
+  signal: AbortSignal,
+  play_media: (signal: AbortSignal) => Promise<void>,
+): Promise<void> => {
+  using lifetime = abortion(signal)
+  const playback = play_media(lifetime.signal)
+  const captions = play_subtitle(lifetime.signal).then(() => playback)
+  try {
+    await Promise.race([playback, captions])
+  } finally {
+    lifetime[Symbol.dispose]()
+    await Promise.allSettled([playback, captions])
+  }
 }
 
 export const run_page = async (
