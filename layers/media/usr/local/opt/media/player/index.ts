@@ -1,4 +1,9 @@
-import { media_snapshot, observe_media, type MediaEvent, type MediaSnapshot } from "./media.ts"
+import {
+  media_snapshot,
+  observe_media,
+  type MediaEvent,
+  type MediaSnapshot,
+} from "./media.ts"
 import { media_sources, type Mse, type MseOperation } from "./mse.ts"
 import { first, logical_stream } from "./util.ts"
 
