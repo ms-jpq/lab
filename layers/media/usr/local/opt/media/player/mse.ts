@@ -13,7 +13,7 @@ const op_lock = async function* (
     return
   }
 
-  using a = abortion()
+  using a = abortion(signal)
   const changed = Promise.race([
     once(a.signal, buffer, "updateend"),
     once(a.signal, buffer, "error"),
@@ -21,6 +21,12 @@ const op_lock = async function* (
 
   yield
   const event = await changed
+  if (a.signal.aborted) {
+    if (buffer.updating) {
+      buffer.abort()
+    }
+    return
+  }
   if (event?.type === "error") {
     throw event
   }
