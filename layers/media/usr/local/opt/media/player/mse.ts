@@ -36,9 +36,16 @@ export const media_source = async function* ({
   const buffer = source.addSourceBuffer(mime_type)
 
   const position = (yield undefined) as number
+  if (signal.aborted) {
+    return
+  }
   buffer.timestampOffset = position
 
   for (let operation = yield undefined; ; operation = yield undefined) {
+    if (signal.aborted) {
+      return
+    }
+
     if (operation === undefined) {
       source.endOfStream()
       continue
