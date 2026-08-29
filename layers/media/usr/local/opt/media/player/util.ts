@@ -141,16 +141,73 @@ export const events = async function* <
   return
 }
 
-const select = async <const T>(
-  source: AsyncIterator<T>,
+export type Interleaved<T, R> =
+  | { kind: "source"; result: IteratorResult<T> }
+  | { kind: "work"; result: PromiseSettledResult<R> }
+
+// i dont understand what is this?
+export const interleave = <const T>(source: AsyncIterator<T>) => {
+  type Aiter = { kind: "source"; result: IteratorResult<T> }
+  let closed: Aiter | undefined
+  let pending: Promise<Aiter> | undefined
+  let ready: Aiter | undefined
+
+  const next = (): Promise<Aiter> =>
+    (pending ??= source.next().then((result) => {
+      ready = { kind: "source", result }
+      return ready
+    }))
+
+  return async <R>(work?: Promise<R>): Promise<Interleaved<T, R>> => {
+    if (closed !== undefined) {
+      return closed
+    }
+    const source = next()
+    const selected =
+      work === undefined
+        ? await source
+        : ready !== undefined
+          ? ready
+          : await Promise.race([
+              source,
+              work.then(
+                (value) =>
+                  ({
+                    kind: "work",
+                    result: { status: "fulfilled", value },
+                  }) as const,
+                (reason) =>
+                  ({
+                    kind: "work",
+                    result: { status: "rejected", reason },
+                  }) as const,
+              ),
+            ])
+    if (selected.kind === "work") {
+      await Promise.resolve()
+    }
+    const settled = ready ?? selected
+    if (settled.kind === "source") {
+      ready = undefined
+      pending = undefined
+      if (settled.result.done) {
+        closed = settled
+      }
+    }
+    return settled
+  }
+}
+
+const next_result = async <const T>(
+  aiter: AsyncIterator<T>,
 ): Promise<readonly [AsyncIterator<T>, IteratorResult<T>]> => [
-  source,
-  await source.next(),
+  aiter,
+  await aiter.next(),
 ]
 
-const close = async <T>(sources: Iterable<AsyncIterator<T>>): Promise<void> => {
+const close = async <T>(aiters: Iterable<AsyncIterator<T>>): Promise<void> => {
   const settled = await Promise.allSettled(
-    [...sources].map(async (source) => source.return?.()),
+    [...aiters].map(async (aiter) => aiter.return?.()),
   )
   const errors = settled.flatMap((result) =>
     result.status === "rejected" ? [result.reason] : [],
@@ -161,28 +218,26 @@ const close = async <T>(sources: Iterable<AsyncIterator<T>>): Promise<void> => {
 }
 
 type Selection<T extends readonly AsyncIterator<unknown>[]> = {
-  [K in keyof T]: T[K] extends AsyncIterator<infer U>
-    ? [source: T[K], value: U]
-    : never
+  [K in keyof T]: T[K] extends AsyncIterator<infer U> ? [T[K], U] : never
 }[number]
 
 export const merge = async function* <
   const T extends readonly AsyncIterator<unknown>[],
->(...sources: T): AsyncIteratorObject<Selection<T>> {
+>(...aiters: T): AsyncIteratorObject<Selection<T>> {
   const pending = new Map(
-    sources.map((source) => [source, select(source)] as const),
+    aiters.map((aiter) => [aiter, next_result(aiter)] as const),
   )
   await using _ = defer(() => close(pending.keys()))
 
   while (pending.size) {
-    const [source, result] = await Promise.race(pending.values())
+    const [aiter, result] = await Promise.race(pending.values())
     if (result.done) {
-      pending.delete(source)
+      pending.delete(aiter)
       continue
     }
 
-    yield [source, result.value] as Selection<T>
-    pending.set(source, select(source))
+    yield [aiter, result.value] as Selection<T>
+    pending.set(aiter, next_result(aiter))
   }
   return
 }
