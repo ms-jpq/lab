@@ -1,4 +1,4 @@
-import { abortion, defer, once } from "./util.ts"
+import { abortion, once } from "./util.ts"
 
 export type MseOperation = undefined | number | Uint8Array
 export type Mse = AsyncGenerator<void, void, MseOperation>
@@ -26,10 +26,12 @@ export const media_source = async function* ({
   mime_type,
   source,
   evict_before,
+  signal,
 }: {
   mime_type: string
   source: MediaSource
   evict_before: () => number
+  signal: AbortSignal
 }): Mse {
   const buffer = source.addSourceBuffer(mime_type)
 
@@ -135,16 +137,19 @@ export const media_sources = async function* ({
   mime_type: string
   evict_behind: number
   signal: AbortSignal
-}): AsyncIteratorObject<[MediaSource, Mse]> {
+}): AsyncIteratorObject<[MediaSource, (_: AbortSignal) => Mse]> {
   try {
     for await (const source of bond(media, signal)) {
-      const buffer = media_source({
-        evict_before: () => media.currentTime - evict_behind,
-        mime_type,
+      yield [
         source,
-      })
-
-      yield [source, buffer]
+        (signal) =>
+          media_source({
+            evict_before: () => media.currentTime - evict_behind,
+            mime_type,
+            source,
+            signal,
+          }),
+      ]
     }
   } finally {
     if (media.src) {
