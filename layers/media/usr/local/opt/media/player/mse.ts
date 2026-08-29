@@ -85,7 +85,7 @@ const MSE = (): MediaSource => {
   return source
 }
 
-export const setup = async function* (
+export const bond = async function* (
   media: HTMLMediaElement,
 ): AsyncIteratorObject<MediaSource> {
   const source = MSE()
@@ -117,65 +117,20 @@ export const setup = async function* (
   return
 }
 
-const BEHIND = 30
-
 export const media_sources = async function* (
   media: HTMLMediaElement,
-  { seek, signal }: { seek: () => void; signal: AbortSignal },
-): AsyncIteratorObject<Mse> {
-  let url: string | undefined
+  mime_type: string,
+  evict_behind: number,
+): AsyncIteratorObject<[MediaSource, Mse]> {
+  for await (const source of bond(media)) {
+    const buffer = media_source({
+      evict_before: () => media.currentTime - evict_behind,
+      mime_type,
+      source,
+    })
 
-  try {
-    while (!signal.aborted) {
-      const source = MSE()
-      const url = URL.createObjectURL(source)
-      using _m = setup(media, url)
-
-      const previous = url
-      const next = URL.createObjectURL(source)
-      const event = await attach(media, {
-        seek,
-        signal,
-        source,
-        url: next,
-      }).then(
-        (value) => value,
-        (error: unknown) => {
-          revoke(next)
-          throw error
-        },
-      )
-
-      url = next
-      revoke(previous)
-      if (!event || signal.aborted) {
-        return
-      }
-      if (event.type !== "sourceopen") {
-        throw event
-      }
-
-      const duration = Number(media.dataset["duration"])
-      if (duration > 0) {
-        source.duration = duration
-      }
-      const buffer = media_source({
-        evict_before: () => media.currentTime - BEHIND,
-        mime_type: media.dataset["mseType"] as string,
-        source,
-      })
-      await buffer.next()
-      try {
-        yield buffer
-      } finally {
-        await buffer.return()
-      }
-    }
-  } finally {
-    try {
-    } finally {
-      revoke(url)
-    }
+    yield [source, buffer]
   }
+
   return
 }
