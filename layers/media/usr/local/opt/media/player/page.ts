@@ -1,4 +1,4 @@
-import { once } from "./util.ts"
+import { abortion, once } from "./util.ts"
 
 export type PlayerPage = {
   media: HTMLMediaElement
@@ -33,13 +33,14 @@ export const player_page = (() => {
     playback: (signal: AbortSignal) => Promise<void>,
   ): Promise<never> => {
     for (;;) {
-      const root = new AbortController()
-      await once(root.signal, window, "pageshow")
-      const running = playback(root.signal)
+      using lifetime = abortion()
+      await once(lifetime.signal, window, "pageshow")
+      const running = playback(lifetime.signal)
+
       try {
-        await Promise.race([once(root.signal, window, "pagehide"), running])
+        await Promise.race([once(lifetime.signal, window, "pagehide"), running])
       } finally {
-        root.abort()
+        lifetime[Symbol.dispose]()
         await running
       }
     }
