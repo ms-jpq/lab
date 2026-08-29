@@ -62,8 +62,12 @@ export const readableIterator = async function* <const T>(
       yield value
     }
   } finally {
-    if (!eof) {
-      await reader.cancel()
+    try {
+      if (!eof) {
+        await reader.cancel()
+      }
+    } finally {
+      reader.releaseLock()
     }
   }
 }
