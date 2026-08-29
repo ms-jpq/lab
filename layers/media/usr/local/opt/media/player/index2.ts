@@ -45,7 +45,6 @@ type Effect =
 type AttemptFailure = Failure & { opened: boolean }
 
 const PULSE = Symbol()
-const SOURCE = Symbol()
 const WAIT = Symbol()
 const BUFFER = {
   BEHIND: 30,
@@ -165,19 +164,14 @@ const page_reader = (signal: AbortSignal, position: number): PageReader => {
 
   const running = (async (): Promise<void> => {
     try {
-      for (;;) {
-        const next = await observations.next()
-        if (next.done) {
-          closed = true
-          wake.resolve()
-          return
-        }
-        apply(next.value)
+      for await (const batch of observations) {
+        apply(batch)
         changed = true
         wake.resolve()
       }
     } catch (error) {
       stream_error = error
+    } finally {
       closed = true
       wake.resolve()
     }
@@ -188,6 +182,12 @@ const page_reader = (signal: AbortSignal, position: number): PageReader => {
     wake = Promise.withResolvers<void>()
     return PULSE
   }
+  const end = (): undefined => {
+    if (stream_error !== undefined) {
+      throw stream_error
+    }
+    return undefined
+  }
 
   return {
     next: async <T>(
@@ -197,31 +197,24 @@ const page_reader = (signal: AbortSignal, position: number): PageReader => {
         return pulse()
       }
       if (closed) {
-        if (stream_error !== undefined) {
-          throw stream_error
-        }
-        return undefined
+        return end()
       }
 
       const selected = await Promise.race([
-        wake.promise.then(() => SOURCE),
-        ...(work ? [work] : []),
+        wake.promise,
+        ...(work === undefined ? [] : [work]),
       ])
       if (changed) {
         return pulse()
       }
       if (closed) {
-        if (stream_error !== undefined) {
-          throw stream_error
-        }
-        return undefined
+        return end()
       }
       return selected as T
     },
     return: async (): Promise<IteratorResult<typeof PULSE, void>> => {
       lifetime[Symbol.dispose]()
       await running
-      await observations.return?.()
       return { done: true, value: undefined }
     },
     seek,
