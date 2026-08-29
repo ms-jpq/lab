@@ -101,8 +101,9 @@ export const bond = async function* (
     ])
 
     const prev = media.src
+    media.src = url
+
     try {
-      media.src = url
       const event = await opened
       if (event?.type === "sourceclose") {
         throw event
@@ -111,12 +112,13 @@ export const bond = async function* (
         return
       }
     } catch (e) {
-      if (prev) {
-        URL.revokeObjectURL(prev)
-      }
+      URL.revokeObjectURL(url)
       throw e
     }
 
+    if (prev) {
+      URL.revokeObjectURL(prev)
+    }
     yield source
   }
 
@@ -145,6 +147,9 @@ export const media_sources = async function* ({
       yield [source, buffer]
     }
   } finally {
+    if (media.src) {
+      URL.revokeObjectURL(media.src)
+    }
     media.removeAttribute("src")
     media.load()
   }
