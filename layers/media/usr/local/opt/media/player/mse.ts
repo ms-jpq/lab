@@ -119,11 +119,15 @@ export const bond = async function* (
   return
 }
 
-export const media_sources = async function* (
-  media: HTMLMediaElement,
-  mime_type: string,
-  evict_behind: number,
-): AsyncIteratorObject<[MediaSource, Mse]> {
+export const media_sources = async function* ({
+  media,
+  mime_type,
+  evict_behind,
+}: {
+  media: HTMLMediaElement
+  mime_type: string
+  evict_behind: number
+}): AsyncIteratorObject<[MediaSource, Mse]> {
   for (;;) {
     for await (const source of bond(media)) {
       const buffer = media_source({
