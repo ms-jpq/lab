@@ -141,60 +141,49 @@ export const events = async function* <
   return
 }
 
-export type Interleaved<T, R> =
+export type RaceResult<T, R> =
   | { kind: "source"; result: IteratorResult<T> }
   | { kind: "work"; result: PromiseSettledResult<R> }
 
-// i dont understand what is this?
-export const interleave = <const T>(source: AsyncIterator<T>) => {
-  type Aiter = { kind: "source"; result: IteratorResult<T> }
-  let closed: Aiter | undefined
-  let pending: Promise<Aiter> | undefined
-  let ready: Aiter | undefined
+export type NextRace<T> = <R>(work?: Promise<R>) => Promise<RaceResult<T, R>>
 
-  const next = (): Promise<Aiter> =>
-    (pending ??= source.next().then((result) => {
+export const race_next = <const T>(source: AsyncIterator<T>): NextRace<T> => {
+  let ready: RaceResult<T, never> | undefined
+  const next = () =>
+    source.next().then((result) => {
       ready = { kind: "source", result }
       return ready
-    }))
+    })
+  let pending = next()
 
-  return async <R>(work?: Promise<R>): Promise<Interleaved<T, R>> => {
-    if (closed !== undefined) {
-      return closed
-    }
-    const source = next()
-    const selected =
+  return async <R>(work?: Promise<R>): Promise<RaceResult<T, R>> => {
+    let selected: RaceResult<T, R> =
       work === undefined
-        ? await source
-        : ready !== undefined
-          ? ready
-          : await Promise.race([
-              source,
-              work.then(
-                (value) =>
-                  ({
-                    kind: "work",
-                    result: { status: "fulfilled", value },
-                  }) as const,
-                (reason) =>
-                  ({
-                    kind: "work",
-                    result: { status: "rejected", reason },
-                  }) as const,
-              ),
-            ])
+        ? await pending
+        : await Promise.race([
+            pending,
+            work.then(
+              (value) =>
+                ({
+                  kind: "work",
+                  result: { status: "fulfilled", value },
+                }) as const,
+              (reason) =>
+                ({
+                  kind: "work",
+                  result: { status: "rejected", reason },
+                }) as const,
+            ),
+          ])
     if (selected.kind === "work") {
       await Promise.resolve()
+      selected = ready ?? selected
     }
-    const settled = ready ?? selected
-    if (settled.kind === "source") {
+    if (selected.kind === "source" && !selected.result.done) {
       ready = undefined
-      pending = undefined
-      if (settled.result.done) {
-        closed = settled
-      }
+      pending = next()
     }
-    return settled
+    return selected
   }
 }
 

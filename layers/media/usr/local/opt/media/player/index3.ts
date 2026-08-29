@@ -16,7 +16,7 @@ import {
   source_url,
   start_page,
 } from "./page.ts"
-import { abortion, delay, interleave, logical_stream } from "./util.ts"
+import { abortion, delay, logical_stream, race_next } from "./util.ts"
 
 const BUFFER = { BEHIND: 30, LO: 45, HI: 60 }
 const RETRY_DELAY = 1_000
@@ -40,7 +40,7 @@ const decide = async (signal: AbortSignal): Promise<void> => {
     signal: lifetime.signal,
   })
   const states = media_states(media, lifetime.signal)
-  const next_state = interleave(states)
+  const next_state = race_next(states)
   let current = states.read()
   let target = { position: page_position(), restart: false }
   let pending_seek: { target: MediaTarget; acknowledged: boolean } | undefined =

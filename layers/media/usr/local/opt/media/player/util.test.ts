@@ -7,10 +7,10 @@ import { setImmediate } from "node:timers/promises"
 import {
   delay,
   events,
-  interleave,
   logical_stream,
   merge,
   once,
+  race_next,
   readableIterator,
 } from "./util.ts"
 
@@ -67,11 +67,11 @@ class OnceTarget extends EventTarget {
 
 const cases = [
   {
-    name: "interleave retains a pending source read when work wins",
+    name: "race_next retains a pending source read when work wins",
     run: async () => {
       const source = Promise.withResolvers<number>()
       const values = delayed(source.promise)
-      const next = interleave(values)
+      const next = race_next(values)
 
       deepEqual(await next(Promise.resolve("work")), {
         kind: "work",
@@ -90,11 +90,11 @@ const cases = [
     },
   },
   {
-    name: "interleave returns a work failure as data",
+    name: "race_next returns a work failure as data",
     run: async () => {
       const source = Promise.withResolvers<number>()
       const values = delayed(source.promise)
-      const next = interleave(values)
+      const next = race_next(values)
       const failure = new Error("work failed")
 
       deepEqual(await next(Promise.reject(failure)), {
