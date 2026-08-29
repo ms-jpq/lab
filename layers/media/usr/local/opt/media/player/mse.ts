@@ -85,7 +85,9 @@ const MSE = (): MediaSource => {
   return source
 }
 
-export const setup = async function* (media: HTMLMediaElement) {
+export const setup = async function* (
+  media: HTMLMediaElement,
+): AsyncIteratorObject<MediaSource> {
   const source = MSE()
   const url = URL.createObjectURL(source)
   using _ = defer(() => {
@@ -108,6 +110,7 @@ export const setup = async function* (media: HTMLMediaElement) {
     media.removeAttribute("src")
     media.load()
   }
+  return
 }
 
 const BEHIND = 30
