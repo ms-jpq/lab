@@ -101,6 +101,7 @@ type MockResponse = {
     getReader: () => {
       cancel: () => Promise<void>
       read: () => Promise<ReadableStreamReadResult<Uint8Array>>
+      releaseLock?: () => void
     }
   }
   ok: boolean
@@ -196,7 +197,16 @@ const frozenClock = (context: PlayerContext) => {
 }
 
 const mockResponse = (body: MockResponse["body"]): MockResponse => ({
-  body,
+  body: {
+    getReader: () => {
+      const reader = body.getReader()
+      return {
+        cancel: () => reader.cancel(),
+        read: () => reader.read(),
+        releaseLock: () => reader.releaseLock?.(),
+      }
+    },
+  },
   ok: true,
   status: 200,
   statusText: "OK",
@@ -784,7 +794,7 @@ const readerTeardownCases = [
   },
   {
     cancelRejects: true,
-    name: "an aborted reader cannot reject stream teardown",
+    name: "an aborted reader preserves its cancellation failure",
     waits: false,
   },
 ] as const
@@ -820,14 +830,23 @@ for (const { cancelRejects, name, waits } of readerTeardownCases) {
     deepEqual(chunk.done, false)
     deepEqual([...chunk.value], [1])
     let closed = false
-    const closing = stream.return().then(() => {
-      closed = true
-    })
+    const closing = stream.return().then(
+      () => {
+        closed = true
+      },
+      (error: unknown) => {
+        closed = true
+        throw error
+      },
+    )
+    const outcome = cancelRejects
+      ? rejects(closing, { name: "AbortError" })
+      : doesNotReject(closing)
     await eventually(() => cancellations === 1)
     await nextTask()
     deepEqual(closed, !waits)
     cancellation.resolve()
-    await doesNotReject(closing)
+    await outcome
 
     deepEqual(reads, 1)
     deepEqual(cancellations, 1)
@@ -835,7 +854,7 @@ for (const { cancelRejects, name, waits } of readerTeardownCases) {
 }
 
 test(
-  "request stream clean EOF does not cancel its completed request",
+  "request stream clean EOF aborts without canceling its completed reader",
   options,
   async () => {
     const current = await fixture()
@@ -870,21 +889,19 @@ test(
     deepEqual(end.done, true)
     deepEqual(
       { aborts, cancellations, reads },
-      { aborts: 0, cancellations: 0, reads: 2 },
+      { aborts: 1, cancellations: 0, reads: 2 },
     )
   },
 )
 
 test(
-  "a non-OK response aborts and drains its body before retry",
+  "a non-OK response aborts without draining its body before retry",
   options,
   async () => {
     const current = await fixture()
     const clock = frozenClock(current.context)
-    const cancelReleased = Promise.withResolvers<void>()
     const requests: Array<{ signal: AbortSignal; target: string | null }> = []
-    let cancelStarted = false
-    let abortedBeforeCancel = false
+    let cancellations = 0
 
     current.context.fetch = async (url, { signal }) => {
       requests.push({
@@ -897,9 +914,7 @@ test(
         ...mockResponse({
           getReader: () => ({
             cancel: async () => {
-              cancelStarted = true
-              abortedBeforeCancel = signal.aborted
-              await cancelReleased.promise
+              cancellations += 1
             },
             read: async () => ({ done: true, value: undefined }),
           }),
@@ -915,26 +930,23 @@ test(
       controller.signal,
     )
     try {
-      await eventually(() => cancelStarted || clock.length !== 0)
+      await eventually(() => clock.length !== 0)
       await nextTask()
       deepEqual(
         {
-          abortedBeforeCancel,
-          cancelStarted,
+          aborted: requests[0]?.signal.aborted,
+          cancellations,
           requests: requests.length,
           retryTimers: clock.length,
         },
         {
-          abortedBeforeCancel: true,
-          cancelStarted: true,
+          aborted: true,
+          cancellations: 0,
           requests: 1,
-          retryTimers: 0,
+          retryTimers: 1,
         },
       )
 
-      cancelReleased.resolve()
-      await eventually(() => clock.length === 1)
-      deepEqual(requests.length, 1)
       clock.advance(0)
       await eventually(() => requests.length === 2)
       deepEqual(
@@ -944,7 +956,6 @@ test(
       deepEqual(requests[0]?.signal.aborted, true)
       deepEqual(requests[1]?.signal.aborted, false)
     } finally {
-      cancelReleased.resolve()
       controller.abort()
       await playback
       clock.dispose()

@@ -802,7 +802,3 @@ const main = async (): Promise<void> => {
 
 form.onsubmit = submit
 void main().catch(console.error)
-
-// ok now lets use the logical stream here
-
-// | >>> request_stream now delegates physical fetch/reader ownership to logical_stream.
