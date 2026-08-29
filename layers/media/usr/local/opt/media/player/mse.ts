@@ -103,20 +103,15 @@ export const bond = async function* (
     once(a.signal, source, "sourceclose"),
   ])
 
-  try {
-    media.src = url
-    const event = await opened
-    if (event?.type === "sourceclose") {
-      throw event
-    }
-    if (event === undefined) {
-      return
-    }
-    yield source
-  } finally {
-    media.removeAttribute("src")
-    media.load()
+  media.src = url
+  const event = await opened
+  if (event?.type === "sourceclose") {
+    throw event
   }
+  if (event === undefined) {
+    return
+  }
+  yield source
   return
 }
 
@@ -132,14 +127,19 @@ export const media_sources = async function* ({
   signal: AbortSignal
 }): AsyncIteratorObject<[MediaSource, Mse]> {
   for (;;) {
-    for await (const source of bond(media, signal)) {
-      const buffer = media_source({
-        evict_before: () => media.currentTime - evict_behind,
-        mime_type,
-        source,
-      })
+    try {
+      for await (const source of bond(media, signal)) {
+        const buffer = media_source({
+          evict_before: () => media.currentTime - evict_behind,
+          mime_type,
+          source,
+        })
 
-      yield [source, buffer]
+        yield [source, buffer]
+      }
+    } finally {
+      media.removeAttribute("src")
+      media.load()
     }
   }
 }
