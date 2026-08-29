@@ -38,6 +38,10 @@ type EventMap<T> = {
 
 type EventName<T> = keyof EventMap<T> & string
 export type EventOf<T, E extends EventName<T>> = Extract<EventMap<T>[E], Event>
+export type EventObservation<T, E extends EventName<T>, S> = readonly [
+  snapshot: S,
+  event: EventOf<T, E>,
+]
 
 export const once = <
   const T extends EventTarget,
@@ -138,6 +142,49 @@ export const events = async function* <
   })
 
   yield* readableIterator(stream)
+  return
+}
+
+export const event_batches = async function* <
+  const T extends EventTarget,
+  const E extends EventName<T>,
+  const S,
+>(
+  signal: AbortSignal,
+  target: T,
+  types: readonly E[],
+  snapshot: (event: EventOf<T, E>) => S,
+): AsyncIteratorObject<EventObservation<T, E, S>[]> {
+  using a = abortion(signal)
+  if (a.signal.aborted) return
+
+  let observations = new Array<EventObservation<T, E, S>>()
+  let ready = Promise.withResolvers<void>()
+  const close = (): void => {
+    observations = []
+    ready.resolve()
+  }
+  const observe = (event: Event): void => {
+    const received = event as EventOf<T, E>
+    observations.push([snapshot(received), received])
+    ready.resolve()
+  }
+  a.signal.addEventListener("abort", close, { once: true })
+
+  try {
+    for (const type of types) target.addEventListener(type, observe)
+    while (!a.signal.aborted) {
+      await ready.promise
+      if (a.signal.aborted) return
+      const batch = observations
+      observations = []
+      ready = Promise.withResolvers<void>()
+      yield batch
+    }
+  } finally {
+    a.signal.removeEventListener("abort", close)
+    for (const type of types) target.removeEventListener(type, observe)
+  }
   return
 }
 
