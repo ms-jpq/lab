@@ -102,7 +102,11 @@ export const setup = async function* (
 
   try {
     media.src = url
-    await opened
+    const event = await opened
+    if (event?.type === "sourceclose") {
+      throw event
+    }
+
     yield source
   } catch {
     URL.revokeObjectURL(url)
