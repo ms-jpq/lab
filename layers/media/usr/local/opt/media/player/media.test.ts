@@ -63,10 +63,16 @@ const cases = [
 
       media.dispatchEvent(new Event("progress"))
 
-      deepEqual(first.value.map(({ type }) => type), ["timeupdate"])
+      deepEqual(
+        first.value.map(({ type }) => type),
+        ["timeupdate"],
+      )
       const second = await events.next()
       ok(!second.done)
-      deepEqual(second.value.map(({ type }) => type), ["progress"])
+      deepEqual(
+        second.value.map(({ type }) => type),
+        ["progress"],
+      )
       await events.return?.()
     },
   },
