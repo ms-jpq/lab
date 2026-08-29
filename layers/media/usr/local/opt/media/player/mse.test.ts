@@ -303,10 +303,10 @@ const cases = [
 
       controller.abort()
 
-      deepEqual(
-        await Promise.race([appending, setImmediate("pending")]),
-        { done: false, value: undefined },
-      )
+      deepEqual(await Promise.race([appending, setImmediate("pending")]), {
+        done: false,
+        value: undefined,
+      })
       deepEqual(mutations, [["append", [6]], ["abort"]])
       deepEqual(buffer.updating, false)
       deepEqual(await values.return?.(undefined), {
@@ -329,10 +329,10 @@ const cases = [
 
       controller.abort()
 
-      deepEqual(
-        await Promise.race([appending, setImmediate("pending")]),
-        { done: false, value: undefined },
-      )
+      deepEqual(await Promise.race([appending, setImmediate("pending")]), {
+        done: false,
+        value: undefined,
+      })
       deepEqual(mutations, [["remove", 0, 70], ["abort"]])
       deepEqual(buffer.updating, false)
       deepEqual(await values.return?.(undefined), {
@@ -426,10 +426,10 @@ const cases = [
 
         bondOwner.abort()
 
-        deepEqual(
-          await Promise.race([pendingBond, setImmediate("pending")]),
-          { done: true, value: undefined },
-        )
+        deepEqual(await Promise.race([pendingBond, setImmediate("pending")]), {
+          done: true,
+          value: undefined,
+        })
         deepEqual(current.sources.length, 1)
         await bonded.return?.()
         current.media.src = ""

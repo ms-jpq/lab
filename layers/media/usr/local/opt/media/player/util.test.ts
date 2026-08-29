@@ -1,10 +1,34 @@
 import { deepEqual, ok as assert } from "node:assert/strict"
 import { randomUUID } from "node:crypto"
 import nodeTest, { type TestContext } from "node:test"
+import { setImmediate } from "node:timers/promises"
 
-import { delay, events, logical_stream, merge, readableIterator } from "./util.ts"
+import {
+  delay,
+  events,
+  logical_stream,
+  merge,
+  readableIterator,
+} from "./util.ts"
 
 const options = { concurrency: true, timeout: 2_000 }
+
+let fetchTests = Promise.resolve()
+const withFetch = async (
+  context: TestContext,
+  run: () => Promise<void>,
+): Promise<void> => {
+  const previous = fetchTests
+  const current = Promise.withResolvers<void>()
+  fetchTests = previous.then(() => current.promise)
+  await previous
+  try {
+    await run()
+  } finally {
+    context.mock.restoreAll()
+    current.resolve()
+  }
+}
 
 const delayed = async function* (
   value: Promise<number>,
@@ -164,41 +188,104 @@ const cases = [
   },
   {
     name: "request abort settles a pending logical fetch",
-    run: async (context: TestContext) => {
-      const entered = Promise.withResolvers<void>()
-      context.mock.method(
-        globalThis,
-        "fetch",
-        async (_input: string | URL | Request, init?: RequestInit) => {
-          const signal = init?.signal
-          assert(signal instanceof AbortSignal)
-          return await new Promise<Response>((_resolve, reject) => {
-            signal.addEventListener(
-              "abort",
-              () => reject(signal.reason),
-              { once: true },
-            )
-            entered.resolve()
-          })
-        },
-      )
-      const owner = new AbortController()
-      const values = logical_stream(
-        new Request("https://example.test/stream", { signal: owner.signal }),
-      )
-      const pending = values.next()
-      await entered.promise
+    run: async (context: TestContext) =>
+      withFetch(context, async () => {
+        const entered = Promise.withResolvers<void>()
+        context.mock.method(
+          globalThis,
+          "fetch",
+          async (_input: string | URL | Request, init?: RequestInit) => {
+            const signal = init?.signal
+            assert(signal instanceof AbortSignal)
+            return await new Promise<Response>((_resolve, reject) => {
+              signal.addEventListener("abort", () => reject(signal.reason), {
+                once: true,
+              })
+              entered.resolve()
+            })
+          },
+        )
+        const owner = new AbortController()
+        const values = logical_stream(
+          new Request("https://example.test/stream", { signal: owner.signal }),
+        )
+        const pending = values.next()
+        await entered.promise
 
-      owner.abort()
+        owner.abort()
 
-      const failure = await pending.then(
-        () => undefined,
-        (error: unknown) => error,
-      )
-      assert(failure instanceof DOMException)
-      deepEqual(failure.name, "AbortError")
-      await values.return(undefined)
-    },
+        const failure = await pending.then(
+          () => undefined,
+          (error: unknown) => error,
+        )
+        assert(failure instanceof DOMException)
+        deepEqual(failure.name, "AbortError")
+        await values.return(undefined)
+      }),
+  },
+  {
+    name: "request abort settles a pending logical response body read",
+    run: async (context: TestContext) =>
+      withFetch(context, async () => {
+        const bodyReady = Promise.withResolvers<ReadableStream<Uint8Array>>()
+        const entered = Promise.withResolvers<void>()
+        const state = { aborts: 0, cancellations: 0, pulls: 0 }
+        context.mock.method(
+          globalThis,
+          "fetch",
+          async (_input: string | URL | Request, init?: RequestInit) => {
+            const signal = init?.signal
+            assert(signal instanceof AbortSignal)
+            const body = new ReadableStream<Uint8Array>({
+              cancel: () => {
+                state.cancellations += 1
+              },
+              pull: () => {
+                state.pulls += 1
+                entered.resolve()
+              },
+              start: (controller) => {
+                signal.addEventListener(
+                  "abort",
+                  () => {
+                    state.aborts += 1
+                    controller.error(signal.reason)
+                  },
+                  { once: true },
+                )
+              },
+            })
+            bodyReady.resolve(body)
+            return new Response(body)
+          },
+        )
+        const owner = new AbortController()
+        const values = logical_stream(
+          new Request("https://example.test/body", { signal: owner.signal }),
+        )
+        const pending = values.next()
+        const body = await bodyReady.promise
+        await entered.promise
+
+        owner.abort()
+
+        const settled = await Promise.race([
+          pending.then(
+            () => undefined,
+            (error: unknown) => error,
+          ),
+          setImmediate("pending"),
+        ])
+        assert(settled instanceof DOMException)
+        deepEqual(settled.name, "AbortError")
+        deepEqual(
+          { aborts: state.aborts, cancellations: state.cancellations },
+          { aborts: 1, cancellations: 0 },
+        )
+        assert(state.pulls > 0)
+        deepEqual(body.locked, false)
+        deepEqual(await values.next(), { done: true, value: undefined })
+      }),
   },
   {
     name: "merged iterators preserve the losing pending read",
