@@ -48,38 +48,31 @@ export const once = <
   target: T,
   event: E,
 ): Promise<R | undefined> => {
-  const { promise, resolve } = Promise.withResolvers<R | undefined>()
+  if (signal.aborted) {
+    return Promise.resolve(undefined)
+  }
 
-  const cancelled = () => resolve(undefined)
-  target.addEventListener(
-    event,
-    (received) => {
-      signal.removeEventListener("abort", cancelled)
-      resolve(received as R)
-    },
-    { signal, once: true },
-  )
+  const { promise, resolve } = Promise.withResolvers<R | undefined>()
+  let open = true
+
+  const finish = (value?: R): void => {
+    if (!open) {
+      return
+    }
+    open = false
+    signal.removeEventListener("abort", cancelled)
+    target.removeEventListener(event, received)
+    resolve(value)
+  }
+  const cancelled = (): void => finish()
+  const received = (value: Event): void => finish(value as R)
+
   signal.addEventListener("abort", cancelled, { once: true })
+  target.addEventListener(event, received)
   if (signal.aborted) {
     cancelled()
   }
   return promise
-}
-
-export const first = async <
-  const T extends EventTarget,
-  const E extends EventName<T>,
-  const R extends EventOf<T, E> = EventOf<T, E>,
->(
-  signal: AbortSignal,
-  target: T,
-  event: E,
-  ...events: E[]
-): Promise<R | undefined> => {
-  using a = abortion(signal)
-  return await Promise.race(
-    [event, ...events].map((event) => once<T, E, R>(a.signal, target, event)),
-  )
 }
 
 export const readableIterator = async function* <const T>(

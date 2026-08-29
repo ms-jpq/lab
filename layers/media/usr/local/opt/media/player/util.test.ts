@@ -1,5 +1,6 @@
 import { deepEqual, ok as assert } from "node:assert/strict"
 import { randomUUID } from "node:crypto"
+import { getEventListeners } from "node:events"
 import nodeTest, { type TestContext } from "node:test"
 import { setImmediate } from "node:timers/promises"
 
@@ -8,6 +9,7 @@ import {
   events,
   logical_stream,
   merge,
+  once,
   readableIterator,
 } from "./util.ts"
 
@@ -58,6 +60,10 @@ class ChangeTarget extends EventTarget {
   }
 }
 
+class OnceTarget extends EventTarget {
+  onleft: ((event: Event) => unknown) | null = null
+}
+
 const cases = [
   {
     name: "delay resolves true when its timer wins",
@@ -100,6 +106,33 @@ const cases = [
       deepEqual(await delay(owner.signal, 100), false)
       deepEqual(scheduled.mock.callCount(), 0)
       deepEqual(added.mock.callCount(), 0)
+    },
+  },
+  {
+    name: "once detaches its listener when its event wins",
+    run: async () => {
+      const owner = new AbortController()
+      const target = new OnceTarget()
+      const selected = once(owner.signal, target, "left")
+
+      deepEqual(getEventListeners(target, "left").length, 1)
+      target.dispatchEvent(new Event("left"))
+
+      deepEqual((await selected)?.type, "left")
+      deepEqual(getEventListeners(target, "left").length, 0)
+    },
+  },
+  {
+    name: "once detaches its listener when its owner aborts",
+    run: async () => {
+      const owner = new AbortController()
+      const target = new OnceTarget()
+      const selected = once(owner.signal, target, "left")
+
+      owner.abort()
+
+      deepEqual(await selected, undefined)
+      deepEqual(getEventListeners(target, "left").length, 0)
     },
   },
   {
