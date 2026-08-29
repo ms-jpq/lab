@@ -416,7 +416,15 @@ const fixture = async (
   position = 40,
   {
     initialPersistenceFailure,
-  }: { initialPersistenceFailure?: unknown } = {},
+    storageReadFailure,
+    storedPosition,
+    urlPosition = initialPersistenceFailure === undefined,
+  }: {
+    initialPersistenceFailure?: unknown
+    storageReadFailure?: unknown
+    storedPosition?: number
+    urlPosition?: boolean
+  } = {},
 ) => {
   const media = new Media()
   const subtitle = new Subtitle()
@@ -432,10 +440,9 @@ const fixture = async (
   }
   const replacements: string[] = []
   const location = {
-    href:
-      initialPersistenceFailure === undefined
-        ? `https://media.test/movie?t=${position}`
-        : "https://media.test/movie",
+    href: urlPosition
+      ? `https://media.test/movie?t=${position}`
+      : "https://media.test/movie",
     pathname: "/movie",
     replace: (target: string | URL) => replacements.push(String(target)),
   }
@@ -680,7 +687,12 @@ const fixture = async (
       },
     },
     localStorage: {
-      getItem: () => null,
+      getItem: () => {
+        if (storageReadFailure !== undefined) {
+          throw storageReadFailure
+        }
+        return storedPosition === undefined ? null : String(storedPosition)
+      },
       setItem: () => {},
     },
     location,
@@ -752,6 +764,54 @@ test(
     deepEqual(current.errors, [[failure]])
   },
 )
+
+const initialPositionCases = [
+  {
+    expected: "40",
+    name: "a URL position takes precedence over stored progress",
+    storedPosition: 110,
+    urlPosition: true,
+  },
+  {
+    expected: "110",
+    name: "stored progress initializes a page without a URL position",
+    storedPosition: 110,
+    urlPosition: false,
+  },
+] as const
+
+for (const currentCase of initialPositionCases) {
+  test(currentCase.name, options, async () => {
+    const current = await fixture(40, currentCase)
+    current.context["window"].dispatchEvent(new Event("pageshow"))
+    try {
+      await eventually(() => current.requests.length !== 0)
+      deepEqual(
+        new URL(present(current.requests[0])).searchParams.get("t"),
+        currentCase.expected,
+      )
+    } finally {
+      current.context["window"].dispatchEvent(new Event("pagehide"))
+    }
+  })
+}
+
+test("a storage read failure falls back to the beginning", options, async () => {
+  const current = await fixture(40, {
+    storageReadFailure: new Error("storage unavailable"),
+    urlPosition: false,
+  })
+  current.context["window"].dispatchEvent(new Event("pageshow"))
+  try {
+    await eventually(() => current.requests.length !== 0)
+    deepEqual(
+      new URL(present(current.requests[0])).searchParams.get("t"),
+      "0",
+    )
+  } finally {
+    current.context["window"].dispatchEvent(new Event("pagehide"))
+  }
+})
 
 const formCases = [
   {
@@ -1206,6 +1266,10 @@ test(
         present(current.subtitle.sources[subtitleRequests]),
       )
       deepEqual(retried.searchParams.get("t"), "0")
+      deepEqual(
+        retried.searchParams.get("page"),
+        new URL(present(current.requests[0])).searchParams.get("page"),
+      )
       notEqual(
         retried.searchParams.get("request"),
         initial.searchParams.get("request"),

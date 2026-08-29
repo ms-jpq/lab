@@ -1,6 +1,6 @@
 import { aligned, buffered_end, buffered_position, media_snapshot, observe_media, play_ahead, playable_position, type MediaEvent, type MediaSnapshot } from "./media.ts"
 import { media_sources, type Mse, type MseOperation } from "./mse.ts"
-import { player_page } from "./page.ts"
+import { form, initial_position, media, page_position, persist_position, run_page, source_url, submit, subtitle } from "./page.ts"
 import { abortion, delay, first, logical_stream } from "./util.ts"
 
 type Failure = { failure: unknown }
@@ -43,14 +43,6 @@ const BUFFER = {
   HI: 60,
 }
 const RETRY_DELAY = 1_000
-const {
-  initial_position,
-  media,
-  page_position,
-  persist_position,
-  source_url,
-  subtitle,
-} = player_page
 
 const result = <T>(promise: Promise<T>): Promise<Result<T>> =>
   promise.then(
@@ -625,8 +617,9 @@ const playback_page = async (signal: AbortSignal): Promise<void> => {
 }
 
 const main = async (): Promise<void> => {
+  form.onsubmit = submit
   persist_position(initial_position)
-  await player_page.run(playback_page)
+  await run_page(playback_page)
 }
 
 void main().catch(console.error)
