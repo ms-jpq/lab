@@ -10,7 +10,6 @@ import {
   logical_stream,
   merge,
   once,
-  race_next,
   readableIterator,
 } from "./util.ts"
 
@@ -66,45 +65,6 @@ class OnceTarget extends EventTarget {
 }
 
 const cases = [
-  {
-    name: "race_next retains a pending source read when work wins",
-    run: async () => {
-      const source = Promise.withResolvers<number>()
-      const values = delayed(source.promise)
-      const next = race_next(values)
-
-      deepEqual(await next(Promise.resolve("work")), {
-        kind: "work",
-        result: { status: "fulfilled", value: "work" },
-      })
-      source.resolve(1)
-      await Promise.resolve()
-      deepEqual(await next(Promise.resolve("later")), {
-        kind: "source",
-        result: { done: false, value: 1 },
-      })
-      deepEqual(await next(), {
-        kind: "source",
-        result: { done: true, value: undefined },
-      })
-    },
-  },
-  {
-    name: "race_next returns a work failure as data",
-    run: async () => {
-      const source = Promise.withResolvers<number>()
-      const values = delayed(source.promise)
-      const next = race_next(values)
-      const failure = new Error("work failed")
-
-      deepEqual(await next(Promise.reject(failure)), {
-        kind: "work",
-        result: { status: "rejected", reason: failure },
-      })
-      source.resolve(1)
-      await values.return(undefined)
-    },
-  },
   {
     name: "delay resolves true when its timer wins",
     run: async (context: TestContext) => {

@@ -141,52 +141,6 @@ export const events = async function* <
   return
 }
 
-export type RaceResult<T, R> =
-  | { kind: "source"; result: IteratorResult<T> }
-  | { kind: "work"; result: PromiseSettledResult<R> }
-
-export type NextRace<T> = <R>(work?: Promise<R>) => Promise<RaceResult<T, R>>
-
-export const race_next = <const T>(source: AsyncIterator<T>): NextRace<T> => {
-  let ready: RaceResult<T, never> | undefined
-  const next = () =>
-    source.next().then((result) => {
-      ready = { kind: "source", result }
-      return ready
-    })
-  let pending = next()
-
-  return async <R>(work?: Promise<R>): Promise<RaceResult<T, R>> => {
-    let selected: RaceResult<T, R> =
-      work === undefined
-        ? await pending
-        : await Promise.race([
-            pending,
-            work.then(
-              (value) =>
-                ({
-                  kind: "work",
-                  result: { status: "fulfilled", value },
-                }) as const,
-              (reason) =>
-                ({
-                  kind: "work",
-                  result: { status: "rejected", reason },
-                }) as const,
-            ),
-          ])
-    if (selected.kind === "work") {
-      await Promise.resolve()
-      selected = ready ?? selected
-    }
-    if (selected.kind === "source" && !selected.result.done) {
-      ready = undefined
-      pending = next()
-    }
-    return selected
-  }
-}
-
 const next = async <const T>(
   aiter: AsyncIterator<T>,
 ): Promise<readonly [AsyncIterator<T>, IteratorResult<T>]> => [

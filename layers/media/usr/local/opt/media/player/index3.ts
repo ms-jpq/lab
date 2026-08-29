@@ -16,7 +16,7 @@ import {
   source_url,
   start_page,
 } from "./page.ts"
-import { abortion, delay, logical_stream, race_next } from "./util.ts"
+import { abortion, delay, logical_stream } from "./util.ts"
 
 const BUFFER = { BEHIND: 30, LO: 45, HI: 60 }
 const RETRY_DELAY = 1_000
@@ -27,6 +27,9 @@ const WAKE = Symbol()
 type Choice<T> = T | typeof STOP | typeof WAKE
 type ReportFailure = { [REPORT]: unknown }
 type MediaTarget = { position: number; restart: boolean }
+type RaceResult<T, R> =
+  | { kind: "source"; result: IteratorResult<T> }
+  | { kind: "work"; result: PromiseSettledResult<R> }
 
 const stream_position = (value: number): number =>
   Math.round(value * 1_000) / 1_000
@@ -40,7 +43,42 @@ const decide = async (signal: AbortSignal): Promise<void> => {
     signal: lifetime.signal,
   })
   const states = media_states(media, lifetime.signal)
-  const next_state = race_next(states)
+  let ready: RaceResult<MediaState, never> | undefined
+  const read_state = () =>
+    states.next().then((result) => {
+      ready = { kind: "source", result }
+      return ready
+    })
+  let pending_state = read_state()
+  const next_state = async <T>(work?: Promise<T>): Promise<RaceResult<MediaState, T>> => {
+    let selected: RaceResult<MediaState, T> =
+      work === undefined
+        ? await pending_state
+        : await Promise.race([
+            pending_state,
+            work.then(
+              (value) =>
+                ({
+                  kind: "work",
+                  result: { status: "fulfilled", value },
+                }) as const,
+              (reason) =>
+                ({
+                  kind: "work",
+                  result: { status: "rejected", reason },
+                }) as const,
+            ),
+          ])
+    if (selected.kind === "work") {
+      await Promise.resolve()
+      selected = ready ?? selected
+    }
+    if (selected.kind === "source" && !selected.result.done) {
+      ready = undefined
+      pending_state = read_state()
+    }
+    return selected
+  }
   let current = states.read()
   let target = { position: page_position(), restart: false }
   let pending_seek: { target: MediaTarget; acknowledged: boolean } | undefined =
