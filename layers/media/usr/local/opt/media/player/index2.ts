@@ -32,7 +32,7 @@ type RequestStream = OwnedStream<Uint8Array, { error: unknown } | void>
 type Reporter = (error: unknown) => void
 type Target = { position: number; restart: boolean; started: boolean }
 
-type PageReader = {
+type Page = {
   next: <T>(work?: Promise<T>) => Promise<typeof PULSE | T | undefined>
   return: () => Promise<IteratorResult<typeof PULSE, void>>
   seek: () => void
@@ -42,7 +42,6 @@ type PageReader = {
 type Effect =
   | { kind: "mutate"; operation: MseOperation }
   | { error: unknown; kind: "report" }
-type AttemptFailure = Failure & { opened: boolean }
 
 const PULSE = Symbol()
 const WAIT = Symbol()
@@ -53,7 +52,7 @@ const BUFFER = {
 }
 const RETRY_DELAY = 1_000
 
-const result = <T>(promise: Promise<T>): Promise<Result<T>> =>
+const capture = <T>(promise: Promise<T>): Promise<Result<T>> =>
   promise.then(
     (value) => ({ value }),
     (failure) => ({ failure }),
@@ -62,7 +61,7 @@ const result = <T>(promise: Promise<T>): Promise<Result<T>> =>
 const stream_position = (value: number): number =>
   Math.round(value * 1_000) / 1_000
 
-const page_reader = (signal: AbortSignal, position: number): PageReader => {
+const page_reader = (signal: AbortSignal, position: number): Page => {
   const lifetime = abortion(signal)
   const observations = media_events(media, lifetime.signal)
   let target = { position, restart: false, started: false }
@@ -268,8 +267,8 @@ const request_stream = (time: number): RequestStream => {
   }
 }
 
-const wait_until = async <T, R>(
-  page: PageReader,
+const choose = async <T, R>(
+  page: Page,
   work: Promise<T> | undefined,
   decide: (change: typeof PULSE | T | undefined) => R | typeof WAIT,
 ): Promise<R> => {
@@ -281,24 +280,24 @@ const wait_until = async <T, R>(
   }
 }
 
-const retry_when = async (
-  page: PageReader,
+const retry = async (
+  page: Page,
   interrupted: () => boolean,
 ): Promise<boolean> => {
   using timer = abortion()
-  return await wait_until(page, delay(timer.signal, RETRY_DELAY), (change) =>
+  return await choose(page, delay(timer.signal, RETRY_DELAY), (change) =>
     change === PULSE && !interrupted() ? WAIT : change !== undefined,
   )
 }
 
-const wait_for_demand = (
-  page: PageReader,
+const demand = (
+  page: Page,
   start: number,
   retarget: (frontier: number) => boolean,
 ): Promise<"ready" | "restart" | undefined> =>
   play_ahead(media, start) < BUFFER.LO
     ? Promise.resolve("ready")
-    : wait_until(page, undefined, (change) => {
+    : choose(page, undefined, (change) => {
         if (change === undefined) {
           return undefined
         }
@@ -309,7 +308,7 @@ const wait_for_demand = (
       })
 
 const decide = async function* (
-  page: PageReader,
+  page: Page,
 ): AsyncGenerator<Effect, void, void> {
   let target = page.target
   let start = target.position
@@ -333,9 +332,9 @@ const decide = async function* (
     return false
   }
 
-  source: for (;;) {
+  request: for (;;) {
     retarget(start)
-    const demanded = await wait_for_demand(page, start, retarget)
+    const demanded = await demand(page, start, retarget)
     if (demanded === undefined) {
       return
     }
@@ -352,19 +351,19 @@ const decide = async function* (
       }
 
       for (;;) {
-        const change = await wait_until(page, request.next(), (selected) =>
+        const change = await choose(page, request.next(), (selected) =>
           selected !== PULSE || retarget(frontier) ? selected : WAIT,
         )
         if (change === undefined) {
           return
         }
         if (change === PULSE) {
-          continue source
+          continue request
         }
         if (change.done) {
           if (change.value === undefined) {
             yield { kind: "mutate", operation: undefined }
-            const action = await wait_until(
+            const action = await choose(
               page,
               undefined,
               (selected): "done" | "restart" | typeof WAIT => {
@@ -377,7 +376,7 @@ const decide = async function* (
             if (action === "done") {
               return
             }
-            continue source
+            continue request
           }
 
           yield { error: change.value.error, kind: "report" }
@@ -388,11 +387,11 @@ const decide = async function* (
         yield { kind: "mutate", operation: change.value }
         frontier = stream_position(buffered_end(media, frontier) ?? frontier)
         if (retarget(frontier)) {
-          continue source
+          continue request
         }
         if (play_ahead(media, frontier) >= BUFFER.HI) {
           start = frontier
-          continue source
+          continue request
         }
       }
     } finally {
@@ -400,7 +399,7 @@ const decide = async function* (
     }
 
     if (
-      !(await retry_when(page, () => {
+      !(await retry(page, () => {
         const interrupted = page.target !== target && page.target.restart
         if (retarget(start) || interrupted) {
           start = page.target.position
@@ -421,7 +420,7 @@ const perform = async function* (
 ): AsyncGenerator<void, Failure | void, void> {
   try {
     for (;;) {
-      const selected = await result(effects.next())
+      const selected = await capture(effects.next())
       if ("failure" in selected) {
         return selected
       }
@@ -436,7 +435,7 @@ const perform = async function* (
         continue
       }
 
-      const mutated = await result(buffer.next(effect.operation))
+      const mutated = await capture(buffer.next(effect.operation))
       if ("failure" in mutated) {
         return mutated
       }
@@ -453,7 +452,7 @@ const perform = async function* (
 const play_source = async (
   buffer: Mse,
   report: Reporter,
-  page: PageReader,
+  page: Page,
 ): Promise<Failure | void> => {
   const running = perform(buffer, report, decide(page))
   for (;;) {
@@ -464,13 +463,11 @@ const play_source = async (
   }
 }
 
-const play_attempt = async (
+const open_buffer = async (
   signal: AbortSignal,
   sources: ReturnType<typeof media_sources>,
-  report: Reporter,
-  page: PageReader,
-): Promise<AttemptFailure | undefined> => {
-  let buffer: Mse | undefined
+  page: Page,
+): Promise<Mse | Failure | undefined> => {
   try {
     const opening = sources.next()
     page.seek()
@@ -484,24 +481,11 @@ const play_attempt = async (
     if (duration > 0) {
       source.duration = duration
     }
-    const created = create_buffer(signal)
-    buffer = (await created.next()).done ? undefined : created
+    const buffer = create_buffer(signal)
+    return (await buffer.next()).done ? undefined : buffer
   } catch (failure) {
-    return signal.aborted
-      ? undefined
-      : { failure, opened: false }
+    return signal.aborted ? undefined : { failure }
   }
-  if (buffer === undefined) {
-    return undefined
-  }
-
-  const played = await play_source(buffer, report, page)
-  return played === undefined || signal.aborted
-    ? undefined
-    : {
-        failure: page.take_error() ?? played.failure,
-        opened: true,
-      }
 }
 
 const play_media = async (signal: AbortSignal): Promise<void> => {
@@ -523,22 +507,30 @@ const play_media = async (signal: AbortSignal): Promise<void> => {
         report(page_failure)
       }
       const target = page.target
-      const attempt = await play_attempt(signal, sources, report, page)
-      if (attempt === undefined) {
+      const opened = await open_buffer(signal, sources, page)
+      if (opened === undefined) {
         return
       }
-      report(attempt.failure)
-      if (
-        !attempt.opened &&
-        !(await retry_when(
-          page,
-          () =>
-            page.take_error() !== undefined ||
-            (page.target !== target && page.target.restart),
-        ))
-      ) {
+      if ("failure" in opened) {
+        report(opened.failure)
+        if (
+          !(await retry(
+            page,
+            () =>
+              page.take_error() !== undefined ||
+              (page.target !== target && page.target.restart),
+          ))
+        ) {
+          return
+        }
+        continue
+      }
+
+      const played = await play_source(opened, report, page)
+      if (played === undefined || signal.aborted) {
         return
       }
+      report(page.take_error() ?? played.failure)
     }
   } finally {
     try {

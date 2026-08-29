@@ -1331,6 +1331,7 @@ test(
       deepEqual(clock.cancellations, 1)
       clock.advance(0)
       await eventually(() => current.media.src === "")
+      await new Promise((resolve) => setImmediate(resolve))
       deepEqual(current.subtitle.sources.length, subtitleRequests)
       const listenerCalls = current.subtitle.listenerCalls
       current.subtitle.dispatchEvent(new Event("error"))
