@@ -51,19 +51,19 @@ export const readableIterator = async function* <const T>(
   stream: ReadableStream<T>,
 ): AsyncIteratorObject<T> {
   const reader = stream.getReader()
+  let eof = false
   try {
     for (;;) {
       const { done, value } = await reader.read()
       if (done) {
+        eof = true
         return
       }
       yield value
     }
   } finally {
-    try {
+    if (!eof) {
       await reader.cancel()
-    } finally {
-      reader.releaseLock()
     }
   }
 }
