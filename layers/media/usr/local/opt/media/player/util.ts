@@ -156,34 +156,42 @@ export const event_batches = async function* <
   snapshot: (event: EventOf<T, E>) => S,
 ): AsyncIteratorObject<EventObservation<T, E, S>[]> {
   using a = abortion(signal)
-  if (a.signal.aborted) return
 
   let observations = new Array<EventObservation<T, E, S>>()
   let ready = Promise.withResolvers<void>()
-  const close = (): void => {
-    observations = []
-    ready.resolve()
-  }
+
   const observe = (event: Event): void => {
     const received = event as EventOf<T, E>
     observations.push([snapshot(received), received])
     ready.resolve()
   }
-  a.signal.addEventListener("abort", close, { once: true })
 
-  try {
-    for (const type of types) target.addEventListener(type, observe)
-    while (!a.signal.aborted) {
-      await ready.promise
-      if (a.signal.aborted) return
-      const batch = observations
-      observations = []
-      ready = Promise.withResolvers<void>()
-      yield batch
+  const close = (): void => {
+    observations = []
+    ready.resolve()
+  }
+  a.signal.addEventListener("abort", close, { once: true })
+  using _ = defer(() => a.signal.removeEventListener("abort", close))
+
+  for (const type of types) {
+    target.addEventListener(type, observe)
+  }
+  using __ = defer(() => {
+    for (const type of types) {
+      target.removeEventListener(type, observe)
     }
-  } finally {
-    a.signal.removeEventListener("abort", close)
-    for (const type of types) target.removeEventListener(type, observe)
+  })
+
+  if (a.signal.aborted) {
+    return
+  }
+  while (!a.signal.aborted) {
+    await ready.promise
+    if (a.signal.aborted) return
+    const batch = observations
+    observations = []
+    ready = Promise.withResolvers<void>()
+    yield batch
   }
   return
 }
