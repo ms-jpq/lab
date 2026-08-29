@@ -12,6 +12,7 @@ type OwnedStream<T, R> = {
 }
 type RequestStream = OwnedStream<Uint8Array, { error: unknown } | void>
 type SourceOperation = MseOperation | Failure
+type PlaybackFailure = Failure & { opened: boolean }
 type Diagnostics = {
   error: (error: unknown) => void
   progress: () => void
@@ -34,6 +35,7 @@ const SOURCE = Symbol()
 const WAIT = Symbol()
 const BUFFER = {
   // TODO: https://bugzilla.mozilla.org/show_bug.cgi?id=1808868
+  BEHIND: 30,
   LO: 45,
   HI: 60,
 }
@@ -48,7 +50,7 @@ const MEDIA_EVENTS =
   )
 
 const media = document.querySelector("video, audio") as HTMLMediaElement
-const subtitle = document.querySelector<HTMLTrackElement>("#subtitle")
+const subtitle = document.querySelector("#subtitle") as HTMLTrackElement | null
 const form = document.querySelector("form") as HTMLFormElement
 const time_input = form.elements.namedItem("t") as HTMLInputElement
 const first_event = (
@@ -540,7 +542,7 @@ const request_operations = async function* (
     }
     if (change.done) {
       if (!change.value) {
-        yield "end"
+        yield undefined
         const action = await wait_until(page, undefined, (change) => {
           if (change === undefined) {
             return "done"
@@ -681,17 +683,35 @@ const play_attempt = async (
   sources: ReturnType<typeof media_sources>,
   failures: Diagnostics,
   page: PageReader,
-) => {
-  const opened = await result(sources.next())
+): Promise<PlaybackFailure | undefined> => {
+  const opened = await result(
+    (async (): Promise<Mse | undefined> => {
+      const opening = sources.next()
+      page.seek()
+      const next = await opening
+      if (next.done) {
+        return undefined
+      }
+
+      const [source, buffer] = next.value
+      const duration = Number(media.dataset["duration"])
+      if (duration > 0) {
+        source.duration = duration
+      }
+      const primed = await buffer.next()
+      return primed.done ? undefined : buffer
+    })(),
+  )
   if ("failure" in opened) {
     return signal.aborted
       ? undefined
       : { failure: opened.failure, opened: false }
   }
-  if (opened.value.done) {
+  if (opened.value === undefined) {
     return undefined
   }
-  const played = await play_source(opened.value.value, failures, page)
+
+  const played = await play_source(opened.value, failures, page)
   return !played || signal.aborted
     ? undefined
     : {
@@ -703,7 +723,11 @@ const play_attempt = async (
 const play_media = async (signal: AbortSignal): Promise<void> => {
   const page = page_reader(signal, playable_position(Number(time_input.value)))
   const failures = diagnostics()
-  const sources = media_sources(media, { seek: page.seek, signal })
+  const sources = media_sources(
+    media,
+    media.dataset["mseType"] as string,
+    BUFFER.BEHIND,
+  )
   try {
     while (!signal.aborted) {
       const page_failure = page.take_error()
