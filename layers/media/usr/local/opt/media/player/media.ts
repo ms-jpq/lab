@@ -166,18 +166,17 @@ export const media_state = async function* (
     return
   }
 
-  // what i thought media wsa part of the events yields why do our own snapshot?
-  let previous = media_snapshot(media)
   let target = { position, restart: false }
   let pending_seek: { target: MediaTarget; acknowledged: boolean } | undefined =
     { target, acknowledged: false }
   let failure: MediaError | undefined
 
+  const start_seek = (next: MediaTarget): void => {
+    pending_seek = { target: next, acknowledged: false }
+    media.currentTime = next.position
+  }
   const state = {
-    seek: (): void => {
-      pending_seek = { target, acknowledged: false }
-      media.currentTime = target.position
-    },
+    seek: (): void => start_seek(target),
     take_error: (): MediaError | undefined => {
       const error = failure
       failure = undefined
@@ -193,27 +192,35 @@ export const media_state = async function* (
 
   yield state
   for await (const batch of media_events(media, signal)) {
-    let current = previous
+    const current = batch.at(-1)?.at(0)
+    if (current === undefined) {
+      continue
+    }
+    let ended = false
+    let moved = false
     let retargeted = false
     for (const [snapshot, event] of batch) {
-      current = snapshot
+      const { error, seeking, time } = snapshot
+      const seek_event = event.type === "seeking" || event.type === "seeked"
+      ended ||= event.type === "ended"
+      moved ||= event.type === "timeupdate" || seek_event
       if (
         event.type === "error" &&
-        current.error !== null &&
-        current.error.code !== MediaError.MEDIA_ERR_ABORTED
+        error !== null &&
+        error.code !== MediaError.MEDIA_ERR_ABORTED
       ) {
-        failure ??= current.error
+        failure ??= error
       }
       const owned_seek =
         pending_seek !== undefined &&
-        aligned(current.time, pending_seek.target.position)
+        aligned(time, pending_seek.target.position)
           ? pending_seek
           : undefined
-      if ((event.type === "seeking" || event.type === "seeked") && owned_seek) {
+      if (seek_event && owned_seek) {
         owned_seek.acknowledged = true
       }
-      if (current.seeking && owned_seek === undefined) {
-        const native = playable_position(media, current.time)
+      if (seeking && owned_seek === undefined) {
+        const native = playable_position(media, time)
         const playable = buffered_position(media, native)
         target = {
           position: playable ?? native,
@@ -223,39 +230,37 @@ export const media_state = async function* (
       }
     }
 
-    const moved =
-      current.time !== previous.time || current.seeking !== previous.seeking
+    const { metadata, seeking, time } = current
     if (retargeted) {
       pending_seek =
-        target.restart || !aligned(current.time, target.position)
+        target.restart || !aligned(time, target.position)
           ? { target, acknowledged: false }
           : undefined
       persist(target.position)
     }
-    if (current.ended && !previous.ended) {
+    if (ended) {
       persist(0)
     } else if (
       !retargeted &&
       pending_seek === undefined &&
       moved &&
-      buffered_position(media, current.time) === current.time
+      buffered_position(media, time) === time
     ) {
-      persist(current.time)
+      persist(time)
     }
     if (pending_seek !== undefined) {
-      const playable = buffered_position(media, pending_seek.target.position)
-      pending_seek.target.position = playable ?? pending_seek.target.position
-      if (!current.seeking) {
-        const positioned = aligned(current.time, pending_seek.target.position)
-        if (!positioned && (current.metadata || playable !== undefined)) {
-          pending_seek.acknowledged = false
-          media.currentTime = pending_seek.target.position
+      const { target: seek_target } = pending_seek
+      const playable = buffered_position(media, seek_target.position)
+      seek_target.position = playable ?? seek_target.position
+      if (!seeking) {
+        const positioned = aligned(time, seek_target.position)
+        if (!positioned && (metadata || playable !== undefined)) {
+          start_seek(seek_target)
         } else if (positioned && pending_seek.acknowledged) {
           pending_seek = undefined
         }
       }
     }
-    previous = current
     yield state
   }
   return
