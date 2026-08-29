@@ -88,7 +88,7 @@ export const media_snapshot = (media: HTMLMediaElement): MediaSnapshot => ({
   time: media.currentTime,
 })
 
-export const observe_media = async function* (
+export const media_events = async function* (
   media: HTMLMediaElement,
   signal: AbortSignal,
 ): AsyncIteratorObject<MediaEvent[]> {

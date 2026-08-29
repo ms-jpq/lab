@@ -1,7 +1,7 @@
 import { deepEqual, ok } from "node:assert/strict"
 import nodeTest from "node:test"
 
-import { observe_media } from "./media.ts"
+import { media_events } from "./media.ts"
 
 const options = { concurrency: true, timeout: 2_000 }
 
@@ -27,7 +27,7 @@ class Media extends EventTarget {
 
 const fixture = (signal: AbortSignal) => {
   const media = new Media()
-  const events = observe_media(media as unknown as HTMLMediaElement, signal)
+  const events = media_events(media as unknown as HTMLMediaElement, signal)
   return { events, media }
 }
 
