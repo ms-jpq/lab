@@ -3,7 +3,6 @@ import {
   event_batches,
   merge,
   type EventObservation,
-  type EventOf,
 } from "./util.ts"
 
 const POSITION_TOLERANCE = 0.1
@@ -32,8 +31,7 @@ const EVENTS = [
   "waiting",
 ] as const satisfies readonly (keyof HTMLMediaElementEventMap)[]
 
-export type MediaEvent = EventOf<HTMLMediaElement, (typeof EVENTS)[number]>
-export type MediaObservation = EventObservation<
+type MediaObservation = EventObservation<
   HTMLMediaElement,
   (typeof EVENTS)[number],
   MediaSnapshot
@@ -163,17 +161,6 @@ const derive = (observations: readonly MediaObservation[]): MediaDerived => {
   return { failure, resume, seeks }
 }
 
-export const media_events = (
-  media: HTMLMediaElement,
-  signal: AbortSignal,
-): AsyncIteratorObject<MediaObservation[]> =>
-  event_batches(signal, media, EVENTS, () => media_snapshot(media))
-
-const from = <T>(
-  source: AsyncIterator<T>,
-  selection: readonly [AsyncIterator<unknown>, unknown],
-): selection is readonly [AsyncIterator<T>, T] => selection[0] === source
-
 export const media_states = <T = never>(
   media: HTMLMediaElement,
   signal: AbortSignal,
@@ -186,13 +173,17 @@ export const media_states = <T = never>(
       return
     }
 
-    const events = media_events(media, a.signal)
+    const events = event_batches(a.signal, media, EVENTS, () =>
+      media_snapshot(media),
+    )
     if (inputs === undefined) {
       let pending = events.next()
       yield { current: media_snapshot(media), derived: derive([]) }
       for (;;) {
         const next = await pending
-        if (next.done) return
+        if (next.done) {
+          return
+        }
         pending = events.next()
         const current = next.value.at(-1)?.[0]
         if (current !== undefined) {
@@ -207,18 +198,21 @@ export const media_states = <T = never>(
     try {
       for (;;) {
         const next = await pending
-        if (next.done) return
+        if (next.done) {
+          return
+        }
         pending = updates.next()
-        if (from(events, next.value)) {
-          const current = next.value[1].at(-1)?.[0]
+        if (next.value[0] === events) {
+          const observations = next.value[1] as MediaObservation[]
+          const current = observations.at(-1)?.[0]
           if (current !== undefined) {
-            yield { current, derived: derive(next.value[1]) }
+            yield { current, derived: derive(observations) }
           }
         } else {
           yield {
             current: media_snapshot(media),
             derived: derive([]),
-            input: next.value[1],
+            input: next.value[1] as T,
           }
         }
       }
