@@ -1,9 +1,4 @@
-import {
-  media_snapshot,
-  observe_media,
-  type MediaEvent,
-  type MediaSnapshot,
-} from "./media.ts"
+import { aligned, buffered_end, buffered_position, media_snapshot, observe_media, play_ahead, playable_position, type MediaEvent, type MediaSnapshot } from "./media.ts"
 import { media_sources, type Mse, type MseOperation } from "./mse.ts"
 import { first, logical_stream } from "./util.ts"
 
@@ -47,8 +42,6 @@ const BUFFER = {
   HI: 60,
 }
 const RETRY_DELAY = 1_000
-const POSITION_TOLERANCE = 0.1
-const END_TOLERANCE = 0.5
 const POSITION = `media:position:${location.pathname}`
 const PAGE = crypto.randomUUID()
 const media = document.querySelector("video, audio") as HTMLMediaElement
@@ -106,59 +99,15 @@ const source_url = (
   return source.toString()
 }
 
-const playable_position = (value: number) => {
-  const duration = Number(media.dataset["duration"])
-  const position = Number.isFinite(value) ? Math.max(0, value) : 0
-  return duration > 0 && position >= duration
-    ? Math.max(0, duration - END_TOLERANCE)
-    : position
-}
-
 const stream_position = (value: number) => Math.round(value * 1_000) / 1_000
-
-const aligned = (left: number, right: number) =>
-  Math.abs(left - right) <= POSITION_TOLERANCE
-
-const buffered_range = (
-  position: number,
-  inclusive: boolean,
-): [number, number] | undefined => {
-  const ranges = media.buffered
-  for (let index = 0; index < ranges.length; index += 1) {
-    const start = ranges.start(index)
-    const end = ranges.end(index)
-    if (
-      start - position <= POSITION_TOLERANCE &&
-      (inclusive ? position <= end : position < end)
-    ) {
-      return [start, end]
-    }
-  }
-  return undefined
-}
-
-const buffered_position = (position: number) => {
-  const range = buffered_range(position, false)
-  return range ? Math.max(position, range.at(0) ?? -Infinity) : undefined
-}
-
-const buffered_end = (position: number) => buffered_range(position, true)?.at(1)
-
-const play_ahead = (frontier: number) => {
-  const end = buffered_end(media.currentTime)
-  const frontier_end = buffered_end(frontier)
-  return end !== undefined && aligned(end, frontier_end ?? NaN)
-    ? end - media.currentTime
-    : 0
-}
 
 const initial_position = (() => {
   if (new URL(location.href).searchParams.has("t")) {
-    return playable_position(Number(time_input.value))
+    return playable_position(media, Number(time_input.value))
   }
   try {
     const stored = Number(localStorage.getItem(POSITION))
-    return playable_position(stored)
+    return playable_position(media, stored)
   } catch {
     return 0
   }

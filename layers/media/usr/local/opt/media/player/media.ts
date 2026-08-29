@@ -1,5 +1,8 @@
 import type { EventOf } from "./util.ts"
 
+const POSITION_TOLERANCE = 0.1
+const END_TOLERANCE = 0.5
+
 export type MediaSnapshot = {
   ended: boolean
   metadata: boolean
@@ -20,6 +23,63 @@ const EVENTS = [
 ] as const satisfies readonly (keyof HTMLMediaElementEventMap)[]
 
 export type MediaEvent = EventOf<HTMLMediaElement, (typeof EVENTS)[number]>
+
+export const playable_position = (
+  media: HTMLMediaElement,
+  value: number,
+): number => {
+  const duration = Number(media.dataset["duration"])
+  const position = Number.isFinite(value) ? Math.max(0, value) : 0
+  return duration > 0 && position >= duration
+    ? Math.max(0, duration - END_TOLERANCE)
+    : position
+}
+
+export const aligned = (left: number, right: number): boolean =>
+  Math.abs(left - right) <= POSITION_TOLERANCE
+
+const buffered_range = (
+  media: HTMLMediaElement,
+  position: number,
+  inclusive: boolean,
+): [number, number] | undefined => {
+  const ranges = media.buffered
+  for (let index = 0; index < ranges.length; index += 1) {
+    const start = ranges.start(index)
+    const end = ranges.end(index)
+    if (
+      start - position <= POSITION_TOLERANCE &&
+      (inclusive ? position <= end : position < end)
+    ) {
+      return [start, end]
+    }
+  }
+  return undefined
+}
+
+export const buffered_position = (
+  media: HTMLMediaElement,
+  position: number,
+): number | undefined => {
+  const range = buffered_range(media, position, false)
+  return range ? Math.max(position, range.at(0) ?? -Infinity) : undefined
+}
+
+export const buffered_end = (
+  media: HTMLMediaElement,
+  position: number,
+): number | undefined => buffered_range(media, position, true)?.at(1)
+
+export const play_ahead = (
+  media: HTMLMediaElement,
+  frontier: number,
+): number => {
+  const end = buffered_end(media, media.currentTime)
+  const frontier_end = buffered_end(media, frontier)
+  return end !== undefined && aligned(end, frontier_end ?? NaN)
+    ? end - media.currentTime
+    : 0
+}
 
 export const media_snapshot = (media: HTMLMediaElement): MediaSnapshot => ({
   ended: media.ended,
