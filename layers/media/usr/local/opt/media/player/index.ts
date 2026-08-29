@@ -1,5 +1,6 @@
 import { aligned, buffered_end, buffered_position, media_snapshot, observe_media, play_ahead, playable_position, type MediaEvent, type MediaSnapshot } from "./media.ts"
 import { media_sources, type Mse, type MseOperation } from "./mse.ts"
+import { player_page } from "./page.ts"
 import { first, logical_stream } from "./util.ts"
 
 type Failure = { failure: unknown }
@@ -44,10 +45,7 @@ const BUFFER = {
 const RETRY_DELAY = 1_000
 const POSITION = `media:position:${location.pathname}`
 const PAGE = crypto.randomUUID()
-const media = document.querySelector("video, audio") as HTMLMediaElement
-const subtitle = document.querySelector("#subtitle") as HTMLTrackElement | null
-const form = document.querySelector("form") as HTMLFormElement
-const time_input = form.elements.namedItem("t") as HTMLInputElement
+const { media, subtitle, time_input } = player_page
 const delay = (signal: AbortSignal, milliseconds: number): Promise<boolean> => {
   if (signal.aborted) {
     return Promise.resolve(false)
@@ -678,36 +676,5 @@ const playback_page = async (signal: AbortSignal): Promise<void> => {
   }
 }
 
-const submit = (event: SubmitEvent): void => {
-  if (event.submitter?.classList.contains("back")) {
-    return
-  }
-  event.preventDefault()
-  const target = new URL(form.action)
-  const query = new URLSearchParams()
-  for (const [name, value] of new FormData(form)) {
-    if (typeof value === "string") {
-      query.append(name, value)
-    }
-  }
-  target.search = query.toString()
-  location.replace(target)
-}
-
-const main = async (): Promise<void> => {
-  persist_position(initial_position)
-  for (;;) {
-    const page = new AbortController()
-    await first(page.signal, window, "pageshow")
-    const playback = playback_page(page.signal)
-    try {
-      await Promise.race([first(page.signal, window, "pagehide"), playback])
-    } finally {
-      page.abort()
-      await playback
-    }
-  }
-}
-
-form.onsubmit = submit
-void main().catch(console.error)
+persist_position(initial_position)
+void player_page.run(playback_page).catch(console.error)

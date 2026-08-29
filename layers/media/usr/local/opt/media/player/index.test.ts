@@ -11,7 +11,7 @@ import { stripTypeScriptTypes } from "node:module"
 import nodeTest, { type TestContext } from "node:test"
 import vm from "node:vm"
 
-const PLAYER = ["util.ts", "media.ts", "mse.ts", "index.ts"].map(
+const PLAYER = ["util.ts", "media.ts", "mse.ts", "page.ts", "index.ts"].map(
   (name) => new URL(name, import.meta.url),
 )
 const options = { concurrency: true, timeout: 2_000 }
@@ -416,15 +416,20 @@ const fixture = async (position = 40) => {
   const media = new Media()
   const subtitle = new Subtitle()
   const timeInput = { value: String(position) }
-  const form = {
+  const form: {
+    action: string
+    elements: { namedItem: () => typeof timeInput }
+    onsubmit: ((event: SubmitEvent) => void) | undefined
+  } = {
     action: "https://media.test/movie",
     elements: { namedItem: () => timeInput },
     onsubmit: undefined,
   }
+  const replacements: string[] = []
   const location = {
     href: `https://media.test/movie?t=${position}`,
     pathname: "/movie",
-    replace: () => {},
+    replace: (target: string | URL) => replacements.push(String(target)),
   }
   const requests: string[] = []
   const revoked: string[] = []
@@ -651,7 +656,13 @@ const fixture = async (position = 40) => {
         }),
       )
     },
-    FormData,
+    FormData: class {
+      constructor(_form: typeof form) {}
+
+      *[Symbol.iterator](): IterableIterator<[string, string]> {
+        yield ["t", timeInput.value]
+      }
+    },
     history: {
       replaceState: (_state: unknown, _unused: string, url: string | URL) => {
         location.href = String(url)
@@ -704,8 +715,10 @@ globalThis.player_test = { PULSE, mse, page_reader, play_source, play_subtitle, 
   return {
     context,
     errors,
+    form,
     media,
     ranges,
+    replacements,
     requests,
     revoked,
     sources,
@@ -713,6 +726,42 @@ globalThis.player_test = { PULSE, mse, page_reader, play_source, play_subtitle, 
     subtitle,
     timeInput,
   }
+}
+
+const formCases = [
+  {
+    back: false,
+    name: "player settings replace the current page",
+    prevented: true,
+    replacements: ["https://media.test/movie?t=40"],
+  },
+  {
+    back: true,
+    name: "back navigation remains native",
+    prevented: false,
+    replacements: [],
+  },
+] as const
+
+for (const formCase of formCases) {
+  test(formCase.name, options, async () => {
+    const current = await fixture()
+    let prevented = false
+    const submit = present(current.form.onsubmit)
+    submit({
+      preventDefault: () => {
+        prevented = true
+      },
+      submitter: {
+        classList: {
+          contains: (name: string) => formCase.back && name === "back",
+        },
+      },
+    } as unknown as SubmitEvent)
+
+    deepEqual(prevented, formCase.prevented)
+    deepEqual(current.replacements, formCase.replacements)
+  })
 }
 
 const open_mse = async (current: Awaited<ReturnType<typeof fixture>>) => {
