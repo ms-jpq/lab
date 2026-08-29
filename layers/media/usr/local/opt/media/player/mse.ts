@@ -12,6 +12,7 @@ const op_lock = async function* (
   if (signal.aborted) {
     return
   }
+
   using a = abortion()
   const changed = Promise.race([
     once(a.signal, buffer, "updateend"),
