@@ -11,7 +11,8 @@ import { stripTypeScriptTypes } from "node:module"
 import nodeTest, { type TestContext } from "node:test"
 import vm from "node:vm"
 
-const PLAYER = ["util.ts", "media.ts", "mse.ts", "page.ts", "index.ts"].map(
+const PLAYER_INDEX = process.env["PLAYER_INDEX"] ?? "index.ts"
+const PLAYER = ["util.ts", "media.ts", "mse.ts", "page.ts", PLAYER_INDEX].map(
   (name) => new URL(name, import.meta.url),
 )
 const options = { concurrency: true, timeout: 2_000 }
@@ -793,22 +794,26 @@ for (const currentCase of initialPositionCases) {
   })
 }
 
-test("a storage read failure falls back to the beginning", options, async () => {
-  const current = await fixture(40, {
-    storageReadFailure: new Error("storage unavailable"),
-    urlPosition: false,
-  })
-  current.context["window"].dispatchEvent(new Event("pageshow"))
-  try {
-    await eventually(() => current.requests.length !== 0)
-    deepEqual(
-      new URL(present(current.requests[0])).searchParams.get("t"),
-      "0",
-    )
-  } finally {
-    current.context["window"].dispatchEvent(new Event("pagehide"))
-  }
-})
+test(
+  "a storage read failure falls back to the beginning",
+  options,
+  async () => {
+    const current = await fixture(40, {
+      storageReadFailure: new Error("storage unavailable"),
+      urlPosition: false,
+    })
+    current.context["window"].dispatchEvent(new Event("pageshow"))
+    try {
+      await eventually(() => current.requests.length !== 0)
+      deepEqual(
+        new URL(present(current.requests[0])).searchParams.get("t"),
+        "0",
+      )
+    } finally {
+      current.context["window"].dispatchEvent(new Event("pagehide"))
+    }
+  },
+)
 
 const formCases = [
   {

@@ -1,6 +1,24 @@
-import { aligned, buffered_end, buffered_position, media_snapshot, observe_media, play_ahead, playable_position, type MediaEvent, type MediaSnapshot } from "./media.ts"
+import {
+  aligned,
+  buffered_end,
+  buffered_position,
+  media_events,
+  media_snapshot,
+  play_ahead,
+  playable_position,
+} from "./media.ts"
 import { media_sources, type Mse, type MseOperation } from "./mse.ts"
-import { form, initial_position, media, page_position, persist_position, run_page, source_url, submit, subtitle } from "./page.ts"
+import {
+  form,
+  initial_position,
+  media,
+  page_position,
+  persist_position,
+  run_page,
+  source_url,
+  submit,
+  subtitle,
+} from "./page.ts"
 import { abortion, delay, first, logical_stream } from "./util.ts"
 
 type Failure = { failure: unknown }
@@ -123,7 +141,7 @@ const page_reader = (signal: AbortSignal, position: number): PageReader => {
   let failure: unknown | undefined = undefined
   let current = media_snapshot(media)
   let previous = current
-  let changed = Promise.withResolvers<boolean>()
+  const observations = media_events(media, lifetime.signal)
   const seek = () => {
     target.started = false
     positioning = target
@@ -134,55 +152,49 @@ const page_reader = (signal: AbortSignal, position: number): PageReader => {
     failure = undefined
     return error
   }
-  const observe = (event: MediaEvent, snapshot: MediaSnapshot) => {
-    current = snapshot
-    const error = media.error
-    if (
-      event.type === "error" &&
-      error !== null &&
-      error.code !== MediaError.MEDIA_ERR_ABORTED
-    ) {
-      failure ??= error
-    }
-    const owned =
-      positioning !== undefined && aligned(current.time, positioning.position)
-        ? positioning
-        : undefined
-    if ((event.type === "seeking" || event.type === "seeked") && owned) {
-      owned.started = true
-    }
-    if (current.seeking && !owned) {
-      const position = playable_position(media, current.time)
-      target = {
-        position: buffered_position(media, position) ?? position,
-        restart: false,
-        started: true,
-      }
-    }
-    changed.resolve(true)
-  }
-  lifetime.signal.addEventListener("abort", () => changed.resolve(false), {
-    once: true,
-  })
-  observe_media(media, lifetime.signal, observe)
-
   const pulses = owned_stream(
     (async function* (): AsyncGenerator<typeof PULSE, void, void> {
       try {
         let handled = target
         yield PULSE
-        for (;;) {
-          if (!(await changed.promise) || lifetime.signal.aborted) {
-            return
+        for await (const batch of observations) {
+          for (const { event, snapshot } of batch) {
+            current = snapshot
+            const { error } = snapshot
+            if (
+              event.type === "error" &&
+              error !== null &&
+              error.code !== MediaError.MEDIA_ERR_ABORTED
+            ) {
+              failure ??= error
+            }
+            const owned =
+              positioning !== undefined &&
+              aligned(current.time, positioning.position)
+                ? positioning
+                : undefined
+            if (
+              (event.type === "seeking" || event.type === "seeked") &&
+              owned
+            ) {
+              owned.started = true
+            }
+            if (current.seeking && !owned) {
+              const position = playable_position(media, current.time)
+              target = {
+                position: buffered_position(current, position) ?? position,
+                restart: false,
+                started: true,
+              }
+            }
           }
-          changed = Promise.withResolvers()
           const moved =
             current.time !== previous.time ||
             current.seeking !== previous.seeking
           const user_seek = target !== handled
 
           if (user_seek) {
-            const playable = buffered_position(media, target.position)
+            const playable = buffered_position(current, target.position)
             target.position = playable ?? target.position
             target.restart = playable === undefined
             positioning =
@@ -199,13 +211,13 @@ const page_reader = (signal: AbortSignal, position: number): PageReader => {
             !user_seek &&
             positioning === undefined &&
             moved &&
-            buffered_position(media, current.time) === current.time
+            buffered_position(current, current.time) === current.time
           ) {
             persist_position(current.time)
           }
 
           if (positioning !== undefined) {
-            const playable = buffered_position(media, positioning.position)
+            const playable = buffered_position(current, positioning.position)
             if (playable !== undefined) {
               positioning.position = playable
             }
@@ -222,6 +234,7 @@ const page_reader = (signal: AbortSignal, position: number): PageReader => {
           previous = current
           yield PULSE
         }
+        return
       } finally {
         lifetime[Symbol.dispose]()
       }
