@@ -391,13 +391,9 @@ const play_media = async (signal: AbortSignal): Promise<void> => {
   }
 }
 
-export const playback_page = async (signal: AbortSignal): Promise<void> => {
-  await run_playback(signal, play_media)
-}
-
 export const PULSE = Symbol()
 export const page_reader = undefined
 export const play_source = undefined
 export const request_stream = undefined
 
-void start_page(playback_page).catch(console.error)
+void start_page((s) => run_playback(s, play_media)).catch(console.error)
