@@ -692,12 +692,16 @@ const play_attempt = async (
       if (next.done) {
         return undefined
       }
+      if (signal.aborted) {
+        return undefined
+      }
 
-      const [source, buffer] = next.value
+      const [source, create_buffer] = next.value
       const duration = Number(media.dataset["duration"])
       if (duration > 0) {
         source.duration = duration
       }
+      const buffer = create_buffer(signal)
       const primed = await buffer.next()
       return primed.done ? undefined : buffer
     })(),
@@ -723,11 +727,12 @@ const play_attempt = async (
 const play_media = async (signal: AbortSignal): Promise<void> => {
   const page = page_reader(signal, playable_position(Number(time_input.value)))
   const failures = diagnostics()
-  const sources = media_sources(
+  const sources = media_sources({
+    evict_behind: BUFFER.BEHIND,
     media,
-    media.dataset["mseType"] as string,
-    BUFFER.BEHIND,
-  )
+    mime_type: media.dataset["mseType"] as string,
+    signal,
+  })
   try {
     while (!signal.aborted) {
       const page_failure = page.take_error()
