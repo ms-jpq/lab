@@ -39,10 +39,10 @@ type PageReader = {
   take_error: () => unknown
   readonly target: Target
 }
-type PlaybackEffect =
+type Effect =
   | { kind: "mutate"; operation: MseOperation }
   | { error: unknown; kind: "report" }
-type PlaybackFailure = Failure & { opened: boolean }
+type AttemptFailure = Failure & { opened: boolean }
 
 const PULSE = Symbol()
 const SOURCE = Symbol()
@@ -322,9 +322,9 @@ const wait_for_demand = (
         return play_ahead(media, start) < BUFFER.LO ? "ready" : WAIT
       })
 
-const source_effects = async function* (
+const decide = async function* (
   page: PageReader,
-): AsyncGenerator<PlaybackEffect, void, void> {
+): AsyncGenerator<Effect, void, void> {
   let target = page.target
   let start = target.position
 
@@ -428,10 +428,10 @@ const source_effects = async function* (
   }
 }
 
-const perform_effects = async function* (
+const perform = async function* (
   buffer: Mse,
   report: Reporter,
-  effects: AsyncGenerator<PlaybackEffect, void, void>,
+  effects: AsyncGenerator<Effect, void, void>,
 ): AsyncGenerator<void, Failure | void, void> {
   try {
     for (;;) {
@@ -469,7 +469,7 @@ const play_source = async (
   report: Reporter,
   page: PageReader,
 ): Promise<Failure | void> => {
-  const running = perform_effects(buffer, report, source_effects(page))
+  const running = perform(buffer, report, decide(page))
   for (;;) {
     const next = await running.next()
     if (next.done) {
@@ -483,35 +483,33 @@ const play_attempt = async (
   sources: ReturnType<typeof media_sources>,
   report: Reporter,
   page: PageReader,
-): Promise<PlaybackFailure | undefined> => {
-  const opened = await result(
-    (async (): Promise<Mse | undefined> => {
-      const opening = sources.next()
-      page.seek()
-      const next = await opening
-      if (next.done || signal.aborted) {
-        return undefined
-      }
+): Promise<AttemptFailure | undefined> => {
+  let buffer: Mse | undefined
+  try {
+    const opening = sources.next()
+    page.seek()
+    const next = await opening
+    if (next.done || signal.aborted) {
+      return undefined
+    }
 
-      const [source, create_buffer] = next.value
-      const duration = Number(media.dataset["duration"])
-      if (duration > 0) {
-        source.duration = duration
-      }
-      const buffer = create_buffer(signal)
-      return (await buffer.next()).done ? undefined : buffer
-    })(),
-  )
-  if ("failure" in opened) {
+    const [source, create_buffer] = next.value
+    const duration = Number(media.dataset["duration"])
+    if (duration > 0) {
+      source.duration = duration
+    }
+    const created = create_buffer(signal)
+    buffer = (await created.next()).done ? undefined : created
+  } catch (failure) {
     return signal.aborted
       ? undefined
-      : { failure: opened.failure, opened: false }
+      : { failure, opened: false }
   }
-  if (opened.value === undefined) {
+  if (buffer === undefined) {
     return undefined
   }
 
-  const played = await play_source(opened.value, report, page)
+  const played = await play_source(buffer, report, page)
   return played === undefined || signal.aborted
     ? undefined
     : {
@@ -530,7 +528,10 @@ const play_media = async (signal: AbortSignal): Promise<void> => {
     signal,
   })
   try {
-    while (!signal.aborted) {
+    for (;;) {
+      if (signal.aborted) {
+        return
+      }
       const page_failure = page.take_error()
       if (page_failure !== undefined) {
         report(page_failure)
@@ -563,10 +564,10 @@ const play_media = async (signal: AbortSignal): Promise<void> => {
 }
 
 const play_subtitle = async (signal: AbortSignal): Promise<void> => {
-  if (!subtitle) {
+  if (!subtitle || signal.aborted) {
     return
   }
-  while (!signal.aborted) {
+  for (;;) {
     const loaded = first(signal, subtitle, "load", "error")
     subtitle.src = source_url(subtitle, 0)
     const event = await loaded
@@ -574,7 +575,7 @@ const play_subtitle = async (signal: AbortSignal): Promise<void> => {
       return
     }
     console.error(event)
-    if (!(await delay(signal, RETRY_DELAY))) {
+    if (!(await delay(signal, RETRY_DELAY)) || signal.aborted) {
       return
     }
   }
