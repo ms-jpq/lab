@@ -1,3 +1,4 @@
+import { media_snapshot, observe_media, type MediaEvent, type MediaSnapshot } from "./media.ts"
 import { media_sources, type Mse, type MseOperation } from "./mse.ts"
 import { first, logical_stream } from "./util.ts"
 
@@ -45,11 +46,6 @@ const POSITION_TOLERANCE = 0.1
 const END_TOLERANCE = 0.5
 const POSITION = `media:position:${location.pathname}`
 const PAGE = crypto.randomUUID()
-const MEDIA_EVENTS =
-  "canplay ended error loadedmetadata progress seeked seeking timeupdate waiting".split(
-    " ",
-  )
-
 const media = document.querySelector("video, audio") as HTMLMediaElement
 const subtitle = document.querySelector("#subtitle") as HTMLTrackElement | null
 const form = document.querySelector("form") as HTMLFormElement
@@ -177,22 +173,6 @@ const persist_position = (value: number) => {
   } catch {}
 }
 
-const media_observation = () => ({
-  ended: media.ended,
-  metadata: media.readyState >= media.HAVE_METADATA,
-  seeking: media.seeking,
-  time: media.currentTime,
-})
-
-const observe_media = (
-  signal: AbortSignal,
-  observe: (event: Event) => void,
-) => {
-  for (const type of MEDIA_EVENTS) {
-    media.addEventListener(type, observe, { signal })
-  }
-}
-
 const owned_stream = <T, R>(
   stream: AsyncGenerator<T, R, void>,
   cancel: () => void,
@@ -266,7 +246,7 @@ const page_reader = (signal: AbortSignal, position: number): PageReader => {
   let target = { position, restart: false, started: false }
   let positioning: Target | undefined = target
   let failure: unknown | undefined = undefined
-  let current = media_observation()
+  let current = media_snapshot(media)
   let previous = current
   let changed = Promise.withResolvers<boolean>()
   const seek = () => {
@@ -279,8 +259,8 @@ const page_reader = (signal: AbortSignal, position: number): PageReader => {
     failure = undefined
     return error
   }
-  const observe = (event: Event) => {
-    current = media_observation()
+  const observe = (event: MediaEvent, snapshot: MediaSnapshot) => {
+    current = snapshot
     const error = media.error
     if (
       event.type === "error" &&
@@ -309,7 +289,7 @@ const page_reader = (signal: AbortSignal, position: number): PageReader => {
   page_signal.addEventListener("abort", () => changed.resolve(false), {
     once: true,
   })
-  observe_media(page_signal, observe)
+  observe_media(media, page_signal, observe)
 
   const pulses = owned_stream(
     (async function* (): AsyncGenerator<typeof PULSE, void, void> {

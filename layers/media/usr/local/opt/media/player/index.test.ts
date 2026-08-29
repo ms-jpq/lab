@@ -11,7 +11,7 @@ import { stripTypeScriptTypes } from "node:module"
 import nodeTest, { type TestContext } from "node:test"
 import vm from "node:vm"
 
-const PLAYER = ["util.ts", "mse.ts", "index.ts"].map(
+const PLAYER = ["util.ts", "media.ts", "mse.ts", "index.ts"].map(
   (name) => new URL(name, import.meta.url),
 )
 const options = { concurrency: true, timeout: 2_000 }

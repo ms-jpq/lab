@@ -19,7 +19,10 @@ type EventMap<T> = {
 }
 
 type EventName<T> = keyof EventMap<T> & string
-type EventOf<T, E extends EventName<T>> = Extract<EventMap<T>[E], Event>
+export type EventOf<T, E extends EventName<T>> = Extract<
+  EventMap<T>[E],
+  Event
+>
 
 export const once = <
   const T extends EventTarget,
