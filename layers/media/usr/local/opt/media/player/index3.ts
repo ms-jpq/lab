@@ -3,6 +3,7 @@ import {
   buffered_end,
   media_state,
   play_ahead,
+  type MediaState,
 } from "./media.ts"
 import { media_sources, type Mse } from "./mse.ts"
 import {
@@ -40,59 +41,64 @@ const decide = async function* (
     mime_type: media.dataset["mseType"] as string,
     signal: lifetime.signal,
   })
-  const state = media_state(media, {
+  const states = media_state(media, {
     persist: persist_position,
     position: page_position(),
     signal: lifetime.signal,
   })
-  let observed: Promise<IteratorResult<void, void>> | undefined
-  let ready: IteratorResult<void, void> | undefined
+  let observed: Promise<IteratorResult<MediaState, void>> | undefined
+  let ready: IteratorResult<MediaState, void> | undefined
+  let state: MediaState
 
-  const select = <T>(
-    work?: Promise<T>,
-    interrupted: () => boolean = () => false,
-  ): (() => Promise<Choice<T>>) => async (): Promise<Choice<T>> => {
-    for (;;) {
-      observed ??= state.next().then((value) => {
-        ready = value
-        return value
-      })
-      let selected: T | undefined
-      let worked = false
-      if (ready === undefined && work !== undefined) {
-        const winner = await Promise.race([
-          observed,
-          work.then((value) => ({ value })),
-        ])
-        if ("value" in winner) {
-          selected = winner.value as T
-          worked = true
+  const select =
+    <T>(
+      work?: Promise<T>,
+      interrupted: () => boolean = () => false,
+    ): (() => Promise<Choice<T>>) =>
+    async (): Promise<Choice<T>> => {
+      for (;;) {
+        observed ??= states.next().then((value) => {
+          ready = value
+          return value
+        })
+        let selected: T | undefined
+        let worked = false
+        if (ready === undefined && work !== undefined) {
+          const winner = await Promise.race([
+            observed,
+            work.then((value) => ({ value })),
+          ])
+          if ("value" in winner) {
+            selected = winner.value as T
+            worked = true
+          }
+        } else if (ready === undefined) {
+          await observed
         }
-      } else if (ready === undefined) {
-        await observed
-      }
-      if (ready !== undefined) {
-        const next = ready
-        ready = undefined
-        observed = undefined
-        if (next.done) {
-          return STOP
+        if (ready !== undefined) {
+          const next = ready
+          ready = undefined
+          observed = undefined
+          if (next.done) {
+            return STOP
+          }
+          state = next.value
+          if (interrupted()) {
+            return CHANGE
+          }
+          continue
         }
-        if (interrupted()) {
-          return CHANGE
+        if (worked) {
+          return selected as T
         }
-        continue
-      }
-      if (worked) {
-        return selected as T
       }
     }
-  }
-  const pull = <T, R>(
-    work: Promise<IteratorResult<T, R>>,
-    done: typeof DONE | typeof STOP = STOP,
-    interrupted: () => boolean = () => false,
-  ): (() => Promise<T | typeof CHANGE | typeof DONE | typeof STOP>) =>
+  const pull =
+    <T, R>(
+      work: Promise<IteratorResult<T, R>>,
+      done: typeof DONE | typeof STOP = STOP,
+      interrupted: () => boolean = () => false,
+    ): (() => Promise<T | typeof CHANGE | typeof DONE | typeof STOP>) =>
     async (): Promise<T | typeof CHANGE | typeof DONE | typeof STOP> => {
       const choice = await select(work, interrupted)()
       return choice === STOP || choice === CHANGE
@@ -102,13 +108,21 @@ const decide = async function* (
           : choice.value
     }
 
-  const report = (error: unknown): Effect => () => {
-    try {
-      console.error(error)
-    } catch (failure) {
-      throw { [REPORT]: failure } satisfies ReportFailure
+  const initial = resume<IteratorResult<MediaState, void>>(
+    yield () => states.next(),
+  )
+  if (initial.done) return
+  state = initial.value
+
+  const report =
+    (error: unknown): Effect =>
+    () => {
+      try {
+        console.error(error)
+      } catch (failure) {
+        throw { [REPORT]: failure } satisfies ReportFailure
+      }
     }
-  }
   try {
     source: for (;;) {
       if (lifetime.signal.aborted) return
@@ -119,7 +133,9 @@ const decide = async function* (
       let setup_failure: unknown | undefined
       let setup_failed = false
       try {
-        const { opening } = resume<{ opening: ReturnType<typeof sources.next> }>(
+        const { opening } = resume<{
+          opening: ReturnType<typeof sources.next>
+        }>(
           yield () => {
             const opening = sources.next()
             state.seek()
@@ -146,12 +162,14 @@ const decide = async function* (
       if (setup_failed) {
         yield report(setup_failure)
         using timer = abortion(lifetime.signal)
-        const waited = resume<Choice<boolean>>(yield select(
-          delay(timer.signal, RETRY_DELAY),
-          () =>
-            state.error !== undefined ||
-            (state.target !== attempt && state.target.restart),
-        ))
+        const waited = resume<Choice<boolean>>(
+          yield select(
+            delay(timer.signal, RETRY_DELAY),
+            () =>
+              state.error !== undefined ||
+              (state.target !== attempt && state.target.restart),
+          ),
+        )
         if (waited === STOP) return
         if (waited === CHANGE) {
           state.take_error()
@@ -183,9 +201,12 @@ const decide = async function* (
         request: for (;;) {
           retarget(start)
           while (play_ahead(media, start) >= BUFFER.LO) {
-            const demanded = resume<Choice<never>>(yield select(undefined, () =>
-              changed(start) || play_ahead(media, start) < BUFFER.LO,
-            ))
+            const demanded = resume<Choice<never>>(
+              yield select(
+                undefined,
+                () => changed(start) || play_ahead(media, start) < BUFFER.LO,
+              ),
+            )
             if (demanded === STOP) return
             if (retarget(start)) {
               continue request
@@ -205,11 +226,7 @@ const decide = async function* (
             }
 
             for (;;) {
-              let read:
-                | Uint8Array
-                | typeof CHANGE
-                | typeof DONE
-                | typeof STOP
+              let read: Uint8Array | typeof CHANGE | typeof DONE | typeof STOP
               try {
                 read = resume(
                   yield pull(request.next(), DONE, () => changed(frontier)),
@@ -224,9 +241,9 @@ const decide = async function* (
               }
               if (read === DONE) {
                 if (resume(yield pull(buffer.next(undefined))) === STOP) return
-                const wake = resume<Choice<never>>(yield select(undefined, () =>
-                  changed(frontier),
-                ))
+                const wake = resume<Choice<never>>(
+                  yield select(undefined, () => changed(frontier)),
+                )
                 if (wake === STOP) return
                 continue request
               }
@@ -252,10 +269,11 @@ const decide = async function* (
             yield report(request_failure)
             start = stream_position(buffered_end(media, frontier) ?? frontier)
             using timer = abortion(lifetime.signal)
-            const waited = resume<Choice<boolean>>(yield select(
-              delay(timer.signal, RETRY_DELAY),
-              () => changed(start),
-            ))
+            const waited = resume<Choice<boolean>>(
+              yield select(delay(timer.signal, RETRY_DELAY), () =>
+                changed(start),
+              ),
+            )
             if (waited === STOP) return
           }
         }
@@ -270,7 +288,7 @@ const decide = async function* (
     try {
       await sources.return?.()
     } finally {
-      await state.return()
+      await states.return(undefined)
     }
   }
 }

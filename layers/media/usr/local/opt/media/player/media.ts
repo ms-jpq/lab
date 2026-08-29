@@ -36,8 +36,6 @@ export type MediaTarget = {
 export type MediaState = {
   readonly error: unknown
   readonly target: MediaTarget
-  next: () => Promise<IteratorResult<void, void>>
-  return: () => Promise<IteratorResult<void, void>>
   seek: () => void
   take_error: () => unknown
 }
@@ -153,7 +151,7 @@ export const media_events = async function* (
   return
 }
 
-export const media_state = (
+export const media_state = async function* (
   media: HTMLMediaElement,
   {
     persist,
@@ -164,8 +162,7 @@ export const media_state = (
     position: number
     signal: AbortSignal
   },
-): MediaState => {
-  const events = media_events(media, signal)
+): AsyncGenerator<MediaState, void, void> {
   let current = media_snapshot(media)
   let previous = current
   let target = { position, restart: false, started: false }
@@ -173,7 +170,30 @@ export const media_state = (
   let positioning: MediaTarget | undefined = target
   let failure: unknown | undefined
 
-  const observe = (batch: MediaObservation[]): void => {
+  const state: MediaState = {
+    seek: (): void => {
+      positioning = target
+      target.started = false
+      media.currentTime = target.position
+    },
+    take_error: (): unknown => {
+      const error = failure
+      failure = undefined
+      return error
+    },
+    get error(): unknown {
+      return failure
+    },
+    get target(): MediaTarget {
+      return target
+    },
+  }
+
+  if (signal.aborted) {
+    return
+  }
+  yield state
+  for await (const batch of media_events(media, signal)) {
     for (const [snapshot, event] of batch) {
       current = snapshot
       if (
@@ -236,36 +256,7 @@ export const media_state = (
       }
     }
     previous = current
+    yield state
   }
-
-  return {
-    next: async (): Promise<IteratorResult<void, void>> => {
-      const next = await events.next()
-      if (next.done) {
-        return { done: true, value: undefined }
-      }
-      observe(next.value)
-      return { done: false, value: undefined }
-    },
-    return: async (): Promise<IteratorResult<void, void>> => {
-      await events.return?.()
-      return { done: true, value: undefined }
-    },
-    seek: (): void => {
-      positioning = target
-      target.started = false
-      media.currentTime = target.position
-    },
-    take_error: (): unknown => {
-      const error = failure
-      failure = undefined
-      return error
-    },
-    get error(): unknown {
-      return failure
-    },
-    get target(): MediaTarget {
-      return target
-    },
-  }
+  return
 }
