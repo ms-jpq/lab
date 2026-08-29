@@ -120,6 +120,12 @@ type PlayerContext = vm.Context & {
   setTimeout: (run: () => void, delay?: number) => ReturnType<typeof setTimeout>
   URL: typeof URL
 }
+
+class TestRequest extends Request {
+  override toString(): string {
+    return this.url
+  }
+}
 type TestBody = (context: TestContext) => void | Promise<void>
 type TestCase = { name: string; run: TestBody }
 
@@ -649,6 +655,7 @@ const fixture = async (position = 40) => {
     MediaError: { MEDIA_ERR_ABORTED: 1 },
     MediaSource,
     Promise,
+    Request: TestRequest,
     ReadableStream,
     setTimeout: (run: () => void) => setTimeout(run, 0),
     URL: PlayerURL,

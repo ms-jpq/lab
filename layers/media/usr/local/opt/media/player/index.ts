@@ -1,4 +1,5 @@
 import { media_sources, type Mse, type MseOperation } from "./mse.ts"
+import { logical_stream } from "./util.ts"
 
 type Failure = { failure: unknown }
 type Result<T> = Failure | { value: T }
@@ -405,40 +406,26 @@ const page_reader = (signal: AbortSignal, position: number): PageReader => {
 
 const request_stream = (time: number): RequestStream => {
   const request = new AbortController()
-  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined = undefined
   const stream = (async function* (): AsyncGenerator<
     Uint8Array,
     { error: unknown } | void,
     void
   > {
+    const logical = logical_stream(
+      new Request(source_url(media, time), { signal: request.signal }),
+    )
     try {
-      const response = await fetch(source_url(media, time), {
-        signal: request.signal,
-      })
-      if (!response.body) {
-        throw new Error(`${response.statusText} - ${response.status}`)
-      }
-      reader = response.body.getReader()
-      if (!response.ok) {
-        throw new Error(`${response.statusText} - ${response.status}`)
-      }
       for (;;) {
-        const { done, value } = await reader.read()
-        if (done) {
-          reader = undefined
+        const next = await logical.next()
+        if (next.done) {
           return
         }
-        yield value
+        yield next.value
       }
     } catch (error) {
       return request.signal.aborted ? undefined : { error }
     } finally {
-      if (reader) {
-        request.abort()
-        try {
-          await reader.cancel()
-        } catch {}
-      }
+      await logical.return(undefined)
     }
   })()
   return owned_stream(stream, () => request.abort())
@@ -815,3 +802,7 @@ const main = async (): Promise<void> => {
 
 form.onsubmit = submit
 void main().catch(console.error)
+
+// ok now lets use the logical stream here
+
+// | >>> request_stream now delegates physical fetch/reader ownership to logical_stream.
