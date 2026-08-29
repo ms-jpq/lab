@@ -163,6 +163,7 @@ const cases = [
       deepEqual(observed.value.target, { position: 30, restart: true })
       deepEqual(persisted, [30])
       await states.return(undefined)
+      deepEqual(getEventListeners(media, "seeking").length, 0)
     },
   },
   {

@@ -162,7 +162,9 @@ export const media_state = async function* (
     signal: AbortSignal
   },
 ): AsyncGenerator<MediaState, void, void> {
-  if (signal.aborted) {
+  using a = abortion(signal)
+
+  if (a.signal.aborted) {
     return
   }
 
@@ -191,7 +193,7 @@ export const media_state = async function* (
   } satisfies MediaState
 
   yield state
-  for await (const batch of media_events(media, signal)) {
+  for await (const batch of media_events(media, a.signal)) {
     const current = batch.at(-1)?.[0]
     if (current === undefined) {
       continue
