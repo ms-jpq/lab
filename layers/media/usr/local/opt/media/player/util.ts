@@ -1,3 +1,11 @@
+for (const name of ["dispose", "asyncDispose"] as const) {
+  if (Symbol[name] === undefined) {
+    Object.defineProperty(Symbol, name, {
+      value: Symbol.for(`Symbol.${name}`),
+    })
+  }
+}
+
 type EventMap<T> = {
   [K in keyof T as K extends `on${infer E}` ? E : never]: NonNullable<
     T[K]
