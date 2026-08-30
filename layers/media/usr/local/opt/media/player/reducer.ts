@@ -18,7 +18,6 @@ type MediaSnapshot = Readonly<{
 }>
 
 export type PlaybackStream = Readonly<{
-  accepted: MediaTarget
   frontier: number
   start: number
 }>
@@ -31,15 +30,14 @@ export type PlaybackState = Readonly<{
 }>
 
 export type PlaybackAction =
-  | Readonly<{ type: "buffered" }>
   | MediaAction
-  | Readonly<{ type: "request_advanced" }>
-  | Readonly<{ target: MediaTarget; type: "seek_requested" }>
-  | Readonly<{ type: "stream_started" }>
+  | Readonly<{ type: "request_failed" }>
+  | Readonly<{ type: "source_opened" }>
 
 export type PlaybackEffects = Readonly<{
   failure?: MediaError
   persist?: number
+  restart?: boolean
   seek?: number
 }>
 
@@ -126,28 +124,16 @@ const stream_position = (value: number): number =>
   Math.round(value * 1_000) / 1_000
 
 const start_stream = (target: MediaTarget): PlaybackStream => ({
-  accepted: target,
   frontier: stream_position(target.position),
   start: target.position,
 })
 
-const restart = (stream: PlaybackStream, target: MediaTarget): boolean =>
-  target !== stream.accepted &&
-  target.restart &&
-  !aligned(target.position, stream.frontier)
-
-const reconcile = (
+const needs_restart = (
   stream: PlaybackStream,
   target: MediaTarget,
-): PlaybackStream => {
-  if (target === stream.accepted || restart(stream, target)) {
-    return stream
-  }
-  return { ...stream, accepted: target }
-}
-
-export const needs_restart = ({ stream, target }: PlaybackState): boolean =>
-  restart(stream, target)
+): boolean =>
+  target.restart &&
+  !aligned(target.position, stream.frontier)
 
 export const needs_data = ({ current, stream }: PlaybackState): boolean =>
   play_ahead(current, stream.start) < BUFFER_LOW
@@ -193,6 +179,7 @@ const reduce_media = (
   let target = state.target
   let pending = state.pending_seek
   let persist: number | undefined
+  let restart = false
   let seek: number | undefined
 
   if (action.type === "seeked" || action.type === "seeking") {
@@ -209,6 +196,7 @@ const reduce_media = (
           ? target
           : undefined
       persist = target.position
+      restart = needs_restart(state.stream, target)
     }
   }
 
@@ -240,12 +228,25 @@ const reduce_media = (
     }
   }
 
+  const frontier = stream_position(
+    buffered_end(current, state.stream.frontier) ?? state.stream.frontier,
+  )
+  const stream = restart
+    ? start_stream(target)
+    : {
+        frontier,
+        start:
+          play_ahead(current, frontier) >= BUFFER_HIGH
+            ? frontier
+            : state.stream.start,
+      }
+
   return [
     {
       ...state,
       current,
       pending_seek: pending,
-      stream: reconcile(state.stream, target),
+      stream,
       target,
     },
     {
@@ -256,6 +257,7 @@ const reduce_media = (
           ? current.error
           : undefined,
       persist,
+      restart,
       seek,
     },
   ]
@@ -266,34 +268,23 @@ export const reduce = (
   action: PlaybackAction,
 ): PlaybackTransition => {
   switch (action.type) {
-    case "buffered":
-    case "request_advanced": {
+    case "request_failed": {
       const frontier = stream_position(
         buffered_end(state.current, state.stream.frontier) ??
           state.stream.frontier,
       )
-      const stream = reconcile(
-        {
-          ...state.stream,
-          frontier,
-          start:
-            action.type === "request_advanced" ? frontier : state.stream.start,
-        },
-        state.target,
-      )
+      const stream = { ...state.stream, frontier, start: frontier }
       return [{ ...state, stream }, {}]
     }
-    case "seek_requested": {
+    case "source_opened": {
       return [
         {
           ...state,
-          pending_seek: action.target,
+          pending_seek: state.target,
+          stream: start_stream(state.target),
         },
-        { seek: action.target.position },
+        { seek: state.target.position },
       ]
-    }
-    case "stream_started": {
-      return [{ ...state, stream: start_stream(state.target) }, {}]
     }
     case "canplay":
     case "ended":
