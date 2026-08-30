@@ -64,13 +64,11 @@ const EVENTS = [
 
 type MediaEvent = (typeof EVENTS)[number]
 
-export type MediaAction<T extends MediaEvent = MediaEvent> = T extends T
-  ? Readonly<{
-      current: MediaSnapshot
-      event: EventOf<HTMLMediaElement, T>
-      type: T
-    }>
-  : never
+export type MediaAction<T extends MediaEvent = MediaEvent> = Readonly<{
+  current: MediaSnapshot
+  event: EventOf<HTMLMediaElement, T>
+  type: T
+}>
 
 const playable_time = (duration: number, value: number): number => {
   const position = Number.isFinite(value) ? Math.max(0, value) : 0
@@ -326,9 +324,8 @@ export const media_events = async function* (
   media: HTMLMediaElement,
   signal: AbortSignal,
 ): AsyncIteratorObject<MediaAction> {
-  using a = abortion(signal)
   const streams: AsyncIteratorObject<MediaAction>[] = EVENTS.map((type) =>
-    observations(media, a.signal, type),
+    observations(media, signal, type),
   )
   for await (const [, action] of merge(...streams)) {
     yield action
