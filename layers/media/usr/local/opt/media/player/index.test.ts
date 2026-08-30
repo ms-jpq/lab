@@ -996,7 +996,9 @@ test(
         signal,
         target: new URL(String(url)).searchParams.get("t"),
       })
-      if (requests.length !== 1) return liveResponse(signal)
+      if (requests.length !== 1) {
+        return liveResponse(signal)
+      }
 
       return {
         ...mockResponse({
@@ -1875,7 +1877,9 @@ const controlledPage = (position: number, pulse: symbol) => {
       ])
       if (selected === pulse) {
         changed = Promise.withResolvers<symbol | undefined>()
-        if (closed) changed.resolve(undefined)
+        if (closed) {
+          changed.resolve(undefined)
+        }
       }
       return selected
     },
@@ -2321,7 +2325,9 @@ test(
     const requests: string[] = []
     current.context.fetch = async (url, { signal }) => {
       requests.push(String(url))
-      if (requests.length === 1) throw new Error("source request failed")
+      if (requests.length === 1) {
+        throw new Error("source request failed")
+      }
       return liveResponse(signal)
     }
     const playback = current.context.player_test.play_source(
@@ -4436,7 +4442,9 @@ test(
     let requests = 0
     current.context.fetch = async (_url, { signal }) => {
       requests += 1
-      if (requests === 1) throw requestFailure
+      if (requests === 1) {
+        throw requestFailure
+      }
       return liveResponse(signal)
     }
 
