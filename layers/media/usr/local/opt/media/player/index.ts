@@ -105,6 +105,7 @@ export const play_media = async (signal: AbortSignal) => {
 
           if (event.type !== "source_opened") {
             position = effects.request.position
+            using _ = abrt
             continue request
           }
         }

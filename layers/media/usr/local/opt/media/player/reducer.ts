@@ -21,6 +21,7 @@ type PlaybackState = Readonly<{
   current: MediaSnapshot
   pending_seek: number | undefined
   request: PlaybackRequest
+  requesting: boolean
   target: number
 }>
 
@@ -42,17 +43,24 @@ type MediaAction = Readonly<{
 
 type PlaybackAction =
   | MediaAction
-  | Readonly<{ type: "request_failed" }>
+  | Readonly<{ bytes: Uint8Array<ArrayBuffer>; type: "bytes_received" }>
+  | Readonly<{ error: unknown; type: "buffer_failed" }>
+  | Readonly<{ error: unknown; type: "request_failed" }>
+  | Readonly<{ type: "request_finished" }>
   | Readonly<{ type: "source_opened" }>
 
 type RequestInterruption = Readonly<{ type: "request" }>
 
 type PlaybackInterruption =
-  RequestInterruption | Readonly<{ error: MediaError; type: "failure" }>
+  RequestInterruption | Readonly<{ error: unknown; type: "failure" }>
 
 type PlaybackEffects = Readonly<{
+  append?: Uint8Array<ArrayBuffer> | undefined
+  end?: boolean | undefined
   interrupt?: PlaybackInterruption | undefined
   persist?: number | undefined
+  report?: unknown
+  request?: PlaybackRequest | undefined
   seek?: number | undefined
 }>
 
@@ -168,6 +176,7 @@ const initial_playback = (
     current,
     pending_seek: undefined,
     request: request_at(current, position),
+    requesting: false,
     target: position,
   }
 }
@@ -226,9 +235,9 @@ const observe = (
   ]
 }
 
-const reduce = (
+const media_transition = (
   state: PlaybackState,
-  action: PlaybackAction,
+  action: MediaAction | Readonly<{ type: "source_opened" }>,
 ): PlaybackTransition => {
   switch (action.type) {
     case "source_opened": {
@@ -240,13 +249,6 @@ const reduce = (
         },
         { seek: state.target },
       ]
-    }
-    case "request_failed": {
-      const request = {
-        ...state.request,
-        position: state.request.frontier,
-      }
-      return [{ ...state, request }, {}]
     }
     case "loadedmetadata":
     case "canplay":
@@ -321,15 +323,80 @@ const reduce = (
   }
 }
 
+const schedule = ([state, effects]: PlaybackTransition): PlaybackTransition => {
+  if (effects.interrupt?.type === "request") {
+    const request = state.request.needed ? state.request : undefined
+    return [
+      { ...state, requesting: request !== undefined },
+      {
+        ...effects,
+        interrupt: undefined,
+        request,
+      },
+    ]
+  }
+  if (state.request.needed && !state.requesting) {
+    return [
+      { ...state, requesting: true },
+      { ...effects, request: state.request },
+    ]
+  }
+  return [state, effects]
+}
+
+const reduce = (
+  state: PlaybackState,
+  action: PlaybackAction,
+): PlaybackTransition => {
+  switch (action.type) {
+    case "buffer_failed": {
+      return [
+        { ...state, requesting: false },
+        { interrupt: { error: action.error, type: "failure" } },
+      ]
+    }
+    case "bytes_received": {
+      return [state, { append: action.bytes }]
+    }
+    case "request_failed": {
+      const request = {
+        ...state.request,
+        position: state.request.frontier,
+      }
+      return [
+        { ...state, request, requesting: true },
+        { report: action.error, request },
+      ]
+    }
+    case "request_finished": {
+      return [{ ...state, requesting: false }, { end: true }]
+    }
+    case "source_opened": {
+      return schedule(media_transition({ ...state, requesting: false }, action))
+    }
+    default: {
+      return schedule(media_transition(state, action))
+    }
+  }
+}
+
 export const playback_transitions = (
   media: HTMLMediaElement,
   position: number,
-) => [initial_playback(media, position), reduce] as const
+): ((action: PlaybackAction) => PlaybackEffects) => {
+  let state = initial_playback(media, position)
+
+  return (action) => {
+    const [next, effects] = reduce(state, action)
+    state = next
+    return effects
+  }
+}
 
 export const playback_events = (
   media: HTMLMediaElement,
   signal: AbortSignal,
-): AsyncIteratorObject<MediaAction> =>
+): AsyncIteratorObject<PlaybackAction> =>
   closing(signal, (signal) => {
     const streams = EVENTS.map((type) =>
       (async function* () {
@@ -341,6 +408,10 @@ export const playback_events = (
     )
 
     return (async function* () {
+      if (signal.aborted) {
+        return
+      }
+      yield { type: "source_opened" } as const
       for await (const [, action] of merge(...streams)) {
         yield action
       }
