@@ -333,8 +333,14 @@ export const media_events = async function* (
     })(),
   )
 
-  for await (const [, action] of merge(...streams)) {
-    yield action
+  await using stream = merge(...streams)
+  using _ = a
+
+  for (;;) {
+    const { done, value } = await stream.next()
+    if (done) {
+      return
+    }
+    yield value[1]
   }
-  return
 }
