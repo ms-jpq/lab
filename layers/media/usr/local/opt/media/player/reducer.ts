@@ -1,4 +1,4 @@
-import { closing, events, merge } from "./util.ts"
+import { closing } from "./util.ts"
 
 type BufferedRange = readonly [start: number, end: number]
 
@@ -48,15 +48,10 @@ type PlaybackAction =
   | Readonly<{ type: "request_finished" }>
   | Readonly<{ type: "source_opened" }>
 
-type RequestInterruption = Readonly<{ type: "request" }>
-
-type PlaybackInterruption =
-  RequestInterruption | Readonly<{ error: unknown; type: "failure" }>
-
 type PlaybackEffects = Readonly<{
   append?: Uint8Array<ArrayBuffer> | undefined
   end?: boolean | undefined
-  interrupt?: PlaybackInterruption | undefined
+  failure?: unknown
   persist?: number | undefined
   report?: unknown
   request?: PlaybackRequest | undefined
@@ -203,10 +198,7 @@ const reconcile_seek = (
 const project_request = (
   current: MediaSnapshot,
   request: PlaybackRequest,
-): readonly [
-  request: PlaybackRequest,
-  interrupt: RequestInterruption | undefined,
-] => {
+): readonly [request: PlaybackRequest, restart: boolean] => {
   const frontier = stream_position(
     buffered_end(current, request.frontier) ?? request.frontier,
   )
@@ -217,7 +209,7 @@ const project_request = (
   const position = advance ? frontier : request.position
   return [
     { frontier, needed: play_ahead(current, position) < BUFFER_LOW, position },
-    advance ? { type: "request" } : undefined,
+    advance,
   ]
 }
 
@@ -226,11 +218,18 @@ const observe = (
   current: MediaSnapshot,
 ): PlaybackTransition => {
   const [pending_seek, seek] = reconcile_seek(current, state.pending_seek)
-  const [request, interrupt] = project_request(current, state.request)
+  const [request, restart] = project_request(current, state.request)
+  const requested = restart && request.needed
 
   return [
-    { ...state, current, pending_seek, request },
-    { interrupt, seek },
+    {
+      ...state,
+      current,
+      pending_seek,
+      request,
+      requesting: restart ? requested : state.requesting,
+    },
+    { request: requested ? request : undefined, seek },
   ]
 }
 
@@ -270,17 +269,14 @@ const media_transition = (
     }
     case "error": {
       const { error } = action.current
-      const [next, effects] = action.current.seeking
-        ? media_transition(state, { ...action, type: "seeking" })
-        : ([{ ...state, current: action.current }, {}] as const)
-      const failure =
-        error !== undefined && error.code !== MediaError.MEDIA_ERR_ABORTED
-          ? { error, type: "failure" as const }
-          : undefined
-
       return [
-        next,
-        { ...effects, interrupt: failure ?? effects.interrupt },
+        { ...state, current: action.current },
+        {
+          failure:
+            error !== undefined && error.code !== MediaError.MEDIA_ERR_ABORTED
+              ? error
+              : undefined,
+        },
       ]
     }
     case "seeking": {
@@ -315,8 +311,8 @@ const media_transition = (
         next,
         {
           ...effects,
-          interrupt: restart ? { type: "request" } : effects.interrupt,
           persist: target,
+          request: restart ? next.request : effects.request,
         },
       ]
     }
@@ -326,16 +322,8 @@ const media_transition = (
 }
 
 const schedule = ([state, effects]: PlaybackTransition): PlaybackTransition => {
-  if (effects.interrupt?.type === "request") {
-    const request = state.request.needed ? state.request : undefined
-    return [
-      { ...state, requesting: request !== undefined },
-      {
-        ...effects,
-        interrupt: undefined,
-        request,
-      },
-    ]
+  if (effects.request !== undefined) {
+    return [{ ...state, requesting: true }, effects]
   }
   if (state.request.needed && !state.requesting) {
     return [
@@ -368,7 +356,14 @@ const reduce = (
       return [{ ...state, requesting: false }, { end: true }]
     }
     case "source_opened": {
-      return schedule(media_transition({ ...state, requesting: false }, action))
+      const [next, effects] = media_transition(
+        { ...state, requesting: false },
+        action,
+      )
+      return [
+        { ...next, requesting: true },
+        { ...effects, request: next.request },
+      ]
     }
     default: {
       return schedule(media_transition(state, action))
@@ -379,12 +374,28 @@ const reduce = (
 export const playback_transitions = (
   media: HTMLMediaElement,
   position: number,
-): ((action: PlaybackAction) => PlaybackEffects) => {
+): ((
+  action: PlaybackAction | readonly PlaybackAction[],
+) => PlaybackEffects) => {
   let state = initial_playback(media, position)
 
   return (action) => {
-    const [next, effects] = reduce(state, action)
-    state = next
+    const actions = "type" in action ? [action] : action
+    let effects: PlaybackEffects = {}
+
+    for (const current of actions) {
+      const [next, produced] = reduce(state, current)
+      state = next
+      effects = {
+        append: produced.append ?? effects.append,
+        end: produced.end ?? effects.end,
+        failure: effects.failure ?? produced.failure,
+        persist: produced.persist ?? effects.persist,
+        report: produced.report ?? effects.report,
+        request: produced.request ?? effects.request,
+        seek: produced.seek ?? effects.seek,
+      }
+    }
     return effects
   }
 }
@@ -392,25 +403,38 @@ export const playback_transitions = (
 export const playback_events = (
   media: HTMLMediaElement,
   signal: AbortSignal,
-): AsyncIteratorObject<PlaybackAction> =>
-  closing(signal, (signal) => {
-    const streams = EVENTS.map((type) =>
-      (async function* () {
-        for await (const _ of events(signal, media, type)) {
-          yield { current: capture(media), type }
-        }
-        return
-      })(),
-    )
+): AsyncIteratorObject<readonly PlaybackAction[]> =>
+  closing(signal, async function* (signal) {
+    if (signal.aborted) {
+      return
+    }
 
-    return (async function* () {
+    const pending: PlaybackAction[] = []
+    let ready = Promise.withResolvers<void>()
+
+    signal.addEventListener("abort", () => ready.resolve(), { once: true })
+    for (const type of EVENTS) {
+      media.addEventListener(
+        type,
+        () => {
+          pending.push({ current: capture(media), type })
+          ready.resolve()
+        },
+        { signal },
+      )
+    }
+
+    while (!signal.aborted) {
+      if (pending.length === 0) {
+        await ready.promise
+      }
       if (signal.aborted) {
         return
       }
-      yield { type: "source_opened" } as const
-      for await (const [, action] of merge(...streams)) {
-        yield action
-      }
-      return
-    })()
+
+      const batch = pending.splice(0)
+      ready = Promise.withResolvers<void>()
+      yield batch
+    }
+    return
   })
