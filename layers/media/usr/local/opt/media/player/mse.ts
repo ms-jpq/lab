@@ -121,25 +121,39 @@ export const bond = (
     while (!signal.aborted) {
       const source = MSE()
       const url = URL.createObjectURL(source)
-      const opened = Promise.race([
-        once(signal, source, "sourceopen"),
-        once(signal, source, "sourceclose"),
-      ])
-
       const prev = media.src
 
+      let committed = false
       try {
-        media.src = url
-        const event = await opened
+        const event = await (async () => {
+          using a = abortion(signal)
+          const opened = Promise.race([
+            once(a.signal, source, "sourceopen"),
+            once(a.signal, source, "sourceclose"),
+          ])
+          media.src = url
+          return await opened
+        })()
+
         if (event?.type === "sourceclose") {
           throw event
         }
         if (event === undefined) {
           return
         }
-      } catch (e) {
-        URL.revokeObjectURL(url)
-        throw e
+        committed = true
+      } finally {
+        if (!committed) {
+          try {
+            if (prev) {
+              media.src = prev
+            } else {
+              media.removeAttribute("src")
+            }
+          } finally {
+            URL.revokeObjectURL(url)
+          }
+        }
       }
 
       if (prev) {

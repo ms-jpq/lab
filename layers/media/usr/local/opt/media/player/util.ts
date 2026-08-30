@@ -186,24 +186,38 @@ const close = async <T>(aiters: Iterable<AsyncIterator<T>>): Promise<void> => {
   }
 }
 
-export const merge = async function* <
-  const T extends readonly AsyncIterator<unknown>[],
->(...aiters: T): AsyncIteratorObject<Selection<T>> {
-  const pending = new Map(aiters.map((aiter) => [aiter, next(aiter)] as const))
-  await using _ = defer(() => close(pending.keys()))
+export const merge = <const T extends readonly AsyncIterator<unknown>[]>(
+  ...aiters: T
+): AsyncIteratorObject<Selection<T>> =>
+  closing(new AbortController().signal, async function* (signal) {
+    const pending = new Map(
+      aiters.map((aiter) => [aiter, next(aiter)] as const),
+    )
+    const cancelled = Promise.withResolvers<undefined>()
+    signal.addEventListener("abort", () => cancelled.resolve(undefined), {
+      once: true,
+    })
+    await using _ = defer(() => close(pending.keys()))
 
-  while (pending.size) {
-    const [aiter, result] = await Promise.race(pending.values())
-    if (result.done) {
-      pending.delete(aiter)
-      continue
+    while (pending.size) {
+      const selected = await Promise.race([
+        ...pending.values(),
+        cancelled.promise,
+      ])
+      if (selected === undefined) {
+        return
+      }
+      const [aiter, result] = selected
+      if (result.done) {
+        pending.delete(aiter)
+        continue
+      }
+
+      yield [aiter, result.value] as Selection<T>
+      pending.set(aiter, next(aiter))
     }
-
-    yield [aiter, result.value] as Selection<T>
-    pending.set(aiter, next(aiter))
-  }
-  return
-}
+    return
+  })
 
 export const fetch_stream = (
   request: Request,
