@@ -427,7 +427,7 @@ const cases = [
     },
   },
   {
-    name: "parent abort settles pending bond and media source acquisitions",
+    name: "bond and media source acquisition obey their abort contract",
     run: async (context: TestContext) => {
       const current = acquisitionFixture(context)
       try {
@@ -463,6 +463,49 @@ const cases = [
         deepEqual(current.revoked, ["blob:test:1"])
         deepEqual(current.state, { loads: 1, removals: 1 })
         await sources.return?.()
+
+        const returnedBondOwner = new AbortController()
+        const returnedBond = bond(current.media, returnedBondOwner.signal)
+        const returnedBondPending = returnedBond.next()
+        const bondSource = current.sources[2]
+        assert(bondSource)
+        bondSource.dispatchEvent(new Event("sourceopen"))
+        deepEqual(await returnedBondPending, {
+          done: false,
+          value: bondSource,
+        })
+        const closedBond = returnedBond.return?.()
+        assert(closedBond)
+
+        deepEqual(
+          await Promise.race([closedBond, setImmediate("pending")]),
+          { done: true, value: undefined },
+        )
+        current.media.src = ""
+
+        const returnedSourcesOwner = new AbortController()
+        const returnedSources = media_sources({
+          evict_behind: 30,
+          media: current.media,
+          mime_type: "video/test",
+          signal: returnedSourcesOwner.signal,
+        })
+        const returnedSourcesPending = returnedSources.next()
+        const mediaSource = current.sources[3]
+        assert(mediaSource)
+        mediaSource.dispatchEvent(new Event("sourceopen"))
+        const acquired = await returnedSourcesPending
+        assert(!acquired.done)
+        deepEqual(acquired.value[0], mediaSource)
+        const closedSources = returnedSources.return?.()
+        assert(closedSources)
+
+        deepEqual(
+          await Promise.race([closedSources, setImmediate("pending")]),
+          { done: true, value: undefined },
+        )
+        deepEqual(current.revoked, ["blob:test:1", "blob:test:3"])
+        deepEqual(current.state, { loads: 2, removals: 2 })
       } finally {
         current.restore()
       }

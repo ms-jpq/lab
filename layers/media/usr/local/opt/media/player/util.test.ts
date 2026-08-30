@@ -68,6 +68,60 @@ class OnceTarget extends EventTarget {
 
 const cases = [
   {
+    name: "for-await returns before scoped abort disposal",
+    run: async () => {
+      const sequence: string[] = []
+      const release = Promise.withResolvers<void>()
+      let returned = false
+
+      const abort = {
+        [Symbol.dispose]: () => sequence.push("abort"),
+      }
+      const source = {
+        [Symbol.asyncDispose]: async () => {
+          sequence.push("asyncDispose")
+          await source.return()
+        },
+        [Symbol.asyncIterator]: () => source,
+        next: async () => ({ done: false, value: 1 }) as const,
+        return: async () => {
+          sequence.push("return")
+          if (!returned) {
+            returned = true
+            await release.promise
+          }
+          return { done: true, value: undefined } as const
+        },
+      }
+
+      const values = (async function* () {
+        using a = abort
+        using _ = a
+        await using stream = source
+
+        for await (const value of stream) {
+          yield value
+        }
+      })()
+
+      deepEqual(await values.next(), { done: false, value: 1 })
+      const closed = values.return(undefined)
+      await setImmediate()
+
+      deepEqual(sequence, ["return"])
+
+      release.resolve()
+      deepEqual(await closed, { done: true, value: undefined })
+      deepEqual(sequence, [
+        "return",
+        "asyncDispose",
+        "return",
+        "abort",
+        "abort",
+      ])
+    },
+  },
+  {
     name: "delay resolves true when its timer wins",
     run: async (context: TestContext) => {
       context.mock.timers.enable({ apis: ["setTimeout"] })
@@ -197,10 +251,12 @@ const cases = [
       target.dispatchEvent(new Event("change"))
 
       deepEqual((await pending).done, false)
-      deepEqual(await values.return?.(undefined), {
-        done: true,
-        value: undefined,
-      })
+      const closed = values.return?.(undefined)
+      assert(closed)
+      deepEqual(
+        await Promise.race([closed, setImmediate("pending")]),
+        { done: true, value: undefined },
+      )
       const deliveries = target.deliveries
 
       owner.abort()
@@ -256,6 +312,48 @@ const cases = [
         assert(failure instanceof DOMException)
         deepEqual(failure.name, "AbortError")
         await values.return(undefined)
+      }),
+  },
+  {
+    name: "return from a logical stream aborts its request before settling",
+    run: async (context: TestContext) =>
+      withFetch(context, async () => {
+        let requestSignal: AbortSignal | undefined
+        let cancellations = 0
+        context.mock.method(
+          globalThis,
+          "fetch",
+          async (_input: string | URL | Request, init?: RequestInit) => {
+            requestSignal = init?.signal ?? undefined
+            return new Response(
+              new ReadableStream<Uint8Array>({
+                cancel: () => {
+                  cancellations += 1
+                },
+                start: (controller) => {
+                  controller.enqueue(new Uint8Array([1]))
+                },
+              }),
+            )
+          },
+        )
+        const values = logical_stream(
+          new Request("https://example.test/stream"),
+        )
+
+        deepEqual(await values.next(), {
+          done: false,
+          value: new Uint8Array([1]),
+        })
+        deepEqual(
+          await Promise.race([
+            values.return(undefined),
+            setImmediate("pending"),
+          ]),
+          { done: true, value: undefined },
+        )
+        assert(requestSignal?.aborted)
+        deepEqual(cancellations, 1)
       }),
   },
   {
