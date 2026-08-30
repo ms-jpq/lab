@@ -90,10 +90,10 @@ const cases = [
       const closed = states.return?.()
       ok(closed)
 
-      deepEqual(
-        await Promise.race([closed, setImmediate("pending")]),
-        { done: true, value: undefined },
-      )
+      deepEqual(await Promise.race([closed, setImmediate("pending")]), {
+        done: true,
+        value: undefined,
+      })
       deepEqual(getEventListeners(media, "progress").length, 0)
       media.dispatchEvent(new Event("progress"))
       deepEqual(await states.next(), { done: true, value: undefined })
