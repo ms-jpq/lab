@@ -82,9 +82,14 @@ class Media extends EventTarget {
   }
 }
 
-const PLAYER = ["util.ts", "mse.ts", "reducer.ts", "page.ts", "index.ts"].map(
-  (name) => new URL(name, import.meta.url),
-)
+const PLAYER = [
+  "util.ts",
+  "mse.ts",
+  "media.ts",
+  "reducer.ts",
+  "page.ts",
+  "index.ts",
+].map((name) => new URL(name, import.meta.url))
 
 const options = { concurrency: true, timeout: 2_000 }
 

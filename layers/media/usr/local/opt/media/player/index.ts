@@ -1,4 +1,5 @@
 import { media_sources } from "./mse.ts"
+import { media_events } from "./media.ts"
 import {
   main,
   media,
@@ -7,7 +8,7 @@ import {
   persist_position,
   source_url,
 } from "./page.ts"
-import { playback_events, playback_transitions } from "./reducer.ts"
+import { playback_transitions } from "./reducer.ts"
 import { abortion, delay, fetch_stream, merge } from "./util.ts"
 
 type Dispatch = ReturnType<typeof playback_transitions>
@@ -80,7 +81,7 @@ export const play_media = async (signal: AbortSignal) => {
       using _ = abrt
 
       for await (const [, event] of merge(
-        playback_events(media, abrt.signal),
+        media_events(media, abrt.signal),
         stream_events(stream, abrt.signal),
       )) {
         const effects = dispatch(event)
