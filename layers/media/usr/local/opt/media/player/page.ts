@@ -91,28 +91,25 @@ export const play_subtitle = async (signal: AbortSignal): Promise<void> => {
   }
 }
 
-export const run_playback = async (
-  signal: AbortSignal,
-  play_media: (signal: AbortSignal) => Promise<void>,
-): Promise<void> => {
-  using a = abortion(signal)
-  const playback = play_media(a.signal)
-  const captions = play_subtitle(a.signal).then(() => playback)
-  try {
-    await Promise.race([playback, captions])
-  } finally {
-    a[Symbol.dispose]()
-    await Promise.allSettled([playback, captions])
-  }
-}
-
-export const run_page = async (
-  playback: (signal: AbortSignal) => Promise<void>,
+export const main = async (
+  play_media: (signal: AbortSignal) => Promise<undefined>,
 ): Promise<never> => {
+  form.onsubmit = submit
+  persist_position(initial_position)
+
   for (;;) {
     using a = abortion()
     await once(a.signal, window, "pageshow")
-    const running = playback(a.signal)
+    const running = (async () => {
+      const playback = play_media(a.signal)
+      const captions = play_subtitle(a.signal).then(() => playback)
+      try {
+        await Promise.race([playback, captions])
+      } finally {
+        a[Symbol.dispose]()
+        await Promise.allSettled([playback, captions])
+      }
+    })()
 
     try {
       await Promise.race([once(a.signal, window, "pagehide"), running])
@@ -121,12 +118,4 @@ export const run_page = async (
       await running
     }
   }
-}
-
-export const start_page = async (
-  playback: (signal: AbortSignal) => Promise<void>,
-): Promise<never> => {
-  form.onsubmit = submit
-  persist_position(initial_position)
-  return await run_page(playback)
 }
