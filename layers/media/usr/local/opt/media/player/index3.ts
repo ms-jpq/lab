@@ -360,6 +360,7 @@ const play_media = async (signal: AbortSignal): Promise<void> => {
     await decide(signal)
   } catch (error) {
     if (typeof error === "object" && error !== null && REPORT in error) {
+      // this seems awful, we are using errors for controlflow, i thought the goal was to not do that
       throw (error as ReportFailure)[REPORT]
     }
     throw error
@@ -371,4 +372,6 @@ export const page_reader = undefined
 export const play_source = undefined
 export const request_stream = undefined
 
-void start_page((s) => run_playback(s, play_media)).catch(console.error)
+void start_page((signal) => run_playback(signal, play_media)).catch(
+  console.error,
+)
