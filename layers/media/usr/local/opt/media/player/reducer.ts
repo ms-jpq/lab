@@ -143,86 +143,90 @@ export const reduce = (
   state: PlaybackState,
   action: PlaybackAction,
 ): PlaybackTransition => {
-  if (action.kind === "consume_failure") {
-    return [
-      { ...state, failure: undefined },
-      { persist: undefined, seek: undefined },
-    ]
-  }
-
-  if (action.kind === "seek") {
-    return [
-      {
-        ...state,
-        pending_seek: { target: action.target, acknowledged: false },
-      },
-      { persist: undefined, seek: action.target.position },
-    ]
-  }
-
-  const { current, derived } = action.value
-  const { failure, resume, seeks } = derived
-  let target = state.target
-  let pending_seek = state.pending_seek
-  let persist: number | undefined
-  let seek: number | undefined
-
-  const pending = pending_seek
-  if (
-    pending !== undefined &&
-    seeks.some(({ position }) => aligned(position, pending.target.position))
-  ) {
-    pending_seek = { ...pending, acknowledged: true }
-  }
-  const external_seek = seeks.findLast(
-    ({ position, seeking }) =>
-      seeking &&
-      (pending === undefined || !aligned(position, pending.target.position)),
-  )
-  const retargeted = external_seek !== undefined
-  if (external_seek !== undefined) {
-    target = external_seek.candidate
-  }
-
-  const { metadata, seeking, time } = current
-  if (retargeted) {
-    pending_seek =
-      target.restart || !aligned(time, target.position)
-        ? { target, acknowledged: false }
-        : undefined
-    persist = target.position
-  }
-  if (
-    resume !== undefined &&
-    (resume.reason === "ended" || (!retargeted && pending_seek === undefined))
-  ) {
-    persist = resume.position
-  }
-  if (pending_seek !== undefined && !seeking) {
-    const pending_target = pending_seek.target
-    const playable = buffered_position(current, pending_target.position)
-    const seek_target = {
-      ...pending_target,
-      position: playable ?? pending_target.position,
+  switch (action.kind) {
+    case "consume_failure": {
+      return [
+        { ...state, failure: undefined },
+        { persist: undefined, seek: undefined },
+      ]
     }
-    const positioned = aligned(time, seek_target.position)
-    if (!positioned && (metadata || playable !== undefined)) {
-      pending_seek = { target: seek_target, acknowledged: false }
-      seek = seek_target.position
-    } else if (positioned && pending_seek.acknowledged) {
-      pending_seek = undefined
+    case "seek": {
+      return [
+        {
+          ...state,
+          pending_seek: { target: action.target, acknowledged: false },
+        },
+        { persist: undefined, seek: action.target.position },
+      ]
+    }
+    case "media": {
+      const { current, derived } = action.value
+      const { failure, resume, seeks } = derived
+      let target = state.target
+      let pending_seek = state.pending_seek
+      let persist: number | undefined
+      let seek: number | undefined
+
+      const pending = pending_seek
+      if (
+        pending !== undefined &&
+        seeks.some(({ position }) => aligned(position, pending.target.position))
+      ) {
+        pending_seek = { ...pending, acknowledged: true }
+      }
+      const external_seek = seeks.findLast(
+        ({ position, seeking }) =>
+          seeking &&
+          (pending === undefined ||
+            !aligned(position, pending.target.position)),
+      )
+      const retargeted = external_seek !== undefined
+      if (external_seek !== undefined) {
+        target = external_seek.candidate
+      }
+
+      const { metadata, seeking, time } = current
+      if (retargeted) {
+        pending_seek =
+          target.restart || !aligned(time, target.position)
+            ? { target, acknowledged: false }
+            : undefined
+        persist = target.position
+      }
+      if (
+        resume !== undefined &&
+        (resume.reason === "ended" ||
+          (!retargeted && pending_seek === undefined))
+      ) {
+        persist = resume.position
+      }
+      if (pending_seek !== undefined && !seeking) {
+        const pending_target = pending_seek.target
+        const playable = buffered_position(current, pending_target.position)
+        const seek_target = {
+          ...pending_target,
+          position: playable ?? pending_target.position,
+        }
+        const positioned = aligned(time, seek_target.position)
+        if (!positioned && (metadata || playable !== undefined)) {
+          pending_seek = { target: seek_target, acknowledged: false }
+          seek = seek_target.position
+        } else if (positioned && pending_seek.acknowledged) {
+          pending_seek = undefined
+        }
+      }
+
+      return [
+        {
+          current,
+          failure: state.failure ?? failure,
+          pending_seek,
+          target,
+        },
+        { persist, seek },
+      ]
     }
   }
-
-  return [
-    {
-      current,
-      failure: state.failure ?? failure,
-      pending_seek,
-      target,
-    },
-    { persist, seek },
-  ]
 }
 
 export const media_states = (
