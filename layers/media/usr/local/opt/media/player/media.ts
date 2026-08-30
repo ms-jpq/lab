@@ -12,7 +12,7 @@ export type MediaSnapshot = Readonly<{
   time: number
 }>
 
-const playable = (duration: number, value: number): number => {
+export const playable_time = (duration: number, value: number): number => {
   const position = Number.isFinite(value) ? Math.max(0, value) : 0
   return duration > 0 && position >= duration
     ? Math.max(0, duration - END_TOLERANCE)
@@ -22,7 +22,7 @@ const playable = (duration: number, value: number): number => {
 export const playable_position = (
   media: HTMLMediaElement,
   value: number,
-): number => playable(Number(media.dataset["duration"]), value)
+): number => playable_time(Number(media.dataset["duration"]), value)
 
 export const aligned = (left: number, right: number): boolean =>
   Math.abs(left - right) <= POSITION_TOLERANCE

@@ -2,10 +2,7 @@ import {
   aligned,
   buffered_end,
   buffered_position,
-  media_states,
   play_ahead,
-  type MediaState,
-  type MediaTarget,
 } from "./media.ts"
 import { media_sources, type Mse } from "./mse.ts"
 import {
@@ -16,6 +13,7 @@ import {
   source_url,
   start_page,
 } from "./page.ts"
+import { media_states, type MediaState, type MediaTarget } from "./reducer.ts"
 import { abortion, delay, logical_stream } from "./util.ts"
 
 const BUFFER = { BEHIND: 30, LO: 45, HI: 60 }
@@ -96,9 +94,12 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
     }
     if (pending_seek === undefined || seeking) return
 
-    const { target: seek_target } = pending_seek
-    const playable = buffered_position(current, seek_target.position)
-    seek_target.position = playable ?? seek_target.position
+    const pending_target = pending_seek.target
+    const playable = buffered_position(current, pending_target.position)
+    const seek_target = {
+      ...pending_target,
+      position: playable ?? pending_target.position,
+    }
     const positioned = aligned(time, seek_target.position)
     if (!positioned && (metadata || playable !== undefined)) {
       seek(seek_target)

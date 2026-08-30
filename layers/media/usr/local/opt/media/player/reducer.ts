@@ -1,6 +1,6 @@
 import {
   buffered_position,
-  playable_position,
+  playable_time,
   type MediaSnapshot,
 } from "./media.ts"
 import { abortion, event_batches, type EventObservation } from "./util.ts"
@@ -61,7 +61,8 @@ const derive = (
   previous: MediaState | undefined,
   observations: readonly MediaObservation[],
 ): MediaState => {
-  const current = observations.at(-1)?.[0] ?? previous?.current ?? capture(media)
+  const current =
+    observations.at(-1)?.[0] ?? previous?.current ?? capture(media)
   const ended = observations.some(([, event]) => event.type === "ended")
   const moved = observations.some(([, event]) =>
     ["seeked", "seeking", "timeupdate"].includes(event.type),
@@ -83,8 +84,8 @@ const derive = (
   const seeks = observations.flatMap(([snapshot, event]) => {
     if (event.type !== "seeked" && event.type !== "seeking") return []
 
-    const { seeking, time } = snapshot
-    const native = playable_position(media, time)
+    const { duration, seeking, time } = snapshot
+    const native = playable_time(duration, time)
     const position = buffered_position(snapshot, native)
     return [
       {
