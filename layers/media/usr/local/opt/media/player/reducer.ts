@@ -213,10 +213,8 @@ const project_request = (
   ]
 }
 
-const observe = (
-  state: PlaybackState,
-  current: MediaSnapshot,
-): PlaybackTransition => {
+const observe = (state: PlaybackState): PlaybackTransition => {
+  const { current } = state
   const [pending_seek, seek] = reconcile_seek(current, state.pending_seek)
   const [request, restart] = project_request(current, state.request)
   const requested = restart && request.needed
@@ -235,42 +233,35 @@ const observe = (
 
 const media_transition = (
   state: PlaybackState,
-  action: MediaAction | Readonly<{ type: "source_opened" }>,
+  action: MediaAction,
 ): PlaybackTransition => {
+  const observed = { ...state, current: action.current }
+  const { current } = observed
+
   switch (action.type) {
-    case "source_opened": {
-      return [
-        {
-          ...state,
-          pending_seek: state.target,
-          request: request_at(state.current, state.target),
-        },
-        { seek: state.target },
-      ]
-    }
     case "loadedmetadata":
     case "canplay":
     case "progress":
     case "seeked":
     case "waiting": {
-      return observe(state, action.current)
+      return observe(observed)
     }
     case "ended": {
-      return [{ ...state, current: action.current }, { persist: 0 }]
+      return [observed, { persist: 0 }]
     }
     case "timeupdate": {
       const persist =
         state.pending_seek === undefined
-          ? buffered_position(action.current, action.current.time)
+          ? buffered_position(current, current.time)
           : undefined
 
-      const [next, effects] = observe(state, action.current)
+      const [next, effects] = observe(observed)
       return [next, { ...effects, persist }]
     }
     case "error": {
-      const { error } = action.current
+      const { error } = current
       return [
-        { ...state, current: action.current },
+        observed,
         {
           failure:
             error !== undefined && error.code !== MediaError.MEDIA_ERR_ABORTED
@@ -280,7 +271,6 @@ const media_transition = (
       ]
     }
     case "seeking": {
-      const { current } = action
       const native = playable_time(current.duration, current.time)
 
       const buffered = buffered_position(current, native)
@@ -291,21 +281,18 @@ const media_transition = (
         !aligned(current.time, state.pending_seek)
 
       if (!external) {
-        return observe(state, current)
+        return observe(observed)
       }
 
       const restart =
         buffered === undefined && !aligned(target, state.request.frontier)
 
-      const [next, effects] = observe(
-        {
-          ...state,
-          pending_seek: undefined,
-          request: restart ? request_at(current, target) : state.request,
-          target,
-        },
-        current,
-      )
+      const [next, effects] = observe({
+        ...observed,
+        pending_seek: undefined,
+        request: restart ? request_at(current, target) : state.request,
+        target,
+      })
 
       return [
         next,
@@ -356,13 +343,15 @@ const reduce = (
       return [{ ...state, requesting: false }, { end: true }]
     }
     case "source_opened": {
-      const [next, effects] = media_transition(
-        { ...state, requesting: false },
-        action,
-      )
+      const request = request_at(state.current, state.target)
       return [
-        { ...next, requesting: true },
-        { ...effects, request: next.request },
+        {
+          ...state,
+          pending_seek: state.target,
+          request,
+          requesting: true,
+        },
+        { request, seek: state.target },
       ]
     }
     default: {
