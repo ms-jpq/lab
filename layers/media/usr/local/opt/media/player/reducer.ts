@@ -9,8 +9,9 @@ type BufferEffect =
   | Readonly<{ type: "end" }>
 
 type PlaybackControl =
-  | Readonly<{ error?: unknown; request: PlaybackRequest; type: "request" }>
-  | Readonly<{ error: unknown; type: "rebuild" }>
+  | Readonly<{ type: "pause" }>
+  | Readonly<{ request: PlaybackRequest; type: "request" }>
+  | Readonly<{ type: "rebuild" }>
 
 type PlaybackState = Readonly<{
   pending_seek: number | undefined
@@ -29,6 +30,7 @@ type PlaybackAction =
 type PlaybackEffects = Readonly<{
   buffer?: BufferEffect
   control?: PlaybackControl
+  error?: unknown
   persist?: number
   seek?: number
 }>
@@ -119,13 +121,13 @@ const project = (
   const frontier = stream_position(
     buffered_end(current, state.request.frontier) ?? state.request.frontier,
   )
+  const advance =
+    !aligned(frontier, state.request.position) &&
+    play_ahead(current, frontier) >= BUFFER_HIGH
+  const pause = state.requesting && advance
   const request = {
     frontier,
-    position:
-      !aligned(frontier, state.request.position) &&
-      play_ahead(current, frontier) >= BUFFER_HIGH
-        ? frontier
-        : state.request.position,
+    position: advance ? frontier : state.request.position,
   }
   const [next, effects] = request_if_needed(
     {
@@ -138,7 +140,10 @@ const project = (
     },
     current,
   )
-  return [next, seek === undefined ? effects : { ...effects, seek }]
+  const controlled = pause
+    ? { ...effects, control: { type: "pause" } as const }
+    : effects
+  return [next, seek === undefined ? controlled : { ...controlled, seek }]
 }
 
 const reduce = (
@@ -153,7 +158,7 @@ const reduce = (
       const request = request_at(state.request.frontier)
       return [
         { ...state, request, requesting: true },
-        { control: { error: action.error, request, type: "request" } },
+        { control: { request, type: "request" }, error: action.error },
       ]
     }
     case "request_finished": {
@@ -200,7 +205,7 @@ const reduce = (
       ) {
         return [next, effects]
       }
-      return [next, { control: { error: current.error, type: "rebuild" } }]
+      return [next, { control: { type: "rebuild" }, error: current.error }]
     }
     case "seeking": {
       const { current } = action

@@ -547,6 +547,52 @@ const cases = [
     },
   },
   {
+    name: "high water pauses acquisition until playback reaches low water",
+    run: async () => {
+      const current = await fixture({ response: "pending" })
+      let first = true
+      current.set_fetch((request) =>
+        response_from(
+          new ReadableStream({
+            start: (controller) => {
+              if (first) {
+                first = false
+                controller.enqueue(Uint8Array.of(1))
+              }
+              request.signal.addEventListener(
+                "abort",
+                () => controller.error(request.signal.reason),
+                { once: true },
+              )
+            },
+          }),
+        ),
+      )
+      const owner = new AbortController()
+      const playback = current.context.player_test.play_media(owner.signal)
+
+      await eventually(
+        () => current.sources[0]?.sourceBuffers[0]?.appended.length === 1,
+      )
+      const initial = current.requests[0]
+      ok(initial)
+      current.media.dispatchEvent(new Event("progress"))
+      await eventually(() => initial.signal.aborted)
+      await next_task()
+
+      equal(current.requests.length, 1)
+
+      current.media.currentTime = 20
+      current.media.dispatchEvent(new Event("timeupdate"))
+      await eventually(() => current.requests.length === 2)
+
+      equal(request_position(current.requests[1]), "60")
+
+      owner.abort()
+      await playback
+    },
+  },
+  {
     name: "a synchronous seek storm requests only its final target",
     run: async () => {
       const current = await fixture({ response: "pending" })

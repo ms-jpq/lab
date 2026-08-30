@@ -10,7 +10,7 @@ import {
   source_url,
 } from "./page.ts"
 import { playback_transitions } from "./reducer.ts"
-import { abortion, delay, fetch_stream, merge, never } from "./util.ts"
+import { abortion, closing, delay, fetch_stream, merge, never } from "./util.ts"
 
 type Dispatch = ReturnType<typeof playback_transitions>
 type PlaybackAction = Parameters<Dispatch>[0]
@@ -48,6 +48,25 @@ const stream_events = async function* (
   return
 }
 
+const playback_events = (
+  signal: AbortSignal,
+  position: number | undefined,
+): AsyncIteratorObject<PlaybackAction> =>
+  closing(signal, async function* (signal) {
+    const states = media_events(media, signal)
+    if (position === undefined) {
+      yield* states
+      return
+    }
+
+    await using stream = fetch_stream(request(signal, position))
+    await using events = merge(states, stream_events(stream, signal))
+    for await (const [, event] of events) {
+      yield event
+    }
+    return
+  })
+
 export const play_media = async (signal: AbortSignal) => {
   using abort = abortion(signal)
   const dispatch = playback_transitions(page_position())
@@ -75,22 +94,26 @@ export const play_media = async (signal: AbortSignal) => {
 
     let requested =
       opened.control?.type === "request" ? opened.control.request : undefined
-    request: while (requested !== undefined && !abort.signal.aborted) {
-      if ((await buffer.next(requested.frontier)).done) {
+
+    request: while (!abort.signal.aborted) {
+      if (
+        requested !== undefined &&
+        (await buffer.next(requested.frontier)).done
+      ) {
         continue source
       }
 
       using abrt = abortion(abort.signal)
-      await using stream = fetch_stream(
-        request(abrt.signal, requested.position),
-      )
       using _ = abrt
 
-      for await (const [, event] of merge(
-        media_events(media, abrt.signal),
-        stream_events(stream, abrt.signal),
+      for await (const event of playback_events(
+        abrt.signal,
+        requested?.position,
       )) {
         const effects = dispatch(event)
+        if (effects.error !== undefined) {
+          console.error(effects.error)
+        }
 
         if (effects.persist !== undefined) {
           persist_position(effects.persist)
@@ -102,11 +125,12 @@ export const play_media = async (signal: AbortSignal) => {
 
         if (effects.control) {
           using _ = abrt
-          if (effects.control.error !== undefined) {
-            console.error(effects.control.error)
-          }
 
           switch (effects.control.type) {
+            case "pause": {
+              requested = undefined
+              continue request
+            }
             case "rebuild":
               continue source
             case "request": {

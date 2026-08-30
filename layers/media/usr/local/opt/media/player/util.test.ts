@@ -244,23 +244,18 @@ const cases = [
         )
         const pending = values.next()
         await entered.promise
-        const failure = pending.then(
-          () => undefined,
-          (error: unknown) => error,
-        )
         const closed = values.return?.(undefined)
         assert(closed)
 
         owner.abort()
 
-        const settled = Promise.all([failure, closed] as const)
+        const settled = Promise.all([pending, closed] as const)
         deepEqual(
           await Promise.race([settled.then(() => true), setImmediate(false)]),
           true,
         )
-        const [error, result] = await settled
-        assert(error instanceof DOMException)
-        deepEqual(error.name, "AbortError")
+        const [read, result] = await settled
+        deepEqual(read, { done: true, value: undefined })
         deepEqual(result, { done: true, value: undefined })
       }),
   },
@@ -371,23 +366,18 @@ const cases = [
         const pending = values.next()
         const body = await bodyReady.promise
         await entered.promise
-        const failure = pending.then(
-          () => undefined,
-          (error: unknown) => error,
-        )
         const closed = values.return?.(undefined)
         assert(closed)
 
         owner.abort()
 
-        const settled = Promise.all([failure, closed] as const)
+        const settled = Promise.all([pending, closed] as const)
         deepEqual(
           await Promise.race([settled.then(() => true), setImmediate(false)]),
           true,
         )
-        const [error, result] = await settled
-        assert(error instanceof DOMException)
-        deepEqual(error.name, "AbortError")
+        const [read, result] = await settled
+        deepEqual(read, { done: true, value: undefined })
         deepEqual(result, { done: true, value: undefined })
         deepEqual(
           { aborts: state.aborts, cancellations: state.cancellations },

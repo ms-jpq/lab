@@ -120,7 +120,7 @@ const cases = [
           current: snapshot({ buffered: [[0, 60]] }),
           type: "progress",
         },
-        expected: {},
+        expected: { control: { type: "pause" } },
       },
       {
         action: {
@@ -186,10 +186,10 @@ const cases = [
         action: { error: failure, type: "request_failed" },
         expected: {
           control: {
-            error: failure,
             request: { frontier: 0, position: 0 },
             type: "request",
           },
+          error: failure,
         },
       },
     ],

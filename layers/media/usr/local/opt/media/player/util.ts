@@ -223,16 +223,22 @@ export const fetch_stream = (
   request: Request,
 ): AsyncIteratorObject<Uint8Array<ArrayBuffer>> =>
   closing(request.signal, async function* (signal) {
-    const response = await fetch(request, { signal })
+    try {
+      const response = await fetch(request, { signal })
 
-    if (!response.ok) {
-      throw new Error([response.status, response.statusText].join(" "), {
-        cause: response,
-      })
-    }
+      if (!response.ok) {
+        throw new Error([response.status, response.statusText].join(" "), {
+          cause: response,
+        })
+      }
 
-    if (response.body) {
-      yield* readableIterator(response.body)
+      if (response.body) {
+        yield* readableIterator(response.body)
+      }
+    } catch (error) {
+      if (!signal.aborted) {
+        throw error
+      }
     }
     return
   })
