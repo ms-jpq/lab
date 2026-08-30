@@ -13,7 +13,7 @@ import {
   play_ahead,
   reduce,
   should_interrupt,
-  type MediaState,
+  type MediaAction,
   type PlaybackAction,
 } from "./reducer.ts"
 import { abortion, delay, logical_stream } from "./util.ts"
@@ -40,11 +40,10 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
   })
 
   const states = media_events(media, lifetime.signal)
-  const initial = await states.next()
-  if (initial.done) {
+  if (lifetime.signal.aborted) {
     return
   }
-  let playback = initial_playback(page_position(), initial.value)
+  let playback = initial_playback(media, page_position())
 
   const dispatch = (action: PlaybackAction): void => {
     const [state, { persist, seek }] = reduce(playback, action)
@@ -75,7 +74,7 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
   const read_state = async () =>
     ({ kind: "state", result: await states.next() }) as const
   let pending_state = read_state()
-  const accept = (result: IteratorResult<MediaState>): boolean => {
+  const accept = (result: IteratorResult<MediaAction>): boolean => {
     if (result.done) {
       return false
     }
