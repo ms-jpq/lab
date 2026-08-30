@@ -35,19 +35,19 @@ type MediaEvent =
   | "timeupdate"
   | "waiting"
 
-export type MediaAction = Readonly<{
+type MediaAction = Readonly<{
   current: MediaSnapshot
   type: MediaEvent
 }>
 
-export type PlaybackAction =
+type PlaybackAction =
   | MediaAction
   | Readonly<{ type: "request_failed" }>
   | Readonly<{ type: "source_opened" }>
 
 type RequestInterruption = Readonly<{ type: "request" }>
 
-export type PlaybackInterruption =
+type PlaybackInterruption =
   RequestInterruption | Readonly<{ error: MediaError; type: "failure" }>
 
 type PlaybackEffects = Readonly<{
@@ -159,7 +159,7 @@ const capture = (media: HTMLMediaElement): MediaSnapshot => ({
   time: media.currentTime,
 })
 
-export const initial_playback = (
+const initial_playback = (
   media: HTMLMediaElement,
   position: number,
 ): PlaybackState => {
@@ -226,7 +226,7 @@ const observe = (
   ]
 }
 
-export const reduce = (
+const reduce = (
   state: PlaybackState,
   action: PlaybackAction,
 ): PlaybackTransition => {
@@ -316,10 +316,17 @@ export const reduce = (
         },
       ]
     }
+    default:
+      throw new Error(action)
   }
 }
 
-export const media_events = (
+export const playback_transitions = (
+  media: HTMLMediaElement,
+  position: number,
+) => [initial_playback(media, position), reduce] as const
+
+export const playback_events = (
   media: HTMLMediaElement,
   signal: AbortSignal,
 ): AsyncIteratorObject<MediaAction> =>

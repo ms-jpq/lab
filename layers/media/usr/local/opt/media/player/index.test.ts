@@ -12,6 +12,7 @@ type PlayerContext = vm.Context & {
       playback: (signal: AbortSignal) => Promise<undefined>,
     ) => Promise<never>
     play_media: (signal: AbortSignal) => Promise<undefined>
+    playback: (signal: AbortSignal) => Promise<undefined>
   }
 }
 
@@ -368,12 +369,12 @@ const fixture = async ({
     (await Promise.all(PLAYER.map((url) => readFile(url, "utf8")))).join("\n"),
   )
     .replace(/^export /gmu, "")
-    .replace(/^void main\(play_media\)\.catch\(console\.error\)$/gmu, "")
+    .replace(/^void main\(playback\)\.catch\(console\.error\)$/gmu, "")
 
   vm.runInContext(
     stripTypeScriptTypes(
       `${source}
-globalThis.player_test = { main, play_media }`,
+globalThis.player_test = { main, play_media, playback }`,
       { mode: "strip" },
     ),
     context,
@@ -1188,9 +1189,13 @@ const cases = [
   {
     name: "a failed SourceBuffer acquisition is reported and rebuilt",
     run: async () => {
-      const current = await fixture({ buffer_failures: 1, response: "pending" })
+      const current = await fixture({
+        buffer_failures: 1,
+        immediate_timers: true,
+        response: "pending",
+      })
       const owner = new AbortController()
-      const playback = current.context.player_test.play_media(owner.signal)
+      const playback = current.context.player_test.playback(owner.signal)
 
       await eventually(() => current.requests.length === 1)
       equal(current.sources.length, 2)

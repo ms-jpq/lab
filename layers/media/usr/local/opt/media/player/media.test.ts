@@ -3,7 +3,7 @@ import { getEventListeners } from "node:events"
 import nodeTest from "node:test"
 import { setImmediate } from "node:timers/promises"
 
-import { initial_playback, media_events, reduce } from "./reducer.ts"
+import { playback_events, playback_transitions } from "./reducer.ts"
 
 const options = { concurrency: true, timeout: 2_000 }
 
@@ -45,7 +45,7 @@ const cases = [
       const owner = new AbortController()
       owner.abort()
       const media = new Media()
-      const states = media_events(
+      const states = playback_events(
         media as unknown as HTMLMediaElement,
         owner.signal,
       )
@@ -60,7 +60,7 @@ const cases = [
     run: async () => {
       const owner = new AbortController()
       const media = new Media()
-      const states = media_events(
+      const states = playback_events(
         media as unknown as HTMLMediaElement,
         owner.signal,
       )
@@ -90,7 +90,7 @@ const cases = [
     run: async () => {
       const owner = new AbortController()
       const media = new Media()
-      const states = media_events(
+      const states = playback_events(
         media as unknown as HTMLMediaElement,
         owner.signal,
       )
@@ -115,7 +115,7 @@ const cases = [
     run: async () => {
       const owner = new AbortController()
       const media = new Media()
-      const states = media_events(
+      const states = playback_events(
         media as unknown as HTMLMediaElement,
         owner.signal,
       )
@@ -126,14 +126,31 @@ const cases = [
 
       const observed = await pending
       ok(!observed.done)
-      const [state] = reduce(
-        initial_playback(media as unknown as HTMLMediaElement, 0),
-        observed.value,
+      const [initial, transition] = playback_transitions(
+        media as unknown as HTMLMediaElement,
+        0,
       )
+      const [state] = transition(initial, observed.value)
       const { current: snapshot } = state
       media.buffered.values[0]?.splice(0, 2, 30, 40)
       deepEqual(snapshot.buffered, [[10, 20]])
       await states.return?.()
+    },
+  },
+  {
+    name: "playback transitions describe effects without performing them",
+    run: async () => {
+      const media = new Media()
+      media.readyState = media.HAVE_METADATA
+      const element = media as unknown as HTMLMediaElement
+      const [initial, transition] = playback_transitions(element, 40)
+
+      const [state, effects] = transition(initial, { type: "source_opened" })
+
+      deepEqual(effects, { seek: 40 })
+      deepEqual(media.currentTime, 0)
+      deepEqual(initial.pending_seek, undefined)
+      deepEqual(state.pending_seek, 40)
     },
   },
 ] as const

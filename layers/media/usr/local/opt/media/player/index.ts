@@ -1,4 +1,4 @@
-import { media_sources, type Mse, type MseOperation } from "./mse.ts"
+import { media_sources, type MseOperation } from "./mse.ts"
 import {
   main,
   media,
@@ -6,20 +6,18 @@ import {
   persist_position,
   source_url,
 } from "./page.ts"
-import {
-  initial_playback,
-  media_events,
-  reduce,
-  type MediaAction,
-  type PlaybackAction,
-  type PlaybackInterruption,
-} from "./reducer.ts"
+import { playback_events, playback_transitions } from "./reducer.ts"
 import { abortion, defer, delay, logical_stream } from "./util.ts"
 
 type Abortion = ReturnType<typeof abortion>
 
+type ReducerEvent =
+  ReturnType<typeof playback_events> extends AsyncIteratorObject<infer T>
+    ? T
+    : never
+
 type Action = Readonly<{
-  result: IteratorResult<MediaAction>
+  result: IteratorResult<ReducerEvent>
   type: "action"
 }>
 
@@ -49,71 +47,69 @@ const BUFFER_BEHIND = 30
 
 export const play_media = async (signal: AbortSignal): Promise<undefined> => {
   const abort = abortion(signal)
-
-  await using actions = media_events(media, abort.signal)
-  await using sources = media_sources({
-    evict_behind: BUFFER_BEHIND,
-    media,
-    mime_type: media.dataset["mseType"] as string,
-    signal: abort.signal,
-  })
+  await using events = playback_events(media, abort.signal)
   using _ = abort
 
-  let playback = initial_playback(media, page_position())
+  const [initial, reduce] = playback_transitions(media, page_position())
+
+  let playback = initial
+  type PlaybackAction = Parameters<typeof reduce>[1]
 
   const read_action = async (): Promise<Action> => ({
-    result: await actions.next(),
+    result: await events.next(),
     type: "action",
   })
   let pending_action = read_action()
 
-  const dispatch = (
-    action: PlaybackAction,
-  ): PlaybackInterruption | undefined => {
+  const transition = (action: PlaybackAction) => {
     const [state, effects] = reduce(playback, action)
     playback = state
-
-    if (effects.persist !== undefined) {
-      persist_position(effects.persist)
-    }
-    if (effects.seek !== undefined) {
-      media.currentTime = effects.seek
-    }
-    return effects.interrupt
+    return effects
   }
 
-  source: for await (const [source, create_buffer] of sources) {
-    const abrt = abortion(abort.signal)
-
-    let stream: Stream | undefined
-    let work: Promise<Work> | undefined
-
-    const close_stream = async (): Promise<void> => {
-      abrt?.[Symbol.dispose]()
-      const current = stream
-      stream = undefined
-      await current?.return(undefined)
-    }
+  source: for await (const [source, create_buffer] of media_sources({
+    evict_behind: BUFFER_BEHIND,
+    media,
+    mime_type: media.dataset["mseType"] as string,
+    signal: abort.signal,
+  })) {
+    using abrt = abortion(abort.signal)
+    await using buffer = create_buffer(abrt.signal)
+    await using _ = defer(async () => {
+      await work
+      await close_stream()
+    })
+    using __ = abrt
 
     if (playback.current.duration > 0) {
       source.duration = playback.current.duration
     }
 
-    const buffer = create_buffer(abrt.signal)
-    await using _buffer = buffer
-    await using _cleanup = defer(async () => {
-      await work
-      await close_stream()
-    })
-    using _preabort = abrt
+    let stream_abort: Abortion | undefined
+    let stream: Stream | undefined
+    let work: Promise<Work> | undefined
+
+    const close_stream = async (): Promise<void> => {
+      stream_abort?.[Symbol.dispose]()
+      stream_abort = undefined
+      const current = stream
+      stream = undefined
+      await current?.return(undefined)
+    }
 
     if ((await buffer.next()).done) {
       continue
     }
-    dispatch({ type: "source_opened" })
+    const opened = transition({ type: "source_opened" })
+    if (opened.persist !== undefined) {
+      persist_position(opened.persist)
+    }
+    if (opened.seek !== undefined) {
+      media.currentTime = opened.seek
+    }
 
     const send = (operation: MseOperation, next: BufferWork["next"]): void => {
-      work = buffer?.next(operation).then(
+      work = buffer.next(operation).then(
         (result) => ({ next, result, type: "buffer" }),
         (error) => ({ error, owner: "buffer", type: "failure" }),
       )
@@ -129,7 +125,6 @@ export const play_media = async (signal: AbortSignal): Promise<undefined> => {
     let reset_stream = false
 
     for (;;) {
-      const a = abortion(abrt.signal)
       if (reset_stream && work === undefined) {
         await close_stream()
         reset_stream = false
@@ -140,9 +135,10 @@ export const play_media = async (signal: AbortSignal): Promise<undefined> => {
         request_open &&
         playback.request.needed
       ) {
+        stream_abort = abortion(abrt.signal)
         stream = logical_stream(
           new Request(source_url(media, playback.request.position), {
-            signal: a.signal,
+            signal: stream_abort.signal,
           }),
         )
         send(playback.request.frontier, "stream")
@@ -159,7 +155,15 @@ export const play_media = async (signal: AbortSignal): Promise<undefined> => {
         }
         pending_action = read_action()
 
-        const interruption = dispatch(result.value)
+        const effects = transition(result.value)
+        if (effects.persist !== undefined) {
+          persist_position(effects.persist)
+        }
+        if (effects.seek !== undefined) {
+          media.currentTime = effects.seek
+        }
+
+        const { interrupt: interruption } = effects
         if (interruption?.type === "failure") {
           console.error(interruption.error)
           continue source
@@ -167,22 +171,22 @@ export const play_media = async (signal: AbortSignal): Promise<undefined> => {
         if (interruption?.type === "request") {
           request_open = true
           reset_stream = stream !== undefined
-          abrt?.[Symbol.dispose]()
+          stream_abort?.[Symbol.dispose]()
         }
         continue
       }
 
       work = undefined
       if (selected.type === "failure") {
-        if (selected.owner === "stream" && abrt?.signal.aborted) {
+        if (selected.owner === "stream" && stream_abort?.signal.aborted) {
           continue
         }
         console.error(selected.error)
         if (selected.owner === "stream") {
-          dispatch({ type: "request_failed" })
+          transition({ type: "request_failed" })
           request_open = true
           reset_stream = true
-          abrt?.[Symbol.dispose]()
+          stream_abort?.[Symbol.dispose]()
           continue
         }
         continue source
@@ -207,10 +211,11 @@ export const play_media = async (signal: AbortSignal): Promise<undefined> => {
       send(selected.result.value, "stream")
     }
   }
+  return undefined
 }
 
-void main(async (signal) => {
-  for (;;) {
+export const playback = async (signal: AbortSignal): Promise<undefined> => {
+  while (!signal.aborted) {
     try {
       await play_media(signal)
     } catch (error) {
@@ -219,6 +224,11 @@ void main(async (signal) => {
       }
       console.error(error)
     }
-    await delay(signal, 1_000)
+    if (!(await delay(signal, 1_000))) {
+      return undefined
+    }
   }
-}).catch(console.error)
+  return undefined
+}
+
+void main(playback).catch(console.error)
