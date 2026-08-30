@@ -38,6 +38,7 @@ export type MediaDerived = Readonly<{
   seek: MediaSeek | undefined
 }>
 export type MediaState = Readonly<{
+  kind: "media"
   current: MediaSnapshot
   derived: MediaDerived
 }>
@@ -54,7 +55,7 @@ export type PlaybackState = Readonly<{
 }>
 export type PlaybackAction =
   | Readonly<{ kind: "consume_failure" }>
-  | Readonly<{ kind: "media"; value: MediaState }>
+  | MediaState
   | Readonly<{ kind: "seek"; target: MediaTarget }>
 export type PlaybackEffects = Readonly<{
   persist: number | undefined
@@ -138,7 +139,7 @@ const derive = (
     }
   })()
 
-  return { current, derived: { failure, resume, seek } }
+  return { kind: "media", current, derived: { failure, resume, seek } }
 }
 
 export const reduce = (
@@ -162,8 +163,9 @@ export const reduce = (
       ]
     }
     case "media": {
-      const { current, derived } = action.value
+      const { current, derived } = action
       const { failure, resume, seek: observed_seek } = derived
+
       let target = state.target
       let pending_seek = state.pending_seek
       let persist: number | undefined
@@ -191,6 +193,7 @@ export const reduce = (
             : undefined
         persist = target.position
       }
+
       if (
         resume !== undefined &&
         (resume.reason === "ended" ||
@@ -198,6 +201,7 @@ export const reduce = (
       ) {
         persist = resume.position
       }
+
       if (pending_seek !== undefined && !seeking) {
         const pending_target = pending_seek.target
         const playable = buffered_position(current, pending_target.position)

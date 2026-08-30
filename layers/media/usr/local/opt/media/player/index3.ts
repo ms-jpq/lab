@@ -63,9 +63,6 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
     dispatch({ kind: "consume_failure" })
     return error
   }
-  const observe = (value: MediaState): void =>
-    dispatch({ kind: "media", value })
-
   const read_state = async () =>
     ({ kind: "state", result: await states.next() }) as const
   let pending_state = read_state()
@@ -74,7 +71,7 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
       return false
     }
     pending_state = read_state()
-    observe(result.value)
+    dispatch(result.value)
     return true
   }
   const wait = async (until: () => boolean): Promise<boolean> => {
