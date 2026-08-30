@@ -119,19 +119,22 @@ const project = (
   const frontier = stream_position(
     buffered_end(current, state.request.frontier) ?? state.request.frontier,
   )
-  const advance =
-    !aligned(frontier, state.request.position) &&
-    play_ahead(current, frontier) >= BUFFER_HIGH
   const request = {
     frontier,
-    position: advance ? frontier : state.request.position,
+    position:
+      !aligned(frontier, state.request.position) &&
+      play_ahead(current, frontier) >= BUFFER_HIGH
+        ? frontier
+        : state.request.position,
   }
   const [next, effects] = request_if_needed(
     {
       ...state,
       pending_seek,
       request,
-      requesting: advance ? false : state.requesting,
+      requesting: aligned(request.position, state.request.position)
+        ? state.requesting
+        : false,
     },
     current,
   )
