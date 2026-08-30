@@ -6,7 +6,7 @@
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
     "checkJs": true,
-    "composite": true,
+    "declaration": false,
     "erasableSyntaxOnly": true,
     "exactOptionalPropertyTypes": true,
     "forceConsistentCasingInFileNames": true,
