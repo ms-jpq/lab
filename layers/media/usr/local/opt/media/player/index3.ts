@@ -43,15 +43,20 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
 
   const states = media_states(media, lifetime.signal)
   const initial = await states.next()
-  if (initial.done) return
+  if (initial.done) {
+    return
+  }
   let playback = initial_playback(page_position(), initial.value)
 
   const dispatch = (action: PlaybackAction): void => {
-    const transition = reduce(playback, action)
-    playback = transition.state
-    const { persist, seek } = transition.effects
-    if (persist !== undefined) persist_position(persist)
-    if (seek !== undefined) media.currentTime = seek
+    const [state, { persist, seek }] = reduce(playback, action)
+    playback = state
+    if (persist !== undefined) {
+      persist_position(persist)
+    }
+    if (seek !== undefined) {
+      media.currentTime = seek
+    }
   }
   const take_failure = (): MediaError | undefined => {
     const error = playback.failure
@@ -65,15 +70,21 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
     ({ kind: "state", result: await states.next() }) as const
   let pending_state = read_state()
   const accept = (result: IteratorResult<MediaState>): boolean => {
-    if (result.done) return false
+    if (result.done) {
+      return false
+    }
     pending_state = read_state()
     observe(result.value)
     return true
   }
   const wait = async (until: () => boolean): Promise<boolean> => {
     for (;;) {
-      if (!accept((await pending_state).result)) return false
-      if (until()) return true
+      if (!accept((await pending_state).result)) {
+        return false
+      }
+      if (until()) {
+        return true
+      }
     }
   }
   const perform = async <T>(
@@ -97,7 +108,9 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
         return { interrupted, value: selected.value }
       }
       if (!accept(selected.result)) {
-        if (!interrupted) interrupt()
+        if (!interrupted) {
+          interrupt()
+        }
         const completed = await effect
         if (completed.kind === "failure") {
           throw completed.error
@@ -133,24 +146,32 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
   const open = async (): Promise<Mse | typeof STOP> => {
     dispatch({ kind: "seek", target: playback.target })
     const opened = await pull(sources.next())
-    if (opened === STOP) return STOP
+    if (opened === STOP) {
+      return STOP
+    }
 
     const [source, create_buffer] = opened
     if (playback.current.duration > 0) {
       source.duration = playback.current.duration
     }
     const buffer = create_buffer(lifetime.signal)
-    if ((await pull(buffer.next())) === STOP) return STOP
+    if ((await pull(buffer.next())) === STOP) {
+      return STOP
+    }
 
     const error = take_failure()
-    if (error !== undefined) throw error
+    if (error !== undefined) {
+      throw error
+    }
     return buffer
   }
 
   try {
     source: for (;;) {
       const media_failure = take_failure()
-      if (media_failure !== undefined) console.error(media_failure)
+      if (media_failure !== undefined) {
+        console.error(media_failure)
+      }
       const attempt = playback.target
       let buffer: Mse | typeof STOP
       try {
@@ -162,11 +183,17 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
             playback.failure !== undefined ||
             (playback.target !== attempt && playback.target.restart),
         )
-        if (interrupted === STOP) return
-        if (interrupted) take_failure()
+        if (interrupted === STOP) {
+          return
+        }
+        if (interrupted) {
+          take_failure()
+        }
         continue
       }
-      if (buffer === STOP) return
+      if (buffer === STOP) {
+        return
+      }
 
       let accepted = playback.target
       let start = accepted.position
@@ -177,8 +204,12 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
           !aligned(playback.target.position, frontier))
       const retarget = (frontier: number): boolean => {
         const error = take_failure()
-        if (error !== undefined) throw error
-        if (playback.target === accepted) return false
+        if (error !== undefined) {
+          throw error
+        }
+        if (playback.target === accepted) {
+          return false
+        }
         accepted = playback.target
         if (accepted.restart && !aligned(accepted.position, frontier)) {
           start = accepted.position
@@ -198,8 +229,12 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
                 changed(start) ||
                 play_ahead(playback.current, start) < BUFFER.LO,
             )
-            if (!demanded) return
-            if (retarget(start)) continue request
+            if (!demanded) {
+              return
+            }
+            if (retarget(start)) {
+              continue request
+            }
           }
 
           using owner = abortion(lifetime.signal)
@@ -207,8 +242,12 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
             new Request(source_url(media, start), { signal: owner.signal }),
           )
           try {
-            if ((await pull(buffer.next(frontier))) === STOP) return
-            if (retarget(frontier)) continue request
+            if ((await pull(buffer.next(frontier))) === STOP) {
+              return
+            }
+            if (retarget(frontier)) {
+              continue request
+            }
 
             for (;;) {
               let read: Performed<IteratorResult<Uint8Array, undefined>>
@@ -222,19 +261,31 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
                 request_failure = { error }
                 break
               }
-              if (read === STOP) return
-              if (read.interrupted) continue request
+              if (read === STOP) {
+                return
+              }
+              if (read.interrupted) {
+                continue request
+              }
               if (read.value.done) {
-                if ((await pull(buffer.next(undefined))) === STOP) return
-                if (!(await wait(() => changed(frontier)))) return
+                if ((await pull(buffer.next(undefined))) === STOP) {
+                  return
+                }
+                if (!(await wait(() => changed(frontier)))) {
+                  return
+                }
                 continue request
               }
 
-              if ((await pull(buffer.next(read.value.value))) === STOP) return
+              if ((await pull(buffer.next(read.value.value))) === STOP) {
+                return
+              }
               frontier = stream_position(
                 buffered_end(playback.current, frontier) ?? frontier,
               )
-              if (retarget(frontier)) continue request
+              if (retarget(frontier)) {
+                continue request
+              }
               if (play_ahead(playback.current, frontier) >= BUFFER.HI) {
                 start = frontier
                 continue request
@@ -245,7 +296,9 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
             await request.return(undefined)
           }
         } catch (error) {
-          if ((await perform(Promise.resolve())) === STOP) return
+          if ((await perform(Promise.resolve())) === STOP) {
+            return
+          }
           console.error(take_failure() ?? error)
           continue source
         }
@@ -255,7 +308,9 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
           start = stream_position(
             buffered_end(playback.current, frontier) ?? frontier,
           )
-          if ((await retry(() => changed(start))) === STOP) return
+          if ((await retry(() => changed(start))) === STOP) {
+            return
+          }
         }
       }
     }

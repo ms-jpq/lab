@@ -61,10 +61,10 @@ export type PlaybackEffects = Readonly<{
   persist: number | undefined
   seek: number | undefined
 }>
-export type PlaybackTransition = Readonly<{
-  effects: PlaybackEffects
-  state: PlaybackState
-}>
+export type PlaybackTransition = readonly [
+  state: PlaybackState,
+  effects: PlaybackEffects,
+]
 
 export const initial_playback = (
   position: number,
@@ -117,7 +117,9 @@ const derive = (
   )?.[0].error
 
   const seeks = observations.flatMap(([snapshot, event]) => {
-    if (event.type !== "seeked" && event.type !== "seeking") return []
+    if (event.type !== "seeked" && event.type !== "seeking") {
+      return []
+    }
 
     const { duration, seeking, time } = snapshot
     const native = playable_time(duration, time)
@@ -142,20 +144,20 @@ export const reduce = (
   action: PlaybackAction,
 ): PlaybackTransition => {
   if (action.kind === "consume_failure") {
-    return {
-      effects: { persist: undefined, seek: undefined },
-      state: { ...state, failure: undefined },
-    }
+    return [
+      { ...state, failure: undefined },
+      { persist: undefined, seek: undefined },
+    ]
   }
 
   if (action.kind === "seek") {
-    return {
-      effects: { persist: undefined, seek: action.target.position },
-      state: {
+    return [
+      {
         ...state,
         pending_seek: { target: action.target, acknowledged: false },
       },
-    }
+      { persist: undefined, seek: action.target.position },
+    ]
   }
 
   const { current, derived } = action.value
@@ -178,7 +180,9 @@ export const reduce = (
       (pending === undefined || !aligned(position, pending.target.position)),
   )
   const retargeted = external_seek !== undefined
-  if (external_seek !== undefined) target = external_seek.candidate
+  if (external_seek !== undefined) {
+    target = external_seek.candidate
+  }
 
   const { metadata, seeking, time } = current
   if (retargeted) {
@@ -210,15 +214,15 @@ export const reduce = (
     }
   }
 
-  return {
-    effects: { persist, seek },
-    state: {
+  return [
+    {
       current,
       failure: state.failure ?? failure,
       pending_seek,
       target,
     },
-  }
+    { persist, seek },
+  ]
 }
 
 export const media_states = (
@@ -227,7 +231,9 @@ export const media_states = (
 ): AsyncIteratorObject<MediaState> =>
   (async function* (): AsyncIteratorObject<MediaState> {
     using a = abortion(signal)
-    if (a.signal.aborted) return
+    if (a.signal.aborted) {
+      return
+    }
 
     const events = event_batches(a.signal, media, EVENTS, () => capture(media))
     let pending = events.next()
@@ -235,7 +241,9 @@ export const media_states = (
     yield state
     for (;;) {
       const next = await pending
-      if (next.done) return
+      if (next.done) {
+        return
+      }
       pending = events.next()
       state = derive(media, state, next.value)
       yield state
