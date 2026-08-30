@@ -311,19 +311,23 @@ const cases = [
       await start(values)
       const appending = values.next(new Uint8Array([6]))
       await entered
+      const closing = values.return?.(undefined)
+      assert(closing)
 
       controller.abort()
 
-      deepEqual(await Promise.race([appending, setImmediate("pending")]), {
-        done: false,
-        value: undefined,
-      })
+      deepEqual(
+        await Promise.race([
+          Promise.all([appending, closing]),
+          setImmediate("pending"),
+        ]),
+        [
+          { done: false, value: undefined },
+          { done: true, value: undefined },
+        ],
+      )
       deepEqual(mutations, [["append", [6]], ["abort"]])
       deepEqual(buffer.updating, false)
-      deepEqual(await values.return?.(undefined), {
-        done: true,
-        value: undefined,
-      })
     },
   },
   {
@@ -337,19 +341,23 @@ const cases = [
       await start(values)
       const appending = values.next(new Uint8Array([6]))
       await entered
+      const closing = values.return?.(undefined)
+      assert(closing)
 
       controller.abort()
 
-      deepEqual(await Promise.race([appending, setImmediate("pending")]), {
-        done: false,
-        value: undefined,
-      })
+      deepEqual(
+        await Promise.race([
+          Promise.all([appending, closing]),
+          setImmediate("pending"),
+        ]),
+        [
+          { done: false, value: undefined },
+          { done: true, value: undefined },
+        ],
+      )
       deepEqual(mutations, [["remove", 0, 70], ["abort"]])
       deepEqual(buffer.updating, false)
-      deepEqual(await values.return?.(undefined), {
-        done: true,
-        value: undefined,
-      })
     },
   },
   {
@@ -434,15 +442,22 @@ const cases = [
         const bondOwner = new AbortController()
         const bonded = bond(current.media, bondOwner.signal)
         const pendingBond = bonded.next()
+        const abortedBond = bonded.return?.()
+        assert(abortedBond)
 
         bondOwner.abort()
 
-        deepEqual(await Promise.race([pendingBond, setImmediate("pending")]), {
-          done: true,
-          value: undefined,
-        })
+        deepEqual(
+          await Promise.race([
+            Promise.all([pendingBond, abortedBond]),
+            setImmediate("pending"),
+          ]),
+          [
+            { done: true, value: undefined },
+            { done: true, value: undefined },
+          ],
+        )
         deepEqual(current.sources.length, 1)
-        await bonded.return?.()
         current.media.src = ""
 
         const sourcesOwner = new AbortController()
@@ -453,17 +468,23 @@ const cases = [
           signal: sourcesOwner.signal,
         })
         const pendingSources = sources.next()
+        const abortedSources = sources.return?.()
+        assert(abortedSources)
 
         sourcesOwner.abort()
 
         deepEqual(
-          await Promise.race([pendingSources, setImmediate("pending")]),
-          { done: true, value: undefined },
+          await Promise.race([
+            Promise.all([pendingSources, abortedSources]),
+            setImmediate("pending"),
+          ]),
+          [
+            { done: true, value: undefined },
+            { done: true, value: undefined },
+          ],
         )
         deepEqual(current.revoked, ["blob:test:1"])
         deepEqual(current.state, { loads: 1, removals: 1 })
-        await sources.return?.()
-
         const returnedBondOwner = new AbortController()
         const returnedBond = bond(current.media, returnedBondOwner.signal)
         const returnedBondPending = returnedBond.next()

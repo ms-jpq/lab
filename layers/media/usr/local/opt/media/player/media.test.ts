@@ -65,10 +65,21 @@ const cases = [
         owner.signal,
       )
       const pending = states.next()
+      const closed = states.return?.()
+      ok(closed)
 
       owner.abort()
 
-      deepEqual(await pending, { done: true, value: undefined })
+      deepEqual(
+        await Promise.race([
+          Promise.all([pending, closed]),
+          setImmediate("pending"),
+        ]),
+        [
+          { done: true, value: undefined },
+          { done: true, value: undefined },
+        ],
+      )
       deepEqual(getEventListeners(media, "timeupdate").length, 0)
       media.dispatchEvent(new Event("timeupdate"))
       deepEqual(await states.next(), { done: true, value: undefined })

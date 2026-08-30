@@ -292,10 +292,21 @@ const cases = [
       const target = new AbortController()
       const values = events(owner.signal, target.signal, "abort")
       const pending = values.next()
+      const closed = values.return?.(undefined)
+      assert(closed)
 
       owner.abort()
 
-      deepEqual(await pending, { done: true, value: undefined })
+      deepEqual(
+        await Promise.race([
+          Promise.all([pending, closed]),
+          setImmediate("pending"),
+        ]),
+        [
+          { done: true, value: undefined },
+          { done: true, value: undefined },
+        ],
+      )
     },
   },
   {
@@ -359,16 +370,23 @@ const cases = [
         )
         const pending = values.next()
         await entered.promise
-
-        owner.abort()
-
-        const failure = await pending.then(
+        const failure = pending.then(
           () => undefined,
           (error: unknown) => error,
         )
-        assert(failure instanceof DOMException)
-        deepEqual(failure.name, "AbortError")
-        await values.return(undefined)
+        const closed = values.return(undefined)
+
+        owner.abort()
+
+        const settled = Promise.all([failure, closed] as const)
+        deepEqual(
+          await Promise.race([settled.then(() => true), setImmediate(false)]),
+          true,
+        )
+        const [error, result] = await settled
+        assert(error instanceof DOMException)
+        deepEqual(error.name, "AbortError")
+        deepEqual(result, { done: true, value: undefined })
       }),
   },
   {
@@ -477,18 +495,23 @@ const cases = [
         const pending = values.next()
         const body = await bodyReady.promise
         await entered.promise
+        const failure = pending.then(
+          () => undefined,
+          (error: unknown) => error,
+        )
+        const closed = values.return(undefined)
 
         owner.abort()
 
-        const settled = await Promise.race([
-          pending.then(
-            () => undefined,
-            (error: unknown) => error,
-          ),
-          setImmediate("pending"),
-        ])
-        assert(settled instanceof DOMException)
-        deepEqual(settled.name, "AbortError")
+        const settled = Promise.all([failure, closed] as const)
+        deepEqual(
+          await Promise.race([settled.then(() => true), setImmediate(false)]),
+          true,
+        )
+        const [error, result] = await settled
+        assert(error instanceof DOMException)
+        deepEqual(error.name, "AbortError")
+        deepEqual(result, { done: true, value: undefined })
         deepEqual(
           { aborts: state.aborts, cancellations: state.cancellations },
           { aborts: 1, cancellations: 0 },
