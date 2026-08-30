@@ -17,11 +17,6 @@ type MediaSnapshot = Readonly<{
   time: number
 }>
 
-type PendingSeek = Readonly<{
-  acknowledged: boolean
-  target: MediaTarget
-}>
-
 export type PlaybackStream = Readonly<{
   accepted: MediaTarget
   frontier: number
@@ -32,7 +27,7 @@ export type PlaybackState = Readonly<{
   current: MediaSnapshot
   failure: MediaError | undefined
   media: HTMLMediaElement
-  pending_seek: PendingSeek | undefined
+  pending_seek: MediaTarget | undefined
   stream: PlaybackStream
   target: MediaTarget
 }>
@@ -175,7 +170,7 @@ export const initial_playback = (
     current: capture(media),
     failure: undefined,
     media,
-    pending_seek: { target, acknowledged: false },
+    pending_seek: target,
     stream: start_stream(target),
     target,
   }
@@ -219,16 +214,11 @@ const reduce_media = (
       position: position ?? native,
       restart: position === undefined,
     }
-    if (
-      pending !== undefined &&
-      aligned(current.time, pending.target.position)
-    ) {
-      pending = { ...pending, acknowledged: true }
-    } else {
+    if (pending === undefined || !aligned(current.time, pending.position)) {
       target = candidate
       pending =
         target.restart || !aligned(current.time, target.position)
-          ? { target, acknowledged: false }
+          ? target
           : undefined
       persist = target.position
     }
@@ -246,16 +236,16 @@ const reduce_media = (
   }
 
   if (pending !== undefined && !current.seeking) {
-    const playable = buffered_position(current, pending.target.position)
+    const playable = buffered_position(current, pending.position)
     const candidate = {
-      ...pending.target,
-      position: playable ?? pending.target.position,
+      ...pending,
+      position: playable ?? pending.position,
     }
     const positioned = aligned(current.time, candidate.position)
     if (!positioned && (current.metadata || playable !== undefined)) {
-      pending = { target: candidate, acknowledged: false }
+      pending = candidate
       seek = candidate.position
-    } else if (positioned && pending.acknowledged) {
+    } else if (positioned) {
       pending = undefined
     }
   }
@@ -306,7 +296,7 @@ export const reduce = (
       return [
         {
           ...state,
-          pending_seek: { target: action.target, acknowledged: false },
+          pending_seek: action.target,
         },
         { persist: undefined, seek: action.target.position },
       ]
