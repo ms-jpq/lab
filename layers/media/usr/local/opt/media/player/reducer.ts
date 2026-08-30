@@ -99,15 +99,11 @@ const derive = (
   const current =
     observations.at(-1)?.[0] ?? previous?.current ?? capture(media)
 
-  const ended = observations.some(([, event]) => event.type === "ended")
-
-  const moved = observations.some(([, event]) =>
-    ["seeked", "seeking", "timeupdate"].includes(event.type),
-  )
-
-  const resume = ended
+  const resume = observations.some(([, event]) => event.type === "ended")
     ? ({ reason: "ended", position: 0 } as const)
-    : moved && buffered_position(current, current.time) === current.time
+    : observations.some(([, event]) =>
+          ["seeked", "seeking", "timeupdate"].includes(event.type),
+        ) && buffered_position(current, current.time) === current.time
       ? ({ reason: "progress", position: current.time } as const)
       : undefined
 
@@ -179,7 +175,6 @@ export const reduce = (
       let pending_seek = owned_seek
         ? { ...pending, acknowledged: true }
         : pending
-      let persist = external_seek?.candidate.position
       let seek: number | undefined
 
       const { metadata, seeking, time } = current
@@ -190,13 +185,12 @@ export const reduce = (
             : undefined
       }
 
-      if (
+      const persist =
         resume !== undefined &&
         (resume.reason === "ended" ||
           (external_seek === undefined && pending_seek === undefined))
-      ) {
-        persist = resume.position
-      }
+          ? resume.position
+          : external_seek?.candidate.position
 
       if (pending_seek !== undefined && !seeking) {
         const pending_target = pending_seek.target
