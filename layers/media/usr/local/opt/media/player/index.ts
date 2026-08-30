@@ -48,13 +48,14 @@ type Work =
 const BUFFER_BEHIND = 30
 
 export const play_media = async (signal: AbortSignal): Promise<undefined> => {
-  using lifetime = abortion(signal)
-  const actions = media_events(media, lifetime.signal)
+  using abort = abortion(signal)
+
+  const actions = media_events(media, abort.signal)
   const sources = media_sources({
     evict_behind: BUFFER_BEHIND,
     media,
     mime_type: media.dataset["mseType"] as string,
-    signal: lifetime.signal,
+    signal: abort.signal,
   })
 
   let playback = initial_playback(media, page_position())
@@ -82,7 +83,7 @@ export const play_media = async (signal: AbortSignal): Promise<undefined> => {
 
   try {
     source: for (;;) {
-      using source_lifetime = abortion(lifetime.signal)
+      using a = abortion(abort.signal)
       let buffer: Mse | undefined
       let stream: Stream | undefined
       let request_lifetime: Abortion | undefined
@@ -107,7 +108,7 @@ export const play_media = async (signal: AbortSignal): Promise<undefined> => {
           source.duration = playback.current.duration
         }
 
-        buffer = create_buffer(source_lifetime.signal)
+        buffer = create_buffer(a.signal)
         if ((await buffer.next()).done) {
           continue
         }
@@ -143,7 +144,7 @@ export const play_media = async (signal: AbortSignal): Promise<undefined> => {
             request_open &&
             playback.request.needed
           ) {
-            request_lifetime = abortion(source_lifetime.signal)
+            request_lifetime = abortion(a.signal)
             stream = logical_stream(
               new Request(source_url(media, playback.request.position), {
                 signal: request_lifetime.signal,
@@ -166,7 +167,7 @@ export const play_media = async (signal: AbortSignal): Promise<undefined> => {
             const interruption = dispatch(result.value)
             if (interruption?.type === "failure") {
               console.error(interruption.error)
-              source_lifetime[Symbol.dispose]()
+              a[Symbol.dispose]()
               continue source
             }
             if (interruption?.type === "request") {
@@ -186,7 +187,7 @@ export const play_media = async (signal: AbortSignal): Promise<undefined> => {
               continue
             }
             console.error(selected.error)
-            source_lifetime[Symbol.dispose]()
+            a[Symbol.dispose]()
             continue source
           }
 
@@ -209,12 +210,12 @@ export const play_media = async (signal: AbortSignal): Promise<undefined> => {
           send(selected.result.value, "stream")
         }
       } catch (error) {
-        if (lifetime.signal.aborted) {
+        if (abort.signal.aborted) {
           return undefined
         }
         console.error(error)
       } finally {
-        source_lifetime[Symbol.dispose]()
+        a[Symbol.dispose]()
         await work
         try {
           await close_stream()
@@ -224,7 +225,7 @@ export const play_media = async (signal: AbortSignal): Promise<undefined> => {
       }
     }
   } finally {
-    lifetime[Symbol.dispose]()
+    abort[Symbol.dispose]()
     try {
       await sources.return?.()
     } finally {
