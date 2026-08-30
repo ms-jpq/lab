@@ -355,7 +355,7 @@ const decide = async (signal: AbortSignal): Promise<void> => {
   }
 }
 
-const play_media = async (signal: AbortSignal): Promise<void> => {
+export const play_media = async (signal: AbortSignal): Promise<void> => {
   try {
     await decide(signal)
   } catch (error) {
