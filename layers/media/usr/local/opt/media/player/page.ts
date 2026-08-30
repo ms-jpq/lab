@@ -71,16 +71,15 @@ const play_subtitle = async (signal: AbortSignal): Promise<void> => {
     return
   }
   for (;;) {
-    let event: Event | undefined
-    {
+    const event = await (async () => {
       using attempt = abortion(signal)
       const loaded = Promise.race([
         once(attempt.signal, subtitle, "load"),
         once(attempt.signal, subtitle, "error"),
       ])
       subtitle.src = source_url(subtitle, 0)
-      event = await loaded
-    }
+      return await loaded
+    })()
     if (event === undefined || event.type === "load") {
       return
     }
@@ -100,22 +99,11 @@ export const main = async (
   for (;;) {
     using a = abortion()
     await once(a.signal, window, "pageshow")
-    const running = (async () => {
-      const playback = play_media(a.signal)
-      const captions = play_subtitle(a.signal).then(() => playback)
-      try {
-        await Promise.race([playback, captions])
-      } finally {
-        a[Symbol.dispose]()
-        await Promise.allSettled([playback, captions])
-      }
-    })()
 
-    try {
-      await Promise.race([once(a.signal, window, "pagehide"), running])
-    } finally {
-      a[Symbol.dispose]()
-      await running
-    }
+    await Promise.race([
+      once(a.signal, window, "pagehide"),
+      play_media(a.signal),
+      play_subtitle(a.signal),
+    ])
   }
 }

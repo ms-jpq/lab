@@ -42,40 +42,28 @@ export const delay = (signal: AbortSignal, ms: number): Promise<boolean> => {
   return promise
 }
 
-export const once = <
+export const once = async <
   const T extends EventTarget,
   const E extends EventName<T>,
-  const R extends EventOf<T, E> = EventOf<T, E>,
 >(
   signal: AbortSignal,
   target: T,
   event: E,
-): Promise<R | undefined> => {
+): Promise<EventOf<T, E> | undefined> => {
   if (signal.aborted) {
-    return Promise.resolve(undefined)
+    return undefined
   }
 
-  const { promise, resolve } = Promise.withResolvers<R | undefined>()
-
-  let closed = false
-  const finish = (value?: R): void => {
-    if (closed) {
-      return
-    }
-    closed = true
+  const fut = Promise.withResolvers<EventOf<T, E> | undefined>()
+  const cancelled = () => fut.resolve(undefined)
+  const received = (value: Event) => {
     signal.removeEventListener("abort", cancelled)
-    target.removeEventListener(event, received)
-    resolve(value)
+    fut.resolve(value as EventOf<T, E>)
   }
-  const cancelled = (): void => finish()
-  const received = (value: Event): void => finish(value as R)
 
   signal.addEventListener("abort", cancelled, { once: true })
-  target.addEventListener(event, received)
-  if (signal.aborted) {
-    cancelled()
-  }
-  return promise
+  target.addEventListener(event, received, { once: true, signal })
+  return fut.promise
 }
 
 export const readableIterator = async function* <const T>(
@@ -106,12 +94,15 @@ export const readableIterator = async function* <const T>(
 export const events = async function* <
   const T extends EventTarget,
   const E extends EventName<T>,
-  const R extends EventMap<T>[E],
->(signal: AbortSignal, target: T, event: E): AsyncIteratorObject<R> {
+>(
+  signal: AbortSignal,
+  target: T,
+  event: E,
+): AsyncIteratorObject<EventOf<T, E>> {
   using a = abortion(signal)
   let closed = false
 
-  const stream = new ReadableStream<R>({
+  const stream = new ReadableStream<EventOf<T, E>>({
     start: (controller) => {
       if (a.signal.aborted) {
         controller.close()
@@ -131,7 +122,7 @@ export const events = async function* <
       )
       target.addEventListener(
         event,
-        (received) => controller.enqueue(received as R),
+        (received) => controller.enqueue(received as EventOf<T, E>),
         { signal: a.signal },
       )
     },

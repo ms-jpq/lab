@@ -1,4 +1,4 @@
-import { abortion, events, merge, type EventOf } from "./util.ts"
+import { abortion, events, merge } from "./util.ts"
 
 type BufferedRange = readonly [start: number, end: number]
 
@@ -11,18 +11,17 @@ type MediaSnapshot = Readonly<{
   time: number
 }>
 
-export type MediaTarget = Readonly<{ position: number; restart: boolean }>
-
-export type PlaybackStream = Readonly<{
+type PlaybackRequest = Readonly<{
   frontier: number
-  start: number
+  needed: boolean
+  position: number
 }>
 
-export type PlaybackState = Readonly<{
+type PlaybackState = Readonly<{
   current: MediaSnapshot
-  pending_seek: MediaTarget | undefined
-  stream: PlaybackStream
-  target: MediaTarget
+  pending_seek: number | undefined
+  request: PlaybackRequest
+  target: number
 }>
 
 type MediaEvent =
@@ -36,10 +35,9 @@ type MediaEvent =
   | "timeupdate"
   | "waiting"
 
-export type MediaAction<T extends MediaEvent = MediaEvent> = Readonly<{
+export type MediaAction = Readonly<{
   current: MediaSnapshot
-  event: EventOf<HTMLMediaElement, T>
-  type: T
+  type: MediaEvent
 }>
 
 export type PlaybackAction =
@@ -47,24 +45,24 @@ export type PlaybackAction =
   | Readonly<{ type: "request_failed" }>
   | Readonly<{ type: "source_opened" }>
 
-export type PlaybackInterruption =
-  | Readonly<{ error: MediaError; type: "failure" }>
-  | Readonly<{ type: "restart" }>
+type RequestInterruption = Readonly<{ type: "request" }>
 
-export type PlaybackEffects = Readonly<{
+export type PlaybackInterruption =
+  RequestInterruption | Readonly<{ error: MediaError; type: "failure" }>
+
+type PlaybackEffects = Readonly<{
   interrupt?: PlaybackInterruption | undefined
   persist?: number | undefined
   seek?: number | undefined
 }>
 
-export type PlaybackTransition = readonly [
+type PlaybackTransition = readonly [
   state: PlaybackState,
   effects: PlaybackEffects,
 ]
 
 const POSITION_TOLERANCE = 0.1
 const END_TOLERANCE = 0.5
-export const BUFFER_BEHIND = 30
 const BUFFER_LOW = 45
 const BUFFER_HIGH = 60
 
@@ -116,7 +114,11 @@ const buffered_position = (
   position: number,
 ): number | undefined => {
   const range = buffered_range(state, position, false)
-  return range ? Math.max(position, range.at(0) ?? -Infinity) : undefined
+  if (range === undefined) {
+    return undefined
+  }
+  const [start] = range
+  return Math.max(position, start)
 }
 
 const buffered_end = (
@@ -135,21 +137,14 @@ const play_ahead = (state: MediaSnapshot, frontier: number): number => {
 const stream_position = (value: number): number =>
   Math.round(value * 1_000) / 1_000
 
-const start_stream = (target: MediaTarget): PlaybackStream => ({
-  frontier: stream_position(target.position),
-  start: target.position,
+const request_at = (
+  current: MediaSnapshot,
+  position: number,
+): PlaybackRequest => ({
+  frontier: stream_position(position),
+  needed: play_ahead(current, position) < BUFFER_LOW,
+  position,
 })
-
-export const needs_data = ({ current, stream }: PlaybackState): boolean =>
-  play_ahead(current, stream.start) < BUFFER_LOW
-
-export const request_full = ({ current, stream }: PlaybackState): boolean =>
-  play_ahead(current, stream.frontier) >= BUFFER_HIGH
-
-export const source_invalidated = (
-  { target }: PlaybackState,
-  attempt: MediaTarget,
-): boolean => target !== attempt && target.restart
 
 const capture = (media: HTMLMediaElement): MediaSnapshot => ({
   buffered: Array.from(
@@ -168,56 +163,66 @@ export const initial_playback = (
   media: HTMLMediaElement,
   position: number,
 ): PlaybackState => {
-  const target = { position, restart: false }
+  const current = capture(media)
   return {
-    current: capture(media),
-    pending_seek: target,
-    stream: start_stream(target),
-    target,
+    current,
+    pending_seek: undefined,
+    request: request_at(current, position),
+    target: position,
   }
+}
+
+const reconcile_seek = (
+  current: MediaSnapshot,
+  pending_seek: number | undefined,
+): readonly [pending_seek: number | undefined, seek: number | undefined] => {
+  if (pending_seek === undefined || current.seeking) {
+    return [pending_seek, undefined]
+  }
+
+  const position =
+    buffered_position(current, pending_seek) ??
+    (current.metadata ? pending_seek : undefined)
+
+  if (position === undefined) {
+    return [pending_seek, undefined]
+  }
+  return aligned(current.time, position)
+    ? [undefined, undefined]
+    : [position, position]
+}
+
+const project_request = (
+  current: MediaSnapshot,
+  request: PlaybackRequest,
+): readonly [
+  request: PlaybackRequest,
+  interrupt: RequestInterruption | undefined,
+] => {
+  const frontier = stream_position(
+    buffered_end(current, request.frontier) ?? request.frontier,
+  )
+  const advance =
+    !aligned(frontier, request.position) &&
+    play_ahead(current, frontier) >= BUFFER_HIGH
+
+  const position = advance ? frontier : request.position
+  return [
+    { frontier, needed: play_ahead(current, position) < BUFFER_LOW, position },
+    advance ? { type: "request" } : undefined,
+  ]
 }
 
 const observe = (
   state: PlaybackState,
   current: MediaSnapshot,
 ): PlaybackTransition => {
-  let pending = state.pending_seek
-  let seek: number | undefined
-
-  if (pending !== undefined && !current.seeking) {
-    const playable = buffered_position(current, pending.position)
-    const candidate = {
-      ...pending,
-      position: playable ?? pending.position,
-    }
-    const positioned = aligned(current.time, candidate.position)
-    if (!positioned && (current.metadata || playable !== undefined)) {
-      pending = candidate
-      seek = candidate.position
-    } else if (positioned) {
-      pending = undefined
-    }
-  }
-
-  const frontier = stream_position(
-    buffered_end(current, state.stream.frontier) ?? state.stream.frontier,
-  )
-  const stream = {
-    frontier,
-    start:
-      play_ahead(current, frontier) >= BUFFER_HIGH
-        ? frontier
-        : state.stream.start,
-  }
+  const [pending_seek, seek] = reconcile_seek(current, state.pending_seek)
+  const [request, interrupt] = project_request(current, state.request)
 
   return [
-    {
-      ...state,
-      current,
-      pending_seek: pending,
-      stream,
-    },
-    { seek },
+    { ...state, current, pending_seek, request },
+    { interrupt, seek },
   ]
 }
 
@@ -226,27 +231,27 @@ export const reduce = (
   action: PlaybackAction,
 ): PlaybackTransition => {
   switch (action.type) {
-    case "request_failed": {
-      const frontier = stream_position(
-        buffered_end(state.current, state.stream.frontier) ??
-          state.stream.frontier,
-      )
-      const stream = { ...state.stream, frontier, start: frontier }
-      return [{ ...state, stream }, {}]
-    }
     case "source_opened": {
       return [
         {
           ...state,
           pending_seek: state.target,
-          stream: start_stream(state.target),
+          request: request_at(state.current, state.target),
         },
-        { seek: state.target.position },
+        { seek: state.target },
       ]
     }
-    case "canplay":
+    case "request_failed": {
+      const request = {
+        ...state.request,
+        position: state.request.frontier,
+      }
+      return [{ ...state, request }, {}]
+    }
     case "loadedmetadata":
+    case "canplay":
     case "progress":
+    case "seeked":
     case "waiting": {
       return observe(state, action.current)
     }
@@ -274,43 +279,40 @@ export const reduce = (
         },
       ]
     }
-    case "seeked":
     case "seeking": {
       const { current } = action
       const native = playable_time(current.duration, current.time)
+
       const buffered = buffered_position(current, native)
-      const target = {
-        position: buffered ?? native,
-        restart: buffered === undefined,
-      }
+      const target = buffered ?? native
+
       const external =
         state.pending_seek === undefined ||
-        !aligned(current.time, state.pending_seek.position)
+        !aligned(current.time, state.pending_seek)
+
       if (!external) {
         return observe(state, current)
       }
 
       const restart =
-        target.restart && !aligned(target.position, state.stream.frontier)
-      const pending_seek =
-        target.restart || !aligned(current.time, target.position)
-          ? target
-          : undefined
+        buffered === undefined && !aligned(target, state.request.frontier)
+
       const [next, effects] = observe(
         {
           ...state,
-          pending_seek,
-          stream: restart ? start_stream(target) : state.stream,
+          pending_seek: undefined,
+          request: restart ? request_at(current, target) : state.request,
           target,
         },
         current,
       )
+
       return [
         next,
         {
           ...effects,
-          interrupt: restart ? { type: "restart" } : undefined,
-          persist: target.position,
+          interrupt: restart ? { type: "request" } : effects.interrupt,
+          persist: target,
         },
       ]
     }
@@ -325,14 +327,14 @@ export const media_events = async function* (
 
   const streams = EVENTS.map((type) =>
     (async function* () {
-      for await (const event of events(a.signal, media, type)) {
-        yield { current: capture(media), event, type }
+      for await (const _ of events(a.signal, media, type)) {
+        yield { current: capture(media), type }
       }
     })(),
   )
 
   for await (const [, action] of merge(...streams)) {
-    yield action as MediaAction
+    yield action
   }
   return
 }

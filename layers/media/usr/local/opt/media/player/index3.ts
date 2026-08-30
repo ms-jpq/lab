@@ -7,13 +7,9 @@ import {
   main,
 } from "./page.ts"
 import {
-  BUFFER_BEHIND,
   initial_playback,
   media_events,
-  needs_data,
   reduce,
-  request_full,
-  source_invalidated,
   type MediaAction,
   type PlaybackAction,
   type PlaybackInterruption,
@@ -29,11 +25,22 @@ type Performed<T> =
       value: T
     }>
 
+type Settled<T> =
+  | Readonly<{ error: unknown; type: "failure" }>
+  | Readonly<{ type: "value"; value: T }>
+
+const BUFFER_BEHIND = 30
 const RETRY_DELAY = 1_000
 
 const STOP: Stop = Symbol()
 
 const stopped = (value: unknown): value is Stop => value === STOP
+
+const settle = <T>(promise: Promise<T>): Promise<Settled<T>> =>
+  promise.then(
+    (value) => ({ type: "value", value }),
+    (error) => ({ error, type: "failure" }),
+  )
 
 export const play_media = async (signal: AbortSignal): Promise<void> => {
   using lifetime = abortion(signal)
@@ -72,12 +79,12 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
     return error
   }
   const should_interrupt = (): boolean => interruption !== undefined
-  const restart_request = (): boolean => {
+  const next_request = (): boolean => {
     const error = take_failure()
     if (error !== undefined) {
       throw error
     }
-    if (interruption?.type !== "restart") {
+    if (interruption?.type !== "request") {
       return false
     }
     interruption = undefined
@@ -186,16 +193,10 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
       if (media_failure !== undefined) {
         console.error(media_failure)
       }
-      const attempt = playback.target
-      let buffer: Mse | Stop
-      try {
-        buffer = await open()
-      } catch (error) {
-        console.error(error)
-        const interrupted = await retry(
-          () =>
-            interruption !== undefined || source_invalidated(playback, attempt),
-        )
+      const opened = await settle(open())
+      if (opened.type === "failure") {
+        console.error(opened.error)
+        const interrupted = await retry(should_interrupt)
         if (stopped(interrupted)) {
           return
         }
@@ -204,6 +205,7 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
         }
         continue
       }
+      const { value: buffer } = opened
       if (stopped(buffer)) {
         return
       }
@@ -212,51 +214,52 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
       request: for (;;) {
         let request_failure: { error: unknown } | undefined
         try {
-          if (restart_request()) {
+          if (next_request()) {
             continue request
           }
-          while (!needs_data(playback)) {
+          while (!playback.request.needed) {
             const demanded = await wait(
-              () => should_interrupt() || needs_data(playback),
+              () => should_interrupt() || playback.request.needed,
             )
             if (!demanded) {
               return
             }
-            if (restart_request()) {
+            if (next_request()) {
               continue request
             }
           }
 
           using owner = abortion(lifetime.signal)
-          const start = playback.stream.start
+          const start = playback.request.position
           const request = logical_stream(
             new Request(source_url(media, start), { signal: owner.signal }),
           )
           try {
-            if (stopped(await pull(buffer.next(playback.stream.frontier)))) {
+            if (stopped(await pull(buffer.next(playback.request.frontier)))) {
               return
             }
-            if (restart_request()) {
+            if (next_request()) {
               continue request
             }
 
             for (;;) {
-              let read: Performed<IteratorResult<Uint8Array, undefined>>
-              try {
-                read = await perform(
+              const received = await settle(
+                perform(
                   request.next(),
                   should_interrupt,
                   owner[Symbol.dispose],
-                )
-              } catch (error) {
-                request_failure = { error }
+                ),
+              )
+              if (received.type === "failure") {
+                request_failure = { error: received.error }
                 break
               }
+              const { value: read } = received
               if (stopped(read)) {
                 return
               }
               if (read.interrupted) {
-                restart_request()
+                next_request()
                 continue request
               }
               if (read.value.done) {
@@ -272,10 +275,7 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
               if (stopped(await pull(buffer.next(read.value.value)))) {
                 return
               }
-              if (restart_request()) {
-                continue request
-              }
-              if (request_full(playback)) {
+              if (next_request()) {
                 continue request
               }
             }

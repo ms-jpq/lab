@@ -1,6 +1,6 @@
 import { abortion, once } from "./util.ts"
 
-export type MseOperation = undefined | number | Uint8Array
+export type MseOperation = undefined | number | Uint8Array<ArrayBuffer>
 export type Mse = AsyncGenerator<void, void, MseOperation>
 
 const EPSILON = 0.001
@@ -95,22 +95,20 @@ export const media_source = async function* ({
         }
       }
       for await (const _ of op_lock(buffer, a.signal)) {
-        buffer.appendBuffer(operation as Uint8Array<ArrayBuffer>)
+        buffer.appendBuffer(operation)
       }
     }
   }
 }
 
-const MSE = (): MediaSource => {
-  const source = new (
+const MSE = (): MediaSource =>
+  new (
     (
       globalThis as typeof globalThis & {
         ManagedMediaSource?: typeof MediaSource
       }
     ).ManagedMediaSource ?? MediaSource
   )()
-  return source
-}
 
 export const bond = async function* (
   media: HTMLMediaElement,
@@ -161,7 +159,7 @@ export const media_sources = async function* ({
   mime_type: string
   evict_behind: number
   signal: AbortSignal
-}): AsyncIteratorObject<[MediaSource, (_: AbortSignal) => Mse]> {
+}): AsyncIteratorObject<readonly [MediaSource, (_: AbortSignal) => Mse]> {
   using a = abortion(signal)
 
   try {
