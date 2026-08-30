@@ -12,7 +12,7 @@ import nodeTest, { type TestContext } from "node:test"
 import vm from "node:vm"
 
 const PLAYER_INDEX = process.env["PLAYER_INDEX"] ?? "index.ts"
-const PLAYER = ["util.ts", "media.ts", "mse.ts", "page.ts", PLAYER_INDEX].map(
+const PLAYER = ["util.ts", "mse.ts", "reducer.ts", "page.ts", PLAYER_INDEX].map(
   (name) => new URL(name, import.meta.url),
 )
 const options = { concurrency: true, timeout: 2_000 }

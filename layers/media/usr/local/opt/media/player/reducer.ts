@@ -57,10 +57,7 @@ const buffered_end = (
   position: number,
 ): number | undefined => buffered_range(state, position, true)?.at(1)
 
-export const play_ahead = (
-  state: MediaSnapshot,
-  frontier: number,
-): number => {
+export const play_ahead = (state: MediaSnapshot, frontier: number): number => {
   const end = buffered_end(state, state.time)
   const frontier_end = buffered_end(state, frontier)
   return end !== undefined && aligned(end, frontier_end ?? NaN)
@@ -192,15 +189,11 @@ const capture = (media: HTMLMediaElement): MediaSnapshot => ({
   time: media.currentTime,
 })
 
-const derive = (
-  media: HTMLMediaElement,
-  previous: MediaState | undefined,
+const resume = (
+  current: MediaSnapshot,
   observations: readonly MediaObservation[],
-): MediaState => {
-  const current =
-    observations.at(-1)?.[0] ?? previous?.current ?? capture(media)
-
-  const resume = observations.some(([, event]) => event.type === "ended")
+): MediaResume | undefined =>
+  observations.some(([, event]) => event.type === "ended")
     ? ({ reason: "ended", position: 0 } as const)
     : observations.some(([, event]) =>
           ["seeked", "seeking", "timeupdate"].includes(event.type),
@@ -208,41 +201,47 @@ const derive = (
       ? ({ reason: "progress", position: current.time } as const)
       : undefined
 
-  const failure = observations.find(
+const failure = (
+  observations: readonly MediaObservation[],
+): MediaError | undefined =>
+  observations.find(
     ([{ error }, event]) =>
       event.type === "error" &&
       error !== undefined &&
       error.code !== MediaError.MEDIA_ERR_ABORTED,
   )?.[0].error
 
-  const seek = (() => {
-    const observation = observations.findLast(
-      ([, event]) => event.type === "seeked" || event.type === "seeking",
-    )
-    if (observation === undefined) {
-      return undefined
-    }
+const seek = (
+  observations: readonly MediaObservation[],
+): MediaSeek | undefined => {
+  const observation = observations.findLast(
+    ([, event]) => event.type === "seeked" || event.type === "seeking",
+  )
+  if (observation === undefined) {
+    return undefined
+  }
 
-    const [snapshot] = observation
-    const { duration, time } = snapshot
-    const native = playable_time(duration, time)
-    const position = buffered_position(snapshot, native)
-    return {
-      candidate: {
-        position: position ?? native,
-        restart: position === undefined,
-      },
-      position: time,
-    }
-  })()
-
+  const [snapshot] = observation
+  const { duration, time } = snapshot
+  const native = playable_time(duration, time)
+  const position = buffered_position(snapshot, native)
   return {
-    kind: "media",
-    current,
-    derived: { failure, resume, seek },
-    media,
+    candidate: {
+      position: position ?? native,
+      restart: position === undefined,
+    },
+    position: time,
   }
 }
+
+const derive = (
+  current: MediaSnapshot,
+  observations: readonly MediaObservation[],
+): MediaDerived => ({
+  failure: failure(observations),
+  resume: resume(current, observations),
+  seek: seek(observations),
+})
 
 export const reduce = (
   state: PlaybackState,
@@ -365,15 +364,25 @@ export const media_states = (
 
     const events = event_batches(a.signal, media, EVENTS, () => capture(media))
     let pending = events.next()
-    let state = derive(media, undefined, [])
-    yield state
+    const initial = capture(media)
+    yield {
+      kind: "media",
+      current: initial,
+      derived: derive(initial, []),
+      media,
+    }
     for (;;) {
       const next = await pending
       if (next.done) {
         return
       }
       pending = events.next()
-      state = derive(media, state, next.value)
-      yield state
+      const current = next.value.at(-1)?.[0] ?? capture(media)
+      yield {
+        kind: "media",
+        current,
+        derived: derive(current, next.value),
+        media,
+      }
     }
   })()
