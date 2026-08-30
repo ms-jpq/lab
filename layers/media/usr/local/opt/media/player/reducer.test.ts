@@ -54,7 +54,10 @@ const cases = [
       {
         action: { type: "source_opened" },
         expected: {
-          request: { frontier: 40, position: 40 },
+          control: {
+            request: { frontier: 40, position: 40 },
+            type: "request",
+          },
           seek: 40,
         },
       },
@@ -65,9 +68,18 @@ const cases = [
     steps: [
       {
         action: { type: "source_opened" },
-        expected: { request: { frontier: 0, position: 0 }, seek: 0 },
+        expected: {
+          control: {
+            request: { frontier: 0, position: 0 },
+            type: "request",
+          },
+          seek: 0,
+        },
       },
-      { action: { type: "request_finished" }, expected: { end: true } },
+      {
+        action: { type: "request_finished" },
+        expected: { buffer: { type: "end" } },
+      },
       {
         action: {
           current: snapshot({ buffered: [[0, 45]] }),
@@ -82,15 +94,29 @@ const cases = [
     steps: [
       {
         action: { type: "source_opened" },
-        expected: { request: { frontier: 0, position: 0 }, seek: 0 },
+        expected: {
+          control: {
+            request: { frontier: 0, position: 0 },
+            type: "request",
+          },
+          seek: 0,
+        },
       },
-      { action: { type: "request_finished" }, expected: { end: true } },
+      {
+        action: { type: "request_finished" },
+        expected: { buffer: { type: "end" } },
+      },
       {
         action: {
           current: snapshot({ buffered: [[0, 44]] }),
           type: "progress",
         },
-        expected: { request: { frontier: 44, position: 0 } },
+        expected: {
+          control: {
+            request: { frontier: 44, position: 0 },
+            type: "request",
+          },
+        },
       },
     ],
   },
@@ -99,7 +125,13 @@ const cases = [
     steps: [
       {
         action: { type: "source_opened" },
-        expected: { request: { frontier: 0, position: 0 }, seek: 0 },
+        expected: {
+          control: {
+            request: { frontier: 0, position: 0 },
+            type: "request",
+          },
+          seek: 0,
+        },
       },
       {
         action: {
@@ -114,8 +146,11 @@ const cases = [
           type: "timeupdate",
         },
         expected: {
+          control: {
+            request: { frontier: 60, position: 60 },
+            type: "request",
+          },
           persist: 20,
-          request: { frontier: 60, position: 60 },
         },
       },
     ],
@@ -125,7 +160,13 @@ const cases = [
     steps: [
       {
         action: { type: "source_opened" },
-        expected: { request: { frontier: 0, position: 0 }, seek: 0 },
+        expected: {
+          control: {
+            request: { frontier: 0, position: 0 },
+            type: "request",
+          },
+          seek: 0,
+        },
       },
       {
         action: { current: snapshot(), type: "seeked" },
@@ -137,8 +178,11 @@ const cases = [
           type: "seeking",
         },
         expected: {
+          control: {
+            request: { frontier: 110, position: 110 },
+            type: "request",
+          },
           persist: 110,
-          request: { frontier: 110, position: 110 },
         },
       },
     ],
@@ -148,13 +192,22 @@ const cases = [
     steps: [
       {
         action: { type: "source_opened" },
-        expected: { request: { frontier: 0, position: 0 }, seek: 0 },
+        expected: {
+          control: {
+            request: { frontier: 0, position: 0 },
+            type: "request",
+          },
+          seek: 0,
+        },
       },
       {
         action: { error: failure, type: "request_failed" },
         expected: {
-          error: failure,
-          request: { frontier: 0, position: 0 },
+          control: {
+            error: failure,
+            request: { frontier: 0, position: 0 },
+            type: "request",
+          },
         },
       },
     ],
@@ -164,25 +217,39 @@ const cases = [
     steps: [
       {
         action: { type: "source_opened" },
-        expected: { request: { frontier: 0, position: 0 }, seek: 0 },
+        expected: {
+          control: {
+            request: { frontier: 0, position: 0 },
+            type: "request",
+          },
+          seek: 0,
+        },
       },
       {
         action: { current: snapshot(), type: "seeked" },
         expected: {},
       },
-      { action: { type: "request_finished" }, expected: { end: true } },
+      {
+        action: { type: "request_finished" },
+        expected: { buffer: { type: "end" } },
+      },
       {
         action: [
-          { bytes: new Uint8Array([1]), type: "bytes_received" },
           {
             current: snapshot({ buffered: [[0, 20]], time: 10 }),
             type: "timeupdate",
           },
+          {
+            current: snapshot({ buffered: [[0, 20]], time: 10 }),
+            type: "progress",
+          },
         ],
         expected: {
-          append: new Uint8Array([1]),
+          control: {
+            request: { frontier: 20, position: 0 },
+            type: "request",
+          },
           persist: 10,
-          request: { frontier: 20, position: 0 },
         },
       },
     ],

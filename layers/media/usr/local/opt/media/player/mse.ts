@@ -1,4 +1,4 @@
-import { abortion, closing, defer, once } from "./util.ts"
+import { abortion, closing, defer, never, once } from "./util.ts"
 
 export type MseOperation = undefined | number | Uint8Array<ArrayBuffer>
 export type Mse = AsyncGenerator<void, void, MseOperation>
@@ -83,7 +83,7 @@ export const media_source = async function* ({
       continue
     }
 
-    {
+    if (operation instanceof Uint8Array) {
       const cutoff = evict_before()
       if (
         cutoff > 0 &&
@@ -97,7 +97,10 @@ export const media_source = async function* ({
       for await (const _ of op_lock(buffer, a.signal)) {
         buffer.appendBuffer(operation)
       }
+      continue
     }
+
+    never(operation)
   }
 }
 

@@ -169,9 +169,18 @@ const close = async <T>(aiters: Iterable<AsyncIterator<T>>): Promise<void> => {
   const settled = await Promise.allSettled(
     [...aiters].map(async (aiter) => aiter.return?.()),
   )
-  const errors = settled.flatMap((result) =>
-    result.status === "rejected" ? [result.reason] : [],
-  )
+  const errors = settled.flatMap((result) => {
+    switch (result.status) {
+      case "fulfilled": {
+        return []
+      }
+      case "rejected": {
+        return [result.reason]
+      }
+      default:
+        return never(result)
+    }
+  })
   if (errors.length > 0) {
     throw new AggregateError(errors)
   }

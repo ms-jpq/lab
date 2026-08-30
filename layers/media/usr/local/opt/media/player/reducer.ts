@@ -1,10 +1,23 @@
 import { media_state, playable_time } from "./media.ts"
 import type { MediaAction, MediaSnapshot } from "./media.ts"
+import { never } from "./util.ts"
 
 type PlaybackRequest = Readonly<{
   frontier: number
   position: number
 }>
+
+type BufferEffect =
+  | Readonly<{ bytes: Uint8Array<ArrayBuffer>; type: "append" }>
+  | Readonly<{ type: "end" }>
+
+type PlaybackControl =
+  | Readonly<{
+      error?: unknown
+      request: PlaybackRequest
+      type: "request"
+    }>
+  | Readonly<{ error: unknown; type: "rebuild" }>
 
 type PlaybackState = Readonly<{
   current: MediaSnapshot
@@ -22,12 +35,9 @@ type PlaybackAction =
   | Readonly<{ type: "source_opened" }>
 
 type PlaybackEffects = Readonly<{
-  append?: Uint8Array<ArrayBuffer>
-  end?: true
-  error?: unknown
+  buffer?: BufferEffect
+  control?: PlaybackControl
   persist?: number
-  rebuild?: true
-  request?: PlaybackRequest
   seek?: number
 }>
 
@@ -39,6 +49,26 @@ type PlaybackTransition = readonly [
 const POSITION_TOLERANCE = 0.1
 const BUFFER_LOW = 45
 const BUFFER_HIGH = 60
+
+const merge_control = (
+  current: PlaybackControl | undefined,
+  produced: PlaybackControl | undefined,
+): PlaybackControl | undefined => {
+  if (current === undefined) {
+    return produced
+  }
+
+  switch (current.type) {
+    case "rebuild": {
+      return current
+    }
+    case "request": {
+      return produced ?? current
+    }
+    default:
+      return never(current)
+  }
+}
 
 const aligned = (left: number, right: number): boolean =>
   Math.abs(left - right) <= POSITION_TOLERANCE
@@ -139,7 +169,7 @@ const observe = (state: PlaybackState): PlaybackTransition => {
       requesting: requesting || start,
     },
     {
-      ...(start ? { request } : {}),
+      ...(start ? { control: { request, type: "request" } as const } : {}),
       ...(seek === undefined ? {} : { seek }),
     },
   ]
@@ -156,7 +186,7 @@ const reduce = (
 
   switch (action.type) {
     case "bytes_received": {
-      return [state, { append: action.bytes }]
+      return [state, { buffer: { bytes: action.bytes, type: "append" } }]
     }
     case "request_failed": {
       const request = {
@@ -165,11 +195,17 @@ const reduce = (
       }
       return [
         { ...state, request, requesting: true },
-        { error: action.error, request },
+        {
+          control: {
+            error: action.error,
+            request,
+            type: "request",
+          },
+        },
       ]
     }
     case "request_finished": {
-      return [{ ...state, requesting: false }, { end: true }]
+      return [{ ...state, requesting: false }, { buffer: { type: "end" } }]
     }
     case "source_opened": {
       const request = request_at(state.target)
@@ -180,7 +216,7 @@ const reduce = (
           request,
           requesting: true,
         },
-        { request, seek: state.target },
+        { control: { request, type: "request" }, seek: state.target },
       ]
     }
     case "loadedmetadata":
@@ -193,7 +229,17 @@ const reduce = (
     case "ended": {
       return [
         { ...observed, requesting: state.requesting || start },
-        { persist: 0, ...(start ? { request: state.request } : {}) },
+        {
+          persist: 0,
+          ...(start
+            ? {
+                control: {
+                  request: state.request,
+                  type: "request" as const,
+                },
+              }
+            : {}),
+        },
       ]
     }
     case "timeupdate": {
@@ -219,8 +265,17 @@ const reduce = (
       return [
         { ...observed, requesting: state.requesting || start },
         failure === undefined
-          ? { ...(start ? { request: state.request } : {}) }
-          : { error: failure, rebuild: true },
+          ? {
+              ...(start
+                ? {
+                    control: {
+                      request: state.request,
+                      type: "request" as const,
+                    },
+                  }
+                : {}),
+            }
+          : { control: { error: failure, type: "rebuild" } },
       ]
     }
     case "seeking": {
@@ -248,16 +303,14 @@ const reduce = (
       return [next, { ...effects, persist: target }]
     }
     default:
-      throw new Error(action)
+      return never(action)
   }
 }
 
 export const playback_transitions = (
   media: HTMLMediaElement,
   position: number,
-): ((
-  action: PlaybackAction | readonly PlaybackAction[],
-) => PlaybackEffects) => {
+): ((action: PlaybackAction | readonly MediaAction[]) => PlaybackEffects) => {
   let state: PlaybackState = {
     current: media_state(media),
     pending_seek: undefined,
@@ -273,10 +326,11 @@ export const playback_transitions = (
     for (const current of actions) {
       const [next, produced] = reduce(state, current)
       state = next
+      const control = merge_control(effects.control, produced.control)
       effects = {
         ...effects,
         ...produced,
-        ...(effects.error === undefined ? {} : { error: effects.error }),
+        ...(control === undefined ? {} : { control }),
       }
     }
     return effects

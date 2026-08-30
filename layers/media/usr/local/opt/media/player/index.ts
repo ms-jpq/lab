@@ -9,7 +9,7 @@ import {
   source_url,
 } from "./page.ts"
 import { playback_transitions } from "./reducer.ts"
-import { abortion, delay, fetch_stream, merge } from "./util.ts"
+import { abortion, delay, fetch_stream, merge, never } from "./util.ts"
 
 type Dispatch = ReturnType<typeof playback_transitions>
 type PlaybackAction = Parameters<Dispatch>[0]
@@ -67,9 +67,9 @@ export const play_media = async (signal: AbortSignal) => {
     if (opened.seek !== undefined) {
       media.currentTime = opened.seek
     }
+
     let requested =
       opened.control?.type === "request" ? opened.control.request : undefined
-
     request: while (requested !== undefined && !abort.signal.aborted) {
       if ((await buffer.next(requested.frontier)).done) {
         continue source
@@ -94,22 +94,38 @@ export const play_media = async (signal: AbortSignal) => {
         if (effects.seek !== undefined) {
           media.currentTime = effects.seek
         }
+
         if (effects.control) {
           using _ = abrt
-          if (effects.control.error) {
+          if (effects.control.error !== undefined) {
             console.error(effects.control.error)
           }
           switch (effects.control.type) {
-            case "rebuild":
+            case "rebuild": {
               continue source
-            case "request":
+            }
+            case "request": {
+              requested = effects.control.request
               continue request
+            }
+            default:
+              never(effects.control)
           }
         }
 
         if (effects.buffer) {
-          const operation =
-            effects.buffer.type === "append" ? effects.buffer.bytes : undefined
+          const operation = (() => {
+            switch (effects.buffer.type) {
+              case "append": {
+                return effects.buffer.bytes
+              }
+              case "end": {
+                return undefined
+              }
+              default:
+                return never(effects.buffer)
+            }
+          })()
 
           if ((await buffer.next(operation)).done) {
             using _ = abrt
