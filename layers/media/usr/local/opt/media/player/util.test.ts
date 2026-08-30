@@ -6,7 +6,6 @@ import { setImmediate } from "node:timers/promises"
 
 import {
   delay,
-  event_batches,
   events,
   logical_stream,
   merge,
@@ -109,38 +108,6 @@ const cases = [
       deepEqual(await delay(owner.signal, 100), false)
       deepEqual(scheduled.mock.callCount(), 0)
       deepEqual(added.mock.callCount(), 0)
-    },
-  },
-  {
-    name: "named events drain as one FIFO batch with per-event snapshots",
-    run: async () => {
-      const owner = new AbortController()
-      const target = new OnceTarget()
-      const values = event_batches(
-        owner.signal,
-        target,
-        ["left", "right"],
-        () => target.state,
-      )
-      const pending = values.next()
-
-      target.state = 1
-      target.dispatchEvent(new Event("left"))
-      target.state = 2
-      target.dispatchEvent(new Event("right"))
-
-      const received = await pending
-      assert(!received.done)
-      deepEqual(
-        received.value.map(([snapshot, event]) => [snapshot, event.type]),
-        [
-          [1, "left"],
-          [2, "right"],
-        ],
-      )
-      await values.return?.(undefined)
-      deepEqual(getEventListeners(target, "left").length, 0)
-      deepEqual(getEventListeners(target, "right").length, 0)
     },
   },
   {

@@ -1,4 +1,4 @@
-import { abortion } from "./util.ts"
+import { events, merge } from "./util.ts"
 
 const POSITION_TOLERANCE = 0.1
 const END_TOLERANCE = 0.5
@@ -77,16 +77,15 @@ const EVENTS = [
   "waiting",
 ] as const satisfies readonly (keyof HTMLMediaElementEventMap)[]
 
-type MediaObservation = readonly [snapshot: MediaSnapshot, event: Event]
-
 export type MediaTarget = Readonly<{ position: number; restart: boolean }>
 export type MediaSeek = Readonly<{
   candidate: MediaTarget
   position: number
 }>
 export type MediaAction = Readonly<{
+  current: MediaSnapshot
+  event: Event
   kind: "media"
-  observations: readonly MediaObservation[]
 }>
 
 type PendingSeek = Readonly<{
@@ -176,29 +175,26 @@ const capture = (media: HTMLMediaElement): MediaSnapshot => ({
 })
 
 const failure = (
-  observations: readonly MediaObservation[],
+  current: MediaSnapshot,
+  event: Event,
 ): MediaError | undefined =>
-  observations.find(
-    ([{ error }, event]) =>
-      event.type === "error" &&
-      error !== undefined &&
-      error.code !== MediaError.MEDIA_ERR_ABORTED,
-  )?.[0].error
+  event.type === "error" &&
+  current.error !== undefined &&
+  current.error.code !== MediaError.MEDIA_ERR_ABORTED
+    ? current.error
+    : undefined
 
 const latest_seek = (
-  observations: readonly MediaObservation[],
+  current: MediaSnapshot,
+  event: Event,
 ): MediaSeek | undefined => {
-  const observation = observations.findLast(
-    ([, event]) => event.type === "seeked" || event.type === "seeking",
-  )
-  if (observation === undefined) {
+  if (event.type !== "seeked" && event.type !== "seeking") {
     return undefined
   }
 
-  const [snapshot] = observation
-  const { duration, time } = snapshot
+  const { duration, time } = current
   const native = playable_time(duration, time)
-  const position = buffered_position(snapshot, native)
+  const position = buffered_position(current, native)
   return {
     candidate: {
       position: position ?? native,
@@ -269,19 +265,17 @@ const advance_seek = (
 
 const persisted_position = (
   current: MediaSnapshot,
-  observations: readonly MediaObservation[],
+  event: Event,
   external: MediaSeek | undefined,
   pending: PendingSeek | undefined,
 ): number | undefined => {
-  if (observations.some(([, event]) => event.type === "ended")) {
+  if (event.type === "ended") {
     return 0
   }
   if (external !== undefined) {
     return external.candidate.position
   }
-  const progressed = observations.some(([, event]) =>
-    ["seeked", "seeking", "timeupdate"].includes(event.type),
-  )
+  const progressed = ["seeked", "seeking", "timeupdate"].includes(event.type)
   if (
     progressed &&
     pending === undefined &&
@@ -337,14 +331,13 @@ export const reduce = (
       ]
     }
     case "media": {
-      const { observations } = action
-      const current = observations.at(-1)?.[0] ?? state.current
-      const observed_failure = failure(observations)
-      const observed_seek = latest_seek(observations)
+      const { current, event } = action
+      const observed_failure = failure(current, event)
+      const observed_seek = latest_seek(current, event)
       const observed = observe_seek(state, current, observed_seek)
       const persist = persisted_position(
         current,
-        observations,
+        event,
         observed.external,
         observed.pending,
       )
@@ -365,41 +358,15 @@ export const reduce = (
   }
 }
 
-// i thought we already had a function here from utils?
 export const media_events = async function* (
   media: HTMLMediaElement,
   signal: AbortSignal,
 ): AsyncIteratorObject<MediaAction> {
-  using a = abortion(signal)
-  if (a.signal.aborted) {
-    return
+  const streams: AsyncIteratorObject<Event>[] = EVENTS.map((event) =>
+    events(signal, media, event),
+  )
+  for await (const [, event] of merge(...streams)) {
+    yield { current: capture(media), event, kind: "media" }
   }
-
-  let observations = new Array<MediaObservation>()
-  let ready = Promise.withResolvers<void>()
-
-  const observe = (event: Event): void => {
-    observations.push([capture(media), event])
-    ready.resolve()
-  }
-  const close = (): void => ready.resolve()
-
-  a.signal.addEventListener("abort", close, { once: true })
-  for (const event of EVENTS) {
-    media.addEventListener(event, observe, { signal: a.signal })
-  }
-  if (a.signal.aborted) {
-    return
-  }
-
-  for (;;) {
-    await ready.promise
-    if (a.signal.aborted) {
-      return
-    }
-    const batch = observations
-    observations = []
-    ready = Promise.withResolvers<void>()
-    yield { kind: "media", observations: batch }
-  }
+  return
 }

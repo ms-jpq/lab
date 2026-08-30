@@ -38,10 +38,6 @@ type EventMap<T> = {
 
 type EventName<T> = keyof EventMap<T> & string
 export type EventOf<T, E extends EventName<T>> = Extract<EventMap<T>[E], Event>
-export type EventObservation<T, E extends EventName<T>, S> = readonly [
-  snapshot: S,
-  event: EventOf<T, E>,
-]
 
 export const once = <
   const T extends EventTarget,
@@ -145,56 +141,6 @@ export const events = async function* <
   return
 }
 
-export const event_batches = async function* <
-  const T extends EventTarget,
-  const E extends EventName<T>,
-  const S,
->(
-  signal: AbortSignal,
-  target: T,
-  types: readonly E[],
-  snapshot: (event: EventOf<T, E>) => S,
-): AsyncIteratorObject<EventObservation<T, E, S>[]> {
-  using a = abortion(signal)
-
-  let observations = new Array<EventObservation<T, E, S>>()
-  let ready = Promise.withResolvers<void>()
-
-  const observe = (event: Event): void => {
-    const received = event as EventOf<T, E>
-    observations.push([snapshot(received), received])
-    ready.resolve()
-  }
-
-  const close = (): void => {
-    observations = []
-    ready.resolve()
-  }
-  a.signal.addEventListener("abort", close, { once: true })
-  using _ = defer(() => a.signal.removeEventListener("abort", close))
-
-  for (const type of types) {
-    target.addEventListener(type, observe)
-  }
-  using __ = defer(() => {
-    for (const type of types) {
-      target.removeEventListener(type, observe)
-    }
-  })
-
-  while (!a.signal.aborted) {
-    await ready.promise
-    if (a.signal.aborted) {
-      return
-    }
-    const batch = observations
-    observations = []
-    ready = Promise.withResolvers<void>()
-    yield batch
-  }
-  return
-}
-
 const next = async <const T>(
   aiter: AsyncIterator<T>,
 ): Promise<readonly [AsyncIterator<T>, IteratorResult<T>]> => [
@@ -214,9 +160,8 @@ const close = async <T>(aiters: Iterable<AsyncIterator<T>>): Promise<void> => {
   }
 }
 
-type Selection<T extends readonly AsyncIterator<unknown>[]> = {
-  [K in keyof T]: T[K] extends AsyncIterator<infer U> ? [T[K], U] : never
-}[number]
+type Entry<T> = T extends AsyncIterator<infer U> ? [T, U] : never
+type Selection<T extends readonly AsyncIterator<unknown>[]> = Entry<T[number]>
 
 export const merge = async function* <
   const T extends readonly AsyncIterator<unknown>[],

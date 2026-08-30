@@ -109,8 +109,7 @@ const cases = [
 
       const observed = await pending
       ok(!observed.done)
-      const snapshot = observed.value.observations.at(-1)?.[0]
-      ok(snapshot)
+      const snapshot = observed.value.current
       media.buffered.values[0]?.splice(0, 2, 30, 40)
       deepEqual(snapshot.buffered, [[10, 20]])
       await states.return?.()
