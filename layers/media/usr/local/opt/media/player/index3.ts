@@ -7,17 +7,19 @@ import {
   main,
 } from "./page.ts"
 import {
+  BUFFER_BEHIND,
   initial_playback,
   media_events,
-  play_ahead,
+  needs_data,
   reduce,
+  request_full,
   should_interrupt,
+  source_invalidated,
   type MediaAction,
   type PlaybackAction,
 } from "./reducer.ts"
 import { abortion, delay, logical_stream } from "./util.ts"
 
-const BUFFER = { BEHIND: 30, LO: 45, HI: 60 }
 const RETRY_DELAY = 1_000
 
 const STOP = Symbol()
@@ -32,7 +34,7 @@ type Performed<T> =
 export const play_media = async (signal: AbortSignal): Promise<void> => {
   using lifetime = abortion(signal)
   const sources = media_sources({
-    evict_behind: BUFFER.BEHIND,
+    evict_behind: BUFFER_BEHIND,
     media,
     mime_type: media.dataset["mseType"] as string,
     signal: lifetime.signal,
@@ -182,10 +184,8 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
         buffer = await open()
       } catch (error) {
         console.error(error)
-        const interrupted = await retry(
-          () =>
-            playback.failure !== undefined ||
-            (playback.target !== attempt && playback.target.restart),
+        const interrupted = await retry(() =>
+          source_invalidated(playback, attempt),
         )
         if (interrupted === STOP) {
           return
@@ -206,13 +206,9 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
           if (restart_request()) {
             continue request
           }
-          while (
-            play_ahead(playback.current, playback.stream.start) >= BUFFER.LO
-          ) {
+          while (!needs_data(playback)) {
             const demanded = await wait(
-              () =>
-                should_interrupt(playback) ||
-                play_ahead(playback.current, playback.stream.start) < BUFFER.LO,
+              () => should_interrupt(playback) || needs_data(playback),
             )
             if (!demanded) {
               return
@@ -271,10 +267,7 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
               if (restart_request()) {
                 continue request
               }
-              if (
-                play_ahead(playback.current, playback.stream.frontier) >=
-                BUFFER.HI
-              ) {
+              if (request_full(playback)) {
                 dispatch({ advance: true, kind: "frontier" })
                 continue request
               }

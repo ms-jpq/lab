@@ -2,6 +2,9 @@ import { events, merge } from "./util.ts"
 
 const POSITION_TOLERANCE = 0.1
 const END_TOLERANCE = 0.5
+export const BUFFER_BEHIND = 30
+const BUFFER_LOW = 45
+const BUFFER_HIGH = 60
 
 type BufferedRange = readonly [start: number, end: number]
 type MediaSnapshot = Readonly<{
@@ -57,7 +60,7 @@ const buffered_end = (
   position: number,
 ): number | undefined => buffered_range(state, position, true)?.at(1)
 
-export const play_ahead = (state: MediaSnapshot, frontier: number): number => {
+const play_ahead = (state: MediaSnapshot, frontier: number): number => {
   const end = buffered_end(state, state.time)
   const frontier_end = buffered_end(state, frontier)
   return end !== undefined && aligned(end, frontier_end ?? NaN)
@@ -145,6 +148,18 @@ const reconcile = (
 
 export const should_interrupt = ({ failure, stream }: PlaybackState): boolean =>
   failure !== undefined || stream.restart
+
+export const needs_data = ({ current, stream }: PlaybackState): boolean =>
+  play_ahead(current, stream.start) < BUFFER_LOW
+
+export const request_full = ({ current, stream }: PlaybackState): boolean =>
+  play_ahead(current, stream.frontier) >= BUFFER_HIGH
+
+export const source_invalidated = (
+  { failure, target }: PlaybackState,
+  attempt: MediaTarget,
+): boolean =>
+  failure !== undefined || (target !== attempt && target.restart)
 
 export const initial_playback = (
   media: HTMLMediaElement,
