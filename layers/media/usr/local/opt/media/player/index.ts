@@ -83,14 +83,13 @@ export const play_media = async (signal: AbortSignal): Promise<undefined> => {
   }
 
   source: for await (const [source, create_buffer] of sources) {
-    let buffer: Mse | undefined
+    const abrt = abortion(abort.signal)
+
     let stream: Stream | undefined
-    let abrt: Abortion | undefined
     let work: Promise<Work> | undefined
 
     const close_stream = async (): Promise<void> => {
       abrt?.[Symbol.dispose]()
-      abrt = undefined
       const current = stream
       stream = undefined
       await current?.return(undefined)
@@ -100,14 +99,13 @@ export const play_media = async (signal: AbortSignal): Promise<undefined> => {
       source.duration = playback.current.duration
     }
 
-    const a = abortion(abort.signal)
-    buffer = create_buffer(a.signal)
+    const buffer = create_buffer(abrt.signal)
     await using _buffer = buffer
     await using _cleanup = defer(async () => {
       await work
       await close_stream()
     })
-    using _preabort = a
+    using _preabort = abrt
 
     if ((await buffer.next()).done) {
       continue
@@ -131,6 +129,7 @@ export const play_media = async (signal: AbortSignal): Promise<undefined> => {
     let reset_stream = false
 
     for (;;) {
+      const a = abortion(abrt.signal)
       if (reset_stream && work === undefined) {
         await close_stream()
         reset_stream = false
@@ -141,10 +140,9 @@ export const play_media = async (signal: AbortSignal): Promise<undefined> => {
         request_open &&
         playback.request.needed
       ) {
-        abrt = abortion(a.signal)
         stream = logical_stream(
           new Request(source_url(media, playback.request.position), {
-            signal: abrt.signal,
+            signal: a.signal,
           }),
         )
         send(playback.request.frontier, "stream")
