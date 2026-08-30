@@ -39,9 +39,9 @@ export type PlaybackInterruption =
   | Readonly<{ type: "restart" }>
 
 export type PlaybackEffects = Readonly<{
-  interrupt?: PlaybackInterruption
-  persist?: number
-  seek?: number
+  interrupt?: PlaybackInterruption | undefined
+  persist?: number | undefined
+  seek?: number | undefined
 }>
 
 export type PlaybackTransition = readonly [
@@ -285,22 +285,7 @@ export const reduce = (
       return observe(state, action.current)
     }
     case "ended": {
-      const [next, effects] = observe(state, action.current)
-      return [next, { ...effects, persist: 0 }]
-    }
-    case "error": {
-      const [next, effects] = observe(state, action.current)
-      const { error } = action.current
-      return [
-        next,
-        {
-          ...effects,
-          interrupt:
-            error !== undefined && error.code !== MediaError.MEDIA_ERR_ABORTED
-              ? { error, type: "failure" }
-              : undefined,
-        },
-      ]
+      return [{ ...state, current: action.current }, { persist: 0 }]
     }
     case "seeked":
     case "seeking": {
@@ -315,6 +300,18 @@ export const reduce = (
           : undefined
       const [next, effects] = observe(state, action.current)
       return [next, { ...effects, persist }]
+    }
+    case "error": {
+      const { error } = action.current
+      return [
+        { ...state, current: action.current },
+        {
+          interrupt:
+            error !== undefined && error.code !== MediaError.MEDIA_ERR_ABORTED
+              ? { error, type: "failure" }
+              : undefined,
+        },
+      ]
     }
   }
 }
