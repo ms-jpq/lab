@@ -163,42 +163,37 @@ export const reduce = (
       ]
     }
     case "media": {
-      const { current, derived } = action
-      const { failure, resume, seek: observed_seek } = derived
-
-      let target = state.target
-      let pending_seek = state.pending_seek
-      let persist: number | undefined
-      let seek: number | undefined
-
-      const pending = pending_seek
+      const {
+        current,
+        derived: { failure, resume, seek: observed_seek },
+      } = action
+      const pending = state.pending_seek
 
       const owned_seek =
         pending !== undefined &&
         observed_seek !== undefined &&
         aligned(observed_seek.position, pending.target.position)
+      const external_seek = owned_seek ? undefined : observed_seek
+      const target = external_seek?.candidate ?? state.target
 
-      if (owned_seek) {
-        pending_seek = { ...pending, acknowledged: true }
-      }
-      const retargeted = observed_seek !== undefined && !owned_seek
-      if (retargeted) {
-        target = observed_seek.candidate
-      }
+      let pending_seek = owned_seek
+        ? { ...pending, acknowledged: true }
+        : pending
+      let persist = external_seek?.candidate.position
+      let seek: number | undefined
 
       const { metadata, seeking, time } = current
-      if (retargeted) {
+      if (external_seek !== undefined) {
         pending_seek =
           target.restart || !aligned(time, target.position)
             ? { target, acknowledged: false }
             : undefined
-        persist = target.position
       }
 
       if (
         resume !== undefined &&
         (resume.reason === "ended" ||
-          (!retargeted && pending_seek === undefined))
+          (external_seek === undefined && pending_seek === undefined))
       ) {
         persist = resume.position
       }
