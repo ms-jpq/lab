@@ -29,7 +29,7 @@ type Performed<T> =
       value: T
     }>
 
-export const decide = async (signal: AbortSignal): Promise<void> => {
+export const play_media = async (signal: AbortSignal): Promise<void> => {
   using lifetime = abortion(signal)
   const sources = media_sources({
     evict_behind: BUFFER.BEHIND,
@@ -310,4 +310,7 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
   }
 }
 
-void main((signal) => run_playback(signal, decide)).catch(console.error)
+void main(async (signal) => {
+  await play_media(signal)
+  return undefined
+}).catch(console.error)
