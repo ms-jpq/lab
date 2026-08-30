@@ -235,7 +235,7 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
       }
 
       request: for (;;) {
-        let request_failure: unknown | undefined
+        let request_failure: { error: unknown } | undefined
         let frontier = stream_position(start)
         try {
           retarget(start)
@@ -273,7 +273,7 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
                   owner[Symbol.dispose],
                 )
               } catch (error) {
-                request_failure = error
+                request_failure = { error }
                 break
               }
               if (read === STOP) return
@@ -309,7 +309,7 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
         }
 
         if (request_failure !== undefined) {
-          console.error(request_failure)
+          console.error(request_failure.error)
           start = stream_position(buffered_end(current, frontier) ?? frontier)
           if ((await retry(() => changed(start))) === STOP) return
         }
