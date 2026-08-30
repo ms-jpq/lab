@@ -3,7 +3,8 @@ import { getEventListeners } from "node:events"
 import nodeTest from "node:test"
 import { setImmediate } from "node:timers/promises"
 
-import { playback_events, playback_transitions } from "./reducer.ts"
+import { media_events } from "./media.ts"
+import { playback_transitions } from "./reducer.ts"
 
 const options = { concurrency: true, timeout: 2_000 }
 
@@ -45,7 +46,7 @@ const cases = [
       const owner = new AbortController()
       owner.abort()
       const media = new Media()
-      const states = playback_events(
+      const states = media_events(
         media as unknown as HTMLMediaElement,
         owner.signal,
       )
@@ -60,14 +61,10 @@ const cases = [
     run: async () => {
       const owner = new AbortController()
       const media = new Media()
-      const states = playback_events(
+      const states = media_events(
         media as unknown as HTMLMediaElement,
         owner.signal,
       )
-      deepEqual(await states.next(), {
-        done: false,
-        value: { type: "source_opened" },
-      })
       const pending = states.next()
       const closed = states.return?.()
       ok(closed)
@@ -94,14 +91,10 @@ const cases = [
     run: async () => {
       const owner = new AbortController()
       const media = new Media()
-      const states = playback_events(
+      const states = media_events(
         media as unknown as HTMLMediaElement,
         owner.signal,
       )
-      deepEqual(await states.next(), {
-        done: false,
-        value: { type: "source_opened" },
-      })
       const pending = states.next()
       media.dispatchEvent(new Event("progress"))
       const received = await pending
@@ -123,14 +116,10 @@ const cases = [
     run: async () => {
       const owner = new AbortController()
       const media = new Media()
-      const states = playback_events(
+      const states = media_events(
         media as unknown as HTMLMediaElement,
         owner.signal,
       )
-      deepEqual(await states.next(), {
-        done: false,
-        value: { type: "source_opened" },
-      })
       const pending = states.next()
 
       media.buffered.values.push([10, 20])
@@ -138,7 +127,9 @@ const cases = [
 
       const observed = await pending
       ok(!observed.done)
-      const { current: snapshot } = observed.value
+      const [observation] = observed.value
+      ok(observation)
+      const { current: snapshot } = observation
       media.buffered.values[0]?.splice(0, 2, 30, 40)
       deepEqual(snapshot.buffered, [[10, 20]])
       await states.return?.()
@@ -154,7 +145,7 @@ const cases = [
       const effects = dispatch({ type: "source_opened" })
 
       deepEqual(effects, {
-        request: { frontier: 40, needed: true, position: 40 },
+        request: { frontier: 40, position: 40 },
         seek: 40,
       })
       deepEqual(media.currentTime, 0)

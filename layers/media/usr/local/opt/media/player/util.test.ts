@@ -8,7 +8,7 @@ import {
   closing,
   delay,
   events,
-  logical_stream,
+  fetch_stream,
   merge,
   once,
   readableIterator,
@@ -365,7 +365,7 @@ const cases = [
           },
         )
         const owner = new AbortController()
-        const values = logical_stream(
+        const values = fetch_stream(
           new Request("https://example.test/stream", { signal: owner.signal }),
         )
         const pending = values.next()
@@ -374,7 +374,8 @@ const cases = [
           () => undefined,
           (error: unknown) => error,
         )
-        const closed = values.return(undefined)
+        const closed = values.return?.(undefined)
+        assert(closed)
 
         owner.abort()
 
@@ -424,7 +425,7 @@ const cases = [
             )
           },
         )
-        const values = logical_stream(
+        const values = fetch_stream(
           new Request("https://example.test/stream", {
             signal: owner.signal,
           }),
@@ -434,7 +435,8 @@ const cases = [
           done: false,
           value: new Uint8Array([1]),
         })
-        const closed = values.return(undefined)
+        const closed = values.return?.(undefined)
+        assert(closed)
         const observed = {
           result: await Promise.race([
             closed.then(() => "closed"),
@@ -489,7 +491,7 @@ const cases = [
           },
         )
         const owner = new AbortController()
-        const values = logical_stream(
+        const values = fetch_stream(
           new Request("https://example.test/body", { signal: owner.signal }),
         )
         const pending = values.next()
@@ -499,7 +501,8 @@ const cases = [
           () => undefined,
           (error: unknown) => error,
         )
-        const closed = values.return(undefined)
+        const closed = values.return?.(undefined)
+        assert(closed)
 
         owner.abort()
 

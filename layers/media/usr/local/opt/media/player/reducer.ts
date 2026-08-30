@@ -138,7 +138,10 @@ const observe = (state: PlaybackState): PlaybackTransition => {
       request,
       requesting: requesting || start,
     },
-    { request: start ? request : undefined, seek },
+    {
+      ...(start ? { request } : {}),
+      ...(seek === undefined ? {} : { seek }),
+    },
   ]
 }
 
@@ -190,7 +193,7 @@ const reduce = (
     case "ended": {
       return [
         { ...observed, requesting: state.requesting || start },
-        { persist: 0, request: start ? state.request : undefined },
+        { persist: 0, ...(start ? { request: state.request } : {}) },
       ]
     }
     case "timeupdate": {
@@ -199,18 +202,23 @@ const reduce = (
           ? buffered_position(current, current.time)
           : undefined
       const [next, effects] = observe(observed)
-      return [next, { ...effects, persist }]
+      return [
+        next,
+        {
+          ...effects,
+          ...(persist === undefined ? {} : { persist }),
+        },
+      ]
     }
     case "error": {
       const { error } = current
       return [
         { ...observed, requesting: state.requesting || start },
         {
-          failure:
-            error !== undefined && error.code !== MediaError.MEDIA_ERR_ABORTED
-              ? error
-              : undefined,
-          request: start ? state.request : undefined,
+          ...(error !== undefined && error.code !== MediaError.MEDIA_ERR_ABORTED
+            ? { failure: error }
+            : {}),
+          ...(start ? { request: state.request } : {}),
         },
       ]
     }
@@ -265,13 +273,9 @@ export const playback_transitions = (
       const [next, produced] = reduce(state, current)
       state = next
       effects = {
-        append: produced.append ?? effects.append,
-        end: produced.end ?? effects.end,
-        failure: effects.failure ?? produced.failure,
-        persist: produced.persist ?? effects.persist,
-        report: produced.report ?? effects.report,
-        request: produced.request ?? effects.request,
-        seek: produced.seek ?? effects.seek,
+        ...effects,
+        ...produced,
+        ...(effects.failure === undefined ? {} : { failure: effects.failure }),
       }
     }
     return effects
