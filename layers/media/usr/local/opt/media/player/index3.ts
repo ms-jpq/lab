@@ -64,21 +64,21 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
     current = latest
     const { failure: media_failure, resume, seeks } = derived
     failure ??= media_failure
-    let retargeted = false
-    for (const { candidate, position, seeking } of seeks) {
-      const owned_seek =
-        pending_seek !== undefined &&
-        aligned(position, pending_seek.target.position)
-          ? pending_seek
-          : undefined
-      if (owned_seek) {
-        owned_seek.acknowledged = true
-      }
-      if (seeking && owned_seek === undefined) {
-        target = candidate
-        retargeted = true
-      }
+
+    const pending = pending_seek
+    if (
+      pending !== undefined &&
+      seeks.some(({ position }) => aligned(position, pending.target.position))
+    ) {
+      pending.acknowledged = true
     }
+    const external_seek = seeks.findLast(
+      ({ position, seeking }) =>
+        seeking &&
+        (pending === undefined || !aligned(position, pending.target.position)),
+    )
+    const retargeted = external_seek !== undefined
+    if (external_seek !== undefined) target = external_seek.candidate
 
     const { metadata, seeking, time } = current
     if (retargeted) {
@@ -88,27 +88,23 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
           : undefined
       persist_position(target.position)
     }
-    if (resume?.reason === "ended") {
-      persist_position(resume.position)
-    } else if (
-      !retargeted &&
-      pending_seek === undefined &&
-      resume !== undefined
+    if (
+      resume !== undefined &&
+      (resume.reason === "ended" ||
+        (!retargeted && pending_seek === undefined))
     ) {
       persist_position(resume.position)
     }
-    if (pending_seek !== undefined) {
-      const { target: seek_target } = pending_seek
-      const playable = buffered_position(current, seek_target.position)
-      seek_target.position = playable ?? seek_target.position
-      if (!seeking) {
-        const positioned = aligned(time, seek_target.position)
-        if (!positioned && (metadata || playable !== undefined)) {
-          seek(seek_target)
-        } else if (positioned && pending_seek.acknowledged) {
-          pending_seek = undefined
-        }
-      }
+    if (pending_seek === undefined || seeking) return
+
+    const { target: seek_target } = pending_seek
+    const playable = buffered_position(current, seek_target.position)
+    seek_target.position = playable ?? seek_target.position
+    const positioned = aligned(time, seek_target.position)
+    if (!positioned && (metadata || playable !== undefined)) {
+      seek(seek_target)
+    } else if (positioned && pending_seek.acknowledged) {
+      pending_seek = undefined
     }
   }
 
