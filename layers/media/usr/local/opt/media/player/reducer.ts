@@ -28,7 +28,6 @@ export type MediaTarget = Readonly<{ position: number; restart: boolean }>
 export type MediaSeek = Readonly<{
   candidate: MediaTarget
   position: number
-  seeking: boolean
 }>
 type MediaResume =
   | Readonly<{ reason: "ended"; position: 0 }>
@@ -36,7 +35,7 @@ type MediaResume =
 export type MediaDerived = Readonly<{
   failure: MediaError | undefined
   resume: MediaResume | undefined
-  seeks: readonly MediaSeek[]
+  seek: MediaSeek | undefined
 }>
 export type MediaState = Readonly<{
   current: MediaSnapshot
@@ -98,7 +97,9 @@ const derive = (
 ): MediaState => {
   const current =
     observations.at(-1)?.[0] ?? previous?.current ?? capture(media)
+
   const ended = observations.some(([, event]) => event.type === "ended")
+
   const moved = observations.some(([, event]) =>
     ["seeked", "seeking", "timeupdate"].includes(event.type),
   )
@@ -116,27 +117,28 @@ const derive = (
       error.code !== MediaError.MEDIA_ERR_ABORTED,
   )?.[0].error
 
-  const seeks = observations.flatMap(([snapshot, event]) => {
-    if (event.type !== "seeked" && event.type !== "seeking") {
-      return []
+  const seek = (() => {
+    const observation = observations.findLast(
+      ([, event]) => event.type === "seeked" || event.type === "seeking",
+    )
+    if (observation === undefined) {
+      return undefined
     }
 
-    const { duration, seeking, time } = snapshot
+    const [snapshot] = observation
+    const { duration, time } = snapshot
     const native = playable_time(duration, time)
     const position = buffered_position(snapshot, native)
-    return [
-      {
-        candidate: {
-          position: position ?? native,
-          restart: position === undefined,
-        },
-        position: time,
-        seeking,
+    return {
+      candidate: {
+        position: position ?? native,
+        restart: position === undefined,
       },
-    ]
-  })
+      position: time,
+    }
+  })()
 
-  return { current, derived: { failure, resume, seeks } }
+  return { current, derived: { failure, resume, seek } }
 }
 
 export const reduce = (
@@ -161,28 +163,24 @@ export const reduce = (
     }
     case "media": {
       const { current, derived } = action.value
-      const { failure, resume, seeks } = derived
+      const { failure, resume, seek: observed_seek } = derived
       let target = state.target
       let pending_seek = state.pending_seek
       let persist: number | undefined
       let seek: number | undefined
 
       const pending = pending_seek
-      if (
+
+      const owned_seek =
         pending !== undefined &&
-        seeks.some(({ position }) => aligned(position, pending.target.position))
-      ) {
+        observed_seek !== undefined &&
+        aligned(observed_seek.position, pending.target.position)
+      if (owned_seek) {
         pending_seek = { ...pending, acknowledged: true }
       }
-      const external_seek = seeks.findLast(
-        ({ position, seeking }) =>
-          seeking &&
-          (pending === undefined ||
-            !aligned(position, pending.target.position)),
-      )
-      const retargeted = external_seek !== undefined
-      if (external_seek !== undefined) {
-        target = external_seek.candidate
+      const retargeted = observed_seek !== undefined && !owned_seek
+      if (retargeted) {
+        target = observed_seek.candidate
       }
 
       const { metadata, seeking, time } = current
