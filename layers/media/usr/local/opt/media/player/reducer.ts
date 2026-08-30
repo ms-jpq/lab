@@ -1,4 +1,4 @@
-import { closing } from "./util.ts"
+import { event_batches } from "./util.ts"
 
 type BufferedRange = readonly [start: number, end: number]
 
@@ -175,7 +175,7 @@ const reconcile_seek = (
 const project_request = (
   current: MediaSnapshot,
   request: PlaybackRequest,
-): readonly [request: PlaybackRequest, restart: boolean] => {
+): PlaybackRequest => {
   const frontier = stream_position(
     buffered_end(current, request.frontier) ?? request.frontier,
   )
@@ -184,14 +184,16 @@ const project_request = (
     play_ahead(current, frontier) >= BUFFER_HIGH
 
   const position = advance ? frontier : request.position
-  return [{ frontier, position }, advance]
+  return { frontier, position }
 }
 
 const observe = (state: PlaybackState): PlaybackTransition => {
   const { current } = state
   const [pending_seek, seek] = reconcile_seek(current, state.pending_seek)
-  const [request, restart] = project_request(current, state.request)
-  const requested = restart && request_needed(current, request)
+  const request = project_request(current, state.request)
+  const restart = !aligned(request.position, state.request.position)
+  const requesting = restart ? false : state.requesting
+  const requested = !requesting && request_needed(current, request)
 
   return [
     {
@@ -199,106 +201,23 @@ const observe = (state: PlaybackState): PlaybackTransition => {
       current,
       pending_seek,
       request,
-      requesting: restart ? requested : state.requesting,
+      requesting: requesting || requested,
     },
     { request: requested ? request : undefined, seek },
   ]
-}
-
-const media_transition = (
-  state: PlaybackState,
-  action: MediaAction,
-): PlaybackTransition => {
-  const observed = { ...state, current: action.current }
-  const { current } = observed
-
-  switch (action.type) {
-    case "loadedmetadata":
-    case "canplay":
-    case "progress":
-    case "seeked":
-    case "waiting": {
-      return observe(observed)
-    }
-    case "ended": {
-      return [observed, { persist: 0 }]
-    }
-    case "timeupdate": {
-      const persist =
-        state.pending_seek === undefined
-          ? buffered_position(current, current.time)
-          : undefined
-
-      const [next, effects] = observe(observed)
-      return [next, { ...effects, persist }]
-    }
-    case "error": {
-      const { error } = current
-      return [
-        observed,
-        {
-          failure:
-            error !== undefined && error.code !== MediaError.MEDIA_ERR_ABORTED
-              ? error
-              : undefined,
-        },
-      ]
-    }
-    case "seeking": {
-      const native = playable_time(current.duration, current.time)
-
-      const buffered = buffered_position(current, native)
-      const target = buffered ?? native
-
-      const external =
-        state.pending_seek === undefined ||
-        !aligned(current.time, state.pending_seek)
-
-      if (!external) {
-        return observe(observed)
-      }
-
-      const restart =
-        buffered === undefined && !aligned(target, state.request.frontier)
-
-      const [next, effects] = observe({
-        ...observed,
-        pending_seek: undefined,
-        request: restart ? request_at(target) : state.request,
-        target,
-      })
-
-      return [
-        next,
-        {
-          ...effects,
-          persist: target,
-          request: restart ? next.request : effects.request,
-        },
-      ]
-    }
-    default:
-      throw new Error(action)
-  }
-}
-
-const schedule = ([state, effects]: PlaybackTransition): PlaybackTransition => {
-  if (effects.request !== undefined) {
-    return [{ ...state, requesting: true }, effects]
-  }
-  if (request_needed(state.current, state.request) && !state.requesting) {
-    return [
-      { ...state, requesting: true },
-      { ...effects, request: state.request },
-    ]
-  }
-  return [state, effects]
 }
 
 const reduce = (
   state: PlaybackState,
   action: PlaybackAction,
 ): PlaybackTransition => {
+  const observed = "current" in action
+    ? { ...state, current: action.current }
+    : state
+  const { current } = observed
+  const requested =
+    !state.requesting && request_needed(current, state.request)
+
   switch (action.type) {
     case "bytes_received": {
       return [state, { append: action.bytes }]
@@ -328,9 +247,66 @@ const reduce = (
         { request, seek: state.target },
       ]
     }
-    default: {
-      return schedule(media_transition(state, action))
+    case "loadedmetadata":
+    case "canplay":
+    case "progress":
+    case "seeked":
+    case "waiting": {
+      return observe(observed)
     }
+    case "ended": {
+      return [
+        { ...observed, requesting: state.requesting || requested },
+        { persist: 0, request: requested ? state.request : undefined },
+      ]
+    }
+    case "timeupdate": {
+      const persist =
+        state.pending_seek === undefined
+          ? buffered_position(current, current.time)
+          : undefined
+      const [next, effects] = observe(observed)
+      return [next, { ...effects, persist }]
+    }
+    case "error": {
+      const { error } = current
+      return [
+        { ...observed, requesting: state.requesting || requested },
+        {
+          failure:
+            error !== undefined && error.code !== MediaError.MEDIA_ERR_ABORTED
+              ? error
+              : undefined,
+          request: requested ? state.request : undefined,
+        },
+      ]
+    }
+    case "seeking": {
+      const native = playable_time(current.duration, current.time)
+      const buffered = buffered_position(current, native)
+      const target = buffered ?? native
+      const external =
+        state.pending_seek === undefined ||
+        !aligned(current.time, state.pending_seek)
+
+      if (!external) {
+        return observe(observed)
+      }
+
+      const restart =
+        buffered === undefined && !aligned(target, state.request.frontier)
+      const [next, effects] = observe({
+        ...observed,
+        pending_seek: undefined,
+        request: restart ? request_at(target) : state.request,
+        requesting: restart ? false : state.requesting,
+        target,
+      })
+
+      return [next, { ...effects, persist: target }]
+    }
+    default:
+      throw new Error(action)
   }
 }
 
@@ -373,37 +349,4 @@ export const playback_events = (
   media: HTMLMediaElement,
   signal: AbortSignal,
 ): AsyncIteratorObject<readonly PlaybackAction[]> =>
-  closing(signal, async function* (signal) {
-    if (signal.aborted) {
-      return
-    }
-
-    const pending: PlaybackAction[] = []
-    let ready = Promise.withResolvers<void>()
-
-    signal.addEventListener("abort", () => ready.resolve(), { once: true })
-    for (const type of EVENTS) {
-      media.addEventListener(
-        type,
-        () => {
-          pending.push({ current: capture(media), type })
-          ready.resolve()
-        },
-        { signal },
-      )
-    }
-
-    while (!signal.aborted) {
-      if (pending.length === 0) {
-        await ready.promise
-      }
-      if (signal.aborted) {
-        return
-      }
-
-      const batch = pending.splice(0)
-      ready = Promise.withResolvers<void>()
-      yield batch
-    }
-    return
-  })
+  event_batches(signal, media, EVENTS, () => capture(media))
