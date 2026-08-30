@@ -309,28 +309,22 @@ export const reduce = (
   }
 }
 
-const observations = async function* <const T extends MediaEvent>(
-  media: HTMLMediaElement,
-  signal: AbortSignal,
-  type: T,
-): AsyncIteratorObject<MediaAction<T>> {
-  using a = abortion(signal)
-  for await (const event of events(a.signal, media, type)) {
-    yield { current: capture(media), event, type }
-  }
-  return
-}
-
 export const media_events = async function* (
   media: HTMLMediaElement,
   signal: AbortSignal,
 ): AsyncIteratorObject<MediaAction> {
   using a = abortion(signal)
-  const streams: AsyncIteratorObject<MediaAction>[] = EVENTS.map((type) =>
-    observations(media, a.signal, type),
+
+  const streams = EVENTS.map((type) =>
+    (async function* () {
+      for await (const event of events(a.signal, media, type)) {
+        yield { current: capture(media), event, type }
+      }
+    })(),
   )
+
   for await (const [, action] of merge(...streams)) {
-    yield action
+    yield action as MediaAction
   }
   return
 }
