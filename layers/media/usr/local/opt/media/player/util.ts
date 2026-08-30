@@ -189,7 +189,7 @@ export const merge = async function* <
   return
 }
 
-const stream = (
+export const fetch_stream = (
   request: Request,
 ): AsyncIteratorObject<Uint8Array<ArrayBuffer>> =>
   closing(request.signal, async function* (signal) {
@@ -206,18 +206,3 @@ const stream = (
     }
     return
   })
-
-export const logical_stream = async function* (
-  request: Request,
-): AsyncGenerator<Uint8Array<ArrayBuffer>, undefined, Request | undefined> {
-  l1: for (;;) {
-    for await (const bytes of stream(request)) {
-      const next = yield bytes
-      if (next !== undefined) {
-        request = next
-        continue l1
-      }
-    }
-    return
-  }
-}
