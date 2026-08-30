@@ -83,7 +83,6 @@ export type MediaSeek = Readonly<{
   position: number
 }>
 export type MediaAction = Readonly<{
-  current: MediaSnapshot
   event: Event
   kind: "media"
 }>
@@ -331,7 +330,8 @@ export const reduce = (
       ]
     }
     case "media": {
-      const { current, event } = action
+      const { event } = action
+      const current = capture(state.media)
       const observed_failure = failure(current, event)
       const observed_seek = latest_seek(current, event)
       const observed = observe_seek(state, current, observed_seek)
@@ -366,7 +366,7 @@ export const media_events = async function* (
     events(signal, media, event),
   )
   for await (const [, event] of merge(...streams)) {
-    yield { current: capture(media), event, kind: "media" }
+    yield { event, kind: "media" }
   }
   return
 }
