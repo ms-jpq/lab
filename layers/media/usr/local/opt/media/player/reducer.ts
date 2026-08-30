@@ -85,43 +85,6 @@ const request_at = (position: number): PlaybackRequest => ({
   position,
 })
 
-const reconcile_seek = (
-  current: MediaSnapshot,
-  pending_seek: number | undefined,
-): readonly [pending_seek: number | undefined, seek: number | undefined] => {
-  if (pending_seek === undefined || current.seeking) {
-    return [pending_seek, undefined]
-  }
-
-  const position =
-    buffered_position(current, pending_seek) ??
-    (current.metadata ? pending_seek : undefined)
-
-  if (position === undefined) {
-    return [pending_seek, undefined]
-  }
-  return aligned(current.time, position)
-    ? [undefined, undefined]
-    : [position, position]
-}
-
-const project_request = (
-  current: MediaSnapshot,
-  request: PlaybackRequest,
-): PlaybackRequest => {
-  const frontier = stream_position(
-    buffered_end(current, request.frontier) ?? request.frontier,
-  )
-  return {
-    frontier,
-    position:
-      !aligned(frontier, request.position) &&
-      play_ahead(current, frontier) >= BUFFER_HIGH
-        ? frontier
-        : request.position,
-  }
-}
-
 const request_if_needed = (
   state: PlaybackState,
   current: MediaSnapshot,
@@ -138,20 +101,37 @@ const request_if_needed = (
   ]
 }
 
-const observe = (
+const project = (
   state: PlaybackState,
   current: MediaSnapshot,
 ): PlaybackTransition => {
-  const [pending_seek, seek] = reconcile_seek(current, state.pending_seek)
-  const request = project_request(current, state.request)
+  const candidate =
+    state.pending_seek === undefined || current.seeking
+      ? undefined
+      : (buffered_position(current, state.pending_seek) ??
+        (current.metadata ? state.pending_seek : undefined))
+  const seek =
+    candidate !== undefined && !aligned(current.time, candidate)
+      ? candidate
+      : undefined
+  const pending_seek = candidate === undefined ? state.pending_seek : seek
+
+  const frontier = stream_position(
+    buffered_end(current, state.request.frontier) ?? state.request.frontier,
+  )
+  const advance =
+    !aligned(frontier, state.request.position) &&
+    play_ahead(current, frontier) >= BUFFER_HIGH
+  const request = {
+    frontier,
+    position: advance ? frontier : state.request.position,
+  }
   const [next, effects] = request_if_needed(
     {
       ...state,
       pending_seek,
       request,
-      requesting: aligned(request.position, state.request.position)
-        ? state.requesting
-        : false,
+      requesting: advance ? false : state.requesting,
     },
     current,
   )
@@ -193,7 +173,7 @@ const reduce = (
     case "progress":
     case "seeked":
     case "waiting": {
-      return observe(state, action.current)
+      return project(state, action.current)
     }
     case "ended": {
       const [next, effects] = request_if_needed(state, action.current)
@@ -205,7 +185,7 @@ const reduce = (
         state.pending_seek === undefined
           ? buffered_position(current, current.time)
           : undefined
-      const [next, effects] = observe(state, current)
+      const [next, effects] = project(state, current)
       return [next, persist === undefined ? effects : { ...effects, persist }]
     }
     case "error": {
@@ -229,12 +209,12 @@ const reduce = (
         state.pending_seek !== undefined &&
         aligned(current.time, state.pending_seek)
       ) {
-        return observe(state, current)
+        return project(state, current)
       }
 
       const restart =
         buffered === undefined && !aligned(target, state.request.frontier)
-      const [next, effects] = observe(
+      const [next, effects] = project(
         {
           ...state,
           pending_seek: undefined,
@@ -269,13 +249,10 @@ export const playback_transitions = (
     for (const current of actions) {
       const [next, produced] = reduce(state, current)
       state = next
-      effects = {
-        ...effects,
-        ...produced,
-        ...(effects.control?.type === "rebuild"
-          ? { control: effects.control }
-          : {}),
-      }
+      effects =
+        effects.control?.type === "rebuild"
+          ? { ...effects, ...produced, control: effects.control }
+          : { ...effects, ...produced }
     }
     return effects
   }
