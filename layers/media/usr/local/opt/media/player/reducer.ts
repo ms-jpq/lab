@@ -177,6 +177,7 @@ export const reduce = (
         pending !== undefined &&
         observed_seek !== undefined &&
         aligned(observed_seek.position, pending.target.position)
+
       if (owned_seek) {
         pending_seek = { ...pending, acknowledged: true }
       }
