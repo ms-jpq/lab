@@ -41,6 +41,7 @@ $(TMP): | $(VAR)
 
 ifeq ($(origin MACHINE), command line)
 include makelib/facts.mk
+include makelib/compile.mk
 include makelib/local.mk
 else
 include layers/_/usr/local/opt/initd/lib/*.mk
