@@ -1,4 +1,4 @@
-import { playable_position } from "./media.ts"
+import { playable_position } from "./reducer.ts"
 import { abortion, delay, once } from "./util.ts"
 
 const POSITION = `media:position:${location.pathname}`

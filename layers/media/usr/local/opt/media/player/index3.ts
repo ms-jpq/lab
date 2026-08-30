@@ -1,4 +1,3 @@
-import { aligned, buffered_end, play_ahead } from "./media.ts"
 import { media_sources, type Mse } from "./mse.ts"
 import {
   media,
@@ -11,7 +10,9 @@ import {
 import {
   initial_playback,
   media_states,
+  play_ahead,
   reduce,
+  should_interrupt,
   type MediaState,
   type PlaybackAction,
 } from "./reducer.ts"
@@ -28,9 +29,6 @@ type Performed<T> =
       interrupted: boolean
       value: T
     }>
-
-const stream_position = (value: number): number =>
-  Math.round(value * 1_000) / 1_000
 
 export const decide = async (signal: AbortSignal): Promise<void> => {
   using lifetime = abortion(signal)
@@ -62,6 +60,17 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
     const error = playback.failure
     dispatch({ kind: "consume_failure" })
     return error
+  }
+  const restart_request = (): boolean => {
+    const error = take_failure()
+    if (error !== undefined) {
+      throw error
+    }
+    if (playback.stream.restart === undefined) {
+      return false
+    }
+    dispatch({ kind: "stream_started" })
+    return true
   }
   const read_state = async () =>
     ({ kind: "state", result: await states.next() }) as const
@@ -191,58 +200,40 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
       if (buffer === STOP) {
         return
       }
-
-      let accepted = playback.target
-      let start = accepted.position
-      const changed = (frontier: number): boolean =>
-        playback.failure !== undefined ||
-        (playback.target !== accepted &&
-          playback.target.restart &&
-          !aligned(playback.target.position, frontier))
-      const retarget = (frontier: number): boolean => {
-        const error = take_failure()
-        if (error !== undefined) {
-          throw error
-        }
-        if (playback.target === accepted) {
-          return false
-        }
-        accepted = playback.target
-        if (accepted.restart && !aligned(accepted.position, frontier)) {
-          start = accepted.position
-          return true
-        }
-        return false
-      }
+      dispatch({ kind: "stream_started" })
 
       request: for (;;) {
         let request_failure: { error: unknown } | undefined
-        let frontier = stream_position(start)
         try {
-          retarget(start)
-          while (play_ahead(playback.current, start) >= BUFFER.LO) {
+          if (restart_request()) {
+            continue request
+          }
+          while (
+            play_ahead(playback.current, playback.stream.start) >= BUFFER.LO
+          ) {
             const demanded = await wait(
               () =>
-                changed(start) ||
-                play_ahead(playback.current, start) < BUFFER.LO,
+                should_interrupt(playback) ||
+                play_ahead(playback.current, playback.stream.start) < BUFFER.LO,
             )
             if (!demanded) {
               return
             }
-            if (retarget(start)) {
+            if (restart_request()) {
               continue request
             }
           }
 
           using owner = abortion(lifetime.signal)
+          const start = playback.stream.start
           const request = logical_stream(
             new Request(source_url(media, start), { signal: owner.signal }),
           )
           try {
-            if ((await pull(buffer.next(frontier))) === STOP) {
+            if ((await pull(buffer.next(playback.stream.frontier))) === STOP) {
               return
             }
-            if (retarget(frontier)) {
+            if (restart_request()) {
               continue request
             }
 
@@ -251,7 +242,7 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
               try {
                 read = await perform(
                   request.next(),
-                  () => changed(frontier),
+                  () => should_interrupt(playback),
                   owner[Symbol.dispose],
                 )
               } catch (error) {
@@ -262,13 +253,14 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
                 return
               }
               if (read.interrupted) {
+                restart_request()
                 continue request
               }
               if (read.value.done) {
                 if ((await pull(buffer.next(undefined))) === STOP) {
                   return
                 }
-                if (!(await wait(() => changed(frontier)))) {
+                if (!(await wait(() => should_interrupt(playback)))) {
                   return
                 }
                 continue request
@@ -277,14 +269,15 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
               if ((await pull(buffer.next(read.value.value))) === STOP) {
                 return
               }
-              frontier = stream_position(
-                buffered_end(playback.current, frontier) ?? frontier,
-              )
-              if (retarget(frontier)) {
+              dispatch({ advance: false, kind: "frontier" })
+              if (restart_request()) {
                 continue request
               }
-              if (play_ahead(playback.current, frontier) >= BUFFER.HI) {
-                start = frontier
+              if (
+                play_ahead(playback.current, playback.stream.frontier) >=
+                BUFFER.HI
+              ) {
+                dispatch({ advance: true, kind: "frontier" })
                 continue request
               }
             }
@@ -302,10 +295,8 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
 
         if (request_failure !== undefined) {
           console.error(request_failure.error)
-          start = stream_position(
-            buffered_end(playback.current, frontier) ?? frontier,
-          )
-          if ((await retry(() => changed(start))) === STOP) {
+          dispatch({ advance: true, kind: "frontier" })
+          if ((await retry(() => should_interrupt(playback))) === STOP) {
             return
           }
         }

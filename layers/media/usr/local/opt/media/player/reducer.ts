@@ -1,10 +1,72 @@
-import {
-  aligned,
-  buffered_position,
-  playable_time,
-  type MediaSnapshot,
-} from "./media.ts"
 import { abortion, event_batches, type EventObservation } from "./util.ts"
+
+const POSITION_TOLERANCE = 0.1
+const END_TOLERANCE = 0.5
+
+type BufferedRange = readonly [start: number, end: number]
+type MediaSnapshot = Readonly<{
+  buffered: readonly BufferedRange[]
+  duration: number
+  error: MediaError | undefined
+  metadata: boolean
+  seeking: boolean
+  time: number
+}>
+
+const playable_time = (duration: number, value: number): number => {
+  const position = Number.isFinite(value) ? Math.max(0, value) : 0
+  return duration > 0 && position >= duration
+    ? Math.max(0, duration - END_TOLERANCE)
+    : position
+}
+
+export const playable_position = (
+  media: HTMLMediaElement,
+  value: number,
+): number => playable_time(Number(media.dataset["duration"]), value)
+
+const aligned = (left: number, right: number): boolean =>
+  Math.abs(left - right) <= POSITION_TOLERANCE
+
+const buffered_range = (
+  { buffered }: MediaSnapshot,
+  position: number,
+  inclusive: boolean,
+): BufferedRange | undefined => {
+  for (const [start, end] of buffered) {
+    if (
+      start - position <= POSITION_TOLERANCE &&
+      (inclusive ? position <= end : position < end)
+    ) {
+      return [start, end]
+    }
+  }
+  return undefined
+}
+
+const buffered_position = (
+  state: MediaSnapshot,
+  position: number,
+): number | undefined => {
+  const range = buffered_range(state, position, false)
+  return range ? Math.max(position, range.at(0) ?? -Infinity) : undefined
+}
+
+const buffered_end = (
+  state: MediaSnapshot,
+  position: number,
+): number | undefined => buffered_range(state, position, true)?.at(1)
+
+export const play_ahead = (
+  state: MediaSnapshot,
+  frontier: number,
+): number => {
+  const end = buffered_end(state, state.time)
+  const frontier_end = buffered_end(state, frontier)
+  return end !== undefined && aligned(end, frontier_end ?? NaN)
+    ? end - state.time
+    : 0
+}
 
 const EVENTS = [
   "canplay",
@@ -41,22 +103,33 @@ export type MediaState = Readonly<{
   kind: "media"
   current: MediaSnapshot
   derived: MediaDerived
+  media: HTMLMediaElement
 }>
 
 type PendingSeek = Readonly<{
   acknowledged: boolean
   target: MediaTarget
 }>
+export type PlaybackStream = Readonly<{
+  accepted: MediaTarget
+  frontier: number
+  restart: number | undefined
+  start: number
+}>
 export type PlaybackState = Readonly<{
   current: MediaSnapshot
   failure: MediaError | undefined
+  media: HTMLMediaElement
   pending_seek: PendingSeek | undefined
+  stream: PlaybackStream
   target: MediaTarget
 }>
 export type PlaybackAction =
   | Readonly<{ kind: "consume_failure" }>
+  | Readonly<{ advance: boolean; kind: "frontier" }>
   | MediaState
   | Readonly<{ kind: "seek"; target: MediaTarget }>
+  | Readonly<{ kind: "stream_started" }>
 export type PlaybackEffects = Readonly<{
   persist: number | undefined
   seek: number | undefined
@@ -66,15 +139,43 @@ export type PlaybackTransition = readonly [
   effects: PlaybackEffects,
 ]
 
+const stream_position = (value: number): number =>
+  Math.round(value * 1_000) / 1_000
+
+const start_stream = (target: MediaTarget): PlaybackStream => ({
+  accepted: target,
+  frontier: stream_position(target.position),
+  restart: undefined,
+  start: target.position,
+})
+
+const reconcile = (
+  stream: PlaybackStream,
+  target: MediaTarget,
+): PlaybackStream => {
+  if (target === stream.accepted) {
+    return stream
+  }
+  if (target.restart && !aligned(target.position, stream.frontier)) {
+    return { ...stream, restart: target.position }
+  }
+  return { ...stream, accepted: target, restart: undefined }
+}
+
+export const should_interrupt = ({ failure, stream }: PlaybackState): boolean =>
+  failure !== undefined || stream.restart !== undefined
+
 export const initial_playback = (
   position: number,
-  { current, derived }: MediaState,
+  { current, derived, media }: MediaState,
 ): PlaybackState => {
   const target = { position, restart: false }
   return {
     current,
     failure: derived.failure,
+    media,
     pending_seek: { target, acknowledged: false },
+    stream: start_stream(target),
     target,
   }
 }
@@ -135,7 +236,12 @@ const derive = (
     }
   })()
 
-  return { kind: "media", current, derived: { failure, resume, seek } }
+  return {
+    kind: "media",
+    current,
+    derived: { failure, resume, seek },
+    media,
+  }
 }
 
 export const reduce = (
@@ -149,6 +255,24 @@ export const reduce = (
         { persist: undefined, seek: undefined },
       ]
     }
+    case "frontier": {
+      const frontier = stream_position(
+        buffered_end(state.current, state.stream.frontier) ??
+          state.stream.frontier,
+      )
+      const stream = reconcile(
+        {
+          ...state.stream,
+          frontier,
+          start: action.advance ? frontier : state.stream.start,
+        },
+        state.target,
+      )
+      return [
+        { ...state, stream },
+        { persist: undefined, seek: undefined },
+      ]
+    }
     case "seek": {
       return [
         {
@@ -156,6 +280,12 @@ export const reduce = (
           pending_seek: { target: action.target, acknowledged: false },
         },
         { persist: undefined, seek: action.target.position },
+      ]
+    }
+    case "stream_started": {
+      return [
+        { ...state, stream: start_stream(state.target) },
+        { persist: undefined, seek: undefined },
       ]
     }
     case "media": {
@@ -212,7 +342,9 @@ export const reduce = (
         {
           current,
           failure: state.failure ?? failure,
+          media: state.media,
           pending_seek,
+          stream: reconcile(state.stream, target),
           target,
         },
         { persist, seek },
