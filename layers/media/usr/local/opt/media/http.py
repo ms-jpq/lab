@@ -45,24 +45,39 @@ def redirect(request: BaseHTTPRequestHandler, *, location: str) -> None:
     request.end_headers()
 
 
-def html(
+def content(
     request: BaseHTTPRequestHandler,
     *,
-    cookies: Iterable[Morsel[str]] = (),
-    body: str,
     head: bool,
+    content_type: str,
+    headers: Iterable[tuple[str, str]] = (),
+    body: bytes,
 ) -> None:
-    encoded = body.encode()
-
     request.send_response(HTTPStatus.OK)
-    request.send_header("Content-Type", "text/html; charset=utf-8")
-    request.send_header("Content-Length", str(len(encoded)))
-    for morsel in cookies:
-        request.send_header("Set-Cookie", morsel.OutputString())
+    request.send_header("Content-Type", content_type)
+    request.send_header("Content-Length", str(len(body)))
+    for name, value in headers:
+        request.send_header(name, value)
     request.end_headers()
 
     if not head:
-        request.wfile.write(encoded)
+        request.wfile.write(body)
+
+
+def html(
+    request: BaseHTTPRequestHandler,
+    *,
+    head: bool,
+    cookies: Iterable[Morsel[str]] = (),
+    body: str,
+) -> None:
+    content(
+        request,
+        head=head,
+        content_type="text/html; charset=utf-8",
+        headers=(("Set-Cookie", morsel.OutputString()) for morsel in cookies),
+        body=body.encode(),
+    )
 
 
 def stream(

@@ -18,9 +18,11 @@ from .filesystem import EntriesError, Entry, entries, entry, resolve
 from .html import Selection
 from .html import index as index_html
 from .html import player as player_html
+from .html import resource
 from .http import (
     Query,
     _Server,
+    content,
     cookies,
     html,
     redirect,
@@ -288,8 +290,31 @@ def _subtitle_stream(
             request.send_error(HTTPStatus.BAD_REQUEST)
 
 
+def _player_script(
+    request: BaseHTTPRequestHandler,
+    *,
+    head: bool,
+    name: str,
+) -> None:
+    try:
+        body = resource("player", name).encode()
+    except FileNotFoundError:
+        request.send_error(HTTPStatus.NOT_FOUND)
+        return
+
+    content(
+        request,
+        body=body,
+        content_type="text/javascript; charset=utf-8",
+        head=head,
+    )
+
+
 def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> None:
     raw, query = target(request.path)
+    if (p := PurePosixPath(raw)).name.endswith(".js"):
+        _player_script(request, head=head, name=p.name)
+
     if (resolved := resolve(root=root, raw=raw)) is None:
         request.send_error(HTTPStatus.NOT_FOUND)
         return

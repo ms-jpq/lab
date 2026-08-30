@@ -436,6 +436,7 @@ const cases = [
       await eventually(() => current.sources[0]?.readyState === "ended")
 
       equal(current.sources.length, 1)
+      equal(current.sources[0]?.duration, 200)
       equal(current.requests.length, 1)
       equal(new URL(current.requests[0]?.url ?? "").searchParams.get("t"), "0")
       deepEqual(

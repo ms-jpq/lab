@@ -1,5 +1,7 @@
 .PHONY: local
 
+local: compile .WAIT $(foreach machine,$(MACHINES),$(TMP)/$(machine)/fs)
+
 e :=
 s := ,
 sp := $(e) $(e)
@@ -92,8 +94,6 @@ $$(foreach layer,$$(MACH.$1.FILES),$$(eval $$(call LOCAL_F_TEMPLATE,$1,$$(layer)
 $$(foreach layer,$$(MACH.$1.LINKS),$$(eval $$(call LOCAL_L_TEMPLATE,$1,$$(firstword $$(subst !, ,$$(layer))),$$(lastword $$(subst !, ,$$(layer))))))
 $$(foreach line,$(REF_LINKS),$$(eval $$(call LOCAL_RL_TEMPLATE,$1,$$(firstword $$(subst !, ,$$(line))),$$(lastword $$(subst !, ,$$(line))))))
 
-
-local: $(TMP)/$1/fs
 
 $(TMP)/$1/fs: $(VAR)/sh/libexec/lsync.sh $$(LOCALS.$1) | $(VAR)/sh
 	'$$<' '$$@' '$(TMP)/$1/layers'/*/

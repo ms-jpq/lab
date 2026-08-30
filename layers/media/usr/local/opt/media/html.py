@@ -27,14 +27,13 @@ _PLACEHOLDER = compile(
 
 
 @cache
-def _resource(name: str) -> str:
-    resource = files(__package__) / "templates" / name
-    return resource.read_text(encoding="utf-8")
+def resource(*path: str) -> str:
+    return files(__package__).joinpath(*path).read_text(encoding="utf-8")
 
 
 @cache
 def _template(name: str) -> Template:
-    return Template(_PLACEHOLDER.sub(r"\1", _resource(name)))
+    return Template(_PLACEHOLDER.sub(r"\1", resource("templates", name)))
 
 
 def _render(template_name: str, **values: str) -> str:
@@ -163,7 +162,7 @@ def index(
                 (_entry(entry=entry) for entry in entries),
             )
         ),
-        style=_resource("style.css"),
+        style=resource("templates", "style.css"),
     )
 
 
@@ -214,8 +213,8 @@ def player(
             ((value, value) for value in profiles), selected=profile
         ),
         subtitle_options=_subtitle_options(probe.subtitles, selected=subtitle),
-        script=_resource("player.js"),
-        style=_resource("style.css"),
+        script="./index.js",
+        style=resource("templates", "style.css"),
         time=escape(time, quote=True),
         title=escape(title),
     )

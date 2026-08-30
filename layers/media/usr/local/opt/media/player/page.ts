@@ -5,6 +5,7 @@ const POSITION = `media:position:${location.pathname}`
 const PAGE = crypto.randomUUID()
 
 export const media = document.querySelector("video, audio") as HTMLMediaElement
+export const duration = Number(media.dataset["duration"])
 export const mime_type = media.dataset["mseType"] as string
 const subtitle = document.querySelector<HTMLTrackElement>("#subtitle")
 const form = document.querySelector("form") as HTMLFormElement

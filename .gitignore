@@ -12,6 +12,7 @@
 .terraform/
 .venv/
 inventory.json
+layers/media/usr/local/opt/media/player/*.js
 node_modules/
 package-lock.json
 tsconfig.tsbuildinfo

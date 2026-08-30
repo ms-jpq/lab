@@ -1,6 +1,7 @@
 import { media_sources } from "./mse.ts"
 import { media_events } from "./media.ts"
 import {
+  duration,
   main,
   media,
   mime_type,
@@ -51,12 +52,16 @@ export const play_media = async (signal: AbortSignal) => {
   using abort = abortion(signal)
   const dispatch = playback_transitions(page_position())
 
-  source: for await (const [, create_buffer] of media_sources({
+  source: for await (const [source, create_buffer] of media_sources({
     evict_behind: BUFFER_BEHIND,
     media,
     mime_type,
     signal: abort.signal,
   })) {
+    if (duration > 0) {
+      source.duration = duration
+    }
+
     await using buffer = create_buffer(abort.signal)
 
     if ((await buffer.next()).done) {

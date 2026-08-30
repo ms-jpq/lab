@@ -9,6 +9,7 @@ define COMPILE_TEMPLATE
 TS_BUILDS += $(dir $1)tsconfig.tsbuildinfo
 
 $(dir $1)tsconfig.tsbuildinfo: $1 tsconfig.json $(shell shopt -u failglob && printf -- '%s ' $(dir $1)**/*.ts) | ./node_modules/.bin
+	rm -f -- '$$@'
 	'./node_modules/.bin/tsc' --project '$1' --incremental --tsBuildInfoFile '$$@'
 	touch -- '$$@'
 endef
