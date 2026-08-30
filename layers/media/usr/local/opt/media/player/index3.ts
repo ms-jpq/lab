@@ -1,7 +1,6 @@
 import {
   aligned,
   buffered_end,
-  buffered_position,
   play_ahead,
 } from "./media.ts"
 import { media_sources, type Mse } from "./mse.ts"
@@ -13,7 +12,13 @@ import {
   source_url,
   start_page,
 } from "./page.ts"
-import { media_states, type MediaState, type MediaTarget } from "./reducer.ts"
+import {
+  initial_playback,
+  media_states,
+  reduce,
+  type MediaState,
+  type PlaybackAction,
+} from "./reducer.ts"
 import { abortion, delay, logical_stream } from "./util.ts"
 
 const BUFFER = { BEHIND: 30, LO: 45, HI: 60 }
@@ -43,70 +48,26 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
   const states = media_states(media, lifetime.signal)
   const initial = await states.next()
   if (initial.done) return
-  let current = initial.value.current
-  let target = { position: page_position(), restart: false }
-  let pending_seek: { target: MediaTarget; acknowledged: boolean } | undefined =
-    { target, acknowledged: false }
-  let failure: MediaError | undefined
+  let playback = initial_playback(page_position(), initial.value)
 
-  const seek = (next: MediaTarget): void => {
-    pending_seek = { target: next, acknowledged: false }
-    media.currentTime = next.position
+  const dispatch = (action: PlaybackAction): void => {
+    const transition = reduce(playback, action)
+    playback = transition.state
+    for (const effect of transition.effects) {
+      if (effect.kind === "persist") {
+        persist_position(effect.position)
+      } else {
+        media.currentTime = effect.position
+      }
+    }
   }
   const take_failure = (): MediaError | undefined => {
-    const error = failure
-    failure = undefined
+    const error = playback.failure
+    dispatch({ kind: "consume_failure" })
     return error
   }
-  const observe = ({ current: latest, derived }: MediaState): void => {
-    current = latest
-    const { failure: media_failure, resume, seeks } = derived
-    failure ??= media_failure
-
-    const pending = pending_seek
-    if (
-      pending !== undefined &&
-      seeks.some(({ position }) => aligned(position, pending.target.position))
-    ) {
-      pending.acknowledged = true
-    }
-    const external_seek = seeks.findLast(
-      ({ position, seeking }) =>
-        seeking &&
-        (pending === undefined || !aligned(position, pending.target.position)),
-    )
-    const retargeted = external_seek !== undefined
-    if (external_seek !== undefined) target = external_seek.candidate
-
-    const { metadata, seeking, time } = current
-    if (retargeted) {
-      pending_seek =
-        target.restart || !aligned(time, target.position)
-          ? { target, acknowledged: false }
-          : undefined
-      persist_position(target.position)
-    }
-    if (
-      resume !== undefined &&
-      (resume.reason === "ended" || (!retargeted && pending_seek === undefined))
-    ) {
-      persist_position(resume.position)
-    }
-    if (pending_seek === undefined || seeking) return
-
-    const pending_target = pending_seek.target
-    const playable = buffered_position(current, pending_target.position)
-    const seek_target = {
-      ...pending_target,
-      position: playable ?? pending_target.position,
-    }
-    const positioned = aligned(time, seek_target.position)
-    if (!positioned && (metadata || playable !== undefined)) {
-      seek(seek_target)
-    } else if (positioned && pending_seek.acknowledged) {
-      pending_seek = undefined
-    }
-  }
+  const observe = (value: MediaState): void =>
+    dispatch({ kind: "media", value })
 
   const read_state = async () =>
     ({ kind: "state", result: await states.next() }) as const
@@ -178,12 +139,14 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
   }
 
   const open = async (): Promise<Mse | typeof STOP> => {
-    seek(target)
+    dispatch({ kind: "seek", target: playback.target })
     const opened = await pull(sources.next())
     if (opened === STOP) return STOP
 
     const [source, create_buffer] = opened
-    if (current.duration > 0) source.duration = current.duration
+    if (playback.current.duration > 0) {
+      source.duration = playback.current.duration
+    }
     const buffer = create_buffer(lifetime.signal)
     if ((await pull(buffer.next())) === STOP) return STOP
 
@@ -196,14 +159,16 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
     source: for (;;) {
       const media_failure = take_failure()
       if (media_failure !== undefined) console.error(media_failure)
-      const attempt = target
+      const attempt = playback.target
       let buffer: Mse | typeof STOP
       try {
         buffer = await open()
       } catch (error) {
         console.error(error)
         const interrupted = await retry(
-          () => failure !== undefined || (target !== attempt && target.restart),
+          () =>
+            playback.failure !== undefined ||
+            (playback.target !== attempt && playback.target.restart),
         )
         if (interrupted === STOP) return
         if (interrupted) take_failure()
@@ -211,18 +176,18 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
       }
       if (buffer === STOP) return
 
-      let accepted = target
+      let accepted = playback.target
       let start = accepted.position
       const changed = (frontier: number): boolean =>
-        failure !== undefined ||
-        (target !== accepted &&
-          target.restart &&
-          !aligned(target.position, frontier))
+        playback.failure !== undefined ||
+        (playback.target !== accepted &&
+          playback.target.restart &&
+          !aligned(playback.target.position, frontier))
       const retarget = (frontier: number): boolean => {
         const error = take_failure()
         if (error !== undefined) throw error
-        if (target === accepted) return false
-        accepted = target
+        if (playback.target === accepted) return false
+        accepted = playback.target
         if (accepted.restart && !aligned(accepted.position, frontier)) {
           start = accepted.position
           return true
@@ -235,9 +200,11 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
         let frontier = stream_position(start)
         try {
           retarget(start)
-          while (play_ahead(current, start) >= BUFFER.LO) {
+          while (play_ahead(playback.current, start) >= BUFFER.LO) {
             const demanded = await wait(
-              () => changed(start) || play_ahead(current, start) < BUFFER.LO,
+              () =>
+                changed(start) ||
+                play_ahead(playback.current, start) < BUFFER.LO,
             )
             if (!demanded) return
             if (retarget(start)) continue request
@@ -273,10 +240,10 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
 
               if ((await pull(buffer.next(read.value.value))) === STOP) return
               frontier = stream_position(
-                buffered_end(current, frontier) ?? frontier,
+                buffered_end(playback.current, frontier) ?? frontier,
               )
               if (retarget(frontier)) continue request
-              if (play_ahead(current, frontier) >= BUFFER.HI) {
+              if (play_ahead(playback.current, frontier) >= BUFFER.HI) {
                 start = frontier
                 continue request
               }
@@ -293,7 +260,9 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
 
         if (request_failure !== undefined) {
           console.error(request_failure.error)
-          start = stream_position(buffered_end(current, frontier) ?? frontier)
+          start = stream_position(
+            buffered_end(playback.current, frontier) ?? frontier,
+          )
           if ((await retry(() => changed(start))) === STOP) return
         }
       }

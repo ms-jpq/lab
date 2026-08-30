@@ -1,4 +1,5 @@
 import {
+  aligned,
   buffered_position,
   playable_time,
   type MediaSnapshot,
@@ -41,6 +42,124 @@ export type MediaState = Readonly<{
   current: MediaSnapshot
   derived: MediaDerived
 }>
+
+type PendingSeek = Readonly<{
+  acknowledged: boolean
+  target: MediaTarget
+}>
+export type PlaybackState = Readonly<{
+  current: MediaSnapshot
+  failure: MediaError | undefined
+  pending_seek: PendingSeek | undefined
+  target: MediaTarget
+}>
+export type PlaybackAction =
+  | Readonly<{ kind: "consume_failure" }>
+  | Readonly<{ kind: "media"; value: MediaState }>
+  | Readonly<{ kind: "seek"; target: MediaTarget }>
+export type PlaybackEffect =
+  | Readonly<{ kind: "persist"; position: number }>
+  | Readonly<{ kind: "seek"; position: number }>
+export type PlaybackTransition = Readonly<{
+  effects: readonly PlaybackEffect[]
+  state: PlaybackState
+}>
+
+export const initial_playback = (
+  position: number,
+  { current, derived }: MediaState,
+): PlaybackState => {
+  const target = { position, restart: false }
+  return {
+    current,
+    failure: derived.failure,
+    pending_seek: { target, acknowledged: false },
+    target,
+  }
+}
+
+export const reduce = (
+  state: PlaybackState,
+  action: PlaybackAction,
+): PlaybackTransition => {
+  if (action.kind === "consume_failure") {
+    return {
+      effects: [],
+      state: { ...state, failure: undefined },
+    }
+  }
+
+  if (action.kind === "seek") {
+    return {
+      effects: [{ kind: "seek", position: action.target.position }],
+      state: {
+        ...state,
+        pending_seek: { target: action.target, acknowledged: false },
+      },
+    }
+  }
+
+  const { current, derived } = action.value
+  const { failure, resume, seeks } = derived
+  let target = state.target
+  let pending_seek = state.pending_seek
+  const effects = new Array<PlaybackEffect>()
+
+  const pending = pending_seek
+  if (
+    pending !== undefined &&
+    seeks.some(({ position }) => aligned(position, pending.target.position))
+  ) {
+    pending_seek = { ...pending, acknowledged: true }
+  }
+  const external_seek = seeks.findLast(
+    ({ position, seeking }) =>
+      seeking &&
+      (pending === undefined || !aligned(position, pending.target.position)),
+  )
+  const retargeted = external_seek !== undefined
+  if (external_seek !== undefined) target = external_seek.candidate
+
+  const { metadata, seeking, time } = current
+  if (retargeted) {
+    pending_seek =
+      target.restart || !aligned(time, target.position)
+        ? { target, acknowledged: false }
+        : undefined
+    effects.push({ kind: "persist", position: target.position })
+  }
+  if (
+    resume !== undefined &&
+    (resume.reason === "ended" || (!retargeted && pending_seek === undefined))
+  ) {
+    effects.push({ kind: "persist", position: resume.position })
+  }
+  if (pending_seek !== undefined && !seeking) {
+    const pending_target = pending_seek.target
+    const playable = buffered_position(current, pending_target.position)
+    const seek_target = {
+      ...pending_target,
+      position: playable ?? pending_target.position,
+    }
+    const positioned = aligned(time, seek_target.position)
+    if (!positioned && (metadata || playable !== undefined)) {
+      pending_seek = { target: seek_target, acknowledged: false }
+      effects.push({ kind: "seek", position: seek_target.position })
+    } else if (positioned && pending_seek.acknowledged) {
+      pending_seek = undefined
+    }
+  }
+
+  return {
+    effects,
+    state: {
+      current,
+      failure: state.failure ?? failure,
+      pending_seek,
+      target,
+    },
+  }
+}
 
 const capture = (media: HTMLMediaElement): MediaSnapshot => ({
   buffered: Array.from(
