@@ -170,47 +170,12 @@ const capture = (media: HTMLMediaElement): MediaSnapshot => ({
   time: media.currentTime,
 })
 
-const reduce_media = (
+const observe = (
   state: PlaybackState,
-  action: MediaAction,
+  current: MediaSnapshot,
 ): PlaybackTransition => {
-  const { current } = action
-  let target = state.target
   let pending = state.pending_seek
-  let persist: number | undefined
-  let restart = false
   let seek: number | undefined
-
-  if (action.type === "seeked" || action.type === "seeking") {
-    const native = playable_time(current.duration, current.time)
-    const position = buffered_position(current, native)
-    const candidate = {
-      position: position ?? native,
-      restart: position === undefined,
-    }
-    if (pending === undefined || !aligned(current.time, pending.position)) {
-      target = candidate
-      pending =
-        target.restart || !aligned(current.time, target.position)
-          ? target
-          : undefined
-      persist = target.position
-      restart = needs_restart(state.stream, target)
-    }
-  }
-
-  if (action.type === "ended") {
-    persist = 0
-  } else if (
-    persist === undefined &&
-    (action.type === "seeked" ||
-      action.type === "seeking" ||
-      action.type === "timeupdate") &&
-    pending === undefined &&
-    buffered_position(current, current.time) === current.time
-  ) {
-    persist = current.time
-  }
 
   if (pending !== undefined && !current.seeking) {
     const playable = buffered_position(current, pending.position)
@@ -230,15 +195,13 @@ const reduce_media = (
   const frontier = stream_position(
     buffered_end(current, state.stream.frontier) ?? state.stream.frontier,
   )
-  const stream = restart
-    ? start_stream(target)
-    : {
-        frontier,
-        start:
-          play_ahead(current, frontier) >= BUFFER_HIGH
-            ? frontier
-            : state.stream.start,
-      }
+  const stream = {
+    frontier,
+    start:
+      play_ahead(current, frontier) >= BUFFER_HIGH
+        ? frontier
+        : state.stream.start,
+  }
 
   return [
     {
@@ -246,19 +209,48 @@ const reduce_media = (
       current,
       pending_seek: pending,
       stream,
+    },
+    { seek },
+  ]
+}
+
+const position = (
+  state: PlaybackState,
+  current: MediaSnapshot,
+): PlaybackTransition => {
+  const native = playable_time(current.duration, current.time)
+  const buffered = buffered_position(current, native)
+  const target = {
+    position: buffered ?? native,
+    restart: buffered === undefined,
+  }
+  const external =
+    state.pending_seek === undefined ||
+    !aligned(current.time, state.pending_seek.position)
+  if (!external) {
+    return observe(state, current)
+  }
+
+  const restart = needs_restart(state.stream, target)
+  const pending_seek =
+    target.restart || !aligned(current.time, target.position)
+      ? target
+      : undefined
+  const [next, effects] = observe(
+    {
+      ...state,
+      pending_seek,
+      stream: restart ? start_stream(target) : state.stream,
       target,
     },
+    current,
+  )
+  return [
+    next,
     {
-      interrupt:
-        action.type === "error" &&
-        current.error !== undefined &&
-        current.error.code !== MediaError.MEDIA_ERR_ABORTED
-          ? { error: current.error, type: "failure" }
-          : restart
-            ? { type: "restart" }
-            : undefined,
-      persist,
-      seek,
+      ...effects,
+      interrupt: restart ? { type: "restart" } : undefined,
+      persist: target.position,
     },
   ]
 }
@@ -287,15 +279,42 @@ export const reduce = (
       ]
     }
     case "canplay":
-    case "ended":
-    case "error":
     case "loadedmetadata":
     case "progress":
-    case "seeked":
-    case "seeking":
-    case "timeupdate":
     case "waiting": {
-      return reduce_media(state, action)
+      return observe(state, action.current)
+    }
+    case "ended": {
+      const [next, effects] = observe(state, action.current)
+      return [next, { ...effects, persist: 0 }]
+    }
+    case "error": {
+      const [next, effects] = observe(state, action.current)
+      const { error } = action.current
+      return [
+        next,
+        {
+          ...effects,
+          interrupt:
+            error !== undefined && error.code !== MediaError.MEDIA_ERR_ABORTED
+              ? { error, type: "failure" }
+              : undefined,
+        },
+      ]
+    }
+    case "seeked":
+    case "seeking": {
+      return position(state, action.current)
+    }
+    case "timeupdate": {
+      const persist =
+        state.pending_seek === undefined &&
+        buffered_position(action.current, action.current.time) ===
+          action.current.time
+          ? action.current.time
+          : undefined
+      const [next, effects] = observe(state, action.current)
+      return [next, { ...effects, persist }]
     }
   }
 }
