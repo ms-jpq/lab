@@ -43,6 +43,7 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
     mime_type: media.dataset["mseType"] as string,
     signal: lifetime.signal,
   })
+
   const states = media_states(media, lifetime.signal)
   const initial = await states.next()
   if (initial.done) return
