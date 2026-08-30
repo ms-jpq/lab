@@ -64,7 +64,7 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
     if (error !== undefined) {
       throw error
     }
-    if (playback.stream.restart === undefined) {
+    if (!playback.stream.restart) {
       return false
     }
     dispatch({ kind: "stream_started" })

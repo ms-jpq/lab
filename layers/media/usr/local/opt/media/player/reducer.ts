@@ -94,7 +94,7 @@ type PendingSeek = Readonly<{
 export type PlaybackStream = Readonly<{
   accepted: MediaTarget
   frontier: number
-  restart: number | undefined
+  restart: boolean
   start: number
 }>
 export type PlaybackState = Readonly<{
@@ -126,7 +126,7 @@ const stream_position = (value: number): number =>
 const start_stream = (target: MediaTarget): PlaybackStream => ({
   accepted: target,
   frontier: stream_position(target.position),
-  restart: undefined,
+  restart: false,
   start: target.position,
 })
 
@@ -138,13 +138,13 @@ const reconcile = (
     return stream
   }
   if (target.restart && !aligned(target.position, stream.frontier)) {
-    return { ...stream, restart: target.position }
+    return { ...stream, restart: true }
   }
-  return { ...stream, accepted: target, restart: undefined }
+  return { ...stream, accepted: target, restart: false }
 }
 
 export const should_interrupt = ({ failure, stream }: PlaybackState): boolean =>
-  failure !== undefined || stream.restart !== undefined
+  failure !== undefined || stream.restart
 
 export const initial_playback = (
   media: HTMLMediaElement,
