@@ -110,46 +110,45 @@ const MSE = (): MediaSource =>
     ).ManagedMediaSource ?? MediaSource
   )()
 
-export const bond = async function* (
+export const bond = (
   media: HTMLMediaElement,
   signal: AbortSignal,
-): AsyncIteratorObject<MediaSource> {
-  using a = abortion(signal)
+): AsyncIteratorObject<MediaSource> =>
+  closing(signal, async function* (signal) {
+    while (!signal.aborted) {
+      const source = MSE()
+      const url = URL.createObjectURL(source)
+      const opened = Promise.race([
+        once(signal, source, "sourceopen"),
+        once(signal, source, "sourceclose"),
+      ])
 
-  while (!a.signal.aborted) {
-    const source = MSE()
-    const url = URL.createObjectURL(source)
-    const opened = Promise.race([
-      once(a.signal, source, "sourceopen"),
-      once(a.signal, source, "sourceclose"),
-    ])
+      const prev = media.src
 
-    const prev = media.src
-
-    try {
-      media.src = url
-      const event = await opened
-      if (event?.type === "sourceclose") {
-        throw event
+      try {
+        media.src = url
+        const event = await opened
+        if (event?.type === "sourceclose") {
+          throw event
+        }
+        if (event === undefined) {
+          return
+        }
+      } catch (e) {
+        URL.revokeObjectURL(url)
+        throw e
       }
-      if (event === undefined) {
-        return
+
+      if (prev) {
+        URL.revokeObjectURL(prev)
       }
-    } catch (e) {
-      URL.revokeObjectURL(url)
-      throw e
+      yield source
     }
 
-    if (prev) {
-      URL.revokeObjectURL(prev)
-    }
-    yield source
-  }
+    return
+  })
 
-  return
-}
-
-export const media_sources = async function* ({
+export const media_sources = ({
   media,
   mime_type,
   evict_behind,
@@ -159,27 +158,27 @@ export const media_sources = async function* ({
   mime_type: string
   evict_behind: number
   signal: AbortSignal
-}): AsyncIteratorObject<readonly [MediaSource, (_: AbortSignal) => Mse]> {
-  using a = abortion(signal)
-  using _ = defer(() => {
-    if (media.src) {
-      URL.revokeObjectURL(media.src)
-    }
-    media.removeAttribute("src")
-    media.load()
-  })
+}): AsyncIteratorObject<readonly [MediaSource, (_: AbortSignal) => Mse]> =>
+  closing(signal, async function* (signal) {
+    using _ = defer(() => {
+      if (media.src) {
+        URL.revokeObjectURL(media.src)
+      }
+      media.removeAttribute("src")
+      media.load()
+    })
 
-  for await (const source of closing(a.signal, bond.bind(undefined, media))) {
-    yield [
-      source,
-      (signal) =>
-        media_source({
-          evict_before: () => media.currentTime - evict_behind,
-          mime_type,
-          source,
-          signal: AbortSignal.any([a.signal, signal]),
-        }),
-    ]
-  }
-  return
-}
+    for await (const source of bond(media, signal)) {
+      yield [
+        source,
+        (sig) =>
+          media_source({
+            evict_before: () => media.currentTime - evict_behind,
+            mime_type,
+            source,
+            signal: AbortSignal.any([signal, sig]),
+          }),
+      ]
+    }
+    return
+  })

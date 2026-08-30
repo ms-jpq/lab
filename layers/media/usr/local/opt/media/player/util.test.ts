@@ -4,15 +4,7 @@ import { getEventListeners } from "node:events"
 import nodeTest, { type TestContext } from "node:test"
 import { setImmediate } from "node:timers/promises"
 
-import {
-  closing,
-  delay,
-  events,
-  fetch_stream,
-  merge,
-  once,
-  readableIterator,
-} from "./util.ts"
+import { closing, delay, fetch_stream, merge, once } from "./util.ts"
 
 const options = { concurrency: true, timeout: 2_000 }
 
@@ -38,27 +30,6 @@ const delayed = async function* (
 ): AsyncGenerator<number> {
   yield await value
   return
-}
-
-class ChangeTarget extends EventTarget {
-  onchange: ((event: Event) => unknown) | null = null
-  deliveries = 0
-
-  override addEventListener(
-    type: string,
-    listener: EventListenerOrEventListenerObject | null,
-    options?: AddEventListenerOptions | boolean,
-  ): void {
-    const tracked = (event: Event): void => {
-      this.deliveries += 1
-      if (typeof listener === "function") {
-        listener.call(this, event)
-      } else {
-        listener?.handleEvent(event)
-      }
-    }
-    super.addEventListener(type, tracked, options)
-  }
 }
 
 class OnceTarget extends EventTarget {
@@ -246,103 +217,6 @@ const cases = [
 
       deepEqual(await selected, undefined)
       deepEqual(getEventListeners(target, "left").length, 0)
-    },
-  },
-  {
-    name: "a readable iterator cancels its reader when iteration ends",
-    run: async () => {
-      const state = { cancellations: 0 }
-      const values = readableIterator(
-        new ReadableStream<number>({
-          start: (controller) => controller.enqueue(1),
-          cancel: () => {
-            state.cancellations += 1
-          },
-        }),
-      )
-
-      deepEqual(await values.next(), { done: false, value: 1 })
-      const closed = values.return?.(undefined)
-      assert(closed)
-      await closed
-      deepEqual(state.cancellations, 1)
-    },
-  },
-  {
-    name: "an event is delivered through the event stream",
-    run: async () => {
-      const owner = new AbortController()
-      const target = new AbortController()
-      const values = events(owner.signal, target.signal, "abort")
-      const received = values.next()
-
-      target.abort()
-
-      const result = await received
-      deepEqual(result.done, false)
-      deepEqual(result.value?.type, "abort")
-      owner.abort()
-      deepEqual(await values.next(), { done: true, value: undefined })
-    },
-  },
-  {
-    name: "parent abort completes a pending event read",
-    run: async () => {
-      const owner = new AbortController()
-      const target = new AbortController()
-      const values = events(owner.signal, target.signal, "abort")
-      const pending = values.next()
-      const closed = values.return?.(undefined)
-      assert(closed)
-
-      owner.abort()
-
-      deepEqual(
-        await Promise.race([
-          Promise.all([pending, closed]),
-          setImmediate("pending"),
-        ]),
-        [
-          { done: true, value: undefined },
-          { done: true, value: undefined },
-        ],
-      )
-    },
-  },
-  {
-    name: "return detaches an event stream before its parent later aborts",
-    run: async () => {
-      const owner = new AbortController()
-      const target = new ChangeTarget()
-      const values = events(owner.signal, target, "change")
-      const pending = values.next()
-      target.dispatchEvent(new Event("change"))
-
-      deepEqual((await pending).done, false)
-      const closed = values.return?.(undefined)
-      assert(closed)
-      deepEqual(await Promise.race([closed, setImmediate("pending")]), {
-        done: true,
-        value: undefined,
-      })
-      const deliveries = target.deliveries
-
-      owner.abort()
-      target.dispatchEvent(new Event("change"))
-
-      deepEqual(target.deliveries, deliveries)
-    },
-  },
-  {
-    name: "a pre-aborted parent produces an empty event stream",
-    run: async () => {
-      const owner = new AbortController()
-      const target = new AbortController()
-      owner.abort()
-
-      const values = events(owner.signal, target.signal, "abort")
-
-      deepEqual(await values.next(), { done: true, value: undefined })
     },
   },
   {

@@ -13,6 +13,10 @@ type Entry<T> = T extends AsyncIterator<infer U> ? [T, U] : never
 type Selection<T extends readonly AsyncIterator<unknown>[]> = Entry<T[number]>
 type Observation<S, E> = Readonly<{ current: S; type: E }>
 
+export const never = (value: never): never => {
+  throw new Error(value)
+}
+
 export const defer = <T>(f: () => T) => ({
   [Symbol.dispose]: f,
   [Symbol.asyncDispose]: f,
@@ -85,7 +89,7 @@ export const once = async <
   return fut.promise
 }
 
-export const readableIterator = async function* <const T>(
+const readableIterator = async function* <const T>(
   stream: ReadableStream<T>,
 ): AsyncIteratorObject<T> {
   const reader = stream.getReader()
@@ -110,53 +114,6 @@ export const readableIterator = async function* <const T>(
   }
 }
 
-export const events = <
-  const T extends EventTarget,
-  const E extends EventName<T>,
->(
-  signal: AbortSignal,
-  target: T,
-  event: E,
-): AsyncIteratorObject<EventOf<T, E>> =>
-  closing(signal, (signal) => {
-    let closed = false
-    const stream = new ReadableStream<EventOf<T, E>>({
-      start: (controller) => {
-        if (signal.aborted) {
-          controller.close()
-          return
-        }
-
-        signal.addEventListener(
-          "abort",
-          () => {
-            if (closed) {
-              return
-            }
-            closed = true
-            controller.close()
-          },
-          { once: true },
-        )
-        target.addEventListener(
-          event,
-          (received) => {
-            if (closed) {
-              return
-            }
-            controller.enqueue(received as EventOf<T, E>)
-          },
-          { signal },
-        )
-      },
-      cancel: () => {
-        closed = true
-      },
-    })
-
-    return readableIterator(stream)
-  })
-
 export const event_batches = <
   const T extends EventTarget,
   const E extends EventName<T>,
@@ -168,11 +125,10 @@ export const event_batches = <
   capture: () => S,
 ): AsyncIteratorObject<readonly Observation<S, E>[]> =>
   closing(signal, async function* (signal) {
-    using a = abortion(signal)
     const pending: Observation<S, E>[] = []
     let fut = Promise.withResolvers()
 
-    a.signal.addEventListener("abort", () => fut.resolve(undefined), {
+    signal.addEventListener("abort", () => fut.resolve(undefined), {
       once: true,
     })
 
@@ -183,15 +139,15 @@ export const event_batches = <
           pending.push({ current: capture(), type })
           fut.resolve(undefined)
         },
-        { signal: a.signal },
+        { signal },
       )
     }
 
-    while (!a.signal.aborted) {
+    while (!signal.aborted) {
       if (pending.length === 0) {
         await fut.promise
       }
-      if (a.signal.aborted) {
+      if (signal.aborted) {
         return
       }
 

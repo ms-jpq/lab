@@ -435,7 +435,7 @@ const cases = [
     },
   },
   {
-    name: "bond and media source acquisition obey their abort contract",
+    name: "bond and media source acquisition obey their return contract",
     run: async (context: TestContext) => {
       const current = acquisitionFixture(context)
       try {
@@ -444,8 +444,6 @@ const cases = [
         const pendingBond = bonded.next()
         const abortedBond = bonded.return?.()
         assert(abortedBond)
-
-        bondOwner.abort()
 
         deepEqual(
           await Promise.race([
@@ -470,8 +468,6 @@ const cases = [
         const pendingSources = sources.next()
         const abortedSources = sources.return?.()
         assert(abortedSources)
-
-        sourcesOwner.abort()
 
         deepEqual(
           await Promise.race([

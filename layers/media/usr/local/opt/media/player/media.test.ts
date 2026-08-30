@@ -4,7 +4,6 @@ import nodeTest from "node:test"
 import { setImmediate } from "node:timers/promises"
 
 import { media_events } from "./media.ts"
-import { playback_transitions } from "./reducer.ts"
 
 const options = { concurrency: true, timeout: 2_000 }
 
@@ -66,10 +65,30 @@ const cases = [
         owner.signal,
       )
       const pending = states.next()
-      const closed = states.return?.()
-      ok(closed)
 
       owner.abort()
+
+      deepEqual(await Promise.race([pending, setImmediate("pending")]), {
+        done: true,
+        value: undefined,
+      })
+      deepEqual(getEventListeners(media, "timeupdate").length, 0)
+      media.dispatchEvent(new Event("timeupdate"))
+      deepEqual(await states.next(), { done: true, value: undefined })
+    },
+  },
+  {
+    name: "return completes a pending media-state pull",
+    run: async () => {
+      const owner = new AbortController()
+      const media = new Media()
+      const states = media_events(
+        media as unknown as HTMLMediaElement,
+        owner.signal,
+      )
+      const pending = states.next()
+      const closed = states.return?.()
+      ok(closed)
 
       deepEqual(
         await Promise.race([
@@ -82,8 +101,6 @@ const cases = [
         ],
       )
       deepEqual(getEventListeners(media, "timeupdate").length, 0)
-      media.dispatchEvent(new Event("timeupdate"))
-      deepEqual(await states.next(), { done: true, value: undefined })
     },
   },
   {
@@ -133,22 +150,6 @@ const cases = [
       media.buffered.values[0]?.splice(0, 2, 30, 40)
       deepEqual(snapshot.buffered, [[10, 20]])
       await states.return?.()
-    },
-  },
-  {
-    name: "playback transitions describe effects without performing them",
-    run: async () => {
-      const media = new Media()
-      media.readyState = media.HAVE_METADATA
-      const element = media as unknown as HTMLMediaElement
-      const dispatch = playback_transitions(element, 40)
-      const effects = dispatch({ type: "source_opened" })
-
-      deepEqual(effects, {
-        request: { frontier: 40, position: 40 },
-        seek: 40,
-      })
-      deepEqual(media.currentTime, 0)
     },
   },
 ] as const

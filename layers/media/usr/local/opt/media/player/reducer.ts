@@ -24,9 +24,9 @@ type PlaybackAction =
 type PlaybackEffects = Readonly<{
   append?: Uint8Array<ArrayBuffer>
   end?: true
-  failure?: unknown
+  error?: unknown
   persist?: number
-  report?: unknown
+  rebuild?: true
   request?: PlaybackRequest
   seek?: number
 }>
@@ -165,7 +165,7 @@ const reduce = (
       }
       return [
         { ...state, request, requesting: true },
-        { report: action.error, request },
+        { error: action.error, request },
       ]
     }
     case "request_finished": {
@@ -212,14 +212,15 @@ const reduce = (
     }
     case "error": {
       const { error } = current
+      const failure =
+        error !== undefined && error.code !== MediaError.MEDIA_ERR_ABORTED
+          ? error
+          : undefined
       return [
         { ...observed, requesting: state.requesting || start },
-        {
-          ...(error !== undefined && error.code !== MediaError.MEDIA_ERR_ABORTED
-            ? { failure: error }
-            : {}),
-          ...(start ? { request: state.request } : {}),
-        },
+        failure === undefined
+          ? { ...(start ? { request: state.request } : {}) }
+          : { error: failure, rebuild: true },
       ]
     }
     case "seeking": {
@@ -275,7 +276,7 @@ export const playback_transitions = (
       effects = {
         ...effects,
         ...produced,
-        ...(effects.failure === undefined ? {} : { failure: effects.failure }),
+        ...(effects.error === undefined ? {} : { error: effects.error }),
       }
     }
     return effects

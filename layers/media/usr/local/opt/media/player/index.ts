@@ -67,9 +67,10 @@ export const play_media = async (signal: AbortSignal) => {
     if (opened.seek !== undefined) {
       media.currentTime = opened.seek
     }
-    let requested = opened.request
+    let requested =
+      opened.control?.type === "request" ? opened.control.request : undefined
 
-    while (requested !== undefined && !abort.signal.aborted) {
+    request: while (requested !== undefined && !abort.signal.aborted) {
       if ((await buffer.next(requested.frontier)).done) {
         continue source
       }
@@ -86,10 +87,6 @@ export const play_media = async (signal: AbortSignal) => {
       )) {
         const effects = dispatch(event)
 
-        if (effects.report !== undefined) {
-          console.error(effects.report)
-        }
-
         if (effects.persist !== undefined) {
           persist_position(effects.persist)
         }
@@ -97,33 +94,27 @@ export const play_media = async (signal: AbortSignal) => {
         if (effects.seek !== undefined) {
           media.currentTime = effects.seek
         }
-
-        if (effects.append) {
-          if ((await buffer.next(effects.append)).done) {
-            using _ = abrt
-            continue source
-          }
-        }
-
-        if (effects.end) {
-          if ((await buffer.next(undefined)).done) {
-            using _ = abrt
-            continue source
-          }
-        }
-
-        if (effects.request !== undefined) {
-          requested = effects.request
-          if (effects.failure === undefined) {
-            using _ = abrt
-            break
-          }
-        }
-
-        if (effects.failure !== undefined) {
-          console.error(effects.failure)
+        if (effects.control) {
           using _ = abrt
-          continue source
+          if (effects.control.error) {
+            console.error(effects.control.error)
+          }
+          switch (effects.control.type) {
+            case "rebuild":
+              continue source
+            case "request":
+              continue request
+          }
+        }
+
+        if (effects.buffer) {
+          const operation =
+            effects.buffer.type === "append" ? effects.buffer.bytes : undefined
+
+          if ((await buffer.next(operation)).done) {
+            using _ = abrt
+            continue source
+          }
         }
       }
     }
