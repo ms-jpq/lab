@@ -353,6 +353,4 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
   }
 }
 
-void start_page((signal) => run_playback(signal, play_media)).catch(
-  console.error,
-)
+void start_page((signal) => run_playback(signal, decide)).catch(console.error)
