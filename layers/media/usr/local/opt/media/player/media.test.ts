@@ -2,7 +2,7 @@ import { deepEqual, ok } from "node:assert/strict"
 import { getEventListeners } from "node:events"
 import nodeTest from "node:test"
 
-import { media_events } from "./reducer.ts"
+import { initial_playback, media_events, reduce } from "./reducer.ts"
 
 const options = { concurrency: true, timeout: 2_000 }
 
@@ -109,7 +109,11 @@ const cases = [
 
       const observed = await pending
       ok(!observed.done)
-      const snapshot = observed.value.current
+      const [state] = reduce(
+        initial_playback(media as unknown as HTMLMediaElement, 0),
+        observed.value,
+      )
+      const { current: snapshot } = state
       media.buffered.values[0]?.splice(0, 2, 30, 40)
       deepEqual(snapshot.buffered, [[10, 20]])
       await states.return?.()
