@@ -33,7 +33,7 @@ type Performed<T> =
 const stream_position = (value: number): number =>
   Math.round(value * 1_000) / 1_000
 
-const decide = async (signal: AbortSignal): Promise<void> => {
+decide const decide = async (signal: AbortSignal): Promise<void> => {
   using lifetime = abortion(signal)
   const sources = media_sources({
     evict_behind: BUFFER.BEHIND,
@@ -351,12 +351,6 @@ const decide = async (signal: AbortSignal): Promise<void> => {
   }
 }
 
-export const play_media = decide
-
-export const PULSE = Symbol()
-export const page_reader = undefined
-export const play_source = undefined
-export const request_stream = undefined
 
 void start_page((signal) => run_playback(signal, play_media)).catch(
   console.error,
