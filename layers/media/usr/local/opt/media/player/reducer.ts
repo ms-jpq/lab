@@ -57,11 +57,12 @@ export type PlaybackAction =
   | Readonly<{ kind: "consume_failure" }>
   | Readonly<{ kind: "media"; value: MediaState }>
   | Readonly<{ kind: "seek"; target: MediaTarget }>
-export type PlaybackEffect =
-  | Readonly<{ kind: "persist"; position: number }>
-  | Readonly<{ kind: "seek"; position: number }>
+export type PlaybackEffects = Readonly<{
+  persist: number | undefined
+  seek: number | undefined
+}>
 export type PlaybackTransition = Readonly<{
-  effects: readonly PlaybackEffect[]
+  effects: PlaybackEffects
   state: PlaybackState
 }>
 
@@ -84,7 +85,6 @@ const capture = (media: HTMLMediaElement): MediaSnapshot => ({
       [media.buffered.start(index), media.buffered.end(index)] as const,
   ),
   duration: Number(media.dataset["duration"]),
-  ended: media.ended,
   error: media.error ?? undefined,
   metadata: media.readyState >= media.HAVE_METADATA,
   seeking: media.seeking,
@@ -143,14 +143,14 @@ export const reduce = (
 ): PlaybackTransition => {
   if (action.kind === "consume_failure") {
     return {
-      effects: [],
+      effects: { persist: undefined, seek: undefined },
       state: { ...state, failure: undefined },
     }
   }
 
   if (action.kind === "seek") {
     return {
-      effects: [{ kind: "seek", position: action.target.position }],
+      effects: { persist: undefined, seek: action.target.position },
       state: {
         ...state,
         pending_seek: { target: action.target, acknowledged: false },
@@ -162,7 +162,8 @@ export const reduce = (
   const { failure, resume, seeks } = derived
   let target = state.target
   let pending_seek = state.pending_seek
-  const effects = new Array<PlaybackEffect>()
+  let persist: number | undefined
+  let seek: number | undefined
 
   const pending = pending_seek
   if (
@@ -185,13 +186,13 @@ export const reduce = (
       target.restart || !aligned(time, target.position)
         ? { target, acknowledged: false }
         : undefined
-    effects.push({ kind: "persist", position: target.position })
+    persist = target.position
   }
   if (
     resume !== undefined &&
     (resume.reason === "ended" || (!retargeted && pending_seek === undefined))
   ) {
-    effects.push({ kind: "persist", position: resume.position })
+    persist = resume.position
   }
   if (pending_seek !== undefined && !seeking) {
     const pending_target = pending_seek.target
@@ -203,14 +204,14 @@ export const reduce = (
     const positioned = aligned(time, seek_target.position)
     if (!positioned && (metadata || playable !== undefined)) {
       pending_seek = { target: seek_target, acknowledged: false }
-      effects.push({ kind: "seek", position: seek_target.position })
+      seek = seek_target.position
     } else if (positioned && pending_seek.acknowledged) {
       pending_seek = undefined
     }
   }
 
   return {
-    effects,
+    effects: { persist, seek },
     state: {
       current,
       failure: state.failure ?? failure,

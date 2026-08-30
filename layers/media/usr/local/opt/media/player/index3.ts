@@ -49,13 +49,9 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
   const dispatch = (action: PlaybackAction): void => {
     const transition = reduce(playback, action)
     playback = transition.state
-    for (const effect of transition.effects) {
-      if (effect.kind === "persist") {
-        persist_position(effect.position)
-      } else {
-        media.currentTime = effect.position
-      }
-    }
+    const { persist, seek } = transition.effects
+    if (persist !== undefined) persist_position(persist)
+    if (seek !== undefined) media.currentTime = seek
   }
   const take_failure = (): MediaError | undefined => {
     const error = playback.failure

@@ -5,7 +5,6 @@ export type BufferedRange = readonly [start: number, end: number]
 export type MediaSnapshot = Readonly<{
   buffered: readonly BufferedRange[]
   duration: number
-  ended: boolean
   error: MediaError | undefined
   metadata: boolean
   seeking: boolean
