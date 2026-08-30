@@ -77,6 +77,65 @@ export const initial_playback = (
     target,
   }
 }
+const capture = (media: HTMLMediaElement): MediaSnapshot => ({
+  buffered: Array.from(
+    { length: media.buffered.length },
+    (_, index) =>
+      [media.buffered.start(index), media.buffered.end(index)] as const,
+  ),
+  duration: Number(media.dataset["duration"]),
+  ended: media.ended,
+  error: media.error ?? undefined,
+  metadata: media.readyState >= media.HAVE_METADATA,
+  seeking: media.seeking,
+  time: media.currentTime,
+})
+
+const derive = (
+  media: HTMLMediaElement,
+  previous: MediaState | undefined,
+  observations: readonly MediaObservation[],
+): MediaState => {
+  const current =
+    observations.at(-1)?.[0] ?? previous?.current ?? capture(media)
+  const ended = observations.some(([, event]) => event.type === "ended")
+  const moved = observations.some(([, event]) =>
+    ["seeked", "seeking", "timeupdate"].includes(event.type),
+  )
+
+  const resume = ended
+    ? ({ reason: "ended", position: 0 } as const)
+    : moved && buffered_position(current, current.time) === current.time
+      ? ({ reason: "progress", position: current.time } as const)
+      : undefined
+
+  const failure = observations.find(
+    ([{ error }, event]) =>
+      event.type === "error" &&
+      error !== undefined &&
+      error.code !== MediaError.MEDIA_ERR_ABORTED,
+  )?.[0].error
+
+  const seeks = observations.flatMap(([snapshot, event]) => {
+    if (event.type !== "seeked" && event.type !== "seeking") return []
+
+    const { duration, seeking, time } = snapshot
+    const native = playable_time(duration, time)
+    const position = buffered_position(snapshot, native)
+    return [
+      {
+        candidate: {
+          position: position ?? native,
+          restart: position === undefined,
+        },
+        position: time,
+        seeking,
+      },
+    ]
+  })
+
+  return { current, derived: { failure, resume, seeks } }
+}
 
 export const reduce = (
   state: PlaybackState,
@@ -159,66 +218,6 @@ export const reduce = (
       target,
     },
   }
-}
-
-const capture = (media: HTMLMediaElement): MediaSnapshot => ({
-  buffered: Array.from(
-    { length: media.buffered.length },
-    (_, index) =>
-      [media.buffered.start(index), media.buffered.end(index)] as const,
-  ),
-  duration: Number(media.dataset["duration"]),
-  ended: media.ended,
-  error: media.error ?? undefined,
-  metadata: media.readyState >= media.HAVE_METADATA,
-  seeking: media.seeking,
-  time: media.currentTime,
-})
-
-const derive = (
-  media: HTMLMediaElement,
-  previous: MediaState | undefined,
-  observations: readonly MediaObservation[],
-): MediaState => {
-  const current =
-    observations.at(-1)?.[0] ?? previous?.current ?? capture(media)
-  const ended = observations.some(([, event]) => event.type === "ended")
-  const moved = observations.some(([, event]) =>
-    ["seeked", "seeking", "timeupdate"].includes(event.type),
-  )
-
-  const resume = ended
-    ? ({ reason: "ended", position: 0 } as const)
-    : moved && buffered_position(current, current.time) === current.time
-      ? ({ reason: "progress", position: current.time } as const)
-      : undefined
-
-  const failure = observations.find(
-    ([{ error }, event]) =>
-      event.type === "error" &&
-      error !== undefined &&
-      error.code !== MediaError.MEDIA_ERR_ABORTED,
-  )?.[0].error
-
-  const seeks = observations.flatMap(([snapshot, event]) => {
-    if (event.type !== "seeked" && event.type !== "seeking") return []
-
-    const { duration, seeking, time } = snapshot
-    const native = playable_time(duration, time)
-    const position = buffered_position(snapshot, native)
-    return [
-      {
-        candidate: {
-          position: position ?? native,
-          restart: position === undefined,
-        },
-        position: time,
-        seeking,
-      },
-    ]
-  })
-
-  return { current, derived: { failure, resume, seeks } }
 }
 
 export const media_states = (

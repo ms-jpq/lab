@@ -1,8 +1,4 @@
-import {
-  aligned,
-  buffered_end,
-  play_ahead,
-} from "./media.ts"
+import { aligned, buffered_end, play_ahead } from "./media.ts"
 import { media_sources, type Mse } from "./mse.ts"
 import {
   media,
