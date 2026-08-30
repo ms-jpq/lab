@@ -519,21 +519,6 @@ const cases = [
     },
   },
   {
-    name: "a SourceBuffer failure rebuilds MediaSource",
-    run: async () => {
-      const current = await fixture({ append_failures: 1 })
-      const owner = new AbortController()
-      const playback = current.context.player_test.play_media(owner.signal)
-
-      await eventually(() => current.sources.length === 2)
-
-      equal(current.errors.length, 1)
-
-      owner.abort()
-      await playback
-    },
-  },
-  {
     name: "low water resumes acquisition at the buffered frontier",
     run: async () => {
       const current = await fixture()

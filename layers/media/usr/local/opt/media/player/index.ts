@@ -62,10 +62,21 @@ export const play_media = async (signal: AbortSignal) => {
       continue
     }
 
-    let position = page_position()
-    request: for (;;) {
+    const opened = dispatch({ type: "source_opened" })
+    if (opened.seek !== undefined) {
+      media.currentTime = opened.seek
+    }
+    let requested = opened.request
+
+    while (requested !== undefined && !abort.signal.aborted) {
+      if ((await buffer.next(requested.frontier)).done) {
+        continue source
+      }
+
       using abrt = abortion(abort.signal)
-      await using stream = fetch_stream(request(abrt.signal, position))
+      await using stream = fetch_stream(
+        request(abrt.signal, requested.position),
+      )
       using _ = abrt
 
       for await (const [, event] of merge(
@@ -88,37 +99,30 @@ export const play_media = async (signal: AbortSignal) => {
 
         if (effects.append) {
           if ((await buffer.next(effects.append)).done) {
+            using _ = abrt
             continue source
           }
         }
 
         if (effects.end) {
           if ((await buffer.next(undefined)).done) {
+            using _ = abrt
             continue source
           }
         }
 
         if (effects.request !== undefined) {
-          if ((await buffer.next(effects.request.frontier)).done) {
-            continue source
-          }
-
-          if (event.type !== "source_opened") {
-            position = effects.request.position
+          requested = effects.request
+          if (effects.failure === undefined) {
             using _ = abrt
-            continue request
+            break
           }
         }
 
-        switch (effects.interrupt?.type) {
-          case "failure": {
-            console.error(effects.interrupt.error)
-            continue source
-          }
-          case "request":
-          case undefined: {
-            break
-          }
+        if (effects.failure !== undefined) {
+          console.error(effects.failure)
+          using _ = abrt
+          continue source
         }
       }
     }

@@ -44,7 +44,6 @@ type MediaAction = Readonly<{
 type PlaybackAction =
   | MediaAction
   | Readonly<{ bytes: Uint8Array<ArrayBuffer>; type: "bytes_received" }>
-  | Readonly<{ error: unknown; type: "buffer_failed" }>
   | Readonly<{ error: unknown; type: "request_failed" }>
   | Readonly<{ type: "request_finished" }>
   | Readonly<{ type: "source_opened" }>
@@ -271,14 +270,17 @@ const media_transition = (
     }
     case "error": {
       const { error } = action.current
+      const [next, effects] = action.current.seeking
+        ? media_transition(state, { ...action, type: "seeking" })
+        : ([{ ...state, current: action.current }, {}] as const)
+      const failure =
+        error !== undefined && error.code !== MediaError.MEDIA_ERR_ABORTED
+          ? { error, type: "failure" as const }
+          : undefined
+
       return [
-        { ...state, current: action.current },
-        {
-          interrupt:
-            error !== undefined && error.code !== MediaError.MEDIA_ERR_ABORTED
-              ? { error, type: "failure" }
-              : undefined,
-        },
+        next,
+        { ...effects, interrupt: failure ?? effects.interrupt },
       ]
     }
     case "seeking": {
@@ -349,12 +351,6 @@ const reduce = (
   action: PlaybackAction,
 ): PlaybackTransition => {
   switch (action.type) {
-    case "buffer_failed": {
-      return [
-        { ...state, requesting: false },
-        { interrupt: { error: action.error, type: "failure" } },
-      ]
-    }
     case "bytes_received": {
       return [state, { append: action.bytes }]
     }

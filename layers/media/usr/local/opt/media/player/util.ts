@@ -139,7 +139,12 @@ export const events = <
         )
         target.addEventListener(
           event,
-          (received) => controller.enqueue(received as EventOf<T, E>),
+          (received) => {
+            if (closed) {
+              return
+            }
+            controller.enqueue(received as EventOf<T, E>)
+          },
           { signal },
         )
       },
