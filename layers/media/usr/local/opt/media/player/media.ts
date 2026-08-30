@@ -116,8 +116,11 @@ const media_snapshot = (media: HTMLMediaElement): MediaSnapshot => ({
   time: media.currentTime,
 })
 
-const derive = (observations: readonly MediaObservation[]): MediaDerived => {
-  const current = observations.at(-1)?.[0]
+const derive = (
+  media: HTMLMediaElement,
+  observations: readonly MediaObservation[],
+): MediaState => {
+  const current = observations.at(-1)?.[0] ?? media_snapshot(media)
   const ended = observations.some(([, event]) => event.type === "ended")
   const moved = observations.some(([, event]) =>
     ["seeked", "seeking", "timeupdate"].includes(event.type),
@@ -125,9 +128,7 @@ const derive = (observations: readonly MediaObservation[]): MediaDerived => {
 
   const resume = ended
     ? ({ reason: "ended", position: 0 } as const)
-    : moved &&
-        current !== undefined &&
-        buffered_position(current, current.time) === current.time
+    : moved && buffered_position(current, current.time) === current.time
       ? ({ reason: "progress", position: current.time } as const)
       : undefined
 
@@ -158,7 +159,7 @@ const derive = (observations: readonly MediaObservation[]): MediaDerived => {
     ]
   })
 
-  return { failure, resume, seeks }
+  return { current, derived: { failure, resume, seeks } }
 }
 
 export const media_states = (
@@ -176,16 +177,13 @@ export const media_states = (
       media_snapshot(media),
     )
     let pending = events.next()
-    yield { current: media_snapshot(media), derived: derive([]) }
+    yield derive(media, [])
     for (;;) {
       const next = await pending
       if (next.done) {
         return
       }
       pending = events.next()
-      const current = next.value.at(-1)?.[0]
-      if (current !== undefined) {
-        yield { current, derived: derive(next.value) }
-      }
+      yield derive(media, next.value)
     }
   })()

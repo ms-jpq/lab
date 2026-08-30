@@ -90,8 +90,7 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
     }
     if (
       resume !== undefined &&
-      (resume.reason === "ended" ||
-        (!retargeted && pending_seek === undefined))
+      (resume.reason === "ended" || (!retargeted && pending_seek === undefined))
     ) {
       persist_position(resume.position)
     }
@@ -183,9 +182,7 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
     if (opened === STOP) return STOP
 
     const [source, create_buffer] = opened
-    if (current.duration > 0) {
-      source.duration = current.duration
-    }
+    if (current.duration > 0) source.duration = current.duration
     const buffer = create_buffer(lifetime.signal)
     if ((await pull(buffer.next())) === STOP) return STOP
 
@@ -208,9 +205,7 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
           () => failure !== undefined || (target !== attempt && target.restart),
         )
         if (interrupted === STOP) return
-        if (interrupted) {
-          take_failure()
-        }
+        if (interrupted) take_failure()
         continue
       }
       if (buffer === STOP) return
@@ -240,16 +235,11 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
         try {
           retarget(start)
           while (play_ahead(current, start) >= BUFFER.LO) {
-            if (
-              !(await wait(
-                () => changed(start) || play_ahead(current, start) < BUFFER.LO,
-              ))
-            ) {
-              return
-            }
-            if (retarget(start)) {
-              continue request
-            }
+            const demanded = await wait(
+              () => changed(start) || play_ahead(current, start) < BUFFER.LO,
+            )
+            if (!demanded) return
+            if (retarget(start)) continue request
           }
 
           using owner = abortion(lifetime.signal)
@@ -258,14 +248,10 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
           )
           try {
             if ((await pull(buffer.next(frontier))) === STOP) return
-            if (retarget(frontier)) {
-              continue request
-            }
+            if (retarget(frontier)) continue request
 
             for (;;) {
-              let read: Performed<
-                IteratorResult<Uint8Array<ArrayBuffer>, undefined>
-              >
+              let read: Performed<IteratorResult<Uint8Array, undefined>>
               try {
                 read = await perform(
                   request.next(),
@@ -277,9 +263,7 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
                 break
               }
               if (read === STOP) return
-              if (read.interrupted) {
-                continue request
-              }
+              if (read.interrupted) continue request
               if (read.value.done) {
                 if ((await pull(buffer.next(undefined))) === STOP) return
                 if (!(await wait(() => changed(frontier)))) return
@@ -290,9 +274,7 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
               frontier = stream_position(
                 buffered_end(current, frontier) ?? frontier,
               )
-              if (retarget(frontier)) {
-                continue request
-              }
+              if (retarget(frontier)) continue request
               if (play_ahead(current, frontier) >= BUFFER.HI) {
                 start = frontier
                 continue request
