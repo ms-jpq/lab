@@ -1,4 +1,4 @@
-import { abortion, once } from "./util.ts"
+import { abortion, closing, defer, once } from "./util.ts"
 
 export type MseOperation = undefined | number | Uint8Array<ArrayBuffer>
 export type Mse = AsyncGenerator<void, void, MseOperation>
@@ -161,26 +161,27 @@ export const media_sources = async function* ({
   signal: AbortSignal
 }): AsyncIteratorObject<readonly [MediaSource, (_: AbortSignal) => Mse]> {
   using a = abortion(signal)
-
-  try {
-    for await (const source of bond(media, a.signal)) {
-      yield [
-        source,
-        (signal) =>
-          media_source({
-            evict_before: () => media.currentTime - evict_behind,
-            mime_type,
-            source,
-            signal: AbortSignal.any([a.signal, signal]),
-          }),
-      ]
-    }
-  } finally {
+  using _ = defer(() => {
     if (media.src) {
       URL.revokeObjectURL(media.src)
     }
     media.removeAttribute("src")
     media.load()
+  })
+
+  for await (const source of closing(a.signal, (signal) =>
+    bond(media, signal),
+  )) {
+    yield [
+      source,
+      (signal) =>
+        media_source({
+          evict_before: () => media.currentTime - evict_behind,
+          mime_type,
+          source,
+          signal: AbortSignal.any([a.signal, signal]),
+        }),
+    ]
   }
   return
 }

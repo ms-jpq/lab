@@ -477,10 +477,10 @@ const cases = [
         const closedBond = returnedBond.return?.()
         assert(closedBond)
 
-        deepEqual(
-          await Promise.race([closedBond, setImmediate("pending")]),
-          { done: true, value: undefined },
-        )
+        deepEqual(await Promise.race([closedBond, setImmediate("pending")]), {
+          done: true,
+          value: undefined,
+        })
         current.media.src = ""
 
         const returnedSourcesOwner = new AbortController()
