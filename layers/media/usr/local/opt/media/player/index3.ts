@@ -20,9 +20,11 @@ import { abortion, delay, logical_stream } from "./util.ts"
 
 const BUFFER = { BEHIND: 30, LO: 45, HI: 60 }
 const RETRY_DELAY = 1_000
+
 const DONE = Symbol()
 const STOP = Symbol()
 const WAKE = Symbol()
+
 type Performed<T> =
   | typeof STOP
   | Readonly<{
@@ -33,7 +35,7 @@ type Performed<T> =
 const stream_position = (value: number): number =>
   Math.round(value * 1_000) / 1_000
 
-decide const decide = async (signal: AbortSignal): Promise<void> => {
+export const decide = async (signal: AbortSignal): Promise<void> => {
   using lifetime = abortion(signal)
   const sources = media_sources({
     evict_behind: BUFFER.BEHIND,
@@ -350,7 +352,6 @@ decide const decide = async (signal: AbortSignal): Promise<void> => {
     }
   }
 }
-
 
 void start_page((signal) => run_playback(signal, play_media)).catch(
   console.error,
