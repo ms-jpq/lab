@@ -352,37 +352,36 @@ export const reduce = (
   }
 }
 
-export const media_states = (
+export const media_events = async function* (
   media: HTMLMediaElement,
   signal: AbortSignal,
-): AsyncIteratorObject<MediaState> =>
-  (async function* (): AsyncIteratorObject<MediaState> {
-    using a = abortion(signal)
-    if (a.signal.aborted) {
+): AsyncIteratorObject<MediaState> {
+  using a = abortion(signal)
+  if (a.signal.aborted) {
+    return
+  }
+
+  const events = event_batches(a.signal, media, EVENTS, () => capture(media))
+  let pending = events.next()
+  const initial = capture(media)
+  yield {
+    kind: "media",
+    current: initial,
+    derived: derive(initial, []),
+    media,
+  }
+  for (;;) {
+    const next = await pending
+    if (next.done) {
       return
     }
-
-    const events = event_batches(a.signal, media, EVENTS, () => capture(media))
-    let pending = events.next()
-    const initial = capture(media)
+    pending = events.next()
+    const current = next.value.at(-1)?.[0] ?? capture(media)
     yield {
       kind: "media",
-      current: initial,
-      derived: derive(initial, []),
+      current,
+      derived: derive(current, next.value),
       media,
     }
-    for (;;) {
-      const next = await pending
-      if (next.done) {
-        return
-      }
-      pending = events.next()
-      const current = next.value.at(-1)?.[0] ?? capture(media)
-      yield {
-        kind: "media",
-        current,
-        derived: derive(current, next.value),
-        media,
-      }
-    }
-  })()
+  }
+}

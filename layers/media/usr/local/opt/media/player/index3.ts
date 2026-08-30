@@ -9,7 +9,7 @@ import {
 } from "./page.ts"
 import {
   initial_playback,
-  media_states,
+  media_events,
   play_ahead,
   reduce,
   should_interrupt,
@@ -39,7 +39,7 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
     signal: lifetime.signal,
   })
 
-  const states = media_states(media, lifetime.signal)
+  const states = media_events(media, lifetime.signal)
   const initial = await states.next()
   if (initial.done) {
     return

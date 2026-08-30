@@ -2,7 +2,7 @@ import { deepEqual, ok } from "node:assert/strict"
 import { getEventListeners } from "node:events"
 import nodeTest from "node:test"
 
-import { media_states } from "./reducer.ts"
+import { media_events } from "./reducer.ts"
 
 const options = { concurrency: true, timeout: 2_000 }
 
@@ -44,7 +44,7 @@ const cases = [
       const owner = new AbortController()
       owner.abort()
       const media = new Media()
-      const states = media_states(
+      const states = media_events(
         media as unknown as HTMLMediaElement,
         owner.signal,
       )
@@ -59,7 +59,7 @@ const cases = [
     run: async () => {
       const owner = new AbortController()
       const media = new Media()
-      const states = media_states(
+      const states = media_events(
         media as unknown as HTMLMediaElement,
         owner.signal,
       )
@@ -80,7 +80,7 @@ const cases = [
     run: async () => {
       const owner = new AbortController()
       const media = new Media()
-      const states = media_states(
+      const states = media_events(
         media as unknown as HTMLMediaElement,
         owner.signal,
       )
@@ -101,7 +101,7 @@ const cases = [
     run: async () => {
       const owner = new AbortController()
       const media = new Media()
-      const states = media_states(
+      const states = media_events(
         media as unknown as HTMLMediaElement,
         owner.signal,
       )
@@ -124,7 +124,7 @@ const cases = [
     run: async () => {
       const owner = new AbortController()
       const media = new Media()
-      const states = media_states(
+      const states = media_events(
         media as unknown as HTMLMediaElement,
         owner.signal,
       )
@@ -157,7 +157,7 @@ const cases = [
       const owner = new AbortController()
       const media = new Media()
       media.buffered.values.push([10, 20])
-      const states = media_states(
+      const states = media_events(
         media as unknown as HTMLMediaElement,
         owner.signal,
       )
@@ -182,7 +182,7 @@ const cases = [
       const owner = new AbortController()
       const media = new Media()
       media.buffered.values.push([10, 20])
-      const states = media_states(
+      const states = media_events(
         media as unknown as HTMLMediaElement,
         owner.signal,
       )
