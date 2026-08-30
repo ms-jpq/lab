@@ -86,7 +86,7 @@ const play_subtitle = async (signal: AbortSignal): Promise<void> => {
       return
     }
     console.error(event)
-    if (!(await delay(signal, 1_000)) || signal.aborted) {
+    if (!(await delay(signal, 1_000))) {
       return
     }
   }

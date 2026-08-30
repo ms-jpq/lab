@@ -602,19 +602,16 @@ const cases = [
     name: "a different target retires its pending read before replacement",
     run: async () => {
       const current = await fixture()
-      const bodies: ReadableStreamDefaultController<
-        Uint8Array<ArrayBuffer>
-      >[] = []
+      const bodies: ReadableStreamDefaultController<Uint8Array<ArrayBuffer>>[] =
+        []
       current.set_fetch((request) =>
         response_from(
           new ReadableStream({
             start: (controller) => {
               bodies.push(controller)
-              request.signal.addEventListener(
-                "abort",
-                () => undefined,
-                { once: true },
-              )
+              request.signal.addEventListener("abort", () => undefined, {
+                once: true,
+              })
             },
           }),
         ),
@@ -622,7 +619,9 @@ const cases = [
       const owner = new AbortController()
       const playback = current.context.player_test.play_media(owner.signal)
 
-      await eventually(() => current.requests.length === 1 && bodies.length === 1)
+      await eventually(
+        () => current.requests.length === 1 && bodies.length === 1,
+      )
       const initial = current.requests[0]
       ok(initial)
       current.media.currentTime = 110
@@ -668,9 +667,8 @@ const cases = [
     run: async () => {
       const current = await fixture({ append_duration: 20 })
       const failure = new Error("request failed after partial progress")
-      let first: ReadableStreamDefaultController<
-        Uint8Array<ArrayBuffer>
-      > | undefined
+      let first:
+        ReadableStreamDefaultController<Uint8Array<ArrayBuffer>> | undefined
       current.set_fetch((request) => {
         if (first !== undefined) {
           return response_from(
@@ -795,7 +793,10 @@ const cases = [
   {
     name: "MediaSource replacement revokes the old URL only after sourceopen",
     run: async () => {
-      const current = await fixture({ response: "pending", source_open: "manual" })
+      const current = await fixture({
+        response: "pending",
+        source_open: "manual",
+      })
       const owner = new AbortController()
       const playback = current.context.player_test.play_media(owner.signal)
 
@@ -828,7 +829,9 @@ const cases = [
         subtitle: true,
         url_position: 40,
       })
-      void current.context.player_test.main(current.context.player_test.play_media)
+      void current.context.player_test.main(
+        current.context.player_test.play_media,
+      )
       current.window.dispatchEvent(new Event("pageshow"))
 
       await eventually(() => current.requests.length === 1)
@@ -846,7 +849,9 @@ const cases = [
         stored_position: 110,
         subtitle: true,
       })
-      void current.context.player_test.main(current.context.player_test.play_media)
+      void current.context.player_test.main(
+        current.context.player_test.play_media,
+      )
       current.window.dispatchEvent(new Event("pageshow"))
 
       await eventually(() => current.requests.length === 1)
@@ -865,7 +870,9 @@ const cases = [
         storage_failure: true,
         subtitle: true,
       })
-      void current.context.player_test.main(current.context.player_test.play_media)
+      void current.context.player_test.main(
+        current.context.player_test.play_media,
+      )
       current.window.dispatchEvent(new Event("pageshow"))
 
       await eventually(() => current.requests.length === 1)
@@ -879,7 +886,9 @@ const cases = [
     name: "player settings replace the page while back remains native",
     run: async () => {
       const current = await fixture()
-      void current.context.player_test.main(current.context.player_test.play_media)
+      void current.context.player_test.main(
+        current.context.player_test.play_media,
+      )
       const submit = current.form.onsubmit
       ok(submit)
       let prevented = false
@@ -912,10 +921,14 @@ const cases = [
         response: "pending",
         subtitle: true,
       })
-      void current.context.player_test.main(current.context.player_test.play_media)
+      void current.context.player_test.main(
+        current.context.player_test.play_media,
+      )
       current.window.dispatchEvent(new Event("pageshow"))
       await eventually(
-        () => current.requests.length === 1 && current.subtitle_sources.length === 1,
+        () =>
+          current.requests.length === 1 &&
+          current.subtitle_sources.length === 1,
       )
       const source = current.sources[0]
       current.subtitle?.dispatchEvent(new Event("error"))
@@ -933,7 +946,9 @@ const cases = [
     name: "pagehide cancels subtitle retry and detaches its listeners",
     run: async () => {
       const current = await fixture({ response: "pending", subtitle: true })
-      void current.context.player_test.main(current.context.player_test.play_media)
+      void current.context.player_test.main(
+        current.context.player_test.play_media,
+      )
       current.window.dispatchEvent(new Event("pageshow"))
       await eventually(() => current.subtitle_sources.length === 1)
       current.subtitle?.dispatchEvent(new Event("error"))
@@ -1027,11 +1042,12 @@ const cases = [
   {
     name: "page progress persists only playable positions",
     run: async () => {
-      const current = await fixture()
+      const current = await fixture({ response: "pending" })
       const owner = new AbortController()
       const playback = current.context.player_test.play_media(owner.signal)
 
-      await eventually(() => current.sources[0]?.readyState === "ended")
+      await eventually(() => current.requests.length === 1)
+      current.media.buffered.values.push([0, 60])
       current.media.seeking = true
       current.media.dispatchEvent(new Event("seeking"))
       current.media.seeking = false
@@ -1187,7 +1203,10 @@ const cases = [
   {
     name: "lifetime abort while sourceopen is pending releases its URL",
     run: async () => {
-      const current = await fixture({ response: "pending", source_open: "manual" })
+      const current = await fixture({
+        response: "pending",
+        source_open: "manual",
+      })
       const owner = new AbortController()
       const playback = current.context.player_test.play_media(owner.signal)
 
@@ -1209,7 +1228,9 @@ const cases = [
         response: "pending",
         subtitle: true,
       })
-      void current.context.player_test.main(current.context.player_test.play_media)
+      void current.context.player_test.main(
+        current.context.player_test.play_media,
+      )
       current.window.dispatchEvent(new Event("pageshow"))
       await eventually(() => current.subtitle_sources.length === 1)
       current.subtitle?.dispatchEvent(new Event("error"))
@@ -1231,7 +1252,9 @@ const cases = [
         response: "pending",
         subtitle: true,
       })
-      void current.context.player_test.main(current.context.player_test.play_media)
+      void current.context.player_test.main(
+        current.context.player_test.play_media,
+      )
       current.window.dispatchEvent(new Event("pageshow"))
       await eventually(() => current.subtitle_sources.length === 1)
       current.subtitle?.dispatchEvent(new Event("load"))
