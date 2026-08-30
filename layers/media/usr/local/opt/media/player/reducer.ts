@@ -7,6 +7,7 @@ const BUFFER_LOW = 45
 const BUFFER_HIGH = 60
 
 type BufferedRange = readonly [start: number, end: number]
+
 type MediaSnapshot = Readonly<{
   buffered: readonly BufferedRange[]
   duration: number
@@ -15,6 +16,62 @@ type MediaSnapshot = Readonly<{
   seeking: boolean
   time: number
 }>
+
+type PendingSeek = Readonly<{
+  acknowledged: boolean
+  target: MediaTarget
+}>
+
+export type PlaybackStream = Readonly<{
+  accepted: MediaTarget
+  frontier: number
+  start: number
+}>
+
+export type PlaybackState = Readonly<{
+  current: MediaSnapshot
+  failure: MediaError | undefined
+  media: HTMLMediaElement
+  pending_seek: PendingSeek | undefined
+  stream: PlaybackStream
+  target: MediaTarget
+}>
+
+export type PlaybackAction =
+  | Readonly<{ kind: "consume_failure" }>
+  | Readonly<{ advance: boolean; kind: "frontier" }>
+  | MediaAction
+  | Readonly<{ kind: "seek"; target: MediaTarget }>
+  | Readonly<{ kind: "stream_started" }>
+
+export type PlaybackEffects = Readonly<{
+  persist: number | undefined
+  seek: number | undefined
+}>
+
+export type PlaybackTransition = readonly [
+  state: PlaybackState,
+  effects: PlaybackEffects,
+]
+
+export type MediaTarget = Readonly<{ position: number; restart: boolean }>
+
+export type MediaAction = Readonly<{
+  event: Event
+  kind: "media"
+}>
+
+const EVENTS = [
+  "canplay",
+  "ended",
+  "error",
+  "loadedmetadata",
+  "progress",
+  "seeked",
+  "seeking",
+  "timeupdate",
+  "waiting",
+] as const satisfies readonly (keyof HTMLMediaElementEventMap)[]
 
 const playable_time = (duration: number, value: number): number => {
   const position = Number.isFinite(value) ? Math.max(0, value) : 0
@@ -68,82 +125,35 @@ const play_ahead = (state: MediaSnapshot, frontier: number): number => {
     : 0
 }
 
-const EVENTS = [
-  "canplay",
-  "ended",
-  "error",
-  "loadedmetadata",
-  "progress",
-  "seeked",
-  "seeking",
-  "timeupdate",
-  "waiting",
-] as const satisfies readonly (keyof HTMLMediaElementEventMap)[]
-
-export type MediaTarget = Readonly<{ position: number; restart: boolean }>
-export type MediaAction = Readonly<{
-  event: Event
-  kind: "media"
-}>
-
-type PendingSeek = Readonly<{
-  acknowledged: boolean
-  target: MediaTarget
-}>
-export type PlaybackStream = Readonly<{
-  accepted: MediaTarget
-  frontier: number
-  restart: boolean
-  start: number
-}>
-export type PlaybackState = Readonly<{
-  current: MediaSnapshot
-  failure: MediaError | undefined
-  media: HTMLMediaElement
-  pending_seek: PendingSeek | undefined
-  stream: PlaybackStream
-  target: MediaTarget
-}>
-export type PlaybackAction =
-  | Readonly<{ kind: "consume_failure" }>
-  | Readonly<{ advance: boolean; kind: "frontier" }>
-  | MediaAction
-  | Readonly<{ kind: "seek"; target: MediaTarget }>
-  | Readonly<{ kind: "stream_started" }>
-export type PlaybackEffects = Readonly<{
-  persist: number | undefined
-  seek: number | undefined
-}>
-export type PlaybackTransition = readonly [
-  state: PlaybackState,
-  effects: PlaybackEffects,
-]
-
 const stream_position = (value: number): number =>
   Math.round(value * 1_000) / 1_000
 
 const start_stream = (target: MediaTarget): PlaybackStream => ({
   accepted: target,
   frontier: stream_position(target.position),
-  restart: false,
   start: target.position,
 })
+
+const restart = (stream: PlaybackStream, target: MediaTarget): boolean =>
+  target !== stream.accepted &&
+  target.restart &&
+  !aligned(target.position, stream.frontier)
 
 const reconcile = (
   stream: PlaybackStream,
   target: MediaTarget,
 ): PlaybackStream => {
-  if (target === stream.accepted) {
+  if (target === stream.accepted || restart(stream, target)) {
     return stream
   }
-  if (target.restart && !aligned(target.position, stream.frontier)) {
-    return { ...stream, restart: true }
-  }
-  return { ...stream, accepted: target, restart: false }
+  return { ...stream, accepted: target }
 }
 
-export const should_interrupt = ({ failure, stream }: PlaybackState): boolean =>
-  failure !== undefined || stream.restart
+export const needs_restart = ({ stream, target }: PlaybackState): boolean =>
+  restart(stream, target)
+
+export const should_interrupt = (state: PlaybackState): boolean =>
+  state.failure !== undefined || needs_restart(state)
 
 export const needs_data = ({ current, stream }: PlaybackState): boolean =>
   play_ahead(current, stream.start) < BUFFER_LOW

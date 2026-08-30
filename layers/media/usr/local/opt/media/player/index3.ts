@@ -11,6 +11,7 @@ import {
   initial_playback,
   media_events,
   needs_data,
+  needs_restart,
   reduce,
   request_full,
   should_interrupt,
@@ -66,7 +67,7 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
     if (error !== undefined) {
       throw error
     }
-    if (!playback.stream.restart) {
+    if (!needs_restart(playback)) {
       return false
     }
     dispatch({ kind: "stream_started" })
