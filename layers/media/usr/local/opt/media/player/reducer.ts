@@ -13,7 +13,6 @@ type MediaSnapshot = Readonly<{
 
 type PlaybackRequest = Readonly<{
   frontier: number
-  needed: boolean
   position: number
 }>
 
@@ -49,13 +48,13 @@ type PlaybackAction =
   | Readonly<{ type: "source_opened" }>
 
 type PlaybackEffects = Readonly<{
-  append?: Uint8Array<ArrayBuffer> | undefined
-  end?: boolean | undefined
+  append?: Uint8Array<ArrayBuffer>
+  end?: true
   failure?: unknown
-  persist?: number | undefined
+  persist?: number
   report?: unknown
-  request?: PlaybackRequest | undefined
-  seek?: number | undefined
+  request?: PlaybackRequest
+  seek?: number
 }>
 
 type PlaybackTransition = readonly [
@@ -99,28 +98,19 @@ const buffered_range = (
   { buffered }: MediaSnapshot,
   position: number,
   inclusive: boolean,
-): BufferedRange | undefined => {
-  for (const [start, end] of buffered) {
-    if (
+): BufferedRange | undefined =>
+  buffered.find(
+    ([start, end]) =>
       start - position <= POSITION_TOLERANCE &&
-      (inclusive ? position <= end : position < end)
-    ) {
-      return [start, end]
-    }
-  }
-  return undefined
-}
+      (inclusive ? position <= end : position < end),
+  )
 
 const buffered_position = (
   state: MediaSnapshot,
   position: number,
 ): number | undefined => {
-  const range = buffered_range(state, position, false)
-  if (range === undefined) {
-    return undefined
-  }
-  const [start] = range
-  return Math.max(position, start)
+  const start = buffered_range(state, position, false)?.[0]
+  return start === undefined ? undefined : Math.max(position, start)
 }
 
 const buffered_end = (
@@ -139,14 +129,15 @@ const play_ahead = (state: MediaSnapshot, frontier: number): number => {
 const stream_position = (value: number): number =>
   Math.round(value * 1_000) / 1_000
 
-const request_at = (
-  current: MediaSnapshot,
-  position: number,
-): PlaybackRequest => ({
+const request_at = (position: number): PlaybackRequest => ({
   frontier: stream_position(position),
-  needed: play_ahead(current, position) < BUFFER_LOW,
   position,
 })
+
+const request_needed = (
+  current: MediaSnapshot,
+  request: PlaybackRequest,
+): boolean => play_ahead(current, request.position) < BUFFER_LOW
 
 const capture = (media: HTMLMediaElement): MediaSnapshot => ({
   buffered: Array.from(
@@ -160,20 +151,6 @@ const capture = (media: HTMLMediaElement): MediaSnapshot => ({
   seeking: media.seeking,
   time: media.currentTime,
 })
-
-const initial_playback = (
-  media: HTMLMediaElement,
-  position: number,
-): PlaybackState => {
-  const current = capture(media)
-  return {
-    current,
-    pending_seek: undefined,
-    request: request_at(current, position),
-    requesting: false,
-    target: position,
-  }
-}
 
 const reconcile_seek = (
   current: MediaSnapshot,
@@ -207,17 +184,14 @@ const project_request = (
     play_ahead(current, frontier) >= BUFFER_HIGH
 
   const position = advance ? frontier : request.position
-  return [
-    { frontier, needed: play_ahead(current, position) < BUFFER_LOW, position },
-    advance,
-  ]
+  return [{ frontier, position }, advance]
 }
 
 const observe = (state: PlaybackState): PlaybackTransition => {
   const { current } = state
   const [pending_seek, seek] = reconcile_seek(current, state.pending_seek)
   const [request, restart] = project_request(current, state.request)
-  const requested = restart && request.needed
+  const requested = restart && request_needed(current, request)
 
   return [
     {
@@ -290,7 +264,7 @@ const media_transition = (
       const [next, effects] = observe({
         ...observed,
         pending_seek: undefined,
-        request: restart ? request_at(current, target) : state.request,
+        request: restart ? request_at(target) : state.request,
         target,
       })
 
@@ -312,7 +286,7 @@ const schedule = ([state, effects]: PlaybackTransition): PlaybackTransition => {
   if (effects.request !== undefined) {
     return [{ ...state, requesting: true }, effects]
   }
-  if (state.request.needed && !state.requesting) {
+  if (request_needed(state.current, state.request) && !state.requesting) {
     return [
       { ...state, requesting: true },
       { ...effects, request: state.request },
@@ -343,7 +317,7 @@ const reduce = (
       return [{ ...state, requesting: false }, { end: true }]
     }
     case "source_opened": {
-      const request = request_at(state.current, state.target)
+      const request = request_at(state.target)
       return [
         {
           ...state,
@@ -366,7 +340,13 @@ export const playback_transitions = (
 ): ((
   action: PlaybackAction | readonly PlaybackAction[],
 ) => PlaybackEffects) => {
-  let state = initial_playback(media, position)
+  let state: PlaybackState = {
+    current: capture(media),
+    pending_seek: undefined,
+    request: request_at(position),
+    requesting: false,
+    target: position,
+  }
 
   return (action) => {
     const actions = "type" in action ? [action] : action
