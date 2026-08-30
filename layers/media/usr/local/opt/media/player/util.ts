@@ -184,7 +184,9 @@ export const event_batches = async function* <
 
   while (!a.signal.aborted) {
     await ready.promise
-    if (a.signal.aborted) return
+    if (a.signal.aborted) {
+      return
+    }
     const batch = observations
     observations = []
     ready = Promise.withResolvers<void>()
