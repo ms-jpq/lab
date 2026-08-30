@@ -21,7 +21,6 @@ import { abortion, delay, logical_stream } from "./util.ts"
 const BUFFER = { BEHIND: 30, LO: 45, HI: 60 }
 const RETRY_DELAY = 1_000
 const DONE = Symbol()
-const REPORT = Symbol()
 const STOP = Symbol()
 const WAKE = Symbol()
 type Performed<T> =
@@ -30,7 +29,6 @@ type Performed<T> =
       interrupted: boolean
       result: PromiseSettledResult<T>
     }>
-type ReportFailure = { [REPORT]: unknown }
 
 const stream_position = (value: number): number =>
   Math.round(value * 1_000) / 1_000
@@ -185,13 +183,7 @@ const decide = async (signal: AbortSignal): Promise<void> => {
     return performed.result.value.done ? done : performed.result.value.value
   }
 
-  const report = (error: unknown): void => {
-    try {
-      console.error(error)
-    } catch (failure) {
-      throw { [REPORT]: failure } satisfies ReportFailure
-    }
-  }
+  const report = (error: unknown): void => console.error(error)
   try {
     source: for (;;) {
       if (lifetime.signal.aborted) return
@@ -257,8 +249,11 @@ const decide = async (signal: AbortSignal): Promise<void> => {
         return false
       }
 
-      try {
-        request: for (;;) {
+      request: for (;;) {
+        let source_failure: { error: unknown } | undefined
+        let request_failure: unknown | undefined
+        let frontier = stream_position(start)
+        try {
           retarget(start)
           while (play_ahead(current, start) >= BUFFER.LO) {
             const demanded = await wait(
@@ -274,8 +269,6 @@ const decide = async (signal: AbortSignal): Promise<void> => {
           const request = logical_stream(
             new Request(source_url(media, start), { signal: owner.signal }),
           )
-          let frontier = stream_position(start)
-          let request_failure: unknown | undefined
           try {
             if ((await pull(buffer.next(frontier))) === STOP) return
             if (retarget(frontier)) {
@@ -322,27 +315,30 @@ const decide = async (signal: AbortSignal): Promise<void> => {
             owner[Symbol.dispose]()
             await request.return(undefined)
           }
+        } catch (error) {
+          source_failure = { error }
+        }
 
-          if (request_failure !== undefined) {
-            report(request_failure)
-            start = stream_position(buffered_end(current, frontier) ?? frontier)
-            using timer = abortion(lifetime.signal)
-            const waited = await perform(
-              delay(timer.signal, RETRY_DELAY),
-              () => changed(start),
-              timer[Symbol.dispose],
-            )
-            if (waited === STOP) return
-            if (waited.result.status === "rejected") throw waited.result.reason
+        if (source_failure !== undefined) {
+          if ((await perform(Promise.resolve())) === STOP) return
+          report(take_failure() ?? source_failure.error)
+          continue source
+        }
+
+        if (request_failure !== undefined) {
+          report(request_failure)
+          start = stream_position(buffered_end(current, frontier) ?? frontier)
+          using timer = abortion(lifetime.signal)
+          const waited = await perform(
+            delay(timer.signal, RETRY_DELAY),
+            () => changed(start),
+            timer[Symbol.dispose],
+          )
+          if (waited === STOP) return
+          if (waited.result.status === "rejected") {
+            throw waited.result.reason
           }
         }
-      } catch (error) {
-        if (typeof error === "object" && error !== null && REPORT in error) {
-          throw error
-        }
-        if ((await perform(Promise.resolve())) === STOP) return
-        report(take_failure() ?? error)
-        continue source
       }
     }
   } finally {
@@ -355,17 +351,7 @@ const decide = async (signal: AbortSignal): Promise<void> => {
   }
 }
 
-export const play_media = async (signal: AbortSignal): Promise<void> => {
-  try {
-    await decide(signal)
-  } catch (error) {
-    if (typeof error === "object" && error !== null && REPORT in error) {
-      // this seems awful, we are using errors for controlflow, i thought the goal was to not do that
-      throw (error as ReportFailure)[REPORT]
-    }
-    throw error
-  }
-}
+export const play_media = decide
 
 export const PULSE = Symbol()
 export const page_reader = undefined
