@@ -16,6 +16,7 @@ import {
   source_invalidated,
   type MediaAction,
   type PlaybackAction,
+  type PlaybackInterruption,
 } from "./reducer.ts"
 import { abortion, delay, logical_stream } from "./util.ts"
 
@@ -44,15 +45,13 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
     return
   }
   let playback = initial_playback(media, page_position())
-  let failure: MediaError | undefined
-  let restart = false
+  let interruption: PlaybackInterruption | undefined
 
   const dispatch = (action: PlaybackAction): void => {
     const [state, effects] = reduce(playback, action)
     const { persist, seek } = effects
     playback = state
-    failure ??= effects.failure
-    restart ||= effects.restart ?? false
+    interruption ??= effects.interrupt
     if (persist !== undefined) {
       persist_position(persist)
     }
@@ -61,21 +60,23 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
     }
   }
   const take_failure = (): MediaError | undefined => {
-    const error = failure
-    failure = undefined
+    if (interruption?.type !== "failure") {
+      return undefined
+    }
+    const { error } = interruption
+    interruption = undefined
     return error
   }
-  const should_interrupt = (): boolean =>
-    failure !== undefined || restart
+  const should_interrupt = (): boolean => interruption !== undefined
   const restart_request = (): boolean => {
     const error = take_failure()
     if (error !== undefined) {
       throw error
     }
-    if (!restart) {
+    if (interruption?.type !== "restart") {
       return false
     }
-    restart = false
+    interruption = undefined
     return true
   }
   const read_state = async () =>
@@ -190,7 +191,8 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
       } catch (error) {
         console.error(error)
         const interrupted = await retry(
-          () => failure !== undefined || source_invalidated(playback, attempt),
+          () =>
+            interruption !== undefined || source_invalidated(playback, attempt),
         )
         if (interrupted === STOP) {
           return

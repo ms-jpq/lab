@@ -34,10 +34,13 @@ export type PlaybackAction =
   | Readonly<{ type: "request_failed" }>
   | Readonly<{ type: "source_opened" }>
 
+export type PlaybackInterruption =
+  | Readonly<{ error: MediaError; type: "failure" }>
+  | Readonly<{ type: "restart" }>
+
 export type PlaybackEffects = Readonly<{
-  failure?: MediaError
+  interrupt?: PlaybackInterruption
   persist?: number
-  restart?: boolean
   seek?: number
 }>
 
@@ -128,12 +131,8 @@ const start_stream = (target: MediaTarget): PlaybackStream => ({
   start: target.position,
 })
 
-const needs_restart = (
-  stream: PlaybackStream,
-  target: MediaTarget,
-): boolean =>
-  target.restart &&
-  !aligned(target.position, stream.frontier)
+const needs_restart = (stream: PlaybackStream, target: MediaTarget): boolean =>
+  target.restart && !aligned(target.position, stream.frontier)
 
 export const needs_data = ({ current, stream }: PlaybackState): boolean =>
   play_ahead(current, stream.start) < BUFFER_LOW
@@ -250,14 +249,15 @@ const reduce_media = (
       target,
     },
     {
-      failure:
+      interrupt:
         action.type === "error" &&
         current.error !== undefined &&
         current.error.code !== MediaError.MEDIA_ERR_ABORTED
-          ? current.error
-          : undefined,
+          ? { error: current.error, type: "failure" }
+          : restart
+            ? { type: "restart" }
+            : undefined,
       persist,
-      restart,
       seek,
     },
   ]
