@@ -14,7 +14,6 @@ import {
   needs_restart,
   reduce,
   request_full,
-  should_interrupt,
   source_invalidated,
   type MediaAction,
   type PlaybackAction,
@@ -46,10 +45,13 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
     return
   }
   let playback = initial_playback(media, page_position())
+  let failure: MediaError | undefined
 
   const dispatch = (action: PlaybackAction): void => {
-    const [state, { persist, seek }] = reduce(playback, action)
+    const [state, effects] = reduce(playback, action)
+    const { persist, seek } = effects
     playback = state
+    failure ??= effects.failure
     if (persist !== undefined) {
       persist_position(persist)
     }
@@ -58,10 +60,12 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
     }
   }
   const take_failure = (): MediaError | undefined => {
-    const error = playback.failure
-    dispatch({ kind: "consume_failure" })
+    const error = failure
+    failure = undefined
     return error
   }
+  const should_interrupt = (): boolean =>
+    failure !== undefined || needs_restart(playback)
   const restart_request = (): boolean => {
     const error = take_failure()
     if (error !== undefined) {
@@ -151,7 +155,7 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
   }
 
   const open = async (): Promise<Mse | typeof STOP> => {
-    dispatch({ kind: "seek", target: playback.target })
+    dispatch({ kind: "seek_requested", target: playback.target })
     const opened = await pull(sources.next())
     if (opened === STOP) {
       return STOP
@@ -186,7 +190,7 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
       } catch (error) {
         console.error(error)
         const interrupted = await retry(() =>
-          source_invalidated(playback, attempt),
+          failure !== undefined || source_invalidated(playback, attempt),
         )
         if (interrupted === STOP) {
           return
@@ -209,7 +213,7 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
           }
           while (!needs_data(playback)) {
             const demanded = await wait(
-              () => should_interrupt(playback) || needs_data(playback),
+              () => should_interrupt() || needs_data(playback),
             )
             if (!demanded) {
               return
@@ -237,7 +241,7 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
               try {
                 read = await perform(
                   request.next(),
-                  () => should_interrupt(playback),
+                  should_interrupt,
                   owner[Symbol.dispose],
                 )
               } catch (error) {
@@ -255,7 +259,7 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
                 if ((await pull(buffer.next(undefined))) === STOP) {
                   return
                 }
-                if (!(await wait(() => should_interrupt(playback)))) {
+                if (!(await wait(should_interrupt))) {
                   return
                 }
                 continue request
@@ -264,12 +268,12 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
               if ((await pull(buffer.next(read.value.value))) === STOP) {
                 return
               }
-              dispatch({ advance: false, kind: "frontier" })
+              dispatch({ kind: "buffered" })
               if (restart_request()) {
                 continue request
               }
               if (request_full(playback)) {
-                dispatch({ advance: true, kind: "frontier" })
+                dispatch({ kind: "request_advanced" })
                 continue request
               }
             }
@@ -287,8 +291,8 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
 
         if (request_failure !== undefined) {
           console.error(request_failure.error)
-          dispatch({ advance: true, kind: "frontier" })
-          if ((await retry(() => should_interrupt(playback))) === STOP) {
+          dispatch({ kind: "request_advanced" })
+          if ((await retry(should_interrupt)) === STOP) {
             return
           }
         }

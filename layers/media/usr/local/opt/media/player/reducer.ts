@@ -11,7 +11,6 @@ type BufferedRange = readonly [start: number, end: number]
 type MediaSnapshot = Readonly<{
   buffered: readonly BufferedRange[]
   duration: number
-  error: MediaError | undefined
   metadata: boolean
   seeking: boolean
   time: number
@@ -25,23 +24,22 @@ export type PlaybackStream = Readonly<{
 
 export type PlaybackState = Readonly<{
   current: MediaSnapshot
-  failure: MediaError | undefined
-  media: HTMLMediaElement
   pending_seek: MediaTarget | undefined
   stream: PlaybackStream
   target: MediaTarget
 }>
 
 export type PlaybackAction =
-  | Readonly<{ kind: "consume_failure" }>
-  | Readonly<{ advance: boolean; kind: "frontier" }>
+  | Readonly<{ kind: "buffered" }>
   | MediaAction
-  | Readonly<{ kind: "seek"; target: MediaTarget }>
+  | Readonly<{ kind: "request_advanced" }>
+  | Readonly<{ kind: "seek_requested"; target: MediaTarget }>
   | Readonly<{ kind: "stream_started" }>
 
 export type PlaybackEffects = Readonly<{
-  persist: number | undefined
-  seek: number | undefined
+  failure?: MediaError
+  persist?: number
+  seek?: number
 }>
 
 export type PlaybackTransition = readonly [
@@ -51,10 +49,16 @@ export type PlaybackTransition = readonly [
 
 export type MediaTarget = Readonly<{ position: number; restart: boolean }>
 
-export type MediaAction = Readonly<{
-  event: Event
-  kind: "media"
-}>
+export type MediaAction =
+  | Readonly<{ current: MediaSnapshot; kind: "media_ended" }>
+  | Readonly<{
+      current: MediaSnapshot
+      error: MediaError
+      kind: "media_failed"
+    }>
+  | Readonly<{ current: MediaSnapshot; kind: "media_observed" }>
+  | Readonly<{ current: MediaSnapshot; kind: "media_position_changed" }>
+  | Readonly<{ current: MediaSnapshot; kind: "media_time_changed" }>
 
 const EVENTS = [
   "canplay",
@@ -147,9 +151,6 @@ const reconcile = (
 export const needs_restart = ({ stream, target }: PlaybackState): boolean =>
   restart(stream, target)
 
-export const should_interrupt = (state: PlaybackState): boolean =>
-  state.failure !== undefined || needs_restart(state)
-
 export const needs_data = ({ current, stream }: PlaybackState): boolean =>
   play_ahead(current, stream.start) < BUFFER_LOW
 
@@ -157,9 +158,9 @@ export const request_full = ({ current, stream }: PlaybackState): boolean =>
   play_ahead(current, stream.frontier) >= BUFFER_HIGH
 
 export const source_invalidated = (
-  { failure, target }: PlaybackState,
+  { target }: PlaybackState,
   attempt: MediaTarget,
-): boolean => failure !== undefined || (target !== attempt && target.restart)
+): boolean => target !== attempt && target.restart
 
 export const initial_playback = (
   media: HTMLMediaElement,
@@ -168,8 +169,6 @@ export const initial_playback = (
   const target = { position, restart: false }
   return {
     current: capture(media),
-    failure: undefined,
-    media,
     pending_seek: target,
     stream: start_stream(target),
     target,
@@ -182,7 +181,6 @@ const capture = (media: HTMLMediaElement): MediaSnapshot => ({
       [media.buffered.start(index), media.buffered.end(index)] as const,
   ),
   duration: Number(media.dataset["duration"]),
-  error: media.error ?? undefined,
   metadata: media.readyState >= media.HAVE_METADATA,
   seeking: media.seeking,
   time: media.currentTime,
@@ -190,24 +188,15 @@ const capture = (media: HTMLMediaElement): MediaSnapshot => ({
 
 const reduce_media = (
   state: PlaybackState,
-  event: Event,
+  action: MediaAction,
 ): PlaybackTransition => {
-  const current = capture(state.media)
-  let failure = state.failure
+  const { current } = action
   let target = state.target
   let pending = state.pending_seek
   let persist: number | undefined
   let seek: number | undefined
 
-  if (
-    event.type === "error" &&
-    current.error !== undefined &&
-    current.error.code !== MediaError.MEDIA_ERR_ABORTED
-  ) {
-    failure ??= current.error
-  }
-
-  if (event.type === "seeked" || event.type === "seeking") {
+  if (action.kind === "media_position_changed") {
     const native = playable_time(current.duration, current.time)
     const position = buffered_position(current, native)
     const candidate = {
@@ -224,11 +213,12 @@ const reduce_media = (
     }
   }
 
-  if (event.type === "ended") {
+  if (action.kind === "media_ended") {
     persist = 0
   } else if (
     persist === undefined &&
-    ["seeked", "seeking", "timeupdate"].includes(event.type) &&
+    (action.kind === "media_position_changed" ||
+      action.kind === "media_time_changed") &&
     pending === undefined &&
     buffered_position(current, current.time) === current.time
   ) {
@@ -254,12 +244,15 @@ const reduce_media = (
     {
       ...state,
       current,
-      failure,
       pending_seek: pending,
       stream: reconcile(state.stream, target),
       target,
     },
-    { persist, seek },
+    {
+      failure: action.kind === "media_failed" ? action.error : undefined,
+      persist,
+      seek,
+    },
   ]
 }
 
@@ -268,13 +261,8 @@ export const reduce = (
   action: PlaybackAction,
 ): PlaybackTransition => {
   switch (action.kind) {
-    case "consume_failure": {
-      return [
-        { ...state, failure: undefined },
-        { persist: undefined, seek: undefined },
-      ]
-    }
-    case "frontier": {
+    case "buffered":
+    case "request_advanced": {
       const frontier = stream_position(
         buffered_end(state.current, state.stream.frontier) ??
           state.stream.frontier,
@@ -283,32 +271,56 @@ export const reduce = (
         {
           ...state.stream,
           frontier,
-          start: action.advance ? frontier : state.stream.start,
+          start:
+            action.kind === "request_advanced" ? frontier : state.stream.start,
         },
         state.target,
       )
-      return [
-        { ...state, stream },
-        { persist: undefined, seek: undefined },
-      ]
+      return [{ ...state, stream }, {}]
     }
-    case "seek": {
+    case "seek_requested": {
       return [
         {
           ...state,
           pending_seek: action.target,
         },
-        { persist: undefined, seek: action.target.position },
+        { seek: action.target.position },
       ]
     }
     case "stream_started": {
-      return [
-        { ...state, stream: start_stream(state.target) },
-        { persist: undefined, seek: undefined },
-      ]
+      return [{ ...state, stream: start_stream(state.target) }, {}]
     }
-    case "media": {
-      return reduce_media(state, action.event)
+    case "media_ended":
+    case "media_failed":
+    case "media_observed":
+    case "media_position_changed":
+    case "media_time_changed": {
+      return reduce_media(state, action)
+    }
+  }
+}
+
+const media_action = (media: HTMLMediaElement, event: Event): MediaAction => {
+  const current = capture(media)
+  switch (event.type) {
+    case "ended": {
+      return { current, kind: "media_ended" }
+    }
+    case "error": {
+      const error = media.error
+      return error !== null && error.code !== MediaError.MEDIA_ERR_ABORTED
+        ? { current, error, kind: "media_failed" }
+        : { current, kind: "media_observed" }
+    }
+    case "seeked":
+    case "seeking": {
+      return { current, kind: "media_position_changed" }
+    }
+    case "timeupdate": {
+      return { current, kind: "media_time_changed" }
+    }
+    default: {
+      return { current, kind: "media_observed" }
     }
   }
 }
@@ -322,7 +334,7 @@ export const media_events = async function* (
     events(a.signal, media, event),
   )
   for await (const [, event] of merge(...streams)) {
-    yield { event, kind: "media" }
+    yield media_action(media, event)
   }
   return
 }
