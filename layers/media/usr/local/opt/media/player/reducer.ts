@@ -1,4 +1,4 @@
-import { media_state, playable_time } from "./media.ts"
+import { playable_time } from "./media.ts"
 import type { MediaAction, MediaSnapshot } from "./media.ts"
 import { never } from "./util.ts"
 
@@ -20,7 +20,6 @@ type PlaybackControl =
   | Readonly<{ error: unknown; type: "rebuild" }>
 
 type PlaybackState = Readonly<{
-  current: MediaSnapshot
   pending_seek: number | undefined
   request: PlaybackRequest
   requesting: boolean
@@ -153,8 +152,10 @@ const project_request = (
   return { frontier, position }
 }
 
-const observe = (state: PlaybackState): PlaybackTransition => {
-  const { current } = state
+const observe = (
+  state: PlaybackState,
+  current: MediaSnapshot,
+): PlaybackTransition => {
   const [pending_seek, seek] = reconcile_seek(current, state.pending_seek)
   const request = project_request(current, state.request)
   const restart = !aligned(request.position, state.request.position)
@@ -179,11 +180,6 @@ const reduce = (
   state: PlaybackState,
   action: PlaybackAction,
 ): PlaybackTransition => {
-  const observed =
-    "current" in action ? { ...state, current: action.current } : state
-  const { current } = observed
-  const start = !state.requesting && request_needed(current, state.request)
-
   switch (action.type) {
     case "bytes_received": {
       return [state, { buffer: { bytes: action.bytes, type: "append" } }]
@@ -224,11 +220,13 @@ const reduce = (
     case "progress":
     case "seeked":
     case "waiting": {
-      return observe(observed)
+      return observe(state, action.current)
     }
     case "ended": {
+      const start =
+        !state.requesting && request_needed(action.current, state.request)
       return [
-        { ...observed, requesting: state.requesting || start },
+        { ...state, requesting: state.requesting || start },
         {
           persist: 0,
           ...(start
@@ -243,11 +241,12 @@ const reduce = (
       ]
     }
     case "timeupdate": {
+      const { current } = action
       const persist =
         state.pending_seek === undefined
           ? buffered_position(current, current.time)
           : undefined
-      const [next, effects] = observe(observed)
+      const [next, effects] = observe(state, current)
       return [
         next,
         {
@@ -257,13 +256,15 @@ const reduce = (
       ]
     }
     case "error": {
+      const { current } = action
+      const start = !state.requesting && request_needed(current, state.request)
       const { error } = current
       const failure =
         error !== undefined && error.code !== MediaError.MEDIA_ERR_ABORTED
           ? error
           : undefined
       return [
-        { ...observed, requesting: state.requesting || start },
+        { ...state, requesting: state.requesting || start },
         failure === undefined
           ? {
               ...(start
@@ -279,6 +280,7 @@ const reduce = (
       ]
     }
     case "seeking": {
+      const { current } = action
       const native = playable_time(current.duration, current.time)
       const buffered = buffered_position(current, native)
       const target = buffered ?? native
@@ -287,32 +289,33 @@ const reduce = (
         !aligned(current.time, state.pending_seek)
 
       if (!external) {
-        return observe(observed)
+        return observe(state, current)
       }
 
       const restart =
         buffered === undefined && !aligned(target, state.request.frontier)
-      const [next, effects] = observe({
-        ...observed,
-        pending_seek: undefined,
-        request: restart ? request_at(target) : state.request,
-        requesting: restart ? false : state.requesting,
-        target,
-      })
+      const [next, effects] = observe(
+        {
+          ...state,
+          pending_seek: undefined,
+          request: restart ? request_at(target) : state.request,
+          requesting: restart ? false : state.requesting,
+          target,
+        },
+        current,
+      )
 
       return [next, { ...effects, persist: target }]
     }
     default:
-      return never(action)
+      never(action)
   }
 }
 
 export const playback_transitions = (
-  media: HTMLMediaElement,
   position: number,
 ): ((action: PlaybackAction | readonly MediaAction[]) => PlaybackEffects) => {
   let state: PlaybackState = {
-    current: media_state(media),
     pending_seek: undefined,
     request: request_at(position),
     requesting: false,

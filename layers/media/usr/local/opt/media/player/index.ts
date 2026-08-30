@@ -49,7 +49,7 @@ const stream_events = async function* (
 
 export const play_media = async (signal: AbortSignal) => {
   using abort = abortion(signal)
-  const dispatch = playback_transitions(media, page_position())
+  const dispatch = playback_transitions(page_position())
 
   source: for await (const [, create_buffer] of media_sources({
     evict_behind: BUFFER_BEHIND,
@@ -100,10 +100,10 @@ export const play_media = async (signal: AbortSignal) => {
           if (effects.control.error !== undefined) {
             console.error(effects.control.error)
           }
+
           switch (effects.control.type) {
-            case "rebuild": {
+            case "rebuild":
               continue source
-            }
             case "request": {
               requested = effects.control.request
               continue request
@@ -116,12 +116,10 @@ export const play_media = async (signal: AbortSignal) => {
         if (effects.buffer) {
           const operation = (() => {
             switch (effects.buffer.type) {
-              case "append": {
+              case "append":
                 return effects.buffer.bytes
-              }
-              case "end": {
+              case "end":
                 return undefined
-              }
               default:
                 return never(effects.buffer)
             }

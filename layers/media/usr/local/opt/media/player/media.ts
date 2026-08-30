@@ -51,7 +51,7 @@ export const playable_position = (
   value: number,
 ): number => playable_time(Number(media.dataset["duration"]), value)
 
-export const media_state = (media: HTMLMediaElement): MediaSnapshot => ({
+const media_state = (media: HTMLMediaElement): MediaSnapshot => ({
   buffered: Array.from(
     { length: media.buffered.length },
     (_, index) =>

@@ -18,14 +18,6 @@ type Case = Readonly<{
 const options = { concurrency: true, timeout: 2_000 }
 const failure = new Error("transport failed")
 
-const ranges = (
-  values: readonly (readonly [number, number])[] = [],
-): TimeRanges => ({
-  length: values.length,
-  end: (index) => values[index]![1],
-  start: (index) => values[index]![0],
-})
-
 const snapshot = (overrides: Partial<MediaSnapshot> = {}): MediaSnapshot => ({
   buffered: [],
   duration: 200,
@@ -36,19 +28,9 @@ const snapshot = (overrides: Partial<MediaSnapshot> = {}): MediaSnapshot => ({
   ...overrides,
 })
 
-class Media {
-  readonly HAVE_METADATA = 1
-  readonly buffered = ranges()
-  readonly dataset = { duration: "200" } as DOMStringMap
-  currentTime = 0
-  error: MediaError | null = null
-  readyState = this.HAVE_METADATA
-  seeking = false
-}
-
 const cases = [
   {
-    name: "source opening describes startup without touching media",
+    name: "source opening describes startup",
     position: 40,
     steps: [
       {
@@ -264,15 +246,10 @@ const shuffled: readonly Case[] = cases
 await Promise.all(
   shuffled.map(({ name, position = 0, steps }) =>
     nodeTest(name, options, () => {
-      const media = new Media()
-      const dispatch = playback_transitions(
-        media as unknown as HTMLMediaElement,
-        position,
-      )
+      const dispatch = playback_transitions(position)
 
       for (const { action, expected } of steps) {
         deepEqual(dispatch(action), expected)
-        deepEqual(media.currentTime, 0)
       }
     }),
   ),
