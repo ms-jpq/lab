@@ -418,6 +418,42 @@ const cases = [
     },
   },
   {
+    name: "return interrupts a pending merged read",
+    run: async () => {
+      const entered = Promise.withResolvers<void>()
+      const read = Promise.withResolvers<IteratorResult<number>>()
+      let returns = 0
+      const source: AsyncIterator<number> = {
+        next: async () => {
+          entered.resolve()
+          return await read.promise
+        },
+        return: async () => {
+          returns += 1
+          read.resolve({ done: true, value: undefined })
+          return { done: true, value: undefined }
+        },
+      }
+      const values = merge(source)
+      const pending = values.next()
+      await entered.promise
+      const closed = values.return?.(undefined)
+      assert(closed)
+
+      deepEqual(
+        await Promise.race([
+          Promise.all([pending, closed]),
+          setImmediate("pending"),
+        ]),
+        [
+          { done: true, value: undefined },
+          { done: true, value: undefined },
+        ],
+      )
+      deepEqual(returns, 1)
+    },
+  },
+  {
     name: "merge preserves each source's value type",
     run: async () => {
       const numbers = delayed(Promise.resolve(1))

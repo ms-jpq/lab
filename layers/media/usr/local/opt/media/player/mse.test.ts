@@ -1,5 +1,6 @@
 import { deepEqual, ok as assert } from "node:assert/strict"
 import { randomUUID } from "node:crypto"
+import { getEventListeners } from "node:events"
 import nodeTest, { type TestContext } from "node:test"
 import { setImmediate } from "node:timers/promises"
 
@@ -435,6 +436,37 @@ const cases = [
     },
   },
   {
+    name: "a failed bond restores the previous URL and detaches its listeners",
+    run: async (context: TestContext) => {
+      const current = acquisitionFixture(context)
+      try {
+        current.media.src = "blob:test:previous"
+        const owner = new AbortController()
+        const values = bond(current.media, owner.signal)
+        const pending = values.next()
+        const source = current.sources[0]
+        assert(source)
+
+        deepEqual(getEventListeners(source, "sourceopen").length, 1)
+        deepEqual(getEventListeners(source, "sourceclose").length, 1)
+        source.dispatchEvent(new Event("sourceclose"))
+        const failure = await pending.then(
+          () => undefined,
+          (error: unknown) => error,
+        )
+
+        assert(failure instanceof Event)
+        deepEqual(failure.type, "sourceclose")
+        deepEqual(current.media.src, "blob:test:previous")
+        deepEqual(current.revoked, ["blob:test:0"])
+        deepEqual(getEventListeners(source, "sourceopen").length, 0)
+        deepEqual(getEventListeners(source, "sourceclose").length, 0)
+      } finally {
+        current.restore()
+      }
+    },
+  },
+  {
     name: "bond and media source acquisition obey their return contract",
     run: async (context: TestContext) => {
       const current = acquisitionFixture(context)
@@ -486,11 +518,15 @@ const cases = [
         const returnedBondPending = returnedBond.next()
         const bondSource = current.sources[2]
         assert(bondSource)
+        deepEqual(getEventListeners(bondSource, "sourceopen").length, 1)
+        deepEqual(getEventListeners(bondSource, "sourceclose").length, 1)
         bondSource.dispatchEvent(new Event("sourceopen"))
         deepEqual(await returnedBondPending, {
           done: false,
           value: bondSource,
         })
+        deepEqual(getEventListeners(bondSource, "sourceopen").length, 0)
+        deepEqual(getEventListeners(bondSource, "sourceclose").length, 0)
         const closedBond = returnedBond.return?.()
         assert(closedBond)
 
