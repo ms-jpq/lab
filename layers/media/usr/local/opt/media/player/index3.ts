@@ -74,7 +74,7 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
     if (!needs_restart(playback)) {
       return false
     }
-    dispatch({ kind: "stream_started" })
+    dispatch({ type: "stream_started" })
     return true
   }
   const read_state = async () =>
@@ -155,7 +155,7 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
   }
 
   const open = async (): Promise<Mse | typeof STOP> => {
-    dispatch({ kind: "seek_requested", target: playback.target })
+    dispatch({ target: playback.target, type: "seek_requested" })
     const opened = await pull(sources.next())
     if (opened === STOP) {
       return STOP
@@ -189,8 +189,8 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
         buffer = await open()
       } catch (error) {
         console.error(error)
-        const interrupted = await retry(() =>
-          failure !== undefined || source_invalidated(playback, attempt),
+        const interrupted = await retry(
+          () => failure !== undefined || source_invalidated(playback, attempt),
         )
         if (interrupted === STOP) {
           return
@@ -203,7 +203,7 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
       if (buffer === STOP) {
         return
       }
-      dispatch({ kind: "stream_started" })
+      dispatch({ type: "stream_started" })
 
       request: for (;;) {
         let request_failure: { error: unknown } | undefined
@@ -268,12 +268,12 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
               if ((await pull(buffer.next(read.value.value))) === STOP) {
                 return
               }
-              dispatch({ kind: "buffered" })
+              dispatch({ type: "buffered" })
               if (restart_request()) {
                 continue request
               }
               if (request_full(playback)) {
-                dispatch({ kind: "request_advanced" })
+                dispatch({ type: "request_advanced" })
                 continue request
               }
             }
@@ -291,7 +291,7 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
 
         if (request_failure !== undefined) {
           console.error(request_failure.error)
-          dispatch({ kind: "request_advanced" })
+          dispatch({ type: "request_advanced" })
           if ((await retry(should_interrupt)) === STOP) {
             return
           }

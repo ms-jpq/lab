@@ -1,4 +1,4 @@
-import { abortion, events, merge } from "./util.ts"
+import { abortion, events, merge, type EventOf } from "./util.ts"
 
 const POSITION_TOLERANCE = 0.1
 const END_TOLERANCE = 0.5
@@ -11,6 +11,7 @@ type BufferedRange = readonly [start: number, end: number]
 type MediaSnapshot = Readonly<{
   buffered: readonly BufferedRange[]
   duration: number
+  error: MediaError | undefined
   metadata: boolean
   seeking: boolean
   time: number
@@ -30,11 +31,11 @@ export type PlaybackState = Readonly<{
 }>
 
 export type PlaybackAction =
-  | Readonly<{ kind: "buffered" }>
+  | Readonly<{ type: "buffered" }>
   | MediaAction
-  | Readonly<{ kind: "request_advanced" }>
-  | Readonly<{ kind: "seek_requested"; target: MediaTarget }>
-  | Readonly<{ kind: "stream_started" }>
+  | Readonly<{ type: "request_advanced" }>
+  | Readonly<{ target: MediaTarget; type: "seek_requested" }>
+  | Readonly<{ type: "stream_started" }>
 
 export type PlaybackEffects = Readonly<{
   failure?: MediaError
@@ -49,17 +50,6 @@ export type PlaybackTransition = readonly [
 
 export type MediaTarget = Readonly<{ position: number; restart: boolean }>
 
-export type MediaAction =
-  | Readonly<{ current: MediaSnapshot; kind: "media_ended" }>
-  | Readonly<{
-      current: MediaSnapshot
-      error: MediaError
-      kind: "media_failed"
-    }>
-  | Readonly<{ current: MediaSnapshot; kind: "media_observed" }>
-  | Readonly<{ current: MediaSnapshot; kind: "media_position_changed" }>
-  | Readonly<{ current: MediaSnapshot; kind: "media_time_changed" }>
-
 const EVENTS = [
   "canplay",
   "ended",
@@ -71,6 +61,16 @@ const EVENTS = [
   "timeupdate",
   "waiting",
 ] as const satisfies readonly (keyof HTMLMediaElementEventMap)[]
+
+type MediaEvent = (typeof EVENTS)[number]
+
+export type MediaAction<T extends MediaEvent = MediaEvent> = T extends T
+  ? Readonly<{
+      current: MediaSnapshot
+      event: EventOf<HTMLMediaElement, T>
+      type: T
+    }>
+  : never
 
 const playable_time = (duration: number, value: number): number => {
   const position = Number.isFinite(value) ? Math.max(0, value) : 0
@@ -181,6 +181,7 @@ const capture = (media: HTMLMediaElement): MediaSnapshot => ({
       [media.buffered.start(index), media.buffered.end(index)] as const,
   ),
   duration: Number(media.dataset["duration"]),
+  error: media.error ?? undefined,
   metadata: media.readyState >= media.HAVE_METADATA,
   seeking: media.seeking,
   time: media.currentTime,
@@ -196,7 +197,7 @@ const reduce_media = (
   let persist: number | undefined
   let seek: number | undefined
 
-  if (action.kind === "media_position_changed") {
+  if (action.type === "seeked" || action.type === "seeking") {
     const native = playable_time(current.duration, current.time)
     const position = buffered_position(current, native)
     const candidate = {
@@ -213,12 +214,13 @@ const reduce_media = (
     }
   }
 
-  if (action.kind === "media_ended") {
+  if (action.type === "ended") {
     persist = 0
   } else if (
     persist === undefined &&
-    (action.kind === "media_position_changed" ||
-      action.kind === "media_time_changed") &&
+    (action.type === "seeked" ||
+      action.type === "seeking" ||
+      action.type === "timeupdate") &&
     pending === undefined &&
     buffered_position(current, current.time) === current.time
   ) {
@@ -249,7 +251,12 @@ const reduce_media = (
       target,
     },
     {
-      failure: action.kind === "media_failed" ? action.error : undefined,
+      failure:
+        action.type === "error" &&
+        current.error !== undefined &&
+        current.error.code !== MediaError.MEDIA_ERR_ABORTED
+          ? current.error
+          : undefined,
       persist,
       seek,
     },
@@ -260,7 +267,7 @@ export const reduce = (
   state: PlaybackState,
   action: PlaybackAction,
 ): PlaybackTransition => {
-  switch (action.kind) {
+  switch (action.type) {
     case "buffered":
     case "request_advanced": {
       const frontier = stream_position(
@@ -272,7 +279,7 @@ export const reduce = (
           ...state.stream,
           frontier,
           start:
-            action.kind === "request_advanced" ? frontier : state.stream.start,
+            action.type === "request_advanced" ? frontier : state.stream.start,
         },
         state.target,
       )
@@ -290,39 +297,29 @@ export const reduce = (
     case "stream_started": {
       return [{ ...state, stream: start_stream(state.target) }, {}]
     }
-    case "media_ended":
-    case "media_failed":
-    case "media_observed":
-    case "media_position_changed":
-    case "media_time_changed": {
+    case "canplay":
+    case "ended":
+    case "error":
+    case "loadedmetadata":
+    case "progress":
+    case "seeked":
+    case "seeking":
+    case "timeupdate":
+    case "waiting": {
       return reduce_media(state, action)
     }
   }
 }
 
-const media_action = (media: HTMLMediaElement, event: Event): MediaAction => {
-  const current = capture(media)
-  switch (event.type) {
-    case "ended": {
-      return { current, kind: "media_ended" }
-    }
-    case "error": {
-      const error = media.error
-      return error !== null && error.code !== MediaError.MEDIA_ERR_ABORTED
-        ? { current, error, kind: "media_failed" }
-        : { current, kind: "media_observed" }
-    }
-    case "seeked":
-    case "seeking": {
-      return { current, kind: "media_position_changed" }
-    }
-    case "timeupdate": {
-      return { current, kind: "media_time_changed" }
-    }
-    default: {
-      return { current, kind: "media_observed" }
-    }
+const observations = async function* <const T extends MediaEvent>(
+  media: HTMLMediaElement,
+  signal: AbortSignal,
+  type: T,
+): AsyncIteratorObject<MediaAction<T>> {
+  for await (const event of events(signal, media, type)) {
+    yield { current: capture(media), event, type }
   }
+  return
 }
 
 export const media_events = async function* (
@@ -330,11 +327,11 @@ export const media_events = async function* (
   signal: AbortSignal,
 ): AsyncIteratorObject<MediaAction> {
   using a = abortion(signal)
-  const streams: AsyncIteratorObject<Event>[] = EVENTS.map((event) =>
-    events(a.signal, media, event),
+  const streams: AsyncIteratorObject<MediaAction>[] = EVENTS.map((type) =>
+    observations(media, a.signal, type),
   )
-  for await (const [, event] of merge(...streams)) {
-    yield media_action(media, event)
+  for await (const [, action] of merge(...streams)) {
+    yield action
   }
   return
 }
