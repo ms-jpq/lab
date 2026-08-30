@@ -11,6 +11,7 @@ export type EventOf<T, E extends EventName<T>> = Extract<EventMap<T>[E], Event>
 
 type Entry<T> = T extends AsyncIterator<infer U> ? [T, U] : never
 type Selection<T extends readonly AsyncIterator<unknown>[]> = Entry<T[number]>
+type Observation<S, E> = Readonly<{ current: S; type: E }>
 
 export const defer = <T>(f: () => T) => ({
   [Symbol.dispose]: f,
@@ -154,6 +155,51 @@ export const events = <
     })
 
     return readableIterator(stream)
+  })
+
+export const event_batches = <
+  const T extends EventTarget,
+  const E extends EventName<T>,
+  const S,
+>(
+  signal: AbortSignal,
+  target: T,
+  names: readonly E[],
+  capture: () => S,
+): AsyncIteratorObject<readonly Observation<S, E>[]> =>
+  closing(signal, async function* (signal) {
+    using a = abortion(signal)
+    const pending: Observation<S, E>[] = []
+    let fut = Promise.withResolvers()
+
+    a.signal.addEventListener("abort", () => fut.resolve(undefined), {
+      once: true,
+    })
+
+    for (const type of names) {
+      target.addEventListener(
+        type,
+        () => {
+          pending.push({ current: capture(), type })
+          fut.resolve(undefined)
+        },
+        { signal: a.signal },
+      )
+    }
+
+    while (!a.signal.aborted) {
+      if (pending.length === 0) {
+        await fut.promise
+      }
+      if (a.signal.aborted) {
+        return
+      }
+
+      const batch = pending.splice(0)
+      fut = Promise.withResolvers()
+      yield batch
+    }
+    return
   })
 
 const next = async <const T>(
