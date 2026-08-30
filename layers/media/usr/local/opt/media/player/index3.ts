@@ -21,9 +21,7 @@ import { abortion, delay, logical_stream } from "./util.ts"
 const BUFFER = { BEHIND: 30, LO: 45, HI: 60 }
 const RETRY_DELAY = 1_000
 
-const DONE = Symbol()
 const STOP = Symbol()
-const WAKE = Symbol()
 
 type Performed<T> =
   | typeof STOP
@@ -114,27 +112,19 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
     }
   }
 
-  type State = Readonly<{
-    kind: "state"
-    result: IteratorResult<MediaState>
-  }>
-  const read_state = async (): Promise<State> => ({
-    kind: "state",
-    result: await states.next(),
-  })
+  const read_state = async () =>
+    ({ kind: "state", result: await states.next() }) as const
   let pending_state = read_state()
-  const accept = ({ result }: State): boolean => {
+  const accept = (result: IteratorResult<MediaState>): boolean => {
     if (result.done) return false
     pending_state = read_state()
     observe(result.value)
     return true
   }
-  const wait = async (
-    until: () => boolean,
-  ): Promise<typeof STOP | typeof WAKE> => {
+  const wait = async (until: () => boolean): Promise<boolean> => {
     for (;;) {
-      if (!accept(await pending_state)) return STOP
-      if (until()) return WAKE
+      if (!accept((await pending_state).result)) return false
+      if (until()) return true
     }
   }
   const perform = async <T>(
@@ -157,7 +147,7 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
       if (selected.kind === "effect") {
         return { interrupted, value: selected.value }
       }
-      if (!accept(selected)) {
+      if (!accept(selected.result)) {
         if (!interrupted) interrupt()
         const completed = await effect
         if (completed.kind === "failure") {
@@ -173,61 +163,61 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
   }
   const pull = async <T, R>(
     promise: Promise<IteratorResult<T, R>>,
-    done: typeof DONE | typeof STOP = STOP,
-    until: () => boolean = () => false,
-    interrupt: () => void = () => undefined,
-  ): Promise<T | typeof DONE | typeof STOP | typeof WAKE> => {
-    const performed = await perform(promise, until, interrupt)
-    if (performed === STOP) return STOP
-    if (performed.interrupted) return WAKE
-    return performed.value.done ? done : performed.value.value
+  ): Promise<T | typeof STOP> => {
+    const performed = await perform(promise)
+    return performed === STOP || performed.value.done
+      ? STOP
+      : performed.value.value
+  }
+  const retry = async (
+    until: () => boolean,
+  ): Promise<boolean | typeof STOP> => {
+    using timer = abortion(lifetime.signal)
+    const performed = await perform(
+      delay(timer.signal, RETRY_DELAY),
+      until,
+      timer[Symbol.dispose],
+    )
+    return performed === STOP ? STOP : performed.interrupted
   }
 
-  const report = (error: unknown): void => console.error(error)
+  const open = async (): Promise<Mse | typeof STOP> => {
+    seek(target)
+    const opened = await pull(sources.next())
+    if (opened === STOP) return STOP
+
+    const [source, create_buffer] = opened
+    if (current.duration > 0) {
+      source.duration = current.duration
+    }
+    const buffer = create_buffer(lifetime.signal)
+    if ((await pull(buffer.next())) === STOP) return STOP
+
+    const error = take_failure()
+    if (error !== undefined) throw error
+    return buffer
+  }
+
   try {
     source: for (;;) {
-      if (lifetime.signal.aborted) return
       const media_failure = take_failure()
-      if (media_failure !== undefined) report(media_failure)
+      if (media_failure !== undefined) console.error(media_failure)
       const attempt = target
-      let buffer: Mse | undefined
-      let setup_failure: unknown | undefined
-      let setup_failed = false
+      let buffer: Mse | typeof STOP
       try {
-        const opening = sources.next()
-        seek(target)
-        const opened = await pull(opening)
-        if (opened === STOP || opened === WAKE || opened === DONE) return
-        const [source, create_buffer] = opened
-        const duration = Number(media.dataset["duration"])
-        if (duration > 0) {
-          source.duration = duration
-        }
-        const created = create_buffer(lifetime.signal)
-        buffer = created
-        if ((await pull(created.next())) === STOP) return
-        setup_failure = take_failure()
-        setup_failed = setup_failure !== undefined
+        buffer = await open()
       } catch (error) {
-        setup_failed = true
-        setup_failure = error
-      }
-      if (setup_failed) {
-        report(setup_failure)
-        using timer = abortion(lifetime.signal)
-        const retry = delay(timer.signal, RETRY_DELAY)
-        const waited = await perform(
-          retry,
+        console.error(error)
+        const interrupted = await retry(
           () => failure !== undefined || (target !== attempt && target.restart),
-          timer[Symbol.dispose],
         )
-        if (waited === STOP) return
-        if (waited.interrupted && !waited.value) {
+        if (interrupted === STOP) return
+        if (interrupted) {
           take_failure()
         }
         continue
       }
-      if (buffer === undefined) return
+      if (buffer === STOP) return
 
       let accepted = target
       let start = accepted.position
@@ -249,16 +239,18 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
       }
 
       request: for (;;) {
-        let source_failure: { error: unknown } | undefined
         let request_failure: unknown | undefined
         let frontier = stream_position(start)
         try {
           retarget(start)
           while (play_ahead(current, start) >= BUFFER.LO) {
-            const demanded = await wait(
-              () => changed(start) || play_ahead(current, start) < BUFFER.LO,
-            )
-            if (demanded === STOP) return
+            if (
+              !(await wait(
+                () => changed(start) || play_ahead(current, start) < BUFFER.LO,
+              ))
+            ) {
+              return
+            }
             if (retarget(start)) {
               continue request
             }
@@ -275,11 +267,12 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
             }
 
             for (;;) {
-              let read: Uint8Array | typeof DONE | typeof STOP | typeof WAKE
+              let read: Performed<
+                IteratorResult<Uint8Array<ArrayBuffer>, undefined>
+              >
               try {
-                read = await pull(
+                read = await perform(
                   request.next(),
-                  DONE,
                   () => changed(frontier),
                   owner[Symbol.dispose],
                 )
@@ -288,17 +281,16 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
                 break
               }
               if (read === STOP) return
-              if (read === WAKE) {
+              if (read.interrupted) {
                 continue request
               }
-              if (read === DONE) {
+              if (read.value.done) {
                 if ((await pull(buffer.next(undefined))) === STOP) return
-                const wake = await wait(() => changed(frontier))
-                if (wake === STOP) return
+                if (!(await wait(() => changed(frontier)))) return
                 continue request
               }
 
-              if ((await pull(buffer.next(read))) === STOP) return
+              if ((await pull(buffer.next(read.value.value))) === STOP) return
               frontier = stream_position(
                 buffered_end(current, frontier) ?? frontier,
               )
@@ -315,25 +307,15 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
             await request.return(undefined)
           }
         } catch (error) {
-          source_failure = { error }
-        }
-
-        if (source_failure !== undefined) {
           if ((await perform(Promise.resolve())) === STOP) return
-          report(take_failure() ?? source_failure.error)
+          console.error(take_failure() ?? error)
           continue source
         }
 
         if (request_failure !== undefined) {
-          report(request_failure)
+          console.error(request_failure)
           start = stream_position(buffered_end(current, frontier) ?? frontier)
-          using timer = abortion(lifetime.signal)
-          const waited = await perform(
-            delay(timer.signal, RETRY_DELAY),
-            () => changed(start),
-            timer[Symbol.dispose],
-          )
-          if (waited === STOP) return
+          if ((await retry(() => changed(start))) === STOP) return
         }
       }
     }
