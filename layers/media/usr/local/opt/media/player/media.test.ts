@@ -2,7 +2,7 @@ import { deepEqual, ok } from "node:assert/strict"
 import { getEventListeners } from "node:events"
 import nodeTest from "node:test"
 
-import { media_states } from "./media.ts"
+import { media_states } from "./reducer.ts"
 
 const options = { concurrency: true, timeout: 2_000 }
 
