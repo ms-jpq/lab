@@ -103,10 +103,11 @@ export const main = async (
     using a = abortion()
     await once(a.signal, window, "pageshow")
 
+    const hidden = once(a.signal, window, "pagehide")
     await Promise.race([
-      once(a.signal, window, "pagehide"),
+      hidden,
       play_media(a.signal),
-      play_subtitle(a.signal),
+      play_subtitle(a.signal).then(() => hidden),
     ])
   }
 }

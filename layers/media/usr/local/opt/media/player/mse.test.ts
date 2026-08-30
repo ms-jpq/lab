@@ -511,8 +511,8 @@ const cases = [
             { done: true, value: undefined },
           ],
         )
-        deepEqual(current.revoked, ["blob:test:1"])
-        deepEqual(current.state, { loads: 1, removals: 1 })
+        deepEqual(current.revoked, ["blob:test:0", "blob:test:1"])
+        deepEqual(current.state, { loads: 1, removals: 3 })
         const returnedBondOwner = new AbortController()
         const returnedBond = bond(current.media, returnedBondOwner.signal)
         const returnedBondPending = returnedBond.next()
@@ -557,8 +557,12 @@ const cases = [
           await Promise.race([closedSources, setImmediate("pending")]),
           { done: true, value: undefined },
         )
-        deepEqual(current.revoked, ["blob:test:1", "blob:test:3"])
-        deepEqual(current.state, { loads: 2, removals: 2 })
+        deepEqual(current.revoked, [
+          "blob:test:0",
+          "blob:test:1",
+          "blob:test:3",
+        ])
+        deepEqual(current.state, { loads: 2, removals: 4 })
       } finally {
         current.restore()
       }
