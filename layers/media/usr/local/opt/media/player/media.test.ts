@@ -64,6 +64,10 @@ const cases = [
         media as unknown as HTMLMediaElement,
         owner.signal,
       )
+      deepEqual(await states.next(), {
+        done: false,
+        value: { type: "source_opened" },
+      })
       const pending = states.next()
       const closed = states.return?.()
       ok(closed)
@@ -94,6 +98,10 @@ const cases = [
         media as unknown as HTMLMediaElement,
         owner.signal,
       )
+      deepEqual(await states.next(), {
+        done: false,
+        value: { type: "source_opened" },
+      })
       const pending = states.next()
       media.dispatchEvent(new Event("progress"))
       const received = await pending
@@ -119,6 +127,10 @@ const cases = [
         media as unknown as HTMLMediaElement,
         owner.signal,
       )
+      deepEqual(await states.next(), {
+        done: false,
+        value: { type: "source_opened" },
+      })
       const pending = states.next()
 
       media.buffered.values.push([10, 20])
@@ -126,12 +138,7 @@ const cases = [
 
       const observed = await pending
       ok(!observed.done)
-      const [initial, transition] = playback_transitions(
-        media as unknown as HTMLMediaElement,
-        0,
-      )
-      const [state] = transition(initial, observed.value)
-      const { current: snapshot } = state
+      const { current: snapshot } = observed.value
       media.buffered.values[0]?.splice(0, 2, 30, 40)
       deepEqual(snapshot.buffered, [[10, 20]])
       await states.return?.()
@@ -143,14 +150,14 @@ const cases = [
       const media = new Media()
       media.readyState = media.HAVE_METADATA
       const element = media as unknown as HTMLMediaElement
-      const [initial, transition] = playback_transitions(element, 40)
+      const dispatch = playback_transitions(element, 40)
+      const effects = dispatch({ type: "source_opened" })
 
-      const [state, effects] = transition(initial, { type: "source_opened" })
-
-      deepEqual(effects, { seek: 40 })
+      deepEqual(effects, {
+        request: { frontier: 40, needed: true, position: 40 },
+        seek: 40,
+      })
       deepEqual(media.currentTime, 0)
-      deepEqual(initial.pending_seek, undefined)
-      deepEqual(state.pending_seek, 40)
     },
   },
 ] as const

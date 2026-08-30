@@ -5,6 +5,7 @@ const POSITION = `media:position:${location.pathname}`
 const PAGE = crypto.randomUUID()
 
 export const media = document.querySelector("video, audio") as HTMLMediaElement
+export const mime_type = media.dataset["mseType"] as string
 const subtitle = document.querySelector<HTMLTrackElement>("#subtitle")
 const form = document.querySelector("form") as HTMLFormElement
 const time_input = form.elements.namedItem("t") as HTMLInputElement
@@ -93,7 +94,7 @@ const play_subtitle = async (signal: AbortSignal): Promise<void> => {
 }
 
 export const main = async (
-  play_media: (signal: AbortSignal) => Promise<undefined>,
+  play_media: (signal: AbortSignal) => Promise<undefined | void>,
 ): Promise<never> => {
   form.onsubmit = submit
   persist_position(initial_position)
