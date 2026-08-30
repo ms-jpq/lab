@@ -5,6 +5,7 @@ import nodeTest, { type TestContext } from "node:test"
 import { setImmediate } from "node:timers/promises"
 
 import {
+  closing,
   delay,
   events,
   logical_stream,
@@ -67,6 +68,66 @@ class OnceTarget extends EventTarget {
 }
 
 const cases = [
+  {
+    name: "closing aborts before returning its source",
+    run: async () => {
+      const owner = new AbortController()
+      const sequence: string[] = []
+      const values = closing(owner.signal, async function* (signal) {
+        const aborted = Promise.withResolvers<void>()
+        signal.addEventListener(
+          "abort",
+          () => {
+            sequence.push("abort")
+            aborted.resolve()
+          },
+          { once: true },
+        )
+        try {
+          yield 1
+        } finally {
+          sequence.push("return")
+          await aborted.promise
+        }
+        return
+      })
+
+      deepEqual(await values.next(), { done: false, value: 1 })
+      const closed = values.return?.(undefined)
+      assert(closed)
+      deepEqual(await closed, {
+        done: true,
+        value: undefined,
+      })
+      deepEqual(sequence, ["abort", "return"])
+    },
+  },
+  {
+    name: "closing interrupts a pending source read before returning",
+    run: async () => {
+      const owner = new AbortController()
+      const values = closing(owner.signal, async function* (signal) {
+        await new Promise<void>((resolve) => {
+          signal.addEventListener("abort", () => resolve(), { once: true })
+        })
+        return
+      })
+      const pending = values.next()
+      const closed = values.return?.(undefined)
+      assert(closed)
+
+      deepEqual(
+        await Promise.race([
+          Promise.all([pending, closed]),
+          setImmediate("pending"),
+        ]),
+        [
+          { done: true, value: undefined },
+          { done: true, value: undefined },
+        ],
+      )
+    },
+  },
   {
     name: "for-await returns before scoped abort disposal",
     run: async () => {
@@ -253,10 +314,10 @@ const cases = [
       deepEqual((await pending).done, false)
       const closed = values.return?.(undefined)
       assert(closed)
-      deepEqual(
-        await Promise.race([closed, setImmediate("pending")]),
-        { done: true, value: undefined },
-      )
+      deepEqual(await Promise.race([closed, setImmediate("pending")]), {
+        done: true,
+        value: undefined,
+      })
       const deliveries = target.deliveries
 
       owner.abort()
@@ -315,20 +376,32 @@ const cases = [
       }),
   },
   {
-    name: "return from a logical stream aborts its request before settling",
+    name: "return from a logical stream aborts before cancelling its body",
     run: async (context: TestContext) =>
       withFetch(context, async () => {
-        let requestSignal: AbortSignal | undefined
-        let cancellations = 0
+        const owner = new AbortController()
+        const aborted = Promise.withResolvers<void>()
+        const sequence: string[] = []
         context.mock.method(
           globalThis,
           "fetch",
           async (_input: string | URL | Request, init?: RequestInit) => {
-            requestSignal = init?.signal ?? undefined
+            const requestSignal = init?.signal
+            assert(requestSignal)
+            requestSignal.addEventListener(
+              "abort",
+              () => {
+                sequence.push("abort")
+                aborted.resolve()
+              },
+              { once: true },
+            )
             return new Response(
               new ReadableStream<Uint8Array>({
-                cancel: () => {
-                  cancellations += 1
+                cancel: async () => {
+                  sequence.push("cancel")
+                  await aborted.promise
+                  sequence.push("cancelled")
                 },
                 start: (controller) => {
                   controller.enqueue(new Uint8Array([1]))
@@ -338,22 +411,31 @@ const cases = [
           },
         )
         const values = logical_stream(
-          new Request("https://example.test/stream"),
+          new Request("https://example.test/stream", {
+            signal: owner.signal,
+          }),
         )
 
         deepEqual(await values.next(), {
           done: false,
           value: new Uint8Array([1]),
         })
-        deepEqual(
-          await Promise.race([
-            values.return(undefined),
+        const closed = values.return(undefined)
+        const observed = {
+          result: await Promise.race([
+            closed.then(() => "closed"),
             setImmediate("pending"),
           ]),
-          { done: true, value: undefined },
-        )
-        assert(requestSignal?.aborted)
-        deepEqual(cancellations, 1)
+          sequence: [...sequence],
+        }
+
+        owner.abort()
+        await closed
+
+        deepEqual(observed, {
+          result: "closed",
+          sequence: ["abort", "cancel", "cancelled"],
+        })
       }),
   },
   {

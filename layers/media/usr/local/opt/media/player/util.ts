@@ -24,22 +24,39 @@ export const abortion = (...parents: AbortSignal[]) => {
   return { signal, [Symbol.dispose]: () => controller.abort() }
 }
 
-export const delay = (signal: AbortSignal, ms: number): Promise<boolean> => {
-  if (signal.aborted) {
-    return Promise.resolve(false)
-  }
-  const { promise, resolve } = Promise.withResolvers<boolean>()
-  const cancelled = () => {
-    clearTimeout(timeout)
-    resolve(false)
-  }
-  const timeout = setTimeout(() => {
-    signal.removeEventListener("abort", cancelled)
-    resolve(true)
-  }, ms)
+export const closing = <const T, const R = undefined, const N = void>(
+  signal: AbortSignal,
+  open: (signal: AbortSignal) => AsyncIteratorObject<T, R, N>,
+): AsyncIteratorObject<T, R, N> => {
+  const a = abortion(signal)
 
-  signal.addEventListener("abort", cancelled, { once: true })
-  return promise
+  const aiter = (async function* (): AsyncGenerator<T, R, N> {
+    using _ = a
+    return yield* open(a.signal)
+  })()
+
+  const close = (value?: R | PromiseLike<R>) => {
+    a[Symbol.dispose]()
+    return aiter.return(value as R)
+  }
+
+  return Object.assign(aiter, { [Symbol.asyncDispose]: close, return: close })
+}
+
+export const delay = async (
+  signal: AbortSignal,
+  ms: number,
+): Promise<boolean> => {
+  if (signal.aborted) {
+    return false
+  }
+  using a = abortion(signal)
+  using _ = defer(() => clearTimeout(timeout))
+  const fut = Promise.withResolvers<boolean>()
+  const timeout = setTimeout(() => fut.resolve(true), ms)
+  a.signal.addEventListener("abort", () => fut.resolve(false), { once: true })
+
+  return await fut.promise
 }
 
 export const once = async <
@@ -91,49 +108,47 @@ export const readableIterator = async function* <const T>(
   }
 }
 
-export const events = async function* <
+export const events = <
   const T extends EventTarget,
   const E extends EventName<T>,
 >(
   signal: AbortSignal,
   target: T,
   event: E,
-): AsyncIteratorObject<EventOf<T, E>> {
-  using a = abortion(signal)
-  let closed = false
-
-  const stream = new ReadableStream<EventOf<T, E>>({
-    start: (controller) => {
-      if (a.signal.aborted) {
-        controller.close()
-        return
-      }
-
-      a.signal.addEventListener(
-        "abort",
-        () => {
-          if (closed) {
-            return
-          }
-          closed = true
+): AsyncIteratorObject<EventOf<T, E>> =>
+  closing(signal, (signal) => {
+    let closed = false
+    const stream = new ReadableStream<EventOf<T, E>>({
+      start: (controller) => {
+        if (signal.aborted) {
           controller.close()
-        },
-        { once: true },
-      )
-      target.addEventListener(
-        event,
-        (received) => controller.enqueue(received as EventOf<T, E>),
-        { signal: a.signal },
-      )
-    },
-    cancel: () => {
-      closed = true
-    },
-  })
+          return
+        }
 
-  yield* readableIterator(stream)
-  return
-}
+        signal.addEventListener(
+          "abort",
+          () => {
+            if (closed) {
+              return
+            }
+            closed = true
+            controller.close()
+          },
+          { once: true },
+        )
+        target.addEventListener(
+          event,
+          (received) => controller.enqueue(received as EventOf<T, E>),
+          { signal },
+        )
+      },
+      cancel: () => {
+        closed = true
+      },
+    })
+
+    return readableIterator(stream)
+  })
 
 const next = async <const T>(
   aiter: AsyncIterator<T>,
@@ -173,23 +188,23 @@ export const merge = async function* <
   return
 }
 
-const stream = async function* (
+const stream = (
   request: Request,
-): AsyncIteratorObject<Uint8Array<ArrayBuffer>> {
-  using a = abortion(request.signal)
-  const response = await fetch(request, { signal: a.signal })
+): AsyncIteratorObject<Uint8Array<ArrayBuffer>> =>
+  closing(request.signal, async function* (signal) {
+    const response = await fetch(request, { signal })
 
-  if (!response.ok) {
-    throw new Error([response.status, response.statusText].join(" "), {
-      cause: response,
-    })
-  }
+    if (!response.ok) {
+      throw new Error([response.status, response.statusText].join(" "), {
+        cause: response,
+      })
+    }
 
-  if (response.body) {
-    yield* readableIterator(response.body)
-  }
-  return
-}
+    if (response.body) {
+      yield* readableIterator(response.body)
+    }
+    return
+  })
 
 export const logical_stream = async function* (
   request: Request,
