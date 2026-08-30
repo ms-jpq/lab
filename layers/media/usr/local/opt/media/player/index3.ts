@@ -29,7 +29,7 @@ type Performed<T> =
   | typeof STOP
   | Readonly<{
       interrupted: boolean
-      result: PromiseSettledResult<T>
+      value: T
     }>
 
 const stream_position = (value: number): number =>
@@ -143,28 +143,26 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
     interrupt: () => void = () => undefined,
   ): Promise<Performed<T>> => {
     const effect = promise.then(
-      (value) =>
-        ({
-          kind: "effect",
-          result: { status: "fulfilled", value },
-        }) as const,
-      (reason) =>
-        ({
-          kind: "effect",
-          result: { status: "rejected", reason },
-        }) as const,
+      (value) => ({ kind: "effect", value }) as const,
+      (error) => ({ kind: "failure", error }) as const,
     )
     let interrupted = false
     for (;;) {
       const selected = await Promise.race(
         interrupted ? [effect, pending_state] : [pending_state, effect],
       )
+      if (selected.kind === "failure") {
+        throw selected.error
+      }
       if (selected.kind === "effect") {
-        return { interrupted, result: selected.result }
+        return { interrupted, value: selected.value }
       }
       if (!accept(selected)) {
         if (!interrupted) interrupt()
-        await effect
+        const completed = await effect
+        if (completed.kind === "failure") {
+          throw completed.error
+        }
         return STOP
       }
       if (!interrupted && until()) {
@@ -182,8 +180,7 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
     const performed = await perform(promise, until, interrupt)
     if (performed === STOP) return STOP
     if (performed.interrupted) return WAKE
-    if (performed.result.status === "rejected") throw performed.result.reason
-    return performed.result.value.done ? done : performed.result.value.value
+    return performed.value.done ? done : performed.value.value
   }
 
   const report = (error: unknown): void => console.error(error)
@@ -225,8 +222,7 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
           timer[Symbol.dispose],
         )
         if (waited === STOP) return
-        if (waited.result.status === "rejected") throw waited.result.reason
-        if (waited.interrupted && !waited.result.value) {
+        if (waited.interrupted && !waited.value) {
           take_failure()
         }
         continue
@@ -338,9 +334,6 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
             timer[Symbol.dispose],
           )
           if (waited === STOP) return
-          if (waited.result.status === "rejected") {
-            throw waited.result.reason
-          }
         }
       }
     }
