@@ -2,21 +2,14 @@ import { playable_time } from "./media.ts"
 import type { MediaAction, MediaSnapshot } from "./media.ts"
 import { never } from "./util.ts"
 
-type PlaybackRequest = Readonly<{
-  frontier: number
-  position: number
-}>
+type PlaybackRequest = Readonly<{ frontier: number; position: number }>
 
 type BufferEffect =
   | Readonly<{ bytes: Uint8Array<ArrayBuffer>; type: "append" }>
   | Readonly<{ type: "end" }>
 
 type PlaybackControl =
-  | Readonly<{
-      error?: unknown
-      request: PlaybackRequest
-      type: "request"
-    }>
+  | Readonly<{ error?: unknown; request: PlaybackRequest; type: "request" }>
   | Readonly<{ error: unknown; type: "rebuild" }>
 
 type PlaybackState = Readonly<{
@@ -48,26 +41,6 @@ type PlaybackTransition = readonly [
 const POSITION_TOLERANCE = 0.1
 const BUFFER_LOW = 45
 const BUFFER_HIGH = 60
-
-const merge_control = (
-  current: PlaybackControl | undefined,
-  produced: PlaybackControl | undefined,
-): PlaybackControl | undefined => {
-  if (current === undefined) {
-    return produced
-  }
-
-  switch (current.type) {
-    case "rebuild": {
-      return current
-    }
-    case "request": {
-      return produced ?? current
-    }
-    default:
-      return never(current)
-  }
-}
 
 const aligned = (left: number, right: number): boolean =>
   Math.abs(left - right) <= POSITION_TOLERANCE
@@ -112,11 +85,6 @@ const request_at = (position: number): PlaybackRequest => ({
   position,
 })
 
-const request_needed = (
-  current: MediaSnapshot,
-  request: PlaybackRequest,
-): boolean => play_ahead(current, request.position) < BUFFER_LOW
-
 const reconcile_seek = (
   current: MediaSnapshot,
   pending_seek: number | undefined,
@@ -144,12 +112,30 @@ const project_request = (
   const frontier = stream_position(
     buffered_end(current, request.frontier) ?? request.frontier,
   )
-  const advance =
-    !aligned(frontier, request.position) &&
-    play_ahead(current, frontier) >= BUFFER_HIGH
+  return {
+    frontier,
+    position:
+      !aligned(frontier, request.position) &&
+      play_ahead(current, frontier) >= BUFFER_HIGH
+        ? frontier
+        : request.position,
+  }
+}
 
-  const position = advance ? frontier : request.position
-  return { frontier, position }
+const request_if_needed = (
+  state: PlaybackState,
+  current: MediaSnapshot,
+): PlaybackTransition => {
+  if (
+    state.requesting ||
+    play_ahead(current, state.request.position) >= BUFFER_LOW
+  ) {
+    return [state, {}]
+  }
+  return [
+    { ...state, requesting: true },
+    { control: { request: state.request, type: "request" } },
+  ]
 }
 
 const observe = (
@@ -158,22 +144,18 @@ const observe = (
 ): PlaybackTransition => {
   const [pending_seek, seek] = reconcile_seek(current, state.pending_seek)
   const request = project_request(current, state.request)
-  const restart = !aligned(request.position, state.request.position)
-  const requesting = restart ? false : state.requesting
-  const start = !requesting && request_needed(current, request)
-
-  return [
+  const [next, effects] = request_if_needed(
     {
       ...state,
       pending_seek,
       request,
-      requesting: requesting || start,
+      requesting: aligned(request.position, state.request.position)
+        ? state.requesting
+        : false,
     },
-    {
-      ...(start ? { control: { request, type: "request" } as const } : {}),
-      ...(seek === undefined ? {} : { seek }),
-    },
-  ]
+    current,
+  )
+  return [next, seek === undefined ? effects : { ...effects, seek }]
 }
 
 const reduce = (
@@ -185,19 +167,10 @@ const reduce = (
       return [state, { buffer: { bytes: action.bytes, type: "append" } }]
     }
     case "request_failed": {
-      const request = {
-        ...state.request,
-        position: state.request.frontier,
-      }
+      const request = request_at(state.request.frontier)
       return [
         { ...state, request, requesting: true },
-        {
-          control: {
-            error: action.error,
-            request,
-            type: "request",
-          },
-        },
+        { control: { error: action.error, request, type: "request" } },
       ]
     }
     case "request_finished": {
@@ -223,22 +196,8 @@ const reduce = (
       return observe(state, action.current)
     }
     case "ended": {
-      const start =
-        !state.requesting && request_needed(action.current, state.request)
-      return [
-        { ...state, requesting: state.requesting || start },
-        {
-          persist: 0,
-          ...(start
-            ? {
-                control: {
-                  request: state.request,
-                  type: "request" as const,
-                },
-              }
-            : {}),
-        },
-      ]
+      const [next, effects] = request_if_needed(state, action.current)
+      return [next, { ...effects, persist: 0 }]
     }
     case "timeupdate": {
       const { current } = action
@@ -247,48 +206,29 @@ const reduce = (
           ? buffered_position(current, current.time)
           : undefined
       const [next, effects] = observe(state, current)
-      return [
-        next,
-        {
-          ...effects,
-          ...(persist === undefined ? {} : { persist }),
-        },
-      ]
+      return [next, persist === undefined ? effects : { ...effects, persist }]
     }
     case "error": {
       const { current } = action
-      const start = !state.requesting && request_needed(current, state.request)
-      const { error } = current
-      const failure =
-        error !== undefined && error.code !== MediaError.MEDIA_ERR_ABORTED
-          ? error
-          : undefined
-      return [
-        { ...state, requesting: state.requesting || start },
-        failure === undefined
-          ? {
-              ...(start
-                ? {
-                    control: {
-                      request: state.request,
-                      type: "request" as const,
-                    },
-                  }
-                : {}),
-            }
-          : { control: { error: failure, type: "rebuild" } },
-      ]
+      const [next, effects] = request_if_needed(state, current)
+      if (
+        current.error === undefined ||
+        current.error.code === MediaError.MEDIA_ERR_ABORTED
+      ) {
+        return [next, effects]
+      }
+      return [next, { control: { error: current.error, type: "rebuild" } }]
     }
     case "seeking": {
       const { current } = action
       const native = playable_time(current.duration, current.time)
       const buffered = buffered_position(current, native)
       const target = buffered ?? native
-      const external =
-        state.pending_seek === undefined ||
-        !aligned(current.time, state.pending_seek)
 
-      if (!external) {
+      if (
+        state.pending_seek !== undefined &&
+        aligned(current.time, state.pending_seek)
+      ) {
         return observe(state, current)
       }
 
@@ -308,7 +248,7 @@ const reduce = (
       return [next, { ...effects, persist: target }]
     }
     default:
-      never(action)
+      return never(action)
   }
 }
 
@@ -329,11 +269,12 @@ export const playback_transitions = (
     for (const current of actions) {
       const [next, produced] = reduce(state, current)
       state = next
-      const control = merge_control(effects.control, produced.control)
       effects = {
         ...effects,
         ...produced,
-        ...(control === undefined ? {} : { control }),
+        ...(effects.control?.type === "rebuild"
+          ? { control: effects.control }
+          : {}),
       }
     }
     return effects
