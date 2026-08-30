@@ -3,9 +3,8 @@ import {
   media,
   page_position,
   persist_position,
-  run_playback,
   source_url,
-  start_page,
+  main,
 } from "./page.ts"
 import {
   initial_playback,
@@ -311,4 +310,4 @@ export const decide = async (signal: AbortSignal): Promise<void> => {
   }
 }
 
-void start_page((signal) => run_playback(signal, decide)).catch(console.error)
+void main((signal) => run_playback(signal, decide)).catch(console.error)
