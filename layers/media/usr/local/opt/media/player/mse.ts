@@ -169,9 +169,7 @@ export const media_sources = async function* ({
     media.load()
   })
 
-  for await (const source of closing(a.signal, (signal) =>
-    bond(media, signal),
-  )) {
+  for await (const source of closing(a.signal, bond.bind(undefined, media))) {
     yield [
       source,
       (signal) =>

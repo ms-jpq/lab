@@ -1,4 +1,4 @@
-import { abortion, events, merge } from "./util.ts"
+import { closing, events, merge } from "./util.ts"
 
 type BufferedRange = readonly [start: number, end: number]
 
@@ -319,28 +319,24 @@ export const reduce = (
   }
 }
 
-export const media_events = async function* (
+export const media_events = (
   media: HTMLMediaElement,
   signal: AbortSignal,
-): AsyncIteratorObject<MediaAction> {
-  using a = abortion(signal)
+): AsyncIteratorObject<MediaAction> =>
+  closing(signal, (signal) => {
+    const streams = EVENTS.map((type) =>
+      (async function* () {
+        for await (const _ of events(signal, media, type)) {
+          yield { current: capture(media), type }
+        }
+        return
+      })(),
+    )
 
-  const streams = EVENTS.map((type) =>
-    (async function* () {
-      for await (const _ of events(a.signal, media, type)) {
-        yield { current: capture(media), type }
+    return (async function* () {
+      for await (const [, action] of merge(...streams)) {
+        yield action
       }
-    })(),
-  )
-
-  await using stream = merge(...streams)
-  using _ = a
-
-  for (;;) {
-    const { done, value } = await stream.next()
-    if (done) {
       return
-    }
-    yield value[1]
-  }
-}
+    })()
+  })

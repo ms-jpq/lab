@@ -70,6 +70,7 @@ const play_subtitle = async (signal: AbortSignal): Promise<void> => {
   if (!subtitle || signal.aborted) {
     return
   }
+
   for (;;) {
     const event = await (async () => {
       using attempt = abortion(signal)
@@ -80,7 +81,8 @@ const play_subtitle = async (signal: AbortSignal): Promise<void> => {
       subtitle.src = source_url(subtitle, 0)
       return await loaded
     })()
-    if (event === undefined || event.type === "load") {
+
+    if (event?.type !== "error") {
       return
     }
     console.error(event)

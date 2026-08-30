@@ -30,14 +30,15 @@ export const closing = <const T, const R = undefined, const N = void>(
 ): AsyncIteratorObject<T, R, N> => {
   const a = abortion(signal)
 
-  const aiter = (async function* (): AsyncGenerator<T, R, N> {
+  const aiter = (async function* () {
     using _ = a
     return yield* open(a.signal)
   })()
+  const bound = aiter.return?.bind(aiter)
 
-  const close = (value?: R | PromiseLike<R>) => {
+  const close = async (value: R | PromiseLike<R>) => {
     a[Symbol.dispose]()
-    return aiter.return(value as R)
+    return bound?.(await value)
   }
 
   return Object.assign(aiter, { [Symbol.asyncDispose]: close, return: close })
