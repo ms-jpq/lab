@@ -20,16 +20,20 @@ import {
 } from "./reducer.ts"
 import { abortion, delay, logical_stream } from "./util.ts"
 
-const RETRY_DELAY = 1_000
-
-const STOP = Symbol()
+type Stop = symbol
 
 type Performed<T> =
-  | typeof STOP
+  | Stop
   | Readonly<{
       interrupted: boolean
       value: T
     }>
+
+const RETRY_DELAY = 1_000
+
+const STOP: Stop = Symbol()
+
+const stopped = (value: unknown): value is Stop => value === STOP
 
 export const play_media = async (signal: AbortSignal): Promise<void> => {
   using lifetime = abortion(signal)
@@ -138,27 +142,25 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
   }
   const pull = async <T, R>(
     promise: Promise<IteratorResult<T, R>>,
-  ): Promise<T | typeof STOP> => {
+  ): Promise<T | Stop> => {
     const performed = await perform(promise)
-    return performed === STOP || performed.value.done
+    return stopped(performed) || performed.value.done
       ? STOP
       : performed.value.value
   }
-  const retry = async (
-    until: () => boolean,
-  ): Promise<boolean | typeof STOP> => {
+  const retry = async (until: () => boolean): Promise<boolean | Stop> => {
     using timer = abortion(lifetime.signal)
     const performed = await perform(
       delay(timer.signal, RETRY_DELAY),
       until,
       timer[Symbol.dispose],
     )
-    return performed === STOP ? STOP : performed.interrupted
+    return stopped(performed) ? STOP : performed.interrupted
   }
 
-  const open = async (): Promise<Mse | typeof STOP> => {
+  const open = async (): Promise<Mse | Stop> => {
     const opened = await pull(sources.next())
-    if (opened === STOP) {
+    if (stopped(opened)) {
       return STOP
     }
 
@@ -167,7 +169,7 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
       source.duration = playback.current.duration
     }
     const buffer = create_buffer(lifetime.signal)
-    if ((await pull(buffer.next())) === STOP) {
+    if (stopped(await pull(buffer.next()))) {
       return STOP
     }
 
@@ -185,7 +187,7 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
         console.error(media_failure)
       }
       const attempt = playback.target
-      let buffer: Mse | typeof STOP
+      let buffer: Mse | Stop
       try {
         buffer = await open()
       } catch (error) {
@@ -194,7 +196,7 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
           () =>
             interruption !== undefined || source_invalidated(playback, attempt),
         )
-        if (interrupted === STOP) {
+        if (stopped(interrupted)) {
           return
         }
         if (interrupted) {
@@ -202,7 +204,7 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
         }
         continue
       }
-      if (buffer === STOP) {
+      if (stopped(buffer)) {
         return
       }
       dispatch({ type: "source_opened" })
@@ -231,7 +233,7 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
             new Request(source_url(media, start), { signal: owner.signal }),
           )
           try {
-            if ((await pull(buffer.next(playback.stream.frontier))) === STOP) {
+            if (stopped(await pull(buffer.next(playback.stream.frontier)))) {
               return
             }
             if (restart_request()) {
@@ -250,7 +252,7 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
                 request_failure = { error }
                 break
               }
-              if (read === STOP) {
+              if (stopped(read)) {
                 return
               }
               if (read.interrupted) {
@@ -258,7 +260,7 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
                 continue request
               }
               if (read.value.done) {
-                if ((await pull(buffer.next(undefined))) === STOP) {
+                if (stopped(await pull(buffer.next(undefined)))) {
                   return
                 }
                 if (!(await wait(should_interrupt))) {
@@ -267,7 +269,7 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
                 continue request
               }
 
-              if ((await pull(buffer.next(read.value.value))) === STOP) {
+              if (stopped(await pull(buffer.next(read.value.value)))) {
                 return
               }
               if (restart_request()) {
@@ -282,7 +284,7 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
             await request.return(undefined)
           }
         } catch (error) {
-          if ((await perform(Promise.resolve())) === STOP) {
+          if (stopped(await perform(Promise.resolve()))) {
             return
           }
           console.error(take_failure() ?? error)
@@ -292,7 +294,7 @@ export const play_media = async (signal: AbortSignal): Promise<void> => {
         if (request_failure !== undefined) {
           console.error(request_failure.error)
           dispatch({ type: "request_failed" })
-          if ((await retry(should_interrupt)) === STOP) {
+          if (stopped(await retry(should_interrupt))) {
             return
           }
         }

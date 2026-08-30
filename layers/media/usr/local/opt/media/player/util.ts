@@ -1,3 +1,17 @@
+type EventMap<T> = {
+  [K in keyof T as K extends `on${infer E}` ? E : never]: NonNullable<
+    T[K]
+  > extends (event: infer R) => unknown
+    ? R
+    : never
+}
+
+type EventName<T> = keyof EventMap<T> & string
+export type EventOf<T, E extends EventName<T>> = Extract<EventMap<T>[E], Event>
+
+type Entry<T> = T extends AsyncIterator<infer U> ? [T, U] : never
+type Selection<T extends readonly AsyncIterator<unknown>[]> = Entry<T[number]>
+
 export const defer = <T>(f: () => T) => ({
   [Symbol.dispose]: f,
   [Symbol.asyncDispose]: f,
@@ -27,17 +41,6 @@ export const delay = (signal: AbortSignal, ms: number): Promise<boolean> => {
   signal.addEventListener("abort", cancelled, { once: true })
   return promise
 }
-
-type EventMap<T> = {
-  [K in keyof T as K extends `on${infer E}` ? E : never]: NonNullable<
-    T[K]
-  > extends (event: infer R) => unknown
-    ? R
-    : never
-}
-
-type EventName<T> = keyof EventMap<T> & string
-export type EventOf<T, E extends EventName<T>> = Extract<EventMap<T>[E], Event>
 
 export const once = <
   const T extends EventTarget,
@@ -159,9 +162,6 @@ const close = async <T>(aiters: Iterable<AsyncIterator<T>>): Promise<void> => {
     throw new AggregateError(errors)
   }
 }
-
-type Entry<T> = T extends AsyncIterator<infer U> ? [T, U] : never
-type Selection<T extends readonly AsyncIterator<unknown>[]> = Entry<T[number]>
 
 export const merge = async function* <
   const T extends readonly AsyncIterator<unknown>[],

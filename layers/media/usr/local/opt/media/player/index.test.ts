@@ -11,12 +11,6 @@ import { stripTypeScriptTypes } from "node:module"
 import nodeTest, { type TestContext } from "node:test"
 import vm from "node:vm"
 
-const PLAYER_INDEX = process.env["PLAYER_INDEX"] ?? "index.ts"
-const PLAYER = ["util.ts", "mse.ts", "reducer.ts", "page.ts", PLAYER_INDEX].map(
-  (name) => new URL(name, import.meta.url),
-)
-const options = { concurrency: true, timeout: 2_000 }
-
 type Range = [number, number]
 type MutableTimeRanges = {
   ranges: Range[]
@@ -113,13 +107,20 @@ type PlayerContext = vm.Context & {
   URL: typeof URL
 }
 
+type TestBody = (context: TestContext) => void | Promise<void>
+type TestCase = { name: string; run: TestBody }
+
+const PLAYER_INDEX = process.env["PLAYER_INDEX"] ?? "index.ts"
+const PLAYER = ["util.ts", "mse.ts", "reducer.ts", "page.ts", PLAYER_INDEX].map(
+  (name) => new URL(name, import.meta.url),
+)
+const options = { concurrency: true, timeout: 2_000 }
+
 class TestRequest extends Request {
   override toString(): string {
     return this.url
   }
 }
-type TestBody = (context: TestContext) => void | Promise<void>
-type TestCase = { name: string; run: TestBody }
 
 const cases: TestCase[] = []
 const test = (name: string, _options: typeof options, run: TestBody): void => {

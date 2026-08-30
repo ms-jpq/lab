@@ -5,14 +5,14 @@ const POSITION = `media:position:${location.pathname}`
 const PAGE = crypto.randomUUID()
 
 export const media = document.querySelector("video, audio") as HTMLMediaElement
-export const subtitle = document.querySelector<HTMLTrackElement>("#subtitle")
-export const form = document.querySelector("form") as HTMLFormElement
+const subtitle = document.querySelector<HTMLTrackElement>("#subtitle")
+const form = document.querySelector("form") as HTMLFormElement
 const time_input = form.elements.namedItem("t") as HTMLInputElement
 
 export const page_position = (): number =>
   playable_position(media, Number(time_input.value))
 
-export const initial_position: number = (() => {
+const initial_position: number = (() => {
   if (new URL(location.href).searchParams.has("t")) {
     return page_position()
   }
@@ -50,7 +50,7 @@ export const source_url = (
   return source.toString()
 }
 
-export const submit = (event: SubmitEvent): void => {
+const submit = (event: SubmitEvent): void => {
   if (event.submitter?.classList.contains("back")) {
     return
   }
@@ -66,7 +66,7 @@ export const submit = (event: SubmitEvent): void => {
   location.replace(target)
 }
 
-export const play_subtitle = async (signal: AbortSignal): Promise<void> => {
+const play_subtitle = async (signal: AbortSignal): Promise<void> => {
   if (!subtitle || signal.aborted) {
     return
   }
