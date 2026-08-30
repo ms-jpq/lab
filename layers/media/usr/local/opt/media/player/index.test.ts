@@ -1257,6 +1257,7 @@ const cases = [
 
       equal(current.subtitle_sources.length, 1)
       equal(current.errors.length, 0)
+      ok(current.media.src !== "")
 
       current.window.dispatchEvent(new Event("pagehide"))
       await eventually(() => current.media.src === "")
