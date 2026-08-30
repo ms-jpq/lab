@@ -21,6 +21,34 @@ type StreamAction = Extract<
   }
 >
 
+{
+  for (const name of ["dispose", "asyncDispose"] as const) {
+    if (Symbol[name] === undefined) {
+      Object.defineProperty(Symbol, name, {
+        value: Symbol.for(`Symbol.${name}`),
+      })
+    }
+  }
+
+  const aiter_proto = Object.getPrototypeOf(
+    Object.getPrototypeOf(
+      Object.getPrototypeOf(
+        (async function* (): AsyncIteratorObject<never> {
+          return
+        })(),
+      ),
+    ),
+  )
+
+  if (!(Symbol.asyncDispose in aiter_proto)) {
+    Object.defineProperty(aiter_proto, Symbol.asyncDispose, {
+      value: async function (this: AsyncIterator<unknown>): Promise<void> {
+        await this.return?.()
+      },
+    })
+  }
+}
+
 const BUFFER_BEHIND = 30
 
 const request = (signal: AbortSignal, time: number): Request =>

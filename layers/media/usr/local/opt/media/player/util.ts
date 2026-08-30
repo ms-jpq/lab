@@ -1,11 +1,3 @@
-for (const name of ["dispose", "asyncDispose"] as const) {
-  if (Symbol[name] === undefined) {
-    Object.defineProperty(Symbol, name, {
-      value: Symbol.for(`Symbol.${name}`),
-    })
-  }
-}
-
 type EventMap<T> = {
   [K in keyof T as K extends `on${infer E}` ? E : never]: NonNullable<
     T[K]
@@ -54,7 +46,11 @@ export const closing = <const T, const R = undefined, const N = void>(
     return bound?.(await value)
   }
 
-  return Object.assign(aiter, { [Symbol.asyncDispose]: close, return: close })
+  Object.defineProperties(aiter, {
+    [Symbol.asyncDispose]: { value: close },
+    return: { value: close },
+  })
+  return aiter
 }
 
 export const delay = async (
