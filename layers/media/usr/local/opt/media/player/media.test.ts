@@ -63,9 +63,7 @@ const cases = [
         media as unknown as HTMLMediaElement,
         owner.signal,
       )
-      await states.next()
       const pending = states.next()
-      media.dispatchEvent(new Event("progress"))
 
       owner.abort()
 
@@ -84,7 +82,6 @@ const cases = [
         media as unknown as HTMLMediaElement,
         owner.signal,
       )
-      await states.next()
       const pending = states.next()
       media.dispatchEvent(new Event("progress"))
       const received = await pending
@@ -105,7 +102,6 @@ const cases = [
         media as unknown as HTMLMediaElement,
         owner.signal,
       )
-      await states.next()
       const pending = states.next()
 
       media.buffered.values.push([10, 20])
@@ -113,92 +109,10 @@ const cases = [
 
       const observed = await pending
       ok(!observed.done)
-      const snapshot = observed.value.current
+      const snapshot = observed.value.observations.at(-1)?.[0]
+      ok(snapshot)
       media.buffered.values[0]?.splice(0, 2, 30, 40)
       deepEqual(snapshot.buffered, [[10, 20]])
-      await states.return?.()
-    },
-  },
-  {
-    name: "media state derives decision inputs from each event batch",
-    run: async () => {
-      const owner = new AbortController()
-      const media = new Media()
-      const states = media_events(
-        media as unknown as HTMLMediaElement,
-        owner.signal,
-      )
-      await states.next()
-      const pending = states.next()
-
-      media.currentTime = 12
-      media.seeking = true
-      media.dispatchEvent(new Event("seeking"))
-      media.dispatchEvent(new Event("timeupdate"))
-      media.ended = true
-      media.dispatchEvent(new Event("ended"))
-
-      const observed = await pending
-      ok(!observed.done)
-      deepEqual(observed.value.derived, {
-        failure: undefined,
-        resume: { reason: "ended", position: 0 },
-        seek: {
-          candidate: { position: 12, restart: true },
-          position: 12,
-        },
-      })
-      await states.return?.()
-    },
-  },
-  {
-    name: "buffered movement derives a progress resume position",
-    run: async () => {
-      const owner = new AbortController()
-      const media = new Media()
-      media.buffered.values.push([10, 20])
-      const states = media_events(
-        media as unknown as HTMLMediaElement,
-        owner.signal,
-      )
-      await states.next()
-      const pending = states.next()
-
-      media.currentTime = 12
-      media.dispatchEvent(new Event("timeupdate"))
-
-      const observed = await pending
-      ok(!observed.done)
-      deepEqual(observed.value.derived.resume, {
-        reason: "progress",
-        position: 12,
-      })
-      await states.return?.()
-    },
-  },
-  {
-    name: "a seek derives its buffered playback target",
-    run: async () => {
-      const owner = new AbortController()
-      const media = new Media()
-      media.buffered.values.push([10, 20])
-      const states = media_events(
-        media as unknown as HTMLMediaElement,
-        owner.signal,
-      )
-      await states.next()
-      const pending = states.next()
-
-      media.currentTime = 9.95
-      media.seeking = true
-      media.dispatchEvent(new Event("seeking"))
-
-      const observed = await pending
-      ok(!observed.done)
-      deepEqual(observed.value.derived.seek, {
-        candidate: { position: 10, restart: false },
-        position: 9.95,
-      })
       await states.return?.()
     },
   },

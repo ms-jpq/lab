@@ -1,4 +1,4 @@
-import { abortion, event_batches, type EventObservation } from "./util.ts"
+import { abortion } from "./util.ts"
 
 const POSITION_TOLERANCE = 0.1
 const END_TOLERANCE = 0.5
@@ -77,30 +77,16 @@ const EVENTS = [
   "waiting",
 ] as const satisfies readonly (keyof HTMLMediaElementEventMap)[]
 
-type MediaObservation = EventObservation<
-  HTMLMediaElement,
-  (typeof EVENTS)[number],
-  MediaSnapshot
->
+type MediaObservation = readonly [snapshot: MediaSnapshot, event: Event]
 
 export type MediaTarget = Readonly<{ position: number; restart: boolean }>
 export type MediaSeek = Readonly<{
   candidate: MediaTarget
   position: number
 }>
-type MediaResume =
-  | Readonly<{ reason: "ended"; position: 0 }>
-  | Readonly<{ reason: "progress"; position: number }>
-export type MediaDerived = Readonly<{
-  failure: MediaError | undefined
-  resume: MediaResume | undefined
-  seek: MediaSeek | undefined
-}>
-export type MediaState = Readonly<{
+export type MediaAction = Readonly<{
   kind: "media"
-  current: MediaSnapshot
-  derived: MediaDerived
-  media: HTMLMediaElement
+  observations: readonly MediaObservation[]
 }>
 
 type PendingSeek = Readonly<{
@@ -124,7 +110,7 @@ export type PlaybackState = Readonly<{
 export type PlaybackAction =
   | Readonly<{ kind: "consume_failure" }>
   | Readonly<{ advance: boolean; kind: "frontier" }>
-  | MediaState
+  | MediaAction
   | Readonly<{ kind: "seek"; target: MediaTarget }>
   | Readonly<{ kind: "stream_started" }>
 export type PlaybackEffects = Readonly<{
@@ -163,13 +149,13 @@ export const should_interrupt = ({ failure, stream }: PlaybackState): boolean =>
   failure !== undefined || stream.restart !== undefined
 
 export const initial_playback = (
+  media: HTMLMediaElement,
   position: number,
-  { current, derived, media }: MediaState,
 ): PlaybackState => {
   const target = { position, restart: false }
   return {
-    current,
-    failure: derived.failure,
+    current: capture(media),
+    failure: undefined,
     media,
     pending_seek: { target, acknowledged: false },
     stream: start_stream(target),
@@ -189,18 +175,6 @@ const capture = (media: HTMLMediaElement): MediaSnapshot => ({
   time: media.currentTime,
 })
 
-const resume = (
-  current: MediaSnapshot,
-  observations: readonly MediaObservation[],
-): MediaResume | undefined =>
-  observations.some(([, event]) => event.type === "ended")
-    ? ({ reason: "ended", position: 0 } as const)
-    : observations.some(([, event]) =>
-          ["seeked", "seeking", "timeupdate"].includes(event.type),
-        ) && buffered_position(current, current.time) === current.time
-      ? ({ reason: "progress", position: current.time } as const)
-      : undefined
-
 const failure = (
   observations: readonly MediaObservation[],
 ): MediaError | undefined =>
@@ -211,7 +185,7 @@ const failure = (
       error.code !== MediaError.MEDIA_ERR_ABORTED,
   )?.[0].error
 
-const seek = (
+const latest_seek = (
   observations: readonly MediaObservation[],
 ): MediaSeek | undefined => {
   const observation = observations.findLast(
@@ -234,14 +208,89 @@ const seek = (
   }
 }
 
-const derive = (
+type ObservedSeek = Readonly<{
+  external: MediaSeek | undefined
+  pending: PendingSeek | undefined
+  target: MediaTarget
+}>
+
+const observe_seek = (
+  state: PlaybackState,
+  current: MediaSnapshot,
+  observed: MediaSeek | undefined,
+): ObservedSeek => {
+  const pending = state.pending_seek
+  const owned =
+    pending !== undefined &&
+    observed !== undefined &&
+    aligned(observed.position, pending.target.position)
+  const external = owned ? undefined : observed
+  const target = external?.candidate ?? state.target
+
+  if (external !== undefined) {
+    return {
+      external,
+      pending:
+        target.restart || !aligned(current.time, target.position)
+          ? { target, acknowledged: false }
+          : undefined,
+      target,
+    }
+  }
+  return {
+    external,
+    pending: owned ? { ...pending, acknowledged: true } : pending,
+    target,
+  }
+}
+
+const advance_seek = (
+  current: MediaSnapshot,
+  pending: PendingSeek | undefined,
+): readonly [PendingSeek | undefined, number | undefined] => {
+  if (pending === undefined || current.seeking) {
+    return [pending, undefined]
+  }
+
+  const playable = buffered_position(current, pending.target.position)
+  const target = {
+    ...pending.target,
+    position: playable ?? pending.target.position,
+  }
+  const positioned = aligned(current.time, target.position)
+  if (!positioned && (current.metadata || playable !== undefined)) {
+    return [{ target, acknowledged: false }, target.position]
+  }
+  if (positioned && pending.acknowledged) {
+    return [undefined, undefined]
+  }
+  return [pending, undefined]
+}
+
+const persisted_position = (
   current: MediaSnapshot,
   observations: readonly MediaObservation[],
-): MediaDerived => ({
-  failure: failure(observations),
-  resume: resume(current, observations),
-  seek: seek(observations),
-})
+  external: MediaSeek | undefined,
+  pending: PendingSeek | undefined,
+): number | undefined => {
+  if (observations.some(([, event]) => event.type === "ended")) {
+    return 0
+  }
+  if (external !== undefined) {
+    return external.candidate.position
+  }
+  const progressed = observations.some(([, event]) =>
+    ["seeked", "seeking", "timeupdate"].includes(event.type),
+  )
+  if (
+    progressed &&
+    pending === undefined &&
+    buffered_position(current, current.time) === current.time
+  ) {
+    return current.time
+  }
+  return undefined
+}
 
 export const reduce = (
   state: PlaybackState,
@@ -288,63 +337,27 @@ export const reduce = (
       ]
     }
     case "media": {
-      const {
+      const { observations } = action
+      const current = observations.at(-1)?.[0] ?? state.current
+      const observed_failure = failure(observations)
+      const observed_seek = latest_seek(observations)
+      const observed = observe_seek(state, current, observed_seek)
+      const persist = persisted_position(
         current,
-        derived: { failure, resume, seek: observed_seek },
-      } = action
-      const pending = state.pending_seek
-
-      const owned_seek =
-        pending !== undefined &&
-        observed_seek !== undefined &&
-        aligned(observed_seek.position, pending.target.position)
-      const external_seek = owned_seek ? undefined : observed_seek
-      const target = external_seek?.candidate ?? state.target
-
-      let pending_seek = owned_seek
-        ? { ...pending, acknowledged: true }
-        : pending
-      let seek: number | undefined
-
-      const { metadata, seeking, time } = current
-      if (external_seek !== undefined) {
-        pending_seek =
-          target.restart || !aligned(time, target.position)
-            ? { target, acknowledged: false }
-            : undefined
-      }
-
-      const persist =
-        resume !== undefined &&
-        (resume.reason === "ended" ||
-          (external_seek === undefined && pending_seek === undefined))
-          ? resume.position
-          : external_seek?.candidate.position
-
-      if (pending_seek !== undefined && !seeking) {
-        const pending_target = pending_seek.target
-        const playable = buffered_position(current, pending_target.position)
-        const seek_target = {
-          ...pending_target,
-          position: playable ?? pending_target.position,
-        }
-        const positioned = aligned(time, seek_target.position)
-        if (!positioned && (metadata || playable !== undefined)) {
-          pending_seek = { target: seek_target, acknowledged: false }
-          seek = seek_target.position
-        } else if (positioned && pending_seek.acknowledged) {
-          pending_seek = undefined
-        }
-      }
+        observations,
+        observed.external,
+        observed.pending,
+      )
+      const [pending_seek, seek] = advance_seek(current, observed.pending)
 
       return [
         {
+          ...state,
           current,
-          failure: state.failure ?? failure,
-          media: state.media,
+          failure: state.failure ?? observed_failure,
           pending_seek,
-          stream: reconcile(state.stream, target),
-          target,
+          stream: reconcile(state.stream, observed.target),
+          target: observed.target,
         },
         { persist, seek },
       ]
@@ -352,36 +365,41 @@ export const reduce = (
   }
 }
 
+// i thought we already had a function here from utils?
 export const media_events = async function* (
   media: HTMLMediaElement,
   signal: AbortSignal,
-): AsyncIteratorObject<MediaState> {
+): AsyncIteratorObject<MediaAction> {
   using a = abortion(signal)
   if (a.signal.aborted) {
     return
   }
 
-  const events = event_batches(a.signal, media, EVENTS, () => capture(media))
-  let pending = events.next()
-  const initial = capture(media)
-  yield {
-    kind: "media",
-    current: initial,
-    derived: derive(initial, []),
-    media,
+  let observations = new Array<MediaObservation>()
+  let ready = Promise.withResolvers<void>()
+
+  const observe = (event: Event): void => {
+    observations.push([capture(media), event])
+    ready.resolve()
   }
+  const close = (): void => ready.resolve()
+
+  a.signal.addEventListener("abort", close, { once: true })
+  for (const event of EVENTS) {
+    media.addEventListener(event, observe, { signal: a.signal })
+  }
+  if (a.signal.aborted) {
+    return
+  }
+
   for (;;) {
-    const next = await pending
-    if (next.done) {
+    await ready.promise
+    if (a.signal.aborted) {
       return
     }
-    pending = events.next()
-    const current = next.value.at(-1)?.[0] ?? capture(media)
-    yield {
-      kind: "media",
-      current,
-      derived: derive(current, next.value),
-      media,
-    }
+    const batch = observations
+    observations = []
+    ready = Promise.withResolvers<void>()
+    yield { kind: "media", observations: batch }
   }
 }
