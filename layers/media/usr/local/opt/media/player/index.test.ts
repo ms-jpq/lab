@@ -37,6 +37,8 @@ type FixtureOptions = Readonly<{
   url_position?: number
 }>
 
+const REQUEST_TIMEOUT = 15_000
+
 class Ranges implements TimeRanges {
   readonly values: Range[] = []
 
@@ -325,8 +327,17 @@ const fixture = async ({
   }
 
   const window = new EventTarget()
-  const schedule = (run: () => void, milliseconds = 0) =>
-    nodeSetTimeout(run, immediate_timers ? 0 : milliseconds)
+  const schedule = (run: () => void, milliseconds = 0) => {
+    const delay =
+      recovery_timers || (immediate_timers && milliseconds !== REQUEST_TIMEOUT)
+        ? 0
+        : milliseconds
+    const timer = nodeSetTimeout(run, delay)
+    if (milliseconds === REQUEST_TIMEOUT && !recovery_timers) {
+      timer.unref()
+    }
+    return timer
+  }
   const PlayerAbortSignal = {
     any: AbortSignal.any.bind(AbortSignal),
     timeout: (milliseconds: number) => {

@@ -10,18 +10,22 @@ import {
   source_url,
 } from "./page.ts"
 import { playback_transitions } from "./reducer.ts"
-import { abortion, closing, delay, fetch_stream, merge, never } from "./util.ts"
+import {
+  abortion,
+  closing,
+  delay,
+  fetch_stream,
+  inactivity,
+  merge,
+  never,
+} from "./util.ts"
 
 type Dispatch = ReturnType<typeof playback_transitions>
 type PlaybackAction = Parameters<Dispatch>[0]
 type StreamAction = Extract<
   PlaybackAction,
   {
-    type:
-      | "bytes_received"
-      | "request_failed"
-      | "request_finished"
-      | "request_timed_out"
+    type: "bytes_received" | "request_failed" | "request_finished"
   }
 >
 
@@ -60,7 +64,6 @@ const REQUEST_TIMEOUT = 15_000
 const stream_events = async function* (
   stream: ReturnType<typeof fetch_stream>,
   signal: AbortSignal,
-  timeout: AbortSignal,
 ): AsyncIteratorObject<StreamAction> {
   try {
     for await (const bytes of stream) {
@@ -72,10 +75,6 @@ const stream_events = async function* (
     if (!signal.aborted) {
       yield { error, type: "request_failed" }
     }
-    return
-  }
-  if (timeout.aborted && !signal.aborted) {
-    yield { type: "request_timed_out" }
     return
   }
   if (!signal.aborted) {
@@ -95,13 +94,14 @@ const playback_events = (
       return
     }
 
-    const timeout = AbortSignal.timeout(REQUEST_TIMEOUT)
-    await using stream = fetch_stream(
-      new Request(source_url(media, position), {
-        signal: AbortSignal.any([signal, timeout]),
-      }),
+    await using stream = inactivity(signal, REQUEST_TIMEOUT, (signal) =>
+      fetch_stream(
+        new Request(source_url(media, position), {
+          signal,
+        }),
+      ),
     )
-    await using events = merge(states, stream_events(stream, signal, timeout))
+    await using events = merge(states, stream_events(stream, signal))
     for await (const [, event] of events) {
       yield event
     }

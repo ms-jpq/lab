@@ -53,6 +53,28 @@ export const closing = <const T, const R = undefined, const N = void>(
   return aiter
 }
 
+export const inactivity = <const T>(
+  signal: AbortSignal,
+  timeout: number,
+  open: (_: AbortSignal) => AsyncIteratorObject<T>,
+): AsyncIteratorObject<T> =>
+  closing(signal, async function* (signal) {
+    using a = abortion(signal)
+    const deadline = () => setTimeout(() => a[Symbol.dispose](), timeout)
+    let timer = deadline()
+    using _ = defer(() => clearTimeout(timer))
+
+    for await (const value of open(a.signal)) {
+      clearTimeout(timer)
+      timer = deadline()
+      yield value
+    }
+    if (a.signal.aborted && !signal.aborted) {
+      throw new Error("The request stopped producing data")
+    }
+    return
+  })
+
 export const delay = async (
   signal: AbortSignal,
   ms: number,
@@ -100,6 +122,7 @@ const readableIterator = async function* <const T>(
   using a = abortion(signal)
   const reader = stream.getReader()
   const cancelled = Promise.withResolvers<undefined>()
+
   a.signal.addEventListener("abort", () => cancelled.resolve(undefined), {
     once: true,
   })

@@ -1,10 +1,17 @@
-import { deepEqual, ok as assert } from "node:assert/strict"
+import { deepEqual, ok as assert, rejects } from "node:assert/strict"
 import { randomUUID } from "node:crypto"
 import { getEventListeners } from "node:events"
 import nodeTest, { type TestContext } from "node:test"
 import { setImmediate } from "node:timers/promises"
 
-import { closing, delay, fetch_stream, merge, once } from "./util.ts"
+import {
+  closing,
+  delay,
+  fetch_stream,
+  inactivity,
+  merge,
+  once,
+} from "./util.ts"
 
 const options = { concurrency: true, timeout: 2_000 }
 
@@ -190,6 +197,31 @@ const cases = [
       deepEqual(await delay(owner.signal, 100), false)
       deepEqual(scheduled.mock.callCount(), 0)
       deepEqual(added.mock.callCount(), 0)
+    },
+  },
+  {
+    name: "inactivity expires only after a quiet interval",
+    run: async (context: TestContext) => {
+      context.mock.timers.enable({ apis: ["setTimeout"] })
+      const owner = new AbortController()
+      const next = Promise.withResolvers<number>()
+      const values = inactivity(owner.signal, 100, async function* (signal) {
+        signal.addEventListener("abort", () => next.reject(signal.reason), {
+          once: true,
+        })
+        yield 1
+        yield await next.promise
+        return
+      })
+
+      deepEqual(await values.next(), { done: false, value: 1 })
+      context.mock.timers.tick(99)
+      next.resolve(2)
+      deepEqual(await values.next(), { done: false, value: 2 })
+      context.mock.timers.tick(99)
+      context.mock.timers.tick(1)
+
+      await rejects(values.next(), /stopped producing data/)
     },
   },
   {

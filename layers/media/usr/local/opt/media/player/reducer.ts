@@ -27,7 +27,6 @@ type PlaybackAction =
   | Readonly<{ bytes: Uint8Array<ArrayBuffer>; type: "bytes_received" }>
   | Readonly<{ error: unknown; type: "request_failed" }>
   | Readonly<{ type: "request_finished" }>
-  | Readonly<{ type: "request_timed_out" }>
   | Readonly<{ type: "source_opened" }>
 
 type PlaybackEffects = Readonly<{
@@ -203,8 +202,6 @@ const reduce = (
       return state.acquisition === "backpressured"
         ? pause(state)
         : [state, { buffer: { bytes: action.bytes, type: "append" } }]
-    case "request_timed_out":
-      return state.acquisition !== "active" ? pause(state) : retry(state)
     case "request_failed":
       return state.acquisition === "backpressured"
         ? pause(state, action.error)
