@@ -95,12 +95,23 @@ export const once = async <
 
 const readableIterator = async function* <const T>(
   stream: ReadableStream<T>,
+  signal: AbortSignal,
 ): AsyncIteratorObject<T> {
+  using a = abortion(signal)
   const reader = stream.getReader()
+  const cancelled = Promise.withResolvers<undefined>()
+  a.signal.addEventListener("abort", () => cancelled.resolve(undefined), {
+    once: true,
+  })
+
   let eof = false
   try {
-    for (;;) {
-      const { done, value } = await reader.read()
+    while (!a.signal.aborted) {
+      const result = await Promise.race([reader.read(), cancelled.promise])
+      if (result === undefined) {
+        return
+      }
+      const { done, value } = result
       if (done) {
         eof = true
         return
@@ -116,6 +127,8 @@ const readableIterator = async function* <const T>(
       reader.releaseLock()
     }
   }
+
+  return
 }
 
 export const event_batches = <
@@ -174,16 +187,10 @@ const close = async <T>(aiters: Iterable<AsyncIterator<T>>): Promise<void> => {
     [...aiters].map(async (aiter) => aiter.return?.()),
   )
   const errors = settled.flatMap((result) => {
-    switch (result.status) {
-      case "fulfilled": {
-        return []
-      }
-      case "rejected": {
-        return [result.reason]
-      }
-      default:
-        return never(result)
+    if (result.status === "rejected") {
+      return [result.reason]
     }
+    return []
   })
   if (errors.length > 0) {
     throw new AggregateError(errors)
@@ -237,7 +244,7 @@ export const fetch_stream = (
       }
 
       if (response.body) {
-        yield* readableIterator(response.body)
+        yield* readableIterator(response.body, signal)
       }
     } catch (error) {
       if (!signal.aborted) {

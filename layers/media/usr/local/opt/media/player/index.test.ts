@@ -2,6 +2,7 @@ import { deepEqual, equal, ok } from "node:assert/strict"
 import { readFile } from "node:fs/promises"
 import { stripTypeScriptTypes } from "node:module"
 import nodeTest, { type TestContext } from "node:test"
+import { setTimeout as nodeSetTimeout } from "node:timers"
 import vm from "node:vm"
 
 type Range = readonly [start: number, end: number]
@@ -22,12 +23,14 @@ type TestCase = Readonly<{
 }>
 
 type FixtureOptions = Readonly<{
+  append_completion?: "automatic" | "pending"
   append_duration?: number
   append_failures?: number
   buffer_failures?: number
   immediate_timers?: boolean
+  recovery_timers?: boolean
   source_open?: "automatic" | "manual"
-  response?: "eof" | "pending"
+  response?: "eof" | "partial" | "pending"
   storage_failure?: boolean
   stored_position?: number
   subtitle?: boolean
@@ -139,10 +142,12 @@ const without_imports = (source: string): string => {
 }
 
 const fixture = async ({
+  append_completion = "automatic",
   append_duration = 60,
   append_failures = 0,
   buffer_failures = 0,
   immediate_timers = false,
+  recovery_timers = false,
   source_open = "automatic",
   response = "eof",
   storage_failure = false,
@@ -192,6 +197,7 @@ const fixture = async ({
   }
   let remaining_append_failures = append_failures
   let remaining_buffer_failures = buffer_failures
+  let partial_sent = false
   let fetch_response: (request: Request) => Promise<Response> | Response
 
   class TestSourceBuffer extends EventTarget {
@@ -217,10 +223,12 @@ const fixture = async ({
         this.timestampOffset + append_duration,
       ])
       this.updating = true
-      queueMicrotask(() => {
-        this.updating = false
-        this.dispatchEvent(new Event("updateend"))
-      })
+      if (append_completion === "automatic") {
+        queueMicrotask(() => {
+          this.updating = false
+          this.dispatchEvent(new Event("updateend"))
+        })
+      }
     }
 
     remove(start: number, end: number): void {
@@ -287,6 +295,10 @@ const fixture = async ({
           controller.close()
           return
         }
+        if (response === "partial" && !partial_sent) {
+          partial_sent = true
+          controller.enqueue(new Uint8Array([1]))
+        }
 
         const aborted = () => controller.error(request.signal.reason)
         if (request.signal.aborted) {
@@ -313,9 +325,28 @@ const fixture = async ({
   }
 
   const window = new EventTarget()
+  const schedule = (run: () => void, milliseconds = 0) =>
+    nodeSetTimeout(run, immediate_timers ? 0 : milliseconds)
+  const PlayerAbortSignal = {
+    any: AbortSignal.any.bind(AbortSignal),
+    timeout: (milliseconds: number) => {
+      const controller = new AbortController()
+      const timer = nodeSetTimeout(
+        () =>
+          controller.abort(
+            new DOMException("The operation timed out", "TimeoutError"),
+          ),
+        recovery_timers ? 0 : milliseconds,
+      )
+      if (!recovery_timers) {
+        timer.unref()
+      }
+      return controller.signal
+    },
+  }
   const context = vm.createContext({
     AbortController,
-    AbortSignal,
+    AbortSignal: PlayerAbortSignal,
     clearTimeout,
     console: {
       error: (...values: unknown[]) => errors.push(values),
@@ -361,9 +392,7 @@ const fixture = async ({
     Promise,
     Request,
     ReadableStream,
-    setTimeout: immediate_timers
-      ? (run: TimerHandler) => setTimeout(run, 0)
-      : setTimeout,
+    setTimeout: schedule,
     Uint8Array,
     URL: PlayerURL,
     URLSearchParams,
@@ -637,7 +666,7 @@ const cases = [
     },
   },
   {
-    name: "a different target retires its pending read before replacement",
+    name: "a different target does not await its retired body read",
     run: async () => {
       const current = await fixture()
       const bodies: ReadableStreamDefaultController<Uint8Array<ArrayBuffer>>[] =
@@ -657,25 +686,26 @@ const cases = [
       const owner = new AbortController()
       const playback = current.context.player_test.play_media(owner.signal)
 
-      await eventually(
-        () => current.requests.length === 1 && bodies.length === 1,
-      )
-      const initial = current.requests[0]
-      ok(initial)
-      current.media.currentTime = 110
-      current.media.seeking = true
-      current.media.dispatchEvent(new Event("seeking"))
-      await eventually(() => initial.signal.aborted)
-      await next_task()
-      equal(current.requests.length, 1)
+      try {
+        await eventually(
+          () => current.requests.length === 1 && bodies.length === 1,
+        )
+        const initial = current.requests[0]
+        ok(initial)
+        current.media.currentTime = 110
+        current.media.seeking = true
+        current.media.dispatchEvent(new Event("seeking"))
+        await eventually(() => initial.signal.aborted)
+        await eventually(() => current.requests.length === 2)
 
-      bodies[0]?.error(initial.signal.reason)
-      await eventually(() => current.requests.length === 2)
-      equal(request_position(current.requests[1]), "110")
-
-      owner.abort()
-      bodies[1]?.error(owner.signal.reason)
-      await playback
+        equal(request_position(current.requests[1]), "110")
+      } finally {
+        owner.abort()
+        for (const body of bodies) {
+          body.error(owner.signal.reason)
+        }
+        await playback
+      }
     },
   },
   {
@@ -1240,6 +1270,91 @@ const cases = [
 
       owner.abort()
       await playback
+    },
+  },
+  {
+    name: "completed appends drive high-water backpressure",
+    run: async () => {
+      const current = await fixture({
+        recovery_timers: true,
+        response: "partial",
+      })
+      const owner = new AbortController()
+      const playback = current.context.player_test.play_media(owner.signal)
+
+      try {
+        await eventually(
+          () => current.sources[0]?.sourceBuffers[0]?.appended.length === 1,
+        )
+        const request = current.requests[0]
+        ok(request)
+        await eventually(() => request.signal.aborted)
+
+        equal(current.requests.length, 1)
+      } finally {
+        owner.abort()
+        await playback
+      }
+    },
+  },
+  {
+    name: "an inactive request retries from its acknowledged frontier",
+    run: async () => {
+      const current = await fixture({
+        append_duration: 20,
+        recovery_timers: true,
+        response: "partial",
+      })
+      const owner = new AbortController()
+      const playback = current.context.player_test.play_media(owner.signal)
+
+      try {
+        await eventually(() => current.requests.length === 2)
+
+        deepEqual(current.requests.map(request_position), ["0", "20"])
+      } finally {
+        owner.abort()
+        await playback
+      }
+    },
+  },
+  {
+    name: "a stalled SourceBuffer mutation rebuilds MediaSource",
+    run: async () => {
+      const current = await fixture({
+        append_completion: "pending",
+        immediate_timers: true,
+        recovery_timers: true,
+      })
+      const owner = new AbortController()
+      const playback = current.context.player_test.playback(owner.signal)
+
+      try {
+        await eventually(() => current.sources.length === 2)
+      } finally {
+        owner.abort()
+        await playback
+      }
+    },
+  },
+  {
+    name: "a missing sourceopen rebuilds MediaSource",
+    run: async () => {
+      const current = await fixture({
+        immediate_timers: true,
+        recovery_timers: true,
+        response: "pending",
+        source_open: "manual",
+      })
+      const owner = new AbortController()
+      const playback = current.context.player_test.playback(owner.signal)
+
+      try {
+        await eventually(() => current.sources.length === 2)
+      } finally {
+        owner.abort()
+        await playback
+      }
     },
   },
   {

@@ -8,12 +8,14 @@ const EPSILON = 0.001
 const op_lock = async function* (
   buffer: SourceBuffer,
   signal: AbortSignal,
+  timeout: number,
 ): AsyncIteratorObject<undefined> {
   if (signal.aborted) {
     return
   }
 
-  using a = abortion(signal)
+  const deadline = AbortSignal.timeout(timeout)
+  using a = abortion(AbortSignal.any([signal, deadline]))
   const changed = Promise.race([
     once(a.signal, buffer, "updateend"),
     once(a.signal, buffer, "error"),
@@ -21,9 +23,12 @@ const op_lock = async function* (
 
   yield
   const event = await changed
-  if (a.signal.aborted) {
+  if (event === undefined) {
     if (buffer.updating) {
       buffer.abort()
+    }
+    if (deadline.aborted && !signal.aborted) {
+      throw new Error("SourceBuffer operation timed out")
     }
     return
   }
@@ -38,11 +43,13 @@ export const media_source = async function* ({
   source,
   evict_before,
   signal,
+  timeout,
 }: {
   mime_type: string
   source: MediaSource
   evict_before: () => number
   signal: AbortSignal
+  timeout: number
 }): Mse {
   using a = abortion(signal)
   if (a.signal.aborted) {
@@ -72,7 +79,7 @@ export const media_source = async function* ({
         const ranges = buffer.buffered
         const end = ranges.length ? ranges.end(ranges.length - 1) : 0
 
-        for await (const _ of op_lock(buffer, a.signal)) {
+        for await (const _ of op_lock(buffer, a.signal, timeout)) {
           buffer.remove(end, end + EPSILON)
         }
       }
@@ -90,11 +97,11 @@ export const media_source = async function* ({
         buffer.buffered.length &&
         buffer.buffered.start(0) < cutoff
       ) {
-        for await (const _ of op_lock(buffer, a.signal)) {
+        for await (const _ of op_lock(buffer, a.signal, timeout)) {
           buffer.remove(0, cutoff)
         }
       }
-      for await (const _ of op_lock(buffer, a.signal)) {
+      for await (const _ of op_lock(buffer, a.signal, timeout)) {
         buffer.appendBuffer(operation)
       }
       continue
@@ -116,6 +123,7 @@ const MSE = (): MediaSource =>
 export const bond = (
   media: HTMLMediaElement,
   signal: AbortSignal,
+  timeout: number,
 ): AsyncIteratorObject<MediaSource> =>
   closing(signal, async function* (signal) {
     while (!signal.aborted) {
@@ -125,8 +133,9 @@ export const bond = (
 
       let committed = false
       try {
+        const deadline = AbortSignal.timeout(timeout)
         const event = await (async () => {
-          using a = abortion(signal)
+          using a = abortion(AbortSignal.any([signal, deadline]))
           const opened = Promise.race([
             once(a.signal, source, "sourceopen"),
             once(a.signal, source, "sourceclose"),
@@ -135,6 +144,9 @@ export const bond = (
           return await opened
         })()
 
+        if (event === undefined && deadline.aborted && !signal.aborted) {
+          throw new Error("MediaSource opening timed out")
+        }
         if (event?.type === "sourceclose") {
           throw event
         }
@@ -170,11 +182,13 @@ export const media_sources = ({
   mime_type,
   evict_behind,
   signal,
+  timeout,
 }: {
   media: HTMLMediaElement
   mime_type: string
   evict_behind: number
   signal: AbortSignal
+  timeout: number
 }): AsyncIteratorObject<readonly [MediaSource, (_: AbortSignal) => Mse]> =>
   closing(signal, async function* (signal) {
     using _ = defer(() => {
@@ -185,7 +199,7 @@ export const media_sources = ({
       media.load()
     })
 
-    for await (const source of bond(media, signal)) {
+    for await (const source of bond(media, signal, timeout)) {
       yield [
         source,
         (sig) =>
@@ -194,6 +208,7 @@ export const media_sources = ({
             mime_type,
             source,
             signal: AbortSignal.any([signal, sig]),
+            timeout,
           }),
       ]
     }

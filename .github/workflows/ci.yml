@@ -33,7 +33,7 @@ jobs:
           sudo -- touch -- /.dockerenv
 
       - run: |-
-          gmake lint
+          gmake lint test
 
       - run: |-
           LOCAL=1 gmake example k8s

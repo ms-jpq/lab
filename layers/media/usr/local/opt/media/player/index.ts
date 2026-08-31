@@ -1,5 +1,5 @@
 import { media_sources } from "./mse.ts"
-import { media_events } from "./media.ts"
+import { media_buffered, media_events } from "./media.ts"
 import {
   duration,
   main,
@@ -17,7 +17,11 @@ type PlaybackAction = Parameters<Dispatch>[0]
 type StreamAction = Extract<
   PlaybackAction,
   {
-    type: "bytes_received" | "request_failed" | "request_finished"
+    type:
+      | "bytes_received"
+      | "request_failed"
+      | "request_finished"
+      | "request_timed_out"
   }
 >
 
@@ -50,13 +54,13 @@ type StreamAction = Extract<
 }
 
 const BUFFER_BEHIND = 30
-
-const request = (signal: AbortSignal, time: number): Request =>
-  new Request(source_url(media, time), { signal })
+const MSE_TIMEOUT = 10_000
+const REQUEST_TIMEOUT = 15_000
 
 const stream_events = async function* (
   stream: ReturnType<typeof fetch_stream>,
   signal: AbortSignal,
+  timeout: AbortSignal,
 ): AsyncIteratorObject<StreamAction> {
   try {
     for await (const bytes of stream) {
@@ -68,6 +72,10 @@ const stream_events = async function* (
     if (!signal.aborted) {
       yield { error, type: "request_failed" }
     }
+    return
+  }
+  if (timeout.aborted && !signal.aborted) {
+    yield { type: "request_timed_out" }
     return
   }
   if (!signal.aborted) {
@@ -87,8 +95,13 @@ const playback_events = (
       return
     }
 
-    await using stream = fetch_stream(request(signal, position))
-    await using events = merge(states, stream_events(stream, signal))
+    const timeout = AbortSignal.timeout(REQUEST_TIMEOUT)
+    await using stream = fetch_stream(
+      new Request(source_url(media, position), {
+        signal: AbortSignal.any([signal, timeout]),
+      }),
+    )
+    await using events = merge(states, stream_events(stream, signal, timeout))
     for await (const [, event] of events) {
       yield event
     }
@@ -104,6 +117,7 @@ export const play_media = async (signal: AbortSignal) => {
     media,
     mime_type,
     signal: abort.signal,
+    timeout: MSE_TIMEOUT,
   })) {
     if (duration > 0) {
       source.duration = duration
@@ -134,11 +148,11 @@ export const play_media = async (signal: AbortSignal) => {
       using abrt = abortion(abort.signal)
       using _ = abrt
 
-      for await (const event of playback_events(
+      for await (const received of playback_events(
         abrt.signal,
         requested?.position,
       )) {
-        const effects = dispatch(event)
+        const effects = dispatch(received)
         if (effects.error !== undefined) {
           console.error(effects.error)
         }
@@ -185,6 +199,9 @@ export const play_media = async (signal: AbortSignal) => {
           if ((await buffer.next(operation)).done) {
             using _ = abrt
             continue source
+          }
+          if (effects.buffer.type === "append") {
+            dispatch(media_buffered(media))
           }
         }
       }

@@ -7,6 +7,7 @@ import { setImmediate } from "node:timers/promises"
 import { bond, media_source, media_sources, type Mse } from "./mse.ts"
 
 const options = { concurrency: true, timeout: 2_000 }
+const MSE_TIMEOUT = 100
 
 const acquisitionFixture = (context: TestContext) => {
   const descriptor = Object.getOwnPropertyDescriptor(globalThis, "MediaSource")
@@ -140,6 +141,7 @@ const fixture = (
     mime_type: "video/test",
     signal: controller.signal,
     source: source as unknown as MediaSource,
+    timeout: MSE_TIMEOUT,
   })
   return {
     buffer,
@@ -272,6 +274,27 @@ const cases = [
       assert(failure instanceof Event)
       deepEqual(failure.type, "error")
       deepEqual(mutations, [["remove", 0, 70]])
+    },
+  },
+  {
+    name: "MSE aborts and surfaces a stalled SourceBuffer mutation",
+    run: async () => {
+      const { buffer, mutations, values } = fixture(
+        timeRanges(),
+        undefined,
+        "append",
+      )
+      await start(values)
+
+      const failure = await values.next(new Uint8Array([4])).then(
+        () => undefined,
+        (error: unknown) => error,
+      )
+
+      assert(failure instanceof Error)
+      deepEqual(failure.message, "SourceBuffer operation timed out")
+      deepEqual(mutations, [["append", [4]], ["abort"]])
+      deepEqual(buffer.updating, false)
     },
   },
   {
@@ -442,7 +465,7 @@ const cases = [
       try {
         current.media.src = "blob:test:previous"
         const owner = new AbortController()
-        const values = bond(current.media, owner.signal)
+        const values = bond(current.media, owner.signal, MSE_TIMEOUT)
         const pending = values.next()
         const source = current.sources[0]
         assert(source)
@@ -472,7 +495,7 @@ const cases = [
       const current = acquisitionFixture(context)
       try {
         const bondOwner = new AbortController()
-        const bonded = bond(current.media, bondOwner.signal)
+        const bonded = bond(current.media, bondOwner.signal, MSE_TIMEOUT)
         const pendingBond = bonded.next()
         const abortedBond = bonded.return?.()
         assert(abortedBond)
@@ -496,6 +519,7 @@ const cases = [
           media: current.media,
           mime_type: "video/test",
           signal: sourcesOwner.signal,
+          timeout: MSE_TIMEOUT,
         })
         const pendingSources = sources.next()
         const abortedSources = sources.return?.()
@@ -514,7 +538,11 @@ const cases = [
         deepEqual(current.revoked, ["blob:test:0", "blob:test:1"])
         deepEqual(current.state, { loads: 1, removals: 3 })
         const returnedBondOwner = new AbortController()
-        const returnedBond = bond(current.media, returnedBondOwner.signal)
+        const returnedBond = bond(
+          current.media,
+          returnedBondOwner.signal,
+          MSE_TIMEOUT,
+        )
         const returnedBondPending = returnedBond.next()
         const bondSource = current.sources[2]
         assert(bondSource)
@@ -542,6 +570,7 @@ const cases = [
           media: current.media,
           mime_type: "video/test",
           signal: returnedSourcesOwner.signal,
+          timeout: MSE_TIMEOUT,
         })
         const returnedSourcesPending = returnedSources.next()
         const mediaSource = current.sources[3]

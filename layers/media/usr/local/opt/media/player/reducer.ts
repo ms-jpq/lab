@@ -13,10 +13,12 @@ type PlaybackControl =
   | Readonly<{ request: PlaybackRequest; type: "request" }>
   | Readonly<{ type: "rebuild" }>
 
+type Acquisition = "active" | "backpressured" | "idle"
+
 type PlaybackState = Readonly<{
+  acquisition: Acquisition
   pending_seek: number | undefined
   request: PlaybackRequest
-  requesting: boolean
   target: number
 }>
 
@@ -25,6 +27,7 @@ type PlaybackAction =
   | Readonly<{ bytes: Uint8Array<ArrayBuffer>; type: "bytes_received" }>
   | Readonly<{ error: unknown; type: "request_failed" }>
   | Readonly<{ type: "request_finished" }>
+  | Readonly<{ type: "request_timed_out" }>
   | Readonly<{ type: "source_opened" }>
 
 type PlaybackEffects = Readonly<{
@@ -92,15 +95,37 @@ const request_if_needed = (
   current: MediaSnapshot,
 ): PlaybackTransition => {
   if (
-    state.requesting ||
+    state.acquisition === "active" ||
     play_ahead(current, state.request.position) >= BUFFER_LOW
   ) {
     return [state, {}]
   }
   return [
-    { ...state, requesting: true },
+    { ...state, acquisition: "active" },
     { control: { request: state.request, type: "request" } },
   ]
+}
+
+const acknowledge = (
+  state: PlaybackState,
+  current: MediaSnapshot,
+): PlaybackState => {
+  const frontier = stream_position(
+    buffered_end(current, state.request.frontier) ?? state.request.frontier,
+  )
+  const pause =
+    state.acquisition === "active" &&
+    !aligned(frontier, state.request.position) &&
+    play_ahead(current, frontier) >= BUFFER_HIGH
+  const request = {
+    frontier,
+    position: pause ? frontier : state.request.position,
+  }
+  return {
+    ...state,
+    acquisition: pause ? "backpressured" : state.acquisition,
+    request,
+  }
 }
 
 const project = (
@@ -124,7 +149,9 @@ const project = (
   const advance =
     !aligned(frontier, state.request.position) &&
     play_ahead(current, frontier) >= BUFFER_HIGH
-  const pause = state.requesting && advance
+  const pause =
+    state.acquisition === "backpressured" ||
+    (state.acquisition === "active" && advance)
   const request = {
     frontier,
     position: advance ? frontier : state.request.position,
@@ -132,11 +159,9 @@ const project = (
   const [next, effects] = request_if_needed(
     {
       ...state,
+      acquisition: pause ? "idle" : state.acquisition,
       pending_seek,
       request,
-      requesting: aligned(request.position, state.request.position)
-        ? state.requesting
-        : false,
     },
     current,
   )
@@ -146,35 +171,61 @@ const project = (
   return [next, seek === undefined ? controlled : { ...controlled, seek }]
 }
 
+const pause = (
+  state: PlaybackState,
+  error: unknown = undefined,
+): PlaybackTransition => [
+  { ...state, acquisition: "idle" },
+  error === undefined
+    ? { control: { type: "pause" } }
+    : { control: { type: "pause" }, error },
+]
+
+const retry = (
+  state: PlaybackState,
+  error: unknown = undefined,
+): PlaybackTransition => {
+  const request = request_at(state.request.frontier)
+  return [
+    { ...state, acquisition: "active", request },
+    error === undefined
+      ? { control: { request, type: "request" } }
+      : { control: { request, type: "request" }, error },
+  ]
+}
+
 const reduce = (
   state: PlaybackState,
   action: PlaybackAction,
 ): PlaybackTransition => {
   switch (action.type) {
-    case "bytes_received": {
-      return [state, { buffer: { bytes: action.bytes, type: "append" } }]
-    }
-    case "request_failed": {
-      const request = request_at(state.request.frontier)
-      return [
-        { ...state, request, requesting: true },
-        { control: { request, type: "request" }, error: action.error },
-      ]
-    }
+    case "bytes_received":
+      return state.acquisition === "backpressured"
+        ? pause(state)
+        : [state, { buffer: { bytes: action.bytes, type: "append" } }]
+    case "request_timed_out":
+      return state.acquisition !== "active" ? pause(state) : retry(state)
+    case "request_failed":
+      return state.acquisition === "backpressured"
+        ? pause(state, action.error)
+        : retry(state, action.error)
     case "request_finished": {
-      return [{ ...state, requesting: false }, { buffer: { type: "end" } }]
+      return [{ ...state, acquisition: "idle" }, { buffer: { type: "end" } }]
     }
     case "source_opened": {
       const request = request_at(state.target)
       return [
         {
           ...state,
+          acquisition: "active",
           pending_seek: state.target,
           request,
-          requesting: true,
         },
         { control: { request, type: "request" }, seek: state.target },
       ]
+    }
+    case "buffered": {
+      return [acknowledge(state, action.current), {}]
     }
     case "loadedmetadata":
     case "canplay":
@@ -225,9 +276,9 @@ const reduce = (
       const [next, effects] = project(
         {
           ...state,
+          acquisition: restart ? "idle" : state.acquisition,
           pending_seek: undefined,
           request: restart ? request_at(target) : state.request,
-          requesting: restart ? false : state.requesting,
           target,
         },
         current,
@@ -244,9 +295,9 @@ export const playback_transitions = (
   position: number,
 ): ((action: PlaybackAction | readonly MediaAction[]) => PlaybackEffects) => {
   let state: PlaybackState = {
+    acquisition: "idle",
     pending_seek: undefined,
     request: request_at(position),
-    requesting: false,
     target: position,
   }
 

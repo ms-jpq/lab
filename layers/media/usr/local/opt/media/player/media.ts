@@ -22,7 +22,7 @@ export type MediaEvent =
 
 export type MediaAction = Readonly<{
   current: MediaSnapshot
-  type: MediaEvent
+  type: "buffered" | MediaEvent
 }>
 
 const END_TOLERANCE = 0.5
@@ -62,6 +62,11 @@ const media_state = (media: HTMLMediaElement): MediaSnapshot => ({
   metadata: media.readyState >= media.HAVE_METADATA,
   seeking: media.seeking,
   time: media.currentTime,
+})
+
+export const media_buffered = (media: HTMLMediaElement): MediaAction => ({
+  current: media_state(media),
+  type: "buffered",
 })
 
 export const media_events = (

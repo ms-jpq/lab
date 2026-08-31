@@ -3,5 +3,6 @@
   "compilerOptions": {
     "noEmit": false
   },
+  "exclude": ["*.test.ts"],
   "extends": "../../../../../../../tsconfig.json"
 }
