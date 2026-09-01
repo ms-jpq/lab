@@ -66,8 +66,8 @@ export const inactivity = <const T>(
 
     for await (const value of open(a.signal)) {
       clearTimeout(timer)
-      timer = deadline()
       yield value
+      timer = deadline()
     }
     if (a.signal.aborted && !signal.aborted) {
       throw new Error("The request stopped producing data")
@@ -115,6 +115,7 @@ export const once = async <
   return fut.promise
 }
 
+// TODO: remove this with safari 27
 const readableIterator = async function* <const T>(
   stream: ReadableStream<T>,
   signal: AbortSignal,
@@ -142,13 +143,17 @@ const readableIterator = async function* <const T>(
       yield value
     }
   } finally {
-    try {
-      if (!eof) {
-        await reader.cancel()
+    if (!eof) {
+      const cancelled = reader.cancel()
+      if (a.signal.aborted) {
+        void cancelled.catch(() => undefined)
+      } else {
+        try {
+          await cancelled
+        } catch {}
       }
-    } finally {
-      reader.releaseLock()
     }
+    reader.releaseLock()
   }
 
   return

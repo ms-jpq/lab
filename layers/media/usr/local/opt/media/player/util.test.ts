@@ -204,24 +204,37 @@ const cases = [
     run: async (context: TestContext) => {
       context.mock.timers.enable({ apis: ["setTimeout"] })
       const owner = new AbortController()
-      const next = Promise.withResolvers<number>()
       const values = inactivity(owner.signal, 100, async function* (signal) {
-        signal.addEventListener("abort", () => next.reject(signal.reason), {
-          once: true,
-        })
         yield 1
-        yield await next.promise
+        await new Promise<void>((resolve) => {
+          signal.addEventListener("abort", () => resolve(), { once: true })
+        })
         return
       })
 
       deepEqual(await values.next(), { done: false, value: 1 })
-      context.mock.timers.tick(99)
-      next.resolve(2)
-      deepEqual(await values.next(), { done: false, value: 2 })
+      const pending = values.next()
+      await setImmediate()
       context.mock.timers.tick(99)
       context.mock.timers.tick(1)
 
-      await rejects(values.next(), /stopped producing data/)
+      await rejects(pending, /stopped producing data/)
+    },
+  },
+  {
+    name: "inactivity ignores downstream work after received data",
+    run: async (context: TestContext) => {
+      context.mock.timers.enable({ apis: ["setTimeout"] })
+      const owner = new AbortController()
+      const values = inactivity(owner.signal, 100, async function* () {
+        yield 1
+        return
+      })
+
+      deepEqual(await values.next(), { done: false, value: 1 })
+      context.mock.timers.tick(100)
+
+      deepEqual(await values.next(), { done: true, value: undefined })
     },
   },
   {
@@ -292,7 +305,7 @@ const cases = [
       }),
   },
   {
-    name: "return from a logical stream aborts before cancelling its body",
+    name: "return from a logical stream starts body cancellation after abort",
     run: async (context: TestContext) =>
       withFetch(context, async () => {
         const owner = new AbortController()
@@ -418,6 +431,42 @@ const cases = [
         assert(state.pulls > 0)
         deepEqual(body.locked, false)
         deepEqual(await values.next(), { done: true, value: undefined })
+      }),
+  },
+  {
+    name: "inactivity settles despite an uncooperative body cancellation",
+    run: async (context: TestContext) =>
+      withFetch(context, async () => {
+        context.mock.timers.enable({ apis: ["setTimeout"] })
+        context.mock.method(
+          globalThis,
+          "fetch",
+          async () =>
+            new Response(
+              new ReadableStream<Uint8Array>({
+                cancel: () => new Promise<void>(() => {}),
+                pull: () => undefined,
+              }),
+            ),
+        )
+        const owner = new AbortController()
+        const values = inactivity(owner.signal, 100, (signal) =>
+          fetch_stream(new Request("https://example.test/body", { signal })),
+        )
+        const pending = values.next()
+
+        context.mock.timers.tick(100)
+
+        deepEqual(
+          await Promise.race([
+            pending.then(
+              () => "completed",
+              () => "failed",
+            ),
+            setImmediate("pending"),
+          ]),
+          "failed",
+        )
       }),
   },
   {

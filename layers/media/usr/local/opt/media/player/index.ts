@@ -18,6 +18,7 @@ import {
   inactivity,
   merge,
   never,
+  once,
 } from "./util.ts"
 
 type Dispatch = ReturnType<typeof playback_transitions>
@@ -28,6 +29,7 @@ type StreamAction = Extract<
     type: "bytes_received" | "request_failed" | "request_finished"
   }
 >
+type SourceAction = Extract<PlaybackAction, { type: "source_closed" }>
 
 {
   for (const name of ["dispose", "asyncDispose"] as const) {
@@ -83,25 +85,46 @@ const stream_events = async function* (
   return
 }
 
+const source_events = async function* (
+  signal: AbortSignal,
+  source: MediaSource,
+): AsyncIteratorObject<SourceAction> {
+  const action = { type: "source_closed" } as const
+  if (source.readyState === "closed") {
+    yield action
+    return
+  }
+  if ((await once(signal, source, "sourceclose")) !== undefined) {
+    yield action
+  }
+  return
+}
+
 const playback_events = (
   signal: AbortSignal,
+  source: MediaSource,
   position: number | undefined,
 ): AsyncIteratorObject<PlaybackAction> =>
   closing(signal, async function* (signal) {
-    const states = media_events(media, signal)
-    if (position === undefined) {
-      yield* states
-      return
-    }
+    await using stream =
+      position === undefined
+        ? (async function* () {})()
+        : stream_events(
+            inactivity(signal, REQUEST_TIMEOUT, (signal) =>
+              fetch_stream(
+                new Request(source_url(media, position), {
+                  signal,
+                }),
+              ),
+            ),
+            signal,
+          )
 
-    await using stream = inactivity(signal, REQUEST_TIMEOUT, (signal) =>
-      fetch_stream(
-        new Request(source_url(media, position), {
-          signal,
-        }),
-      ),
+    await using events = merge(
+      media_events(media, signal),
+      source_events(signal, source),
+      stream,
     )
-    await using events = merge(states, stream_events(stream, signal))
     for await (const [, event] of events) {
       yield event
     }
@@ -150,6 +173,7 @@ export const play_media = async (signal: AbortSignal) => {
 
       for await (const received of playback_events(
         abrt.signal,
+        source,
         requested?.position,
       )) {
         const effects = dispatch(received)

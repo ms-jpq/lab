@@ -565,6 +565,29 @@ const cases = [
     },
   },
   {
+    name: "a live MediaSource close rebuilds playback",
+    run: async () => {
+      const current = await fixture({ response: "pending" })
+      const owner = new AbortController()
+      const active = current.context.player_test.playback(owner.signal)
+
+      try {
+        await eventually(() => current.requests.length === 1)
+        const source = current.sources[0]
+        const request = current.requests[0]
+        ok(source)
+        ok(request)
+        source.dispatchEvent(new Event("sourceclose"))
+
+        await eventually(() => current.sources.length === 2)
+        equal(request.signal.aborted, true)
+      } finally {
+        owner.abort()
+        await active
+      }
+    },
+  },
+  {
     name: "low water resumes acquisition at the buffered frontier",
     run: async () => {
       const current = await fixture()
