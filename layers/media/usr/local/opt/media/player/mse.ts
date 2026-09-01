@@ -5,8 +5,13 @@ export type Mse = AsyncGenerator<void, void, MseOperation>
 
 const EPSILON = 0.001
 
+export const closed = (source: MediaSource): boolean =>
+  source.readyState === "closed"
+
 const op_lock = async function* (
   buffer: SourceBuffer,
+  media: HTMLMediaElement,
+  source: MediaSource,
   signal: AbortSignal,
   timeout: number,
 ): AsyncIteratorObject<undefined> {
@@ -19,6 +24,8 @@ const op_lock = async function* (
   const changed = Promise.race([
     once(a.signal, buffer, "updateend"),
     once(a.signal, buffer, "error"),
+    once(a.signal, media, "seeking"),
+    once(a.signal, source, "sourceclose"),
   ])
 
   yield
@@ -32,19 +39,28 @@ const op_lock = async function* (
     }
     return
   }
-  if (event?.type === "error") {
-    throw event
+  switch (event?.type) {
+    case "error":
+      throw event
+    case "seeking":
+    case "sourceclose": {
+      if (buffer.updating) {
+        buffer.abort()
+      }
+    }
   }
   return
 }
 
 export const media_source = async function* ({
+  media,
   mime_type,
   source,
   evict_before,
   signal,
   timeout,
 }: {
+  media: HTMLMediaElement
   mime_type: string
   source: MediaSource
   evict_before: () => number
@@ -79,8 +95,17 @@ export const media_source = async function* ({
         const ranges = buffer.buffered
         const end = ranges.length ? ranges.end(ranges.length - 1) : 0
 
-        for await (const _ of op_lock(buffer, a.signal, timeout)) {
+        for await (const _ of op_lock(
+          buffer,
+          media,
+          source,
+          a.signal,
+          timeout,
+        )) {
           buffer.remove(end, end + EPSILON)
+        }
+        if (closed(source)) {
+          return
         }
       }
       {
@@ -97,12 +122,24 @@ export const media_source = async function* ({
         buffer.buffered.length &&
         buffer.buffered.start(0) < cutoff
       ) {
-        for await (const _ of op_lock(buffer, a.signal, timeout)) {
+        for await (const _ of op_lock(
+          buffer,
+          media,
+          source,
+          a.signal,
+          timeout,
+        )) {
           buffer.remove(0, cutoff)
         }
+        if (closed(source)) {
+          return
+        }
       }
-      for await (const _ of op_lock(buffer, a.signal, timeout)) {
+      for await (const _ of op_lock(buffer, media, source, a.signal, timeout)) {
         buffer.appendBuffer(operation)
+      }
+      if (closed(source)) {
+        return
       }
       continue
     }
@@ -205,6 +242,7 @@ export const media_sources = ({
         (sig) =>
           media_source({
             evict_before: () => media.currentTime - evict_behind,
+            media,
             mime_type,
             source,
             signal: AbortSignal.any([signal, sig]),

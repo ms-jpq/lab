@@ -27,6 +27,7 @@ type PlaybackAction =
   | Readonly<{ bytes: Uint8Array<ArrayBuffer>; type: "bytes_received" }>
   | Readonly<{ error: unknown; type: "request_failed" }>
   | Readonly<{ type: "request_finished" }>
+  | Readonly<{ type: "request_retry" }>
   | Readonly<{ type: "source_closed" }>
   | Readonly<{ type: "source_opened" }>
 
@@ -206,9 +207,12 @@ const reduce = (
     case "request_failed":
       return state.acquisition === "backpressured"
         ? pause(state, action.error)
-        : retry(state, action.error)
+        : [state, { error: action.error }]
     case "request_finished": {
       return [{ ...state, acquisition: "idle" }, { buffer: { type: "end" } }]
+    }
+    case "request_retry": {
+      return retry(state)
     }
     case "source_closed": {
       return [state, { control: { type: "rebuild" } }]

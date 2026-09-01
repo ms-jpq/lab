@@ -184,12 +184,15 @@ const cases = [
       },
       {
         action: { error: failure, type: "request_failed" },
+        expected: { error: failure },
+      },
+      {
+        action: { type: "request_retry" },
         expected: {
           control: {
             request: { frontier: 0, position: 0 },
             type: "request",
           },
-          error: failure,
         },
       },
     ],

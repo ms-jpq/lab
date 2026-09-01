@@ -1,4 +1,4 @@
-import { media_sources } from "./mse.ts"
+import { closed, media_sources } from "./mse.ts"
 import { media_buffered, media_events } from "./media.ts"
 import {
   duration,
@@ -26,7 +26,8 @@ type PlaybackAction = Parameters<Dispatch>[0]
 type StreamAction = Extract<
   PlaybackAction,
   {
-    type: "bytes_received" | "request_failed" | "request_finished"
+    type:
+      "bytes_received" | "request_failed" | "request_finished" | "request_retry"
   }
 >
 type SourceAction = Extract<PlaybackAction, { type: "source_closed" }>
@@ -62,6 +63,7 @@ type SourceAction = Extract<PlaybackAction, { type: "source_closed" }>
 const BUFFER_BEHIND = 30
 const MSE_TIMEOUT = 10_000
 const REQUEST_TIMEOUT = 15_000
+const RETRY_DELAY = 1_000
 
 const stream_events = async function* (
   stream: ReturnType<typeof fetch_stream>,
@@ -74,8 +76,12 @@ const stream_events = async function* (
       }
     }
   } catch (error) {
-    if (!signal.aborted) {
-      yield { error, type: "request_failed" }
+    if (signal.aborted) {
+      return
+    }
+    yield { error, type: "request_failed" }
+    if (await delay(signal, RETRY_DELAY)) {
+      yield { type: "request_retry" }
     }
     return
   }
@@ -90,7 +96,7 @@ const source_events = async function* (
   source: MediaSource,
 ): AsyncIteratorObject<SourceAction> {
   const action = { type: "source_closed" } as const
-  if (source.readyState === "closed") {
+  if (closed(source)) {
     yield action
     return
   }

@@ -128,16 +128,18 @@ const fixture = (
     timestampOffset: 0,
     updating: false,
   })
-  const source = {
+  const media = new EventTarget() as HTMLMediaElement
+  const source = Object.assign(new EventTarget(), {
     addSourceBuffer: (type: string) => {
       types.push(type)
       return buffer
     },
     endOfStream: () => mutations.push(["end"]),
     readyState,
-  }
+  })
   const values = media_source({
     evict_before: () => 70,
+    media,
     mime_type: "video/test",
     signal: controller.signal,
     source: source as unknown as MediaSource,

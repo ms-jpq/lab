@@ -80,6 +80,14 @@ def html(
     )
 
 
+def _start_stream(request: BaseHTTPRequestHandler, *, content_type: str) -> None:
+    request.send_response(HTTPStatus.OK)
+    request.send_header("Content-Type", content_type)
+    request.send_header("Cache-Control", "no-store")
+    request.send_header("Connection", "close")
+    request.end_headers()
+
+
 def stream(
     request: BaseHTTPRequestHandler,
     *,
@@ -88,15 +96,15 @@ def stream(
     head: bool,
 ) -> None:
     request.close_connection = True
-    request.send_response(HTTPStatus.OK)
-    request.send_header("Content-Type", content_type)
-    request.send_header("Cache-Control", "no-store")
-    request.send_header("Connection", "close")
-    request.end_headers()
 
-    if not head:
-        for chunk in source:
-            request.wfile.write(chunk)
+    if head:
+        _start_stream(request, content_type=content_type)
+        return
+
+    for idx, chunk in enumerate(source):
+        if not idx:
+            _start_stream(request, content_type=content_type)
+        request.wfile.write(chunk)
 
 
 def _handler(handlers: Mapping[str, _HandlerFn]) -> type[BaseHTTPRequestHandler]:

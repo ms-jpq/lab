@@ -588,6 +588,58 @@ const cases = [
     },
   },
   {
+    name: "a live MediaSource close interrupts a pending append",
+    run: async () => {
+      const current = await fixture({ append_completion: "pending" })
+      const owner = new AbortController()
+      const playback = current.context.player_test.play_media(owner.signal)
+
+      try {
+        await eventually(
+          () => current.sources[0]?.sourceBuffers[0]?.appended.length === 1,
+        )
+        const source = current.sources[0]
+        const request = current.requests[0]
+        ok(source)
+        ok(request)
+        source.readyState = "closed"
+        source.dispatchEvent(new Event("sourceclose"))
+
+        await eventually(() => current.sources.length === 2)
+        equal(request.signal.aborted, true)
+      } finally {
+        owner.abort()
+        await playback
+      }
+    },
+  },
+  {
+    name: "an unbuffered seek interrupts a pending append",
+    run: async () => {
+      const current = await fixture({ append_completion: "pending" })
+      const owner = new AbortController()
+      const playback = current.context.player_test.play_media(owner.signal)
+
+      try {
+        await eventually(
+          () => current.sources[0]?.sourceBuffers[0]?.appended.length === 1,
+        )
+        const request = current.requests[0]
+        ok(request)
+        current.media.currentTime = 110
+        current.media.seeking = true
+        current.media.dispatchEvent(new Event("seeking"))
+
+        await eventually(() => current.requests.length === 2)
+        equal(request.signal.aborted, true)
+        equal(request_position(current.requests[1]), "110")
+      } finally {
+        owner.abort()
+        await playback
+      }
+    },
+  },
+  {
     name: "low water resumes acquisition at the buffered frontier",
     run: async () => {
       const current = await fixture()
@@ -767,7 +819,10 @@ const cases = [
   {
     name: "a partial request failure retries from its buffered frontier",
     run: async () => {
-      const current = await fixture({ append_duration: 20 })
+      const current = await fixture({
+        append_duration: 20,
+        immediate_timers: true,
+      })
       const failure = new Error("request failed after partial progress")
       let first:
         ReadableStreamDefaultController<Uint8Array<ArrayBuffer>> | undefined
@@ -815,7 +870,10 @@ const cases = [
   {
     name: "an expected native media abort preserves playback",
     run: async () => {
-      const current = await fixture({ response: "pending" })
+      const current = await fixture({
+        immediate_timers: true,
+        response: "pending",
+      })
       const owner = new AbortController()
       const playback = current.context.player_test.play_media(owner.signal)
 
@@ -837,7 +895,10 @@ const cases = [
   {
     name: "a media failure storm reports and rebuilds once",
     run: async () => {
-      const current = await fixture({ response: "pending" })
+      const current = await fixture({
+        immediate_timers: true,
+        response: "pending",
+      })
       const owner = new AbortController()
       const playback = current.context.player_test.play_media(owner.signal)
 
@@ -859,7 +920,10 @@ const cases = [
   {
     name: "a transport failure is reported and retried",
     run: async () => {
-      const current = await fixture({ response: "pending" })
+      const current = await fixture({
+        immediate_timers: true,
+        response: "pending",
+      })
       const failure = new Error("transport failed")
       let attempts = 0
       current.set_fetch((request) => {
@@ -890,6 +954,43 @@ const cases = [
 
       owner.abort()
       await playback
+    },
+  },
+  {
+    name: "a failed transport waits before retrying",
+    run: async () => {
+      const current = await fixture({ response: "pending" })
+      let attempts = 0
+      current.set_fetch((request) => {
+        attempts += 1
+        if (attempts === 1) {
+          throw new Error("first request failed")
+        }
+        return response_from(
+          new ReadableStream({
+            start: (controller) => {
+              request.signal.addEventListener(
+                "abort",
+                () => controller.error(request.signal.reason),
+                { once: true },
+              )
+            },
+          }),
+        )
+      })
+      const owner = new AbortController()
+      const playback = current.context.player_test.play_media(owner.signal)
+
+      try {
+        await eventually(() => current.requests.length === 1)
+        await next_task()
+
+        equal(current.requests.length, 1)
+        equal(current.errors.length, 1)
+      } finally {
+        owner.abort()
+        await playback
+      }
     },
   },
   {
@@ -1210,7 +1311,10 @@ const cases = [
   {
     name: "a non-OK response retires without draining its body",
     run: async () => {
-      const current = await fixture({ response: "pending" })
+      const current = await fixture({
+        immediate_timers: true,
+        response: "pending",
+      })
       let cancellations = 0
       let attempts = 0
       current.set_fetch((request) => {
@@ -1252,7 +1356,10 @@ const cases = [
   {
     name: "each failed transport attempt is reported",
     run: async () => {
-      const current = await fixture({ response: "pending" })
+      const current = await fixture({
+        immediate_timers: true,
+        response: "pending",
+      })
       const failures = [new Error("first"), new Error("second")]
       let attempts = 0
       current.set_fetch((request) => {
