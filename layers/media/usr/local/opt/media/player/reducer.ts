@@ -172,6 +172,14 @@ const project = (
   return [next, seek === undefined ? controlled : { ...controlled, seek }]
 }
 
+const retry = (state: PlaybackState): PlaybackTransition => {
+  const request = request_at(state.request.frontier)
+  return [
+    { ...state, acquisition: "active", request },
+    { control: { request, type: "request" } },
+  ]
+}
+
 const pause = (
   state: PlaybackState,
   error: unknown = undefined,
@@ -181,19 +189,6 @@ const pause = (
     ? { control: { type: "pause" } }
     : { control: { type: "pause" }, error },
 ]
-
-const retry = (
-  state: PlaybackState,
-  error: unknown = undefined,
-): PlaybackTransition => {
-  const request = request_at(state.request.frontier)
-  return [
-    { ...state, acquisition: "active", request },
-    error === undefined
-      ? { control: { request, type: "request" } }
-      : { control: { request, type: "request" }, error },
-  ]
-}
 
 const reduce = (
   state: PlaybackState,

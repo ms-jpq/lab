@@ -467,7 +467,7 @@ const cases = [
     },
   },
   {
-    name: "startup streams bytes through one MediaSource",
+    name: "a finite high-water response reaches end of stream",
     run: async () => {
       const current = await fixture()
       const owner = new AbortController()
@@ -478,7 +478,9 @@ const cases = [
       equal(current.sources.length, 1)
       equal(current.sources[0]?.duration, 200)
       equal(current.requests.length, 1)
-      equal(new URL(current.requests[0]?.url ?? "").searchParams.get("t"), "0")
+      const request = current.requests[0]
+      ok(request)
+      equal(new URL(request.url).searchParams.get("t"), "0")
       deepEqual(
         current.sources[0]?.sourceBuffers[0]?.appended[0],
         Uint8Array.of(1),
