@@ -217,6 +217,30 @@ const start = async (values: Mse, position = 0): Promise<void> => {
 
 const cases = [
   {
+    name: "a committed bond releases opening listeners before handing off",
+    run: async (context: TestContext) => {
+      const current = acquisitionFixture(context)
+      const owner = new AbortController()
+      const values = bond(current.media, owner.signal, MSE_TIMEOUT)
+      try {
+        current.media.src = "blob:test:previous"
+        const pending = values.next()
+        const source = current.sources[0]
+        assert(source)
+        source.dispatchEvent(new Event("sourceopen"))
+        deepEqual(await pending, { done: false, value: source })
+        deepEqual(getEventListeners(source, "sourceopen"), [])
+        deepEqual(getEventListeners(source, "sourceclose"), [])
+        deepEqual(current.media.src, "blob:test:0")
+        deepEqual(current.revoked, ["blob:test:previous"])
+      } finally {
+        owner.abort()
+        await values.return?.()
+        current.restore()
+      }
+    },
+  },
+  {
     name: "quota yields the exact unaccepted bytes without autonomous retries, eviction, or listeners",
     run: async () => {
       const current = quotaFixture()

@@ -10,18 +10,7 @@ export type MediaSnapshot = Readonly<{
   time: number
 }>
 
-export type MediaEvent =
-  | "canplay"
-  | "ended"
-  | "error"
-  | "loadedmetadata"
-  | "playing"
-  | "progress"
-  | "seeked"
-  | "seeking"
-  | "stalled"
-  | "timeupdate"
-  | "waiting"
+export type MediaEvent = (typeof EVENTS)[number]
 
 export type MediaAction = Readonly<{
   current: MediaSnapshot
@@ -43,7 +32,7 @@ const EVENTS = [
   "stalled",
   "timeupdate",
   "waiting",
-] as const satisfies readonly MediaEvent[]
+] as const satisfies readonly (keyof HTMLMediaElementEventMap)[]
 
 export const playable_time = (duration: number, value: number): number => {
   const position = Number.isFinite(value) ? Math.max(0, value) : 0

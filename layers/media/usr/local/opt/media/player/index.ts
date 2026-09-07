@@ -72,9 +72,7 @@ const stream_events = async function* (
 ): AsyncIteratorObject<StreamAction> {
   try {
     for await (const bytes of stream) {
-      if (bytes !== undefined) {
-        yield { bytes, type: "bytes_received" }
-      }
+      yield { bytes, type: "bytes_received" }
     }
   } catch (error) {
     if (signal.aborted) {
@@ -190,7 +188,6 @@ export const play_media = async (signal: AbortSignal) => {
       }
 
       using abrt = abortion(abort.signal)
-      using _ = abrt
 
       for await (const received of playback_events(
         abrt.signal,
@@ -296,7 +293,7 @@ export const playback = async (signal: AbortSignal) => {
       }
       console.error(error)
     }
-    if (!(await delay(signal, 1_000))) {
+    if (!(await delay(signal, RETRY_DELAY))) {
       return
     }
   }

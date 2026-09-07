@@ -140,14 +140,13 @@ const acknowledge = (
     state.acquisition === "active" &&
     !aligned(frontier, state.request.position) &&
     play_ahead(current, frontier) >= BUFFER_HIGH
-  const request = {
-    frontier,
-    position: pause ? frontier : state.request.position,
-  }
   return {
     ...state,
     acquisition: pause ? "backpressured" : state.acquisition,
-    request,
+    request: {
+      frontier,
+      position: pause ? frontier : state.request.position,
+    },
   }
 }
 
@@ -180,16 +179,15 @@ const project = (
   const pause =
     state.acquisition === "backpressured" ||
     (state.acquisition === "active" && advance)
-  const request = {
-    frontier,
-    position: advance ? frontier : state.request.position,
-  }
   const [next, effects] = request_if_needed(
     {
       ...state,
       acquisition: pause ? "idle" : state.acquisition,
       pending_seek,
-      request,
+      request: {
+        frontier,
+        position: advance ? frontier : state.request.position,
+      },
       resume: state.resume && !play,
       target: pending_seek ?? playable_time(current.duration, current.time),
     },
@@ -311,13 +309,7 @@ const reduce = (
           ? buffered_position(current, current.time)
           : undefined
       const [next, effects] = project(state, current)
-      return [
-        next,
-        {
-          ...effects,
-          ...(persist === undefined ? {} : { persist }),
-        },
-      ]
+      return [next, persist === undefined ? effects : { ...effects, persist }]
     }
     case "error": {
       const { current } = action
@@ -344,8 +336,7 @@ const reduce = (
     case "seeking": {
       const { current } = action
       const native = playable_time(current.duration, current.time)
-      const buffered = buffered_position(current, native)
-      const target = buffered ?? native
+      const target = buffered_position(current, native) ?? native
 
       if (
         state.pending_seek !== undefined &&

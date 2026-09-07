@@ -456,6 +456,32 @@ const cases = [
       }),
   },
   {
+    name: "return releases the body reader even when cancellation rejects",
+    run: async (context: TestContext) =>
+      withFetch(context, async () => {
+        const failure = new Error("cancellation failed")
+        const state = { cancelled: 0 }
+        const body = new ReadableStream<Uint8Array>({
+          start: (controller) => controller.enqueue(new Uint8Array([1])),
+          cancel: () => {
+            state.cancelled += 1
+            throw failure
+          },
+        })
+        context.mock.method(globalThis, "fetch", async () => new Response(body))
+        const owner = new AbortController()
+        const values = fetch_stream(
+          new Request("https://example.test/stream", {
+            signal: owner.signal,
+          }),
+        )
+        await values.next()
+        deepEqual(await values.return?.(), { done: true, value: undefined })
+        deepEqual(state.cancelled, 1)
+        deepEqual(body.locked, false)
+      }),
+  },
+  {
     name: "return from a logical stream starts body cancellation after abort",
     run: async (context: TestContext) =>
       withFetch(context, async () => {

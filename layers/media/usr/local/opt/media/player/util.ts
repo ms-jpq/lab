@@ -39,15 +39,15 @@ export const closing = <const T, const R = undefined, const N = void>(
     using _ = a
     return yield* open(a.signal)
   })()
-  const bound = aiter.return?.bind(aiter)
+  const bound = aiter.return.bind(aiter)
 
   const close = async (value: R | PromiseLike<R>) => {
     a[Symbol.dispose]()
     try {
-      return bound?.(await value)
+      return bound(await value)
     } catch (error) {
       try {
-        await bound?.(Promise.reject(error))
+        await bound(Promise.reject(error))
       } catch (e) {
         if (e !== error) {
           throw new AggregateError([error, e])
@@ -155,13 +155,13 @@ const readableIterator = async function* <const T>(
     }
   } finally {
     if (!eof) {
-      const cancelled = reader.cancel()
-      if (a.signal.aborted) {
-        void cancelled.catch(() => undefined)
-      } else {
+      const cancelled = (async () => {
         try {
-          await cancelled
+          await reader.cancel()
         } catch {}
+      })()
+      if (!a.signal.aborted) {
+        await cancelled
       }
     }
     reader.releaseLock()
@@ -224,13 +224,9 @@ const next = async <const T>(
 export const join = async (
   promises: Iterable<PromiseLike<unknown>>,
 ): Promise<void> => {
-  const settled = await Promise.allSettled(promises)
-  const errors = settled.flatMap((result) => {
-    if (result.status === "rejected") {
-      return [result.reason]
-    }
-    return []
-  })
+  const errors = (await Promise.allSettled(promises)).flatMap((result) =>
+    result.status === "rejected" ? [result.reason] : [],
+  )
   if (errors.length === 1) {
     throw errors[0]
   }

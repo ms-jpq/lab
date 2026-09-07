@@ -57,7 +57,7 @@ const op_lock = async function* (
   }
 
   const deadline = AbortSignal.timeout(timeout)
-  using a = abortion(AbortSignal.any([signal, deadline]))
+  using a = abortion(signal, deadline)
   const changed = Promise.race([
     ...(operation === "append"
       ? [unbuffered_seek(media, buffer, a.signal)]
@@ -69,22 +69,17 @@ const op_lock = async function* (
 
   yield
   const event = await changed
-  if (event === undefined) {
-    if (operation === "append" && buffer.updating) {
-      buffer.abort()
-    }
-    if (deadline.aborted && !signal.aborted) {
-      throw new Error("SourceBuffer operation timed out")
-    }
-    return
-  }
   switch (event?.type) {
     case "error":
       throw event
+    case undefined:
     case "seeking":
     case "sourceclose": {
       if (operation === "append" && buffer.updating) {
         buffer.abort()
+      }
+      if (event === undefined && deadline.aborted && !signal.aborted) {
+        throw new Error("SourceBuffer operation timed out")
       }
     }
   }
@@ -235,20 +230,18 @@ export const bond = (
       let committed = false
       try {
         const deadline = AbortSignal.timeout(timeout)
-        const event = await (async () => {
-          using a = abortion(AbortSignal.any([signal, deadline]))
-          const opened = Promise.race([
-            once(a.signal, source, "sourceopen"),
-            once(a.signal, source, "sourceclose"),
-          ])
-          media.src = url
-          return await opened
-        })()
+        using a = abortion(signal, deadline)
+        const opened = Promise.race([
+          once(a.signal, source, "sourceopen"),
+          once(a.signal, source, "sourceclose"),
+        ])
+        media.src = url
+        const event = await opened
 
         if (signal.aborted) {
           return
         }
-        if (event === undefined && deadline.aborted && !signal.aborted) {
+        if (event === undefined && deadline.aborted) {
           throw new Error("MediaSource opening timed out")
         }
         if (event?.type === "sourceclose" || closed(source)) {

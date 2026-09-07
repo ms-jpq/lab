@@ -73,10 +73,7 @@ const play_subtitle = async (signal: AbortSignal): Promise<void> => {
     return
   }
 
-  for (;;) {
-    if (subtitle.readyState === subtitle.LOADED) {
-      return
-    }
+  while (subtitle.readyState !== subtitle.LOADED) {
     const event = await (async () => {
       using attempt = abortion(signal)
       const loaded = Promise.race([
