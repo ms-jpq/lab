@@ -1,4 +1,5 @@
-import { doesNotThrow, equal, ok } from "node:assert/strict"
+import { deepEqual, doesNotThrow, equal, ok } from "node:assert/strict"
+import { getEventListeners } from "node:events"
 import { readFile } from "node:fs/promises"
 import { stripTypeScriptTypes } from "node:module"
 import test from "node:test"
@@ -241,6 +242,42 @@ test("playback teardown failures escape the page lifetime", async () => {
   equal(started.length, 1)
 })
 
+for (const failure of [undefined, "teardown rejected"]) {
+  test(
+    `page teardown preserves ${typeof failure} rejection values`,
+    { concurrency: true, timeout: 2_000 },
+    async () => {
+      const { main, window } = await fixture()
+      const started: AbortSignal[] = []
+      const finished = main(async (signal) => {
+        started.push(signal)
+        await new Promise<void>((resolve) => {
+          signal.addEventListener("abort", () => resolve(), { once: true })
+        })
+        throw failure
+      }).then(
+        () => ({ status: "fulfilled" }),
+        (reason: unknown) => ({ status: "rejected", reason }),
+      )
+
+      try {
+        window.dispatchEvent(new Event("pageshow"))
+        await setImmediate()
+        equal(started.length, 1)
+        window.dispatchEvent(new Event("pagehide"))
+
+        deepEqual(await finished, { status: "rejected", reason: failure })
+        ok(started[0]?.aborted)
+        equal(getEventListeners(window, "pagehide").length, 0)
+        equal(getEventListeners(window, "pageshow").length, 0)
+      } finally {
+        window.dispatchEvent(new Event("pagehide"))
+        await setImmediate()
+      }
+    },
+  )
+}
+
 test("restoring a loading subtitle does not turn cancellation into a retry loop", async () => {
   const timers = new Map<number, () => void>()
   const { cancelled, finish, requests, subtitle } = subtitle_fixture()
@@ -365,3 +402,87 @@ test("a restored pending subtitle still retries its own loading failure", async 
     await setImmediate()
   }
 })
+
+for (const outcome of ["pending", "load", "error"] as const) {
+  for (const visible of [false, true]) {
+    test(
+      `delayed page teardown with ${outcome} subtitles honors a final ${visible ? "show" : "hide"}`,
+      { concurrency: true, timeout: 2_000 },
+      async () => {
+        const timers = new Map<number, () => void>()
+        const track = subtitle_fixture()
+        const { main, media, window } = await fixture(track.subtitle, timers)
+        const cleanup = Promise.withResolvers<void>()
+        const started: AbortSignal[] = []
+        const live = new Set<number>()
+        const failures: unknown[] = []
+        void main(async (signal) => {
+          equal(
+            live.size,
+            0,
+            "the preceding owner must finish before replacement",
+          )
+          started.push(signal)
+          const session = started.length
+          live.add(session)
+          media.src = `source:${session}`
+          await new Promise<void>((resolve) => {
+            signal.addEventListener("abort", () => resolve(), { once: true })
+          })
+          if (session === 1) {
+            await cleanup.promise
+          }
+          media.removeAttribute("src")
+          live.delete(session)
+        }).catch((error: unknown) => failures.push(error))
+
+        try {
+          window.dispatchEvent(new Event("pageshow"))
+          await setImmediate()
+          equal(started.length, 1)
+          equal(track.requests.length, 1)
+          window.dispatchEvent(new Event("pagehide"))
+          await setImmediate()
+          ok(started[0]?.aborted)
+          equal(getEventListeners(track.subtitle, "load").length, 0)
+          equal(getEventListeners(track.subtitle, "error").length, 0)
+
+          if (outcome !== "pending") {
+            track.finish(outcome)
+            await setImmediate()
+          }
+          window.dispatchEvent(new Event("pageshow"))
+          await setImmediate()
+          if (!visible) {
+            window.dispatchEvent(new Event("pagehide"))
+            await setImmediate()
+          }
+          equal(started.length, 1)
+          equal(
+            live.size,
+            1,
+            "aborted work remains owned until cleanup finishes",
+          )
+          cleanup.resolve()
+          await setImmediate()
+
+          equal(started.length, visible ? 2 : 1)
+          equal(live.size, visible ? 1 : 0)
+          equal(media.src, visible ? "source:2" : "")
+          equal(track.requests.length, visible && outcome === "error" ? 2 : 1)
+          equal(track.cancelled.length, 0)
+          equal(timers.size, 0)
+          deepEqual(failures, [])
+        } finally {
+          cleanup.resolve()
+          window.dispatchEvent(new Event("pagehide"))
+          await setImmediate()
+        }
+        equal(live.size, 0)
+        equal(getEventListeners(track.subtitle, "load").length, 0)
+        equal(getEventListeners(track.subtitle, "error").length, 0)
+        equal(timers.size, 0)
+      },
+    )
+  }
+}

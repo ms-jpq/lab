@@ -62,6 +62,9 @@ export const BUFFER_HIGH = 60
 const aligned = (left: number, right: number): boolean =>
   Math.abs(left - right) <= POSITION_TOLERANCE
 
+const stream_position = (value: number): number =>
+  Math.round(value * 1_000) / 1_000
+
 const buffered_range = (
   { buffered }: MediaSnapshot,
   position: number,
@@ -70,7 +73,9 @@ const buffered_range = (
   buffered.find(
     ([start, end]) =>
       start - position <= POSITION_TOLERANCE &&
-      (inclusive ? position <= end : position < end),
+      (inclusive
+        ? position <= Math.max(end, stream_position(end))
+        : position < end),
   )
 
 const buffered_position = (
@@ -93,9 +98,6 @@ const play_ahead = (state: MediaSnapshot, frontier: number): number => {
     ? end - state.time
     : 0
 }
-
-const stream_position = (value: number): number =>
-  Math.round(value * 1_000) / 1_000
 
 const request_at = (position: number): PlaybackRequest => ({
   frontier: stream_position(position),
@@ -280,6 +282,8 @@ const reduce = (
     case "buffered": {
       return [acknowledge(state, action.current), {}]
     }
+    case "play":
+      return [{ ...state, resume: false }, { play: false }]
     case "loadedmetadata":
     case "canplay":
     case "progress":

@@ -7,6 +7,7 @@ import { setImmediate } from "node:timers/promises"
 import {
   closing,
   delay,
+  event_batches,
   fetch_stream,
   inactivity,
   join,
@@ -47,6 +48,94 @@ class OnceTarget extends EventTarget {
 }
 
 const cases = [
+  {
+    name: "return drains queued event reads directly and through merge",
+    run: async () => {
+      for (const count of [0, 1, 8]) {
+        for (const combined of [false, true]) {
+          const owner = new AbortController()
+          const target = new OnceTarget()
+          const source = event_batches(
+            owner.signal,
+            target,
+            ["left"],
+            () => target.state,
+          )
+          const values = combined ? merge(source) : source
+          try {
+            const pending = Array.from({ length: count }, () => values.next())
+            await setImmediate()
+            const returned = values.return?.(undefined)
+            const settled = Promise.all([...pending, returned])
+            deepEqual(
+              await Promise.race([
+                settled.then((results) =>
+                  results.every((result) => result?.done),
+                ),
+                setImmediate("pending"),
+              ]),
+              true,
+            )
+            deepEqual(getEventListeners(target, "left"), [])
+          } finally {
+            owner.abort()
+            await values.return?.(undefined)
+          }
+        }
+      }
+    },
+  },
+  ...(["fulfilled", "rejected"] as const).map((outcome) => ({
+    name: `closing assimilates a ${outcome} return thenable once and completes cleanup`,
+    run: async () => {
+      const pending = Promise.withResolvers<undefined>()
+      const failure = new Error("return failed")
+      let assimilations = 0
+      let cleaned = false
+      const input: PromiseLike<undefined> = {
+        then: (fulfilled, rejected) => {
+          assimilations += 1
+          return pending.promise.then(fulfilled, rejected)
+        },
+      }
+      const values = closing(
+        new AbortController().signal,
+        async function* (signal) {
+          try {
+            yield 1
+          } finally {
+            assert(signal.aborted)
+            cleaned = true
+          }
+          return
+        },
+      )
+      await values.next()
+      const returned = values.return?.(input)
+      assert(returned)
+      const settled = returned.then(
+        (result) => ({ result }),
+        (error: unknown) => ({ error }),
+      )
+      try {
+        await setImmediate()
+        deepEqual(assimilations, 1)
+        if (outcome === "fulfilled") {
+          pending.resolve(undefined)
+          deepEqual(await settled, { result: { done: true, value: undefined } })
+        } else {
+          pending.reject(failure)
+          deepEqual(await settled, { error: failure })
+        }
+        assert(cleaned)
+        deepEqual(assimilations, 1)
+      } finally {
+        pending.resolve(undefined)
+        await settled
+        await values.return?.(undefined)
+      }
+    },
+  })),
   {
     name: "closing preserves native return-before-next call ordering",
     run: async () => {

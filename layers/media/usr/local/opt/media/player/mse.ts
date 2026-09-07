@@ -28,7 +28,11 @@ const unbuffered_seek = async (
     }
     const ranges = media.buffered
     const position = playable_position(media, media.currentTime)
-    if (Math.abs(position - buffer.timestampOffset) <= POSITION_TOLERANCE) {
+    if (
+      Math.abs(position - buffer.timestampOffset) <= POSITION_TOLERANCE &&
+      (!ranges.length ||
+        buffer.timestampOffset >= ranges.start(0) - POSITION_TOLERANCE)
+    ) {
       continue
     }
     for (let index = 0; index < ranges.length; index += 1) {

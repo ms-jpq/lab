@@ -60,6 +60,87 @@ const quota_steps: readonly Step[] = [
 ]
 
 const cases = [
+  ...[1, 2].map((frames): Case => {
+    const end = BUFFER_HIGH + frames / 30
+    return {
+      name: `native 30fps end ${end} reaches high water regardless of request rounding`,
+      steps: [
+        {
+          action: { type: "source_opened" },
+          expected: {
+            control: { type: "request", request: { frontier: 0, position: 0 } },
+            seek: 0,
+          },
+        },
+        { action: { type: "seeked", current: snapshot() }, expected: {} },
+        {
+          action: {
+            type: "buffered",
+            current: snapshot({ buffered: [[0, end]] }),
+          },
+          expected: {},
+        },
+        {
+          action: { type: "bytes_received", bytes: new Uint8Array([1]) },
+          expected: { control: { type: "pause" } },
+        },
+        {
+          action: {
+            type: "progress",
+            current: snapshot({ buffered: [[0, end]], time: end - BUFFER_LOW }),
+          },
+          expected: {},
+        },
+        {
+          action: {
+            type: "progress",
+            current: snapshot({
+              buffered: [[0, end]],
+              time: end - BUFFER_LOW + 0.01,
+            }),
+          },
+          expected: {
+            control: {
+              type: "request",
+              request: {
+                frontier: Math.round(end * 1_000) / 1_000,
+                position: Math.round(end * 1_000) / 1_000,
+              },
+            },
+          },
+        },
+      ],
+    }
+  }),
+  {
+    name: "rounding tolerance does not attach a new frontier to an older range across a real gap",
+    position: 60.05,
+    steps: [
+      {
+        action: { type: "source_opened" },
+        expected: {
+          control: {
+            type: "request",
+            request: { frontier: 60.05, position: 60.05 },
+          },
+          seek: 60.05,
+        },
+      },
+      {
+        action: {
+          type: "seeked",
+          current: snapshot({
+            buffered: [
+              [0, 60],
+              [60.1, 140.1],
+            ],
+            time: 60.11,
+          }),
+        },
+        expected: { control: { type: "pause" } },
+      },
+    ],
+  },
   {
     name: "quota holds acquisition through buffered seeks until half the playable buffer is consumed",
     position: 40,
@@ -942,6 +1023,31 @@ const shuffled: readonly Case[] = cases
   .map(({ testCase }) => testCase)
 
 await Promise.all([
+  ...(
+    [
+      ["play", "canplay"],
+      ["canplay", "play"],
+    ] as const
+  ).map((types) =>
+    nodeTest(
+      `native play owns resumption for ${types.join("/")}`,
+      options,
+      () => {
+        const dispatch = playback_transitions(0)
+        dispatch({ type: "source_opened" })
+        dispatch({ type: "source_closed", paused: false, position: 0 })
+        dispatch({ type: "source_opened" })
+        const effects = dispatch(
+          types.map((type) => ({ type, current: snapshot() })),
+        )
+        equal(effects.play, false)
+        equal(
+          dispatch({ type: "canplay", current: snapshot() }).play,
+          undefined,
+        )
+      },
+    ),
+  ),
   ...[false, true].flatMap((paused) =>
     (
       [

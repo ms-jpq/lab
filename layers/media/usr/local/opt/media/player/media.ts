@@ -25,6 +25,7 @@ const EVENTS = [
   "ended",
   "error",
   "loadedmetadata",
+  "play",
   "playing",
   "progress",
   "seeked",
@@ -41,10 +42,13 @@ export const playable_time = (duration: number, value: number): number => {
     : position
 }
 
+const media_duration = (media: HTMLMediaElement): number =>
+  Number(media.dataset["duration"]) || media.duration
+
 export const playable_position = (
   media: HTMLMediaElement,
   value: number,
-): number => playable_time(Number(media.dataset["duration"]), value)
+): number => playable_time(media_duration(media), value)
 
 const media_state = (media: HTMLMediaElement): MediaSnapshot => ({
   buffered: Array.from(
@@ -52,7 +56,7 @@ const media_state = (media: HTMLMediaElement): MediaSnapshot => ({
     (_, index) =>
       [media.buffered.start(index), media.buffered.end(index)] as const,
   ),
-  duration: Number(media.dataset["duration"]),
+  duration: media_duration(media),
   error: media.error ?? undefined,
   metadata: media.readyState >= media.HAVE_METADATA,
   paused: media.paused,

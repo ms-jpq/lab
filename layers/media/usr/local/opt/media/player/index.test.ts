@@ -31,6 +31,7 @@ type FixtureOptions = Readonly<{
   append_failures?: number
   buffer_failures?: number
   immediate_timers?: boolean
+  media_duration?: number
   recovery_timers?: boolean
   source_open?: "automatic" | "manual"
   response?: "eof" | "partial" | "pending"
@@ -168,6 +169,7 @@ const fixture = async ({
   append_failures = 0,
   buffer_failures = 0,
   immediate_timers = false,
+  media_duration = 200,
   recovery_timers = false,
   source_open = "automatic",
   response = "eof",
@@ -178,6 +180,7 @@ const fixture = async ({
 }: FixtureOptions = {}) => {
   const errors: unknown[][] = []
   const media = new Media()
+  media.dataset["duration"] = String(media_duration)
   const requests: Request[] = []
   const replacements: string[] = []
   const revoked: string[] = []
@@ -525,6 +528,170 @@ const retry_clock = (context: PlayerContext): (() => void) => {
 }
 
 const cases = [
+  {
+    name: "audit: a fractional native frame endpoint still pauses fetching at high water",
+    run: async () => {
+      const current = await fixture({ append_duration: BUFFER_HIGH + 2 / 30 })
+      let body:
+        ReadableStreamDefaultController<Uint8Array<ArrayBuffer>> | undefined
+      current.set_fetch(() =>
+        response_from(
+          new ReadableStream({
+            start: (controller) => {
+              body = controller
+            },
+          }),
+        ),
+      )
+      const owner = new AbortController()
+      const playback = current.context.player_test.play_media(owner.signal)
+      try {
+        await eventually(() => current.requests.length === 1)
+        ok(body)
+        body.enqueue(new Uint8Array([1]))
+        await eventually(
+          () => current.sources[0]?.sourceBuffers[0]?.appended.length === 1,
+        )
+        await next_task()
+        body.enqueue(new Uint8Array([2]))
+        await next_task()
+        deepEqual(
+          {
+            appends: current.sources[0]?.sourceBuffers[0]?.appended.length,
+            aborted: current.requests[0]?.signal.aborted,
+          },
+          { appends: 1, aborted: true },
+        )
+      } finally {
+        owner.abort()
+        await playback
+      }
+    },
+  },
+  {
+    name: "audit: native completion supplies an initially unknown media duration",
+    run: async () => {
+      const current = await fixture({ media_duration: 0, append_duration: 10 })
+      let body:
+        ReadableStreamDefaultController<Uint8Array<ArrayBuffer>> | undefined
+      current.set_fetch(() => {
+        const source = current.sources[0]
+        ok(source)
+        Object.defineProperty(current.media, "duration", {
+          configurable: true,
+          get: () => source.duration,
+        })
+        source.endOfStream = () => {
+          source.duration = 10
+          source.readyState = "ended"
+        }
+        return response_from(
+          new ReadableStream({
+            start: (controller) => {
+              if (current.requests.length === 1) {
+                body = controller
+              }
+            },
+          }),
+        )
+      })
+      const owner = new AbortController()
+      const playback = current.context.player_test.play_media(owner.signal)
+      try {
+        await eventually(() => current.requests.length === 1)
+        current.media.dispatchEvent(new Event("seeked"))
+        await next_task()
+        ok(body)
+        body.enqueue(new Uint8Array([1]))
+        body.close()
+        await eventually(() => current.sources[0]?.readyState === "ended")
+        current.media.currentTime = 10
+        current.media.dispatchEvent(new Event("timeupdate"))
+        current.media.paused = true
+        current.media.ended = true
+        current.media.dispatchEvent(new Event("ended"))
+        await next_task()
+        deepEqual(
+          {
+            positions: current.requests.map(request_position),
+            persisted: current.time_input.value,
+          },
+          { positions: ["0"], persisted: "0" },
+        )
+      } finally {
+        owner.abort()
+        await playback
+      }
+    },
+  },
+  {
+    name: "audit: a newer explicit pause cancels deferred source-recovery playback",
+    run: async () => {
+      const current = await fixture({ response: "pending" })
+      const pending = Promise.withResolvers<void>()
+      const owner = new AbortController()
+      const playback = current.context.player_test.play_media(owner.signal)
+      let plays = 0
+      try {
+        await eventually(() => current.requests.length === 1)
+        current.media.dispatchEvent(new Event("seeked"))
+        await next_task()
+        let src = current.media.src
+        Object.defineProperty(current.media, "src", {
+          get: () => src,
+          set: (value: string) => {
+            src = value
+            current.media.paused = true
+            current.media.readyState = 0
+          },
+        })
+        current.media.play = async () => {
+          plays += 1
+          current.media.paused = false
+          setImmediate(() => current.media.dispatchEvent(new Event("play")))
+          if (current.media.readyState < current.media.HAVE_FUTURE_DATA) {
+            await pending.promise
+          }
+        }
+        current.media.pause = () => {
+          if (!current.media.paused) {
+            current.media.paused = true
+            setImmediate(() => {
+              current.media.dispatchEvent(new Event("timeupdate"))
+              current.media.dispatchEvent(new Event("pause"))
+              pending.reject(new DOMException("paused", "AbortError"))
+            })
+          }
+        }
+        const source = current.sources[0]
+        ok(source)
+        source.readyState = "closed"
+        source.dispatchEvent(new Event("sourceclose"))
+        await eventually(() => current.requests.length === 2)
+        const user_play = current.media.play().catch((error: unknown) => {
+          ok(error instanceof DOMException)
+          equal(error.code, DOMException.ABORT_ERR)
+        })
+        current.media.pause()
+        await user_play
+        await next_task()
+        equal(current.media.paused, true)
+        equal(plays, 1)
+        current.media.readyState = current.media.HAVE_FUTURE_DATA
+        current.media.dispatchEvent(new Event("canplay"))
+        await next_task()
+        equal(
+          plays,
+          1,
+          "metadata arrival must not undo the newer explicit pause",
+        )
+        equal(current.media.paused, true)
+      } finally {
+        owner.abort()
+        await playback
+      }
+    },
+  },
   ...[false, true].map((paused): TestCase => ({
     name: `audit: repeated outer append-failure recovery preserves ${paused ? "a user pause" : "active playback intent"}`,
     run: async () => {

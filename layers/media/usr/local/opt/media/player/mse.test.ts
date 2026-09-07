@@ -566,6 +566,91 @@ const cases = [
       }
     },
   },
+  {
+    name: "seeking to an evicted request start interrupts an active append",
+    run: async () => {
+      const { buffer, controller, entered, media, mutations, release, values } =
+        fixture(timeRanges(), undefined, "append", "open", () => 80 - 30)
+      const initial = new Uint8Array([8])
+      const append = buffer.appendBuffer.bind(buffer)
+      buffer.appendBuffer = (bytes) => {
+        append(bytes)
+        if (bytes === initial) {
+          buffer.buffered = timeRanges([0, 100])
+          Object.assign(media, { buffered: buffer.buffered })
+          release()
+        }
+      }
+      const remove = buffer.remove.bind(buffer)
+      buffer.remove = (start, end) => {
+        const retained = timeRanges([end, 100])
+        buffer.buffered = retained
+        Object.assign(media, { buffered: retained })
+        remove(start, end)
+      }
+      await start(values, 0)
+      await values.next(initial)
+      media.currentTime = 80
+      const appending = values.next(new Uint8Array([9]))
+      await entered
+      await setImmediate()
+      try {
+        assert(buffer.updating)
+        deepEqual(mutations, [
+          ["append", [8]],
+          ["remove", 0, 50],
+          ["append", [9]],
+        ])
+        deepEqual(buffer.timestampOffset, 0)
+        deepEqual(media.buffered.start(0), 50)
+        media.currentTime = 0
+        media.dispatchEvent(new Event("seeking"))
+        deepEqual(
+          await Promise.race([
+            appending.then(() => "completed"),
+            setImmediate("pending"),
+          ]),
+          "completed",
+        )
+        deepEqual(buffer.updating, false)
+      } finally {
+        controller.abort()
+        release()
+        await appending
+        await values.return?.(undefined)
+      }
+    },
+  },
+  {
+    name: "the initial unbuffered request seek preserves its pending append",
+    run: async () => {
+      const { buffer, controller, entered, media, release, values } = fixture(
+        timeRanges(),
+        undefined,
+        "append",
+      )
+      await start(values, 100)
+      const appending = values.next(new Uint8Array([9]))
+      await entered
+      try {
+        media.currentTime = 100
+        media.dispatchEvent(new Event("seeking"))
+        deepEqual(
+          await Promise.race([
+            appending.then(() => "completed"),
+            setImmediate("pending"),
+          ]),
+          "pending",
+        )
+        deepEqual(buffer.updating, true)
+      } finally {
+        controller.abort()
+        release()
+        await appending
+        await values.return?.(undefined)
+      }
+    },
+  },
   ...[100, 99.95, 120, 120.05].map((position) => ({
     name: `a buffered seek to ${position} preserves an active parser`,
     run: async () => {
@@ -627,6 +712,50 @@ const cases = [
       }
     },
   },
+  ...(["append", "remove"] as const).map((operation) => ({
+    name: `source detachment completes a pending ${operation} without another mutation`,
+    run: async () => {
+      const {
+        buffer,
+        controller,
+        entered,
+        media,
+        mutations,
+        release,
+        source,
+        values,
+      } = fixture(
+        operation === "remove" ? timeRanges([0, 120]) : timeRanges(),
+        undefined,
+        operation,
+      )
+      await start(values)
+      const pending = values.next(new Uint8Array([9]))
+      await entered
+      try {
+        buffer.updating = false
+        Object.assign(source, { readyState: "closed" })
+        source.dispatchEvent(new Event("sourceclose"))
+        deepEqual(await Promise.race([pending, setImmediate("pending")]), {
+          done: true,
+          value: undefined,
+        })
+        deepEqual(
+          mutations,
+          operation === "append" ? [["append", [9]]] : [["remove", 0, 70]],
+        )
+        deepEqual(getEventListeners(media, "seeking"), [])
+        deepEqual(getEventListeners(source, "sourceclose"), [])
+        deepEqual(getEventListeners(buffer, "update"), [])
+        deepEqual(getEventListeners(buffer, "error"), [])
+      } finally {
+        controller.abort()
+        release()
+        await pending
+        await values.return?.(undefined)
+      }
+    },
+  })),
   ...(["abort", "seeking", "timeout"] as const).map((interruption) => ({
     name: `range removal survives ${interruption} without calling the forbidden SourceBuffer abort`,
     run: async (context: TestContext) => {
