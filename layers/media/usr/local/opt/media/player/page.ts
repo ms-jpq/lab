@@ -80,17 +80,15 @@ const play_subtitle = async (signal: AbortSignal): Promise<void> => {
     !signal.aborted && subtitle.readyState !== subtitle.LOADED;
     await delay(signal, 1_000)
   ) {
-    const event = await (async () => {
-      using attempt = abortion(signal)
-      const loaded = Promise.race([
-        once(attempt.signal, subtitle, "load"),
-        once(attempt.signal, subtitle, "error"),
-      ])
-      if (!subtitle.src || subtitle.readyState === subtitle.ERROR) {
-        subtitle.src = source_url(subtitle, 0)
-      }
-      return await loaded
-    })()
+    using attempt = abortion(signal)
+    const loaded = Promise.race([
+      once(attempt.signal, subtitle, "load"),
+      once(attempt.signal, subtitle, "error"),
+    ])
+    if (!subtitle.src || subtitle.readyState === subtitle.ERROR) {
+      subtitle.src = source_url(subtitle, 0)
+    }
+    const event = await loaded
 
     if (event?.type !== "error") {
       return

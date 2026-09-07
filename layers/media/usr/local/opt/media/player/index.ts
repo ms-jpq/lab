@@ -260,40 +260,32 @@ export const play_media = async (signal: AbortSignal, dispatch: Dispatch) => {
           }
         }
 
-        if (effects.buffer) {
-          const operation = (() => {
-            switch (effects.buffer.type) {
-              case "append":
-                return effects.buffer.bytes
-              case "end":
-                return undefined
-              default:
-                return never(effects.buffer)
-            }
-          })()
-
-          const result = await buffer.next(operation)
-          if (result.done) {
-            using _ = abrt
-            continue source
-          }
-
-          if (effects.buffer.type === "append") {
-            if (result.value.byteLength > 0) {
-              const { control } = dispatch({
-                ...media_buffered(media),
-                type: "buffer_full",
-              })
-              if (control?.type === "retry") {
-                return
-              }
-              requested = undefined
-              using _ = abrt
-              continue request
-            }
-            dispatch(media_buffered(media))
-          }
+        if (effects.buffer === undefined) {
+          continue
         }
+
+        const result = await buffer.next(effects.buffer?.bytes)
+        if (result.done) {
+          using _ = abrt
+          continue source
+        }
+        if (effects.buffer.type === "end") {
+          continue
+        }
+
+        if (result.value.byteLength > 0) {
+          const { control } = dispatch({
+            ...media_buffered(media),
+            type: "buffer_full",
+          })
+          if (control?.type === "retry") {
+            return
+          }
+          requested = undefined
+          using _ = abrt
+          continue request
+        }
+        dispatch(media_buffered(media))
       }
     }
   }

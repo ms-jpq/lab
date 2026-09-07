@@ -116,7 +116,7 @@ export const media_source = async function* ({
   timeout: number
 }): Mse {
   using a = abortion(signal)
-  if (a.signal.aborted) {
+  if (a.signal.aborted || closed(source)) {
     return
   }
 
@@ -135,10 +135,9 @@ export const media_source = async function* ({
   }
   buffer.timestampOffset = position
 
-  let remaining = empty
   let awaiting_start = true
   for (
-    let operation = yield empty;
+    let remaining = empty, operation = yield remaining;
     !a.signal.aborted && !closed(source);
     operation = yield remaining
   ) {
@@ -201,13 +200,13 @@ export const media_source = async function* ({
         throw error
       }
     }
+    if (closed(source)) {
+      return
+    }
     awaiting_start &&= !contains_position(
       media.buffered,
       buffer.timestampOffset,
     )
-    if (closed(source)) {
-      return
-    }
   }
 }
 

@@ -6,7 +6,7 @@ type PlaybackRequest = Readonly<{ frontier: number; position: number }>
 
 type BufferEffect =
   | Readonly<{ bytes: Uint8Array<ArrayBuffer>; type: "append" }>
-  | Readonly<{ type: "end" }>
+  | Readonly<{ bytes?: undefined; type: "end" }>
 
 type PlaybackControl =
   | Readonly<{ type: "pause" }>
@@ -131,17 +131,27 @@ const request_if_needed = (
   ]
 }
 
+const buffer_progress = (
+  request: PlaybackRequest,
+  current: MediaSnapshot,
+): Readonly<{ frontier: number; advance: boolean }> => {
+  const frontier = stream_position(
+    buffered_end(current, request.frontier) ?? request.frontier,
+  )
+  return {
+    frontier,
+    advance:
+      !aligned(frontier, request.position) &&
+      play_ahead(current, frontier) >= BUFFER_HIGH,
+  }
+}
+
 const acknowledge = (
   state: PlaybackState,
   current: MediaSnapshot,
 ): PlaybackState => {
-  const frontier = stream_position(
-    buffered_end(current, state.request.frontier) ?? state.request.frontier,
-  )
-  const pause =
-    state.acquisition === "active" &&
-    !aligned(frontier, state.request.position) &&
-    play_ahead(current, frontier) >= BUFFER_HIGH
+  const { frontier, advance } = buffer_progress(state.request, current)
+  const pause = state.acquisition === "active" && advance
   return {
     ...state,
     acquisition: pause ? "backpressured" : state.acquisition,
@@ -172,12 +182,7 @@ const project = (
     !current.seeking &&
     pending_seek === undefined
 
-  const frontier = stream_position(
-    buffered_end(current, state.request.frontier) ?? state.request.frontier,
-  )
-  const advance =
-    !aligned(frontier, state.request.position) &&
-    play_ahead(current, frontier) >= BUFFER_HIGH
+  const { frontier, advance } = buffer_progress(state.request, current)
   const pause =
     state.acquisition === "backpressured" ||
     (state.acquisition === "active" && advance)

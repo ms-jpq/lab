@@ -210,6 +210,53 @@ const start = async (values: Mse, position = 0): Promise<void> => {
 }
 
 const cases = [
+  ...[false, true].map((notified) => ({
+    name: `buffer acquisition after detachment ${notified ? "after" : "before"} sourceclose dispatch completes without allocating`,
+    run: async (context: TestContext) => {
+      const current = acquisitionFixture(context)
+      const owner = new AbortController()
+      const sources = media_sources({
+        media: current.media,
+        mime_type: "video/test",
+        evict_behind: 30,
+        signal: owner.signal,
+        timeout: MSE_TIMEOUT,
+      })
+      try {
+        const pending = sources.next()
+        const source = current.sources[0]
+        assert(source)
+        let allocations = 0
+        Object.assign(source, {
+          readyState: "open",
+          addSourceBuffer: () => {
+            allocations += 1
+            throw new DOMException("MediaSource is closed", "InvalidStateError")
+          },
+        })
+        source.dispatchEvent(new Event("sourceopen"))
+        const acquired = await pending
+        assert(!acquired.done)
+        const [, create] = acquired.value
+        Object.assign(source, { readyState: "closed" })
+        if (notified) {
+          source.dispatchEvent(new Event("sourceclose"))
+        }
+        const buffer = create(owner.signal)
+        const outcome = await buffer.next().then(
+          (result) => ({ result }),
+          (error: unknown) => ({ error }),
+        )
+        deepEqual(outcome, { result: { done: true, value: undefined } })
+        deepEqual(allocations, 0)
+        await buffer.return?.(undefined)
+      } finally {
+        owner.abort()
+        await sources.return?.()
+        current.restore()
+      }
+    },
+  })),
   ...(["sourceclose", "advance", "return", "caller"] as const).map((exit) => ({
     name: `source-scoped buffers stop on ${exit} without leaking their listener`,
     run: async (context: TestContext) => {
@@ -638,9 +685,10 @@ const cases = [
   {
     name: "seeking to an evicted request start interrupts an active append",
     run: async () => {
-      const { buffer, controller, entered, media, mutations, release, values } =
+      const { buffer, controller, media, mutations, release, values } =
         fixture(timeRanges(), undefined, "append", "open", 30)
       const initial = new Uint8Array([8])
+      const appending_started = Promise.withResolvers<void>()
       const append = buffer.appendBuffer.bind(buffer)
       buffer.appendBuffer = (bytes) => {
         append(bytes)
@@ -648,6 +696,8 @@ const cases = [
           buffer.buffered = timeRanges([0, 100])
           Object.assign(media, { buffered: buffer.buffered })
           release()
+        } else {
+          appending_started.resolve()
         }
       }
       const remove = buffer.remove.bind(buffer)
@@ -661,8 +711,7 @@ const cases = [
       await values.next(initial)
       media.currentTime = 80
       const appending = values.next(new Uint8Array([9]))
-      await entered
-      await setImmediate()
+      await appending_started.promise
       try {
         assert(buffer.updating)
         deepEqual(mutations, [
@@ -851,6 +900,37 @@ const cases = [
         controller.abort()
         release()
         await pending
+        await values.return?.(undefined)
+      }
+    },
+  })),
+  ...(["append", "remove"] as const).map((operation) => ({
+    name: `the access gate prevents buffer reads after detachment during ${operation}`,
+    run: async () => {
+      const { buffer, controller, entered, source, values } = fixture(
+        operation === "remove" ? timeRanges([0, 120]) : timeRanges(),
+        undefined,
+        operation,
+      )
+      await start(values, 200)
+      const pending = values.next(new Uint8Array([9])).then(
+        (result) => ({ result }),
+        (error: unknown) => ({ error }),
+      )
+      await entered
+      try {
+        buffer.updating = false
+        Object.assign(source, { readyState: "closed" })
+        // Poison access to test ownership, not native getter exception semantics.
+        Object.defineProperty(buffer, "timestampOffset", {
+          get: () => {
+            throw new Error("Read from a detached buffer")
+          },
+        })
+        source.dispatchEvent(new Event("sourceclose"))
+        deepEqual(await pending, { result: { done: true, value: undefined } })
+      } finally {
+        controller.abort()
         await values.return?.(undefined)
       }
     },
