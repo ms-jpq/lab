@@ -341,8 +341,10 @@ const reduce = (
       const { current } = action
       const native = playable_time(current.duration, current.time)
       const target = buffered_position(current, native) ?? native
+      const seek = target === current.time ? undefined : target
 
       if (
+        seek === undefined &&
         state.pending_seek !== undefined &&
         aligned(current.time, state.pending_seek)
       ) {
@@ -357,7 +359,7 @@ const reduce = (
         {
           ...state,
           acquisition: restart ? "idle" : state.acquisition,
-          pending_seek: undefined,
+          pending_seek: seek,
           request: restart ? request_at(end ?? target) : state.request,
           target,
         },
@@ -374,6 +376,7 @@ const reduce = (
             ? { control: { type: "pause" } as const }
             : {}),
           persist: target,
+          ...(seek === undefined ? {} : { seek }),
         },
       ]
     }

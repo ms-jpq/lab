@@ -60,6 +60,55 @@ const quota_steps: readonly Step[] = [
 ]
 
 const cases = [
+  ...[10, 10.05].map((time): Case => ({
+    name: `the normalized seek target 10.05 is applied for native time ${time}`,
+    position: 50,
+    steps: [
+      {
+        action: { type: "source_opened" },
+        expected: {
+          control: { type: "request", request: { frontier: 50, position: 50 } },
+          seek: 50,
+        },
+      },
+      {
+        action: {
+          type: "seeked",
+          current: snapshot({ buffered: [[10.05, 100]], time: 50 }),
+        },
+        expected: {},
+      },
+      {
+        action: {
+          type: "seeking",
+          current: snapshot({ buffered: [[10.05, 100]], time, seeking: true }),
+        },
+        expected: {
+          control: { type: "pause" },
+          persist: 10.05,
+          ...(time === 10.05 ? {} : { seek: 10.05 }),
+        },
+      },
+      {
+        action: {
+          type: "seeking",
+          current: snapshot({
+            buffered: [[10.05, 100]],
+            time: 10.05,
+            seeking: true,
+          }),
+        },
+        expected: time === 10.05 ? { persist: 10.05 } : {},
+      },
+      {
+        action: {
+          type: "seeked",
+          current: snapshot({ buffered: [[10.05, 100]], time: 10.05 }),
+        },
+        expected: {},
+      },
+    ],
+  })),
   ...[1, 2].map((frames): Case => {
     const end = BUFFER_HIGH + frames / 30
     return {

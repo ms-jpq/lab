@@ -529,6 +529,137 @@ const retry_clock = (context: PlayerContext): (() => void) => {
 
 const cases = [
   {
+    name: "audit: a same-request seek before a retained future range preserves the parser prefix",
+    run: async () => {
+      const current = await fixture({ url_position: 120, append_duration: 40 })
+      const bodies: ReadableStreamDefaultController<Uint8Array<ArrayBuffer>>[] =
+        []
+      current.set_fetch(() =>
+        response_from(
+          new ReadableStream({
+            start: (controller) => {
+              bodies.push(controller)
+            },
+          }),
+        ),
+      )
+      const owner = new AbortController()
+      const playback = current.context.player_test.play_media(owner.signal)
+      try {
+        await eventually(() => bodies.length === 1)
+        bodies[0]!.enqueue(new Uint8Array([1]))
+        await eventually(() => current.media.buffered.length === 1)
+        current.media.dispatchEvent(new Event("seeked"))
+        await next_task()
+        deepEqual(current.media.buffered.values, [[120, 160]])
+        current.media.currentTime = 100
+        current.media.seeking = true
+        current.media.dispatchEvent(new Event("seeking"))
+        await eventually(() => bodies.length === 2)
+        const buffer = current.sources[0]?.sourceBuffers[0]
+        const body = bodies[1]
+        ok(buffer)
+        ok(body)
+        equal(request_position(current.requests[1]), "100")
+        const box = new Uint8Array([0, 0, 0, 12, 109, 100, 97, 116, 1, 2, 3, 4])
+        let prefix = new Uint8Array(0)
+        let completed = 0
+        buffer.abort = () => {
+          prefix = new Uint8Array(0)
+          buffer.updating = false
+        }
+        buffer.appendBuffer = (bytes) => {
+          prefix = new Uint8Array([...prefix, ...bytes])
+          buffer.updating = true
+          if (
+            prefix.length === box.length &&
+            prefix.every((value, index) => value === box[index])
+          ) {
+            completed += 1
+            prefix = new Uint8Array(0)
+          }
+          if (bytes.length !== 10) {
+            queueMicrotask(() => {
+              buffer.updating = false
+              buffer.dispatchEvent(new Event("update"))
+              buffer.dispatchEvent(new Event("updateend"))
+            })
+          }
+        }
+        body.enqueue(box.slice(0, 10))
+        await eventually(() => buffer.updating)
+        current.media.currentTime = 100.01
+        current.media.dispatchEvent(new Event("seeking"))
+        await next_task()
+        if (buffer.updating) {
+          buffer.updating = false
+          buffer.dispatchEvent(new Event("update"))
+          buffer.dispatchEvent(new Event("updateend"))
+        }
+        body.enqueue(box.slice(10))
+        await next_task()
+        await next_task()
+        deepEqual(
+          { requests: current.requests.length, completed },
+          { requests: 2, completed: 1 },
+        )
+      } finally {
+        owner.abort()
+        await playback
+      }
+    },
+  },
+  ...[10, 10.05].map((target): TestCase => ({
+    name: `audit: a seek to ${target} applies the normalized retained range start 10.05`,
+    run: async () => {
+      const current = await fixture({ response: "pending", url_position: 50 })
+      const owner = new AbortController()
+      const playback = current.context.player_test.play_media(owner.signal)
+      try {
+        await eventually(() => current.requests.length === 1)
+        current.media.buffered.values.push([10.05, 100])
+        current.media.dispatchEvent(new Event("seeked"))
+        await next_task()
+
+        let time = current.media.currentTime
+        Object.defineProperty(current.media, "currentTime", {
+          get: () => time,
+          set: (value: number) => {
+            time = value
+            current.media.seeking = true
+            setImmediate(() => {
+              current.media.dispatchEvent(new Event("seeking"))
+              if (
+                current.media.buffered.values.some(
+                  ([start, end]) => start <= time && time < end,
+                )
+              ) {
+                current.media.seeking = false
+                current.media.dispatchEvent(new Event("seeked"))
+              } else {
+                current.media.dispatchEvent(new Event("waiting"))
+              }
+            })
+          },
+        })
+        current.media.currentTime = target
+        for (let task = 0; task < 4; task += 1) {
+          await next_task()
+        }
+        deepEqual(
+          { time: current.media.currentTime, seeking: current.media.seeking },
+          {
+            time: 10.05,
+            seeking: false,
+          },
+        )
+      } finally {
+        owner.abort()
+        await playback
+      }
+    },
+  })),
+  {
     name: "audit: a fractional native frame endpoint still pauses fetching at high water",
     run: async () => {
       const current = await fixture({ append_duration: BUFFER_HIGH + 2 / 30 })

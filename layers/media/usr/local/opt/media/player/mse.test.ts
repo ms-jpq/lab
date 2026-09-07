@@ -651,6 +651,36 @@ const cases = [
       }
     },
   },
+  {
+    name: "a nearby seek preserves a new earlier request while future media remains cached",
+    run: async () => {
+      const { buffer, controller, entered, media, mutations, release, values } =
+        fixture(timeRanges([120, 160]), undefined, "append")
+      await start(values, 120)
+      media.currentTime = 100
+      await values.next(100)
+      const appending = values.next(new Uint8Array([9]))
+      await entered
+      try {
+        media.currentTime = 100.05
+        media.dispatchEvent(new Event("seeking"))
+        deepEqual(
+          await Promise.race([
+            appending.then(() => "completed"),
+            setImmediate("pending"),
+          ]),
+          "pending",
+        )
+        assert(buffer.updating)
+        deepEqual(mutations, [["abort"], ["append", [9]]])
+      } finally {
+        controller.abort()
+        release()
+        await appending
+        await values.return?.(undefined)
+      }
+    },
+  },
   ...[100, 99.95, 120, 120.05].map((position) => ({
     name: `a buffered seek to ${position} preserves an active parser`,
     run: async () => {

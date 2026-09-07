@@ -35,6 +35,21 @@ const EVENTS = [
   "waiting",
 ] as const satisfies readonly (keyof HTMLMediaElementEventMap)[]
 
+export const contains_position = (
+  ranges: TimeRanges,
+  position: number,
+): boolean => {
+  for (let index = 0; index < ranges.length; index += 1) {
+    if (
+      ranges.start(index) - position <= POSITION_TOLERANCE &&
+      position - ranges.end(index) <= POSITION_TOLERANCE
+    ) {
+      return true
+    }
+  }
+  return false
+}
+
 export const playable_time = (duration: number, value: number): number => {
   const position = Number.isFinite(value) ? Math.max(0, value) : 0
   return duration > 0 && position >= duration

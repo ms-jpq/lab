@@ -33,6 +33,7 @@ class Media extends EventTarget {
   readonly buffered = new Ranges()
   readonly dataset = { duration: "200" } as DOMStringMap
   currentTime = 0
+  duration = Number.NaN
   ended = false
   error: MediaError | null = null
   paused = false
@@ -41,6 +42,42 @@ class Media extends EventTarget {
 }
 
 const cases = [
+  ...["0", "200"].map((declared) => ({
+    name: `duration ${declared} follows native initialization, completion, reopening, and replacement`,
+    run: () => {
+      const media = new Media()
+      media.dataset["duration"] = declared
+      const element = media as unknown as HTMLMediaElement
+      // Unknown initialization duration is Infinity; normal EOF supplies the
+      // buffered end. Reopening preserves it, while a new resource resets it.
+      // https://www.w3.org/TR/media-source-2/#initialization-segment-received
+      // https://html.spec.whatwg.org/multipage/media.html#media-element-load-algorithm
+      const phases = [
+        { name: "before metadata", duration: Number.NaN },
+        { name: "unknown-duration initialization", duration: Infinity },
+        { name: "first EOF", duration: 10 },
+        { name: "reopened source", duration: 10 },
+        { name: "replacement before metadata", duration: Number.NaN },
+        { name: "replacement initialization", duration: Infinity },
+        { name: "replacement EOF", duration: 20 },
+      ]
+      for (const phase of phases) {
+        media.duration = phase.duration
+        media.readyState = Number.isNaN(phase.duration)
+          ? 0
+          : media.HAVE_METADATA
+        const snapshot = media_buffered(element).current
+        const expected = declared === "200" ? 200 : phase.duration
+        deepEqual(snapshot.duration, expected, phase.name)
+        deepEqual(snapshot.metadata, !Number.isNaN(phase.duration), phase.name)
+        deepEqual(
+          playable_position(element, 37),
+          declared === "0" && Number.isFinite(expected) ? expected - 0.5 : 37,
+          phase.name,
+        )
+      }
+    },
+  })),
   ...["200", "0", ""].map((declared) => ({
     name: `duration ${JSON.stringify(declared)} uses native duration only as a fallback`,
     run: () => {
