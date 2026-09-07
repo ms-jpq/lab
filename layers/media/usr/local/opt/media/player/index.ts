@@ -116,8 +116,12 @@ const playback_events = (
   signal: AbortSignal,
   source: MediaSource,
   position: number | undefined,
+  previous_time: number,
 ): AsyncIteratorObject<PlaybackAction> =>
   closing(signal, async function* (signal) {
+    if (media.seeking && media.currentTime !== previous_time) {
+      yield { current: media_buffered(media).current, type: "seeking" }
+    }
     await using stream =
       position === undefined
         ? (async function* () {})()
@@ -185,6 +189,7 @@ export const play_media = async (signal: AbortSignal, dispatch: Dispatch) => {
       opened.control?.type === "request" ? opened.control.request : undefined
 
     request: while (!abort.signal.aborted) {
+      const previous_time = media.currentTime
       if (
         requested !== undefined &&
         (await buffer.next(requested.frontier)).done
@@ -198,6 +203,7 @@ export const play_media = async (signal: AbortSignal, dispatch: Dispatch) => {
         abrt.signal,
         source,
         requested?.position,
+        previous_time,
       )) {
         const effects = dispatch(received)
         if (effects.error !== undefined) {

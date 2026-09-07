@@ -528,6 +528,65 @@ const retry_clock = (context: PlayerContext): (() => void) => {
 }
 
 const cases = [
+  ...[0, 100].map((target): TestCase => ({
+    name: `audit: request reopening honors the latest seek ${target} while removal is pending`,
+    run: async () => {
+      const current = await fixture({ url_position: 120, append_duration: 40 })
+      const bodies: ReadableStreamDefaultController<Uint8Array<ArrayBuffer>>[] =
+        []
+      current.set_fetch(() =>
+        response_from(
+          new ReadableStream({
+            start: (controller) => {
+              bodies.push(controller)
+            },
+          }),
+        ),
+      )
+      const owner = new AbortController()
+      const playback = current.context.player_test.play_media(owner.signal)
+      try {
+        await eventually(() => bodies.length === 1)
+        bodies[0]!.enqueue(new Uint8Array([1]))
+        await eventually(() => current.media.buffered.length === 1)
+        current.media.dispatchEvent(new Event("seeked"))
+        await next_task()
+        bodies[0]!.close()
+        await eventually(() => current.sources[0]?.readyState === "ended")
+        const source = current.sources[0]
+        const buffer = source?.sourceBuffers[0]
+        ok(source)
+        ok(buffer)
+        source.duration = 160
+        Object.defineProperty(current.media, "duration", {
+          get: () => source.duration,
+        })
+        buffer.remove = (start, end) => {
+          buffer.removed.push([start, end])
+          source.readyState = "open"
+          buffer.updating = true
+        }
+        current.media.currentTime = 0
+        current.media.seeking = true
+        current.media.dispatchEvent(new Event("seeking"))
+        await eventually(() => buffer.updating)
+        if (target !== 0) {
+          current.media.currentTime = target
+          current.media.dispatchEvent(new Event("seeking"))
+          current.media.dispatchEvent(new Event("waiting"))
+          await next_task()
+        }
+        buffer.updating = false
+        buffer.dispatchEvent(new Event("update"))
+        buffer.dispatchEvent(new Event("updateend"))
+        await eventually(() => bodies.length === 2)
+        equal(request_position(current.requests[1]), String(target))
+      } finally {
+        owner.abort()
+        await playback
+      }
+    },
+  })),
   {
     name: "audit: a same-request seek before a retained future range preserves the parser prefix",
     run: async () => {

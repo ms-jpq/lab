@@ -920,6 +920,30 @@ const cases = [
       }
     },
   },
+  ...(["append", "remove", "reopen"] as const).map((operation) => ({
+    name: `abort between requesting and entering ${operation} prevents the mutation`,
+    run: async () => {
+      const { controller, mutations, release, values } = fixture(
+        operation === "remove" ? timeRanges([0, 120]) : timeRanges(),
+        undefined,
+        operation === "append" ? "append" : "remove",
+        operation === "reopen" ? "ended" : "open",
+      )
+      await start(values)
+      const pending = values.next(
+        operation === "reopen" ? 50 : new Uint8Array([9]),
+      )
+      controller.abort()
+      try {
+        await pending
+        deepEqual(mutations, [])
+      } finally {
+        release()
+        await pending
+        await values.return?.(undefined)
+      }
+    },
+  })),
   {
     name: "a pre-aborted MSE performs no work",
     run: async () => {

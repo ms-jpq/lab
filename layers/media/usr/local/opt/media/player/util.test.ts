@@ -203,6 +203,27 @@ const cases = [
     },
   },
   {
+    name: "an always-ready merge source does not starve another ready source",
+    run: async () => {
+      const source = (value: number): AsyncIterator<number> => ({
+        next: async () => ({ done: false, value }),
+        return: async () => ({ done: true, value: undefined }),
+      })
+      const values = merge(source(1), source(2))
+      const received: number[] = []
+      try {
+        for (let index = 0; index < 6; index += 1) {
+          const result = await values.next()
+          assert(!result.done)
+          received.push(result.value[1])
+        }
+        deepEqual(received, [1, 2, 1, 2, 1, 2])
+      } finally {
+        await values.return?.(undefined)
+      }
+    },
+  },
+  {
     name: "join completes empty and successful groups",
     run: async () => {
       deepEqual(await join([]), undefined)

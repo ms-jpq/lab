@@ -242,6 +242,62 @@ test("playback teardown failures escape the page lifetime", async () => {
   equal(started.length, 1)
 })
 
+for (const synchronous of [false, true]) {
+  test(
+    `${synchronous ? "synchronous" : "already-rejected"} playback startup aborts and releases the page session`,
+    { concurrency: true, timeout: 2_000 },
+    async () => {
+      const timers = new Map<number, () => void>()
+      const track = subtitle_fixture()
+      const { main, window } = await fixture(track.subtitle, timers)
+      const failure = new Error("playback startup failed")
+      const started: AbortSignal[] = []
+      const finished = main((signal) => {
+        started.push(signal)
+        if (synchronous) {
+          throw failure
+        }
+        return Promise.reject(failure)
+      }).then(
+        () => undefined,
+        (reason: unknown) => reason,
+      )
+
+      try {
+        window.dispatchEvent(new Event("pageshow"))
+        const reason = await finished
+        ok(
+          reason === failure ||
+            (typeof reason === "object" &&
+              reason !== null &&
+              "error" in reason &&
+              reason.error === failure),
+          "startup failure must remain observable after scoped cleanup",
+        )
+        equal(started.length, 1)
+        ok(started[0]?.aborted)
+        equal(track.requests.length, synchronous ? 0 : 1)
+        equal(getEventListeners(track.subtitle, "load").length, 0)
+        equal(getEventListeners(track.subtitle, "error").length, 0)
+        equal(getEventListeners(window, "pageshow").length, 0)
+        equal(getEventListeners(window, "pagehide").length, 0)
+
+        if (!synchronous) {
+          track.finish("error")
+        }
+        window.dispatchEvent(new Event("pageshow"))
+        await setImmediate()
+        equal(timers.size, 0)
+        equal(started.length, 1)
+        equal(track.requests.length, synchronous ? 0 : 1)
+      } finally {
+        window.dispatchEvent(new Event("pagehide"))
+        await setImmediate()
+      }
+    },
+  )
+}
+
 for (const failure of [undefined, "teardown rejected"]) {
   test(
     `page teardown preserves ${typeof failure} rejection values`,

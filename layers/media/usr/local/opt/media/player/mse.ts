@@ -155,6 +155,9 @@ export const media_source = async function* ({
         const end = ranges.length ? ranges.end(ranges.length - 1) : 0
 
         for await (const _ of lock("remove", awaiting_start)) {
+          if (a.signal.aborted) {
+            return
+          }
           buffer.remove(end, end + EPSILON)
         }
         if (a.signal.aborted || closed(source)) {
@@ -181,6 +184,9 @@ export const media_source = async function* ({
         buffer.buffered.start(0) < cutoff
       ) {
         for await (const _ of lock("remove", awaiting_start)) {
+          if (a.signal.aborted) {
+            return
+          }
           buffer.remove(0, cutoff)
         }
         if (closed(source)) {
@@ -188,6 +194,9 @@ export const media_source = async function* ({
         }
       }
       for await (const _ of lock("append", awaiting_start)) {
+        if (a.signal.aborted) {
+          return
+        }
         try {
           buffer.appendBuffer(operation)
         } catch (error) {
