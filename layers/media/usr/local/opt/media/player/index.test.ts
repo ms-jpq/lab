@@ -1,9 +1,11 @@
 import { deepEqual, equal, ok } from "node:assert/strict"
+import { getEventListeners } from "node:events"
 import { readFile } from "node:fs/promises"
 import { stripTypeScriptTypes } from "node:module"
 import nodeTest, { type TestContext } from "node:test"
 import { setTimeout as nodeSetTimeout } from "node:timers"
 import vm from "node:vm"
+import { BUFFER_HIGH, BUFFER_LOW } from "./reducer.ts"
 
 type Range = readonly [start: number, end: number]
 
@@ -11,9 +13,10 @@ type PlayerContext = vm.Context & {
   player_test: {
     main: (
       playback: (signal: AbortSignal) => Promise<undefined>,
-    ) => Promise<never>
+    ) => Promise<void>
     play_media: (signal: AbortSignal) => Promise<undefined>
     playback: (signal: AbortSignal) => Promise<undefined>
+    media_sources: (signal: AbortSignal) => AsyncIteratorObject<unknown>
   }
 }
 
@@ -38,6 +41,7 @@ type FixtureOptions = Readonly<{
 }>
 
 const REQUEST_TIMEOUT = 15_000
+const RESUME_AT = BUFFER_HIGH - BUFFER_LOW + 1
 
 class Ranges implements TimeRanges {
   readonly values: Range[] = []
@@ -61,6 +65,7 @@ class Ranges implements TimeRanges {
 
 class Media extends EventTarget {
   readonly HAVE_METADATA = 1
+  readonly HAVE_FUTURE_DATA = 3
   readonly dataset = {
     duration: "200",
     mseType: "video/mp4",
@@ -72,12 +77,26 @@ class Media extends EventTarget {
   ended = false
   error: MediaError | null = null
   loads = 0
+  paused = false
   readyState = this.HAVE_METADATA
   seeking = false
   src = ""
 
+  update_time(time: number): void {
+    this.currentTime = time
+    this.dispatchEvent(new Event("timeupdate"))
+  }
+
   load(): void {
     this.loads += 1
+  }
+
+  pause(): void {
+    this.paused = true
+  }
+
+  async play(): Promise<void> {
+    this.paused = false
   }
 
   removeAttribute(name: string): void {
@@ -174,6 +193,11 @@ const fixture = async ({
   }
   class Subtitle extends EventTarget {
     readonly dataset = { src: "/subtitle" } as DOMStringMap
+    readonly NONE = 0
+    readonly LOADING = 1
+    readonly LOADED = 2
+    readonly ERROR = 3
+    readyState: number = this.NONE
     private value = ""
 
     get src(): string {
@@ -182,7 +206,18 @@ const fixture = async ({
 
     set src(value: string) {
       this.value = value
+      this.readyState = this.LOADING
       subtitle_sources.push(value)
+    }
+
+    override dispatchEvent(event: Event): boolean {
+      if (event.type === "load") {
+        this.readyState = this.LOADED
+      }
+      if (event.type === "error") {
+        this.readyState = this.ERROR
+      }
+      return super.dispatchEvent(event)
     }
   }
   const subtitle = with_subtitle ? new Subtitle() : null
@@ -228,6 +263,7 @@ const fixture = async ({
       if (append_completion === "automatic") {
         queueMicrotask(() => {
           this.updating = false
+          this.dispatchEvent(new Event("update"))
           this.dispatchEvent(new Event("updateend"))
         })
       }
@@ -238,6 +274,7 @@ const fixture = async ({
       this.updating = true
       queueMicrotask(() => {
         this.updating = false
+        this.dispatchEvent(new Event("update"))
         this.dispatchEvent(new Event("updateend"))
       })
     }
@@ -401,6 +438,7 @@ const fixture = async ({
     MediaError: { MEDIA_ERR_ABORTED: 1 },
     MediaSource: TestMediaSource,
     Promise,
+    queueMicrotask,
     Request,
     ReadableStream,
     setTimeout: schedule,
@@ -422,6 +460,13 @@ const fixture = async ({
 globalThis.player_test = { main, play_media, playback }`,
       { mode: "strip" },
     ),
+    context,
+  )
+
+  vm.runInContext(
+    `player_test.media_sources = (signal) => media_sources({
+      media, mime_type, signal, evict_behind: 30, timeout: 10_000,
+    })`,
     context,
   )
 
@@ -451,7 +496,818 @@ globalThis.player_test = { main, play_media, playback }`,
   }
 }
 
+const retry_clock = (context: PlayerContext): (() => void) => {
+  const retries: (() => void)[] = []
+  const schedule = context["setTimeout"] as (
+    run: () => void,
+    milliseconds: number,
+  ) => ReturnType<typeof nodeSetTimeout>
+  context["setTimeout"] = (run: () => void, milliseconds: number) => {
+    const timer = schedule(run, milliseconds === 1_000 ? 60_000 : milliseconds)
+    if (milliseconds === 1_000) {
+      timer.unref()
+      retries.push(() => {
+        clearTimeout(timer)
+        run()
+      })
+    }
+    return timer
+  }
+  return () => {
+    for (const retry of retries.splice(0)) {
+      retry()
+    }
+  }
+}
+
 const cases = [
+  {
+    name: "quota without playable media uses the delayed recovery path instead of waiting forever",
+    run: async () => {
+      const current = await fixture({ response: "pending" })
+      const tick = retry_clock(current.context)
+      current.set_fetch(() => {
+        if (current.requests.length !== 1) {
+          return response_from(new ReadableStream())
+        }
+        const buffer = current.sources[0]?.sourceBuffers[0]
+        ok(buffer)
+        buffer.appendBuffer = () => {
+          throw new DOMException("full", "QuotaExceededError")
+        }
+        return response_from(
+          new ReadableStream({
+            start: (controller) => controller.enqueue(new Uint8Array(5)),
+          }),
+        )
+      })
+      const owner = new AbortController()
+      const playing = current.context.player_test.playback(owner.signal)
+      try {
+        await eventually(() => current.requests[0]?.signal.aborted === true)
+        await next_task()
+        equal(current.requests.length, 1)
+        deepEqual(current.errors, [])
+        ok(current.requests[0]?.signal.aborted)
+        tick()
+        await eventually(() => current.requests.length === 2)
+        equal(request_position(current.requests[1]), "0")
+      } finally {
+        owner.abort()
+        await playing
+      }
+    },
+  },
+  ...(
+    [
+      "progress",
+      "buffered seek",
+      "unbuffered seek",
+      "error",
+      "sourceclose",
+    ] as const
+  ).map((recovery): TestCase => ({
+    name: `quota pressure keeps the event loop responsive to ${recovery}`,
+    run: async () => {
+      const current = await fixture({
+        response: "pending",
+        append_duration: 20,
+      })
+      const tick = retry_clock(current.context)
+      const chunk = new Uint8Array(20)
+      const rejected = new Uint8Array(5)
+      const refetched = new Uint8Array(5).fill(2)
+      const capacity = 40
+      let exhausted = 0
+      const attempts: Uint8Array<ArrayBuffer>[] = []
+      const bodies: ReadableStreamDefaultController<Uint8Array<ArrayBuffer>>[] =
+        []
+      current.set_fetch(() => {
+        const buffer = current.sources.at(-1)?.sourceBuffers[0]
+        ok(buffer)
+        if (bodies.length === 0) {
+          const append = buffer.appendBuffer.bind(buffer)
+          const remove = buffer.remove.bind(buffer)
+          // Constant-bitrate capacity model: retained timeline duration represents bytes.
+          buffer.appendBuffer = (bytes) => {
+            attempts.push(bytes)
+            const retained = buffer.buffered.values.reduce(
+              (total, [start, end]) => total + end - start,
+              0,
+            )
+            if (retained + bytes.byteLength > capacity) {
+              exhausted += 1
+              throw new DOMException(
+                "The MediaSource buffer is not sufficient",
+                "QuotaExceededError",
+              )
+            }
+            const start =
+              buffer.buffered.values[0]?.[0] ?? buffer.timestampOffset
+            const end =
+              buffer.buffered.values.at(-1)?.[1] ?? buffer.timestampOffset
+            append(bytes)
+            buffer.buffered.values.splice(0, buffer.buffered.values.length, [
+              start,
+              end + bytes.byteLength,
+            ])
+          }
+          buffer.remove = (start, end) => {
+            const retained = buffer.buffered.values.flatMap(
+              ([lo, hi]): Range[] => [
+                ...(lo < start ? [[lo, Math.min(hi, start)] as const] : []),
+                ...(hi > end ? [[Math.max(lo, end), hi] as const] : []),
+              ],
+            )
+            buffer.buffered.values.splice(
+              0,
+              buffer.buffered.values.length,
+              ...retained,
+            )
+            remove(start, end)
+          }
+        }
+        return response_from(
+          new ReadableStream({
+            start: (controller) => {
+              bodies.push(controller)
+              if (bodies.length > 1) {
+                controller.enqueue(refetched)
+              }
+            },
+          }),
+        )
+      })
+      const owner = new AbortController()
+      const playing = current.context.player_test.playback(owner.signal)
+      try {
+        await eventually(() => bodies.length === 1)
+        current.media.dispatchEvent(new Event("seeked"))
+        await next_task()
+        const body = bodies[0]
+        ok(body)
+        body.enqueue(chunk)
+        body.enqueue(chunk)
+        await eventually(
+          () => current.sources[0]?.sourceBuffers[0]?.appended.length === 2,
+        )
+        current.media.update_time(10)
+        await eventually(() => current.time_input.value === "10")
+        body.enqueue(rejected)
+        await eventually(
+          () => exhausted > 0 && current.requests[0]?.signal.aborted === true,
+        )
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          await next_task()
+          tick()
+          await next_task()
+        }
+        equal(
+          current.sources.length,
+          1,
+          "quota recovery must retain playable data instead of rebuilding the same overfull source",
+        )
+        const buffer = current.sources[0]?.sourceBuffers[0]
+        ok(buffer)
+        current.media.dispatchEvent(new Event("timeupdate"))
+        await next_task()
+        equal(
+          exhausted,
+          1,
+          "an unchanged clock must not spin on the rejected chunk",
+        )
+        equal(
+          attempts.length,
+          3,
+          "do not append after aborting the full request",
+        )
+        equal(
+          current.requests.length,
+          1,
+          "do not immediately refetch into a full buffer",
+        )
+        switch (recovery) {
+          case "buffered seek":
+          case "progress":
+            if (recovery === "buffered seek") {
+              current.media.currentTime = 15
+              current.media.dispatchEvent(new Event("seeking"))
+              current.media.dispatchEvent(new Event("seeked"))
+              await eventually(() => current.time_input.value === "15")
+              equal(current.requests.length, 1)
+            }
+            current.media.update_time(38)
+            await eventually(() => buffer.appended.length === 3)
+            equal(attempts.at(-1), refetched)
+            equal(request_position(current.requests[1]), "40")
+            equal(buffer.timestampOffset, 40)
+            equal(current.time_input.value, "38")
+            equal(current.requests.length, 2)
+            equal(current.sources.length, 1)
+            deepEqual(current.errors, [])
+            break
+          case "unbuffered seek":
+            current.media.currentTime = 110
+            current.media.dispatchEvent(new Event("seeking"))
+            await eventually(() => current.requests.length >= 2)
+            equal(request_position(current.requests[1]), "110")
+            equal(current.sources.length, 1)
+            break
+          case "error":
+            current.media.paused = true
+            current.media.error = { code: 3 } as MediaError
+            current.media.dispatchEvent(new Event("error"))
+            await eventually(() => current.sources.length >= 2)
+            break
+          case "sourceclose":
+            current.media.paused = true
+            Object.assign(current.sources[0]!, { readyState: "closed" })
+            current.sources[0]!.dispatchEvent(new Event("sourceclose"))
+            await eventually(() => current.sources.length >= 2)
+            break
+        }
+      } finally {
+        owner.abort()
+        await playing
+      }
+    },
+  })),
+  {
+    name: "audit: a premature native ended event does not erase resumable page progress",
+    run: async () => {
+      const current = await fixture({
+        response: "pending",
+        append_duration: BUFFER_LOW,
+      })
+      const bodies: ReadableStreamDefaultController<Uint8Array<ArrayBuffer>>[] =
+        []
+      current.set_fetch(() =>
+        response_from(
+          new ReadableStream({
+            start: (controller) => {
+              bodies.push(controller)
+            },
+          }),
+        ),
+      )
+      const owner = new AbortController()
+      const playing = current.context.player_test.play_media(owner.signal)
+      try {
+        await eventually(() => bodies.length === 1)
+        current.media.dispatchEvent(new Event("seeked"))
+        await next_task()
+        const body = bodies[0]
+        ok(body)
+        body.enqueue(new Uint8Array([1]))
+        await eventually(
+          () => current.sources[0]?.sourceBuffers[0]?.appended.length === 1,
+        )
+        current.media.update_time(BUFFER_LOW - 1)
+        await eventually(
+          () => current.time_input.value === String(BUFFER_LOW - 1),
+        )
+        body.close()
+        await eventually(() => current.sources[0]?.readyState === "ended")
+        current.media.currentTime = BUFFER_LOW
+        current.media.ended = true
+        current.media.dispatchEvent(new Event("ended"))
+        await next_task()
+        ok(
+          Number(current.time_input.value) >= BUFFER_LOW - 1,
+          "recovery must not lose the last playable position",
+        )
+      } finally {
+        owner.abort()
+        await playing
+      }
+    },
+  },
+  {
+    name: "audit: a failed transport does not retry beyond an already buffered media end",
+    run: async () => {
+      const length = BUFFER_HIGH - 1
+      const current = await fixture({
+        response: "pending",
+        append_duration: length,
+        url_position: 200 - length,
+      })
+      const tick = retry_clock(current.context)
+      const bodies: ReadableStreamDefaultController<Uint8Array<ArrayBuffer>>[] =
+        []
+      current.set_fetch(() =>
+        response_from(
+          new ReadableStream({
+            start: (controller) => {
+              bodies.push(controller)
+            },
+          }),
+        ),
+      )
+      const owner = new AbortController()
+      const playing = current.context.player_test.play_media(owner.signal)
+      try {
+        await eventually(() => bodies.length === 1)
+        current.media.dispatchEvent(new Event("seeked"))
+        await next_task()
+        const body = bodies[0]
+        ok(body)
+        body.enqueue(new Uint8Array([1]))
+        await eventually(
+          () => current.sources[0]?.sourceBuffers[0]?.appended.length === 1,
+        )
+        const failure = new Error("transport reset after the final media bytes")
+        body.error(failure)
+        await eventually(() => current.errors.length === 1)
+        await next_task()
+        tick()
+        await next_task()
+        deepEqual(current.errors, [[failure]])
+        deepEqual(current.requests.map(request_position), [
+          String(200 - length),
+        ])
+      } finally {
+        owner.abort()
+        await playing
+      }
+    },
+  },
+  {
+    name: "audit: a clean short response resumes from its appended end, not its original request start",
+    run: async () => {
+      const current = await fixture({
+        response: "pending",
+        append_duration: BUFFER_LOW,
+      })
+      const bodies: ReadableStreamDefaultController<Uint8Array<ArrayBuffer>>[] =
+        []
+      current.set_fetch(() =>
+        response_from(
+          new ReadableStream({
+            start: (controller) => {
+              bodies.push(controller)
+            },
+          }),
+        ),
+      )
+      const owner = new AbortController()
+      const playing = current.context.player_test.play_media(owner.signal)
+      try {
+        await eventually(() => bodies.length === 1)
+        current.media.dispatchEvent(new Event("seeked"))
+        await next_task()
+        const body = bodies[0]
+        ok(body)
+        body.enqueue(new Uint8Array([1]))
+        body.close()
+        await eventually(() => current.sources[0]?.readyState === "ended")
+        current.media.update_time(1)
+        await eventually(() => current.requests.length === 2)
+        equal(current.sources[0]?.sourceBuffers[0]?.timestampOffset, BUFFER_LOW)
+        equal(request_position(current.requests[1]), String(BUFFER_LOW))
+      } finally {
+        owner.abort()
+        await playing
+      }
+    },
+  },
+  {
+    name: "audit: a seek into an older buffered range resumes acquisition at that range's end",
+    run: async () => {
+      const current = await fixture({ response: "pending" })
+      const bodies: ReadableStreamDefaultController<Uint8Array<ArrayBuffer>>[] =
+        []
+      current.set_fetch(() =>
+        response_from(
+          new ReadableStream({
+            start: (controller) => {
+              bodies.push(controller)
+            },
+          }),
+        ),
+      )
+      const owner = new AbortController()
+      const playing = current.context.player_test.play_media(owner.signal)
+      try {
+        await eventually(() => current.requests.length === 1)
+        current.media.dispatchEvent(new Event("seeked"))
+        await next_task()
+        const initial = bodies[0]
+        ok(initial)
+        initial.enqueue(new Uint8Array([1]))
+        await eventually(
+          () => current.sources[0]?.sourceBuffers[0]?.appended.length === 1,
+        )
+        current.media.currentTime = 120
+        current.media.seeking = true
+        current.media.dispatchEvent(new Event("seeking"))
+        await eventually(() => current.requests.length === 2)
+        current.media.currentTime = 10
+        current.media.seeking = true
+        current.media.dispatchEvent(new Event("seeking"))
+        await eventually(() => current.requests[1]?.signal.aborted === true)
+        await next_task()
+        equal(current.requests.length, 2)
+        current.media.seeking = false
+        current.media.dispatchEvent(new Event("seeked"))
+        current.media.update_time(60 - BUFFER_LOW)
+        await next_task()
+        equal(current.requests.length, 2)
+        current.media.update_time(60 - BUFFER_LOW + 1)
+        await eventually(() => current.requests.length === 3)
+        equal(request_position(current.requests[2]), "60")
+        equal(current.requests[1]?.signal.aborted, true)
+        current.media.seeking = false
+        current.media.dispatchEvent(new Event("seeked"))
+        const body = bodies[2]
+        ok(body)
+        body.enqueue(new Uint8Array([2]))
+        await eventually(
+          () => current.sources[0]?.sourceBuffers[0]?.appended.length === 2,
+        )
+        deepEqual(current.media.buffered.values, [
+          [0, 60],
+          [60, 120],
+        ])
+        await next_task()
+        current.media.update_time(55)
+        await next_task()
+        equal(current.requests.length, 3)
+      } finally {
+        owner.abort()
+        await playing
+      }
+    },
+  },
+  ...[
+    { position: 0, targets: [] },
+    { position: 0, targets: [10] },
+    { position: 0, targets: [110, 10] },
+    { position: 0, targets: [20] },
+    { position: 0, targets: [20.05] },
+    { position: 0, targets: [0] },
+    { position: 40, targets: [40] },
+    {
+      position: 0,
+      targets: [120],
+      ranges: [
+        [0, 20],
+        [100, 120],
+      ] as const,
+      requested: 120,
+    },
+    ...Array.from({ length: 10 }, (_, index) => ({
+      position: 0,
+      targets: [110, 10],
+      microtasks: index + 1,
+    })),
+  ].map(
+    ({
+      position,
+      targets,
+      microtasks = 0,
+      ranges = [[0, 20]],
+      requested,
+    }: {
+      position: number
+      targets: number[]
+      microtasks?: number
+      ranges?: readonly Range[]
+      requested?: number
+    }): TestCase => ({
+      name: `audit: split box from ${position} completes across seeks ${JSON.stringify(targets)} with ${microtasks} microtasks between them`,
+      run: async () => {
+        const current = await fixture({
+          response: "pending",
+          url_position: position,
+        })
+        const bodies: ReadableStreamDefaultController<
+          Uint8Array<ArrayBuffer>
+        >[] = []
+        const box = new Uint8Array([0, 0, 0, 12, 109, 100, 97, 116, 1, 2, 3, 4])
+        current.set_fetch(() =>
+          response_from(
+            new ReadableStream({
+              start: (controller) => {
+                bodies.push(controller)
+                if (bodies.length > 1) {
+                  controller.enqueue(box)
+                }
+              },
+            }),
+          ),
+        )
+        const owner = new AbortController()
+        const playing = current.context.player_test.play_media(owner.signal)
+        try {
+          await eventually(() => bodies.length === 1)
+          const buffer = current.sources[0]?.sourceBuffers[0]
+          const body = bodies[0]
+          ok(buffer)
+          ok(body)
+          if (position === 0) {
+            buffer.buffered.values.push(...ranges)
+            current.media.dispatchEvent(new Event("seeked"))
+          }
+          await next_task()
+
+          // Model only ISO BMFF box framing and abort's parser reset, not decoding.
+          let pending = new Uint8Array(0)
+          let completed = 0
+          buffer.abort = () => {
+            pending = new Uint8Array(0)
+            buffer.updating = false
+          }
+          buffer.appendBuffer = (bytes) => {
+            pending = new Uint8Array([...pending, ...bytes])
+            buffer.updating = true
+            if (pending.length >= 8) {
+              const size = new DataView(pending.buffer).getUint32(0)
+              if (size === box.length && pending.length === size) {
+                completed += 1
+                pending = new Uint8Array(0)
+              }
+            }
+            if (bytes.length !== 10) {
+              queueMicrotask(() => {
+                buffer.updating = false
+                buffer.dispatchEvent(new Event("update"))
+                buffer.dispatchEvent(new Event("updateend"))
+              })
+            }
+          }
+
+          body.enqueue(box.slice(0, 10))
+          await eventually(() => buffer.updating)
+          for (const target of targets) {
+            current.media.currentTime = target
+            current.media.seeking = true
+            current.media.dispatchEvent(new Event("seeking"))
+            for (let turn = 0; turn < microtasks; turn += 1) {
+              await Promise.resolve()
+            }
+          }
+          await next_task()
+          if (buffer.updating) {
+            buffer.updating = false
+            buffer.dispatchEvent(new Event("update"))
+            buffer.dispatchEvent(new Event("updateend"))
+          }
+          if (targets.length > 0) {
+            current.media.seeking = false
+            current.media.dispatchEvent(new Event("seeked"))
+          }
+          if (!current.requests[0]?.signal.aborted) {
+            body.enqueue(box.slice(10))
+          }
+          await next_task()
+          await next_task()
+          ok(
+            completed > 0,
+            "the complete box must survive seeking, including its prefix",
+          )
+          if (requested !== undefined) {
+            equal(current.requests.length, 2)
+            equal(request_position(current.requests[1]), String(requested))
+          } else if (microtasks === 0) {
+            equal(
+              current.requests.length,
+              1,
+              "seeks within the current request retain its parser and connection",
+            )
+          }
+        } finally {
+          owner.abort()
+          await playing
+        }
+      },
+    }),
+  ),
+  {
+    name: "audit: delayed MediaSource teardown cannot detach a restored page's source",
+    run: async () => {
+      const current = await fixture()
+      const cleanup = Promise.withResolvers<void>()
+      const sessions: string[] = []
+      const finished: number[] = []
+      const failures: unknown[] = []
+      void current.context.player_test
+        .main(async (signal) => {
+          for await (const _ of current.context.player_test.media_sources(
+            signal,
+          )) {
+            sessions.push(current.media.src)
+            const session = sessions.length
+            await new Promise<void>((resolve) => {
+              signal.addEventListener("abort", () => resolve(), { once: true })
+            })
+            if (session === 1) {
+              await cleanup.promise
+            }
+            finished.push(session)
+            break
+          }
+          return undefined
+        })
+        .catch((error: unknown) => failures.push(error))
+      try {
+        current.window.dispatchEvent(new Event("pageshow"))
+        await eventually(() => sessions.length === 1)
+        current.window.dispatchEvent(new Event("pagehide"))
+        await next_task()
+        current.window.dispatchEvent(new Event("pageshow"))
+        await next_task()
+        cleanup.resolve()
+        await eventually(() => finished.includes(1) && sessions.length === 2)
+        await next_task()
+        deepEqual(failures, [])
+        const restored = sessions[1]
+        ok(restored)
+        equal(current.media.src, restored)
+        equal(current.revoked.includes(restored), false)
+      } finally {
+        cleanup.resolve()
+        current.window.dispatchEvent(new Event("pagehide"))
+        await next_task()
+      }
+    },
+  },
+  ...["error", "sourceclose"].flatMap((type) =>
+    [false, true].map((observed): TestCase => ({
+      name: `audit: ${type} recovery resumes at the current playback position ${observed ? "after" : "before"} timeupdate`,
+      run: async () => {
+        const current = await fixture({ response: "pending" })
+        const owner = new AbortController()
+        const playing = current.context.player_test.play_media(owner.signal)
+        try {
+          await eventually(() => current.requests.length === 1)
+          current.media.dispatchEvent(new Event("seeked"))
+          await next_task()
+          current.media.buffered.values.push([0, 60])
+          if (observed) {
+            current.media.update_time(20)
+            await next_task()
+            equal(current.time_input.value, "20")
+          } else {
+            current.media.currentTime = 20
+          }
+          if (type === "error") {
+            current.media.error = { code: 3 } as MediaError
+            current.media.dispatchEvent(new Event("error"))
+          } else {
+            const source = current.sources[0]
+            ok(source)
+            source.readyState = "closed"
+            source.dispatchEvent(new Event("sourceclose"))
+          }
+          await eventually(() => current.requests.length === 2)
+          deepEqual(current.requests.map(request_position), ["0", "20"])
+          equal(current.media.currentTime, 20)
+        } finally {
+          owner.abort()
+          await playing
+        }
+      },
+    })),
+  ),
+  {
+    name: "audit: a newer user seek replaces an older projected seek in the same batch",
+    run: async () => {
+      const current = await fixture({ response: "pending", url_position: 40 })
+      const owner = new AbortController()
+      const playing = current.context.player_test.play_media(owner.signal)
+      try {
+        await eventually(() => current.requests.length === 1)
+        current.media.currentTime = 0
+        current.media.dispatchEvent(new Event("canplay"))
+        current.media.currentTime = 110
+        current.media.seeking = true
+        current.media.dispatchEvent(new Event("seeking"))
+        await eventually(() => current.requests.length === 2)
+        equal(request_position(current.requests[1]), "110")
+        equal(current.media.currentTime, 110)
+      } finally {
+        owner.abort()
+        await playing
+      }
+    },
+  },
+  ...[200, 199.98].map((end): TestCase => ({
+    name: `audit: natural playback completion at ${end} does not start another request`,
+    run: async () => {
+      const current = await fixture({ append_duration: end })
+      const owner = new AbortController()
+      const playing = current.context.player_test.play_media(owner.signal)
+      try {
+        await eventually(() => current.sources[0]?.readyState === "ended")
+        const source = current.sources[0]
+        ok(source)
+        source.duration = end
+        current.media.currentTime = end
+        current.media.ended = true
+        current.media.dispatchEvent(new Event("ended"))
+        await next_task()
+        equal(current.requests.length, 1)
+        equal(current.sources[0]?.readyState, "ended")
+      } finally {
+        owner.abort()
+        await playing
+      }
+    },
+  })),
+  ...[
+    { type: "timeupdate", time: RESUME_AT, position: String(BUFFER_HIGH) },
+    { type: "waiting", time: BUFFER_HIGH, position: String(BUFFER_HIGH) },
+    {
+      type: "seeking",
+      time: BUFFER_HIGH + 10,
+      position: String(BUFFER_HIGH + 10),
+    },
+  ].map(({ type, time, position }): TestCase => ({
+    name: `${type} resumes fetching when it overtakes an acknowledged high-water pause`,
+    run: async () => {
+      const current = await fixture({ append_duration: BUFFER_HIGH })
+      const bodies: ReadableStreamDefaultController<Uint8Array<ArrayBuffer>>[] =
+        []
+      current.set_fetch(() =>
+        response_from(
+          new ReadableStream({
+            start: (controller) => {
+              bodies.push(controller)
+            },
+          }),
+        ),
+      )
+      const owner = new AbortController()
+      const playing = current.context.player_test.play_media(owner.signal)
+      try {
+        await eventually(() => current.requests.length === 1)
+        current.media.dispatchEvent(new Event("seeked"))
+        await next_task()
+        const body = bodies[0]
+        ok(body)
+        body.enqueue(Uint8Array.of(1))
+        await eventually(
+          () => current.sources[0]?.sourceBuffers[0]?.appended.length === 1,
+        )
+        await next_task()
+        equal(current.requests[0]?.signal.aborted, false)
+
+        current.media.currentTime = time
+        current.media.seeking = type === "seeking"
+        current.media.dispatchEvent(new Event(type))
+        await eventually(() => current.requests.length === 2)
+        equal(current.requests[0]?.signal.aborted, true)
+        deepEqual(current.requests.map(request_position), ["0", position])
+        const resumed = bodies[1]
+        ok(resumed)
+        resumed.enqueue(Uint8Array.of(2))
+        await eventually(
+          () => current.sources[0]?.sourceBuffers[0]?.appended.length === 2,
+        )
+        equal(
+          current.sources[0]?.sourceBuffers[0]?.timestampOffset,
+          Number(position),
+        )
+        equal(current.sources.length, 1)
+        equal(current.media.loads, 0)
+        equal(current.media.currentTime, time)
+      } finally {
+        owner.abort()
+        await playing
+      }
+    },
+  })),
+  {
+    name: "pagehide detaches media listeners and pageshow reinstalls them once",
+    run: async () => {
+      const current = await fixture({ response: "pending" })
+      void current.context.player_test.main(
+        current.context.player_test.play_media,
+      )
+      current.window.dispatchEvent(new Event("pageshow"))
+      await eventually(() => current.requests.length === 1)
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
+      current.media.dispatchEvent(new Event("waiting"))
+      current.window.dispatchEvent(new Event("pagehide"))
+      await eventually(() => current.media.src === "")
+      equal(getEventListeners(current.media, "waiting").length, 0)
+      current.media.update_time(1)
+      await next_task()
+
+      current.window.dispatchEvent(new Event("pageshow"))
+      try {
+        await eventually(() => current.requests.length === 2)
+        equal(getEventListeners(current.media, "waiting").length, 1)
+        current.media.dispatchEvent(new Event("playing"))
+        current.media.update_time(0.1)
+        await next_task()
+        equal(current.requests.length, 2)
+      } finally {
+        current.window.dispatchEvent(new Event("pagehide"))
+        await eventually(() => current.media.src === "")
+      }
+    },
+  },
   {
     name: "a pre-aborted lifetime starts no source or request",
     run: async () => {
@@ -469,7 +1325,7 @@ const cases = [
   {
     name: "a finite high-water response reaches end of stream",
     run: async () => {
-      const current = await fixture()
+      const current = await fixture({ append_duration: BUFFER_HIGH })
       const owner = new AbortController()
       const playback = current.context.player_test.play_media(owner.signal)
 
@@ -644,7 +1500,7 @@ const cases = [
   {
     name: "low water resumes acquisition at the buffered frontier",
     run: async () => {
-      const current = await fixture()
+      const current = await fixture({ append_duration: BUFFER_HIGH })
       const owner = new AbortController()
       const playback = current.context.player_test.play_media(owner.signal)
 
@@ -653,11 +1509,11 @@ const cases = [
       await new Promise((resolve) => setImmediate(resolve))
       equal(current.requests.length, 1)
 
-      current.media.currentTime = 20
+      current.media.currentTime = RESUME_AT
       current.media.dispatchEvent(new Event("timeupdate"))
       await eventually(() => current.requests.length === 2)
 
-      equal(new URL(current.requests[1]?.url ?? "").searchParams.get("t"), "60")
+      equal(request_position(current.requests[1]), String(BUFFER_HIGH))
 
       owner.abort()
       await playback
@@ -666,7 +1522,10 @@ const cases = [
   {
     name: "high water pauses acquisition until playback reaches low water",
     run: async () => {
-      const current = await fixture({ response: "pending" })
+      const current = await fixture({
+        append_duration: BUFFER_HIGH,
+        response: "pending",
+      })
       let first = true
       current.set_fetch((request) =>
         response_from(
@@ -699,11 +1558,11 @@ const cases = [
 
       equal(current.requests.length, 1)
 
-      current.media.currentTime = 20
+      current.media.currentTime = RESUME_AT
       current.media.dispatchEvent(new Event("timeupdate"))
       await eventually(() => current.requests.length === 2)
 
-      equal(request_position(current.requests[1]), "60")
+      equal(request_position(current.requests[1]), String(BUFFER_HIGH))
 
       owner.abort()
       await playback
@@ -1287,6 +2146,7 @@ const cases = [
       current.media.currentTime = 20
       current.media.dispatchEvent(new Event("timeupdate"))
       await eventually(() => current.time_input.value === "20")
+      current.media.currentTime = Number(current.media.dataset["duration"])
       current.media.ended = true
       current.media.dispatchEvent(new Event("ended"))
       await eventually(() => current.time_input.value === "0")
@@ -1419,6 +2279,7 @@ const cases = [
     name: "completed appends drive high-water backpressure",
     run: async () => {
       const current = await fixture({
+        append_duration: BUFFER_HIGH,
         recovery_timers: true,
         response: "partial",
       })
@@ -1568,6 +2429,102 @@ const cases = [
       await eventually(() => current.media.src === "")
     },
   },
+  ...(["paused", "playing", "append", "abort", "reject"] as const).map(
+    (mode): TestCase => ({
+      name: `audit: rebuilding a source owns playback resumption: ${mode}`,
+      run: async () => {
+        const paused = mode === "paused"
+        const current = await fixture({ response: "pending" })
+        const pending = Promise.withResolvers<void>()
+        let body:
+          ReadableStreamDefaultController<Uint8Array<ArrayBuffer>> | undefined
+        let calls = 0
+        let settled = false
+        current.set_fetch(() =>
+          response_from(
+            new ReadableStream({
+              start: (controller) => {
+                body = controller
+              },
+            }),
+          ),
+        )
+        const owner = new AbortController()
+        const playback = current.context.player_test.play_media(owner.signal)
+        try {
+          await eventually(() => current.requests.length === 1)
+          current.media.seeking = false
+          current.media.dispatchEvent(new Event("seeked"))
+          current.media.paused = paused
+          current.media.readyState = current.media.HAVE_FUTURE_DATA
+          await next_task()
+
+          let src = current.media.src
+          Object.defineProperty(current.media, "src", {
+            get: () => src,
+            set: (value: string) => {
+              src = value
+              // Loading a new media resource sets paused=true, even after play().
+              // https://html.spec.whatwg.org/multipage/media.html#media-element-load-algorithm
+              current.media.paused = true
+            },
+          })
+          Object.assign(current.media, {
+            play: () => {
+              calls += 1
+              current.media.paused = false
+              if (mode === "playing") {
+                return Promise.resolve()
+              }
+              return pending.promise.finally(() => {
+                settled = true
+              })
+            },
+            pause: () => {
+              current.media.paused = true
+              if (mode !== "playing") {
+                pending.reject(new DOMException("paused", "AbortError"))
+              }
+            },
+          })
+          const source = current.sources[0]
+          ok(source)
+          source.readyState = "closed"
+          source.dispatchEvent(new Event("sourceclose"))
+
+          await eventually(() => current.requests.length === 2)
+          current.media.readyState = current.media.HAVE_FUTURE_DATA
+          current.media.dispatchEvent(new Event("canplay"))
+          await next_task()
+          equal(current.media.paused, paused)
+          equal(calls, paused ? 0 : 1)
+          if (mode === "append") {
+            ok(body)
+            body.enqueue(new Uint8Array([1]))
+            await eventually(
+              () => current.sources[1]?.sourceBuffers[0]?.appended.length === 1,
+            )
+            equal(settled, false)
+            pending.resolve()
+            await eventually(() => settled)
+          }
+          if (mode === "reject") {
+            const error = new DOMException("blocked", "NotAllowedError")
+            pending.reject(error)
+            await eventually(() => current.errors.length === 1)
+            deepEqual(current.errors, [[error]])
+          }
+        } finally {
+          owner.abort()
+          await playback
+        }
+        if (mode === "abort") {
+          equal(settled, true)
+          deepEqual(current.errors, [])
+        }
+      },
+    }),
+  ),
   {
     name: "lifetime abort drains the request and detaches media",
     run: async () => {

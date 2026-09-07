@@ -5,6 +5,7 @@ export type MediaSnapshot = Readonly<{
   duration: number
   error: MediaError | undefined
   metadata: boolean
+  paused: boolean
   seeking: boolean
   time: number
 }>
@@ -14,9 +15,11 @@ export type MediaEvent =
   | "ended"
   | "error"
   | "loadedmetadata"
+  | "playing"
   | "progress"
   | "seeked"
   | "seeking"
+  | "stalled"
   | "timeupdate"
   | "waiting"
 
@@ -26,15 +29,18 @@ export type MediaAction = Readonly<{
 }>
 
 const END_TOLERANCE = 0.5
+export const POSITION_TOLERANCE = 0.1
 
 const EVENTS = [
   "canplay",
   "ended",
   "error",
   "loadedmetadata",
+  "playing",
   "progress",
   "seeked",
   "seeking",
+  "stalled",
   "timeupdate",
   "waiting",
 ] as const satisfies readonly MediaEvent[]
@@ -60,6 +66,7 @@ const media_state = (media: HTMLMediaElement): MediaSnapshot => ({
   duration: Number(media.dataset["duration"]),
   error: media.error ?? undefined,
   metadata: media.readyState >= media.HAVE_METADATA,
+  paused: media.paused,
   seeking: media.seeking,
   time: media.currentTime,
 })

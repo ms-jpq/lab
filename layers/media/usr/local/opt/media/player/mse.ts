@@ -1,12 +1,48 @@
-import { abortion, closing, defer, never, once } from "./util.ts"
+import { playable_position, POSITION_TOLERANCE } from "./media.ts"
+import { abortion, closing, defer, event_batches, never, once } from "./util.ts"
 
 export type MseOperation = undefined | number | Uint8Array<ArrayBuffer>
-export type Mse = AsyncGenerator<void, void, MseOperation>
+export type Mse = AsyncIteratorObject<
+  Uint8Array<ArrayBuffer>,
+  void,
+  MseOperation
+>
 
 const EPSILON = 0.001
 
 export const closed = (source: MediaSource): boolean =>
   source.readyState === "closed"
+
+const unbuffered_seek = async (
+  media: HTMLMediaElement,
+  buffer: SourceBuffer,
+  signal: AbortSignal,
+): Promise<{ type: "seeking" } | undefined> => {
+  await using seeks = event_batches(signal, media, ["seeking"], () => undefined)
+  seeking: for await (const _ of seeks) {
+    if (signal.aborted) {
+      return
+    }
+    if (!buffer.updating) {
+      continue
+    }
+    const ranges = media.buffered
+    const position = playable_position(media, media.currentTime)
+    if (Math.abs(position - buffer.timestampOffset) <= POSITION_TOLERANCE) {
+      continue
+    }
+    for (let index = 0; index < ranges.length; index += 1) {
+      if (
+        ranges.start(index) - position <= POSITION_TOLERANCE &&
+        position - ranges.end(index) <= POSITION_TOLERANCE
+      ) {
+        continue seeking
+      }
+    }
+    return { type: "seeking" }
+  }
+  return
+}
 
 const op_lock = async function* (
   buffer: SourceBuffer,
@@ -14,6 +50,7 @@ const op_lock = async function* (
   source: MediaSource,
   signal: AbortSignal,
   timeout: number,
+  operation: "append" | "remove",
 ): AsyncIteratorObject<undefined> {
   if (signal.aborted) {
     return
@@ -22,16 +59,18 @@ const op_lock = async function* (
   const deadline = AbortSignal.timeout(timeout)
   using a = abortion(AbortSignal.any([signal, deadline]))
   const changed = Promise.race([
-    once(a.signal, buffer, "updateend"),
+    ...(operation === "append"
+      ? [unbuffered_seek(media, buffer, a.signal)]
+      : []),
+    once(a.signal, buffer, "update"),
     once(a.signal, buffer, "error"),
-    once(a.signal, media, "seeking"),
     once(a.signal, source, "sourceclose"),
   ])
 
   yield
   const event = await changed
   if (event === undefined) {
-    if (buffer.updating) {
+    if (operation === "append" && buffer.updating) {
       buffer.abort()
     }
     if (deadline.aborted && !signal.aborted) {
@@ -44,13 +83,15 @@ const op_lock = async function* (
       throw event
     case "seeking":
     case "sourceclose": {
-      if (buffer.updating) {
+      if (operation === "append" && buffer.updating) {
         buffer.abort()
       }
     }
   }
   return
 }
+
+const empty = new Uint8Array(0)
 
 export const media_source = async function* ({
   media,
@@ -74,13 +115,16 @@ export const media_source = async function* ({
 
   const buffer = source.addSourceBuffer(mime_type)
 
-  const position = (yield undefined) as number
+  const position = (yield empty) as number
   if (a.signal.aborted) {
     return
   }
   buffer.timestampOffset = position
 
-  for (let operation = yield undefined; ; operation = yield undefined) {
+  let remaining = empty
+  for (let operation = yield empty; ; operation = yield remaining) {
+    remaining = empty
+
     if (a.signal.aborted) {
       return
     }
@@ -101,10 +145,11 @@ export const media_source = async function* ({
           source,
           a.signal,
           timeout,
+          "remove",
         )) {
           buffer.remove(end, end + EPSILON)
         }
-        if (closed(source)) {
+        if (a.signal.aborted || closed(source)) {
           return
         }
       }
@@ -128,6 +173,7 @@ export const media_source = async function* ({
           source,
           a.signal,
           timeout,
+          "remove",
         )) {
           buffer.remove(0, cutoff)
         }
@@ -135,8 +181,26 @@ export const media_source = async function* ({
           return
         }
       }
-      for await (const _ of op_lock(buffer, media, source, a.signal, timeout)) {
-        buffer.appendBuffer(operation)
+      for await (const _ of op_lock(
+        buffer,
+        media,
+        source,
+        a.signal,
+        timeout,
+        "append",
+      )) {
+        try {
+          buffer.appendBuffer(operation)
+        } catch (error) {
+          if (
+            error instanceof DOMException &&
+            error.code === DOMException.QUOTA_EXCEEDED_ERR
+          ) {
+            remaining = operation
+            break
+          }
+          throw error
+        }
       }
       if (closed(source)) {
         return
@@ -181,11 +245,16 @@ export const bond = (
           return await opened
         })()
 
+        if (signal.aborted) {
+          return
+        }
         if (event === undefined && deadline.aborted && !signal.aborted) {
           throw new Error("MediaSource opening timed out")
         }
-        if (event?.type === "sourceclose") {
-          throw event
+        if (event?.type === "sourceclose" || closed(source)) {
+          throw event?.type === "sourceclose"
+            ? event
+            : new Error("MediaSource closed before handoff")
         }
         if (event === undefined) {
           return

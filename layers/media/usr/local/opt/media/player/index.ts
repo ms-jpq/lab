@@ -1,5 +1,5 @@
 import { closed, media_sources } from "./mse.ts"
-import { media_buffered, media_events } from "./media.ts"
+import { media_buffered, media_events, playable_position } from "./media.ts"
 import {
   duration,
   main,
@@ -13,6 +13,7 @@ import { playback_transitions } from "./reducer.ts"
 import {
   abortion,
   closing,
+  defer,
   delay,
   fetch_stream,
   inactivity,
@@ -81,7 +82,7 @@ const stream_events = async function* (
     }
     yield { error, type: "request_failed" }
     if (await delay(signal, RETRY_DELAY)) {
-      yield { type: "request_retry" }
+      yield { current: media_buffered(media).current, type: "request_retry" }
     }
     return
   }
@@ -95,13 +96,20 @@ const source_events = async function* (
   signal: AbortSignal,
   source: MediaSource,
 ): AsyncIteratorObject<SourceAction> {
-  const action = { type: "source_closed" } as const
-  if (closed(source)) {
-    yield action
+  if (
+    !closed(source) &&
+    (await once(signal, source, "sourceclose")) === undefined
+  ) {
     return
   }
-  if ((await once(signal, source, "sourceclose")) !== undefined) {
-    yield action
+
+  yield {
+    paused: media.paused,
+    position:
+      media.readyState >= media.HAVE_METADATA
+        ? playable_position(media, media.currentTime)
+        : undefined,
+    type: "source_closed",
   }
   return
 }
@@ -153,6 +161,13 @@ export const play_media = async (signal: AbortSignal) => {
     }
 
     await using buffer = create_buffer(abort.signal)
+    let playing: Promise<void> | undefined
+    await using _ = defer(async () => {
+      if (playing !== undefined) {
+        media.pause()
+        await playing
+      }
+    })
 
     if ((await buffer.next()).done) {
       continue
@@ -195,6 +210,21 @@ export const play_media = async (signal: AbortSignal) => {
           media.currentTime = effects.seek
         }
 
+        if (effects.play && playing === undefined) {
+          playing = (async () => {
+            try {
+              await media.play()
+            } catch (error) {
+              if (!(
+                error instanceof DOMException &&
+                error.code === DOMException.ABORT_ERR
+              )) {
+                console.error(error)
+              }
+            }
+          })()
+        }
+
         if (effects.control) {
           using _ = abrt
 
@@ -205,6 +235,8 @@ export const play_media = async (signal: AbortSignal) => {
             }
             case "rebuild":
               continue source
+            case "retry":
+              return
             case "request": {
               requested = effects.control.request
               continue request
@@ -226,11 +258,25 @@ export const play_media = async (signal: AbortSignal) => {
             }
           })()
 
-          if ((await buffer.next(operation)).done) {
+          const result = await buffer.next(operation)
+          if (result.done) {
             using _ = abrt
             continue source
           }
+
           if (effects.buffer.type === "append") {
+            if (result.value.byteLength > 0) {
+              const { control } = dispatch({
+                ...media_buffered(media),
+                type: "buffer_full",
+              })
+              if (control?.type === "retry") {
+                return
+              }
+              requested = undefined
+              using _ = abrt
+              continue request
+            }
             dispatch(media_buffered(media))
           }
         }

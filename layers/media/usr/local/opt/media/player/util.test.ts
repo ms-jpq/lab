@@ -9,6 +9,7 @@ import {
   delay,
   fetch_stream,
   inactivity,
+  join,
   merge,
   once,
 } from "./util.ts"
@@ -47,6 +48,52 @@ class OnceTarget extends EventTarget {
 
 const cases = [
   {
+    name: "join completes empty and successful groups",
+    run: async () => {
+      deepEqual(await join([]), undefined)
+      deepEqual(
+        await join([Promise.resolve(1), Promise.resolve("done")]),
+        undefined,
+      )
+    },
+  },
+  ...[new Error("single failure"), undefined].map((failure) => ({
+    name: `join preserves a single ${failure === undefined ? "undefined rejection" : "error"} after all work settles`,
+    run: async () => {
+      const pending = Promise.withResolvers<void>()
+      const outcomes: unknown[] = []
+      const joined = join([Promise.reject(failure), pending.promise]).then(
+        () => outcomes.push({ success: true }),
+        (error: unknown) => outcomes.push({ error }),
+      )
+      await setImmediate()
+      deepEqual(outcomes, [])
+      pending.resolve()
+      await joined
+      deepEqual(outcomes, [{ error: failure }])
+    },
+  })),
+  {
+    name: "join aggregates failures in input order after every task settles",
+    run: async () => {
+      const first = Promise.withResolvers<void>()
+      const left = new Error("left")
+      const right = new Error("right")
+      const outcomes: unknown[] = []
+      const joined = join([first.promise, Promise.reject(right)]).then(
+        () => outcomes.push({ success: true }),
+        (error: unknown) => outcomes.push(error),
+      )
+      await setImmediate()
+      deepEqual(outcomes.length, 0)
+      first.reject(left)
+      await joined
+      const [error] = outcomes
+      assert(error instanceof AggregateError)
+      deepEqual(error.errors, [left, right])
+    },
+  },
+  {
     name: "closing aborts before returning its source",
     run: async () => {
       const owner = new AbortController()
@@ -81,6 +128,34 @@ const cases = [
     },
   },
   {
+    name: "closing runs source cleanup when the return value rejects",
+    run: async () => {
+      const owner = new AbortController()
+      const failure = new Error("return value failed")
+      const sequence: string[] = []
+      const values = closing(owner.signal, async function* (signal) {
+        signal.addEventListener("abort", () => sequence.push("abort"), {
+          once: true,
+        })
+        try {
+          yield 1
+        } finally {
+          sequence.push("cleanup")
+        }
+        return
+      })
+
+      deepEqual(await values.next(), { done: false, value: 1 })
+      const closed = values.return?.(Promise.reject(failure))
+      assert(closed)
+      await rejects(closed, (error) => error === failure)
+      const observed = [...sequence]
+      await values.return?.(undefined)
+
+      deepEqual(observed, ["abort", "cleanup"])
+    },
+  },
+  {
     name: "closing interrupts a pending source read before returning",
     run: async () => {
       const owner = new AbortController()
@@ -104,6 +179,82 @@ const cases = [
           { done: true, value: undefined },
         ],
       )
+    },
+  },
+  ...(["unstarted", "completed"] as const).map((state) => ({
+    name: `closing preserves a rejected return value when the source is ${state}`,
+    run: async () => {
+      const owner = new AbortController()
+      const failure = new Error("return value failed")
+      const values = closing(owner.signal, async function* () {
+        return
+      })
+      if (state === "completed") {
+        deepEqual(await values.next(), { done: true, value: undefined })
+      }
+
+      const closed = values.return?.(Promise.reject(failure))
+      assert(closed)
+      await rejects(closed, (error) => error === failure)
+      deepEqual(await values.next(), { done: true, value: undefined })
+    },
+  })),
+  {
+    name: "closing waits for cleanup and preserves both return and cleanup failures",
+    run: async () => {
+      const owner = new AbortController()
+      const failure = new Error("return value failed")
+      const cleanup_failure = new Error("cleanup failed")
+      const release = Promise.withResolvers<void>()
+      const entered = Promise.withResolvers<void>()
+      const values = closing(owner.signal, async function* (signal) {
+        try {
+          yield 1
+        } finally {
+          assert(signal.aborted)
+          entered.resolve()
+          await release.promise
+          throw cleanup_failure
+        }
+      })
+      await values.next()
+      const closed = values.return?.(Promise.reject(failure))
+      assert(closed)
+      const outcomes: unknown[] = []
+      const settled = closed.then(
+        () => outcomes.push("closed"),
+        (error: unknown) => outcomes.push(error),
+      )
+      await entered.promise
+      await setImmediate()
+      deepEqual(outcomes.length, 0)
+      release.resolve()
+      await settled
+      const [error] = outcomes
+      assert(error instanceof AggregateError)
+      deepEqual(error.errors, [failure, cleanup_failure])
+    },
+  },
+  {
+    name: "closing forwards a resolved return value to its source",
+    run: async () => {
+      const owner = new AbortController()
+      const values = closing(
+        owner.signal,
+        async function* (signal): AsyncGenerator<number, number, void> {
+          try {
+            yield 1
+          } finally {
+            assert(signal.aborted)
+          }
+          return 2
+        },
+      )
+      await values.next()
+      deepEqual(await values.return?.(Promise.resolve(3)), {
+        done: true,
+        value: 3,
+      })
     },
   },
   {
@@ -622,8 +773,7 @@ const cases = [
       )
 
       assert(failure instanceof SuppressedError)
-      assert(failure.error instanceof AggregateError)
-      deepEqual(failure.error.errors, [closeFailure])
+      deepEqual(failure.error, closeFailure)
       deepEqual(failure.suppressed, sourceFailure)
     },
   },

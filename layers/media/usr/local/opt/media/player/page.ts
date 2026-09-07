@@ -1,5 +1,5 @@
 import { playable_position } from "./media.ts"
-import { abortion, delay, once } from "./util.ts"
+import { abortion, defer, delay, event_batches, join, once } from "./util.ts"
 
 const POSITION = `media:position:${location.pathname}`
 const PAGE = crypto.randomUUID()
@@ -74,13 +74,18 @@ const play_subtitle = async (signal: AbortSignal): Promise<void> => {
   }
 
   for (;;) {
+    if (subtitle.readyState === subtitle.LOADED) {
+      return
+    }
     const event = await (async () => {
       using attempt = abortion(signal)
       const loaded = Promise.race([
         once(attempt.signal, subtitle, "load"),
         once(attempt.signal, subtitle, "error"),
       ])
-      subtitle.src = source_url(subtitle, 0)
+      if (!subtitle.src || subtitle.readyState === subtitle.ERROR) {
+        subtitle.src = source_url(subtitle, 0)
+      }
       return await loaded
     })()
 
@@ -96,19 +101,29 @@ const play_subtitle = async (signal: AbortSignal): Promise<void> => {
 
 export const main = async (
   play_media: (signal: AbortSignal) => Promise<undefined | void>,
-): Promise<never> => {
+): Promise<void> => {
   form.onsubmit = submit
   persist_position(initial_position)
 
-  for (;;) {
-    using a = abortion()
-    await once(a.signal, window, "pageshow")
+  using abort = abortion()
+  await using pages = event_batches(
+    abort.signal,
+    window,
+    ["pageshow", "pagehide"],
+    () => undefined,
+  )
 
+  for await (const value of pages) {
+    if (value.at(-1)?.type !== "pageshow") {
+      continue
+    }
+
+    using a = abortion(abort.signal)
     const hidden = once(a.signal, window, "pagehide")
-    await Promise.race([
-      hidden,
-      play_media(a.signal),
-      play_subtitle(a.signal).then(() => hidden),
-    ])
+    const playback = play_media(a.signal)
+    const subtitles = play_subtitle(a.signal)
+    await using _ = defer(() => join([playback, subtitles]))
+    using __ = a
+    await Promise.race([hidden, playback, subtitles.then(() => hidden)])
   }
 }

@@ -1,4 +1,4 @@
-import { playable_time } from "./media.ts"
+import { playable_time, POSITION_TOLERANCE } from "./media.ts"
 import type { MediaAction, MediaSnapshot } from "./media.ts"
 import { never } from "./util.ts"
 
@@ -12,23 +12,34 @@ type PlaybackControl =
   | Readonly<{ type: "pause" }>
   | Readonly<{ request: PlaybackRequest; type: "request" }>
   | Readonly<{ type: "rebuild" }>
+  | Readonly<{ type: "retry" }>
 
 type Acquisition = "active" | "backpressured" | "idle"
 
 type PlaybackState = Readonly<{
   acquisition: Acquisition
+  buffer_low: number
   pending_seek: number | undefined
   request: PlaybackRequest
+  resume: boolean
   target: number
 }>
 
 type PlaybackAction =
   | MediaAction
   | Readonly<{ bytes: Uint8Array<ArrayBuffer>; type: "bytes_received" }>
+  | Readonly<{
+      current: MediaSnapshot
+      type: "buffer_full"
+    }>
   | Readonly<{ error: unknown; type: "request_failed" }>
   | Readonly<{ type: "request_finished" }>
-  | Readonly<{ type: "request_retry" }>
-  | Readonly<{ type: "source_closed" }>
+  | Readonly<{ current: MediaSnapshot; type: "request_retry" }>
+  | Readonly<{
+      paused: boolean
+      position: number | undefined
+      type: "source_closed"
+    }>
   | Readonly<{ type: "source_opened" }>
 
 type PlaybackEffects = Readonly<{
@@ -36,6 +47,7 @@ type PlaybackEffects = Readonly<{
   control?: PlaybackControl
   error?: unknown
   persist?: number
+  play?: boolean
   seek?: number
 }>
 
@@ -44,9 +56,8 @@ type PlaybackTransition = readonly [
   effects: PlaybackEffects,
 ]
 
-const POSITION_TOLERANCE = 0.1
-const BUFFER_LOW = 45
-const BUFFER_HIGH = 60
+export const BUFFER_LOW = 45
+export const BUFFER_HIGH = 60
 
 const aligned = (left: number, right: number): boolean =>
   Math.abs(left - right) <= POSITION_TOLERANCE
@@ -91,19 +102,30 @@ const request_at = (position: number): PlaybackRequest => ({
   position,
 })
 
+const at_end = ({ duration }: MediaSnapshot, position: number): boolean =>
+  duration > 0 && position >= duration - POSITION_TOLERANCE
+
+const complete = (state: PlaybackState, current: MediaSnapshot): boolean =>
+  at_end(
+    current,
+    buffered_end(current, state.pending_seek ?? current.time) ?? current.time,
+  )
+
 const request_if_needed = (
   state: PlaybackState,
   current: MediaSnapshot,
 ): PlaybackTransition => {
   if (
     state.acquisition === "active" ||
-    play_ahead(current, state.request.position) >= BUFFER_LOW
+    complete(state, current) ||
+    play_ahead(current, state.request.position) >= state.buffer_low
   ) {
     return [state, {}]
   }
+  const request = request_at(state.request.frontier)
   return [
-    { ...state, acquisition: "active" },
-    { control: { request: state.request, type: "request" } },
+    { ...state, acquisition: "active", request },
+    { control: { request, type: "request" } },
   ]
 }
 
@@ -143,6 +165,11 @@ const project = (
       ? candidate
       : undefined
   const pending_seek = candidate === undefined ? state.pending_seek : seek
+  const play =
+    state.resume &&
+    current.metadata &&
+    !current.seeking &&
+    pending_seek === undefined
 
   const frontier = stream_position(
     buffered_end(current, state.request.frontier) ?? state.request.frontier,
@@ -163,21 +190,20 @@ const project = (
       acquisition: pause ? "idle" : state.acquisition,
       pending_seek,
       request,
+      resume: state.resume && !play,
+      target: pending_seek ?? playable_time(current.duration, current.time),
     },
     current,
   )
-  const controlled = pause
-    ? { ...effects, control: { type: "pause" } as const }
-    : effects
-  return [next, seek === undefined ? controlled : { ...controlled, seek }]
-}
-
-const retry = (state: PlaybackState): PlaybackTransition => {
-  const request = request_at(state.request.frontier)
-  return [
-    { ...state, acquisition: "active", request },
-    { control: { request, type: "request" } },
-  ]
+  const controlled = {
+    ...effects,
+    ...(pause && effects.control === undefined
+      ? { control: { type: "pause" } as const }
+      : {}),
+    ...(seek === undefined ? {} : { seek }),
+    ...(play ? { play: true } : {}),
+  }
+  return [next, controlled]
 }
 
 const pause = (
@@ -195,6 +221,18 @@ const reduce = (
   action: PlaybackAction,
 ): PlaybackTransition => {
   switch (action.type) {
+    case "buffer_full": {
+      const ahead = play_ahead(action.current, state.request.frontier)
+      return [
+        {
+          ...state,
+          acquisition: "idle",
+          buffer_low: Math.min(state.buffer_low, ahead / 2),
+          request: request_at(state.request.frontier),
+        },
+        ahead > 0 ? {} : { control: { type: "retry" } },
+      ]
+    }
     case "bytes_received":
       return state.acquisition === "backpressured"
         ? pause(state)
@@ -207,10 +245,26 @@ const reduce = (
       return [{ ...state, acquisition: "idle" }, { buffer: { type: "end" } }]
     }
     case "request_retry": {
-      return retry(state)
+      const [next, effects] = project(
+        { ...state, acquisition: "idle" },
+        action.current,
+      )
+      return [
+        next,
+        complete(next, action.current)
+          ? { ...effects, buffer: { type: "end" } }
+          : { ...effects, control: effects.control ?? { type: "pause" } },
+      ]
     }
     case "source_closed": {
-      return [state, { control: { type: "rebuild" } }]
+      return [
+        {
+          ...state,
+          resume: state.resume || !action.paused,
+          target: state.pending_seek ?? action.position ?? state.target,
+        },
+        { control: { type: "rebuild" } },
+      ]
     }
     case "source_opened": {
       const request = request_at(state.target)
@@ -218,6 +272,7 @@ const reduce = (
         {
           ...state,
           acquisition: "active",
+          buffer_low: BUFFER_LOW,
           pending_seek: state.target,
           request,
         },
@@ -230,13 +285,24 @@ const reduce = (
     case "loadedmetadata":
     case "canplay":
     case "progress":
+    case "playing":
+    case "stalled":
     case "seeked":
     case "waiting": {
       return project(state, action.current)
     }
     case "ended": {
       const [next, effects] = request_if_needed(state, action.current)
-      return [next, { ...effects, persist: 0 }]
+      return [
+        next,
+        {
+          ...effects,
+          persist: at_end(action.current, action.current.time)
+            ? 0
+            : (state.pending_seek ??
+              playable_time(action.current.duration, action.current.time)),
+        },
+      ]
     }
     case "timeupdate": {
       const { current } = action
@@ -245,7 +311,13 @@ const reduce = (
           ? buffered_position(current, current.time)
           : undefined
       const [next, effects] = project(state, current)
-      return [next, persist === undefined ? effects : { ...effects, persist }]
+      return [
+        next,
+        {
+          ...effects,
+          ...(persist === undefined ? {} : { persist }),
+        },
+      ]
     }
     case "error": {
       const { current } = action
@@ -256,7 +328,18 @@ const reduce = (
       ) {
         return [next, effects]
       }
-      return [next, { control: { type: "rebuild" }, error: current.error }]
+      return [
+        {
+          ...next,
+          resume: state.resume || !current.paused,
+          target:
+            state.pending_seek ??
+            (current.metadata
+              ? playable_time(current.duration, current.time)
+              : state.target),
+        },
+        { control: { type: "rebuild" }, error: current.error },
+      ]
     }
     case "seeking": {
       const { current } = action
@@ -271,20 +354,33 @@ const reduce = (
         return project(state, current)
       }
 
-      const restart =
-        buffered === undefined && !aligned(target, state.request.frontier)
+      const end = buffered_end(current, target)
+      const frontier =
+        buffered_end(current, state.request.frontier) ?? state.request.frontier
+      const restart = !aligned(end ?? target, frontier)
       const [next, effects] = project(
         {
           ...state,
           acquisition: restart ? "idle" : state.acquisition,
           pending_seek: undefined,
-          request: restart ? request_at(target) : state.request,
+          request: restart ? request_at(end ?? target) : state.request,
           target,
         },
         current,
       )
 
-      return [next, { ...effects, persist: target }]
+      return [
+        next,
+        {
+          ...effects,
+          ...(restart &&
+          effects.control === undefined &&
+          state.acquisition !== "idle"
+            ? { control: { type: "pause" } as const }
+            : {}),
+          persist: target,
+        },
+      ]
     }
     default:
       return never(action)
@@ -296,22 +392,32 @@ export const playback_transitions = (
 ): ((action: PlaybackAction | readonly MediaAction[]) => PlaybackEffects) => {
   let state: PlaybackState = {
     acquisition: "idle",
+    buffer_low: BUFFER_LOW,
     pending_seek: undefined,
     request: request_at(position),
+    resume: false,
     target: position,
   }
 
   return (action) => {
     const actions = "type" in action ? [action] : action
+    const seeking = actions.findLast(({ type }) => type === "seeking")
     let effects: PlaybackEffects = {}
 
     for (const current of actions) {
+      if (current.type === "seeking" && current !== seeking) {
+        continue
+      }
       const [next, produced] = reduce(state, current)
       state = next
       effects =
         effects.control?.type === "rebuild"
           ? { ...effects, ...produced, control: effects.control }
           : { ...effects, ...produced }
+      if (state.pending_seek === undefined && effects.seek !== undefined) {
+        const { seek, ...remaining } = effects
+        effects = remaining
+      }
     }
     return effects
   }

@@ -18,7 +18,7 @@ prettier: ./node_modules/.bin
 	'$</prettier' --cache --write -- .
 
 nginx: ./node_modules/.bin
-	'$</prettier' --cache --write --tab-width 2 --plugin ./node_modules/prettier-plugin-nginx/dist/index.js -- '**/*.nginx'
+	'$</prettier' --cache --write --tab-width 2 --plugin prettier-plugin-nginx -- '**/*.nginx'
 
 taplo: ./node_modules/.bin
 	git ls-files --deduplicate -z -- '*.toml' ':(exclude)*.m4.toml' | xargs -r -0 -- '$</taplo' format --

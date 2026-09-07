@@ -43,7 +43,18 @@ export const closing = <const T, const R = undefined, const N = void>(
 
   const close = async (value: R | PromiseLike<R>) => {
     a[Symbol.dispose]()
-    return bound?.(await value)
+    try {
+      return bound?.(await value)
+    } catch (error) {
+      try {
+        await bound?.(Promise.reject(error))
+      } catch (e) {
+        if (e !== error) {
+          throw new AggregateError([error, e])
+        }
+      }
+      throw error
+    }
   }
 
   Object.defineProperties(aiter, {
@@ -210,17 +221,20 @@ const next = async <const T>(
   await aiter.next(),
 ]
 
-const close = async <T>(aiters: Iterable<AsyncIterator<T>>): Promise<void> => {
-  const settled = await Promise.allSettled(
-    [...aiters].map(async (aiter) => aiter.return?.()),
-  )
+export const join = async (
+  promises: Iterable<PromiseLike<unknown>>,
+): Promise<void> => {
+  const settled = await Promise.allSettled(promises)
   const errors = settled.flatMap((result) => {
     if (result.status === "rejected") {
       return [result.reason]
     }
     return []
   })
-  if (errors.length > 0) {
+  if (errors.length === 1) {
+    throw errors[0]
+  }
+  if (errors.length > 1) {
     throw new AggregateError(errors)
   }
 }
@@ -236,7 +250,10 @@ export const merge = <const T extends readonly AsyncIterator<unknown>[]>(
     signal.addEventListener("abort", () => cancelled.resolve(undefined), {
       once: true,
     })
-    await using _ = defer(() => close(pending.keys()))
+
+    await using _ = defer(() =>
+      join([...pending.keys()].map(async (aiter) => aiter.return?.())),
+    )
 
     while (pending.size) {
       const selected = await Promise.race([

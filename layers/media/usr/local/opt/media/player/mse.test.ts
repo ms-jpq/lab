@@ -75,6 +75,7 @@ const fixture = (
     "append" | "append-sync" | "remove" | "remove-sync" | undefined = undefined,
   hold: "append" | "remove" | undefined = undefined,
   readyState: "open" | "ended" = "open",
+  evict_before: () => number = () => 70,
 ) => {
   const controller = new AbortController()
   const mutations: unknown[] = []
@@ -104,8 +105,9 @@ const fixture = (
       if (hold !== "append") {
         buffer.updating = false
         buffer.dispatchEvent(
-          new Event(failure === "append" ? "error" : "updateend"),
+          new Event(failure === "append" ? "error" : "update"),
         )
+        buffer.dispatchEvent(new Event("updateend"))
       }
     },
     buffered,
@@ -121,14 +123,19 @@ const fixture = (
       if (hold !== "remove") {
         buffer.updating = false
         buffer.dispatchEvent(
-          new Event(failure === "remove" ? "error" : "updateend"),
+          new Event(failure === "remove" ? "error" : "update"),
         )
+        buffer.dispatchEvent(new Event("updateend"))
       }
     },
     timestampOffset: 0,
     updating: false,
   })
-  const media = new EventTarget() as HTMLMediaElement
+  const media = Object.assign(new EventTarget(), {
+    buffered,
+    currentTime: 0,
+    dataset: { duration: "200" },
+  }) as unknown as HTMLMediaElement
   const source = Object.assign(new EventTarget(), {
     addSourceBuffer: (type: string) => {
       types.push(type)
@@ -138,7 +145,7 @@ const fixture = (
     readyState,
   })
   const values = media_source({
-    evict_before: () => 70,
+    evict_before,
     media,
     mime_type: "video/test",
     signal: controller.signal,
@@ -149,22 +156,587 @@ const fixture = (
     buffer,
     controller,
     entered: entered.promise,
+    media,
     mutations,
     release: () => {
       buffer.updating = false
+      buffer.dispatchEvent(new Event("update"))
       return buffer.dispatchEvent(new Event("updateend"))
     },
+    source,
     types,
     values,
   }
 }
 
+const quotaFixture = (capacity = 40) => {
+  const state = { start: 0, end: capacity, attempts: 0, cutoff: -20 }
+  const ranges: TimeRanges = {
+    get length() {
+      return state.end > state.start ? 1 : 0
+    },
+    start: () => state.start,
+    end: () => state.end,
+  }
+  const current = fixture(
+    ranges,
+    undefined,
+    undefined,
+    "open",
+    () => state.cutoff,
+  )
+  const accepted: Uint8Array<ArrayBuffer>[] = []
+  current.media.currentTime = 10
+  current.buffer.appendBuffer = (bytes) => {
+    state.attempts += 1
+    if (state.end - state.start + bytes.byteLength > capacity) {
+      throw new DOMException(
+        "MediaSource buffer not sufficient.",
+        "QuotaExceededError",
+      )
+    }
+    accepted.push(bytes)
+    state.end += bytes.byteLength
+    current.release()
+  }
+  current.buffer.remove = (start, end) => {
+    current.mutations.push(["remove", start, end])
+    state.start = Math.min(state.end, end)
+    current.release()
+  }
+  return { ...current, accepted, state }
+}
+
 const start = async (values: Mse, position = 0): Promise<void> => {
-  deepEqual(await values.next(), { done: false, value: undefined })
-  deepEqual(await values.next(position), { done: false, value: undefined })
+  deepEqual(await values.next(), { done: false, value: new Uint8Array(0) })
+  deepEqual(await values.next(position), {
+    done: false,
+    value: new Uint8Array(0),
+  })
 }
 
 const cases = [
+  {
+    name: "quota yields the exact unaccepted bytes without autonomous retries, eviction, or listeners",
+    run: async () => {
+      const current = quotaFixture()
+      await start(current.values)
+      const chunk = new Uint8Array(32).fill(7).subarray(6, 26)
+      try {
+        const outcome = await Promise.race([
+          current.values.next(chunk),
+          setImmediate("pending"),
+        ])
+        assert(typeof outcome === "object" && !outcome.done)
+        assert(outcome.value === chunk)
+        deepEqual(current.state.attempts, 1)
+        deepEqual(current.accepted, [])
+        for (let index = 0; index < 3; index += 1) {
+          current.media.currentTime += 10
+          current.media.dispatchEvent(new Event("timeupdate"))
+          current.media.dispatchEvent(new Event("seeking"))
+          await setImmediate()
+        }
+        deepEqual(current.state.attempts, 1)
+        deepEqual(current.accepted, [])
+        deepEqual(current.mutations, [])
+        deepEqual(getEventListeners(current.media, "timeupdate"), [])
+        deepEqual(getEventListeners(current.media, "seeking"), [])
+        deepEqual(getEventListeners(current.source, "sourceclose"), [])
+        deepEqual(getEventListeners(current.buffer, "update"), [])
+        deepEqual(getEventListeners(current.buffer, "error"), [])
+      } finally {
+        current.controller.abort()
+        await current.values.return?.(undefined)
+      }
+    },
+  },
+  {
+    name: "retrying quota uses the configured eviction cutoff without resetting the parser",
+    run: async () => {
+      const current = quotaFixture()
+      await start(current.values)
+      const chunk = new Uint8Array(20).fill(7)
+      try {
+        const first = await current.values.next(chunk)
+        assert(first.value === chunk)
+        current.state.cutoff = 9.9
+        const retry = await current.values.next(chunk)
+        assert(retry.value === chunk)
+        deepEqual(current.state.attempts, 2)
+        deepEqual(current.accepted, [])
+        current.media.currentTime = 20.5
+        current.state.cutoff = 20.4
+        deepEqual(await current.values.next(chunk), {
+          done: false,
+          value: new Uint8Array(0),
+        })
+        deepEqual(current.accepted, [chunk])
+        assert(current.accepted[0] === chunk)
+        deepEqual(current.state.attempts, 3)
+        deepEqual(current.mutations, [
+          ["remove", 0, 9.9],
+          ["remove", 0, 20.4],
+        ])
+      } finally {
+        current.controller.abort()
+        await current.values.return?.(undefined)
+      }
+    },
+  },
+  {
+    name: "abort after a quota outcome prevents a requested retry from evicting or appending",
+    run: async () => {
+      const current = quotaFixture()
+      await start(current.values)
+      const chunk = new Uint8Array(20)
+      try {
+        const first = await current.values.next(chunk)
+        assert(first.value === chunk)
+        current.controller.abort()
+        deepEqual(await current.values.next(chunk), {
+          done: true,
+          value: undefined,
+        })
+        deepEqual(current.state.attempts, 1)
+        deepEqual(current.accepted, [])
+        deepEqual(current.mutations, [])
+      } finally {
+        current.controller.abort()
+        await current.values.return?.(undefined)
+      }
+    },
+  },
+  {
+    name: "return after a quota outcome closes without waiting for playback progress",
+    run: async () => {
+      const current = quotaFixture()
+      await start(current.values)
+      try {
+        const chunk = new Uint8Array(20)
+        const first = await current.values.next(chunk)
+        assert(first.value === chunk)
+        deepEqual(
+          await Promise.race([
+            current.values.return?.(undefined),
+            setImmediate("pending"),
+          ]),
+          {
+            done: true,
+            value: undefined,
+          },
+        )
+        deepEqual(current.state.attempts, 1)
+        deepEqual(current.accepted, [])
+      } finally {
+        current.controller.abort()
+        await current.values.return?.(undefined)
+      }
+    },
+  },
+  {
+    name: "an oversized first chunk is yielded back without waiting for impossible playback progress",
+    run: async () => {
+      const current = quotaFixture(0)
+      current.media.currentTime = 0
+      await start(current.values)
+      const chunk = new Uint8Array(20)
+      const outcome = await current.values.next(chunk)
+      assert(outcome.value === chunk)
+      deepEqual(outcome.done, false)
+      deepEqual(current.state.attempts, 1)
+      deepEqual(current.accepted, [])
+      await current.values.return?.(undefined)
+    },
+  },
+  ...(["remove", "append"] as const).map((operation) => ({
+    name: `${operation} errors outside synchronous append quota still escape unchanged`,
+    run: async () => {
+      const current = quotaFixture()
+      await start(current.values)
+      const chunk = new Uint8Array(20)
+      if (operation === "remove") {
+        const first = await current.values.next(chunk)
+        assert(first.value === chunk)
+        current.state.cutoff = 9.9
+      }
+      const failure = new DOMException(
+        "operation failed",
+        operation === "remove" ? "QuotaExceededError" : "InvalidStateError",
+      )
+      if (operation === "remove") {
+        current.buffer.remove = () => {
+          throw failure
+        }
+      } else {
+        current.buffer.appendBuffer = () => {
+          throw failure
+        }
+      }
+      const outcome = await current.values.next(chunk).then(
+        () => undefined,
+        (error: unknown) => error,
+      )
+      assert(outcome === failure)
+    },
+  })),
+  {
+    name: "a new timestamp clears returned bytes without changing the configured eviction cutoff",
+    run: async () => {
+      const current = quotaFixture()
+      await start(current.values)
+      try {
+        const chunk = new Uint8Array(20)
+        const first = await current.values.next(chunk)
+        assert(first.value === chunk)
+        deepEqual(await current.values.next(120), {
+          done: false,
+          value: new Uint8Array(0),
+        })
+        const next = new Uint8Array(1)
+        const second = await current.values.next(next)
+        assert(second.value === next)
+        deepEqual(current.mutations, [["abort"]])
+        deepEqual(current.buffer.timestampOffset, 120)
+      } finally {
+        current.controller.abort()
+        await current.values.return?.(undefined)
+      }
+    },
+  },
+  {
+    name: "bond rolls back a candidate that closes before its open handoff resumes",
+    run: async (context: TestContext) => {
+      const current = acquisitionFixture(context)
+      const owner = new AbortController()
+      const values = bond(current.media, owner.signal, MSE_TIMEOUT)
+      try {
+        current.media.src = "blob:test:previous"
+        const pending = values.next()
+        const source = current.sources[0]
+        assert(source)
+        Object.assign(source, { readyState: "open" })
+        source.dispatchEvent(new Event("sourceopen"))
+        Object.assign(source, { readyState: "closed" })
+        const detached = setImmediate().then(() =>
+          source.dispatchEvent(new Event("sourceclose")),
+        )
+        const outcome = await pending.then(
+          (value) => ({ value }),
+          (error: unknown) => ({ error }),
+        )
+        await detached
+
+        assert("error" in outcome)
+        deepEqual(current.media.src, "blob:test:previous")
+        deepEqual(current.revoked, ["blob:test:0"])
+        deepEqual(getEventListeners(source, "sourceopen"), [])
+        deepEqual(getEventListeners(source, "sourceclose"), [])
+      } finally {
+        owner.abort()
+        await values.return?.()
+        current.restore()
+      }
+    },
+  },
+  ...(["abort", "return"] as const).map((cancellation) => ({
+    name: `bond does not commit an opened source after ${cancellation} cancels its pending handoff`,
+    run: async (context: TestContext) => {
+      const current = acquisitionFixture(context)
+      const owner = new AbortController()
+      const values = bond(current.media, owner.signal, MSE_TIMEOUT)
+      try {
+        current.media.src = "blob:test:previous"
+        const pending = values.next()
+        const source = current.sources[0]
+        assert(source)
+
+        source.dispatchEvent(new Event("sourceopen"))
+        const closing = (() => {
+          switch (cancellation) {
+            case "abort": {
+              owner.abort()
+              return undefined
+            }
+            case "return": {
+              return values.return?.()
+            }
+          }
+        })()
+        const acquired = await pending
+        await closing
+
+        deepEqual(acquired, { done: true, value: undefined })
+        deepEqual(current.media.src, "blob:test:previous")
+        deepEqual(current.revoked, ["blob:test:0"])
+        deepEqual(getEventListeners(source, "sourceopen"), [])
+        deepEqual(getEventListeners(source, "sourceclose"), [])
+      } finally {
+        owner.abort()
+        await values.return?.()
+        current.restore()
+      }
+    },
+  })),
+  {
+    name: "seeking cannot leave a successful operation's queued update behind",
+    run: async () => {
+      const { buffer, controller, entered, media, mutations, release, values } =
+        fixture(timeRanges(), undefined, "append")
+      await start(values)
+      const appending = values.next(new Uint8Array([9]))
+      await entered
+      try {
+        buffer.updating = false
+        media.currentTime = 110
+        media.dispatchEvent(new Event("seeking"))
+        deepEqual(
+          await Promise.race([
+            appending.then(() => "completed"),
+            setImmediate("pending"),
+          ]),
+          "pending",
+        )
+        deepEqual(mutations, [["append", [9]]])
+        release()
+        await appending
+        for (const type of ["update", "error"] as const) {
+          deepEqual(getEventListeners(buffer, type), [])
+        }
+        deepEqual(getEventListeners(media, "seeking"), [])
+      } finally {
+        controller.abort()
+        release()
+        await values.return?.(undefined)
+      }
+    },
+  },
+  {
+    name: "a seek storm ending in buffered media preserves the active parser",
+    run: async () => {
+      const { buffer, controller, entered, media, mutations, release, values } =
+        fixture(timeRanges([100, 120]), undefined, "append")
+      await start(values, 100)
+      const appending = values.next(new Uint8Array([9]))
+      await entered
+      try {
+        media.currentTime = 200
+        media.dispatchEvent(new Event("seeking"))
+        media.currentTime = 110
+        media.dispatchEvent(new Event("seeking"))
+        deepEqual(
+          await Promise.race([
+            appending.then(() => "completed"),
+            setImmediate("pending"),
+          ]),
+          "pending",
+        )
+        deepEqual(buffer.updating, true)
+        deepEqual(mutations, [["append", [9]]])
+        release()
+        await appending
+      } finally {
+        controller.abort()
+        release()
+        await values.return?.(undefined)
+      }
+    },
+  },
+  ...[100, 99.95, 120, 120.05].map((position) => ({
+    name: `a buffered seek to ${position} preserves an active parser`,
+    run: async () => {
+      const { buffer, controller, entered, media, mutations, release, values } =
+        fixture(timeRanges([100, 120]), undefined, "append")
+      await start(values, 100)
+      const appending = values.next(new Uint8Array([9]))
+      await entered
+      try {
+        media.currentTime = position
+        media.dispatchEvent(new Event("seeking"))
+        deepEqual(
+          await Promise.race([
+            appending.then(() => "completed"),
+            setImmediate("pending"),
+          ]),
+          "pending",
+        )
+        deepEqual(buffer.updating, true)
+        deepEqual(mutations, [["append", [9]]])
+        release()
+        await appending
+      } finally {
+        controller.abort()
+        release()
+        await values.return?.(undefined)
+      }
+    },
+  })),
+  {
+    name: "an ignored buffered seek still allows a later unbuffered seek to interrupt",
+    run: async () => {
+      const { buffer, controller, entered, media, mutations, release, values } =
+        fixture(timeRanges([100, 120]), undefined, "append")
+      await start(values, 100)
+      const appending = values.next(new Uint8Array([9]))
+      await entered
+      try {
+        media.currentTime = 110
+        media.dispatchEvent(new Event("seeking"))
+        deepEqual(
+          await Promise.race([
+            appending.then(() => "completed"),
+            setImmediate("pending"),
+          ]),
+          "pending",
+        )
+        deepEqual(buffer.updating, true)
+        media.currentTime = 200
+        media.dispatchEvent(new Event("seeking"))
+        await appending
+        deepEqual(buffer.updating, false)
+        deepEqual(mutations, [["append", [9]], ["abort"]])
+        deepEqual(getEventListeners(media, "seeking"), [])
+      } finally {
+        controller.abort()
+        release()
+        await values.return?.(undefined)
+      }
+    },
+  },
+  ...(["abort", "seeking", "timeout"] as const).map((interruption) => ({
+    name: `range removal survives ${interruption} without calling the forbidden SourceBuffer abort`,
+    run: async (context: TestContext) => {
+      const { buffer, controller, entered, media, release, values } = fixture(
+        timeRanges([0, 120]),
+        undefined,
+        "remove",
+      )
+      context.mock.method(buffer, "abort", () => {
+        if (buffer.updating) {
+          throw new DOMException(
+            "Range removal is running",
+            "InvalidStateError",
+          )
+        }
+      })
+      await start(values)
+      const appending = values.next(new Uint8Array([9])).then(
+        (result) => ({ result }),
+        (error: unknown) => ({ error }),
+      )
+      await entered
+      try {
+        switch (interruption) {
+          case "abort": {
+            controller.abort()
+            break
+          }
+          case "seeking": {
+            media.dispatchEvent(new Event("seeking"))
+            await setImmediate()
+            release()
+            break
+          }
+          case "timeout": {
+            break
+          }
+        }
+        const outcome = await appending
+        if (interruption === "timeout") {
+          assert("error" in outcome)
+          assert(outcome.error instanceof Error)
+          deepEqual(outcome.error.message, "SourceBuffer operation timed out")
+        } else {
+          assert(
+            "result" in outcome,
+            "interruption must not fail with InvalidStateError",
+          )
+        }
+      } finally {
+        controller.abort()
+        release()
+        await values.return?.(undefined)
+      }
+    },
+  })),
+  {
+    name: "an aborted append's queued updateend does not finish the next append",
+    run: async () => {
+      const { buffer, controller, entered, media, release, values } = fixture(
+        timeRanges(),
+        undefined,
+        "append",
+      )
+      await start(values)
+      try {
+        const first = values.next(new Uint8Array([1]))
+        await entered
+        media.currentTime = 110
+        media.dispatchEvent(new Event("seeking"))
+        await first
+        deepEqual(buffer.updating, false)
+
+        const second = values.next(new Uint8Array([2]))
+        await setImmediate()
+        deepEqual(buffer.updating, true)
+        buffer.dispatchEvent(new Event("updateend"))
+        deepEqual(
+          await Promise.race([
+            second.then(() => "completed"),
+            setImmediate("pending"),
+          ]),
+          "pending",
+        )
+        release()
+        await second
+      } finally {
+        controller.abort()
+        release()
+        await values.return?.(undefined)
+      }
+    },
+  },
+  {
+    name: "an aborted append's queued updateend cannot hide a later append error",
+    run: async () => {
+      const { buffer, controller, entered, media, release, values } = fixture(
+        timeRanges(),
+        undefined,
+        "append",
+      )
+      await start(values)
+      try {
+        const first = values.next(new Uint8Array([1]))
+        await entered
+        media.currentTime = 110
+        media.dispatchEvent(new Event("seeking"))
+        await first
+
+        const second = values.next(new Uint8Array([2])).then(
+          (result) => ({ result }),
+          (error: unknown) => ({ error }),
+        )
+        await setImmediate()
+        buffer.updating = false
+        buffer.dispatchEvent(new Event("updateend"))
+        deepEqual(
+          await Promise.race([
+            second.then(() => "completed"),
+            setImmediate("pending"),
+          ]),
+          "pending",
+        )
+        const failure = new Event("error")
+        buffer.dispatchEvent(failure)
+        buffer.dispatchEvent(new Event("updateend"))
+        deepEqual(await second, { error: failure })
+      } finally {
+        controller.abort()
+        release()
+        await values.return?.(undefined)
+      }
+    },
+  },
   {
     name: "a pre-aborted MSE performs no work",
     run: async () => {
@@ -184,7 +756,7 @@ const cases = [
       await start(values)
       deepEqual(await values.next(new Uint8Array([1, 2])), {
         done: false,
-        value: undefined,
+        value: new Uint8Array(0),
       })
       deepEqual(mutations, [["append", [1, 2]]])
       deepEqual(types, ["video/test"])
@@ -321,7 +893,7 @@ const cases = [
       deepEqual(closed, false)
 
       release()
-      deepEqual(await appending, { done: false, value: undefined })
+      deepEqual(await appending, { done: false, value: new Uint8Array(0) })
       deepEqual(await closing, { done: true, value: undefined })
       deepEqual(mutations, [["append", [5]]])
     },
@@ -348,7 +920,7 @@ const cases = [
           setImmediate("pending"),
         ]),
         [
-          { done: false, value: undefined },
+          { done: false, value: new Uint8Array(0) },
           { done: true, value: undefined },
         ],
       )
@@ -378,12 +950,12 @@ const cases = [
           setImmediate("pending"),
         ]),
         [
-          { done: false, value: undefined },
+          { done: false, value: new Uint8Array(0) },
           { done: true, value: undefined },
         ],
       )
-      deepEqual(mutations, [["remove", 0, 70], ["abort"]])
-      deepEqual(buffer.updating, false)
+      deepEqual(mutations, [["remove", 0, 70]])
+      deepEqual(buffer.updating, true)
     },
   },
   {
@@ -397,6 +969,30 @@ const cases = [
       await values.next(30)
       deepEqual(mutations, [["abort"]])
       deepEqual(buffer.timestampOffset, 30)
+      await values.return?.(undefined)
+    },
+  },
+  {
+    name: "abort during reopening does not reset a parser while removal is running",
+    run: async () => {
+      const { buffer, controller, entered, mutations, values } = fixture(
+        timeRanges([0, 20]),
+        undefined,
+        "remove",
+        "ended",
+      )
+      await start(values, 10)
+      const reopening = values.next(30)
+      await entered
+      controller.abort()
+
+      deepEqual(await Promise.race([reopening, setImmediate("pending")]), {
+        done: true,
+        value: undefined,
+      })
+      deepEqual(mutations, [["remove", 20, 20.001]])
+      deepEqual(buffer.timestampOffset, 10)
+      deepEqual(buffer.updating, true)
       await values.return?.(undefined)
     },
   },
@@ -426,7 +1022,7 @@ const cases = [
       await values.next(new Uint8Array([7]))
       deepEqual(await values.next(undefined), {
         done: false,
-        value: undefined,
+        value: new Uint8Array(0),
       })
       deepEqual(mutations, [["append", [7]], ["end"]])
       await values.return?.(undefined)

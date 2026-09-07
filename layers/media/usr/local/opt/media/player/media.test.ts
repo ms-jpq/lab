@@ -29,11 +29,13 @@ class Ranges implements TimeRanges {
 
 class Media extends EventTarget {
   readonly HAVE_METADATA = 1
+  readonly HAVE_FUTURE_DATA = 3
   readonly buffered = new Ranges()
   readonly dataset = { duration: "200" } as DOMStringMap
   currentTime = 0
   ended = false
   error: MediaError | null = null
+  paused = false
   readyState = 0
   seeking = false
 }
