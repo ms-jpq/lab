@@ -1,9 +1,8 @@
 import { deepEqual, equal } from "node:assert/strict"
-import { randomUUID } from "node:crypto"
-import nodeTest from "node:test"
 
 import type { MediaSnapshot } from "./media.ts"
 import { BUFFER_HIGH, BUFFER_LOW, playback_transitions } from "./reducer.ts"
+import { run_cases } from "./test_utils.ts"
 
 type Dispatch = ReturnType<typeof playback_transitions>
 type Effects = ReturnType<Dispatch>
@@ -15,7 +14,6 @@ type Case = Readonly<{
   steps: readonly Step[]
 }>
 
-const options = { concurrency: true, timeout: 2_000 }
 const failure = new Error("transport failed")
 const RESUME_AT = BUFFER_HIGH - BUFFER_LOW + 1
 
@@ -34,14 +32,16 @@ const snapshot = (overrides: Partial<MediaSnapshot> = {}): MediaSnapshot => ({
   ...overrides,
 })
 
-const quota_steps: readonly Step[] = [
-  {
-    action: { type: "source_opened" },
-    expected: {
-      control: { type: "request", request: { frontier: 40, position: 40 } },
-      seek: 40,
-    },
+const source_opened = (position = 0): Step => ({
+  action: { type: "source_opened" },
+  expected: {
+    control: { type: "request", request: { frontier: position, position } },
+    seek: position,
   },
+})
+
+const quota_steps: readonly Step[] = [
+  source_opened(40),
   { action: { type: "seeked", current: snapshot({ time: 40 }) }, expected: {} },
   {
     action: {
@@ -59,18 +59,12 @@ const quota_steps: readonly Step[] = [
   },
 ]
 
-const cases = [
+const cases: readonly Case[] = [
   ...[10, 10.05].map((time): Case => ({
     name: `the normalized seek target 10.05 is applied for native time ${time}`,
     position: 50,
     steps: [
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: { type: "request", request: { frontier: 50, position: 50 } },
-          seek: 50,
-        },
-      },
+      source_opened(50),
       {
         action: {
           type: "seeked",
@@ -114,13 +108,7 @@ const cases = [
     return {
       name: `native 30fps end ${end} reaches high water regardless of request rounding`,
       steps: [
-        {
-          action: { type: "source_opened" },
-          expected: {
-            control: { type: "request", request: { frontier: 0, position: 0 } },
-            seek: 0,
-          },
-        },
+        source_opened(),
         { action: { type: "seeked", current: snapshot() }, expected: {} },
         {
           action: {
@@ -165,16 +153,7 @@ const cases = [
     name: "rounding tolerance does not attach a new frontier to an older range across a real gap",
     position: 60.05,
     steps: [
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: {
-            type: "request",
-            request: { frontier: 60.05, position: 60.05 },
-          },
-          seek: 60.05,
-        },
-      },
+      source_opened(60.05),
       {
         action: {
           type: "seeked",
@@ -297,13 +276,7 @@ const cases = [
         action: { type: "source_closed", position: 50, paused: true },
         expected: { control: { type: "rebuild" } },
       },
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: { type: "request", request: { frontier: 50, position: 50 } },
-          seek: 50,
-        },
-      },
+      source_opened(50),
       {
         action: { type: "seeked", current: snapshot({ time: 50 }) },
         expected: {},
@@ -334,13 +307,7 @@ const cases = [
     name: `source replacement ${paused ? "preserves a user pause" : "resumes once after its seek settles"}`,
     position: 40,
     steps: [
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: { type: "request", request: { frontier: 40, position: 40 } },
-          seek: 40,
-        },
-      },
+      source_opened(40),
       {
         action: { type: "canplay", current: snapshot({ time: 40, paused }) },
         expected: {},
@@ -349,13 +316,7 @@ const cases = [
         action: { type: "source_closed", position: 40, paused },
         expected: { control: { type: "rebuild" } },
       },
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: { type: "request", request: { frontier: 40, position: 40 } },
-          seek: 40,
-        },
-      },
+      source_opened(40),
       {
         action: {
           type: "loadedmetadata",
@@ -380,13 +341,7 @@ const cases = [
   {
     name: "play intent survives a replacement that fails before it can resume",
     steps: [
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: { type: "request", request: { frontier: 0, position: 0 } },
-          seek: 0,
-        },
-      },
+      source_opened(),
       {
         action: { type: "seeked", current: snapshot({ paused: false }) },
         expected: {},
@@ -395,24 +350,12 @@ const cases = [
         action: { type: "source_closed", position: 0, paused: false },
         expected: { control: { type: "rebuild" } },
       },
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: { type: "request", request: { frontier: 0, position: 0 } },
-          seek: 0,
-        },
-      },
+      source_opened(),
       {
         action: { type: "source_closed", position: 0, paused: true },
         expected: { control: { type: "rebuild" } },
       },
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: { type: "request", request: { frontier: 0, position: 0 } },
-          seek: 0,
-        },
-      },
+      source_opened(),
       {
         action: { type: "canplay", current: snapshot() },
         expected: { play: true },
@@ -424,16 +367,7 @@ const cases = [
     name: "a failed complete tail still applies an unacknowledged startup seek",
     position: 141,
     steps: [
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: {
-            type: "request",
-            request: { frontier: 141, position: 141 },
-          },
-          seek: 141,
-        },
-      },
+      source_opened(141),
       {
         action: {
           type: "buffered",
@@ -458,19 +392,7 @@ const cases = [
     name: `a delayed retry at frontier ${end} respects completion without bypassing backoff`,
     position: 200 - BUFFER_HIGH + 1,
     steps: [
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: {
-            type: "request",
-            request: {
-              frontier: 200 - BUFFER_HIGH + 1,
-              position: 200 - BUFFER_HIGH + 1,
-            },
-          },
-          seek: 200 - BUFFER_HIGH + 1,
-        },
-      },
+      source_opened(200 - BUFFER_HIGH + 1),
       {
         action: {
           type: "seeked",
@@ -525,13 +447,7 @@ const cases = [
   {
     name: "a retry with sufficient retained data waits for low water before continuing",
     steps: [
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: { type: "request", request: { frontier: 0, position: 0 } },
-          seek: 0,
-        },
-      },
+      source_opened(),
       { action: { type: "seeked", current: snapshot() }, expected: {} },
       {
         action: {
@@ -569,13 +485,7 @@ const cases = [
   ...(["progress", "ended"] as const).map((type): Case => ({
     name: `audit: ${type} after short EOF requests new content at the acknowledged frontier`,
     steps: [
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: { type: "request", request: { frontier: 0, position: 0 } },
-          seek: 0,
-        },
-      },
+      source_opened(),
       { action: { type: "seeked", current: snapshot() }, expected: {} },
       {
         action: {
@@ -609,13 +519,7 @@ const cases = [
   ...[BUFFER_LOW - 1, BUFFER_HIGH].map((end): Case => ({
     name: `a buffered seek away from another request resumes its own range ending at ${end}`,
     steps: [
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: { type: "request", request: { frontier: 0, position: 0 } },
-          seek: 0,
-        },
-      },
+      source_opened(),
       { action: { type: "seeked", current: snapshot() }, expected: {} },
       {
         action: {
@@ -682,13 +586,7 @@ const cases = [
   ...[199.98, 199, BUFFER_LOW].map((end): Case => ({
     name: `EOF at ${end} of 200 only stops acquisition within terminal tolerance`,
     steps: [
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: { type: "request", request: { frontier: 0, position: 0 } },
-          seek: 0,
-        },
-      },
+      source_opened(),
       { action: { type: "seeked", current: snapshot() }, expected: {} },
       {
         action: {
@@ -727,13 +625,7 @@ const cases = [
     name: "a pending startup seek survives observations before recovery",
     position: 40,
     steps: [
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: { type: "request", request: { frontier: 40, position: 40 } },
-          seek: 40,
-        },
-      },
+      source_opened(40),
       {
         action: { type: "timeupdate", current: snapshot() },
         expected: { seek: 40 },
@@ -742,25 +634,13 @@ const cases = [
         action: { type: "source_closed", position: 0, paused: true },
         expected: { control: { type: "rebuild" } },
       },
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: { type: "request", request: { frontier: 40, position: 40 } },
-          seek: 40,
-        },
-      },
+      source_opened(40),
     ],
   },
   {
     name: "complete buffered media stays idle through tail playback and can be replayed",
     steps: [
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: { type: "request", request: { frontier: 0, position: 0 } },
-          seek: 0,
-        },
-      },
+      source_opened(),
       { action: { type: "seeked", current: snapshot() }, expected: {} },
       {
         action: {
@@ -814,13 +694,7 @@ const cases = [
   ].map((time): Case => ({
     name: `acknowledged backpressure at time ${time} keeps state and request effects aligned`,
     steps: [
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: { type: "request", request: { frontier: 0, position: 0 } },
-          seek: 0,
-        },
-      },
+      source_opened(),
       { action: { type: "seeked", current: snapshot() }, expected: {} },
       {
         action: {
@@ -873,16 +747,7 @@ const cases = [
   {
     name: "the low-water threshold does not request more data",
     steps: [
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: {
-            request: { frontier: 0, position: 0 },
-            type: "request",
-          },
-          seek: 0,
-        },
-      },
+      source_opened(),
       {
         action: { type: "request_finished" },
         expected: { buffer: { type: "end" } },
@@ -899,16 +764,7 @@ const cases = [
   {
     name: "below low water requests from the current stream",
     steps: [
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: {
-            request: { frontier: 0, position: 0 },
-            type: "request",
-          },
-          seek: 0,
-        },
-      },
+      source_opened(),
       {
         action: { type: "request_finished" },
         expected: { buffer: { type: "end" } },
@@ -930,16 +786,7 @@ const cases = [
   {
     name: "low water resumes at an advanced buffered frontier",
     steps: [
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: {
-            request: { frontier: 0, position: 0 },
-            type: "request",
-          },
-          seek: 0,
-        },
-      },
+      source_opened(),
       {
         action: {
           current: snapshot({ buffered: [[0, BUFFER_HIGH]] }),
@@ -965,16 +812,7 @@ const cases = [
   {
     name: "an external unbuffered seek retargets acquisition",
     steps: [
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: {
-            request: { frontier: 0, position: 0 },
-            type: "request",
-          },
-          seek: 0,
-        },
-      },
+      source_opened(),
       {
         action: { current: snapshot(), type: "seeked" },
         expected: {},
@@ -997,16 +835,7 @@ const cases = [
   {
     name: "a failed request reports and retries from its frontier",
     steps: [
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: {
-            request: { frontier: 0, position: 0 },
-            type: "request",
-          },
-          seek: 0,
-        },
-      },
+      source_opened(),
       {
         action: { error: failure, type: "request_failed" },
         expected: { error: failure },
@@ -1025,16 +854,7 @@ const cases = [
   {
     name: "a batch folds independent effects",
     steps: [
-      {
-        action: { type: "source_opened" },
-        expected: {
-          control: {
-            request: { frontier: 0, position: 0 },
-            type: "request",
-          },
-          seek: 0,
-        },
-      },
+      source_opened(),
       {
         action: { current: snapshot(), type: "seeked" },
         expected: {},
@@ -1064,101 +884,85 @@ const cases = [
       },
     ],
   },
-] as const satisfies readonly Case[]
+]
 
-const shuffled: readonly Case[] = cases
-  .map((testCase) => ({ order: randomUUID(), testCase }))
-  .sort((left, right) => left.order.localeCompare(right.order))
-  .map(({ testCase }) => testCase)
-
-await Promise.all([
+await run_cases([
   ...(
     [
       ["play", "canplay"],
       ["canplay", "play"],
     ] as const
-  ).map((types) =>
-    nodeTest(
-      `native play owns resumption for ${types.join("/")}`,
-      options,
-      () => {
-        const dispatch = playback_transitions(0)
-        dispatch({ type: "source_opened" })
-        dispatch({ type: "source_closed", paused: false, position: 0 })
-        dispatch({ type: "source_opened" })
-        const effects = dispatch(
-          types.map((type) => ({ type, current: snapshot() })),
-        )
-        equal(effects.play, false)
-        equal(
-          dispatch({ type: "canplay", current: snapshot() }).play,
-          undefined,
-        )
-      },
-    ),
-  ),
+  ).map((types) => ({
+    name: `native play owns resumption for ${types.join("/")}`,
+    run: async (): Promise<void> => {
+      const dispatch = playback_transitions(0)
+      dispatch({ type: "source_opened" })
+      dispatch({ type: "source_closed", paused: false, position: 0 })
+      dispatch({ type: "source_opened" })
+      const effects = dispatch(
+        types.map((type) => ({ type, current: snapshot() })),
+      )
+      equal(effects.play, false)
+      equal(dispatch({ type: "canplay", current: snapshot() }).play, undefined)
+    },
+  })),
   ...[false, true].flatMap((paused) =>
     (
       [
         ["error", "timeupdate"],
         ["timeupdate", "error"],
       ] as const
-    ).map((types) =>
-      nodeTest(
-        `rebuild defers play for ${types.join("/")} with paused=${paused}`,
-        options,
-        () => {
-          const dispatch = playback_transitions(0)
-          dispatch({ type: "source_opened" })
-          dispatch({ type: "source_closed", position: 0, paused })
-          dispatch({ type: "source_opened" })
-          const current = snapshot({
-            paused,
-            error: { code: 3, message: "decode failed" } as MediaError,
-          })
-          const effects = dispatch(types.map((type) => ({ type, current })))
-          deepEqual(effects.control, { type: "rebuild" })
-          equal(effects.play, undefined)
-          dispatch({ type: "source_opened" })
-          equal(
-            dispatch({ type: "canplay", current: snapshot() }).play,
-            paused ? undefined : true,
-          )
-          equal(
-            dispatch({ type: "canplay", current: snapshot() }).play,
-            undefined,
-          )
-        },
-      ),
-    ),
+    ).map((types) => ({
+      name: `rebuild defers play for ${types.join("/")} with paused=${paused}`,
+      run: async (): Promise<void> => {
+        const dispatch = playback_transitions(0)
+        dispatch({ type: "source_opened" })
+        dispatch({ type: "source_closed", position: 0, paused })
+        dispatch({ type: "source_opened" })
+        const current = snapshot({
+          paused,
+          error: { code: 3, message: "decode failed" } as MediaError,
+        })
+        const effects = dispatch(types.map((type) => ({ type, current })))
+        deepEqual(effects.control, { type: "rebuild" })
+        equal(effects.play, undefined)
+        dispatch({ type: "source_opened" })
+        equal(
+          dispatch({ type: "canplay", current: snapshot() }).play,
+          paused ? undefined : true,
+        )
+        equal(
+          dispatch({ type: "canplay", current: snapshot() }).play,
+          undefined,
+        )
+      },
+    })),
   ),
-  ...shuffled.map(({ name, position = 0, steps }) =>
-    nodeTest(name, options, () => {
+  ...cases.map(({ name, position = 0, steps }) => ({
+    name,
+    run: async (): Promise<void> => {
       const dispatch = playback_transitions(position)
 
       for (const { action, expected } of steps) {
         deepEqual(dispatch(action), expected)
       }
-    }),
-  ),
-  ...([[], [[20, 40]]] as const).map((buffered) =>
-    nodeTest(
-      `quota with no playable future in ${JSON.stringify(buffered)} requests a retry`,
-      options,
-      () => {
-        const dispatch = playback_transitions(40)
-        dispatch({ type: "source_opened" })
-        const effects = dispatch({
-          type: "buffer_full",
-          current: snapshot({
-            buffered,
-            time: 40,
-          }),
-        })
-        equal(effects.error, undefined)
-        deepEqual(effects.control, { type: "retry" })
-        equal(effects.buffer, undefined)
-      },
-    ),
-  ),
+    },
+  })),
+  ...([[], [[20, 40]]] as const).map((buffered) => ({
+    name: `quota with no playable future in ${JSON.stringify(buffered)} requests a retry`,
+    run: async (): Promise<void> => {
+      const dispatch = playback_transitions(40)
+      dispatch({ type: "source_opened" })
+      const effects = dispatch({
+        type: "buffer_full",
+        current: snapshot({
+          buffered,
+          time: 40,
+        }),
+      })
+      equal(effects.error, undefined)
+      deepEqual(effects.control, { type: "retry" })
+      equal(effects.buffer, undefined)
+    },
+  })),
 ])

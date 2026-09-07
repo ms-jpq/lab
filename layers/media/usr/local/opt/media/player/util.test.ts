@@ -1,8 +1,8 @@
 import { deepEqual, ok as assert, rejects } from "node:assert/strict"
-import { randomUUID } from "node:crypto"
 import { getEventListeners } from "node:events"
-import nodeTest, { type TestContext } from "node:test"
+import type { TestContext } from "node:test"
 import { setImmediate } from "node:timers/promises"
+import { EventTarget, run_cases } from "./test_utils.ts"
 
 import {
   closing,
@@ -14,8 +14,6 @@ import {
   merge,
   once,
 } from "./util.ts"
-
-const options = { concurrency: true, timeout: 2_000 }
 
 let fetchTests = Promise.resolve()
 const withFetch = async (
@@ -48,43 +46,41 @@ class OnceTarget extends EventTarget {
 }
 
 const cases = [
-  {
-    name: "return drains queued event reads directly and through merge",
-    run: async () => {
-      for (const count of [0, 1, 8]) {
-        for (const combined of [false, true]) {
-          const owner = new AbortController()
-          const target = new OnceTarget()
-          const source = event_batches(
-            owner.signal,
-            target,
-            ["left"],
-            () => target.state,
+  ...[0, 1, 8].flatMap((count) =>
+    [false, true].map((combined) => ({
+      name: `return drains ${count} queued event reads ${combined ? "through merge" : "directly"}`,
+      run: async () => {
+        const owner = new AbortController()
+        const target = new OnceTarget()
+        const source = event_batches(
+          owner.signal,
+          target,
+          ["left"],
+          () => target.state,
+        )
+        const values = combined ? merge(source) : source
+        try {
+          const pending = Array.from({ length: count }, () => values.next())
+          await setImmediate()
+          const returned = values.return?.(undefined)
+          const settled = Promise.all([...pending, returned])
+          deepEqual(
+            await Promise.race([
+              settled.then((results) =>
+                results.every((result) => result?.done),
+              ),
+              setImmediate("pending"),
+            ]),
+            true,
           )
-          const values = combined ? merge(source) : source
-          try {
-            const pending = Array.from({ length: count }, () => values.next())
-            await setImmediate()
-            const returned = values.return?.(undefined)
-            const settled = Promise.all([...pending, returned])
-            deepEqual(
-              await Promise.race([
-                settled.then((results) =>
-                  results.every((result) => result?.done),
-                ),
-                setImmediate("pending"),
-              ]),
-              true,
-            )
-            deepEqual(getEventListeners(target, "left"), [])
-          } finally {
-            owner.abort()
-            await values.return?.(undefined)
-          }
+          deepEqual(getEventListeners(target, "left"), [])
+        } finally {
+          owner.abort()
+          await values.return?.(undefined)
         }
-      }
-    },
-  },
+      },
+    })),
+  ),
   ...(["fulfilled", "rejected"] as const).map((outcome) => ({
     name: `closing assimilates a ${outcome} return thenable once and completes cleanup`,
     run: async () => {
@@ -235,13 +231,17 @@ const cases = [
   },
   ...[new Error("single failure"), undefined].map((failure) => ({
     name: `join preserves a single ${failure === undefined ? "undefined rejection" : "error"} after all work settles`,
-    run: async () => {
+    run: async (context: TestContext) => {
       const pending = Promise.withResolvers<void>()
       const outcomes: unknown[] = []
       const joined = join([Promise.reject(failure), pending.promise]).then(
         () => outcomes.push({ success: true }),
         (error: unknown) => outcomes.push({ error }),
       )
+      context.after(async () => {
+        pending.resolve()
+        await joined
+      })
       await setImmediate()
       deepEqual(outcomes, [])
       pending.resolve()
@@ -251,7 +251,7 @@ const cases = [
   })),
   {
     name: "join aggregates failures in input order after every task settles",
-    run: async () => {
+    run: async (context: TestContext) => {
       const first = Promise.withResolvers<void>()
       const left = new Error("left")
       const right = new Error("right")
@@ -260,6 +260,10 @@ const cases = [
         () => outcomes.push({ success: true }),
         (error: unknown) => outcomes.push(error),
       )
+      context.after(async () => {
+        first.resolve()
+        await joined
+      })
       await setImmediate()
       deepEqual(outcomes.length, 0)
       first.reject(left)
@@ -377,7 +381,7 @@ const cases = [
   })),
   {
     name: "closing waits for cleanup and preserves both return and cleanup failures",
-    run: async () => {
+    run: async (context: TestContext) => {
       const owner = new AbortController()
       const failure = new Error("return value failed")
       const cleanup_failure = new Error("cleanup failed")
@@ -401,6 +405,10 @@ const cases = [
         () => outcomes.push("closed"),
         (error: unknown) => outcomes.push(error),
       )
+      context.after(async () => {
+        release.resolve()
+        await settled
+      })
       await entered.promise
       await setImmediate()
       deepEqual(outcomes.length, 0)
@@ -435,7 +443,7 @@ const cases = [
   },
   {
     name: "for-await returns before scoped abort disposal",
-    run: async () => {
+    run: async (context: TestContext) => {
       const sequence: string[] = []
       const release = Promise.withResolvers<void>()
       let returned = false
@@ -472,6 +480,10 @@ const cases = [
 
       deepEqual(await values.next(), { done: false, value: 1 })
       const closed = values.return(undefined)
+      context.after(async () => {
+        release.resolve()
+        await closed
+      })
       await setImmediate()
 
       deepEqual(sequence, ["return"])
@@ -564,33 +576,28 @@ const cases = [
       deepEqual(await values.next(), { done: true, value: undefined })
     },
   },
-  {
-    name: "once detaches its listener when its event wins",
+  ...[
+    { name: "its event wins", abort: false },
+    { name: "its owner aborts", abort: true },
+  ].map(({ name, abort }) => ({
+    name: `once detaches its listener when ${name}`,
     run: async () => {
       const owner = new AbortController()
       const target = new OnceTarget()
       const selected = once(owner.signal, target, "left")
+      const event = new Event("left")
 
       deepEqual(getEventListeners(target, "left").length, 1)
-      target.dispatchEvent(new Event("left"))
+      if (abort) {
+        owner.abort()
+      } else {
+        target.dispatchEvent(event)
+      }
 
-      deepEqual((await selected)?.type, "left")
+      deepEqual(await selected, abort ? undefined : event)
       deepEqual(getEventListeners(target, "left").length, 0)
     },
-  },
-  {
-    name: "once detaches its listener when its owner aborts",
-    run: async () => {
-      const owner = new AbortController()
-      const target = new OnceTarget()
-      const selected = once(owner.signal, target, "left")
-
-      owner.abort()
-
-      deepEqual(await selected, undefined)
-      deepEqual(getEventListeners(target, "left").length, 0)
-    },
-  },
+  })),
   {
     name: "request abort settles a pending logical fetch",
     run: async (context: TestContext) =>
@@ -981,9 +988,4 @@ const cases = [
   },
 ]
 
-const shuffled = cases
-  .map((testCase) => ({ order: randomUUID(), testCase }))
-  .sort((left, right) => left.order.localeCompare(right.order))
-  .map(({ testCase }) => testCase)
-
-await Promise.all(shuffled.map(({ name, run }) => nodeTest(name, options, run)))
+await run_cases(cases)

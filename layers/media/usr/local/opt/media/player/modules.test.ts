@@ -18,7 +18,7 @@ import { readFile } from "node:fs/promises"
 import { setImmediate } from "node:timers/promises"
 import { pathToFileURL } from "node:url"
 import vm from "node:vm"
-import { EventTarget } from ${JSON.stringify(new URL("./fixtures/event_target.ts", import.meta.url).href)}
+import { EventTarget } from ${JSON.stringify(new URL("./test_utils.ts", import.meta.url).href)}
 
 const [directory, symbols] = process.argv.slice(1)
 const window = new EventTarget()
@@ -114,7 +114,9 @@ equal(vm.runInContext("typeof Symbol.asyncDispose", context), "symbol")
 
 try {
   window.dispatchEvent(new Event("pageshow"))
-  for (let turn = 0; turn < 100 && requests.length === 0; turn++) await setImmediate()
+  for (let turn = 0; turn < 100 && requests.length === 0; turn++) {
+    await setImmediate()
+  }
   equal(requests.length, 1)
   equal(sources.length, 1)
   equal(new URL(requests[0].url).searchParams.get("t"), "0")
@@ -122,7 +124,9 @@ try {
 } finally {
   globalThis.gc()
   window.dispatchEvent(new Event("pagehide"))
-  for (let turn = 0; turn < 100 && media.src !== ""; turn++) await setImmediate()
+  for (let turn = 0; turn < 100 && media.src !== ""; turn++) {
+    await setImmediate()
+  }
 }
 equal(media.src, "")
 equal(requests[0]?.signal.aborted, true)
@@ -135,7 +139,7 @@ console.log("startup and teardown passed")
 test(
   "emitted ES modules start and dispose with native or polyfilled disposal symbols",
   { timeout: 30_000 },
-  async () => {
+  async (context): Promise<void> => {
     const directory = await mkdtemp(join(tmpdir(), "player-modules-"))
     try {
       await exec(
@@ -157,22 +161,28 @@ test(
       )
 
       await Promise.all(
-        ["native", "missing"].map(async (symbols) => {
-          const { stdout } = await exec(
-            execPath,
-            [
-              "--expose-gc",
-              "--experimental-vm-modules",
-              "--input-type=module",
-              "--eval",
-              startup,
-              directory,
-              symbols,
-            ],
-            { timeout: 10_000 },
-          )
-          equal(stdout.trim(), "startup and teardown passed")
-        }),
+        ["native", "missing"].map((symbols) =>
+          context.test(
+            `${symbols} disposal symbols`,
+            { concurrency: true },
+            async (): Promise<void> => {
+              const { stdout } = await exec(
+                execPath,
+                [
+                  "--expose-gc",
+                  "--experimental-vm-modules",
+                  "--input-type=module",
+                  "--eval",
+                  startup,
+                  directory,
+                  symbols,
+                ],
+                { timeout: 10_000 },
+              )
+              equal(stdout.trim(), "startup and teardown passed")
+            },
+          ),
+        ),
       )
     } finally {
       await rm(directory, { recursive: true, force: true })

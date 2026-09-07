@@ -1,16 +1,23 @@
 import { deepEqual, ok as assert } from "node:assert/strict"
-import { randomUUID } from "node:crypto"
 import { getEventListeners } from "node:events"
-import nodeTest, { type TestContext } from "node:test"
+import type { TestContext } from "node:test"
 import { setImmediate } from "node:timers/promises"
 
 import { bond, media_source, media_sources, type Mse } from "./mse.ts"
+import { EventTarget, run_cases, timeRanges } from "./test_utils.ts"
 
-const options = { concurrency: true, timeout: 2_000 }
 const MSE_TIMEOUT = 100
 
 const acquisitionFixture = (context: TestContext) => {
   const descriptor = Object.getOwnPropertyDescriptor(globalThis, "MediaSource")
+  const restore = (): void => {
+    if (descriptor) {
+      Object.defineProperty(globalThis, "MediaSource", descriptor)
+    } else {
+      Reflect.deleteProperty(globalThis, "MediaSource")
+    }
+  }
+  context.after(restore)
   const sources: EventTarget[] = []
   class Source extends EventTarget {
     constructor() {
@@ -50,24 +57,12 @@ const acquisitionFixture = (context: TestContext) => {
 
   return {
     media,
-    restore: (): void => {
-      if (descriptor) {
-        Object.defineProperty(globalThis, "MediaSource", descriptor)
-      } else {
-        Reflect.deleteProperty(globalThis, "MediaSource")
-      }
-    },
+    restore,
     revoked,
     sources,
     state,
   }
 }
-
-const timeRanges = (...ranges: [number, number][]): TimeRanges => ({
-  length: ranges.length,
-  start: (index) => ranges[index]![0],
-  end: (index) => ranges[index]![1],
-})
 
 const fixture = (
   buffered: TimeRanges = timeRanges(),
@@ -81,6 +76,17 @@ const fixture = (
   const mutations: unknown[] = []
   const types: string[] = []
   const entered = Promise.withResolvers<void>()
+  const update = (operation: "append" | "remove"): void => {
+    buffer.updating = true
+    entered.resolve()
+    if (hold !== operation) {
+      buffer.updating = false
+      buffer.dispatchEvent(
+        new Event(failure === operation ? "error" : "update"),
+      )
+      buffer.dispatchEvent(new Event("updateend"))
+    }
+  }
   const buffer = Object.assign(new EventTarget(), {
     abort: () => {
       mutations.push(["abort"])
@@ -100,15 +106,7 @@ const fixture = (
         throw new DOMException("SourceBuffer is updating", "InvalidStateError")
       }
       mutations.push(["append", [...bytes]])
-      buffer.updating = true
-      entered.resolve()
-      if (hold !== "append") {
-        buffer.updating = false
-        buffer.dispatchEvent(
-          new Event(failure === "append" ? "error" : "update"),
-        )
-        buffer.dispatchEvent(new Event("updateend"))
-      }
+      update("append")
     },
     buffered,
     onerror: null,
@@ -118,15 +116,7 @@ const fixture = (
         throw new DOMException("remove failed", "InvalidStateError")
       }
       mutations.push(["remove", start, end])
-      buffer.updating = true
-      entered.resolve()
-      if (hold !== "remove") {
-        buffer.updating = false
-        buffer.dispatchEvent(
-          new Event(failure === "remove" ? "error" : "update"),
-        )
-        buffer.dispatchEvent(new Event("updateend"))
-      }
+      update("remove")
     },
     timestampOffset: 0,
     updating: false,
@@ -1225,10 +1215,15 @@ const cases = [
       deepEqual(failure.type, "error")
     },
   },
-  {
-    name: "MSE surfaces a synchronous append failure without waiting",
+  ...(
+    [
+      { operation: "append", buffered: [] },
+      { operation: "remove", buffered: [[0, 120]] },
+    ] as const
+  ).map(({ operation, buffered }) => ({
+    name: `MSE surfaces a synchronous ${operation === "append" ? "append" : "removal"} failure without waiting`,
     run: async () => {
-      const { values } = fixture(timeRanges(), "append-sync")
+      const { values } = fixture(timeRanges(...buffered), `${operation}-sync`)
       await start(values)
 
       const failure = await Promise.race([
@@ -1242,25 +1237,7 @@ const cases = [
       assert(failure instanceof DOMException)
       deepEqual(failure.name, "InvalidStateError")
     },
-  },
-  {
-    name: "MSE surfaces a synchronous removal failure without waiting",
-    run: async () => {
-      const { values } = fixture(timeRanges([0, 120]), "remove-sync")
-      await start(values)
-
-      const failure = await Promise.race([
-        values.next(new Uint8Array([4])).then(
-          () => undefined,
-          (error: unknown) => error,
-        ),
-        setImmediate("pending"),
-      ])
-
-      assert(failure instanceof DOMException)
-      deepEqual(failure.name, "InvalidStateError")
-    },
-  },
+  })),
   {
     name: "MSE surfaces an asynchronous removal failure before appending",
     run: async () => {
@@ -1325,13 +1302,30 @@ const cases = [
       deepEqual(mutations, [["append", [5]]])
     },
   },
-  {
-    name: "parent abort interrupts an entered SourceBuffer mutation",
+  ...(
+    [
+      {
+        operation: "append",
+        name: "mutation",
+        buffered: [],
+        mutations: [["append", [6]], ["abort"]],
+        updating: false,
+      },
+      {
+        operation: "remove",
+        name: "removal",
+        buffered: [[0, 120]],
+        mutations: [["remove", 0, 70]],
+        updating: true,
+      },
+    ] as const
+  ).map(({ operation, name, buffered, mutations: expected, updating }) => ({
+    name: `parent abort interrupts an entered SourceBuffer ${name}`,
     run: async () => {
       const { buffer, controller, entered, mutations, values } = fixture(
-        timeRanges(),
+        timeRanges(...buffered),
         undefined,
-        "append",
+        operation,
       )
       await start(values)
       const appending = values.next(new Uint8Array([6]))
@@ -1351,40 +1345,10 @@ const cases = [
           { done: true, value: undefined },
         ],
       )
-      deepEqual(mutations, [["append", [6]], ["abort"]])
-      deepEqual(buffer.updating, false)
+      deepEqual(mutations, expected)
+      deepEqual(buffer.updating, updating)
     },
-  },
-  {
-    name: "parent abort interrupts an entered SourceBuffer removal",
-    run: async () => {
-      const { buffer, controller, entered, mutations, values } = fixture(
-        timeRanges([0, 120]),
-        undefined,
-        "remove",
-      )
-      await start(values)
-      const appending = values.next(new Uint8Array([6]))
-      await entered
-      const closing = values.return?.(undefined)
-      assert(closing)
-
-      controller.abort()
-
-      deepEqual(
-        await Promise.race([
-          Promise.all([appending, closing]),
-          setImmediate("pending"),
-        ]),
-        [
-          { done: false, value: new Uint8Array(0) },
-          { done: true, value: undefined },
-        ],
-      )
-      deepEqual(mutations, [["remove", 0, 70]])
-      deepEqual(buffer.updating, true)
-    },
-  },
+  })),
   {
     name: "source detachment during the initial handshake completes without writing a removed buffer",
     run: async () => {
@@ -1570,119 +1534,73 @@ const cases = [
       }
     },
   },
-  {
-    name: "bond and media source acquisition obey their return contract",
-    run: async (context: TestContext) => {
-      const current = acquisitionFixture(context)
-      try {
-        const bondOwner = new AbortController()
-        const bonded = bond(current.media, bondOwner.signal, MSE_TIMEOUT)
-        const pendingBond = bonded.next()
-        const abortedBond = bonded.return?.()
-        assert(abortedBond)
-
-        deepEqual(
-          await Promise.race([
-            Promise.all([pendingBond, abortedBond]),
-            setImmediate("pending"),
-          ]),
-          [
-            { done: true, value: undefined },
-            { done: true, value: undefined },
-          ],
-        )
-        deepEqual(current.sources.length, 1)
-        current.media.src = ""
-
-        const sourcesOwner = new AbortController()
-        const sources = media_sources({
-          evict_behind: 30,
-          media: current.media,
-          mime_type: "video/test",
-          signal: sourcesOwner.signal,
-          timeout: MSE_TIMEOUT,
-        })
-        const pendingSources = sources.next()
-        const abortedSources = sources.return?.()
-        assert(abortedSources)
-
-        deepEqual(
-          await Promise.race([
-            Promise.all([pendingSources, abortedSources]),
-            setImmediate("pending"),
-          ]),
-          [
-            { done: true, value: undefined },
-            { done: true, value: undefined },
-          ],
-        )
-        deepEqual(current.revoked, ["blob:test:0", "blob:test:1"])
-        deepEqual(current.state, { loads: 1, removals: 3 })
-        const returnedBondOwner = new AbortController()
-        const returnedBond = bond(
-          current.media,
-          returnedBondOwner.signal,
-          MSE_TIMEOUT,
-        )
-        const returnedBondPending = returnedBond.next()
-        const bondSource = current.sources[2]
-        assert(bondSource)
-        deepEqual(getEventListeners(bondSource, "sourceopen").length, 1)
-        deepEqual(getEventListeners(bondSource, "sourceclose").length, 1)
-        bondSource.dispatchEvent(new Event("sourceopen"))
-        deepEqual(await returnedBondPending, {
-          done: false,
-          value: bondSource,
-        })
-        deepEqual(getEventListeners(bondSource, "sourceopen").length, 0)
-        deepEqual(getEventListeners(bondSource, "sourceclose").length, 0)
-        const closedBond = returnedBond.return?.()
-        assert(closedBond)
-
-        deepEqual(await Promise.race([closedBond, setImmediate("pending")]), {
-          done: true,
-          value: undefined,
-        })
-        current.media.src = ""
-
-        const returnedSourcesOwner = new AbortController()
-        const returnedSources = media_sources({
-          evict_behind: 30,
-          media: current.media,
-          mime_type: "video/test",
-          signal: returnedSourcesOwner.signal,
-          timeout: MSE_TIMEOUT,
-        })
-        const returnedSourcesPending = returnedSources.next()
-        const mediaSource = current.sources[3]
-        assert(mediaSource)
-        mediaSource.dispatchEvent(new Event("sourceopen"))
-        const acquired = await returnedSourcesPending
-        assert(!acquired.done)
-        deepEqual(acquired.value[0], mediaSource)
-        const closedSources = returnedSources.return?.()
-        assert(closedSources)
-
-        deepEqual(
-          await Promise.race([closedSources, setImmediate("pending")]),
-          { done: true, value: undefined },
-        )
-        deepEqual(current.revoked, [
-          "blob:test:0",
-          "blob:test:1",
-          "blob:test:3",
-        ])
-        deepEqual(current.state, { loads: 2, removals: 4 })
-      } finally {
-        current.restore()
-      }
-    },
-  },
+  ...(["bond", "media_sources"] as const).flatMap((kind) =>
+    [false, true].map((opened) => ({
+      name: `${kind} return closes ${opened ? "an acquired" : "a pending"} source`,
+      run: async (context: TestContext) => {
+        const current = acquisitionFixture(context)
+        const owner = new AbortController()
+        const values =
+          kind === "bond"
+            ? bond(current.media, owner.signal, MSE_TIMEOUT)
+            : media_sources({
+                evict_behind: 30,
+                media: current.media,
+                mime_type: "video/test",
+                signal: owner.signal,
+                timeout: MSE_TIMEOUT,
+              })
+        try {
+          const pending = values.next()
+          const source = current.sources[0]
+          assert(source)
+          deepEqual(current.sources.length, 1)
+          deepEqual(getEventListeners(source, "sourceopen").length, 1)
+          deepEqual(getEventListeners(source, "sourceclose").length, 1)
+          if (opened) {
+            source.dispatchEvent(new Event("sourceopen"))
+            const acquired = await pending
+            assert(!acquired.done)
+            deepEqual(
+              Array.isArray(acquired.value)
+                ? acquired.value[0]
+                : acquired.value,
+              source,
+            )
+            deepEqual(getEventListeners(source, "sourceopen").length, 0)
+            deepEqual(
+              getEventListeners(source, "sourceclose").length,
+              kind === "bond" ? 0 : 1,
+            )
+          }
+          const closed = values.return?.()
+          assert(closed)
+          deepEqual(
+            await Promise.race([
+              Promise.all(opened ? [closed] : [pending, closed]),
+              setImmediate("pending"),
+            ]),
+            Array.from({ length: opened ? 1 : 2 }, () => ({
+              done: true,
+              value: undefined,
+            })),
+          )
+          deepEqual(
+            current.revoked,
+            kind === "bond" && opened ? [] : ["blob:test:0"],
+          )
+          deepEqual(current.state, {
+            loads: kind === "bond" ? 0 : 1,
+            removals: (opened ? 0 : 1) + (kind === "bond" ? 0 : 1),
+          })
+        } finally {
+          owner.abort()
+          await values.return?.()
+          current.restore()
+        }
+      },
+    })),
+  ),
 ]
 
-const shuffled = cases
-  .map((testCase) => ({ order: randomUUID(), testCase }))
-  .sort((left, right) => left.order.localeCompare(right.order))
-  .map(({ testCase }) => testCase)
-
-await Promise.all(shuffled.map(({ name, run }) => nodeTest(name, options, run)))
+await run_cases(cases)

@@ -1,31 +1,10 @@
 import { deepEqual, ok } from "node:assert/strict"
 import { getEventListeners } from "node:events"
-import nodeTest from "node:test"
+import type { TestContext } from "node:test"
 import { setImmediate } from "node:timers/promises"
 
 import { media_buffered, media_events, playable_position } from "./media.ts"
-
-const options = { concurrency: true, timeout: 2_000 }
-
-class Ranges implements TimeRanges {
-  readonly values: [number, number][] = []
-
-  get length(): number {
-    return this.values.length
-  }
-
-  start(index: number): number {
-    const range = this.values[index]
-    ok(range)
-    return range[0]
-  }
-
-  end(index: number): number {
-    const range = this.values[index]
-    ok(range)
-    return range[1]
-  }
-}
+import { EventTarget, Ranges, run_cases } from "./test_utils.ts"
 
 class Media extends EventTarget {
   readonly HAVE_METADATA = 1
@@ -41,10 +20,34 @@ class Media extends EventTarget {
   seeking = false
 }
 
+const observations = (
+  context: TestContext,
+): {
+  owner: AbortController
+  media: Media
+  states: ReturnType<typeof media_events>
+} => {
+  const owner = new AbortController()
+  const media = new Media()
+  const states = media_events(
+    media as unknown as HTMLMediaElement,
+    owner.signal,
+  )
+  context.after(async () => {
+    owner.abort()
+    await states.return?.()
+  })
+  return {
+    owner,
+    media,
+    states,
+  }
+}
+
 const cases = [
   ...["0", "200"].map((declared) => ({
     name: `duration ${declared} follows native initialization, completion, reopening, and replacement`,
-    run: () => {
+    run: async (): Promise<void> => {
       const media = new Media()
       media.dataset["duration"] = declared
       const element = media as unknown as HTMLMediaElement
@@ -80,7 +83,7 @@ const cases = [
   })),
   ...["200", "0", ""].map((declared) => ({
     name: `duration ${JSON.stringify(declared)} uses native duration only as a fallback`,
-    run: () => {
+    run: async (): Promise<void> => {
       const media = Object.assign(new Media(), { duration: 10 })
       media.dataset["duration"] = declared
       const element = media as unknown as HTMLMediaElement
@@ -91,7 +94,7 @@ const cases = [
   })),
   {
     name: "a pre-aborted owner produces no media states",
-    run: async () => {
+    run: async (): Promise<void> => {
       const owner = new AbortController()
       owner.abort()
       const media = new Media()
@@ -107,13 +110,8 @@ const cases = [
   },
   {
     name: "owner abort completes a pending media-state pull",
-    run: async () => {
-      const owner = new AbortController()
-      const media = new Media()
-      const states = media_events(
-        media as unknown as HTMLMediaElement,
-        owner.signal,
-      )
+    run: async (context: TestContext): Promise<void> => {
+      const { owner, media, states } = observations(context)
       const pending = states.next()
 
       owner.abort()
@@ -129,13 +127,8 @@ const cases = [
   },
   {
     name: "return completes a pending media-state pull",
-    run: async () => {
-      const owner = new AbortController()
-      const media = new Media()
-      const states = media_events(
-        media as unknown as HTMLMediaElement,
-        owner.signal,
-      )
+    run: async (context: TestContext): Promise<void> => {
+      const { media, states } = observations(context)
       const pending = states.next()
       const closed = states.return?.()
       ok(closed)
@@ -155,13 +148,8 @@ const cases = [
   },
   {
     name: "return from media states detaches its event listeners",
-    run: async () => {
-      const owner = new AbortController()
-      const media = new Media()
-      const states = media_events(
-        media as unknown as HTMLMediaElement,
-        owner.signal,
-      )
+    run: async (context: TestContext): Promise<void> => {
+      const { media, states } = observations(context)
       const pending = states.next()
       media.dispatchEvent(new Event("progress"))
       const received = await pending
@@ -180,13 +168,8 @@ const cases = [
   },
   {
     name: "queued media observations retain the state of each event while the consumer is suspended",
-    run: async () => {
-      const owner = new AbortController()
-      const media = new Media()
-      const states = media_events(
-        media as unknown as HTMLMediaElement,
-        owner.signal,
-      )
+    run: async (context: TestContext): Promise<void> => {
+      const { owner, media, states } = observations(context)
       try {
         const first = states.next()
         media.dispatchEvent(new Event("progress"))
@@ -195,13 +178,14 @@ const cases = [
         media.readyState = media.HAVE_METADATA
         media.currentTime = 10
         media.seeking = true
-        media.buffered.values.push([10, 20])
+        const range: [number, number] = [10, 20]
+        media.buffered.values.push(range)
         media.dispatchEvent(new Event("seeking"))
         await setImmediate()
         media.currentTime = 12
         media.seeking = false
         media.paused = true
-        media.buffered.values[0]?.splice(0, 2, 12, 24)
+        range.splice(0, 2, 12, 24)
         media.dispatchEvent(new Event("seeked"))
         await setImmediate()
         media.currentTime = 99
@@ -243,13 +227,8 @@ const cases = [
   },
   {
     name: "owner abort discards media observations queued behind a suspended consumer",
-    run: async () => {
-      const owner = new AbortController()
-      const media = new Media()
-      const states = media_events(
-        media as unknown as HTMLMediaElement,
-        owner.signal,
-      )
+    run: async (context: TestContext): Promise<void> => {
+      const { owner, media, states } = observations(context)
       try {
         const first = states.next()
         media.dispatchEvent(new Event("progress"))
@@ -271,16 +250,12 @@ const cases = [
   },
   {
     name: "an observation owns an immutable copy of buffered ranges",
-    run: async () => {
-      const owner = new AbortController()
-      const media = new Media()
-      const states = media_events(
-        media as unknown as HTMLMediaElement,
-        owner.signal,
-      )
+    run: async (context: TestContext): Promise<void> => {
+      const { media, states } = observations(context)
       const pending = states.next()
 
-      media.buffered.values.push([10, 20])
+      const range: [number, number] = [10, 20]
+      media.buffered.values.push(range)
       media.dispatchEvent(new Event("progress"))
 
       const observed = await pending
@@ -288,13 +263,11 @@ const cases = [
       const [observation] = observed.value
       ok(observation)
       const { current: snapshot } = observation
-      media.buffered.values[0]?.splice(0, 2, 30, 40)
+      range.splice(0, 2, 30, 40)
       deepEqual(snapshot.buffered, [[10, 20]])
       await states.return?.()
     },
   },
 ] as const
 
-for (const current of cases) {
-  nodeTest(current.name, options, current.run)
-}
+await run_cases(cases)
