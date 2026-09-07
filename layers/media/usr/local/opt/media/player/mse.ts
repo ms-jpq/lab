@@ -1,4 +1,8 @@
-import { playable_position, POSITION_TOLERANCE } from "./media.ts"
+import {
+  contains_position,
+  playable_position,
+  POSITION_TOLERANCE,
+} from "./media.ts"
 import { abortion, closing, defer, event_batches, never, once } from "./util.ts"
 
 export type MseOperation = undefined | number | Uint8Array<ArrayBuffer>
@@ -17,9 +21,10 @@ const unbuffered_seek = async (
   media: HTMLMediaElement,
   buffer: SourceBuffer,
   signal: AbortSignal,
+  awaiting_start: boolean,
 ): Promise<{ type: "seeking" } | undefined> => {
   await using seeks = event_batches(signal, media, ["seeking"], () => undefined)
-  seeking: for await (const _ of seeks) {
+  for await (const _ of seeks) {
     if (signal.aborted) {
       return
     }
@@ -29,19 +34,13 @@ const unbuffered_seek = async (
     const ranges = media.buffered
     const position = playable_position(media, media.currentTime)
     if (
-      Math.abs(position - buffer.timestampOffset) <= POSITION_TOLERANCE &&
-      (!ranges.length ||
-        buffer.timestampOffset >= ranges.start(0) - POSITION_TOLERANCE)
+      awaiting_start &&
+      Math.abs(position - buffer.timestampOffset) <= POSITION_TOLERANCE
     ) {
       continue
     }
-    for (let index = 0; index < ranges.length; index += 1) {
-      if (
-        ranges.start(index) - position <= POSITION_TOLERANCE &&
-        position - ranges.end(index) <= POSITION_TOLERANCE
-      ) {
-        continue seeking
-      }
+    if (contains_position(ranges, position)) {
+      continue
     }
     return { type: "seeking" }
   }
@@ -63,6 +62,7 @@ const op_lock = async function* (
     timeout: number
   },
   operation: "append" | "remove",
+  awaiting_start: boolean,
 ): AsyncIteratorObject<undefined> {
   if (signal.aborted) {
     return
@@ -72,7 +72,7 @@ const op_lock = async function* (
   using a = abortion(signal, deadline)
   const changed = Promise.race([
     ...(operation === "append"
-      ? [unbuffered_seek(media, buffer, a.signal)]
+      ? [unbuffered_seek(media, buffer, a.signal, awaiting_start)]
       : []),
     once(a.signal, buffer, "update"),
     once(a.signal, buffer, "error"),
@@ -136,6 +136,7 @@ export const media_source = async function* ({
   buffer.timestampOffset = position
 
   let remaining = empty
+  let awaiting_start = true
   for (let operation = yield empty; ; operation = yield remaining) {
     remaining = empty
 
@@ -153,7 +154,7 @@ export const media_source = async function* ({
         const ranges = buffer.buffered
         const end = ranges.length ? ranges.end(ranges.length - 1) : 0
 
-        for await (const _ of lock("remove")) {
+        for await (const _ of lock("remove", awaiting_start)) {
           buffer.remove(end, end + EPSILON)
         }
         if (a.signal.aborted || closed(source)) {
@@ -164,24 +165,29 @@ export const media_source = async function* ({
         buffer.abort()
         buffer.timestampOffset = operation
       }
+      awaiting_start = true
       continue
     }
 
     if (operation instanceof Uint8Array) {
+      awaiting_start &&= !contains_position(
+        media.buffered,
+        buffer.timestampOffset,
+      )
       const cutoff = evict_before()
       if (
         cutoff > 0 &&
         buffer.buffered.length &&
         buffer.buffered.start(0) < cutoff
       ) {
-        for await (const _ of lock("remove")) {
+        for await (const _ of lock("remove", awaiting_start)) {
           buffer.remove(0, cutoff)
         }
         if (closed(source)) {
           return
         }
       }
-      for await (const _ of lock("append")) {
+      for await (const _ of lock("append", awaiting_start)) {
         try {
           buffer.appendBuffer(operation)
         } catch (error) {
@@ -198,6 +204,10 @@ export const media_source = async function* ({
       if (closed(source)) {
         return
       }
+      awaiting_start &&= !contains_position(
+        media.buffered,
+        buffer.timestampOffset,
+      )
       continue
     }
 
