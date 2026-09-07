@@ -5,6 +5,7 @@ import { stripTypeScriptTypes } from "node:module"
 import test from "node:test"
 import { setImmediate } from "node:timers/promises"
 import vm from "node:vm"
+import { EventTarget } from "./fixtures/event_target.ts"
 
 type Playback = (signal: AbortSignal) => Promise<void>
 

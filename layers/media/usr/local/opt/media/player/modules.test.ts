@@ -18,6 +18,7 @@ import { readFile } from "node:fs/promises"
 import { setImmediate } from "node:timers/promises"
 import { pathToFileURL } from "node:url"
 import vm from "node:vm"
+import { EventTarget } from ${JSON.stringify(new URL("./fixtures/event_target.ts", import.meta.url).href)}
 
 const [directory, symbols] = process.argv.slice(1)
 const window = new EventTarget()
@@ -119,6 +120,7 @@ try {
   equal(new URL(requests[0].url).searchParams.get("t"), "0")
   deepEqual(errors, [])
 } finally {
+  globalThis.gc()
   window.dispatchEvent(new Event("pagehide"))
   for (let turn = 0; turn < 100 && media.src !== ""; turn++) await setImmediate()
 }
@@ -159,6 +161,7 @@ test(
           const { stdout } = await exec(
             execPath,
             [
+              "--expose-gc",
               "--experimental-vm-modules",
               "--input-type=module",
               "--eval",
