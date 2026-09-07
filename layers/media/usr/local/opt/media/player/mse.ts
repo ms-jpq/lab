@@ -130,7 +130,7 @@ export const media_source = async function* ({
   })
 
   const position = (yield empty) as number
-  if (a.signal.aborted) {
+  if (a.signal.aborted || closed(source)) {
     return
   }
   buffer.timestampOffset = position

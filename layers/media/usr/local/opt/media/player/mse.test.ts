@@ -1166,6 +1166,34 @@ const cases = [
     },
   },
   {
+    name: "source detachment during the initial handshake completes without writing a removed buffer",
+    run: async () => {
+      const { buffer, controller, source, values } = fixture()
+      deepEqual(await values.next(), { done: false, value: new Uint8Array(0) })
+      Object.assign(source, { readyState: "closed" })
+      Object.defineProperty(buffer, "timestampOffset", {
+        get: () => 0,
+        set: () => {
+          throw new DOMException(
+            "SourceBuffer has been removed",
+            "InvalidStateError",
+          )
+        },
+      })
+      source.dispatchEvent(new Event("sourceclose"))
+      try {
+        const outcome = await values.next(100).then(
+          (result) => ({ result }),
+          (error: unknown) => ({ error }),
+        )
+        deepEqual(outcome, { result: { done: true, value: undefined } })
+      } finally {
+        controller.abort()
+        await values.return?.(undefined)
+      }
+    },
+  },
+  {
     name: "a second timestamp resets the parser before changing its offset",
     run: async () => {
       const { buffer, mutations, values } = fixture()

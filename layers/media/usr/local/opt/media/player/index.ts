@@ -1,5 +1,6 @@
 import { closed, media_sources } from "./mse.ts"
 import { media_buffered, media_events, playable_position } from "./media.ts"
+import type { MediaSnapshot } from "./media.ts"
 import {
   duration,
   main,
@@ -116,11 +117,15 @@ const playback_events = (
   signal: AbortSignal,
   source: MediaSource,
   position: number | undefined,
-  previous_time: number,
+  previous: MediaSnapshot,
 ): AsyncIteratorObject<PlaybackAction> =>
   closing(signal, async function* (signal) {
-    if (media.seeking && media.currentTime !== previous_time) {
-      yield { current: media_buffered(media).current, type: "seeking" }
+    const current = media_buffered(media).current
+    if (current.error !== undefined && current.error !== previous.error) {
+      yield { current, type: "error" }
+    }
+    if (current.time !== previous.time) {
+      yield { current, type: "seeking" }
     }
     await using stream =
       position === undefined
@@ -189,7 +194,7 @@ export const play_media = async (signal: AbortSignal, dispatch: Dispatch) => {
       opened.control?.type === "request" ? opened.control.request : undefined
 
     request: while (!abort.signal.aborted) {
-      const previous_time = media.currentTime
+      const previous = media_buffered(media).current
       if (
         requested !== undefined &&
         (await buffer.next(requested.frontier)).done
@@ -203,7 +208,7 @@ export const play_media = async (signal: AbortSignal, dispatch: Dispatch) => {
         abrt.signal,
         source,
         requested?.position,
-        previous_time,
+        previous,
       )) {
         const effects = dispatch(received)
         if (effects.error !== undefined) {

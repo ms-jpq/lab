@@ -528,8 +528,15 @@ const retry_clock = (context: PlayerContext): (() => void) => {
 }
 
 const cases = [
-  ...[0, 100].map((target): TestCase => ({
-    name: `audit: request reopening honors the latest seek ${target} while removal is pending`,
+  ...[
+    { target: 0 },
+    { target: 100 },
+    { target: 130 },
+    { target: 0, failure: true },
+  ].map(({ target, failure = false }): TestCase => ({
+    name: failure
+      ? "audit: a fatal media error during reopening is recovered before fetching again"
+      : `audit: request reopening honors the latest seek ${target} while removal is pending`,
     run: async () => {
       const current = await fixture({ url_position: 120, append_duration: 40 })
       const bodies: ReadableStreamDefaultController<Uint8Array<ArrayBuffer>>[] =
@@ -570,17 +577,48 @@ const cases = [
         current.media.seeking = true
         current.media.dispatchEvent(new Event("seeking"))
         await eventually(() => buffer.updating)
+        if (failure) {
+          let src = current.media.src
+          Object.defineProperty(current.media, "src", {
+            get: () => src,
+            set: (value: string) => {
+              src = value
+              current.media.error = null
+            },
+          })
+          current.media.error = {
+            code: 3,
+            message: "decode failed",
+          } as MediaError
+          current.media.dispatchEvent(new Event("error"))
+          await next_task()
+        }
         if (target !== 0) {
           current.media.currentTime = target
           current.media.dispatchEvent(new Event("seeking"))
-          current.media.dispatchEvent(new Event("waiting"))
+          if (target === 130) {
+            current.media.seeking = false
+            current.media.dispatchEvent(new Event("seeked"))
+          } else {
+            current.media.dispatchEvent(new Event("waiting"))
+          }
           await next_task()
         }
         buffer.updating = false
         buffer.dispatchEvent(new Event("update"))
         buffer.dispatchEvent(new Event("updateend"))
         await eventually(() => bodies.length === 2)
-        equal(request_position(current.requests[1]), String(target))
+        equal(
+          request_position(current.requests[1]),
+          String(target === 130 ? 160 : target),
+        )
+        if (failure) {
+          equal(
+            current.sources.length,
+            2,
+            "the fatal media error must rebuild the source before the next fetch",
+          )
+        }
       } finally {
         owner.abort()
         await playback
