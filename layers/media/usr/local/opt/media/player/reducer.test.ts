@@ -19,6 +19,10 @@ const options = { concurrency: true, timeout: 2_000 }
 const failure = new Error("transport failed")
 const RESUME_AT = BUFFER_HIGH - BUFFER_LOW + 1
 
+Object.defineProperty(globalThis, "MediaError", {
+  value: { MEDIA_ERR_ABORTED: 1 },
+})
+
 const snapshot = (overrides: Partial<MediaSnapshot> = {}): MediaSnapshot => ({
   buffered: [],
   duration: 200,
@@ -938,6 +942,41 @@ const shuffled: readonly Case[] = cases
   .map(({ testCase }) => testCase)
 
 await Promise.all([
+  ...[false, true].flatMap((paused) =>
+    (
+      [
+        ["error", "timeupdate"],
+        ["timeupdate", "error"],
+      ] as const
+    ).map((types) =>
+      nodeTest(
+        `rebuild defers play for ${types.join("/")} with paused=${paused}`,
+        options,
+        () => {
+          const dispatch = playback_transitions(0)
+          dispatch({ type: "source_opened" })
+          dispatch({ type: "source_closed", position: 0, paused })
+          dispatch({ type: "source_opened" })
+          const current = snapshot({
+            paused,
+            error: { code: 3, message: "decode failed" } as MediaError,
+          })
+          const effects = dispatch(types.map((type) => ({ type, current })))
+          deepEqual(effects.control, { type: "rebuild" })
+          equal(effects.play, undefined)
+          dispatch({ type: "source_opened" })
+          equal(
+            dispatch({ type: "canplay", current: snapshot() }).play,
+            paused ? undefined : true,
+          )
+          equal(
+            dispatch({ type: "canplay", current: snapshot() }).play,
+            undefined,
+          )
+        },
+      ),
+    ),
+  ),
   ...shuffled.map(({ name, position = 0, steps }) =>
     nodeTest(name, options, () => {
       const dispatch = playback_transitions(position)

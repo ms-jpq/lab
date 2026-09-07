@@ -45,11 +45,19 @@ const unbuffered_seek = async (
 }
 
 const op_lock = async function* (
-  buffer: SourceBuffer,
-  media: HTMLMediaElement,
-  source: MediaSource,
-  signal: AbortSignal,
-  timeout: number,
+  {
+    buffer,
+    media,
+    source,
+    signal,
+    timeout,
+  }: {
+    buffer: SourceBuffer
+    media: HTMLMediaElement
+    source: MediaSource
+    signal: AbortSignal
+    timeout: number
+  },
   operation: "append" | "remove",
 ): AsyncIteratorObject<undefined> {
   if (signal.aborted) {
@@ -109,6 +117,13 @@ export const media_source = async function* ({
   }
 
   const buffer = source.addSourceBuffer(mime_type)
+  const lock = op_lock.bind(undefined, {
+    buffer,
+    media,
+    source,
+    signal: a.signal,
+    timeout,
+  })
 
   const position = (yield empty) as number
   if (a.signal.aborted) {
@@ -134,14 +149,7 @@ export const media_source = async function* ({
         const ranges = buffer.buffered
         const end = ranges.length ? ranges.end(ranges.length - 1) : 0
 
-        for await (const _ of op_lock(
-          buffer,
-          media,
-          source,
-          a.signal,
-          timeout,
-          "remove",
-        )) {
+        for await (const _ of lock("remove")) {
           buffer.remove(end, end + EPSILON)
         }
         if (a.signal.aborted || closed(source)) {
@@ -162,28 +170,14 @@ export const media_source = async function* ({
         buffer.buffered.length &&
         buffer.buffered.start(0) < cutoff
       ) {
-        for await (const _ of op_lock(
-          buffer,
-          media,
-          source,
-          a.signal,
-          timeout,
-          "remove",
-        )) {
+        for await (const _ of lock("remove")) {
           buffer.remove(0, cutoff)
         }
         if (closed(source)) {
           return
         }
       }
-      for await (const _ of op_lock(
-        buffer,
-        media,
-        source,
-        a.signal,
-        timeout,
-        "append",
-      )) {
+      for await (const _ of lock("append")) {
         try {
           buffer.appendBuffer(operation)
         } catch (error) {

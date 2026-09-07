@@ -1,4 +1,4 @@
-import { equal, ok } from "node:assert/strict"
+import { doesNotThrow, equal, ok } from "node:assert/strict"
 import { readFile } from "node:fs/promises"
 import { stripTypeScriptTypes } from "node:module"
 import test from "node:test"
@@ -95,12 +95,40 @@ const fixture = async (
     .replace(/^import .*$/gmu, "")
     .replace(/^export /gmu, "")
 
-  const main = vm.runInContext(
-    stripTypeScriptTypes(`${source}\nmain`, { mode: "strip" }),
+  const { main, persist_position } = vm.runInContext(
+    stripTypeScriptTypes(`${source}\n({ main, persist_position })`, {
+      mode: "strip",
+    }),
     context,
-  ) as (playback: Playback) => Promise<void>
-  return { main, media, window }
+  ) as {
+    main: (playback: Playback) => Promise<void>
+    persist_position: (position: number) => void
+  }
+  return { context, main, media, persist_position, window }
 }
+
+test("browser history rate limiting does not make position persistence fatal", async () => {
+  const { context, persist_position } = await fixture()
+  const stored = new Map<string, string>()
+  const failure = new DOMException(
+    "History updates are rate limited",
+    "SecurityError",
+  )
+  context["history"] = {
+    // WebKit's history quota is independent of localStorage availability.
+    // https://github.com/WebKit/WebKit/blob/main/Source/WebCore/page/History.cpp
+    replaceState: () => {
+      throw failure
+    },
+  }
+  context["localStorage"] = {
+    getItem: (key: string) => stored.get(key) ?? null,
+    setItem: (key: string, value: string) => stored.set(key, value),
+  }
+
+  doesNotThrow(() => persist_position(37))
+  equal(stored.get("media:position:/player"), "37")
+})
 
 test("page restoration does not let previous playback cleanup detach the new source", async () => {
   const { main, media, window } = await fixture()

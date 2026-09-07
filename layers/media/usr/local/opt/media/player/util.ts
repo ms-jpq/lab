@@ -43,11 +43,13 @@ export const closing = <const T, const R = undefined, const N = void>(
 
   const close = async (value: R | PromiseLike<R>) => {
     a[Symbol.dispose]()
+    const resolved = Promise.resolve(value)
+    const returned = bound(resolved)
     try {
-      return bound(await value)
+      await resolved
     } catch (error) {
       try {
-        await bound(Promise.reject(error))
+        await returned
       } catch (e) {
         if (e !== error) {
           throw new AggregateError([error, e])
@@ -55,6 +57,7 @@ export const closing = <const T, const R = undefined, const N = void>(
       }
       throw error
     }
+    return returned
   }
 
   Object.defineProperties(aiter, {
@@ -240,7 +243,7 @@ export const merge = <const T extends readonly AsyncIterator<unknown>[]>(
 ): AsyncIteratorObject<Selection<T>> =>
   closing(new AbortController().signal, async function* (signal) {
     const pending = new Map(
-      aiters.map((aiter) => [aiter, next(aiter)] as const),
+      [...new Set(aiters)].map((aiter) => [aiter, next(aiter)] as const),
     )
     const cancelled = Promise.withResolvers<undefined>()
     signal.addEventListener("abort", () => cancelled.resolve(undefined), {

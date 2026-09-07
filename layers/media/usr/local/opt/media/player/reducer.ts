@@ -410,6 +410,11 @@ export const playback_transitions = (
         effects = remaining
       }
     }
+    if (effects.control?.type === "rebuild" && effects.play) {
+      state = { ...state, resume: true }
+      const { play, ...remaining } = effects
+      return remaining
+    }
     return effects
   }
 }

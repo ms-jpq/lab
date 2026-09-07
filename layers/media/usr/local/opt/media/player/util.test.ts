@@ -48,6 +48,72 @@ class OnceTarget extends EventTarget {
 
 const cases = [
   {
+    name: "closing preserves native return-before-next call ordering",
+    run: async () => {
+      const open = async function* () {
+        yield 1
+        yield 2
+        return
+      }
+      for (const values of [
+        open(),
+        closing(new AbortController().signal, open),
+      ]) {
+        try {
+          deepEqual(await values.next(), { done: false, value: 1 })
+          const closed = values.return?.(undefined)
+          const later = values.next()
+          deepEqual(await Promise.all([closed, later]), [
+            { done: true, value: undefined },
+            { done: true, value: undefined },
+          ])
+        } finally {
+          await values.return?.(undefined)
+        }
+      }
+    },
+  },
+  {
+    name: "closing reserves return order while its value is still pending",
+    run: async () => {
+      const result = Promise.withResolvers<undefined>()
+      const values = closing(new AbortController().signal, async function* () {
+        yield 1
+        yield 2
+        return
+      })
+      try {
+        deepEqual(await values.next(), { done: false, value: 1 })
+        const closed = values.return?.(result.promise)
+        const later = values.next()
+        await setImmediate()
+        result.resolve(undefined)
+        deepEqual(await Promise.all([closed, later]), [
+          { done: true, value: undefined },
+          { done: true, value: undefined },
+        ])
+      } finally {
+        result.resolve(undefined)
+        await values.return?.(undefined)
+      }
+    },
+  },
+  {
+    name: "merge does not discard values when the same iterator is supplied twice",
+    run: async () => {
+      const source = (async function* () {
+        yield 1
+        yield 2
+        return
+      })()
+      const received: number[] = []
+      for await (const [, value] of merge(source, source)) {
+        received.push(value)
+      }
+      deepEqual(received, [1, 2])
+    },
+  },
+  {
     name: "join completes empty and successful groups",
     run: async () => {
       deepEqual(await join([]), undefined)

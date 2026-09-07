@@ -34,7 +34,9 @@ export const persist_position = (value: number): void => {
   }
   time_input.value = String(position)
   page_url.searchParams.set("t", time_input.value)
-  history.replaceState(null, "", page_url)
+  try {
+    history.replaceState(null, "", page_url)
+  } catch {}
   try {
     localStorage.setItem(POSITION, time_input.value)
   } catch {}

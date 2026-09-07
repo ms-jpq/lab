@@ -143,9 +143,8 @@ const playback_events = (
     return
   })
 
-export const play_media = async (signal: AbortSignal) => {
+export const play_media = async (signal: AbortSignal, dispatch: Dispatch) => {
   using abort = abortion(signal)
-  const dispatch = playback_transitions(page_position())
 
   source: for await (const [source, create_buffer] of media_sources({
     evict_behind: BUFFER_BEHIND,
@@ -161,6 +160,12 @@ export const play_media = async (signal: AbortSignal) => {
     await using buffer = create_buffer(abort.signal)
     let playing: Promise<void> | undefined
     await using _ = defer(async () => {
+      const position =
+        media.readyState >= media.HAVE_METADATA
+          ? playable_position(media, media.currentTime)
+          : undefined
+      dispatch({ type: "source_closed", paused: media.paused, position })
+
       if (playing !== undefined) {
         media.pause()
         await playing
@@ -284,9 +289,10 @@ export const play_media = async (signal: AbortSignal) => {
 }
 
 export const playback = async (signal: AbortSignal) => {
+  const dispatch = playback_transitions(page_position())
   while (!signal.aborted) {
     try {
-      await play_media(signal)
+      await play_media(signal, dispatch)
     } catch (error) {
       if (signal.aborted) {
         return

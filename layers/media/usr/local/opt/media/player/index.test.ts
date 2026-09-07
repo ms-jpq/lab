@@ -457,7 +457,11 @@ const fixture = async ({
   vm.runInContext(
     stripTypeScriptTypes(
       `${source}
-globalThis.player_test = { main, play_media, playback }`,
+globalThis.player_test = {
+  main,
+  play_media: (signal) => play_media(signal, playback_transitions(page_position())),
+  playback,
+}`,
       { mode: "strip" },
     ),
     context,
@@ -521,6 +525,137 @@ const retry_clock = (context: PlayerContext): (() => void) => {
 }
 
 const cases = [
+  ...[false, true].map((paused): TestCase => ({
+    name: `audit: repeated outer append-failure recovery preserves ${paused ? "a user pause" : "active playback intent"}`,
+    run: async () => {
+      const current = await fixture({ append_failures: 1, response: "pending" })
+      const tick = retry_clock(current.context)
+      let body:
+        ReadableStreamDefaultController<Uint8Array<ArrayBuffer>> | undefined
+      current.set_fetch(() =>
+        response_from(
+          new ReadableStream({
+            start: (controller) => {
+              body = controller
+            },
+          }),
+        ),
+      )
+      const owner = new AbortController()
+      const playback = current.context.player_test.playback(owner.signal)
+      try {
+        await eventually(() => current.requests.length === 1)
+        current.media.dispatchEvent(new Event("seeked"))
+        current.media.paused = paused
+        await next_task()
+        let src = current.media.src
+        let plays = 0
+        Object.defineProperty(current.media, "src", {
+          get: () => src,
+          set: (value: string) => {
+            src = value
+            current.media.paused = true
+          },
+        })
+        current.media.play = async () => {
+          plays += 1
+          current.media.paused = false
+        }
+        ok(body)
+        body.enqueue(new Uint8Array([1]))
+        await eventually(() => current.errors.length === 1)
+        await next_task()
+        tick()
+        await eventually(() => current.requests.length === 2)
+        current.media.readyState = current.media.HAVE_FUTURE_DATA
+        current.media.dispatchEvent(new Event("canplay"))
+        await next_task()
+        equal(
+          plays,
+          paused ? 0 : 1,
+          "recreating the dispatcher must not forget that playback was active",
+        )
+        equal(current.media.paused, paused)
+
+        const buffer = current.sources[1]?.sourceBuffers[0]
+        ok(buffer)
+        buffer.appendBuffer = () => {
+          throw new Error("second append failed")
+        }
+        current.media.currentTime = 12.25
+        body.enqueue(new Uint8Array([2]))
+        await eventually(() => current.errors.length === 2)
+        await next_task()
+        tick()
+        await eventually(() => current.requests.length === 3)
+        equal(request_position(current.requests[2]), "12.25")
+        current.media.dispatchEvent(new Event("canplay"))
+        await next_task()
+        equal(plays, paused ? 0 : 2)
+        equal(current.media.paused, paused)
+      } finally {
+        owner.abort()
+        await playback
+      }
+    },
+  })),
+  {
+    name: "audit: a fatal error batched with a clock observation resumes only the replacement source",
+    run: async () => {
+      const current = await fixture({
+        append_completion: "pending",
+        append_duration: 1,
+        response: "partial",
+      })
+      const owner = new AbortController()
+      const playback = current.context.player_test.play_media(owner.signal)
+      const played: string[] = []
+      try {
+        await eventually(
+          () => current.sources[0]?.sourceBuffers[0]?.updating === true,
+        )
+        const buffer = current.sources[0]?.sourceBuffers[0]
+        ok(buffer)
+        let src = current.media.src
+        Object.defineProperty(current.media, "src", {
+          get: () => src,
+          set: (value: string) => {
+            src = value
+            current.media.paused = true
+            current.media.error = null
+          },
+        })
+        current.media.play = async () => {
+          played.push(current.media.src)
+          current.media.paused = false
+        }
+        current.media.paused = false
+        current.media.dispatchEvent(new Event("progress"))
+        await next_task()
+        current.media.error = {
+          code: 3,
+          message: "decode failed",
+        } as MediaError
+        current.media.dispatchEvent(new Event("error"))
+        await next_task()
+        current.media.dispatchEvent(new Event("timeupdate"))
+        await next_task()
+        buffer.updating = false
+        buffer.dispatchEvent(new Event("update"))
+        buffer.dispatchEvent(new Event("updateend"))
+        await eventually(() => current.requests.length === 2)
+        const replacement = current.media.src
+        current.media.readyState = current.media.HAVE_FUTURE_DATA
+        current.media.dispatchEvent(new Event("canplay"))
+        await next_task()
+        deepEqual(played, [replacement])
+        equal(current.media.paused, false)
+      } finally {
+        owner.abort()
+        await playback
+      }
+    },
+  },
   {
     name: "quota without playable media uses the delayed recovery path instead of waiting forever",
     run: async () => {
