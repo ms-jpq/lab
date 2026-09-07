@@ -144,7 +144,7 @@ const readableIterator = async function* <const T>(
 
   let eof = false
   try {
-    while (!a.signal.aborted) {
+    for (; !a.signal.aborted;) {
       const result = await Promise.race([reader.read(), cancelled.promise])
       if (result === undefined) {
         return
@@ -202,7 +202,7 @@ export const event_batches = <
       )
     }
 
-    while (!signal.aborted) {
+    for (; !signal.aborted;) {
       if (pending.length === 0) {
         await fut.promise
       }
@@ -254,7 +254,7 @@ export const merge = <const T extends readonly AsyncIterator<unknown>[]>(
       join([...pending.keys()].map(async (aiter) => aiter.return?.())),
     )
 
-    while (pending.size) {
+    for (; pending.size;) {
       const selected = await Promise.race([
         ...pending.values(),
         cancelled.promise,

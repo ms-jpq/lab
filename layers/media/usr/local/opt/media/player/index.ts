@@ -194,7 +194,7 @@ export const play_media = async (signal: AbortSignal, dispatch: Dispatch) => {
       opened.control?.type === "request" ? opened.control.request : undefined
     let previous = media_buffered(media).current
 
-    request: while (!abort.signal.aborted) {
+    request: for (; !abort.signal.aborted;) {
       if (
         requested !== undefined &&
         (await buffer.next(requested.frontier)).done
@@ -302,7 +302,7 @@ export const play_media = async (signal: AbortSignal, dispatch: Dispatch) => {
 
 export const playback = async (signal: AbortSignal) => {
   const dispatch = playback_transitions(page_position())
-  while (!signal.aborted) {
+  for (; !signal.aborted; await delay(signal, RETRY_DELAY)) {
     try {
       await play_media(signal, dispatch)
     } catch (error) {
@@ -310,9 +310,6 @@ export const playback = async (signal: AbortSignal) => {
         return
       }
       console.error(error)
-    }
-    if (!(await delay(signal, RETRY_DELAY))) {
-      return
     }
   }
   return

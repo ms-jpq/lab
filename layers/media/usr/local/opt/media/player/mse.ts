@@ -34,12 +34,10 @@ const unbuffered_seek = async (
     const ranges = media.buffered
     const position = playable_position(media, media.currentTime)
     if (
-      awaiting_start &&
-      Math.abs(position - buffer.timestampOffset) <= POSITION_TOLERANCE
+      (awaiting_start &&
+        Math.abs(position - buffer.timestampOffset) <= POSITION_TOLERANCE) ||
+      contains_position(ranges, position)
     ) {
-      continue
-    }
-    if (contains_position(ranges, position)) {
       continue
     }
     return { type: "seeking" }
@@ -63,7 +61,7 @@ const op_lock = async (
   },
   operation: "append" | "remove",
   awaiting_start: boolean,
-  mutate: () => void,
+  mutate: () => undefined,
 ): Promise<undefined> => {
   if (signal.aborted || closed(source)) {
     return
@@ -80,9 +78,6 @@ const op_lock = async (
     once(a.signal, source, "sourceclose"),
   ])
 
-  if (a.signal.aborted || closed(source)) {
-    return
-  }
   mutate()
 
   const event = await changed
@@ -142,12 +137,12 @@ export const media_source = async function* ({
 
   let remaining = empty
   let awaiting_start = true
-  for (let operation = yield empty; ; operation = yield remaining) {
+  for (
+    let operation = yield empty;
+    !a.signal.aborted && !closed(source);
+    operation = yield remaining
+  ) {
     remaining = empty
-
-    if (a.signal.aborted || closed(source)) {
-      return
-    }
 
     if (operation === undefined) {
       source.endOfStream()
@@ -159,9 +154,9 @@ export const media_source = async function* ({
         const ranges = buffer.buffered
         const end = ranges.length ? ranges.end(ranges.length - 1) : 0
 
-        await lock("remove", awaiting_start, () =>
-          buffer.remove(end, end + EPSILON),
-        )
+        await lock("remove", awaiting_start, () => {
+          buffer.remove(end, end + EPSILON)
+        })
         if (a.signal.aborted || closed(source)) {
           return
         }
@@ -174,44 +169,45 @@ export const media_source = async function* ({
       continue
     }
 
-    if (operation instanceof Uint8Array) {
-      awaiting_start &&= !contains_position(
-        media.buffered,
-        buffer.timestampOffset,
-      )
-      const cutoff = media.currentTime - evict_behind
-      if (
-        cutoff > 0 &&
-        buffer.buffered.length &&
-        buffer.buffered.start(0) < cutoff
-      ) {
-        await lock("remove", awaiting_start, () => buffer.remove(0, cutoff))
-      }
-      try {
-        await lock("append", awaiting_start, () =>
-          buffer.appendBuffer(operation),
-        )
-      } catch (error) {
-        if (
-          error instanceof DOMException &&
-          error.code === DOMException.QUOTA_EXCEEDED_ERR
-        ) {
-          remaining = operation
-        } else {
-          throw error
-        }
-      }
-      if (closed(source)) {
-        return
-      }
-      awaiting_start &&= !contains_position(
-        media.buffered,
-        buffer.timestampOffset,
-      )
-      continue
+    if (!(operation instanceof Uint8Array)) {
+      never(operation)
     }
 
-    never(operation)
+    awaiting_start &&= !contains_position(
+      media.buffered,
+      buffer.timestampOffset,
+    )
+    const cutoff = media.currentTime - evict_behind
+    if (
+      cutoff > 0 &&
+      buffer.buffered.length &&
+      buffer.buffered.start(0) < cutoff
+    ) {
+      await lock("remove", awaiting_start, () => {
+        buffer.remove(0, cutoff)
+      })
+    }
+    try {
+      await lock("append", awaiting_start, () => {
+        buffer.appendBuffer(operation)
+      })
+    } catch (error) {
+      if (
+        error instanceof DOMException &&
+        error.code === DOMException.QUOTA_EXCEEDED_ERR
+      ) {
+        remaining = operation
+      } else {
+        throw error
+      }
+    }
+    awaiting_start &&= !contains_position(
+      media.buffered,
+      buffer.timestampOffset,
+    )
+    if (closed(source)) {
+      return
+    }
   }
 }
 
@@ -230,7 +226,7 @@ export const bond = (
   timeout: number,
 ): AsyncIteratorObject<MediaSource> =>
   closing(signal, async function* (signal) {
-    while (!signal.aborted) {
+    for (; !signal.aborted;) {
       const source = MSE()
       const url = URL.createObjectURL(source)
       const prev = media.src
