@@ -1,8 +1,7 @@
 user      root;
 error_log stderr;
 
-events {
-}
+events {}
 
 http {
   access_log off;
@@ -17,7 +16,7 @@ http {
     }
 
     location = /-_-validate {
-      internal                ;
+      internal;
       proxy_pass              http://unix:/run/local/nginx/htaccess.sock:/;
       proxy_pass_request_body off;
     }

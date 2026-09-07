@@ -10,20 +10,20 @@ server {
   smtp_auth        none plain login cram-md5;
   # ])
   starttls         on;
-  SMTP_CONF
+  # SMTP_CONF
 }
 
 server {
   listen           [[::]]:465 ipv6only=off ssl;
   auth_http_header X-Server-Port "465";
-  SMTP_CONF
+  # SMTP_CONF
 }
 
 server {
   listen           [[::]]:587 ipv6only=off;
   auth_http_header X-Server-Port "587";
   starttls         only;
-  SMTP_CONF
+  # SMTP_CONF
 }
 
 server {
@@ -36,11 +36,11 @@ server {
   imap_auth        plain login;
   # ])
   # starttls       on;
-  IMAP_CONF
+  # IMAP_CONF
 }
 
 server {
   listen           [[::]]:993 ipv6only=off ssl;
   auth_http_header X-Server-Port "993";
-  IMAP_CONF
+  # IMAP_CONF
 }

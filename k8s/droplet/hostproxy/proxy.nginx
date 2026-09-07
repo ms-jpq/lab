@@ -1,8 +1,7 @@
 user      root;
 error_log stderr;
 
-events {
-}
+events {}
 
 stream {
   server {

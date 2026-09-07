@@ -1,8 +1,8 @@
 server {
   # listen     [[::]]:m5_or([ENV_HTTPS_PORT], 443) default_server ipv6only=off
   #   quic reuseport;
-  listen     [[::]]:m5_or([ENV_HTTPS_PORT], 443) default_server ipv6only=off
-    ssl http2 reuseport;
+  listen     [[::]]:m5_or([ENV_HTTPS_PORT], 443) default_server ipv6only=off ssl
+    http2 reuseport;
   add_header Alt-Svc 'h3=":$server_port"';
   include    /usr/local/opt/nginx/conf/auth.nginx;
 
