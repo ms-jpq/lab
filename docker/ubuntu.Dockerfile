@@ -19,5 +19,4 @@ COPY . /srv
 
 ENV LOCAL=1
 RUN mkdir -p -- /usr/share/doc/avahi-daemon/examples && touch -- /.dockerenv /usr/share/doc/avahi-daemon/examples/ssh.service
-RUN gmake ./node_modules/.bin
 RUN gmake example && ./main.sh --machine -

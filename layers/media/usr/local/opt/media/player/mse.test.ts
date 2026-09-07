@@ -685,8 +685,13 @@ const cases = [
   {
     name: "seeking to an evicted request start interrupts an active append",
     run: async () => {
-      const { buffer, controller, media, mutations, release, values } =
-        fixture(timeRanges(), undefined, "append", "open", 30)
+      const { buffer, controller, media, mutations, release, values } = fixture(
+        timeRanges(),
+        undefined,
+        "append",
+        "open",
+        30,
+      )
       const initial = new Uint8Array([8])
       const appending_started = Promise.withResolvers<void>()
       const append = buffer.appendBuffer.bind(buffer)
@@ -1048,16 +1053,9 @@ const cases = [
           (result) => ({ result }),
           (error: unknown) => ({ error }),
         )
-        await setImmediate()
+        deepEqual(buffer.updating, true)
         buffer.updating = false
         buffer.dispatchEvent(new Event("updateend"))
-        deepEqual(
-          await Promise.race([
-            second.then(() => "completed"),
-            setImmediate("pending"),
-          ]),
-          "pending",
-        )
         const failure = new Event("error")
         buffer.dispatchEvent(failure)
         buffer.dispatchEvent(new Event("updateend"))

@@ -1,4 +1,4 @@
 .PHONY: test
 
-test:
+test: ./node_modules/.bin
 	npm run test
