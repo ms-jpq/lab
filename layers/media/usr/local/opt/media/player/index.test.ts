@@ -706,6 +706,126 @@ const cases = [
       }
     },
   },
+  ...[20, 20.05].map((target): TestCase => ({
+    name: `audit: quota retirement preserves a queued seek to ${target} during eviction`,
+    run: async () => {
+      const current = await fixture({
+        response: "pending",
+        append_duration: 40,
+      })
+      let body:
+        ReadableStreamDefaultController<Uint8Array<ArrayBuffer>> | undefined
+      let removing = false
+      let exhausted = 0
+      current.set_fetch(() => {
+        const buffer = current.sources[0]?.sourceBuffers[0]
+        ok(buffer)
+        const append = buffer.appendBuffer.bind(buffer)
+        buffer.appendBuffer = (bytes) => {
+          // Retained duration represents bytes in this constant-bitrate model.
+          const retained = buffer.buffered.values.reduce(
+            (total, [start, end]) => total + end - start,
+            0,
+          )
+          if (retained + bytes.byteLength > 80) {
+            exhausted += 1
+            throw new DOMException(
+              "Buffer capacity exceeded",
+              "QuotaExceededError",
+            )
+          }
+          const start = buffer.buffered.values[0]?.[0] ?? buffer.timestampOffset
+          const end =
+            buffer.buffered.values.at(-1)?.[1] ?? buffer.timestampOffset
+          append(bytes)
+          buffer.buffered.values.splice(0, buffer.buffered.values.length, [
+            start,
+            end + bytes.byteLength,
+          ])
+        }
+        buffer.remove = (start, end) => {
+          buffer.removed.push([start, end])
+          buffer.updating = true
+          removing = true
+        }
+        return response_from(
+          new ReadableStream({
+            start: (controller) => {
+              body = controller
+            },
+          }),
+        )
+      })
+      const owner = new AbortController()
+      const playback = current.context.player_test.play_media(owner.signal)
+      try {
+        await eventually(() => body !== undefined)
+        ok(body)
+        const buffer = current.sources[0]?.sourceBuffers[0]
+        ok(buffer)
+        body.enqueue(new Uint8Array(40))
+        await eventually(() => buffer.appended.length === 1 && !buffer.updating)
+        current.media.dispatchEvent(new Event("seeked"))
+        current.media.update_time(30)
+        await next_task()
+        body.enqueue(new Uint8Array(40))
+        await eventually(() => buffer.appended.length === 2 && !buffer.updating)
+        current.media.update_time(50)
+        await next_task()
+        body.enqueue(new Uint8Array(25))
+        await eventually(() => removing)
+        deepEqual(buffer.removed, [[0, 20]])
+
+        // Removal has finished, but its queued completion events have not run.
+        // The next retained frame begins just beyond the requested cutoff.
+        buffer.buffered.values.splice(
+          0,
+          buffer.buffered.values.length,
+          [20.05, 80],
+        )
+        buffer.updating = false
+        let time = current.media.currentTime
+        Object.defineProperty(current.media, "currentTime", {
+          get: () => time,
+          set: (value: number) => {
+            time = value
+            current.media.seeking = true
+            setImmediate(() => {
+              current.media.dispatchEvent(new Event("seeking"))
+              if (time >= 20.05 && time < 80) {
+                current.media.seeking = false
+                current.media.dispatchEvent(new Event("seeked"))
+              } else {
+                current.media.dispatchEvent(new Event("waiting"))
+              }
+            })
+          },
+        })
+        current.media.currentTime = target
+        await next_task()
+        buffer.dispatchEvent(new Event("update"))
+        buffer.dispatchEvent(new Event("updateend"))
+        await eventually(
+          () => exhausted === 1 && current.requests[0]?.signal.aborted === true,
+        )
+        for (let task = 0; task < 4; task += 1) {
+          await next_task()
+        }
+        deepEqual(
+          {
+            time: current.media.currentTime,
+            seeking: current.media.seeking,
+            requests: current.requests.length,
+          },
+          { time: 20.05, seeking: false, requests: 1 },
+          "quota retirement must not discard the application's retained-range normalization",
+        )
+      } finally {
+        owner.abort()
+        await playback
+      }
+    },
+  })),
   ...[10, 10.05].map((target): TestCase => ({
     name: `audit: a seek to ${target} applies the normalized retained range start 10.05`,
     run: async () => {

@@ -47,7 +47,7 @@ const unbuffered_seek = async (
   return
 }
 
-const op_lock = async function* (
+const op_lock = async (
   {
     buffer,
     media,
@@ -63,8 +63,9 @@ const op_lock = async function* (
   },
   operation: "append" | "remove",
   awaiting_start: boolean,
-): AsyncIteratorObject<undefined> {
-  if (signal.aborted) {
+  mutate: () => void,
+): Promise<undefined> => {
+  if (signal.aborted || closed(source)) {
     return
   }
 
@@ -79,7 +80,11 @@ const op_lock = async function* (
     once(a.signal, source, "sourceclose"),
   ])
 
-  yield
+  if (a.signal.aborted || closed(source)) {
+    return
+  }
+  mutate()
+
   const event = await changed
   switch (event?.type) {
     case "error":
@@ -104,14 +109,14 @@ export const media_source = async function* ({
   media,
   mime_type,
   source,
-  evict_before,
+  evict_behind,
   signal,
   timeout,
 }: {
   media: HTMLMediaElement
   mime_type: string
   source: MediaSource
-  evict_before: () => number
+  evict_behind: number
   signal: AbortSignal
   timeout: number
 }): Mse {
@@ -140,7 +145,7 @@ export const media_source = async function* ({
   for (let operation = yield empty; ; operation = yield remaining) {
     remaining = empty
 
-    if (a.signal.aborted) {
+    if (a.signal.aborted || closed(source)) {
       return
     }
 
@@ -154,12 +159,9 @@ export const media_source = async function* ({
         const ranges = buffer.buffered
         const end = ranges.length ? ranges.end(ranges.length - 1) : 0
 
-        for await (const _ of lock("remove", awaiting_start)) {
-          if (a.signal.aborted) {
-            return
-          }
-          buffer.remove(end, end + EPSILON)
-        }
+        await lock("remove", awaiting_start, () =>
+          buffer.remove(end, end + EPSILON),
+        )
         if (a.signal.aborted || closed(source)) {
           return
         }
@@ -177,36 +179,25 @@ export const media_source = async function* ({
         media.buffered,
         buffer.timestampOffset,
       )
-      const cutoff = evict_before()
+      const cutoff = media.currentTime - evict_behind
       if (
         cutoff > 0 &&
         buffer.buffered.length &&
         buffer.buffered.start(0) < cutoff
       ) {
-        for await (const _ of lock("remove", awaiting_start)) {
-          if (a.signal.aborted) {
-            return
-          }
-          buffer.remove(0, cutoff)
-        }
-        if (closed(source)) {
-          return
-        }
+        await lock("remove", awaiting_start, () => buffer.remove(0, cutoff))
       }
-      for await (const _ of lock("append", awaiting_start)) {
-        if (a.signal.aborted) {
-          return
-        }
-        try {
-          buffer.appendBuffer(operation)
-        } catch (error) {
-          if (
-            error instanceof DOMException &&
-            error.code === DOMException.QUOTA_EXCEEDED_ERR
-          ) {
-            remaining = operation
-            break
-          }
+      try {
+        await lock("append", awaiting_start, () =>
+          buffer.appendBuffer(operation),
+        )
+      } catch (error) {
+        if (
+          error instanceof DOMException &&
+          error.code === DOMException.QUOTA_EXCEEDED_ERR
+        ) {
+          remaining = operation
+        } else {
           throw error
         }
       }
@@ -316,15 +307,23 @@ export const media_sources = ({
     })
 
     for await (const source of bond(media, signal, timeout)) {
+      using a = abortion(signal)
+      source.addEventListener("sourceclose", a[Symbol.dispose], {
+        once: true,
+        signal: a.signal,
+      })
+      if (closed(source)) {
+        continue
+      }
       yield [
         source,
         (sig) =>
           media_source({
-            evict_before: () => media.currentTime - evict_behind,
+            evict_behind,
             media,
             mime_type,
             source,
-            signal: AbortSignal.any([signal, sig]),
+            signal: AbortSignal.any([a.signal, sig]),
             timeout,
           }),
       ]

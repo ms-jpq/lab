@@ -74,8 +74,8 @@ const fixture = (
   failure:
     "append" | "append-sync" | "remove" | "remove-sync" | undefined = undefined,
   hold: "append" | "remove" | undefined = undefined,
-  readyState: "open" | "ended" = "open",
-  evict_before: () => number = () => 70,
+  readyState: MediaSource["readyState"] = "open",
+  evict_behind = 30,
 ) => {
   const controller = new AbortController()
   const mutations: unknown[] = []
@@ -133,7 +133,7 @@ const fixture = (
   })
   const media = Object.assign(new EventTarget(), {
     buffered,
-    currentTime: 0,
+    currentTime: 100,
     dataset: { duration: "200" },
   }) as unknown as HTMLMediaElement
   const source = Object.assign(new EventTarget(), {
@@ -145,7 +145,7 @@ const fixture = (
     readyState,
   })
   const values = media_source({
-    evict_before,
+    evict_behind,
     media,
     mime_type: "video/test",
     signal: controller.signal,
@@ -170,7 +170,7 @@ const fixture = (
 }
 
 const quotaFixture = (capacity = 40) => {
-  const state = { start: 0, end: capacity, attempts: 0, cutoff: -20 }
+  const state = { start: 0, end: capacity, attempts: 0 }
   const ranges: TimeRanges = {
     get length() {
       return state.end > state.start ? 1 : 0
@@ -178,13 +178,7 @@ const quotaFixture = (capacity = 40) => {
     start: () => state.start,
     end: () => state.end,
   }
-  const current = fixture(
-    ranges,
-    undefined,
-    undefined,
-    "open",
-    () => state.cutoff,
-  )
+  const current = fixture(ranges)
   const accepted: Uint8Array<ArrayBuffer>[] = []
   current.media.currentTime = 10
   current.buffer.appendBuffer = (bytes) => {
@@ -216,6 +210,82 @@ const start = async (values: Mse, position = 0): Promise<void> => {
 }
 
 const cases = [
+  ...(["sourceclose", "advance", "return", "caller"] as const).map((exit) => ({
+    name: `source-scoped buffers stop on ${exit} without leaking their listener`,
+    run: async (context: TestContext) => {
+      const current = acquisitionFixture(context)
+      const owner = new AbortController()
+      const caller = new AbortController()
+      const sources = media_sources({
+        media: current.media,
+        mime_type: "video/test",
+        evict_behind: 30,
+        signal: owner.signal,
+        timeout: MSE_TIMEOUT,
+      })
+      try {
+        const pending = sources.next()
+        const source = current.sources[0]
+        assert(source)
+        let buffers = 0
+        Object.assign(source, {
+          readyState: "open",
+          addSourceBuffer: () => {
+            buffers += 1
+            return { timestampOffset: 0 }
+          },
+        })
+        source.dispatchEvent(new Event("sourceopen"))
+        const acquired = await pending
+        assert(!acquired.done)
+        const [, create] = acquired.value
+        const buffer = create(caller.signal)
+        await start(buffer)
+        deepEqual(getEventListeners(source, "sourceclose").length, 1)
+
+        switch (exit) {
+          case "sourceclose":
+            Object.assign(source, { readyState: "closed" })
+            source.dispatchEvent(new Event("sourceclose"))
+            break
+          case "advance": {
+            const next = sources.next()
+            await setImmediate()
+            const replacement = current.sources[1]
+            assert(replacement)
+            Object.assign(replacement, { readyState: "open" })
+            replacement.dispatchEvent(new Event("sourceopen"))
+            assert(!(await next).done)
+            deepEqual(getEventListeners(replacement, "sourceclose").length, 1)
+            break
+          }
+          case "return":
+            await sources.return?.()
+            break
+          case "caller":
+            caller.abort()
+            break
+        }
+
+        deepEqual(await buffer.next(50), { done: true, value: undefined })
+        deepEqual(
+          getEventListeners(source, "sourceclose").length,
+          exit === "caller" ? 1 : 0,
+        )
+        const fresh = create(new AbortController().signal)
+        deepEqual((await fresh.next()).done, exit !== "caller")
+        deepEqual(buffers, exit === "caller" ? 2 : 1)
+        await fresh.return?.(undefined)
+      } finally {
+        owner.abort()
+        await sources.return?.()
+        for (const source of current.sources) {
+          deepEqual(getEventListeners(source, "sourceclose").length, 0)
+        }
+        current.restore()
+      }
+    },
+  })),
   {
     name: "a committed bond releases opening listeners before handing off",
     run: async (context: TestContext) => {
@@ -284,13 +354,12 @@ const cases = [
       try {
         const first = await current.values.next(chunk)
         assert(first.value === chunk)
-        current.state.cutoff = 9.9
+        current.media.currentTime = 40
         const retry = await current.values.next(chunk)
         assert(retry.value === chunk)
         deepEqual(current.state.attempts, 2)
         deepEqual(current.accepted, [])
-        current.media.currentTime = 20.5
-        current.state.cutoff = 20.4
+        current.media.currentTime = 51
         deepEqual(await current.values.next(chunk), {
           done: false,
           value: new Uint8Array(0),
@@ -299,8 +368,8 @@ const cases = [
         assert(current.accepted[0] === chunk)
         deepEqual(current.state.attempts, 3)
         deepEqual(current.mutations, [
-          ["remove", 0, 9.9],
-          ["remove", 0, 20.4],
+          ["remove", 0, 10],
+          ["remove", 0, 21],
         ])
       } finally {
         current.controller.abort()
@@ -382,7 +451,7 @@ const cases = [
       if (operation === "remove") {
         const first = await current.values.next(chunk)
         assert(first.value === chunk)
-        current.state.cutoff = 9.9
+        current.media.currentTime = 40
       }
       const failure = new DOMException(
         "operation failed",
@@ -570,7 +639,7 @@ const cases = [
     name: "seeking to an evicted request start interrupts an active append",
     run: async () => {
       const { buffer, controller, entered, media, mutations, release, values } =
-        fixture(timeRanges(), undefined, "append", "open", () => 80 - 30)
+        fixture(timeRanges(), undefined, "append", "open", 30)
       const initial = new Uint8Array([8])
       const append = buffer.appendBuffer.bind(buffer)
       buffer.appendBuffer = (bytes) => {
@@ -920,30 +989,43 @@ const cases = [
       }
     },
   },
-  ...(["append", "remove", "reopen"] as const).map((operation) => ({
-    name: `abort between requesting and entering ${operation} prevents the mutation`,
-    run: async () => {
-      const { controller, mutations, release, values } = fixture(
-        operation === "remove" ? timeRanges([0, 120]) : timeRanges(),
-        undefined,
-        operation === "append" ? "append" : "remove",
-        operation === "reopen" ? "ended" : "open",
-      )
-      await start(values)
-      const pending = values.next(
-        operation === "reopen" ? 50 : new Uint8Array([9]),
-      )
-      controller.abort()
-      try {
-        await pending
-        deepEqual(mutations, [])
-      } finally {
-        release()
-        await pending
-        await values.return?.(undefined)
-      }
-    },
-  })),
+  ...(["append", "remove", "reopen"] as const).flatMap((operation) =>
+    [true, false].map((before) => ({
+      name: `abort ${before ? "before" : "after"} synchronous ${operation} admission prevents later mutations`,
+      run: async () => {
+        const { controller, mutations, release, values } = fixture(
+          operation === "remove" ? timeRanges([0, 120]) : timeRanges(),
+          undefined,
+          operation === "append" ? "append" : "remove",
+          operation === "reopen" ? "ended" : "open",
+        )
+        await start(values)
+        if (before) {
+          controller.abort()
+        }
+        const pending = values.next(
+          operation === "reopen" ? 50 : new Uint8Array([9]),
+        )
+        deepEqual(mutations.length, before ? 0 : 1)
+        controller.abort()
+        try {
+          await pending
+          deepEqual(
+            mutations,
+            before
+              ? []
+              : operation === "append"
+                ? [["append", [9]], ["abort"]]
+                : [["remove", 0, operation === "reopen" ? 0.001 : 70]],
+          )
+        } finally {
+          release()
+          await pending
+          await values.return?.(undefined)
+        }
+      },
+    })),
+  ),
   {
     name: "a pre-aborted MSE performs no work",
     run: async () => {
@@ -955,6 +1037,66 @@ const cases = [
       deepEqual(types, [])
     },
   },
+  ...(["append", "remove", "reopen"] as const).flatMap((operation) =>
+    [true, false].map((before) => ({
+      name: `detachment ${before ? "before" : "after"} synchronous ${operation} admission is safe before sourceclose dispatch`,
+      run: async () => {
+        const { buffer, controller, mutations, source, values } = fixture(
+          operation === "remove" ? timeRanges([0, 120]) : timeRanges(),
+          undefined,
+          undefined,
+          operation === "reopen" ? "ended" : "open",
+        )
+        await start(values)
+        const append = buffer.appendBuffer.bind(buffer)
+        const remove = buffer.remove.bind(buffer)
+        buffer.appendBuffer = (bytes) => {
+          assert(
+            source.readyState !== "closed",
+            "append touched a detached buffer",
+          )
+          append(bytes)
+        }
+        buffer.remove = (start, end) => {
+          assert(
+            source.readyState !== "closed",
+            "remove touched a detached buffer",
+          )
+          remove(start, end)
+        }
+        if (before) {
+          Object.assign(source, { readyState: "closed" })
+        }
+        const pending = values
+          .next(operation === "reopen" ? 50 : new Uint8Array([9]))
+          .then(
+            (result) => ({ result }),
+            (error: unknown) => ({ error }),
+          )
+        deepEqual(mutations.length, before ? 0 : 1)
+        Object.assign(source, { readyState: "closed" })
+        // Detachment changes readyState before its queued sourceclose event.
+        const notified = setImmediate().then(() => {
+          source.dispatchEvent(new Event("sourceclose"))
+        })
+        try {
+          deepEqual(await pending, { result: { done: true, value: undefined } })
+          deepEqual(
+            mutations,
+            before
+              ? []
+              : operation === "append"
+                ? [["append", [9]]]
+                : [["remove", 0, operation === "reopen" ? 0.001 : 70]],
+          )
+        } finally {
+          controller.abort()
+          await notified
+          await values.return?.(undefined)
+        }
+      },
+    })),
+  ),
   {
     name: "MSE observes a synchronous append completion",
     run: async () => {
@@ -1193,6 +1335,34 @@ const cases = [
       }
     },
   },
+  ...[
+    { name: "append", operation: new Uint8Array([9]) },
+    { name: "timestamp", operation: 100 },
+    { name: "EOF", operation: undefined },
+  ].map(({ name, operation }) => ({
+    name: `source detachment between operations completes before ${name}`,
+    run: async () => {
+      const { buffer, controller, source, values } = fixture()
+      await start(values)
+      const detached = () => {
+        throw new DOMException("MediaSource is closed", "InvalidStateError")
+      }
+      Object.assign(source, { readyState: "closed", endOfStream: detached })
+      Object.assign(buffer, { abort: detached, appendBuffer: detached })
+      Object.defineProperty(buffer, "buffered", { get: detached })
+      source.dispatchEvent(new Event("sourceclose"))
+      try {
+        const outcome = await values.next(operation).then(
+          (result) => ({ result }),
+          (error: unknown) => ({ error }),
+        )
+        deepEqual(outcome, { result: { done: true, value: undefined } })
+      } finally {
+        controller.abort()
+        await values.return?.(undefined)
+      }
+    },
+  })),
   {
     name: "a second timestamp resets the parser before changing its offset",
     run: async () => {
