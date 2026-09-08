@@ -7,7 +7,9 @@ const PAGE = crypto.randomUUID()
 export const media = document.querySelector("video, audio") as HTMLMediaElement
 export const duration = Number(media.dataset["duration"])
 export const mime_type = media.dataset["mseType"] as string
-const subtitle = document.querySelector<HTMLTrackElement>("#subtitle")
+const subtitles = document.querySelectorAll<HTMLTrackElement>(
+  'track[kind="subtitles"]',
+)
 const form = document.querySelector("form") as HTMLFormElement
 const time_input = form.elements.namedItem("t") as HTMLInputElement
 
@@ -70,8 +72,11 @@ const submit = (event: SubmitEvent): void => {
   location.replace(target)
 }
 
-const play_subtitle = async (signal: AbortSignal): Promise<void> => {
-  if (!subtitle || signal.aborted) {
+const play_subtitle = async (
+  subtitle: HTMLTrackElement,
+  signal: AbortSignal,
+): Promise<void> => {
+  if (signal.aborted) {
     return
   }
 
@@ -85,8 +90,10 @@ const play_subtitle = async (signal: AbortSignal): Promise<void> => {
       once(attempt.signal, subtitle, "load"),
       once(attempt.signal, subtitle, "error"),
     ])
-    if (!subtitle.src || subtitle.readyState === subtitle.ERROR) {
-      subtitle.src = source_url(subtitle, 0)
+    if (subtitle.readyState === subtitle.ERROR) {
+      const source = new URL(subtitle.src, location.href)
+      source.searchParams.set("request", crypto.randomUUID())
+      subtitle.src = source.toString()
     }
     const event = await loaded
 
@@ -119,9 +126,11 @@ export const main = async (
     using a = abortion(abort.signal)
     const hidden = once(a.signal, window, "pagehide")
     const playback = play_media(a.signal)
-    const subtitles = play_subtitle(a.signal)
-    await using _ = defer(() => join([playback, subtitles]))
+    const tracks = join(
+      Array.from(subtitles, (track) => play_subtitle(track, a.signal)),
+    )
+    await using _ = defer(() => join([playback, tracks]))
     using __ = a
-    await Promise.race([hidden, playback, subtitles.then(() => hidden)])
+    await Promise.race([hidden, playback, tracks.then(() => hidden)])
   }
 }

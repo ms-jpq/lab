@@ -176,6 +176,9 @@ const fixture = async ({
     }
   }
   const subtitle = with_subtitle ? new Subtitle() : null
+  if (subtitle) {
+    subtitle.src = "/subtitle?t=0"
+  }
   const location = {
     href:
       url_position === undefined
@@ -356,6 +359,7 @@ const fixture = async ({
     },
     crypto,
     document: {
+      querySelectorAll: () => (subtitle ? [subtitle] : []),
       querySelector: (selector: string) => {
         if (selector === "video, audio") {
           return media
@@ -482,7 +486,10 @@ const cases = [
       ? "audit: a fatal media error during reopening is recovered before fetching again"
       : `audit: request reopening honors the latest seek ${target} while removal is pending`,
     run: async () => {
-      const current = await fixture({ url_position: 120, append_duration: 40 })
+      const current = await fixture({
+        url_position: 120,
+        append_duration: 40,
+      })
       const bodies = pending_responses(current)
       const owner = new AbortController()
       const playback = current.context.player_test.play_media(owner.signal)
@@ -967,7 +974,10 @@ const cases = [
   ...[false, true].map((paused): TestCase => ({
     name: `audit: repeated outer append-failure recovery preserves ${paused ? "a user pause" : "active playback intent"}`,
     run: async () => {
-      const current = await fixture({ append_failures: 1, response: "pending" })
+      const current = await fixture({
+        append_failures: 1,
+        response: "pending",
+      })
       const tick = retry_clock(current.context)
       let body:
         ReadableStreamDefaultController<Uint8Array<ArrayBuffer>> | undefined
@@ -2555,7 +2565,9 @@ const cases = [
         current.context.player_test.play_media,
       )
       current.window.dispatchEvent(new Event("pageshow"))
-      await eventually(() => current.subtitle_sources.length === 1)
+      await eventually(
+        () => getEventListeners(current.subtitle!, "error").length > 0,
+      )
       current.subtitle?.dispatchEvent(new Event("error"))
       await eventually(() => current.errors.length === 1)
 
@@ -2947,7 +2959,9 @@ const cases = [
         current.context.player_test.play_media,
       )
       current.window.dispatchEvent(new Event("pageshow"))
-      await eventually(() => current.subtitle_sources.length === 1)
+      await eventually(
+        () => getEventListeners(current.subtitle!, "error").length > 0,
+      )
       current.subtitle?.dispatchEvent(new Event("error"))
       await eventually(() => current.subtitle_sources.length === 2)
       current.subtitle?.dispatchEvent(new Event("error"))
@@ -2971,7 +2985,9 @@ const cases = [
         current.context.player_test.play_media,
       )
       current.window.dispatchEvent(new Event("pageshow"))
-      await eventually(() => current.subtitle_sources.length === 1)
+      await eventually(
+        () => getEventListeners(current.subtitle!, "load").length > 0,
+      )
       current.subtitle?.dispatchEvent(new Event("load"))
       await next_task()
 

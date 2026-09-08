@@ -5,7 +5,7 @@ import { never } from "./util.ts"
 type PlaybackRequest = Readonly<{ frontier: number; position: number }>
 
 type BufferEffect =
-  | Readonly<{ bytes: Uint8Array<ArrayBuffer>; type: "append" }>
+  | Readonly<{ bytes: Uint8Array<ArrayBufferLike>; type: "append" }>
   | Readonly<{ bytes?: undefined; type: "end" }>
 
 type PlaybackControl =
@@ -27,7 +27,7 @@ type PlaybackState = Readonly<{
 
 type PlaybackAction =
   | MediaAction
-  | Readonly<{ bytes: Uint8Array<ArrayBuffer>; type: "bytes_received" }>
+  | Readonly<{ bytes: Uint8Array<ArrayBufferLike>; type: "bytes_received" }>
   | Readonly<{
       current: MediaSnapshot
       type: "buffer_full"

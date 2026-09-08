@@ -45,11 +45,12 @@ const subtitle_fixture = () => {
       subtitle.readyState = subtitle.LOADING
     },
   })
+  Object.assign(subtitle, { src: "/subtitle?t=0" })
   return { cancelled, finish, requests, subtitle }
 }
 
 const fixture = async (
-  subtitle: EventTarget | null = null,
+  subtitle: EventTarget | readonly EventTarget[] | null = null,
   timers?: Map<number, () => void>,
 ) => {
   const window = new EventTarget()
@@ -73,6 +74,12 @@ const fixture = async (
     console: { error: () => undefined },
     crypto,
     document: {
+      querySelectorAll: () =>
+        subtitle === null
+          ? []
+          : Array.isArray(subtitle)
+            ? subtitle
+            : [subtitle],
       querySelector: (selector: string) =>
         selector === "video, audio"
           ? media
@@ -101,6 +108,65 @@ const fixture = async (
 }
 
 const cases = [
+  {
+    name: "native subtitle tracks retry independently without fetching an unselected track",
+    run: async (): Promise<void> => {
+      const timers = new Map<number, () => void>()
+      const first = subtitle_fixture()
+      const second = subtitle_fixture()
+      second.subtitle.readyState = 0
+      const { main, window } = await fixture(
+        [first.subtitle, second.subtitle],
+        timers,
+      )
+      const started: AbortSignal[] = []
+      const failures: unknown[] = []
+      void main(async (signal) => {
+        started.push(signal)
+        await wait_for_abort(signal)
+      }).catch((error: unknown) => failures.push(error))
+
+      try {
+        window.dispatchEvent(new Event("pageshow"))
+        await setImmediate()
+        equal(first.requests.length, 1)
+        equal(second.requests.length, 1)
+        equal(second.subtitle.readyState, 0)
+        first.finish("load")
+        await setImmediate()
+        equal(started[0]?.aborted, false)
+
+        second.subtitle.readyState = second.subtitle.LOADING
+        second.finish("error")
+        await setImmediate()
+        equal(timers.size, 1)
+        const scheduled = [...timers.values()]
+        timers.clear()
+        for (const fire of scheduled) {
+          fire()
+        }
+        await setImmediate()
+        equal(first.requests.length, 1)
+        equal(second.requests.length, 2)
+        const retried = new URL(second.requests[1]!)
+        equal(retried.pathname, "/subtitle")
+        equal(retried.searchParams.get("t"), "0")
+        ok(retried.searchParams.has("request"))
+        second.finish("load")
+        await setImmediate()
+        equal(started[0]?.aborted, false)
+        deepEqual(failures, [])
+      } finally {
+        window.dispatchEvent(new Event("pagehide"))
+        await setImmediate()
+      }
+      for (const { subtitle } of [first, second]) {
+        equal(getEventListeners(subtitle, "load").length, 0)
+        equal(getEventListeners(subtitle, "error").length, 0)
+      }
+      equal(timers.size, 0)
+    },
+  },
   {
     name: "browser history rate limiting does not make position persistence fatal",
     run: async (): Promise<void> => {
@@ -278,7 +344,7 @@ const cases = [
         )
         equal(started.length, 1)
         ok(started[0]?.aborted)
-        equal(track.requests.length, synchronous ? 0 : 1)
+        equal(track.requests.length, 1)
         equal(getEventListeners(track.subtitle, "load").length, 0)
         equal(getEventListeners(track.subtitle, "error").length, 0)
         equal(getEventListeners(window, "pageshow").length, 0)
@@ -291,7 +357,7 @@ const cases = [
         await setImmediate()
         equal(timers.size, 0)
         equal(started.length, 1)
-        equal(track.requests.length, synchronous ? 0 : 1)
+        equal(track.requests.length, 1)
       } finally {
         window.dispatchEvent(new Event("pagehide"))
         await setImmediate()

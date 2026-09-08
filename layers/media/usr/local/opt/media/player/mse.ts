@@ -5,9 +5,9 @@ import {
 } from "./media.ts"
 import { abortion, closing, defer, event_batches, never, once } from "./util.ts"
 
-export type MseOperation = undefined | number | Uint8Array<ArrayBuffer>
+export type MseOperation = undefined | number | Uint8Array<ArrayBufferLike>
 export type Mse = AsyncIteratorObject<
-  Uint8Array<ArrayBuffer>,
+  Uint8Array<ArrayBufferLike>,
   void,
   MseOperation
 >
@@ -137,7 +137,8 @@ export const media_source = async function* ({
 
   let awaiting_start = true
   for (
-    let remaining = empty, operation = yield remaining;
+    let remaining: Uint8Array<ArrayBufferLike> = empty,
+      operation = yield remaining;
     !a.signal.aborted && !closed(source);
     operation = yield remaining
   ) {

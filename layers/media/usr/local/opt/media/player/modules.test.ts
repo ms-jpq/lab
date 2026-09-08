@@ -72,7 +72,7 @@ const context = vm.createContext({
   MediaSource, Promise, ReadableStream, Request, URL: PlayerURL, URLSearchParams,
   clearTimeout, crypto, queueMicrotask, setTimeout, window,
   console: { error: (...values) => errors.push(values) },
-  document: { querySelector: (selector) =>
+  document: { querySelectorAll: () => [], querySelector: (selector) =>
     selector === "video, audio" ? media : selector === "#subtitle" ? null : form },
   localStorage: { getItem: () => null },
   location: { href: "https://example.test/player", pathname: "/player" },

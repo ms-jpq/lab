@@ -107,10 +107,12 @@ def _player_element(
     )
 
 
-def _subtitle_track(*, language: str, url: str) -> str:
+def _subtitle_track(*, stream: Stream, url: str, selected: bool) -> str:
     return _render(
         "subtitle-track.html",
-        language=escape(language, quote=True),
+        default="default" if selected else "",
+        language=escape(stream.language, quote=True),
+        label=escape(f"{stream.index}: {stream.language} {stream.codec}", quote=True),
         url=escape(url, quote=True),
     )
 
@@ -137,16 +139,6 @@ def _language_options(streams: tuple[Stream, ...]) -> Iterator[tuple[str, str]]:
             languages.add(stream.language)
             yield stream.language, f"{stream.index}: {stream.language} {stream.codec}"
     return
-
-
-def _subtitle_options(streams: tuple[Stream, ...], *, selected: Stream | None) -> str:
-    return _options(
-        chain(
-            ((Selection.NONE, "None"),),
-            _language_options(streams),
-        ),
-        selected=selected.language if selected else Selection.NONE,
-    )
 
 
 def index(
@@ -182,16 +174,18 @@ def player(
         "profile": profile,
         "t": time,
     }
-    track = ""
-    if subtitle:
-        track = _subtitle_track(
-            language=subtitle.language,
+    track = "".join(
+        _subtitle_track(
+            stream=stream,
+            selected=stream == subtitle,
             url=_child(
                 relative=relative,
                 endpoint="subtitle",
-                query={"stream": str(subtitle.index), "t": time},
+                query={"stream": str(stream.index), "t": "0"},
             ),
         )
+        for stream in probe.subtitles
+    )
     return _render(
         "player.html",
         audio_options=_options(
@@ -212,7 +206,6 @@ def player(
         profile_options=_options(
             ((value, value) for value in profiles), selected=profile
         ),
-        subtitle_options=_subtitle_options(probe.subtitles, selected=subtitle),
         script="./index.js",
         style=resource("templates", "style.css"),
         time=escape(time, quote=True),
