@@ -145,7 +145,9 @@ export const media_source = async function* ({
     remaining = empty
 
     if (operation === undefined) {
-      source.endOfStream()
+      if (source.readyState !== "ended") {
+        source.endOfStream()
+      }
       continue
     }
 

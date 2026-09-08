@@ -477,8 +477,72 @@ const retry_clock = (context: PlayerContext): (() => void) => {
 }
 
 const cases = [
+  ...[false, true].map((unknown): TestCase => ({
+    name: `EOF retry respects completed ${unknown ? "native" : "declared"} duration`,
+    run: async () => {
+      const current = await fixture({
+        media_duration: unknown ? 0 : 10,
+        append_duration: 10,
+      })
+      const tick = retry_clock(current.context)
+      const bodies = pending_responses(current)
+      const owner = new AbortController()
+      const playback = current.context.player_test.play_media(owner.signal)
+      let ends = 0
+      try {
+        await eventually(() => bodies.length === 1)
+        const source = current.sources[0]!
+        Object.defineProperty(current.media, "duration", {
+          get: () => source.duration,
+        })
+        source.endOfStream = () => {
+          equal(source.readyState, "open")
+          ends += 1
+          source.duration = 10
+          source.readyState = "ended"
+        }
+        bodies[0]!.enqueue(Uint8Array.of(1))
+        bodies[0]!.close()
+        await eventually(() => ends === 1)
+        await next_task()
+        tick()
+        await next_task()
+        equal(ends, 1)
+        equal(current.requests.length, 1)
+        equal(current.errors.length, 0)
+      } finally {
+        owner.abort()
+        await playback
+      }
+    },
+  })),
+  {
+    name: "seeking cancels a premature EOF retry",
+    run: async () => {
+      const current = await fixture({ append_duration: 1 })
+      const tick = retry_clock(current.context)
+      const bodies = pending_responses(current)
+      const owner = new AbortController()
+      const playback = current.context.player_test.play_media(owner.signal)
+      try {
+        await eventually(() => bodies.length === 1)
+        bodies[0]!.close()
+        await eventually(() => current.sources[0]?.readyState === "ended")
+        await next_task()
+        current.media.currentTime = 100
+        current.media.dispatchEvent(new Event("seeking"))
+        await eventually(() => current.requests.length === 2)
+        tick()
+        await next_task()
+        deepEqual(current.requests.map(request_position), ["0", "100"])
+      } finally {
+        owner.abort()
+        await playback
+      }
+    },
+  },
   ...[0, 1].map((chunks): TestCase => ({
-    name: `audit: startup EOF after ${chunks} chunks needs another native media event to retry`,
+    name: `startup EOF after ${chunks} chunks retries after backoff without another native media event`,
     run: async () => {
       const current = await fixture({ append_duration: 1 })
       const tick = retry_clock(current.context)
@@ -493,14 +557,8 @@ const cases = [
         bodies[0]!.close()
         await eventually(() => current.sources[0]?.readyState === "ended")
         await next_task()
+        equal(current.requests.length, 1)
         tick()
-        await next_task()
-        equal(
-          current.requests.length,
-          1,
-          "EOF before the declared duration currently schedules no recovery",
-        )
-        current.media.dispatchEvent(new Event("waiting"))
         await eventually(() => current.requests.length === 2)
         equal(request_position(current.requests[1]), String(chunks))
       } finally {
@@ -3078,107 +3136,118 @@ const cases = [
       await eventually(() => current.media.src === "")
     },
   },
-  ...(["paused", "playing", "append", "abort", "reject"] as const).map(
-    (mode): TestCase => ({
-      name: `audit: rebuilding a source owns playback resumption: ${mode}`,
-      run: async () => {
-        const paused = mode === "paused"
-        const current = await fixture({ response: "pending" })
-        const pending = Promise.withResolvers<void>()
-        let body:
-          ReadableStreamDefaultController<Uint8Array<ArrayBuffer>> | undefined
-        let calls = 0
-        let settled = false
-        current.set_fetch(() =>
-          response_from(
-            new ReadableStream({
-              start: (controller) => {
-                body = controller
-              },
-            }),
-          ),
-        )
-        const owner = new AbortController()
-        const playback = current.context.player_test.play_media(owner.signal)
-        try {
-          await eventually(() => current.requests.length === 1)
-          current.media.seeking = false
-          current.media.dispatchEvent(new Event("seeked"))
-          current.media.paused = paused
-          current.media.readyState = current.media.HAVE_FUTURE_DATA
-          await next_task()
+  ...(
+    ["paused", "playing", "append", "abort", "reject", "user_pause"] as const
+  ).map((mode): TestCase => ({
+    name: `audit: rebuilding a source owns playback resumption: ${mode}`,
+    run: async () => {
+      const paused = mode === "paused"
+      const current = await fixture({ response: "pending" })
+      const pending = Promise.withResolvers<void>()
+      let body:
+        ReadableStreamDefaultController<Uint8Array<ArrayBuffer>> | undefined
+      let calls = 0
+      let settled = false
+      current.set_fetch(() =>
+        response_from(
+          new ReadableStream({
+            start: (controller) => {
+              body = controller
+            },
+          }),
+        ),
+      )
+      const owner = new AbortController()
+      const playback = current.context.player_test.play_media(owner.signal)
+      try {
+        await eventually(() => current.requests.length === 1)
+        current.media.seeking = false
+        current.media.dispatchEvent(new Event("seeked"))
+        current.media.paused = paused
+        current.media.readyState = current.media.HAVE_FUTURE_DATA
+        await next_task()
 
-          let src = current.media.src
-          Object.defineProperty(current.media, "src", {
-            get: () => src,
-            set: (value: string) => {
-              src = value
-              // Loading a new media resource sets paused=true, even after play().
-              // https://html.spec.whatwg.org/multipage/media.html#media-element-load-algorithm
-              current.media.paused = true
-            },
-          })
-          Object.assign(current.media, {
-            play: () => {
-              calls += 1
-              current.media.paused = false
-              if (mode === "playing") {
-                return Promise.resolve()
-              }
-              return pending.promise.finally(() => {
-                settled = true
-              })
-            },
-            pause: () => {
-              current.media.paused = true
-              if (mode !== "playing") {
-                pending.reject(new DOMException("paused", "AbortError"))
-              }
-            },
-          })
-          const source = current.sources[0]
-          ok(source)
-          source.readyState = "closed"
-          source.dispatchEvent(new Event("sourceclose"))
+        let src = current.media.src
+        Object.defineProperty(current.media, "src", {
+          get: () => src,
+          set: (value: string) => {
+            src = value
+            // Loading a new media resource sets paused=true, even after play().
+            // https://html.spec.whatwg.org/multipage/media.html#media-element-load-algorithm
+            current.media.paused = true
+          },
+        })
+        Object.assign(current.media, {
+          play: () => {
+            calls += 1
+            current.media.paused = false
+            if (mode === "playing") {
+              return Promise.resolve()
+            }
+            return pending.promise.finally(() => {
+              settled = true
+            })
+          },
+          pause: () => {
+            current.media.paused = true
+            if (mode !== "playing") {
+              pending.reject(new DOMException("paused", "AbortError"))
+            }
+          },
+        })
+        const source = current.sources[0]
+        ok(source)
+        source.readyState = "closed"
+        source.dispatchEvent(new Event("sourceclose"))
 
-          await eventually(() => current.requests.length === 2)
-          current.media.readyState = current.media.HAVE_FUTURE_DATA
+        await eventually(() => current.requests.length === 2)
+        current.media.readyState = current.media.HAVE_FUTURE_DATA
+        current.media.dispatchEvent(new Event("canplay"))
+        await next_task()
+        equal(current.media.paused, paused)
+        equal(calls, paused ? 0 : 1)
+        if (mode === "append") {
+          ok(body)
+          body.enqueue(new Uint8Array([1]))
+          await eventually(
+            () => current.sources[1]?.sourceBuffers[0]?.appended.length === 1,
+          )
+          equal(settled, false)
+          pending.resolve()
+          await eventually(() => settled)
+        }
+        if (mode === "reject") {
+          const error = new DOMException("blocked", "NotAllowedError")
+          current.media.paused = true
+          pending.reject(error)
+          await eventually(() => current.errors.length === 1)
+          deepEqual(current.errors, [[error]])
           current.media.dispatchEvent(new Event("canplay"))
           await next_task()
-          equal(current.media.paused, paused)
-          equal(calls, paused ? 0 : 1)
-          if (mode === "append") {
-            ok(body)
-            body.enqueue(new Uint8Array([1]))
-            await eventually(
-              () => current.sources[1]?.sourceBuffers[0]?.appended.length === 1,
-            )
-            equal(settled, false)
-            pending.resolve()
-            await eventually(() => settled)
-          }
-          if (mode === "reject") {
-            const error = new DOMException("blocked", "NotAllowedError")
-            current.media.paused = true
-            pending.reject(error)
-            await eventually(() => current.errors.length === 1)
-            deepEqual(current.errors, [[error]])
-            current.media.dispatchEvent(new Event("canplay"))
-            await next_task()
-            equal(calls, 1, "a rejected resume attempt is not tried again")
-            equal(current.media.paused, true)
-          }
-        } finally {
-          owner.abort()
-          await playback
+          equal(calls, 1, "a rejected resume attempt is not tried again")
+          equal(current.media.paused, true)
         }
-        if (mode === "abort") {
-          equal(settled, true)
+        if (mode === "user_pause") {
+          current.media.pause()
+          current.media.dispatchEvent(new Event("pause"))
+          await eventually(() => settled)
+          current.media.dispatchEvent(new Event("canplay"))
+          current.media.dispatchEvent(new Event("timeupdate"))
+          await next_task()
+          equal(calls, 1, "an aborted play must not undo a user pause")
+          equal(current.media.paused, true)
           deepEqual(current.errors, [])
         }
-      },
-    }),
-  ),
+      } finally {
+        owner.abort()
+        await playback
+      }
+      if (mode === "abort") {
+        equal(settled, true)
+        deepEqual(current.errors, [])
+      }
+    },
+  })),
   {
     name: "lifetime abort drains the request and detaches media",
     run: async (context: TestContext): Promise<void> => {

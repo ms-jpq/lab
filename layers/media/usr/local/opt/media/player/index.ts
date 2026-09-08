@@ -75,18 +75,17 @@ const stream_events = async function* (
     for await (const bytes of stream) {
       yield { bytes, type: "bytes_received" }
     }
+    if (!signal.aborted) {
+      yield { type: "request_finished" }
+    }
   } catch (error) {
     if (signal.aborted) {
       return
     }
     yield { error, type: "request_failed" }
-    if (await delay(signal, RETRY_DELAY)) {
-      yield { current: media_buffered(media).current, type: "request_retry" }
-    }
-    return
   }
-  if (!signal.aborted) {
-    yield { type: "request_finished" }
+  if (await delay(signal, RETRY_DELAY)) {
+    yield { current: media_buffered(media).current, type: "request_retry" }
   }
   return
 }
