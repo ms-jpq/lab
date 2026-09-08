@@ -351,6 +351,7 @@ const fixture = async ({
     },
   }
   const context = vm.createContext({
+    ArrayBuffer,
     AbortController,
     AbortSignal: PlayerAbortSignal,
     clearTimeout,
@@ -476,6 +477,83 @@ const retry_clock = (context: PlayerContext): (() => void) => {
 }
 
 const cases = [
+  ...[0, 1].map((chunks): TestCase => ({
+    name: `audit: startup EOF after ${chunks} chunks needs another native media event to retry`,
+    run: async () => {
+      const current = await fixture({ append_duration: 1 })
+      const tick = retry_clock(current.context)
+      const bodies = pending_responses(current)
+      const owner = new AbortController()
+      const playback = current.context.player_test.play_media(owner.signal)
+      try {
+        await eventually(() => bodies.length === 1)
+        if (chunks > 0) {
+          bodies[0]!.enqueue(Uint8Array.of(1))
+        }
+        bodies[0]!.close()
+        await eventually(() => current.sources[0]?.readyState === "ended")
+        await next_task()
+        tick()
+        await next_task()
+        equal(
+          current.requests.length,
+          1,
+          "EOF before the declared duration currently schedules no recovery",
+        )
+        current.media.dispatchEvent(new Event("waiting"))
+        await eventually(() => current.requests.length === 2)
+        equal(request_position(current.requests[1]), String(chunks))
+      } finally {
+        owner.abort()
+        await playback
+      }
+    },
+  })),
+  {
+    name: "audit: source replacement waits for an outstanding play promise to settle",
+    run: async () => {
+      const current = await fixture({ response: "pending" })
+      const pending = Promise.withResolvers<void>()
+      let calls = 0
+      let pauses = 0
+      current.media.play = () => {
+        calls += 1
+        current.media.paused = false
+        return pending.promise
+      }
+      current.media.pause = () => {
+        pauses += 1
+        current.media.paused = true
+      }
+      const owner = new AbortController()
+      const playback = current.context.player_test.play_media(owner.signal)
+      try {
+        await eventually(() => current.requests.length === 1)
+        current.media.dispatchEvent(new Event("seeked"))
+        await next_task()
+        const first = current.sources[0]!
+        first.readyState = "closed"
+        first.dispatchEvent(new Event("sourceclose"))
+        await eventually(() => current.requests.length === 2)
+        current.media.dispatchEvent(new Event("canplay"))
+        await eventually(() => calls === 1)
+        const second = current.sources[1]!
+        second.readyState = "closed"
+        second.dispatchEvent(new Event("sourceclose"))
+        await eventually(() => pauses === 1)
+        await next_task()
+        equal(current.sources.length, 2)
+        equal(current.requests.length, 2)
+        pending.resolve()
+        await eventually(() => current.requests.length === 3)
+        equal(current.sources.length, 3)
+      } finally {
+        pending.resolve()
+        owner.abort()
+        await playback
+      }
+    },
+  },
   ...[
     { target: 0 },
     { target: 100 },
@@ -1282,7 +1360,8 @@ const cases = [
             }
             current.media.update_time(38)
             await eventually(() => buffer.appended.length === 3)
-            equal(attempts.at(-1), refetched)
+            deepEqual(attempts.at(-1), refetched)
+            equal(attempts.at(-1)?.buffer, refetched.buffer)
             equal(request_position(current.requests[1]), "40")
             equal(buffer.timestampOffset, 40)
             equal(current.time_input.value, "38")
@@ -3080,9 +3159,14 @@ const cases = [
           }
           if (mode === "reject") {
             const error = new DOMException("blocked", "NotAllowedError")
+            current.media.paused = true
             pending.reject(error)
             await eventually(() => current.errors.length === 1)
             deepEqual(current.errors, [[error]])
+            current.media.dispatchEvent(new Event("canplay"))
+            await next_task()
+            equal(calls, 1, "a rejected resume attempt is not tried again")
+            equal(current.media.paused, true)
           }
         } finally {
           owner.abort()

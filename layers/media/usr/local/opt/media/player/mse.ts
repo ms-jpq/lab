@@ -189,7 +189,15 @@ export const media_source = async function* ({
     }
     try {
       await lock("append", awaiting_start, () => {
-        buffer.appendBuffer(operation)
+        buffer.appendBuffer(
+          operation.buffer instanceof ArrayBuffer
+            ? new Uint8Array(
+                operation.buffer,
+                operation.byteOffset,
+                operation.byteLength,
+              )
+            : new Uint8Array(operation),
+        )
       })
     } catch (error) {
       if (

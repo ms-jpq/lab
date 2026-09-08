@@ -402,7 +402,6 @@ const cases = [
           value: new Uint8Array(0),
         })
         deepEqual(current.accepted, [chunk])
-        assert(current.accepted[0] === chunk)
         deepEqual(current.state.attempts, 3)
         deepEqual(current.mutations, [
           ["remove", 0, 10],
@@ -687,7 +686,7 @@ const cases = [
       const append = buffer.appendBuffer.bind(buffer)
       buffer.appendBuffer = (bytes) => {
         append(bytes)
-        if (bytes === initial) {
+        if (bytes.buffer === initial.buffer) {
           buffer.buffered = timeRanges([0, 100])
           Object.assign(media, { buffered: buffer.buffered })
           release()

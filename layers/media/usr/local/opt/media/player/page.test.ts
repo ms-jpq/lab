@@ -109,6 +109,106 @@ const fixture = async (
 
 const cases = [
   {
+    name: "DOM readiness starts playback before subtitles finish and delayed pageshow does not duplicate it",
+    run: async (): Promise<void> => {
+      const track = subtitle_fixture()
+      const { main, window } = await fixture(track.subtitle)
+      const started: AbortSignal[] = []
+      const failures: unknown[] = []
+      void main(async (signal) => {
+        started.push(signal)
+        await wait_for_abort(signal)
+      }).catch((error: unknown) => failures.push(error))
+
+      try {
+        window.dispatchEvent(new Event("DOMContentLoaded"))
+        await setImmediate()
+        equal(track.subtitle.readyState, track.subtitle.LOADING)
+        equal(started.length, 1)
+        window.dispatchEvent(new Event("pageshow"))
+        await setImmediate()
+        equal(started.length, 1)
+        window.dispatchEvent(new Event("pagehide"))
+        await setImmediate()
+        equal(started[0]?.aborted, true)
+        equal(started.length, 1)
+        window.dispatchEvent(new Event("pageshow"))
+        await setImmediate()
+        equal(started.length, 2)
+        equal(track.requests.length, 1)
+        deepEqual(failures, [])
+      } finally {
+        window.dispatchEvent(new Event("pagehide"))
+        await setImmediate()
+      }
+    },
+  },
+  {
+    name: "characterization: a loading subtitle has no scheduled recovery until a native event arrives",
+    run: async (): Promise<void> => {
+      const timers = new Map<number, () => void>()
+      const track = subtitle_fixture()
+      const { main, window } = await fixture(track.subtitle, timers)
+      const started: AbortSignal[] = []
+      const failures: unknown[] = []
+      void main(async (signal) => {
+        started.push(signal)
+        await wait_for_abort(signal)
+      }).catch((error: unknown) => failures.push(error))
+
+      try {
+        window.dispatchEvent(new Event("pageshow"))
+        await setImmediate()
+        equal(started.length, 1)
+        equal(track.subtitle.readyState, track.subtitle.LOADING)
+        equal(getEventListeners(track.subtitle, "load").length, 1)
+        equal(getEventListeners(track.subtitle, "error").length, 1)
+        equal(timers.size, 0)
+        equal(track.requests.length, 1)
+        equal(started[0]?.aborted, false)
+
+        track.finish("error")
+        await setImmediate()
+        equal(timers.size, 1)
+        equal(started[0]?.aborted, false)
+      } finally {
+        window.dispatchEvent(new Event("pagehide"))
+        await setImmediate()
+      }
+      equal(timers.size, 0)
+      equal(getEventListeners(track.subtitle, "load").length, 0)
+      equal(getEventListeners(track.subtitle, "error").length, 0)
+      deepEqual(failures, [])
+    },
+  },
+  {
+    name: "characterization: bootstrap after pageshow waits for another pageshow even when the document is complete",
+    run: async (): Promise<void> => {
+      const { context, main, window } = await fixture()
+      context["document"].readyState = "complete"
+      window.dispatchEvent(new Event("pageshow"))
+      const started: AbortSignal[] = []
+      const failures: unknown[] = []
+      void main(async (signal) => {
+        started.push(signal)
+        await wait_for_abort(signal)
+      }).catch((error: unknown) => failures.push(error))
+
+      try {
+        await setImmediate()
+        equal(started.length, 0)
+        window.dispatchEvent(new Event("pageshow"))
+        await setImmediate()
+        equal(started.length, 1)
+      } finally {
+        window.dispatchEvent(new Event("pagehide"))
+        await setImmediate()
+      }
+      equal(started[0]?.aborted, true)
+      deepEqual(failures, [])
+    },
+  },
+  {
     name: "native subtitle tracks retry independently without fetching an unselected track",
     run: async (): Promise<void> => {
       const timers = new Map<number, () => void>()

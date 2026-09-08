@@ -60,6 +60,29 @@ const quota_steps: readonly Step[] = [
 ]
 
 const cases: readonly Case[] = [
+  {
+    name: "audit: a resume effect consumes intent before playback success is observed",
+    steps: [
+      source_opened(),
+      {
+        action: { type: "source_closed", position: 0, paused: false },
+        expected: { control: { type: "rebuild" } },
+      },
+      source_opened(),
+      {
+        action: { type: "canplay", current: snapshot() },
+        expected: { play: true },
+      },
+      {
+        action: { type: "waiting", current: snapshot() },
+        expected: {},
+      },
+      {
+        action: { type: "canplay", current: snapshot() },
+        expected: {},
+      },
+    ],
+  },
   ...[10, 10.05].map((time): Case => ({
     name: `the normalized seek target 10.05 is applied for native time ${time}`,
     position: 50,

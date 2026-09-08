@@ -113,13 +113,13 @@ export const main = async (
   using abort = abortion()
   await using pages = event_batches(
     abort.signal,
-    window,
-    ["pageshow", "pagehide"],
+    window as Window & { onDOMContentLoaded?: EventListener },
+    ["DOMContentLoaded", "pageshow", "pagehide"],
     () => undefined,
   )
 
   for await (const value of pages) {
-    if (value.at(-1)?.type !== "pageshow") {
+    if (value.at(-1)?.type === "pagehide") {
       continue
     }
 
