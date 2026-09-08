@@ -39,7 +39,9 @@ with nullcontext():
 
 
 def redirect(request: BaseHTTPRequestHandler, *, location: str) -> None:
-    request.send_response(HTTPStatus.TEMPORARY_REDIRECT)
+    request.send_response(
+        HTTPStatus.TEMPORARY_REDIRECT, message=HTTPStatus.TEMPORARY_REDIRECT.phrase
+    )
     request.send_header("Location", location)
     request.send_header("Content-Length", "0")
     request.end_headers()
@@ -53,7 +55,7 @@ def content(
     headers: Iterable[tuple[str, str]] = (),
     body: bytes,
 ) -> None:
-    request.send_response(HTTPStatus.OK)
+    request.send_response(HTTPStatus.OK, message=HTTPStatus.OK.phrase)
     request.send_header("Content-Type", content_type)
     request.send_header("Content-Length", str(len(body)))
     for name, value in headers:
@@ -81,7 +83,7 @@ def html(
 
 
 def _start_stream(request: BaseHTTPRequestHandler, *, content_type: str) -> None:
-    request.send_response(HTTPStatus.OK)
+    request.send_response(HTTPStatus.OK, message=HTTPStatus.OK.phrase)
     request.send_header("Content-Type", content_type)
     request.send_header("Cache-Control", "no-store")
     request.send_header("Connection", "close")
@@ -111,7 +113,10 @@ def _handler(handlers: Mapping[str, _HandlerFn]) -> type[BaseHTTPRequestHandler]
     def dispatch(request: BaseHTTPRequestHandler) -> None:
         with suppress(BrokenPipeError, ConnectionResetError):
             if (handler := handlers.get(request.command)) is None:
-                request.send_error(HTTPStatus.METHOD_NOT_ALLOWED)
+                request.send_error(
+                    HTTPStatus.METHOD_NOT_ALLOWED,
+                    message=HTTPStatus.METHOD_NOT_ALLOWED.phrase,
+                )
                 return
             handler(request)
 

@@ -157,7 +157,10 @@ def _media(request: BaseHTTPRequestHandler, *, entry: Entry) -> Probe | None:
     try:
         return probe(path=path, modified=data.st_mtime_ns)
     except ProbeError:
-        request.send_error(HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
+        request.send_error(
+            HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+            message=HTTPStatus.UNSUPPORTED_MEDIA_TYPE.phrase,
+        )
         return None
 
 
@@ -171,7 +174,7 @@ def _index(
     try:
         selected = entries(path=path)
     except EntriesError:
-        request.send_error(HTTPStatus.FORBIDDEN)
+        request.send_error(HTTPStatus.FORBIDDEN, message=HTTPStatus.FORBIDDEN.phrase)
         return
 
     html(
@@ -197,12 +200,17 @@ def _player(
         return
 
     if not media.videos and not media.audios:
-        request.send_error(HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
+        request.send_error(
+            HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+            message=HTTPStatus.UNSUPPORTED_MEDIA_TYPE.phrase,
+        )
         return
 
     profiles = _profiles(media)
     if (selected := _profile(profiles, query)) is None:
-        request.send_error(HTTPStatus.BAD_REQUEST)
+        request.send_error(
+            HTTPStatus.BAD_REQUEST, message=HTTPStatus.BAD_REQUEST.phrase
+        )
         return
 
     profile, _ = selected
@@ -244,11 +252,15 @@ def _stream(
         return
 
     if not media.videos and not media.audios:
-        request.send_error(HTTPStatus.BAD_REQUEST)
+        request.send_error(
+            HTTPStatus.BAD_REQUEST, message=HTTPStatus.BAD_REQUEST.phrase
+        )
         return
 
     if (selected := _profile(_profiles(media), query)) is None:
-        request.send_error(HTTPStatus.BAD_REQUEST)
+        request.send_error(
+            HTTPStatus.BAD_REQUEST, message=HTTPStatus.BAD_REQUEST.phrase
+        )
         return
 
     _, height = selected
@@ -287,7 +299,9 @@ def _subtitle_stream(
                 head=head,
             )
         case _:
-            request.send_error(HTTPStatus.BAD_REQUEST)
+            request.send_error(
+                HTTPStatus.BAD_REQUEST, message=HTTPStatus.BAD_REQUEST.phrase
+            )
 
 
 def _player_script(
@@ -299,7 +313,7 @@ def _player_script(
     try:
         body = resource("player", name).encode()
     except FileNotFoundError:
-        request.send_error(HTTPStatus.NOT_FOUND)
+        request.send_error(HTTPStatus.NOT_FOUND, message=HTTPStatus.NOT_FOUND.phrase)
         return
 
     content(
@@ -316,7 +330,7 @@ def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> Non
         _player_script(request, head=head, name=p.name)
 
     if (resolved := resolve(root=root, raw=raw)) is None:
-        request.send_error(HTTPStatus.NOT_FOUND)
+        request.send_error(HTTPStatus.NOT_FOUND, message=HTTPStatus.NOT_FOUND.phrase)
         return
     relative, path = resolved
 
@@ -357,9 +371,13 @@ def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> Non
                         request, entry=(source, data), query=query, head=head
                     )
                 case _:
-                    request.send_error(HTTPStatus.NOT_FOUND)
+                    request.send_error(
+                        HTTPStatus.NOT_FOUND, message=HTTPStatus.NOT_FOUND.phrase
+                    )
         case _:
-            request.send_error(HTTPStatus.NOT_FOUND)
+            request.send_error(
+                HTTPStatus.NOT_FOUND, message=HTTPStatus.NOT_FOUND.phrase
+            )
 
 
 def server(*, root: Path, socket: Path) -> _Server:
