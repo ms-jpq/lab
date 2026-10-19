@@ -40,8 +40,8 @@ services:
 
   mcp:
     image: docker.io/isokoliuk/mcp-searxng:latest
-    labels:
-      kompose.service.expose: searx.mcp.${DOMAIN}
+    # labels:
+    #   kompose.service.expose: searx.mcp.${DOMAIN}
     environment:
       MCP_HTTP_HOST: "::"
       MCP_HTTP_PORT: 8080
