@@ -204,7 +204,6 @@ if [[ -n ${BRIDGE:-} ]]; then
   )
 fi
 
-FD=3
 for IDX in "${!TAPS[@]}"; do
   ID="tap$IDX"
   MACVTAP="${TAPS[$IDX]}"
@@ -216,7 +215,6 @@ for IDX in "${!TAPS[@]}"; do
     -netdev "tap,id=$ID,fd=$FD"
     -device "$NIC,netdev=$ID,mac=$MACADDR"
   )
-  ((FD++))
 done
 
 if [[ -n ${INITIATOR_NAME:-} ]]; then

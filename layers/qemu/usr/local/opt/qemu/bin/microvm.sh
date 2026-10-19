@@ -143,7 +143,6 @@ if [[ -n ${BRIDGE:-} ]]; then
   )
 fi
 
-FD=3
 for IDX in "${!TAPS[@]}"; do
   ID="mv$IDX"
   MACVTAP="${TAPS[$IDX]}"
@@ -155,7 +154,6 @@ for IDX in "${!TAPS[@]}"; do
     -netdev "tap,fd=$FD,id=$ID"
     -device "virtio-net-device,netdev=$ID,mac=$MACADDR"
   )
-  ((FD++))
 done
 
 BLKDEV_OPTIONS=(
