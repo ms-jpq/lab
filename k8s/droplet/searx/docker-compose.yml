@@ -3,11 +3,20 @@ x-networkpolicy:
   - librechat
 
 services:
+  anubis:
+    image: ghcr.io/techarohq/anubis:latest
+    labels:
+      kompose.service.expose: true
+    environment:
+      BIND: ":8080"
+      TARGET: http://searxng.${COMPOSE_PROJECT_NAME}.svc.cluster.local:8080
+    ports:
+      - 8080
+
   searxng:
     image: ghcr.io/searxng/searxng:latest
     labels:
       kompose.controller.type: statefulset
-      kompose.service.expose: true
     entrypoint:
       - sh
       - -euxc
