@@ -4,5 +4,4 @@
 + dnsdist
 + microsocks
 + ndisc6
-+ tor
 + unbound
