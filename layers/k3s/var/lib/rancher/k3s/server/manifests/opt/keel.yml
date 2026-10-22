@@ -12,7 +12,7 @@ spec:
   targetNamespace: *chart
   valuesContent: |-
     image:
-      repository: docker.io/keelhq/keel
-      tag: 0.20.0
+      repository: ghcr.io/keel-hq/keel
+      tag: latest
     polling:
       defaultSchedule: "@every 8h"
