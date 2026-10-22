@@ -141,6 +141,7 @@ const buffer_progress = (
   return {
     frontier,
     advance:
+      !at_end(current, frontier) &&
       !aligned(frontier, request.position) &&
       play_ahead(current, frontier) >= BUFFER_HIGH,
   }

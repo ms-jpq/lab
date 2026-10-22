@@ -477,6 +477,36 @@ const retry_clock = (context: PlayerContext): (() => void) => {
 }
 
 const cases = [
+  ...[200, 199.98].map((end): TestCase => ({
+    name: `terminal buffering at ${end} drains EOF despite a high-water observation`,
+    run: async () => {
+      const current = await fixture({ append_duration: end })
+      const bodies = pending_responses(current)
+      const owner = new AbortController()
+      const playback = current.context.player_test.play_media(owner.signal)
+      try {
+        await eventually(() => bodies.length === 1)
+        current.media.dispatchEvent(new Event("seeked"))
+        await next_task()
+        const body = bodies[0]!
+        body.enqueue(Uint8Array.of(1))
+        await eventually(
+          () => current.sources[0]?.sourceBuffers[0]?.appended.length === 1,
+        )
+        await next_task()
+        current.media.update_time(1)
+        await next_task()
+        equal(current.requests[0]?.signal.aborted, false)
+        body.close()
+        await eventually(() => current.sources[0]?.readyState === "ended")
+        equal(current.requests.length, 1)
+        deepEqual(current.errors, [])
+      } finally {
+        owner.abort()
+        await playback
+      }
+    },
+  })),
   ...[false, true].map((unknown): TestCase => ({
     name: `EOF retry respects completed ${unknown ? "native" : "declared"} duration`,
     run: async () => {

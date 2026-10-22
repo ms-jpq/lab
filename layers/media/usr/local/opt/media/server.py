@@ -38,6 +38,7 @@ with nullcontext():
     _HEIGHTS = {
         _NATIVE_PROFILE: None,
         "2160p": 2160,
+        "1440p": 1440,
         "1080p": 1080,
         "720p": 720,
     }
