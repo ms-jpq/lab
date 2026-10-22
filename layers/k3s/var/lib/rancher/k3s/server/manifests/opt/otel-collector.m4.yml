@@ -13,6 +13,7 @@ spec:
   valuesContent: |-
     mode: daemonset
     image:
+      # TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/lookupprocessor/internal/source/dns
       repository: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-k8s
     networkPolicy:
       enabled: true
