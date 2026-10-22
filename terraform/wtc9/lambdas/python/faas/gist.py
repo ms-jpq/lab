@@ -1,14 +1,13 @@
 from collections.abc import Sequence
 from contextlib import nullcontext
-from importlib.abc import InspectLoader, Loader, MetaPathFinder, SourceLoader
+from importlib.abc import InspectLoader, MetaPathFinder, SourceLoader
 from importlib.machinery import ModuleSpec
-from importlib.util import LazyLoader, spec_from_loader
+from importlib.util import LazyLoader
 from inspect import getsourcelines
 from pathlib import PurePath
 from sys import meta_path
 from threading import RLock
 from types import CodeType, ModuleType
-from typing import cast
 from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 from uuid import uuid4
 
@@ -75,9 +74,7 @@ def register(name: str, uri: str, timeout: float) -> None:
                         with _TRACER.start_as_current_span("exec code"):
                             return exec(compiled, module.__dict__)
 
-            loader = LazyLoader.factory(cast(Loader, _Loader))
-            spec = spec_from_loader(fullname, loader=loader())
-            return spec
+            return ModuleSpec(fullname, loader=LazyLoader(_Loader()))
 
     meta_path.append(_Finder())
 
