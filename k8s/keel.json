@@ -1,4 +1,5 @@
 {
+  "keel.sh/matchTag": "true",
   "keel.sh/policy": "force",
   "keel.sh/trigger": "poll"
 }

@@ -31,7 +31,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 250M
+          memory: 500M
     environment:
       FASTMCP_HTTP_HOST_ORIGIN_PROTECTION: "false"
     entrypoint:
