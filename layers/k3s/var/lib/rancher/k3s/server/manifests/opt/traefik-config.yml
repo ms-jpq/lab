@@ -45,10 +45,9 @@ spec:
         - x-real-ip
       otlp:
         <<: *otlp-http
-    logs:
-      access:
-        enabled: true
-        otlp:
-          <<: *otlp-http
+    accessLog:
+      enabled: true
+      otlp:
+        <<: *otlp-http
     experimental:
       otlpLogs: true

@@ -1,9 +1,25 @@
 ---
 services:
-  redlib:
-    image: &img ghcr.io/silvenga/redlib:latest
+  anubis: &anubis
+    image: ghcr.io/techarohq/anubis:latest
     labels:
       kompose.service.expose: bbs.${DOMAIN}
+    environment: &anubis-env
+      BIND: ":8080"
+      TARGET: http://redlib.${COMPOSE_PROJECT_NAME}.svc.cluster.local:8080
+    ports:
+      - 8080
+
+  anubis-bluelib:
+    <<: *anubis
+    labels:
+      kompose.service.expose: forum.${DOMAIN}
+    environment:
+      <<: *anubis-env
+      TARGET: http://bluelib.${COMPOSE_PROJECT_NAME}.svc.cluster.local:8080
+
+  redlib:
+    image: &img ghcr.io/silvenga/redlib:latest
     environment: &env
       ALL_PROXY: socks5://proxy.komposed-hostproxy.svc.cluster.local:1080
       REDLIB_AUTOPLAY_VIDEOS: on
@@ -24,8 +40,6 @@ services:
 
   bluelib:
     image: *img
-    labels:
-      kompose.service.expose: forum.${DOMAIN}
     environment:
       <<: *env
       REDLIB_FULL_URL: https://forum.${DOMAIN}
