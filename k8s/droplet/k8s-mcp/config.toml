@@ -1,0 +1,3 @@
+bind_address = "::"
+port         = "8080"
+read_only    = true

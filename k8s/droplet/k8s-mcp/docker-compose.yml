@@ -33,8 +33,7 @@ services:
     labels:
       jq.mixin: '{"serviceAccountName": "k8s-mcp"}'
       kompose.service.expose: k8s.mcp.${DOMAIN}
-    command:
-      - --port=8080
-      - --read-only
     ports:
       - 8080
+    volumes:
+      - ./config.toml:/etc/kubernetes-mcp-server/config.toml:ro

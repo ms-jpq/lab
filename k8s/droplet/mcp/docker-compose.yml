@@ -25,7 +25,7 @@ services:
       - playwright:/tmp/playwright-home
 
   time: &fastmcp
-    image: python:latest
+    image: python:3.14
     labels:
       kompose.service.expose: time.${DOMAIN}
     deploy:
