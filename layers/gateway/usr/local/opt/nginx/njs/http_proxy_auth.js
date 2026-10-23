@@ -151,9 +151,8 @@ const decodeCookieValue = (domain, value) => {
   if (!sigPlain) {
     return undefined
   }
-  const [encodedSig, encodedPlain] = sigPlain
-  const sig = Buffer.from(encodedSig, "base64")
-  const plain = Buffer.from(encodedPlain, "base64")
+  const sig = Buffer.from(sigPlain[0], "base64")
+  const plain = Buffer.from(sigPlain[1], "base64")
   return timingSafeEqual(sig, digest(domain, plain))
     ? plain.toString()
     : undefined
