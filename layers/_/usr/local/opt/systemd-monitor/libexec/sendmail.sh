@@ -41,7 +41,7 @@ SENDMAIL=(
   "${ACC[@]}"
 )
 
-SENDMAIL+=(-- --insecure)
+# SENDMAIL+=(-- --insecure)
 
 "${SENDMAIL[@]}"
 
