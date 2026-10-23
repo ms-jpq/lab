@@ -5,11 +5,14 @@ metadata:
   name: traefik-policy
   namespace: ${K8S_NAMESPACE}
 spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
   ingress:
     - from:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: kube-system
-        - podSelector:
+          podSelector:
             matchLabels:
               app.kubernetes.io/name: traefik

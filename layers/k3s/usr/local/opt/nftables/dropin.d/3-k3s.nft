@@ -1,6 +1,10 @@
 #
 
-add element inet user external_ports { tcp . 6443, tcp . 10250 }
+define K3S_POD_IPV4 = 10.42.0.0/16
+define K3S_POD_IPV6 = fd00:42::/56
+
+add element inet user external_ports { tcp . 6443 }
+add element inet user internal_ports { tcp . 10250 }
 
 table inet user {
   set k3s_ifs {
@@ -23,11 +27,19 @@ table inet user {
 
   chain preraw {
     iifname @external_ifs meta l4proto . th dport @k3s_lbs counter reject comment "Forbid k8s load balancers"
+    iifname @external_ifs meta l4proto . th dport @k3s_nodeports counter drop comment "Forbid external k8s nodeports"
+    iifname @isolated_ifs meta l4proto . th dport @k3s_lbs counter drop comment "Forbid isolated k8s load balancers"
+    iifname @isolated_ifs meta l4proto . th dport @k3s_nodeports counter drop comment "Forbid isolated k8s nodeports"
+  }
+
+  chain input {
+    iifname @k3s_ifs ip  saddr $K3S_POD_IPV4 tcp dport 10250 mark set mark | 0xb00b0000 comment "Allow pod kubelet access"
+    iifname @k3s_ifs ip6 saddr $K3S_POD_IPV6 tcp dport 10250 mark set mark | 0xb00b0000 comment "Allow pod kubelet access"
   }
 
   chain forward {
-    iifname @k3s_ifs ip   saddr @internal_v4                                          mark set mark | 0xb00b0000 comment "Allow k3s IP4 traffic"
-    iifname @k3s_ifs ip6  saddr @internal_v6                                          mark set mark | 0xb00b0000 comment "Allow k3s IP6 traffic"
-    iifname @internal_ifs ct original protocol . ct original proto-dst @k3s_nodeports mark set mark | 0xb00b0000 comment "Allow k3s nodeport traffic"
+    iifname @k3s_ifs ip  saddr @internal_v4 mark set mark | 0xb00b0000 comment "Allow k3s IP4 traffic"
+    iifname @k3s_ifs ip6 saddr @internal_v6 mark set mark | 0xb00b0000 comment "Allow k3s IP6 traffic"
+    iifname @internal_ifs iifname != @isolated_ifs ct original protocol . ct original proto-dst @k3s_nodeports mark set mark | 0xb00b0000 comment "Allow k3s nodeport traffic"
   }
 }
