@@ -27,10 +27,21 @@ EOF
 
 cat -- /dev/null "$CONF"/*.nspawn "${ROOT%/*}"/*.nspawn | envsubst | sponge -- "/run/systemd/nspawn/$MACHINE.nspawn"
 
-mkdir -p -- "$SYSTEMD_NETWORK"
-IPV4="$IPV4/24" IPV6="$IPV6/64" envsubst < "$BASE/host0.network" > "$HOST0"
-envsubst < "$BASE/macvlan.network" > "$MVLAN"
-chmod -- o+r "$HOST0" "$MVLAN"
+WRITE_NETWORK=1
+for DIR in "$ROOT"{,/usr,/usr/local,/usr/local/lib,/usr/local/lib/systemd,/usr/local/lib/systemd/network}; do
+  if [[ -L $DIR ]]; then
+    WRITE_NETWORK=0
+    break
+  fi
+done
+
+if ((WRITE_NETWORK)); then
+  mkdir -p -- "$SYSTEMD_NETWORK"
+  rm -fr -- "$HOST0" "$MVLAN"
+  IPV4="$IPV4/24" IPV6="$IPV6/64" envsubst < "$BASE/host0.network" > "$HOST0"
+  envsubst < "$BASE/macvlan.network" > "$MVLAN"
+  chmod -- o+r "$HOST0" "$MVLAN"
+fi
 
 ARGV=(
   systemd-nspawn

@@ -247,14 +247,14 @@ export default {
   loginRedirect: (r) => escapeHtml(r.variables.request_uri ?? "/"),
 
   /** @param {NginxHTTPRequest} r */
-  loginUser: (r) => escapeHtml(r.variables.upstream_http_x_auth_user ?? ""),
+  loginUser: (r) => escapeHtml(r.variables["upstream_http_x_auth_user"] ?? ""),
 
   /** @param {NginxHTTPRequest} r */
   gate: async (r) => {
     const o = r
     const uri =
       (o.variables.host ?? "") +
-      (o.variables.htpasswd_request_uri ?? o.variables.uri ?? "/")
+      (o.variables["htpasswd_request_uri"] ?? o.variables.uri ?? "/")
 
     if (matchAllow(uri) || hasValidAuthCookie(o)) {
       return r.return(204)
