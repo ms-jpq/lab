@@ -2,6 +2,10 @@
 Description  = CGI -- %t/local/cgi/%J.sock
 
 [Socket]
+SocketUser   = root
+SocketGroup  = www-data
+SocketMode   = 0660
+
 RemoveOnStop = yes
 Accept       = yes
 ListenStream = %t/local/cgi/%J.sock
