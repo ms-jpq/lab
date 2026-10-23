@@ -9,6 +9,8 @@ const SUBREQ = "/-_-validate"
 const COOKIE_NAME = "htpasswd"
 const COOKIE_TTL = 60 * 60 * 24 * 7 * 2
 const DOMAIN_PARTS = 2
+const LOCAL_PATH_RE = /^\/(?![\/\\])/
+const TAB_OR_NEWLINE_RE = /[\t\n\r]/
 const HMAC_SECRET =
   process.env["HTPASSWD_SECRET"] ||
   (() => {
@@ -35,10 +37,15 @@ const ALLOW_REX = (() => {
 
         const pat = line
           .split("")
-          .map((c) => {
+          .map((c, i) => {
+            const hostname = !line.slice(0, i).includes("/")
             switch (true) {
+              case hostname && c === "*":
+                return "[^/?]*"
               case c === "*":
                 return ".*"
+              case hostname && c === "?":
+                return "[^/?]"
               case c === "?":
                 return "."
               case /[.+^${}()|[\]\\]/.test(c):
@@ -49,7 +56,8 @@ const ALLOW_REX = (() => {
           })
           .join("")
 
-        acc.push(new RegExp(`^${pat}$`))
+        const re = new RegExp(`^${pat}${line.includes("/") ? "" : "/.*"}$`)
+        acc.push(re)
       })
   })
 
@@ -59,9 +67,30 @@ const ALLOW_REX = (() => {
 /** @param {string} host_path */
 const matchAllow = (host_path) => ALLOW_REX.some((re) => re.test(host_path))
 
-/** @param {Buffer} plain */
-const digest = (plain) =>
-  Buffer.from(cr.createHmac(ALGORITHM, HMAC_SECRET).update(plain).digest())
+/** @param {string} value */
+const escapeHtml = (value) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+
+/**
+ * @param {string} domain
+ * @param {Buffer} plain
+ */
+const digest = (domain, plain) =>
+  Buffer.from(
+    cr
+      .createHmac(ALGORITHM, HMAC_SECRET)
+      .update(`\x00${domain}\x00`)
+      .update(plain)
+      .digest(),
+  )
+
+/** @param {NginxHTTPRequest} r */
+const cookieDomain = (r) =>
+  (r.variables.host ?? "").split(".").slice(-DOMAIN_PARTS).join(".")
 
 /**
  * @param {string} s
@@ -79,12 +108,6 @@ const removeWs = (s) => s.replace(/\s+/g, "")
 
 /** @param {string | string[] | undefined} v */
 const firstString = (v) => (typeof v === "string" ? v : "")
-
-/**
- * @param {NginxHTTPRequest} r
- * @returns {NginxHTTPRequest}
- */
-const origin = (r) => (r.parent ? origin(r.parent) : r)
 
 /** @param {NginxHTTPRequest} o */
 const isSecure = (o) => (o.variables.scheme ?? "").toLowerCase() !== "http"
@@ -108,23 +131,32 @@ const timingSafeEqual = (a, b) => {
 const cookieName = (secure) =>
   secure ? `__Secure-${COOKIE_NAME}` : COOKIE_NAME
 
-/** @param {string} data */
-const encodeCookieValue = (data) => {
+/**
+ * @param {string} domain
+ * @param {string} data
+ */
+const encodeCookieValue = (domain, data) => {
   const buf = Buffer.from(data)
-  const sig = digest(buf).toString("base64")
+  const sig = digest(domain, buf).toString("base64")
   const plain = buf.toString("base64")
   return `${sig}.${plain}`
 }
 
-/** @param {string} value */
-const decodeCookieValue = (value) => {
+/**
+ * @param {string} domain
+ * @param {string} value
+ */
+const decodeCookieValue = (domain, value) => {
   const sigPlain = partition(value, ".")
   if (!sigPlain) {
     return undefined
   }
-  const sig = Buffer.from(sigPlain[0], "base64")
-  const plain = Buffer.from(sigPlain[1], "base64")
-  return timingSafeEqual(sig, digest(plain)) ? plain.toString() : undefined
+  const [encodedSig, encodedPlain] = sigPlain
+  const sig = Buffer.from(encodedSig, "base64")
+  const plain = Buffer.from(encodedPlain, "base64")
+  return timingSafeEqual(sig, digest(domain, plain))
+    ? plain.toString()
+    : undefined
 }
 
 /** @param {NginxHTTPRequest} o */
@@ -140,7 +172,7 @@ const hasValidAuthCookie = (o) => {
     if (!nameValue || nameValue[0].trim() !== name) {
       return false
     }
-    const plain = decodeCookieValue(nameValue[1].trim())
+    const plain = decodeCookieValue(cookieDomain(o), nameValue[1].trim())
     if (plain === undefined) {
       return false
     }
@@ -156,16 +188,15 @@ const hasValidAuthCookie = (o) => {
 /**
  * @param {NginxHTTPRequest} o
  * @param {string} user
- * @param {number} parts
  */
-const buildCookie = (o, user, parts) => {
-  const host = o.variables.host ?? ""
+const buildCookie = (o, user) => {
+  const domain = cookieDomain(o)
   const secure = isSecure(o)
   const exp = Math.round(Date.now() + COOKIE_TTL * 1000)
 
   const morsels = [
-    `${cookieName(secure)}=${encodeCookieValue(`${user}:${exp}`)}`,
-    `Domain=${host.split(".").slice(-parts).join(".")}`,
+    `${cookieName(secure)}=${encodeCookieValue(domain, `${user}:${exp}`)}`,
+    `Domain=${domain}`,
     `Expires=${new Date(exp).toUTCString()}`,
     `Max-Age=${COOKIE_TTL}`,
     "Path=/",
@@ -214,13 +245,17 @@ const validate = async (r, creds, o) => {
 
 export default {
   /** @param {NginxHTTPRequest} r */
+  loginRedirect: (r) => escapeHtml(r.variables.request_uri ?? "/"),
+
+  /** @param {NginxHTTPRequest} r */
+  loginUser: (r) => escapeHtml(r.variables.upstream_http_x_auth_user ?? ""),
+
+  /** @param {NginxHTTPRequest} r */
   gate: async (r) => {
-    const o = origin(r)
+    const o = r
     const uri =
       (o.variables.host ?? "") +
-      (o.variables.uri ?? "/") +
-      (o.variables.is_args ?? "") +
-      (o.variables.args ?? "")
+      (o.variables.htpasswd_request_uri ?? o.variables.uri ?? "/")
 
     if (matchAllow(uri) || hasValidAuthCookie(o)) {
       return r.return(204)
@@ -240,11 +275,13 @@ export default {
 
   /** @param {NginxHTTPRequest} r */
   login: async (r) => {
-    const o = origin(r)
+    const o = r
 
     const want = `${o.variables.scheme}://${o.variables.host}`
     const ref = o.headersIn["Referer"] ?? ""
-    if (o.headersIn["Origin"] !== want && !ref.startsWith(want + "/")) {
+    const originHeader = o.headersIn["Origin"]
+
+    if (originHeader ? originHeader !== want : !ref.startsWith(want + "/")) {
       return r.return(403)
     }
 
@@ -257,9 +294,16 @@ export default {
       return r.return(401)
     }
 
-    r.headersOut["Set-Cookie"] = [buildCookie(o, username, DOMAIN_PARTS)]
+    r.headersOut["Set-Cookie"] = [buildCookie(o, username)]
 
-    const redirect = removeWs(firstString(params["redirect"])) || "/"
+    const requested = firstString(params["redirect"])
+    const redirectPath = requested.startsWith(want + "/")
+      ? requested.slice(want.length)
+      : requested
+    const redirect =
+      LOCAL_PATH_RE.test(redirectPath) && !TAB_OR_NEWLINE_RE.test(redirectPath)
+        ? redirectPath
+        : "/"
     return r.return(303, redirect)
   },
 }

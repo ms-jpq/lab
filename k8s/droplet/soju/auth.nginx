@@ -12,17 +12,22 @@ http {
     location = / {
       auth_request /-_-validate;
       error_page   401 403 = @denied;
-      return       200;
+      try_files    /dev/null @accepted;
     }
 
     location = /-_-validate {
       internal;
       proxy_pass              http://unix:/run/local/nginx/htaccess.sock:/;
       proxy_pass_request_body off;
+      proxy_set_header        Content-Length "";
     }
 
     location @denied {
       return 403;
+    }
+
+    location @accepted {
+      return 200;
     }
   }
 }

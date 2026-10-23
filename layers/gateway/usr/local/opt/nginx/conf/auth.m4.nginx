@@ -1,6 +1,7 @@
 include      /usr/local/opt/nginx/conf/js_import.nginx;
 include      /usr/local/opt/nginx/conf/http.d/security2.nginx;
 auth_request /-_-auth-_-;
+set          $htpasswd_request_uri $htpasswd_original_uri;
 
 location /-_-auth-_- {
   internal;
@@ -17,6 +18,7 @@ location = /-_-validate {
   internal;
   proxy_pass              http://unix:/run/local/nginx/htaccess.sock:/;
   proxy_set_header        Authorization $htpasswd_authz;
+  proxy_set_header        Content-Length "";
   proxy_set_header        X-Real-IP $htpasswd_ip;
   proxy_pass_request_body off;
 }
@@ -37,8 +39,8 @@ location /die/die/die {
 location @e401 {
   internal;
   auth_request off;
-  sub_filter   "@REDIRECT" $x_request_uri;
-  sub_filter   "@USER" $upstream_http_x_auth_user;
+  sub_filter   "@REDIRECT" $htpasswd_redirect;
+  sub_filter   "@USER" $htpasswd_user;
   root         /usr/local/opt/nginx/auth/;
   try_files    /index.html =404;
 }
