@@ -27,9 +27,6 @@ table inet user {
 
   chain preraw {
     iifname @external_ifs meta l4proto . th dport @k3s_lbs counter reject comment "Forbid k8s load balancers"
-    iifname @external_ifs meta l4proto . th dport @k3s_nodeports counter drop comment "Forbid external k8s nodeports"
-    iifname @isolated_ifs meta l4proto . th dport @k3s_lbs counter drop comment "Forbid isolated k8s load balancers"
-    iifname @isolated_ifs meta l4proto . th dport @k3s_nodeports counter drop comment "Forbid isolated k8s nodeports"
   }
 
   chain input {
