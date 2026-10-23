@@ -42,7 +42,7 @@ export -- PASSWORD
 \getenv pass PASSWORD
 CREATE USER :role
 WITH
-  SUPERUSER PASSWORD :'pass';
+  CREATEDB PASSWORD :'pass';
 SQL
 
 printf -- '%s\n' "$ROLE : $PASSWORD" | runuser --user postgres -- sponge -- "$SHADOW"
