@@ -1,5 +1,6 @@
 import { playable_position } from "./media.ts"
-import { abortion, defer, delay, event_batches, join, once } from "./util.ts"
+import { play_subtitle } from "./subtitle.ts"
+import { abortion, defer, event_batches, join, once } from "./util.ts"
 
 const POSITION = `media:position:${location.pathname}`
 const PAGE = crypto.randomUUID()
@@ -72,38 +73,6 @@ const submit = (event: SubmitEvent): void => {
   location.replace(target)
 }
 
-const play_subtitle = async (
-  subtitle: HTMLTrackElement,
-  signal: AbortSignal,
-): Promise<void> => {
-  if (signal.aborted) {
-    return
-  }
-
-  for (
-    ;
-    !signal.aborted && subtitle.readyState !== subtitle.LOADED;
-    await delay(signal, 1_000)
-  ) {
-    using attempt = abortion(signal)
-    const loaded = Promise.race([
-      once(attempt.signal, subtitle, "load"),
-      once(attempt.signal, subtitle, "error"),
-    ])
-    if (subtitle.readyState === subtitle.ERROR) {
-      const source = new URL(subtitle.src, location.href)
-      source.searchParams.set("request", crypto.randomUUID())
-      subtitle.src = source.toString()
-    }
-    const event = await loaded
-
-    if (event?.type !== "error") {
-      return
-    }
-    console.error(event)
-  }
-}
-
 export const main = async (
   play_media: (signal: AbortSignal) => Promise<undefined | void>,
 ): Promise<void> => {
@@ -126,11 +95,12 @@ export const main = async (
     using a = abortion(abort.signal)
     const hidden = once(a.signal, window, "pagehide")
     const playback = play_media(a.signal)
-    const tracks = join(
-      Array.from(subtitles, (track) => play_subtitle(track, a.signal)),
+
+    const tracks = Array.from(subtitles, (track) =>
+      play_subtitle(track, { signal: a.signal, tracks: media.textTracks }),
     )
-    await using _ = defer(() => join([playback, tracks]))
+    await using _ = defer(() => join([playback, ...tracks]))
     using __ = a
-    await Promise.race([hidden, playback, tracks.then(() => hidden)])
+    await Promise.race([hidden, playback, join(tracks).then(() => hidden)])
   }
 }

@@ -12,8 +12,8 @@ const wait_for_abort = (signal: AbortSignal): Promise<void> =>
   })
 
 const script = await player_script(
-  ["util.ts", "media.ts", "page.ts"],
-  "({ main, persist_position })",
+  ["util.ts", "media.ts", "subtitle.ts", "page.ts"],
+  "({ main, persist_position, play_subtitle })",
 )
 
 const subtitle_fixture = () => {
@@ -25,13 +25,21 @@ const subtitle_fixture = () => {
     LOADING: 1,
     LOADED: 2,
     ERROR: 3,
+    track: { mode: "showing" },
+    removeAttribute: (name: string) => {
+      if (name === "src") {
+        source = ""
+        subtitle.readyState = 0
+      }
+    },
   })
+  let source = ""
   const finish = (type: "load" | "error") => {
     subtitle.readyState = type === "load" ? subtitle.LOADED : subtitle.ERROR
     subtitle.dispatchEvent(new Event(type))
   }
   Object.defineProperty(subtitle, "src", {
-    get: () => requests.at(-1) ?? "",
+    get: () => source,
     set: (value: string) => {
       if (
         subtitle.readyState === subtitle.LOADING &&
@@ -42,10 +50,10 @@ const subtitle_fixture = () => {
         cancelled.push(() => finish("error"))
       }
       requests.push(value)
+      source = value
       subtitle.readyState = subtitle.LOADING
     },
   })
-  Object.assign(subtitle, { src: "/subtitle?t=0" })
   return { cancelled, finish, requests, subtitle }
 }
 
@@ -54,7 +62,20 @@ const fixture = async (
   timers?: Map<number, () => void>,
 ) => {
   const window = new EventTarget()
+  const fetched: { url: string; signal: AbortSignal }[] = []
+  const revoked: string[] = []
+  const blobs: Blob[] = []
+  class ObjectURL extends URL {
+    static override createObjectURL(blob: Blob): string {
+      blobs.push(blob)
+      return `blob:subtitle:${blobs.length}`
+    }
+    static override revokeObjectURL(url: string): void {
+      revoked.push(url)
+    }
+  }
   const media = {
+    textTracks: new EventTarget(),
     dataset: { duration: "200", mseType: "video/mp4", src: "/media" },
     src: "",
     removeAttribute: (name: string) => {
@@ -70,6 +91,13 @@ const fixture = async (
   const context = vm.createContext({
     AbortController,
     AbortSignal,
+    Blob,
+    fetch: async (url: string | URL, options: { signal: AbortSignal }) => {
+      fetched.push({ url: String(url), signal: options.signal })
+      return new Response("WEBVTT\n\n", {
+        headers: { "Content-Type": "text/vtt" },
+      })
+    },
     clearTimeout: timers ? (id: number) => timers.delete(id) : clearTimeout,
     console: { error: () => undefined },
     crypto,
@@ -97,17 +125,170 @@ const fixture = async (
           return id
         }
       : setTimeout,
-    URL,
+    URL: ObjectURL,
     window,
   })
-  const { main, persist_position } = script.runInContext(context) as {
+  const { main, persist_position, play_subtitle } = script.runInContext(
+    context,
+  ) as {
     main: (playback: Playback) => Promise<void>
     persist_position: (position: number) => void
+    play_subtitle: (
+      track: EventTarget,
+      options: { signal: AbortSignal; tracks: EventTarget },
+    ) => Promise<void>
   }
-  return { context, main, media, persist_position, window }
+  return {
+    blobs,
+    context,
+    fetched,
+    main,
+    media,
+    persist_position,
+    play_subtitle: (track: EventTarget, signal: AbortSignal) =>
+      play_subtitle(track, { signal, tracks: media.textTracks }),
+    revoked,
+    window,
+  }
 }
 
 const cases = [
+  {
+    name: "loaded subtitles remain attached until their owner aborts",
+    run: async (): Promise<void> => {
+      const track = subtitle_fixture()
+      const { play_subtitle, revoked } = await fixture(track.subtitle)
+      const owner = new AbortController()
+      const loaded = play_subtitle(track.subtitle, owner.signal)
+      await setImmediate()
+      track.finish("load")
+      equal(
+        await Promise.race([
+          loaded.then(() => "loaded"),
+          setImmediate("pending"),
+        ]),
+        "pending",
+      )
+      equal(owner.signal.aborted, false)
+      equal(Reflect.get(track.subtitle, "src"), track.requests[0])
+      deepEqual(revoked, [])
+      owner.abort()
+      await loaded
+      equal(getEventListeners(owner.signal, "abort").length, 0)
+      equal(Reflect.get(track.subtitle, "src"), "")
+      deepEqual(revoked, track.requests)
+    },
+  },
+  ...["network", "http"].map((failure) => ({
+    name: `subtitle ${failure} failures retry without attaching a native source`,
+    run: async (): Promise<void> => {
+      const timers = new Map<number, () => void>()
+      const track = subtitle_fixture()
+      const { context, main, window } = await fixture(track.subtitle, timers)
+      const urls: string[] = []
+      context["fetch"] = async (url: string | URL) => {
+        urls.push(String(url))
+        if (urls.length === 1) {
+          if (failure === "network") {
+            throw new Error("subtitle request failed")
+          }
+          return new Response("unavailable", { status: 503 })
+        }
+        return new Response("WEBVTT\n\n")
+      }
+      const failures: unknown[] = []
+      void main(wait_for_abort).catch((error: unknown) => failures.push(error))
+      try {
+        window.dispatchEvent(new Event("pageshow"))
+        await setImmediate()
+        equal(track.requests.length, 0)
+        equal(timers.size, 1)
+        const callbacks = [...timers.values()]
+        timers.clear()
+        for (const callback of callbacks) {
+          callback()
+        }
+        await setImmediate()
+        equal(track.requests.length, 1)
+        equal(urls.length, 2)
+        ok(new URL(urls[0]!).searchParams.get("request"))
+        ok(urls[0] !== urls[1])
+        track.finish("load")
+        await setImmediate()
+        equal(timers.size, 0)
+        deepEqual(failures, [])
+      } finally {
+        window.dispatchEvent(new Event("pagehide"))
+        await setImmediate()
+      }
+    },
+  })),
+  {
+    name: "a subtitle body completing after cancellation cannot attach a source",
+    run: async (): Promise<void> => {
+      const track = subtitle_fixture()
+      const { context, main, window, blobs, revoked } = await fixture(
+        track.subtitle,
+      )
+      const body = Promise.withResolvers<Blob>()
+      const requests: AbortSignal[] = []
+      context["fetch"] = async (
+        _: string,
+        options: { signal: AbortSignal },
+      ) => {
+        requests.push(options.signal)
+        return { ok: true, blob: () => body.promise }
+      }
+      const failures: unknown[] = []
+      void main(wait_for_abort).catch((error: unknown) => failures.push(error))
+      window.dispatchEvent(new Event("pageshow"))
+      await setImmediate()
+      equal(requests.length, 1)
+      window.dispatchEvent(new Event("pagehide"))
+      await setImmediate()
+      equal(requests[0]?.aborted, true)
+      body.resolve(new Blob(["WEBVTT\n\n"]))
+      await setImmediate()
+      equal(track.requests.length, 0)
+      equal(blobs.length, 0)
+      deepEqual(revoked, [])
+      deepEqual(failures, [])
+    },
+  },
+  {
+    name: "loaded subtitle URLs remain owned until pagehide and are renewed on restoration",
+    run: async (): Promise<void> => {
+      const track = subtitle_fixture()
+      const { main, window, revoked, fetched } = await fixture(track.subtitle)
+      const failures: unknown[] = []
+      void main(wait_for_abort).catch((error: unknown) => failures.push(error))
+      try {
+        window.dispatchEvent(new Event("pageshow"))
+        await setImmediate()
+        const initial = track.requests[0]!
+        track.finish("load")
+        await setImmediate()
+        deepEqual(revoked, [])
+        window.dispatchEvent(new Event("pagehide"))
+        await setImmediate()
+        deepEqual(revoked, [initial])
+        equal(Reflect.get(track.subtitle, "src"), "")
+        equal(track.subtitle.track.mode, "showing")
+        window.dispatchEvent(new Event("pageshow"))
+        await setImmediate()
+        equal(fetched.length, 2)
+        equal(track.requests.length, 2)
+        ok(track.requests[1] !== initial)
+        track.finish("load")
+        await setImmediate()
+      } finally {
+        window.dispatchEvent(new Event("pagehide"))
+        await setImmediate()
+      }
+      deepEqual(revoked, track.requests)
+      deepEqual(failures, [])
+    },
+  },
   {
     name: "DOM readiness starts playback before subtitles finish and delayed pageshow does not duplicate it",
     run: async (): Promise<void> => {
@@ -135,7 +316,7 @@ const cases = [
         window.dispatchEvent(new Event("pageshow"))
         await setImmediate()
         equal(started.length, 2)
-        equal(track.requests.length, 1)
+        equal(track.requests.length, 2)
         deepEqual(failures, [])
       } finally {
         window.dispatchEvent(new Event("pagehide"))
@@ -144,11 +325,16 @@ const cases = [
     },
   },
   {
-    name: "characterization: a loading subtitle has no scheduled recovery until a native event arrives",
+    name: "a pending subtitle fetch never attaches an incomplete native track",
     run: async (): Promise<void> => {
       const timers = new Map<number, () => void>()
       const track = subtitle_fixture()
-      const { main, window } = await fixture(track.subtitle, timers)
+      const { context, main, window, blobs } = await fixture(
+        track.subtitle,
+        timers,
+      )
+      const body = Promise.withResolvers<Blob>()
+      context["fetch"] = async () => ({ ok: true, blob: () => body.promise })
       const started: AbortSignal[] = []
       const failures: unknown[] = []
       void main(async (signal) => {
@@ -160,16 +346,18 @@ const cases = [
         window.dispatchEvent(new Event("pageshow"))
         await setImmediate()
         equal(started.length, 1)
-        equal(track.subtitle.readyState, track.subtitle.LOADING)
-        equal(getEventListeners(track.subtitle, "load").length, 1)
-        equal(getEventListeners(track.subtitle, "error").length, 1)
+        equal(track.subtitle.readyState, 0)
+        equal(track.requests.length, 0)
+        equal(blobs.length, 0)
         equal(timers.size, 0)
-        equal(track.requests.length, 1)
         equal(started[0]?.aborted, false)
 
-        track.finish("error")
+        body.resolve(new Blob(["WEBVTT\n\n"]))
         await setImmediate()
-        equal(timers.size, 1)
+        equal(track.requests.length, 1)
+        equal(blobs.length, 1)
+        track.finish("load")
+        await setImmediate()
         equal(started[0]?.aborted, false)
       } finally {
         window.dispatchEvent(new Event("pagehide"))
@@ -214,8 +402,8 @@ const cases = [
       const timers = new Map<number, () => void>()
       const first = subtitle_fixture()
       const second = subtitle_fixture()
-      second.subtitle.readyState = 0
-      const { main, window } = await fixture(
+      second.subtitle.track.mode = "disabled"
+      const { main, media, fetched, revoked, window } = await fixture(
         [first.subtitle, second.subtitle],
         timers,
       )
@@ -230,16 +418,21 @@ const cases = [
         window.dispatchEvent(new Event("pageshow"))
         await setImmediate()
         equal(first.requests.length, 1)
-        equal(second.requests.length, 1)
+        equal(second.requests.length, 0)
         equal(second.subtitle.readyState, 0)
         first.finish("load")
         await setImmediate()
         equal(started[0]?.aborted, false)
 
-        second.subtitle.readyState = second.subtitle.LOADING
+        second.subtitle.track.mode = "hidden"
+        media.textTracks.dispatchEvent(new Event("change"))
+        await setImmediate()
+        equal(second.requests.length, 1)
         second.finish("error")
         await setImmediate()
         equal(timers.size, 1)
+        deepEqual(revoked, [second.requests[0]])
+        equal(Reflect.get(second.subtitle, "src"), "")
         const scheduled = [...timers.values()]
         timers.clear()
         for (const fire of scheduled) {
@@ -248,12 +441,12 @@ const cases = [
         await setImmediate()
         equal(first.requests.length, 1)
         equal(second.requests.length, 2)
-        const retried = new URL(second.requests[1]!)
+        const retried = new URL(fetched[2]!.url)
         equal(retried.pathname, "/subtitle")
-        equal(retried.searchParams.get("t"), "0")
         ok(retried.searchParams.has("request"))
         second.finish("load")
         await setImmediate()
+        equal(second.subtitle.track.mode, "hidden")
         equal(started[0]?.aborted, false)
         deepEqual(failures, [])
       } finally {
@@ -444,7 +637,7 @@ const cases = [
         )
         equal(started.length, 1)
         ok(started[0]?.aborted)
-        equal(track.requests.length, 1)
+        equal(track.requests.length, 0)
         equal(getEventListeners(track.subtitle, "load").length, 0)
         equal(getEventListeners(track.subtitle, "error").length, 0)
         equal(getEventListeners(window, "pageshow").length, 0)
@@ -457,7 +650,7 @@ const cases = [
         await setImmediate()
         equal(timers.size, 0)
         equal(started.length, 1)
-        equal(track.requests.length, 1)
+        equal(track.requests.length, 0)
       } finally {
         window.dispatchEvent(new Event("pagehide"))
         await setImmediate()
@@ -533,7 +726,7 @@ const cases = [
         }
 
         equal(failures.length, 0)
-        equal(requests.length, 1)
+        equal(requests.length, 2)
         finish("load")
         await setImmediate()
         equal(timers.size, 0)
@@ -546,7 +739,7 @@ const cases = [
   },
 
   ...(["load", "error"] as const).map((outcome) => ({
-    name: `restoring a subtitle after ${outcome} while hidden respects its ready state`,
+    name: `restoring a subtitle after ${outcome} while hidden reloads its revoked source`,
     run: async (): Promise<void> => {
       const { requests, subtitle, finish } = subtitle_fixture()
       const { main, window } = await fixture(subtitle)
@@ -568,7 +761,7 @@ const cases = [
         await setImmediate()
         equal(started.length, 2)
         equal(started.at(-1)?.aborted, false)
-        equal(requests.length, outcome === "load" ? 1 : 2)
+        equal(requests.length, 2)
         equal(failures.length, 0)
       } finally {
         window.dispatchEvent(new Event("pagehide"))
@@ -597,7 +790,7 @@ const cases = [
         await setImmediate()
         window.dispatchEvent(new Event("pageshow"))
         await setImmediate()
-        equal(requests.length, 1)
+        equal(requests.length, 2)
 
         finish("error")
         await setImmediate()
@@ -608,7 +801,7 @@ const cases = [
           fire()
         }
         await setImmediate()
-        equal(requests.length, 2)
+        equal(requests.length, 3)
         equal(cancelled.length, 0)
         finish("load")
         await setImmediate()
@@ -684,7 +877,7 @@ const cases = [
           equal(started.length, visible ? 2 : 1)
           equal(live.size, visible ? 1 : 0)
           equal(media.src, visible ? "source:2" : "")
-          equal(track.requests.length, visible && outcome === "error" ? 2 : 1)
+          equal(track.requests.length, visible ? 2 : 1)
           equal(track.cancelled.length, 0)
           equal(timers.size, 0)
           deepEqual(failures, [])

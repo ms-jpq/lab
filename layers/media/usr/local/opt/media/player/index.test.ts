@@ -87,7 +87,15 @@ class Media extends EventTarget {
 }
 
 const script = await player_script(
-  ["util.ts", "mse.ts", "media.ts", "reducer.ts", "page.ts", "index.ts"],
+  [
+    "util.ts",
+    "mse.ts",
+    "media.ts",
+    "reducer.ts",
+    "subtitle.ts",
+    "page.ts",
+    "index.ts",
+  ],
   `globalThis.player_test = {
   main,
   play_media: (signal) => play_media(signal, playback_transitions(page_position())),
@@ -147,6 +155,7 @@ const fixture = async ({
     onsubmit: null as ((event: SubmitEvent) => void) | null,
   }
   class Subtitle extends EventTarget {
+    readonly track = { mode: "showing" }
     readonly dataset = { src: "/subtitle" } as DOMStringMap
     readonly NONE = 0
     readonly LOADING = 1
@@ -165,6 +174,13 @@ const fixture = async ({
       subtitle_sources.push(value)
     }
 
+    removeAttribute(name: string): void {
+      if (name === "src") {
+        this.value = ""
+        this.readyState = this.NONE
+      }
+    }
+
     override dispatchEvent(event: Event): boolean {
       if (event.type === "load") {
         this.readyState = this.LOADED
@@ -176,9 +192,6 @@ const fixture = async ({
     }
   }
   const subtitle = with_subtitle ? new Subtitle() : null
-  if (subtitle) {
-    subtitle.src = "/subtitle?t=0"
-  }
   const location = {
     href:
       url_position === undefined
@@ -271,6 +284,9 @@ const fixture = async ({
 
   class PlayerURL extends URL {
     static override createObjectURL(value: Blob | MediaSource): string {
+      if (value instanceof Blob) {
+        return `blob:subtitle-${crypto.randomUUID()}`
+      }
       ok(value instanceof TestMediaSource)
       const url = `blob:player-${crypto.randomUUID()}`
       if (source_open === "automatic") {
@@ -316,6 +332,11 @@ const fixture = async ({
   fetch_response = default_response
 
   const fetch = async (input: RequestInfo | URL): Promise<Response> => {
+    if (input instanceof URL) {
+      return new Response("WEBVTT\n", {
+        headers: { "Content-Type": "text/vtt" },
+      })
+    }
     const request = input as Request
     requests.push(request)
     return fetch_response(request)
@@ -3152,9 +3173,7 @@ const cases = [
         current.context.player_test.play_media,
       )
       current.window.dispatchEvent(new Event("pageshow"))
-      await eventually(
-        () => getEventListeners(current.subtitle!, "load").length > 0,
-      )
+      await eventually(() => current.subtitle_sources.length === 1)
       current.subtitle?.dispatchEvent(new Event("load"))
       await next_task()
 
