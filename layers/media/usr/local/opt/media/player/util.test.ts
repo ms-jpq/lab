@@ -953,13 +953,11 @@ const cases = [
       })
       const closed = values.return?.(undefined)
       assert(closed)
-      const failure = await closed.then(
-        () => undefined,
-        (error: unknown) => error,
-      )
-
-      assert(failure instanceof AggregateError)
-      deepEqual(failure.errors, [left, right])
+      await rejects(closed, (failure: unknown) => {
+        assert(failure instanceof AggregateError)
+        deepEqual(failure.errors, [left, right])
+        return true
+      })
     },
   },
   {
@@ -976,14 +974,12 @@ const cases = [
         },
       })
 
-      const failure = await values.next().then(
-        () => undefined,
-        (error: unknown) => error,
-      )
-
-      assert(failure instanceof SuppressedError)
-      deepEqual(failure.error, closeFailure)
-      deepEqual(failure.suppressed, sourceFailure)
+      await rejects(values.next(), (failure: unknown) => {
+        assert(failure instanceof SuppressedError)
+        deepEqual(failure.error, closeFailure)
+        deepEqual(failure.suppressed, sourceFailure)
+        return true
+      })
     },
   },
 ]

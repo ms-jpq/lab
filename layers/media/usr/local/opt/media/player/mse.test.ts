@@ -64,14 +64,19 @@ const acquisitionFixture = (context: TestContext) => {
   }
 }
 
-const fixture = (
-  buffered: TimeRanges = timeRanges(),
-  failure:
-    "append" | "append-sync" | "remove" | "remove-sync" | undefined = undefined,
-  hold: "append" | "remove" | undefined = undefined,
-  readyState: MediaSource["readyState"] = "open",
+const fixture = ({
+  buffered = timeRanges(),
+  failure,
+  hold,
+  readyState = "open",
   evict_behind = 30,
-) => {
+}: {
+  buffered?: TimeRanges
+  failure?: "append" | "append-sync" | "remove" | "remove-sync"
+  hold?: "append" | "remove"
+  readyState?: MediaSource["readyState"]
+  evict_behind?: number
+} = {}) => {
   const controller = new AbortController()
   const mutations: unknown[] = []
   const types: string[] = []
@@ -168,7 +173,7 @@ const quotaFixture = (capacity = 40) => {
     start: () => state.start,
     end: () => state.end,
   }
-  const current = fixture(ranges)
+  const current = fixture({ buffered: ranges })
   const accepted: Uint8Array<ArrayBuffer>[] = []
   current.media.currentTime = 10
   current.buffer.appendBuffer = (bytes) => {
@@ -611,7 +616,7 @@ const cases = [
     name: "seeking cannot leave a successful operation's queued update behind",
     run: async () => {
       const { buffer, controller, entered, media, mutations, release, values } =
-        fixture(timeRanges(), undefined, "append")
+        fixture({ hold: "append" })
       await start(values)
       const appending = values.next(new Uint8Array([9]))
       await entered
@@ -644,7 +649,7 @@ const cases = [
     name: "a seek storm ending in buffered media preserves the active parser",
     run: async () => {
       const { buffer, controller, entered, media, mutations, release, values } =
-        fixture(timeRanges([100, 120]), undefined, "append")
+        fixture({ buffered: timeRanges([100, 120]), hold: "append" })
       await start(values, 100)
       const appending = values.next(new Uint8Array([9]))
       await entered
@@ -675,11 +680,7 @@ const cases = [
     name: "seeking to an evicted request start interrupts an active append",
     run: async () => {
       const { buffer, controller, media, mutations, release, values } = fixture(
-        timeRanges(),
-        undefined,
-        "append",
-        "open",
-        30,
+        { hold: "append", readyState: "open", evict_behind: 30 },
       )
       const initial = new Uint8Array([8])
       const appending_started = Promise.withResolvers<void>()
@@ -736,11 +737,9 @@ const cases = [
   {
     name: "the initial unbuffered request seek preserves its pending append",
     run: async () => {
-      const { buffer, controller, entered, media, release, values } = fixture(
-        timeRanges(),
-        undefined,
-        "append",
-      )
+      const { buffer, controller, entered, media, release, values } = fixture({
+        hold: "append",
+      })
       await start(values, 100)
       const appending = values.next(new Uint8Array([9]))
       await entered
@@ -767,7 +766,7 @@ const cases = [
     name: "a nearby seek preserves a new earlier request while future media remains cached",
     run: async () => {
       const { buffer, controller, entered, media, mutations, release, values } =
-        fixture(timeRanges([120, 160]), undefined, "append")
+        fixture({ buffered: timeRanges([120, 160]), hold: "append" })
       await start(values, 120)
       media.currentTime = 100
       await values.next(100)
@@ -797,7 +796,7 @@ const cases = [
     name: `a buffered seek to ${position} preserves an active parser`,
     run: async () => {
       const { buffer, controller, entered, media, mutations, release, values } =
-        fixture(timeRanges([100, 120]), undefined, "append")
+        fixture({ buffered: timeRanges([100, 120]), hold: "append" })
       await start(values, 100)
       const appending = values.next(new Uint8Array([9]))
       await entered
@@ -826,7 +825,7 @@ const cases = [
     name: "an ignored buffered seek still allows a later unbuffered seek to interrupt",
     run: async () => {
       const { buffer, controller, entered, media, mutations, release, values } =
-        fixture(timeRanges([100, 120]), undefined, "append")
+        fixture({ buffered: timeRanges([100, 120]), hold: "append" })
       await start(values, 100)
       const appending = values.next(new Uint8Array([9]))
       await entered
@@ -866,11 +865,10 @@ const cases = [
         release,
         source,
         values,
-      } = fixture(
-        operation === "remove" ? timeRanges([0, 120]) : timeRanges(),
-        undefined,
-        operation,
-      )
+      } = fixture({
+        buffered: operation === "remove" ? timeRanges([0, 120]) : timeRanges(),
+        hold: operation,
+      })
       await start(values)
       const pending = values.next(new Uint8Array([9]))
       await entered
@@ -901,11 +899,10 @@ const cases = [
   ...(["append", "remove"] as const).map((operation) => ({
     name: `the access gate prevents buffer reads after detachment during ${operation}`,
     run: async () => {
-      const { buffer, controller, entered, source, values } = fixture(
-        operation === "remove" ? timeRanges([0, 120]) : timeRanges(),
-        undefined,
-        operation,
-      )
+      const { buffer, controller, entered, source, values } = fixture({
+        buffered: operation === "remove" ? timeRanges([0, 120]) : timeRanges(),
+        hold: operation,
+      })
       await start(values, 200)
       const pending = values.next(new Uint8Array([9])).then(
         (result) => ({ result }),
@@ -932,11 +929,10 @@ const cases = [
   ...(["abort", "seeking", "timeout"] as const).map((interruption) => ({
     name: `range removal survives ${interruption} without calling the forbidden SourceBuffer abort`,
     run: async (context: TestContext) => {
-      const { buffer, controller, entered, media, release, values } = fixture(
-        timeRanges([0, 120]),
-        undefined,
-        "remove",
-      )
+      const { buffer, controller, entered, media, release, values } = fixture({
+        buffered: timeRanges([0, 120]),
+        hold: "remove",
+      })
       context.mock.method(buffer, "abort", () => {
         if (buffer.updating) {
           throw new DOMException(
@@ -988,11 +984,9 @@ const cases = [
   {
     name: "an aborted append's queued updateend does not finish the next append",
     run: async () => {
-      const { buffer, controller, entered, media, release, values } = fixture(
-        timeRanges(),
-        undefined,
-        "append",
-      )
+      const { buffer, controller, entered, media, release, values } = fixture({
+        hold: "append",
+      })
       await start(values)
       try {
         const first = values.next(new Uint8Array([1]))
@@ -1025,11 +1019,9 @@ const cases = [
   {
     name: "an aborted append's queued updateend cannot hide a later append error",
     run: async () => {
-      const { buffer, controller, entered, media, release, values } = fixture(
-        timeRanges(),
-        undefined,
-        "append",
-      )
+      const { buffer, controller, entered, media, release, values } = fixture({
+        hold: "append",
+      })
       await start(values)
       try {
         const first = values.next(new Uint8Array([1]))
@@ -1060,12 +1052,12 @@ const cases = [
     [true, false].map((before) => ({
       name: `abort ${before ? "before" : "after"} synchronous ${operation} admission prevents later mutations`,
       run: async () => {
-        const { controller, mutations, release, values } = fixture(
-          operation === "remove" ? timeRanges([0, 120]) : timeRanges(),
-          undefined,
-          operation === "append" ? "append" : "remove",
-          operation === "reopen" ? "ended" : "open",
-        )
+        const { controller, mutations, release, values } = fixture({
+          buffered:
+            operation === "remove" ? timeRanges([0, 120]) : timeRanges(),
+          hold: operation === "append" ? "append" : "remove",
+          readyState: operation === "reopen" ? "ended" : "open",
+        })
         await start(values)
         if (before) {
           controller.abort()
@@ -1108,12 +1100,11 @@ const cases = [
     [true, false].map((before) => ({
       name: `detachment ${before ? "before" : "after"} synchronous ${operation} admission is safe before sourceclose dispatch`,
       run: async () => {
-        const { buffer, controller, mutations, source, values } = fixture(
-          operation === "remove" ? timeRanges([0, 120]) : timeRanges(),
-          undefined,
-          undefined,
-          operation === "reopen" ? "ended" : "open",
-        )
+        const { buffer, controller, mutations, source, values } = fixture({
+          buffered:
+            operation === "remove" ? timeRanges([0, 120]) : timeRanges(),
+          readyState: operation === "reopen" ? "ended" : "open",
+        })
         await start(values)
         const append = buffer.appendBuffer.bind(buffer)
         const remove = buffer.remove.bind(buffer)
@@ -1185,7 +1176,7 @@ const cases = [
   {
     name: "MSE evicts expired media before appending",
     run: async () => {
-      const { mutations, values } = fixture(timeRanges([0, 120]))
+      const { mutations, values } = fixture({ buffered: timeRanges([0, 120]) })
 
       await start(values)
       await values.next(new Uint8Array([3]))
@@ -1199,21 +1190,6 @@ const cases = [
       await closed
     },
   },
-  {
-    name: "MSE surfaces a SourceBuffer mutation error",
-    run: async () => {
-      const { values } = fixture(timeRanges(), "append")
-      await start(values)
-
-      const failure = await values.next(new Uint8Array([4])).then(
-        () => undefined,
-        (error: unknown) => error,
-      )
-
-      assert(failure instanceof Event)
-      deepEqual(failure.type, "error")
-    },
-  },
   ...(
     [
       { operation: "append", buffered: [] },
@@ -1222,7 +1198,10 @@ const cases = [
   ).map(({ operation, buffered }) => ({
     name: `MSE surfaces a synchronous ${operation === "append" ? "append" : "removal"} failure without waiting`,
     run: async () => {
-      const { values } = fixture(timeRanges(...buffered), `${operation}-sync`)
+      const { values } = fixture({
+        buffered: timeRanges(...buffered),
+        failure: `${operation}-sync`,
+      })
       await start(values)
 
       const failure = await Promise.race([
@@ -1237,10 +1216,22 @@ const cases = [
       deepEqual(failure.name, "InvalidStateError")
     },
   })),
-  {
-    name: "MSE surfaces an asynchronous removal failure before appending",
+  ...(
+    [
+      { operation: "append", buffered: [], mutations: [["append", [4]]] },
+      {
+        operation: "remove",
+        buffered: [[0, 120]],
+        mutations: [["remove", 0, 70]],
+      },
+    ] as const
+  ).map(({ operation, buffered, mutations: expected }) => ({
+    name: `MSE surfaces an asynchronous ${operation} failure without further mutations`,
     run: async () => {
-      const { mutations, values } = fixture(timeRanges([0, 120]), "remove")
+      const { mutations, values } = fixture({
+        buffered: timeRanges(...buffered),
+        failure: operation,
+      })
       await start(values)
 
       const failure = await values.next(new Uint8Array([4])).then(
@@ -1250,17 +1241,13 @@ const cases = [
 
       assert(failure instanceof Event)
       deepEqual(failure.type, "error")
-      deepEqual(mutations, [["remove", 0, 70]])
+      deepEqual(mutations, expected)
     },
-  },
+  })),
   {
     name: "MSE aborts and surfaces a stalled SourceBuffer mutation",
     run: async () => {
-      const { buffer, mutations, values } = fixture(
-        timeRanges(),
-        undefined,
-        "append",
-      )
+      const { buffer, mutations, values } = fixture({ hold: "append" })
       await start(values)
 
       const failure = await values.next(new Uint8Array([4])).then(
@@ -1277,11 +1264,9 @@ const cases = [
   {
     name: "return drains an entered SourceBuffer mutation",
     run: async () => {
-      const { entered, mutations, release, values } = fixture(
-        timeRanges(),
-        undefined,
-        "append",
-      )
+      const { entered, mutations, release, values } = fixture({
+        hold: "append",
+      })
       await start(values)
 
       const appending = values.next(new Uint8Array([5]))
@@ -1321,11 +1306,10 @@ const cases = [
   ).map(({ operation, name, buffered, mutations: expected, updating }) => ({
     name: `parent abort interrupts an entered SourceBuffer ${name}`,
     run: async () => {
-      const { buffer, controller, entered, mutations, values } = fixture(
-        timeRanges(...buffered),
-        undefined,
-        operation,
-      )
+      const { buffer, controller, entered, mutations, values } = fixture({
+        buffered: timeRanges(...buffered),
+        hold: operation,
+      })
       await start(values)
       const appending = values.next(new Uint8Array([6]))
       await entered
@@ -1421,12 +1405,11 @@ const cases = [
   {
     name: "abort during reopening does not reset a parser while removal is running",
     run: async () => {
-      const { buffer, controller, entered, mutations, values } = fixture(
-        timeRanges([0, 20]),
-        undefined,
-        "remove",
-        "ended",
-      )
+      const { buffer, controller, entered, mutations, values } = fixture({
+        buffered: timeRanges([0, 20]),
+        hold: "remove",
+        readyState: "ended",
+      })
       await start(values, 10)
       const reopening = values.next(30)
       await entered
@@ -1445,12 +1428,10 @@ const cases = [
   {
     name: "an ended source reopens before resetting its timestamp",
     run: async () => {
-      const { buffer, mutations, values } = fixture(
-        timeRanges([0, 20]),
-        undefined,
-        undefined,
-        "ended",
-      )
+      const { buffer, mutations, values } = fixture({
+        buffered: timeRanges([0, 20]),
+        readyState: "ended",
+      })
       await start(values, 10)
 
       await values.next(30)
@@ -1477,11 +1458,9 @@ const cases = [
   {
     name: "queued end-of-stream waits for an entered append",
     run: async () => {
-      const { entered, mutations, release, values } = fixture(
-        timeRanges(),
-        undefined,
-        "append",
-      )
+      const { entered, mutations, release, values } = fixture({
+        hold: "append",
+      })
       await start(values)
 
       const appending = values.next(new Uint8Array([8]))

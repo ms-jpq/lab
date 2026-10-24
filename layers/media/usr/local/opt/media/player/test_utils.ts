@@ -34,6 +34,56 @@ export class EventTarget extends globalThis.EventTarget {
   }
 }
 
+export const subtitle_fixture = () => {
+  const cancelled: (() => void)[] = []
+  const requests: string[] = []
+  const subtitle = Object.assign(new EventTarget(), {
+    dataset: { src: "/subtitle" },
+    readyState: 0,
+    NONE: 0,
+    LOADING: 1,
+    LOADED: 2,
+    ERROR: 3,
+    track: { mode: "showing" },
+    dispatchEvent: (event: Event): boolean => {
+      if (event.type === "load") {
+        subtitle.readyState = subtitle.LOADED
+      }
+      if (event.type === "error") {
+        subtitle.readyState = subtitle.ERROR
+      }
+      return EventTarget.prototype.dispatchEvent.call(subtitle, event)
+    },
+    removeAttribute: (name: string) => {
+      if (name === "src") {
+        source = ""
+        subtitle.readyState = 0
+      }
+    },
+  })
+  let source = ""
+  const finish = (type: "load" | "error"): void => {
+    subtitle.dispatchEvent(new Event(type))
+  }
+  Object.defineProperty(subtitle, "src", {
+    get: () => source,
+    set: (value: string) => {
+      if (
+        subtitle.readyState === subtitle.LOADING &&
+        value !== requests.at(-1)
+      ) {
+        // HTML queues an error when changing the URL of a loading text track.
+        // https://html.spec.whatwg.org/multipage/media.html#sourcing-out-of-band-text-tracks
+        cancelled.push(() => finish("error"))
+      }
+      requests.push(value)
+      source = value
+      subtitle.readyState = subtitle.LOADING
+    },
+  })
+  return { cancelled, finish, requests, subtitle }
+}
+
 export class Ranges implements TimeRanges {
   readonly values: Range[] = []
 
@@ -61,7 +111,8 @@ export const timeRanges = (...ranges: Range[]): Ranges => {
 }
 
 export const eventually = async (predicate: () => boolean): Promise<void> => {
-  for (let attempt = 0; attempt < 1_000; attempt += 1) {
+  const deadline = performance.now() + 1_000
+  while (performance.now() < deadline) {
     if (predicate()) {
       return
     }

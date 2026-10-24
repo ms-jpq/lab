@@ -81,13 +81,16 @@ const cases = [
       }
     },
   })),
-  ...["200", "0", ""].map((declared) => ({
+  ...[
+    { declared: "200", expected: 200 },
+    { declared: "0", expected: 10 },
+    { declared: "", expected: 10 },
+  ].map(({ declared, expected }) => ({
     name: `duration ${JSON.stringify(declared)} uses native duration only as a fallback`,
     run: async (): Promise<void> => {
       const media = Object.assign(new Media(), { duration: 10 })
       media.dataset["duration"] = declared
       const element = media as unknown as HTMLMediaElement
-      const expected = declared === "200" ? 200 : 10
       deepEqual(media_buffered(element).current.duration, expected)
       deepEqual(playable_position(element, expected), expected - 0.5)
     },
@@ -169,83 +172,73 @@ const cases = [
   {
     name: "queued media observations retain the state of each event while the consumer is suspended",
     run: async (context: TestContext): Promise<void> => {
-      const { owner, media, states } = observations(context)
-      try {
-        const first = states.next()
-        media.dispatchEvent(new Event("progress"))
-        ok(!(await first).done)
+      const { media, states } = observations(context)
+      const first = states.next()
+      media.dispatchEvent(new Event("progress"))
+      ok(!(await first).done)
 
-        media.readyState = media.HAVE_METADATA
-        media.currentTime = 10
-        media.seeking = true
-        const range: [number, number] = [10, 20]
-        media.buffered.values.push(range)
-        media.dispatchEvent(new Event("seeking"))
-        await setImmediate()
-        media.currentTime = 12
-        media.seeking = false
-        media.paused = true
-        range.splice(0, 2, 12, 24)
-        media.dispatchEvent(new Event("seeked"))
-        await setImmediate()
-        media.currentTime = 99
-        media.buffered.values.length = 0
+      media.readyState = media.HAVE_METADATA
+      media.currentTime = 10
+      media.seeking = true
+      const range: [number, number] = [10, 20]
+      media.buffered.values.push(range)
+      media.dispatchEvent(new Event("seeking"))
+      await setImmediate()
+      media.currentTime = 12
+      media.seeking = false
+      media.paused = true
+      range.splice(0, 2, 12, 24)
+      media.dispatchEvent(new Event("seeked"))
+      await setImmediate()
+      media.currentTime = 99
+      media.buffered.values.length = 0
 
-        const batch = await states.next()
-        ok(!batch.done)
-        deepEqual(batch.value, [
-          {
-            type: "seeking",
-            current: {
-              buffered: [[10, 20]],
-              duration: 200,
-              error: undefined,
-              metadata: true,
-              paused: false,
-              seeking: true,
-              time: 10,
-            },
+      const batch = await states.next()
+      ok(!batch.done)
+      deepEqual(batch.value, [
+        {
+          type: "seeking",
+          current: {
+            buffered: [[10, 20]],
+            duration: 200,
+            error: undefined,
+            metadata: true,
+            paused: false,
+            seeking: true,
+            time: 10,
           },
-          {
-            type: "seeked",
-            current: {
-              buffered: [[12, 24]],
-              duration: 200,
-              error: undefined,
-              metadata: true,
-              paused: true,
-              seeking: false,
-              time: 12,
-            },
+        },
+        {
+          type: "seeked",
+          current: {
+            buffered: [[12, 24]],
+            duration: 200,
+            error: undefined,
+            metadata: true,
+            paused: true,
+            seeking: false,
+            time: 12,
           },
-        ])
-      } finally {
-        owner.abort()
-        await states.return?.()
-      }
+        },
+      ])
     },
   },
   {
     name: "owner abort discards media observations queued behind a suspended consumer",
     run: async (context: TestContext): Promise<void> => {
       const { owner, media, states } = observations(context)
-      try {
-        const first = states.next()
-        media.dispatchEvent(new Event("progress"))
-        ok(!(await first).done)
-        media.dispatchEvent(new Event("seeking"))
-        await setImmediate()
-        media.dispatchEvent(new Event("seeked"))
+      const first = states.next()
+      media.dispatchEvent(new Event("progress"))
+      ok(!(await first).done)
+      media.dispatchEvent(new Event("seeking"))
+      await setImmediate()
+      media.dispatchEvent(new Event("seeked"))
 
-        owner.abort()
+      owner.abort()
 
-        deepEqual(await states.next(), { done: true, value: undefined })
-        deepEqual(getEventListeners(media, "seeking").length, 0)
-        deepEqual(getEventListeners(media, "seeked").length, 0)
-      } finally {
-        owner.abort()
-        await states.return?.()
-      }
+      deepEqual(await states.next(), { done: true, value: undefined })
+      deepEqual(getEventListeners(media, "seeking").length, 0)
+      deepEqual(getEventListeners(media, "seeked").length, 0)
     },
   },
   {
@@ -265,7 +258,6 @@ const cases = [
       const { current: snapshot } = observation
       range.splice(0, 2, 30, 40)
       deepEqual(snapshot.buffered, [[10, 20]])
-      await states.return?.()
     },
   },
 ] as const

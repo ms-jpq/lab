@@ -15,10 +15,9 @@ const startup = `
 import { deepEqual, equal, ok } from "node:assert/strict"
 import { getEventListeners } from "node:events"
 import { readFile } from "node:fs/promises"
-import { setImmediate } from "node:timers/promises"
 import { pathToFileURL } from "node:url"
 import vm from "node:vm"
-import { EventTarget } from ${JSON.stringify(new URL("./test_utils.ts", import.meta.url).href)}
+import { EventTarget, eventually } from ${JSON.stringify(new URL("./test_utils.ts", import.meta.url).href)}
 
 const [directory, symbols] = process.argv.slice(1)
 const window = new EventTarget()
@@ -114,9 +113,7 @@ equal(vm.runInContext("typeof Symbol.asyncDispose", context), "symbol")
 
 try {
   window.dispatchEvent(new Event("pageshow"))
-  for (let turn = 0; turn < 100 && requests.length === 0; turn++) {
-    await setImmediate()
-  }
+  await eventually(() => requests.length > 0)
   equal(requests.length, 1)
   equal(sources.length, 1)
   equal(new URL(requests[0].url).searchParams.get("t"), "0")
@@ -124,9 +121,7 @@ try {
 } finally {
   globalThis.gc()
   window.dispatchEvent(new Event("pagehide"))
-  for (let turn = 0; turn < 100 && media.src !== ""; turn++) {
-    await setImmediate()
-  }
+  await eventually(() => media.src === "")
 }
 equal(media.src, "")
 equal(requests[0]?.signal.aborted, true)

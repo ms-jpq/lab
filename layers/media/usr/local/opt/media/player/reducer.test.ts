@@ -61,7 +61,7 @@ const quota_steps: readonly Step[] = [
 
 const cases: readonly Case[] = [
   {
-    name: "audit: a resume effect consumes intent before playback success is observed",
+    name: "a resume effect consumes intent before playback success is observed",
     steps: [
       source_opened(),
       {
@@ -506,7 +506,7 @@ const cases: readonly Case[] = [
     ],
   },
   ...(["progress", "ended"] as const).map((type): Case => ({
-    name: `audit: ${type} after short EOF requests new content at the acknowledged frontier`,
+    name: `${type} after short EOF requests new content at the acknowledged frontier`,
     steps: [
       source_opened(),
       { action: { type: "seeked", current: snapshot() }, expected: {} },
@@ -966,8 +966,12 @@ await run_cases([
     run: async (): Promise<void> => {
       const dispatch = playback_transitions(position)
 
-      for (const { action, expected } of steps) {
-        deepEqual(dispatch(action), expected)
+      for (const [index, { action, expected }] of steps.entries()) {
+        deepEqual(
+          dispatch(action),
+          expected,
+          `step ${index + 1}: ${JSON.stringify(action)}`,
+        )
       }
     },
   })),
