@@ -1,4 +1,4 @@
-.PHONY: nginx nginx.lint
+.PHONY: nginx
 all: nginx
 
 # pkg._: /etc/apt/trusted.gpg.d/nginx.gpg
@@ -20,7 +20,3 @@ nginx: /var/lib/local/nginx/$2.htpasswd
 endef
 
 $(foreach realm,$(shell printf -- '%s ' /usr/local/opt/nginx/htpasswd/*.env),$(eval $(call NGINX_TEMPLATE,$(realm),$(subst .env,,$(notdir $(realm))))))
-
-/opt/python3/gixy: | pkg._
-nginx.lint: /opt/python3/gixy
-	PYTHONPATH='$<' '$</bin/gixy' -- /usr/local/opt/nginx/conf/main.nginx

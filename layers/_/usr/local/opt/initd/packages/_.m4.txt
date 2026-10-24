@@ -25,7 +25,6 @@
 + net-tools
 + parallel
 + pv
-+ py-gixy
 + python3-venv
 + ripgrep
 + rsync
