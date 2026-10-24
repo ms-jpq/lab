@@ -31,11 +31,11 @@ from .http import (
     target,
     unix_server,
 )
-from .lang import select_subtitle
+from .selection import select_stream
 
 with nullcontext():
     _NATIVE_PROFILE = "native"
-    _HEIGHTS = {
+    _PROFILE_HEIGHTS = {
         _NATIVE_PROFILE: None,
         "2160p": 2160,
         "1440p": 1440,
@@ -52,78 +52,58 @@ class _Preference(StrEnum):
     SUBTITLE = "subtitle"
 
 
-def _profiles(media: Probe) -> tuple[str, ...]:
+def _available_profiles(media: Probe) -> tuple[str, ...]:
     match media.videos:
         case (Stream(height=int(height)), *_):
             return tuple(
                 profile
-                for profile, maximum in _HEIGHTS.items()
-                if maximum is None or maximum <= height
+                for profile, output_height in _PROFILE_HEIGHTS.items()
+                if output_height is None or output_height <= height
             )
         case _:
             return (_NATIVE_PROFILE,)
 
 
-def _profile(profiles: tuple[str, ...], query: Query) -> tuple[str, int | None] | None:
+def _select_profile(
+    profiles: tuple[str, ...], query: Query
+) -> tuple[str, int | None] | None:
     match query:
         case {"profile": [*_, profile]} if profile in profiles:
-            return profile, _HEIGHTS[profile]
+            return profile, _PROFILE_HEIGHTS[profile]
         case {"profile": [*_, _]}:
             return None
         case _:
             return _NATIVE_PROFILE, None
 
 
-def _selected(streams: tuple[Stream, ...], *, value: str) -> Stream | None:
-    for item in streams:
-        if str(item.index) == value:
-            return item
+def _stream_by_index(streams: tuple[Stream, ...], *, index: str) -> Stream | None:
+    for candidate in streams:
+        if str(candidate.index) == index:
+            return candidate
     return None
 
 
-def _language(streams: tuple[Stream, ...], *, value: str) -> Stream | None:
-    for item in streams:
-        if item.language == value:
-            return item
+def _stream_by_language(streams: tuple[Stream, ...], *, language: str) -> Stream | None:
+    for candidate in streams:
+        if candidate.language == language:
+            return candidate
     return None
 
 
-def _audio(media: Probe, *, query: Query, preferences: dict[str, str]) -> Stream | None:
+def _select_audio_stream(
+    media: Probe, *, query: Query, preferences: dict[str, str]
+) -> Stream | None:
     match query, preferences:
         case ({_Preference.AUDIO: [*_, str(language)]}, _) | (
             _,
             {_Preference.AUDIO: str(language)},
         ):
-            return _language(media.audios, value=language) or media.default_audio
+            return (
+                _stream_by_language(media.audios, language=language)
+                or media.default_audio
+            )
         case _, _:
             return media.default_audio
-
-
-def _subtitle(
-    media: Probe,
-    *,
-    audio: Stream | None,
-    query: Query,
-    preferences: dict[str, str],
-    request: BaseHTTPRequestHandler,
-) -> Stream | None:
-    match query, preferences:
-        case ({_Preference.SUBTITLE: [*_, Selection.NONE]}, _) | (
-            _,
-            {_Preference.SUBTITLE: Selection.NONE},
-        ):
-            return None
-        case ({_Preference.SUBTITLE: [*_, str(language)]}, _) | (
-            _,
-            {_Preference.SUBTITLE: str(language)},
-        ):
-            return _language(media.subtitles, value=language)
-        case _, _:
-            return select_subtitle(
-                audio=audio,
-                subtitles=media.subtitles,
-                accept_language=request.headers.get("Accept-Language"),
-            )
 
 
 def _query_preferences(query: Query) -> dict[str, str]:
@@ -134,7 +114,7 @@ def _query_preferences(query: Query) -> dict[str, str]:
     }
 
 
-def _set_preferences(query: Query) -> Iterator[Morsel[str]]:
+def _preference_cookies(query: Query) -> Iterator[Morsel[str]]:
     for name, value in _query_preferences(query).items():
         yield set_cookie(
             name=name,
@@ -143,20 +123,20 @@ def _set_preferences(query: Query) -> Iterator[Morsel[str]]:
         )
 
 
-def _time(query: Query) -> str:
+def _start_time(query: Query) -> str:
     match query:
         case {"t": [*_, value]}:
             with suppress(OverflowError, ValueError):
-                time = float(value)
-                if isfinite(time):
-                    return f"{max(0, time):.3f}"
+                seconds = float(value)
+                if isfinite(seconds):
+                    return f"{max(0, seconds):.3f}"
     return "0"
 
 
-def _media(request: BaseHTTPRequestHandler, *, entry: Entry) -> Probe | None:
-    path, data = entry
+def _probe_media(request: BaseHTTPRequestHandler, *, entry: Entry) -> Probe | None:
+    path, stat = entry
     try:
-        return probe(path=path, modified=data.st_mtime_ns)
+        return probe(path=path, modified=stat.st_mtime_ns)
     except ProbeError:
         request.send_error(
             HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
@@ -165,7 +145,31 @@ def _media(request: BaseHTTPRequestHandler, *, entry: Entry) -> Probe | None:
         return None
 
 
-def _index(
+def _select_subtitle_stream(
+    media: Probe,
+    *,
+    audio: Stream | None,
+    query: Query,
+    preferences: dict[str, str],
+    request: BaseHTTPRequestHandler,
+) -> Stream | None:
+    requested_language = _query_preferences(query).get(_Preference.SUBTITLE)
+    for language in (requested_language, preferences.get(_Preference.SUBTITLE)):
+        if language == Selection.NONE:
+            return None
+        if language and (
+            subtitle := _stream_by_language(media.subtitles, language=language)
+        ):
+            return subtitle
+
+    return select_stream(
+        audio=audio,
+        streams=media.subtitles,
+        accept_language=request.headers.get("Accept-Language"),
+    )
+
+
+def _serve_directory(
     request: BaseHTTPRequestHandler,
     *,
     path: Path,
@@ -173,7 +177,7 @@ def _index(
     head: bool,
 ) -> None:
     try:
-        selected = entries(path=path)
+        directory_entries = entries(path=path)
     except EntriesError:
         request.send_error(HTTPStatus.FORBIDDEN, message=HTTPStatus.FORBIDDEN.phrase)
         return
@@ -182,13 +186,13 @@ def _index(
         request,
         body=index_html(
             relative=relative,
-            entries=selected,
+            entries=directory_entries,
         ),
         head=head,
     )
 
 
-def _player(
+def _serve_player(
     request: BaseHTTPRequestHandler,
     *,
     relative: PurePosixPath,
@@ -197,7 +201,7 @@ def _player(
     head: bool,
 ) -> None:
     path, _ = entry
-    if (media := _media(request, entry=entry)) is None:
+    if (media := _probe_media(request, entry=entry)) is None:
         return
 
     if not media.videos and not media.audios:
@@ -207,17 +211,17 @@ def _player(
         )
         return
 
-    profiles = _profiles(media)
-    if (selected := _profile(profiles, query)) is None:
+    profiles = _available_profiles(media)
+    if (selected_profile := _select_profile(profiles, query)) is None:
         request.send_error(
             HTTPStatus.BAD_REQUEST, message=HTTPStatus.BAD_REQUEST.phrase
         )
         return
 
-    profile, _ = selected
+    profile, _ = selected_profile
     preferences = cookies(request)
-    audio = _audio(media, query=query, preferences=preferences)
-    subtitle = _subtitle(
+    audio = _select_audio_stream(media, query=query, preferences=preferences)
+    subtitle = _select_subtitle_stream(
         media,
         audio=audio,
         query=query,
@@ -227,7 +231,7 @@ def _player(
 
     html(
         request,
-        cookies=_set_preferences(query),
+        cookies=_preference_cookies(query),
         body=player_html(
             audio=audio,
             probe=media,
@@ -235,21 +239,21 @@ def _player(
             profile=profile,
             profiles=profiles,
             subtitle=subtitle,
-            time=_time(query),
+            time=_start_time(query),
             title=path.name,
         ),
         head=head,
     )
 
 
-def _stream(
+def _serve_media_stream(
     request: BaseHTTPRequestHandler,
     *,
     entry: Entry,
     query: Query,
     head: bool,
 ) -> None:
-    if (media := _media(request, entry=entry)) is None:
+    if (media := _probe_media(request, entry=entry)) is None:
         return
 
     if not media.videos and not media.audios:
@@ -258,14 +262,14 @@ def _stream(
         )
         return
 
-    if (selected := _profile(_profiles(media), query)) is None:
+    if (selected_profile := _select_profile(_available_profiles(media), query)) is None:
         request.send_error(
             HTTPStatus.BAD_REQUEST, message=HTTPStatus.BAD_REQUEST.phrase
         )
         return
 
-    _, height = selected
-    audio = _audio(media, query=query, preferences=cookies(request))
+    _, height = selected_profile
+    audio = _select_audio_stream(media, query=query, preferences=cookies(request))
     audio_index = audio.index if audio else None
 
     stream(
@@ -273,30 +277,33 @@ def _stream(
         source=media.stream(
             audio=audio_index,
             height=height,
-            time=_time(query),
+            time=_start_time(query),
         ),
         content_type="video/mp4" if media.videos else "audio/mp4",
         head=head,
     )
 
 
-def _subtitle_stream(
+def _serve_subtitle_stream(
     request: BaseHTTPRequestHandler,
     *,
     entry: Entry,
     query: Query,
     head: bool,
 ) -> None:
-    if (media := _media(request, entry=entry)) is None:
+    if (media := _probe_media(request, entry=entry)) is None:
         return
     match query:
-        case {"stream": [*_, value]} if (
-            subtitle := _selected(media.subtitles, value=value)
+        case {"stream": [*_, index]} if (
+            subtitle := _stream_by_index(media.subtitles, index=index)
         ) is not None:
             stream(
                 request,
-                source=media.subtitle(subtitle=subtitle, time=_time(query)),
+                source=media.subtitle(subtitle=subtitle, time=_start_time(query)),
                 content_type="text/vtt; charset=utf-8",
+                cookies=_preference_cookies(
+                    {_Preference.SUBTITLE: [subtitle.language]}
+                ),
                 head=head,
             )
         case _:
@@ -305,7 +312,7 @@ def _subtitle_stream(
             )
 
 
-def _player_script(
+def _serve_player_script(
     request: BaseHTTPRequestHandler,
     *,
     head: bool,
@@ -327,8 +334,8 @@ def _player_script(
 
 def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> None:
     raw, query = target(request.path)
-    if (p := PurePosixPath(raw)).name.endswith(".js"):
-        _player_script(request, head=head, name=p.name)
+    if (request_path := PurePosixPath(raw)).name.endswith(".js"):
+        _serve_player_script(request, head=head, name=request_path.name)
         return
 
     if (resolved := resolve(root=root, raw=raw)) is None:
@@ -337,12 +344,12 @@ def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> Non
     relative, path = resolved
 
     match entry(path=path):
-        case source, data if S_ISDIR(data.st_mode):
+        case source, stat if S_ISDIR(stat.st_mode):
             if not raw.endswith(sep):
                 redirect(request, location=f"{quote(relative.name)}{sep}")
                 return
 
-            _index(
+            _serve_directory(
                 request,
                 path=source,
                 relative=relative,
@@ -350,11 +357,11 @@ def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> Non
             )
             return
 
-        case source, data if S_ISREG(data.st_mode):
-            _player(
+        case source, stat if S_ISREG(stat.st_mode):
+            _serve_player(
                 request,
                 relative=relative,
-                entry=(source, data),
+                entry=(source, stat),
                 query=query,
                 head=head,
             )
@@ -364,13 +371,15 @@ def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> Non
             pass
 
     match entry(path=path.parent):
-        case source, data if S_ISREG(data.st_mode):
+        case source, stat if S_ISREG(stat.st_mode):
             match relative.name:
                 case "stream":
-                    _stream(request, entry=(source, data), query=query, head=head)
+                    _serve_media_stream(
+                        request, entry=(source, stat), query=query, head=head
+                    )
                 case "subtitle":
-                    _subtitle_stream(
-                        request, entry=(source, data), query=query, head=head
+                    _serve_subtitle_stream(
+                        request, entry=(source, stat), query=query, head=head
                     )
                 case _:
                     request.send_error(

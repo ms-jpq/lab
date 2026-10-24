@@ -82,11 +82,18 @@ def html(
     )
 
 
-def _start_stream(request: BaseHTTPRequestHandler, *, content_type: str) -> None:
+def _start_stream(
+    request: BaseHTTPRequestHandler,
+    *,
+    content_type: str,
+    cookies: Iterable[Morsel[str]],
+) -> None:
     request.send_response(HTTPStatus.OK, message=HTTPStatus.OK.phrase)
     request.send_header("Content-Type", content_type)
     request.send_header("Cache-Control", "no-store")
     request.send_header("Connection", "close")
+    for morsel in cookies:
+        request.send_header("Set-Cookie", morsel.OutputString())
     request.end_headers()
 
 
@@ -96,16 +103,17 @@ def stream(
     source: Iterator[bytes],
     content_type: str,
     head: bool,
+    cookies: Iterable[Morsel[str]] = (),
 ) -> None:
     request.close_connection = True
 
     if head:
-        _start_stream(request, content_type=content_type)
+        _start_stream(request, content_type=content_type, cookies=cookies)
         return
 
     for idx, chunk in enumerate(source):
         if not idx:
-            _start_stream(request, content_type=content_type)
+            _start_stream(request, content_type=content_type, cookies=cookies)
         request.wfile.write(chunk)
 
 

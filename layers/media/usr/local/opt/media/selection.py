@@ -38,27 +38,31 @@ _RANGE = compile(
 
 
 def _codecs(value: str) -> Iterator[str]:
-    for item in value.split(","):
-        if (match := _RANGE.fullmatch(item)) and (
-            quality := float(match.group("quality") or 1)
-        ):
-            language = match.group("language").casefold()
-            yield from _CODECS.get(language, (language,))
+    preferences = (
+        (float(match.group("quality") or 1), match.group("language").casefold())
+        for item in value.split(",")
+        if (match := _RANGE.fullmatch(item))
+    )
+    for quality, language in sorted(preferences, key=lambda item: -item[0]):
+        if quality:
+            yield language
+            yield from _CODECS.get(language, ())
     return
 
 
-def select_subtitle(
+def select_stream(
     *,
     audio: Stream | None,
-    subtitles: tuple[Stream, ...],
+    streams: tuple[Stream, ...],
     accept_language: str | None,
 ) -> Stream | None:
-    active = {*_codecs(accept_language or "")}
-    if audio and audio.language in active:
+    active = tuple(_codecs(accept_language or ""))
+    if audio and audio.language.casefold() in active:
         return None
 
-    for item in subtitles:
-        if item.language in active:
-            return item
+    for language in active:
+        for item in streams:
+            if item.language.casefold() == language:
+                return item
 
-    return None
+    return next((item for item in streams if item.default), None)
