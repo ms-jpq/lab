@@ -129,7 +129,6 @@ export const once = async <
   return fut.promise
 }
 
-
 export const event_batches = <
   const T extends EventTarget,
   const E extends EventName<T>,
@@ -245,7 +244,7 @@ export const fetch_stream = (
       }
 
       if (response.body) {
-        yield* response.body
+        yield* response.body.pipeThrough(new TransformStream(), { signal })
       }
     } catch (error) {
       if (!signal.aborted) {

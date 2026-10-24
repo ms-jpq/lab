@@ -1,5 +1,6 @@
 import { deepEqual, ok as assert, rejects } from "node:assert/strict"
 import { getEventListeners } from "node:events"
+import { createServer } from "node:http"
 import type { TestContext } from "node:test"
 import { setImmediate } from "node:timers/promises"
 import { EventTarget, run_cases } from "./test_utils.ts"
@@ -46,6 +47,70 @@ class OnceTarget extends EventTarget {
 }
 
 const cases = [
+  ...(["owner abort", "iterator return"] as const).map((stop) => ({
+    name: `native fetch releases a pending HTTP body read on ${stop}`,
+    run: async (context: TestContext): Promise<void> =>
+      withFetch(context, async () => {
+        const disconnected = Promise.withResolvers<void>()
+        const server = createServer((_request, response) => {
+          response.on("close", disconnected.resolve)
+          response.writeHead(200, {
+            "Content-Type": "application/octet-stream",
+          })
+          response.write(Buffer.from([1]))
+        })
+        const owner = new AbortController()
+        context.after(async () => {
+          owner.abort()
+          server.closeAllConnections()
+          await new Promise<void>((resolve, reject) => {
+            server.close((error) => (error ? reject(error) : resolve()))
+          })
+        })
+        await new Promise<void>((resolve) =>
+          server.listen(0, "127.0.0.1", resolve),
+        )
+        const address = server.address()
+        assert(address && typeof address === "object")
+        const nativeFetch = globalThis.fetch
+        const received = Promise.withResolvers<ReadableStream<Uint8Array>>()
+        context.mock.method(
+          globalThis,
+          "fetch",
+          async (...args: Parameters<typeof fetch>) => {
+            const response = await nativeFetch(...args)
+            assert(response.body)
+            received.resolve(response.body)
+            return response
+          },
+        )
+        const values = fetch_stream(
+          new Request(`http://127.0.0.1:${address.port}/stream`, {
+            signal: owner.signal,
+          }),
+        )
+        deepEqual(await values.next(), {
+          done: false,
+          value: new Uint8Array([1]),
+        })
+        const pending = values.next()
+        await setImmediate()
+
+        if (stop === "owner abort") {
+          owner.abort()
+          deepEqual(await pending, { done: true, value: undefined })
+        }
+        const closed = values.return?.()
+        assert(closed)
+        deepEqual(await Promise.all([pending, closed]), [
+          { done: true, value: undefined },
+          { done: true, value: undefined },
+        ])
+        await disconnected.promise
+        const body = await received.promise
+        deepEqual(body.locked, false)
+      }),
+  })),
   ...[0, 1, 8].flatMap((count) =>
     [false, true].map((combined) => ({
       name: `return drains ${count} queued event reads ${combined ? "through merge" : "directly"}`,

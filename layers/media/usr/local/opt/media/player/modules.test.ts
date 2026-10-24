@@ -68,7 +68,7 @@ class PlayerURL extends URL {
 const form = { elements: { namedItem: () => ({ value: "0" }) } }
 const context = vm.createContext({
   AbortController, AbortSignal, DOMException, Event, EventTarget,
-  MediaSource, Promise, ReadableStream, Request, URL: PlayerURL, URLSearchParams,
+  MediaSource, Promise, ReadableStream, TransformStream, Request, URL: PlayerURL, URLSearchParams,
   clearTimeout, crypto, queueMicrotask, setTimeout, window,
   console: { error: (...values) => errors.push(values) },
   document: { querySelectorAll: () => [], querySelector: (selector) =>

@@ -388,6 +388,7 @@ const fixture = async ({
     queueMicrotask,
     Request,
     ReadableStream,
+    TransformStream,
     setTimeout: schedule,
     Uint8Array,
     URL: PlayerURL,
