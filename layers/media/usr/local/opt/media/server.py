@@ -329,6 +329,7 @@ def _dispatch(root: Path, request: BaseHTTPRequestHandler, *, head: bool) -> Non
     raw, query = target(request.path)
     if (p := PurePosixPath(raw)).name.endswith(".js"):
         _player_script(request, head=head, name=p.name)
+        return
 
     if (resolved := resolve(root=root, raw=raw)) is None:
         request.send_error(HTTPStatus.NOT_FOUND, message=HTTPStatus.NOT_FOUND.phrase)
