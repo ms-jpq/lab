@@ -1,6 +1,6 @@
 import { closed, media_sources } from "./mse.ts"
+import type { Mse } from "./mse.ts"
 import { media_buffered, media_events, playable_position } from "./media.ts"
-import type { MediaSnapshot } from "./media.ts"
 import {
   duration,
   main,
@@ -11,6 +11,11 @@ import {
   source_url,
 } from "./page.ts"
 import { playback_transitions } from "./reducer.ts"
+import type {
+  PlaybackAction,
+  PlaybackDispatch,
+  PlaybackEffects,
+} from "./reducer.ts"
 import {
   abortion,
   closing,
@@ -21,10 +26,9 @@ import {
   merge,
   never,
   once,
+  typed_next,
 } from "./util.ts"
 
-type Dispatch = ReturnType<typeof playback_transitions>
-type PlaybackAction = Parameters<Dispatch>[0]
 type StreamAction = Extract<
   PlaybackAction,
   {
@@ -62,7 +66,6 @@ type SourceAction = Extract<PlaybackAction, { type: "source_closed" }>
   }
 }
 
-const BUFFER_BEHIND = 30
 const MSE_TIMEOUT = 10_000
 const REQUEST_TIMEOUT = 15_000
 const RETRY_DELAY = 1_000
@@ -70,22 +73,22 @@ const RETRY_DELAY = 1_000
 const stream_events = async function* (
   stream: ReturnType<typeof fetch_stream>,
   signal: AbortSignal,
-): AsyncIteratorObject<StreamAction> {
+): AsyncIteratorObject<readonly StreamAction[]> {
   try {
     for await (const bytes of stream) {
-      yield { bytes, type: "bytes_received" }
+      yield [{ bytes, type: "bytes_received" }]
     }
     if (!signal.aborted) {
-      yield { type: "request_finished" }
+      yield [{ type: "request_finished" }]
     }
   } catch (error) {
     if (signal.aborted) {
       return
     }
-    yield { error, type: "request_failed" }
+    yield [{ error, type: "request_failed" }]
   }
   if (await delay(signal, RETRY_DELAY)) {
-    yield { current: media_buffered(media).current, type: "request_retry" }
+    yield [{ current: media_buffered(media).current, type: "request_retry" }]
   }
   return
 }
@@ -93,7 +96,7 @@ const stream_events = async function* (
 const source_events = async function* (
   signal: AbortSignal,
   source: MediaSource,
-): AsyncIteratorObject<SourceAction> {
+): AsyncIteratorObject<readonly SourceAction[]> {
   if (
     !closed(source) &&
     (await once(signal, source, "sourceclose")) === undefined
@@ -101,61 +104,137 @@ const source_events = async function* (
     return
   }
 
-  yield {
-    paused: media.paused,
-    position:
-      media.readyState >= media.HAVE_METADATA
-        ? playable_position(media, media.currentTime)
-        : undefined,
-    type: "source_closed",
+  yield [
+    {
+      paused: media.paused,
+      position:
+        media.readyState >= media.HAVE_METADATA
+          ? playable_position(media, media.currentTime)
+          : undefined,
+      type: "source_closed",
+    },
+  ]
+  return
+}
+
+const playback_events = async function* (
+  source: MediaSource,
+  {
+    signal,
+    buffer,
+    dispatch,
+  }: { signal: AbortSignal; buffer: Mse; dispatch: PlaybackDispatch },
+): AsyncIteratorObject<PlaybackEffects> {
+  const abort = abortion(signal)
+  await using observations = merge(
+    media_events(media, abort.signal),
+    source_events(abort.signal, source),
+  )
+  using _ = abort
+
+  let pending_media = typed_next(observations, { type: "media" })
+  let request:
+    | {
+        aiter: AsyncIteratorObject<readonly StreamAction[]>
+        pending?: Promise<
+          { type: "request" } & IteratorResult<readonly StreamAction[]>
+        >
+      }
+    | undefined
+
+  await using __ = defer(async () => {
+    await request?.aiter.return?.()
+  })
+
+  let actions: readonly PlaybackAction[] = [{ type: "source_opened" }]
+  for (; !abort.signal.aborted;) {
+    const effects: PlaybackEffects = dispatch(actions)
+    yield effects
+
+    if (effects.control) {
+      await request?.aiter.return?.()
+      request = undefined
+      switch (effects.control.type) {
+        case "pause":
+          break
+        case "rebuild":
+        case "retry":
+          return
+        case "request": {
+          const { frontier, position } = effects.control.request
+          if ((await buffer.next(frontier)).done) {
+            return
+          }
+          const aiter = closing(abort.signal, (signal) =>
+            stream_events(
+              inactivity(signal, REQUEST_TIMEOUT, (signal) =>
+                fetch_stream(
+                  new Request(source_url(media, position), { signal }),
+                ),
+              ),
+              signal,
+            ),
+          )
+          request = { aiter }
+          break
+        }
+        default:
+          never(effects.control)
+      }
+    } else if (effects.buffer !== undefined) {
+      const result = await buffer.next(effects.buffer.bytes)
+      if (result.done) {
+        return
+      }
+      if (effects.buffer.type !== "end" && result.value.byteLength > 0) {
+        actions = [
+          {
+            ...media_buffered(media),
+            type: "buffer_full",
+            playable: media.readyState >= media.HAVE_FUTURE_DATA,
+          },
+        ]
+        continue
+      } else if (effects.buffer.type !== "end") {
+        dispatch([media_buffered(media)])
+      }
+    }
+
+    actions = []
+    const selected = await Promise.race([
+      pending_media,
+      ...(request === undefined
+        ? []
+        : [request.pending ?? Promise.resolve({ type: "admit" as const })]),
+    ])
+    if (selected.type === "media") {
+      if (selected.done) {
+        return
+      }
+      pending_media = typed_next(observations, { type: "media" })
+      const [, observed] = selected.value
+      actions = observed
+    } else if (request !== undefined) {
+      if (selected.type === "admit") {
+        request.pending = typed_next(request.aiter, { type: "request" })
+      } else if (selected.done) {
+        request = undefined
+      } else {
+        delete request.pending
+        actions = selected.value
+      }
+    }
   }
   return
 }
 
-const playback_events = (
+export const play_media = async (
   signal: AbortSignal,
-  source: MediaSource,
-  position: number | undefined,
-  previous: MediaSnapshot,
-): AsyncIteratorObject<PlaybackAction> =>
-  closing(signal, async function* (signal) {
-    const current = media_buffered(media).current
-    if (current.error !== undefined && current.error !== previous.error) {
-      yield { current, type: "error" }
-    }
-    if (current.time !== previous.time) {
-      yield { current, type: "seeking" }
-    }
-    await using stream =
-      position === undefined
-        ? (async function* () {})()
-        : stream_events(
-            inactivity(signal, REQUEST_TIMEOUT, (signal) =>
-              fetch_stream(
-                new Request(source_url(media, position), {
-                  signal,
-                }),
-              ),
-            ),
-            signal,
-          )
-
-    await using events = merge(
-      media_events(media, signal),
-      source_events(signal, source),
-      stream,
-    )
-    for await (const [, event] of events) {
-      yield event
-    }
-    return
-  })
-
-export const play_media = async (signal: AbortSignal, dispatch: Dispatch) => {
+  dispatch: PlaybackDispatch,
+): Promise<void> => {
   using abort = abortion(signal)
 
-  source: for await (const [source, create_buffer] of media_sources({
-    evict_behind: BUFFER_BEHIND,
+  for await (const [source, create_buffer] of media_sources({
     media,
     mime_type,
     signal: abort.signal,
@@ -172,7 +251,7 @@ export const play_media = async (signal: AbortSignal, dispatch: Dispatch) => {
         media.readyState >= media.HAVE_METADATA
           ? playable_position(media, media.currentTime)
           : undefined
-      dispatch({ type: "source_closed", paused: media.paused, position })
+      dispatch([{ type: "source_closed", paused: media.paused, position }])
 
       if (playing !== undefined) {
         media.pause()
@@ -184,107 +263,36 @@ export const play_media = async (signal: AbortSignal, dispatch: Dispatch) => {
       continue
     }
 
-    const opened = dispatch({ type: "source_opened" })
-    if (opened.seek !== undefined) {
-      media.currentTime = opened.seek
-    }
-
-    let requested =
-      opened.control?.type === "request" ? opened.control.request : undefined
-    let previous = media_buffered(media).current
-
-    request: for (; !abort.signal.aborted;) {
-      if (
-        requested !== undefined &&
-        (await buffer.next(requested.frontier)).done
-      ) {
-        continue source
+    for await (const effects of playback_events(source, {
+      signal: abort.signal,
+      buffer,
+      dispatch,
+    })) {
+      if (effects.error !== undefined) {
+        console.error(effects.error)
       }
-
-      using abrt = abortion(abort.signal)
-
-      for await (const received of playback_events(
-        abrt.signal,
-        source,
-        requested?.position,
-        previous,
-      )) {
-        const effects = dispatch(received)
-        if (effects.error !== undefined) {
-          console.error(effects.error)
-        }
-
-        if (effects.persist !== undefined) {
-          persist_position(effects.persist)
-        }
-
-        if (effects.seek !== undefined) {
-          media.currentTime = effects.seek
-        }
-        previous = media_buffered(media).current
-
-        if (effects.play && playing === undefined) {
-          playing = (async () => {
-            try {
-              await media.play()
-            } catch (error) {
-              if (!(
-                error instanceof DOMException &&
-                error.code === DOMException.ABORT_ERR
-              )) {
-                console.error(error)
-              }
+      if (effects.persist !== undefined) {
+        persist_position(effects.persist)
+      }
+      if (effects.seek !== undefined) {
+        media.currentTime = effects.seek
+      }
+      if (effects.play && playing === undefined) {
+        playing = (async () => {
+          try {
+            await media.play()
+          } catch (error) {
+            if (!(
+              error instanceof DOMException &&
+              error.code === DOMException.ABORT_ERR
+            )) {
+              console.error(error)
             }
-          })()
-        }
-
-        if (effects.control) {
-          using _ = abrt
-
-          switch (effects.control.type) {
-            case "pause": {
-              requested = undefined
-              continue request
-            }
-            case "rebuild":
-              continue source
-            case "retry":
-              return
-            case "request": {
-              requested = effects.control.request
-              continue request
-            }
-            default:
-              never(effects.control)
           }
-        }
-
-        if (effects.buffer === undefined) {
-          continue
-        }
-
-        const result = await buffer.next(effects.buffer?.bytes)
-        if (result.done) {
-          using _ = abrt
-          continue source
-        }
-        if (effects.buffer.type === "end") {
-          continue
-        }
-
-        if (result.value.byteLength > 0) {
-          const { control } = dispatch({
-            ...media_buffered(media),
-            type: "buffer_full",
-          })
-          if (control?.type === "retry") {
-            return
-          }
-          requested = undefined
-          using _ = abrt
-          continue request
-        }
-        dispatch(media_buffered(media))
+        })()
+      }
+      if (effects.control?.type === "retry") {
+        return
       }
     }
   }

@@ -46,7 +46,7 @@ export const persist_position = (value: number): void => {
 }
 
 export const source_url = (
-  resource: HTMLMediaElement | HTMLTrackElement,
+  resource: HTMLMediaElement,
   time: number,
 ): string => {
   const path = resource.dataset["src"] as string
@@ -74,7 +74,7 @@ const submit = (event: SubmitEvent): void => {
 }
 
 export const main = async (
-  play_media: (signal: AbortSignal) => Promise<undefined | void>,
+  play_media: (signal: AbortSignal) => Promise<void>,
 ): Promise<void> => {
   form.onsubmit = submit
   persist_position(initial_position)

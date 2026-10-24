@@ -20,11 +20,9 @@ import type { Range, TestCase } from "./test_utils.ts"
 
 type PlayerContext = vm.Context & {
   player_test: {
-    main: (
-      playback: (signal: AbortSignal) => Promise<undefined>,
-    ) => Promise<void>
-    play_media: (signal: AbortSignal) => Promise<undefined>
-    playback: (signal: AbortSignal) => Promise<undefined>
+    main: (playback: (signal: AbortSignal) => Promise<void>) => Promise<void>
+    play_media: (signal: AbortSignal) => Promise<void>
+    playback: (signal: AbortSignal) => Promise<void>
     media_sources: (signal: AbortSignal) => AsyncIteratorObject<unknown>
   }
 }
@@ -106,7 +104,7 @@ const script = await player_script(
   play_media: (signal) => play_media(signal, playback_transitions(page_position())),
   playback,
   media_sources: (signal) => media_sources({
-    media, mime_type, signal, evict_behind: 30, timeout: 10_000,
+    media, mime_type, signal, timeout: 10_000,
   }),
 }`,
 )
@@ -384,7 +382,6 @@ const fixture = async ({
     location,
     MediaError: { MEDIA_ERR_ABORTED: 1 },
     MediaSource: TestMediaSource,
-    Promise,
     queueMicrotask,
     Request,
     ReadableStream,
@@ -427,7 +424,7 @@ const fixture = async ({
 const start_playback = (
   current: Awaited<ReturnType<typeof fixture>>,
   context: TestContext,
-): { owner: AbortController; playback: Promise<undefined> } => {
+): { owner: AbortController; playback: Promise<void> } => {
   const owner = new AbortController()
   const playback = current.context.player_test.play_media(owner.signal)
   context.after(async () => {
@@ -805,15 +802,15 @@ const cases = [
     },
   },
   ...[20, 20.05].map((target): TestCase => ({
-    name: `audit: quota retirement preserves a queued seek to ${target} during eviction`,
+    name: `audit: quota retirement preserves a queued seek to ${target} after browser eviction`,
     run: async () => {
       const current = await fixture({
         response: "pending",
         append_duration: 40,
       })
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
       let body:
         ReadableStreamDefaultController<Uint8Array<ArrayBuffer>> | undefined
-      let removing = false
       let exhausted = 0
       current.set_fetch(() => {
         const buffer = current.sources[0]?.sourceBuffers[0]
@@ -826,6 +823,12 @@ const cases = [
             0,
           )
           if (retained + bytes.byteLength > 80) {
+            buffer.buffered.values.splice(
+              0,
+              buffer.buffered.values.length,
+              [20.05, 80],
+            )
+            current.media.currentTime = target
             exhausted += 1
             throw new DOMException(
               "Buffer capacity exceeded",
@@ -840,11 +843,6 @@ const cases = [
             start,
             end + bytes.byteLength,
           ])
-        }
-        buffer.remove = (start, end) => {
-          buffer.removed.push([start, end])
-          buffer.updating = true
-          removing = true
         }
         return response_from(
           new ReadableStream({
@@ -870,18 +868,6 @@ const cases = [
         await eventually(() => buffer.appended.length === 2 && !buffer.updating)
         current.media.update_time(50)
         await setImmediate()
-        body.enqueue(new Uint8Array(25))
-        await eventually(() => removing)
-        deepEqual(buffer.removed, [[0, 20]])
-
-        // Removal has finished, but its queued completion events have not run.
-        // The next retained frame begins just beyond the requested cutoff.
-        buffer.buffered.values.splice(
-          0,
-          buffer.buffered.values.length,
-          [20.05, 80],
-        )
-        buffer.updating = false
         let time = current.media.currentTime
         Object.defineProperty(current.media, "currentTime", {
           get: () => time,
@@ -899,10 +885,7 @@ const cases = [
             })
           },
         })
-        current.media.currentTime = target
-        await setImmediate()
-        buffer.dispatchEvent(new Event("update"))
-        buffer.dispatchEvent(new Event("updateend"))
+        body.enqueue(new Uint8Array(25))
         await eventually(
           () => exhausted === 1 && current.requests[0]?.signal.aborted === true,
         )
@@ -1272,10 +1255,27 @@ const cases = [
       }
     },
   },
-  {
-    name: "quota without playable media uses the delayed recovery path instead of waiting forever",
+  ...(
+    [
+      { name: "no buffered data", time: 0, buffered: [] },
+      {
+        name: "buffered data that cannot advance playback",
+        time: 1535.324599,
+        buffered: [
+          [1531.375, 1535.398274],
+          [4974, 4981],
+        ],
+      },
+    ] as const
+  ).map(({ name, time, buffered }): TestCase => ({
+    name: `quota with ${name} uses delayed recovery instead of waiting forever`,
     run: async () => {
-      const current = await fixture({ response: "pending" })
+      const current = await fixture({
+        response: "pending",
+        url_position: time,
+        media_duration: 5000,
+      })
+      current.media.readyState = 2
       const tick = retry_clock(current.context)
       current.set_fetch(() => {
         if (current.requests.length !== 1) {
@@ -1284,6 +1284,11 @@ const cases = [
         const buffer = current.sources[0]?.sourceBuffers[0]
         ok(buffer)
         buffer.appendBuffer = () => {
+          buffer.buffered.values.splice(
+            0,
+            buffer.buffered.values.length,
+            ...buffered.map(([start, end]): Range => [start, end]),
+          )
           throw new DOMException("full", "QuotaExceededError")
         }
         return response_from(
@@ -1302,13 +1307,13 @@ const cases = [
         ok(current.requests[0]?.signal.aborted)
         tick()
         await eventually(() => current.requests.length === 2)
-        equal(request_position(current.requests[1]), "0")
+        equal(request_position(current.requests[1]), String(time))
       } finally {
         owner.abort()
         await playing
       }
     },
-  },
+  })),
   ...(
     [
       "progress",
@@ -1324,6 +1329,7 @@ const cases = [
         response: "pending",
         append_duration: 20,
       })
+      current.media.readyState = current.media.HAVE_FUTURE_DATA
       const tick = retry_clock(current.context)
       const chunk = new Uint8Array(20)
       const rejected = new Uint8Array(5)
@@ -1338,10 +1344,17 @@ const cases = [
         ok(buffer)
         if (bodies.length === 0) {
           const append = buffer.appendBuffer.bind(buffer)
-          const remove = buffer.remove.bind(buffer)
           // Constant-bitrate capacity model: retained timeline duration represents bytes.
           buffer.appendBuffer = (bytes) => {
             attempts.push(bytes)
+            const cutoff = Math.max(0, current.media.currentTime - 30)
+            buffer.buffered.values.splice(
+              0,
+              buffer.buffered.values.length,
+              ...buffer.buffered.values.flatMap(([start, end]): Range[] =>
+                end > cutoff ? [[Math.max(start, cutoff), end]] : [],
+              ),
+            )
             const retained = buffer.buffered.values.reduce(
               (total, [start, end]) => total + end - start,
               0,
@@ -1362,20 +1375,6 @@ const cases = [
               start,
               end + bytes.byteLength,
             ])
-          }
-          buffer.remove = (start, end) => {
-            const retained = buffer.buffered.values.flatMap(
-              ([lo, hi]): Range[] => [
-                ...(lo < start ? [[lo, Math.min(hi, start)] as const] : []),
-                ...(hi > end ? [[Math.max(lo, end), hi] as const] : []),
-              ],
-            )
-            buffer.buffered.values.splice(
-              0,
-              buffer.buffered.values.length,
-              ...retained,
-            )
-            remove(start, end)
           }
         }
         return response_from(
@@ -1988,6 +1987,10 @@ const cases = [
       )
       current.window.dispatchEvent(new Event("pageshow"))
       await eventually(() => current.requests.length === 1)
+      const waitingListeners = getEventListeners(
+        current.media,
+        "waiting",
+      ).length
       current.media.readyState = current.media.HAVE_FUTURE_DATA
       current.media.dispatchEvent(new Event("waiting"))
       current.window.dispatchEvent(new Event("pagehide"))
@@ -1999,7 +2002,10 @@ const cases = [
       current.window.dispatchEvent(new Event("pageshow"))
       try {
         await eventually(() => current.requests.length === 2)
-        equal(getEventListeners(current.media, "waiting").length, 1)
+        equal(
+          getEventListeners(current.media, "waiting").length,
+          waitingListeners,
+        )
         current.media.dispatchEvent(new Event("playing"))
         current.media.update_time(0.1)
         await setImmediate()

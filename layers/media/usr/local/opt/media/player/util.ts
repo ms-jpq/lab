@@ -173,6 +173,14 @@ export const event_batches = <
     return
   })
 
+export const typed_next = async <T, const K extends string>(
+  aiter: AsyncIterator<T>,
+  { type }: { type: K },
+): Promise<{ type: K } & IteratorResult<T>> => ({
+  type,
+  ...(await aiter.next()),
+})
+
 const next = async <const T>(
   aiter: AsyncIterator<T>,
 ): Promise<readonly [AsyncIterator<T>, IteratorResult<T>]> => [

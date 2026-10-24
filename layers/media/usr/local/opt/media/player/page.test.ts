@@ -22,7 +22,7 @@ const script = await player_script(
 )
 
 const fixture = async (
-  subtitle: EventTarget | readonly EventTarget[] | null = null,
+  subtitles: readonly EventTarget[] = [],
   timers?: Map<number, () => void>,
 ) => {
   const window = new EventTarget()
@@ -66,17 +66,12 @@ const fixture = async (
     console: { error: () => undefined },
     crypto,
     document: {
-      querySelectorAll: () =>
-        subtitle === null
-          ? []
-          : Array.isArray(subtitle)
-            ? subtitle
-            : [subtitle],
+      querySelectorAll: () => subtitles,
       querySelector: (selector: string) =>
         selector === "video, audio"
           ? media
           : selector === "#subtitle"
-            ? subtitle
+            ? (subtitles[0] ?? null)
             : form,
     },
     localStorage: { getItem: () => null },
@@ -134,7 +129,7 @@ const cases = [
     name: "loaded subtitles remain attached until their owner aborts",
     run: async (): Promise<void> => {
       const track = subtitle_fixture()
-      const { play_subtitle, revoked } = await fixture(track.subtitle)
+      const { play_subtitle, revoked } = await fixture([track.subtitle])
       const owner = new AbortController()
       const loaded = play_subtitle(track.subtitle, owner.signal)
       await setImmediate()
@@ -161,7 +156,10 @@ const cases = [
     run: async (): Promise<void> => {
       const timers = new Map<number, () => void>()
       const track = subtitle_fixture()
-      const { context, start, dispatch } = await fixture(track.subtitle, timers)
+      const { context, start, dispatch } = await fixture(
+        [track.subtitle],
+        timers,
+      )
       const urls: string[] = []
       context["fetch"] = async (url: string | URL) => {
         urls.push(String(url))
@@ -201,9 +199,9 @@ const cases = [
     name: "a subtitle body completing after cancellation cannot attach a source",
     run: async (): Promise<void> => {
       const track = subtitle_fixture()
-      const { context, start, dispatch, blobs, revoked } = await fixture(
+      const { context, start, dispatch, blobs, revoked } = await fixture([
         track.subtitle,
-      )
+      ])
       const body = Promise.withResolvers<Blob>()
       const requests: AbortSignal[] = []
       context["fetch"] = async (
@@ -230,9 +228,9 @@ const cases = [
     name: "loaded subtitle URLs remain owned until pagehide and are renewed on restoration",
     run: async (): Promise<void> => {
       const track = subtitle_fixture()
-      const { start, dispatch, revoked, fetched } = await fixture(
+      const { start, dispatch, revoked, fetched } = await fixture([
         track.subtitle,
-      )
+      ])
       const { failures } = start()
       try {
         await dispatch("pageshow")
@@ -261,7 +259,7 @@ const cases = [
     name: "DOM readiness starts playback before subtitles finish and delayed pageshow does not duplicate it",
     run: async (): Promise<void> => {
       const track = subtitle_fixture()
-      const { start, dispatch } = await fixture(track.subtitle)
+      const { start, dispatch } = await fixture([track.subtitle])
       const { started, failures } = start()
 
       try {
@@ -288,7 +286,7 @@ const cases = [
       const timers = new Map<number, () => void>()
       const track = subtitle_fixture()
       const { context, start, dispatch, blobs } = await fixture(
-        track.subtitle,
+        [track.subtitle],
         timers,
       )
       const body = Promise.withResolvers<Blob>()
@@ -535,7 +533,7 @@ const cases = [
     run: async (): Promise<void> => {
       const timers = new Map<number, () => void>()
       const track = subtitle_fixture()
-      const { main, dispatch, window } = await fixture(track.subtitle, timers)
+      const { main, dispatch, window } = await fixture([track.subtitle], timers)
       const failure = new Error("playback startup failed")
       const started: AbortSignal[] = []
       const finished = main((signal) => {
@@ -615,7 +613,7 @@ const cases = [
     run: async (): Promise<void> => {
       const timers = new Map<number, () => void>()
       const { cancelled, finish, requests, subtitle } = subtitle_fixture()
-      const { start, dispatch } = await fixture(subtitle, timers)
+      const { start, dispatch } = await fixture([subtitle], timers)
       const { started, failures } = start()
 
       try {
@@ -654,7 +652,7 @@ const cases = [
     name: `restoring a subtitle after ${outcome} while hidden reloads its revoked source`,
     run: async (): Promise<void> => {
       const { requests, subtitle, finish } = subtitle_fixture()
-      const { start, dispatch } = await fixture(subtitle)
+      const { start, dispatch } = await fixture([subtitle])
       const { started, failures } = start()
 
       try {
@@ -678,7 +676,7 @@ const cases = [
     run: async (): Promise<void> => {
       const timers = new Map<number, () => void>()
       const { cancelled, requests, subtitle, finish } = subtitle_fixture()
-      const { start, dispatch } = await fixture(subtitle, timers)
+      const { start, dispatch } = await fixture([subtitle], timers)
       const { started, failures } = start()
 
       try {
@@ -715,7 +713,10 @@ const cases = [
       run: async (): Promise<void> => {
         const timers = new Map<number, () => void>()
         const track = subtitle_fixture()
-        const { main, media, dispatch } = await fixture(track.subtitle, timers)
+        const { main, media, dispatch } = await fixture(
+          [track.subtitle],
+          timers,
+        )
         const cleanup = Promise.withResolvers<void>()
         const started: AbortSignal[] = []
         const live = new Set<number>()

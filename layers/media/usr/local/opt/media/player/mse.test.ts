@@ -69,13 +69,11 @@ const fixture = ({
   failure,
   hold,
   readyState = "open",
-  evict_behind = 30,
 }: {
   buffered?: TimeRanges
   failure?: "append" | "append-sync" | "remove" | "remove-sync"
   hold?: "append" | "remove"
   readyState?: MediaSource["readyState"]
-  evict_behind?: number
 } = {}) => {
   const controller = new AbortController()
   const mutations: unknown[] = []
@@ -140,7 +138,6 @@ const fixture = ({
     readyState,
   })
   const values = media_source({
-    evict_behind,
     media,
     mime_type: "video/test",
     signal: controller.signal,
@@ -188,11 +185,6 @@ const quotaFixture = (capacity = 40) => {
     state.end += bytes.byteLength
     current.release()
   }
-  current.buffer.remove = (start, end) => {
-    current.mutations.push(["remove", start, end])
-    state.start = Math.min(state.end, end)
-    current.release()
-  }
   return { ...current, accepted, state }
 }
 
@@ -213,7 +205,6 @@ const cases = [
       const sources = media_sources({
         media: current.media,
         mime_type: "video/test",
-        evict_behind: 30,
         signal: owner.signal,
         timeout: MSE_TIMEOUT,
       })
@@ -261,7 +252,6 @@ const cases = [
       const sources = media_sources({
         media: current.media,
         mime_type: "video/test",
-        evict_behind: 30,
         signal: owner.signal,
         timeout: MSE_TIMEOUT,
       })
@@ -388,7 +378,7 @@ const cases = [
     },
   },
   {
-    name: "retrying quota uses the configured eviction cutoff without resetting the parser",
+    name: "retrying quota appends once capacity becomes available without resetting the parser",
     run: async () => {
       const current = quotaFixture()
       await start(current.values)
@@ -402,16 +392,14 @@ const cases = [
         deepEqual(current.state.attempts, 2)
         deepEqual(current.accepted, [])
         current.media.currentTime = 51
+        current.state.start = 21
         deepEqual(await current.values.next(chunk), {
           done: false,
           value: new Uint8Array(0),
         })
         deepEqual(current.accepted, [chunk])
         deepEqual(current.state.attempts, 3)
-        deepEqual(current.mutations, [
-          ["remove", 0, 10],
-          ["remove", 0, 21],
-        ])
+        deepEqual(current.mutations, [])
       } finally {
         current.controller.abort()
         await current.values.return?.(undefined)
@@ -490,9 +478,7 @@ const cases = [
       await start(current.values)
       const chunk = new Uint8Array(20)
       if (operation === "remove") {
-        const first = await current.values.next(chunk)
-        assert(first.value === chunk)
-        current.media.currentTime = 40
+        Object.assign(current.source, { readyState: "ended" })
       }
       const failure = new DOMException(
         "operation failed",
@@ -507,15 +493,17 @@ const cases = [
           throw failure
         }
       }
-      const outcome = await current.values.next(chunk).then(
-        () => undefined,
-        (error: unknown) => error,
-      )
+      const outcome = await current.values
+        .next(operation === "remove" ? 120 : chunk)
+        .then(
+          () => undefined,
+          (error: unknown) => error,
+        )
       assert(outcome === failure)
     },
   })),
   {
-    name: "a new timestamp clears returned bytes without changing the configured eviction cutoff",
+    name: "a new timestamp clears returned bytes without evicting existing data",
     run: async () => {
       const current = quotaFixture()
       await start(current.values)
@@ -677,10 +665,10 @@ const cases = [
     },
   },
   {
-    name: "seeking to an evicted request start interrupts an active append",
+    name: "seeking to a request start evicted by the browser interrupts an active append",
     run: async () => {
       const { buffer, controller, media, mutations, release, values } = fixture(
-        { hold: "append", readyState: "open", evict_behind: 30 },
+        { hold: "append", readyState: "open" },
       )
       const initial = new Uint8Array([8])
       const appending_started = Promise.withResolvers<void>()
@@ -695,15 +683,10 @@ const cases = [
           appending_started.resolve()
         }
       }
-      const remove = buffer.remove.bind(buffer)
-      buffer.remove = (start, end) => {
-        const retained = timeRanges([end, 100])
-        buffer.buffered = retained
-        Object.assign(media, { buffered: retained })
-        remove(start, end)
-      }
       await start(values, 0)
       await values.next(initial)
+      buffer.buffered = timeRanges([50, 100])
+      Object.assign(media, { buffered: buffer.buffered })
       media.currentTime = 80
       const appending = values.next(new Uint8Array([9]))
       await appending_started.promise
@@ -711,7 +694,6 @@ const cases = [
         assert(buffer.updating)
         deepEqual(mutations, [
           ["append", [8]],
-          ["remove", 0, 50],
           ["append", [9]],
         ])
         deepEqual(buffer.timestampOffset, 0)
@@ -868,9 +850,12 @@ const cases = [
       } = fixture({
         buffered: operation === "remove" ? timeRanges([0, 120]) : timeRanges(),
         hold: operation,
+        readyState: operation === "remove" ? "ended" : "open",
       })
       await start(values)
-      const pending = values.next(new Uint8Array([9]))
+      const pending = values.next(
+        operation === "remove" ? 50 : new Uint8Array([9]),
+      )
       await entered
       try {
         buffer.updating = false
@@ -882,7 +867,9 @@ const cases = [
         })
         deepEqual(
           mutations,
-          operation === "append" ? [["append", [9]]] : [["remove", 0, 70]],
+          operation === "append"
+            ? [["append", [9]]]
+            : [["remove", 120, 120.001]],
         )
         deepEqual(getEventListeners(media, "seeking"), [])
         deepEqual(getEventListeners(source, "sourceclose"), [])
@@ -902,12 +889,15 @@ const cases = [
       const { buffer, controller, entered, source, values } = fixture({
         buffered: operation === "remove" ? timeRanges([0, 120]) : timeRanges(),
         hold: operation,
+        readyState: operation === "remove" ? "ended" : "open",
       })
       await start(values, 200)
-      const pending = values.next(new Uint8Array([9])).then(
-        (result) => ({ result }),
-        (error: unknown) => ({ error }),
-      )
+      const pending = values
+        .next(operation === "remove" ? 50 : new Uint8Array([9]))
+        .then(
+          (result) => ({ result }),
+          (error: unknown) => ({ error }),
+        )
       await entered
       try {
         buffer.updating = false
@@ -932,6 +922,7 @@ const cases = [
       const { buffer, controller, entered, media, release, values } = fixture({
         buffered: timeRanges([0, 120]),
         hold: "remove",
+        readyState: "ended",
       })
       context.mock.method(buffer, "abort", () => {
         if (buffer.updating) {
@@ -942,7 +933,7 @@ const cases = [
         }
       })
       await start(values)
-      const appending = values.next(new Uint8Array([9])).then(
+      const appending = values.next(50).then(
         (result) => ({ result }),
         (error: unknown) => ({ error }),
       )
@@ -1048,13 +1039,11 @@ const cases = [
       }
     },
   },
-  ...(["append", "remove", "reopen"] as const).flatMap((operation) =>
+  ...(["append", "reopen"] as const).flatMap((operation) =>
     [true, false].map((before) => ({
       name: `abort ${before ? "before" : "after"} synchronous ${operation} admission prevents later mutations`,
       run: async () => {
         const { controller, mutations, release, values } = fixture({
-          buffered:
-            operation === "remove" ? timeRanges([0, 120]) : timeRanges(),
           hold: operation === "append" ? "append" : "remove",
           readyState: operation === "reopen" ? "ended" : "open",
         })
@@ -1075,7 +1064,7 @@ const cases = [
               ? []
               : operation === "append"
                 ? [["append", [9]], ["abort"]]
-                : [["remove", 0, operation === "reopen" ? 0.001 : 70]],
+                : [["remove", 0, 0.001]],
           )
         } finally {
           release()
@@ -1096,13 +1085,11 @@ const cases = [
       deepEqual(types, [])
     },
   },
-  ...(["append", "remove", "reopen"] as const).flatMap((operation) =>
+  ...(["append", "reopen"] as const).flatMap((operation) =>
     [true, false].map((before) => ({
       name: `detachment ${before ? "before" : "after"} synchronous ${operation} admission is safe before sourceclose dispatch`,
       run: async () => {
         const { buffer, controller, mutations, source, values } = fixture({
-          buffered:
-            operation === "remove" ? timeRanges([0, 120]) : timeRanges(),
           readyState: operation === "reopen" ? "ended" : "open",
         })
         await start(values)
@@ -1145,7 +1132,7 @@ const cases = [
               ? []
               : operation === "append"
                 ? [["append", [9]]]
-                : [["remove", 0, operation === "reopen" ? 0.001 : 70]],
+                : [["remove", 0, 0.001]],
           )
         } finally {
           controller.abort()
@@ -1174,17 +1161,17 @@ const cases = [
     },
   },
   {
-    name: "MSE evicts expired media before appending",
+    name: "appending preserves the active GOP even when its keyframe is more than thirty seconds behind playback",
     run: async () => {
-      const { mutations, values } = fixture({ buffered: timeRanges([0, 120]) })
+      const { media, mutations, values } = fixture({
+        buffered: timeRanges([4880, 4966]),
+      })
+      media.currentTime = 4923.52379
 
-      await start(values)
+      await start(values, 4880)
       await values.next(new Uint8Array([3]))
 
-      deepEqual(mutations, [
-        ["remove", 0, 70],
-        ["append", [3]],
-      ])
+      deepEqual(mutations, [["append", [3]]])
       const closed = values.return?.(undefined)
       assert(closed)
       await closed
@@ -1201,11 +1188,12 @@ const cases = [
       const { values } = fixture({
         buffered: timeRanges(...buffered),
         failure: `${operation}-sync`,
+        readyState: operation === "remove" ? "ended" : "open",
       })
       await start(values)
 
       const failure = await Promise.race([
-        values.next(new Uint8Array([4])).then(
+        values.next(operation === "remove" ? 50 : new Uint8Array([4])).then(
           () => undefined,
           (error: unknown) => error,
         ),
@@ -1222,7 +1210,7 @@ const cases = [
       {
         operation: "remove",
         buffered: [[0, 120]],
-        mutations: [["remove", 0, 70]],
+        mutations: [["remove", 120, 120.001]],
       },
     ] as const
   ).map(({ operation, buffered, mutations: expected }) => ({
@@ -1231,13 +1219,16 @@ const cases = [
       const { mutations, values } = fixture({
         buffered: timeRanges(...buffered),
         failure: operation,
+        readyState: operation === "remove" ? "ended" : "open",
       })
       await start(values)
 
-      const failure = await values.next(new Uint8Array([4])).then(
-        () => undefined,
-        (error: unknown) => error,
-      )
+      const failure = await values
+        .next(operation === "remove" ? 50 : new Uint8Array([4]))
+        .then(
+          () => undefined,
+          (error: unknown) => error,
+        )
 
       assert(failure instanceof Event)
       deepEqual(failure.type, "error")
@@ -1299,7 +1290,7 @@ const cases = [
         operation: "remove",
         name: "removal",
         buffered: [[0, 120]],
-        mutations: [["remove", 0, 70]],
+        mutations: [["remove", 120, 120.001]],
         updating: true,
       },
     ] as const
@@ -1309,9 +1300,12 @@ const cases = [
       const { buffer, controller, entered, mutations, values } = fixture({
         buffered: timeRanges(...buffered),
         hold: operation,
+        readyState: operation === "remove" ? "ended" : "open",
       })
       await start(values)
-      const appending = values.next(new Uint8Array([6]))
+      const appending = values.next(
+        operation === "remove" ? 50 : new Uint8Array([6]),
+      )
       await entered
       const closing = values.return?.(undefined)
       assert(closing)
@@ -1324,7 +1318,9 @@ const cases = [
           setImmediate("pending"),
         ]),
         [
-          { done: false, value: new Uint8Array(0) },
+          operation === "remove"
+            ? { done: true, value: undefined }
+            : { done: false, value: new Uint8Array(0) },
           { done: true, value: undefined },
         ],
       )
@@ -1522,7 +1518,6 @@ const cases = [
           kind === "bond"
             ? bond(current.media, owner.signal, MSE_TIMEOUT)
             : media_sources({
-                evict_behind: 30,
                 media: current.media,
                 mime_type: "video/test",
                 signal: owner.signal,

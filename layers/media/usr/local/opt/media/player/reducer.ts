@@ -25,12 +25,13 @@ type PlaybackState = Readonly<{
   target: number
 }>
 
-type PlaybackAction =
+export type PlaybackAction =
   | MediaAction
   | Readonly<{ bytes: Uint8Array<ArrayBufferLike>; type: "bytes_received" }>
   | Readonly<{
       current: MediaSnapshot
       type: "buffer_full"
+      playable: boolean
     }>
   | Readonly<{ error: unknown; type: "request_failed" }>
   | Readonly<{ type: "request_finished" }>
@@ -42,7 +43,7 @@ type PlaybackAction =
     }>
   | Readonly<{ type: "source_opened" }>
 
-type PlaybackEffects = Readonly<{
+export type PlaybackEffects = Readonly<{
   buffer?: BufferEffect
   control?: PlaybackControl
   error?: unknown
@@ -50,6 +51,10 @@ type PlaybackEffects = Readonly<{
   play?: boolean
   seek?: number
 }>
+
+export type PlaybackDispatch = (
+  actions: readonly PlaybackAction[],
+) => PlaybackEffects
 
 type PlaybackTransition = readonly [
   state: PlaybackState,
@@ -124,7 +129,10 @@ const request_if_needed = (
   ) {
     return [state, {}]
   }
-  const request = request_at(state.request.frontier)
+  const position = state.pending_seek ?? current.time
+  const request = request_at(
+    stream_position(buffered_end(current, position) ?? position),
+  )
   return [
     { ...state, acquisition: "active", request },
     { control: { request, type: "request" } },
@@ -236,7 +244,7 @@ const reduce = (
           buffer_low: Math.min(state.buffer_low, ahead / 2),
           request: request_at(state.request.frontier),
         },
-        ahead > 0 ? {} : { control: { type: "retry" } },
+        { control: { type: ahead > 0 && action.playable ? "pause" : "retry" } },
       ]
     }
     case "bytes_received":
@@ -391,9 +399,7 @@ const reduce = (
   }
 }
 
-export const playback_transitions = (
-  position: number,
-): ((action: PlaybackAction | readonly MediaAction[]) => PlaybackEffects) => {
+export const playback_transitions = (position: number): PlaybackDispatch => {
   let state: PlaybackState = {
     acquisition: "idle",
     buffer_low: BUFFER_LOW,
@@ -403,8 +409,7 @@ export const playback_transitions = (
     target: position,
   }
 
-  return (action) => {
-    const actions = "type" in action ? [action] : action
+  return (actions) => {
     const seeking = actions.findLast(({ type }) => type === "seeking")
     let effects: PlaybackEffects = {}
 

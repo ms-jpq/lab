@@ -4,12 +4,14 @@
     "@taplo/cli": "*",
     "@types/node": "*",
     "njs-types": "*",
+    "playwright": "*",
     "prettier": "*",
     "prettier-plugin-nginx": "*",
     "typescript": "*"
   },
   "scripts": {
-    "test": "node --test --test-concurrency=$(nproc) '{layers,machines}/**/*.test.ts'"
+    "test": "node --test --test-concurrency=$(nproc) '{layers,machines}/**/*.test.ts'",
+    "test:firefox": "node layers/media/usr/local/opt/media/player/firefox.integration.ts"
   },
   "type": "module"
 }

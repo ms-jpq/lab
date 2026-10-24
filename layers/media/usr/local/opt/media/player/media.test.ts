@@ -8,12 +8,10 @@ import { EventTarget, Ranges, run_cases } from "./test_utils.ts"
 
 class Media extends EventTarget {
   readonly HAVE_METADATA = 1
-  readonly HAVE_FUTURE_DATA = 3
   readonly buffered = new Ranges()
   readonly dataset = { duration: "200" } as DOMStringMap
   currentTime = 0
   duration = Number.NaN
-  ended = false
   error: MediaError | null = null
   paused = false
   readyState = 0

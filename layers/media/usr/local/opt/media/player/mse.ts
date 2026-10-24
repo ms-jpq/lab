@@ -104,14 +104,12 @@ export const media_source = async function* ({
   media,
   mime_type,
   source,
-  evict_behind,
   signal,
   timeout,
 }: {
   media: HTMLMediaElement
   mime_type: string
   source: MediaSource
-  evict_behind: number
   signal: AbortSignal
   timeout: number
 }): Mse {
@@ -163,10 +161,8 @@ export const media_source = async function* ({
           return
         }
       }
-      {
-        buffer.abort()
-        buffer.timestampOffset = operation
-      }
+      buffer.abort()
+      buffer.timestampOffset = operation
       awaiting_start = true
       continue
     }
@@ -179,16 +175,6 @@ export const media_source = async function* ({
       media.buffered,
       buffer.timestampOffset,
     )
-    const cutoff = media.currentTime - evict_behind
-    if (
-      cutoff > 0 &&
-      buffer.buffered.length &&
-      buffer.buffered.start(0) < cutoff
-    ) {
-      await lock("remove", awaiting_start, () => {
-        buffer.remove(0, cutoff)
-      })
-    }
     try {
       await lock("append", awaiting_start, () => {
         buffer.appendBuffer(
@@ -293,13 +279,11 @@ export const bond = (
 export const media_sources = ({
   media,
   mime_type,
-  evict_behind,
   signal,
   timeout,
 }: {
   media: HTMLMediaElement
   mime_type: string
-  evict_behind: number
   signal: AbortSignal
   timeout: number
 }): AsyncIteratorObject<readonly [MediaSource, (_: AbortSignal) => Mse]> =>
@@ -325,7 +309,6 @@ export const media_sources = ({
         source,
         (sig) =>
           media_source({
-            evict_behind,
             media,
             mime_type,
             source,

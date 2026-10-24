@@ -2,12 +2,13 @@ import { deepEqual, equal } from "node:assert/strict"
 
 import type { MediaSnapshot } from "./media.ts"
 import { BUFFER_HIGH, BUFFER_LOW, playback_transitions } from "./reducer.ts"
+import type { PlaybackAction, PlaybackEffects } from "./reducer.ts"
 import { run_cases } from "./test_utils.ts"
 
-type Dispatch = ReturnType<typeof playback_transitions>
-type Effects = ReturnType<Dispatch>
-type Input = Parameters<Dispatch>[0]
-type Step = Readonly<{ action: Input; expected: Effects }>
+type Step = Readonly<{
+  action: readonly PlaybackAction[]
+  expected: PlaybackEffects
+}>
 type Case = Readonly<{
   name: string
   position?: number
@@ -33,7 +34,7 @@ const snapshot = (overrides: Partial<MediaSnapshot> = {}): MediaSnapshot => ({
 })
 
 const source_opened = (position = 0): Step => ({
-  action: { type: "source_opened" },
+  action: [{ type: "source_opened" }],
   expected: {
     control: { type: "request", request: { frontier: position, position } },
     seek: position,
@@ -42,43 +43,104 @@ const source_opened = (position = 0): Step => ({
 
 const quota_steps: readonly Step[] = [
   source_opened(40),
-  { action: { type: "seeked", current: snapshot({ time: 40 }) }, expected: {} },
   {
-    action: {
-      type: "buffered",
-      current: snapshot({ buffered: [[40, 80]], time: 50 }),
-    },
+    action: [{ type: "seeked", current: snapshot({ time: 40 }) }],
     expected: {},
   },
   {
-    action: {
-      type: "buffer_full",
-      current: snapshot({ buffered: [[40, 80]], time: 50 }),
-    },
+    action: [
+      {
+        type: "buffered",
+        current: snapshot({ buffered: [[40, 80]], time: 50 }),
+      },
+    ],
     expected: {},
+  },
+  {
+    action: [
+      {
+        type: "buffer_full",
+        playable: true,
+        current: snapshot({ buffered: [[40, 80]], time: 50 }),
+      },
+    ],
+    expected: { control: { type: "pause" } },
   },
 ]
 
 const cases: readonly Case[] = [
+  ...(
+    [
+      {
+        name: "a missing playhead",
+        buffered: [[4942.022949, 5000.152587]],
+        position: 4930.231,
+      },
+      {
+        name: "a playhead in a separate retained range",
+        buffered: [
+          [4920, 4940],
+          [4942.022949, 5000.152587],
+        ],
+        position: 4940,
+      },
+    ] as const
+  ).map(({ name, buffered, position }): Case => {
+    const current = snapshot({
+      time: 4930.231,
+      duration: 5000,
+      buffered,
+    })
+    const request: PlaybackEffects = {
+      control: { type: "request", request: { frontier: position, position } },
+    }
+    return {
+      name: `new requests follow ${name} instead of an unrelated future frontier`,
+      position: 4880,
+      steps: [
+        source_opened(4880),
+        {
+          action: [
+            {
+              type: "seeked",
+              current: snapshot({
+                time: 4880,
+                duration: 5000,
+                buffered: [[4880, 4966]],
+              }),
+            },
+          ],
+          expected: { control: { type: "pause" } },
+        },
+        { action: [{ type: "progress", current }], expected: request },
+        { action: [{ type: "progress", current }], expected: {} },
+        {
+          action: [{ type: "request_finished" }],
+          expected: { buffer: { type: "end" } },
+        },
+        { action: [{ type: "request_retry", current }], expected: request },
+      ],
+    }
+  }),
   {
     name: "a resume effect consumes intent before playback success is observed",
     steps: [
       source_opened(),
       {
-        action: { type: "source_closed", position: 0, paused: false },
+        action: [{ type: "source_closed", position: 0, paused: false }],
         expected: { control: { type: "rebuild" } },
       },
       source_opened(),
       {
-        action: { type: "canplay", current: snapshot() },
+        action: [{ type: "canplay", current: snapshot() }],
         expected: { play: true },
       },
       {
-        action: { type: "waiting", current: snapshot() },
+        action: [{ type: "waiting", current: snapshot() }],
         expected: {},
       },
       {
-        action: { type: "canplay", current: snapshot() },
+        action: [{ type: "canplay", current: snapshot() }],
         expected: {},
       },
     ],
@@ -89,17 +151,25 @@ const cases: readonly Case[] = [
     steps: [
       source_opened(50),
       {
-        action: {
-          type: "seeked",
-          current: snapshot({ buffered: [[10.05, 100]], time: 50 }),
-        },
+        action: [
+          {
+            type: "seeked",
+            current: snapshot({ buffered: [[10.05, 100]], time: 50 }),
+          },
+        ],
         expected: {},
       },
       {
-        action: {
-          type: "seeking",
-          current: snapshot({ buffered: [[10.05, 100]], time, seeking: true }),
-        },
+        action: [
+          {
+            type: "seeking",
+            current: snapshot({
+              buffered: [[10.05, 100]],
+              time,
+              seeking: true,
+            }),
+          },
+        ],
         expected: {
           control: { type: "pause" },
           persist: 10.05,
@@ -107,21 +177,25 @@ const cases: readonly Case[] = [
         },
       },
       {
-        action: {
-          type: "seeking",
-          current: snapshot({
-            buffered: [[10.05, 100]],
-            time: 10.05,
-            seeking: true,
-          }),
-        },
+        action: [
+          {
+            type: "seeking",
+            current: snapshot({
+              buffered: [[10.05, 100]],
+              time: 10.05,
+              seeking: true,
+            }),
+          },
+        ],
         expected: time === 10.05 ? { persist: 10.05 } : {},
       },
       {
-        action: {
-          type: "seeked",
-          current: snapshot({ buffered: [[10.05, 100]], time: 10.05 }),
-        },
+        action: [
+          {
+            type: "seeked",
+            current: snapshot({ buffered: [[10.05, 100]], time: 10.05 }),
+          },
+        ],
         expected: {},
       },
     ],
@@ -132,33 +206,42 @@ const cases: readonly Case[] = [
       name: `native 30fps end ${end} reaches high water regardless of request rounding`,
       steps: [
         source_opened(),
-        { action: { type: "seeked", current: snapshot() }, expected: {} },
+        { action: [{ type: "seeked", current: snapshot() }], expected: {} },
         {
-          action: {
-            type: "buffered",
-            current: snapshot({ buffered: [[0, end]] }),
-          },
+          action: [
+            {
+              type: "buffered",
+              current: snapshot({ buffered: [[0, end]] }),
+            },
+          ],
           expected: {},
         },
         {
-          action: { type: "bytes_received", bytes: new Uint8Array([1]) },
+          action: [{ type: "bytes_received", bytes: new Uint8Array([1]) }],
           expected: { control: { type: "pause" } },
         },
         {
-          action: {
-            type: "progress",
-            current: snapshot({ buffered: [[0, end]], time: end - BUFFER_LOW }),
-          },
+          action: [
+            {
+              type: "progress",
+              current: snapshot({
+                buffered: [[0, end]],
+                time: end - BUFFER_LOW,
+              }),
+            },
+          ],
           expected: {},
         },
         {
-          action: {
-            type: "progress",
-            current: snapshot({
-              buffered: [[0, end]],
-              time: end - BUFFER_LOW + 0.01,
-            }),
-          },
+          action: [
+            {
+              type: "progress",
+              current: snapshot({
+                buffered: [[0, end]],
+                time: end - BUFFER_LOW + 0.01,
+              }),
+            },
+          ],
           expected: {
             control: {
               type: "request",
@@ -178,16 +261,18 @@ const cases: readonly Case[] = [
     steps: [
       source_opened(60.05),
       {
-        action: {
-          type: "seeked",
-          current: snapshot({
-            buffered: [
-              [0, 60],
-              [60.1, 140.1],
-            ],
-            time: 60.11,
-          }),
-        },
+        action: [
+          {
+            type: "seeked",
+            current: snapshot({
+              buffered: [
+                [0, 60],
+                [60.1, 140.1],
+              ],
+              time: 60.11,
+            }),
+          },
+        ],
         expected: { control: { type: "pause" } },
       },
     ],
@@ -198,55 +283,73 @@ const cases: readonly Case[] = [
     steps: [
       ...quota_steps,
       {
-        action: {
-          type: "progress",
-          current: snapshot({ buffered: [[40, 80]], time: 50 }),
-        },
+        action: [
+          {
+            type: "progress",
+            current: snapshot({ buffered: [[40, 80]], time: 50 }),
+          },
+        ],
         expected: {},
       },
       {
-        action: {
-          type: "timeupdate",
-          current: snapshot({ buffered: [[40, 80]], time: 50 }),
-        },
+        action: [
+          {
+            type: "timeupdate",
+            current: snapshot({ buffered: [[40, 80]], time: 50 }),
+          },
+        ],
         expected: { persist: 50 },
       },
       {
-        action: {
-          type: "seeking",
-          current: snapshot({ buffered: [[40, 80]], time: 55, seeking: true }),
-        },
+        action: [
+          {
+            type: "seeking",
+            current: snapshot({
+              buffered: [[40, 80]],
+              time: 55,
+              seeking: true,
+            }),
+          },
+        ],
         expected: { persist: 55 },
       },
       {
-        action: {
-          type: "seeked",
-          current: snapshot({ buffered: [[40, 80]], time: 55 }),
-        },
+        action: [
+          {
+            type: "seeked",
+            current: snapshot({ buffered: [[40, 80]], time: 55 }),
+          },
+        ],
         expected: {},
       },
       {
-        action: {
-          type: "timeupdate",
-          current: snapshot({ buffered: [[40, 80]], time: 65 }),
-        },
+        action: [
+          {
+            type: "timeupdate",
+            current: snapshot({ buffered: [[40, 80]], time: 65 }),
+          },
+        ],
         expected: { persist: 65 },
       },
       {
-        action: {
-          type: "timeupdate",
-          current: snapshot({ buffered: [[40, 80]], time: 65.001 }),
-        },
+        action: [
+          {
+            type: "timeupdate",
+            current: snapshot({ buffered: [[40, 80]], time: 65.001 }),
+          },
+        ],
         expected: {
           control: { type: "request", request: { frontier: 80, position: 80 } },
           persist: 65.001,
         },
       },
       {
-        action: {
-          type: "waiting",
-          current: snapshot({ buffered: [[40, 80]], time: 65.001 }),
-        },
+        action: [
+          {
+            type: "waiting",
+            current: snapshot({ buffered: [[40, 80]], time: 65.001 }),
+          },
+        ],
         expected: {},
       },
     ],
@@ -257,35 +360,45 @@ const cases: readonly Case[] = [
     steps: [
       ...quota_steps,
       {
-        action: {
-          type: "seeking",
-          current: snapshot({ buffered: [[40, 80]], time: 10, seeking: true }),
-        },
+        action: [
+          {
+            type: "seeking",
+            current: snapshot({
+              buffered: [[40, 80]],
+              time: 10,
+              seeking: true,
+            }),
+          },
+        ],
         expected: {
           control: { type: "request", request: { frontier: 10, position: 10 } },
           persist: 10,
         },
       },
       {
-        action: { type: "seeked", current: snapshot({ time: 10 }) },
+        action: [{ type: "seeked", current: snapshot({ time: 10 }) }],
         expected: {},
       },
       {
-        action: {
-          type: "buffered",
-          current: snapshot({ buffered: [[10, 30]], time: 10 }),
-        },
+        action: [
+          {
+            type: "buffered",
+            current: snapshot({ buffered: [[10, 30]], time: 10 }),
+          },
+        ],
         expected: {},
       },
       {
-        action: { type: "request_finished" },
+        action: [{ type: "request_finished" }],
         expected: { buffer: { type: "end" } },
       },
       {
-        action: {
-          type: "progress",
-          current: snapshot({ buffered: [[10, 30]], time: 10 }),
-        },
+        action: [
+          {
+            type: "progress",
+            current: snapshot({ buffered: [[10, 30]], time: 10 }),
+          },
+        ],
         expected: {},
       },
     ],
@@ -296,30 +409,34 @@ const cases: readonly Case[] = [
     steps: [
       ...quota_steps,
       {
-        action: { type: "source_closed", position: 50, paused: true },
+        action: [{ type: "source_closed", position: 50, paused: true }],
         expected: { control: { type: "rebuild" } },
       },
       source_opened(50),
       {
-        action: { type: "seeked", current: snapshot({ time: 50 }) },
+        action: [{ type: "seeked", current: snapshot({ time: 50 }) }],
         expected: {},
       },
       {
-        action: {
-          type: "buffered",
-          current: snapshot({ buffered: [[50, 70]], time: 50 }),
-        },
+        action: [
+          {
+            type: "buffered",
+            current: snapshot({ buffered: [[50, 70]], time: 50 }),
+          },
+        ],
         expected: {},
       },
       {
-        action: { type: "request_finished" },
+        action: [{ type: "request_finished" }],
         expected: { buffer: { type: "end" } },
       },
       {
-        action: {
-          type: "progress",
-          current: snapshot({ buffered: [[50, 70]], time: 50 }),
-        },
+        action: [
+          {
+            type: "progress",
+            current: snapshot({ buffered: [[50, 70]], time: 50 }),
+          },
+        ],
         expected: {
           control: { type: "request", request: { frontier: 70, position: 70 } },
         },
@@ -332,31 +449,33 @@ const cases: readonly Case[] = [
     steps: [
       source_opened(40),
       {
-        action: { type: "canplay", current: snapshot({ time: 40, paused }) },
+        action: [{ type: "canplay", current: snapshot({ time: 40, paused }) }],
         expected: {},
       },
       {
-        action: { type: "source_closed", position: 40, paused },
+        action: [{ type: "source_closed", position: 40, paused }],
         expected: { control: { type: "rebuild" } },
       },
       source_opened(40),
       {
-        action: {
-          type: "loadedmetadata",
-          current: snapshot({ metadata: false }),
-        },
+        action: [
+          {
+            type: "loadedmetadata",
+            current: snapshot({ metadata: false }),
+          },
+        ],
         expected: {},
       },
       {
-        action: { type: "canplay", current: snapshot() },
+        action: [{ type: "canplay", current: snapshot() }],
         expected: { seek: 40 },
       },
       {
-        action: { type: "seeked", current: snapshot({ time: 40 }) },
+        action: [{ type: "seeked", current: snapshot({ time: 40 }) }],
         expected: paused ? {} : { play: true },
       },
       {
-        action: { type: "canplay", current: snapshot({ time: 40 }) },
+        action: [{ type: "canplay", current: snapshot({ time: 40 }) }],
         expected: {},
       },
     ],
@@ -366,24 +485,24 @@ const cases: readonly Case[] = [
     steps: [
       source_opened(),
       {
-        action: { type: "seeked", current: snapshot({ paused: false }) },
+        action: [{ type: "seeked", current: snapshot({ paused: false }) }],
         expected: {},
       },
       {
-        action: { type: "source_closed", position: 0, paused: false },
+        action: [{ type: "source_closed", position: 0, paused: false }],
         expected: { control: { type: "rebuild" } },
       },
       source_opened(),
       {
-        action: { type: "source_closed", position: 0, paused: true },
+        action: [{ type: "source_closed", position: 0, paused: true }],
         expected: { control: { type: "rebuild" } },
       },
       source_opened(),
       {
-        action: { type: "canplay", current: snapshot() },
+        action: [{ type: "canplay", current: snapshot() }],
         expected: { play: true },
       },
-      { action: { type: "timeupdate", current: snapshot() }, expected: {} },
+      { action: [{ type: "timeupdate", current: snapshot() }], expected: {} },
     ],
   },
   {
@@ -392,21 +511,25 @@ const cases: readonly Case[] = [
     steps: [
       source_opened(141),
       {
-        action: {
-          type: "buffered",
-          current: snapshot({ buffered: [[141, 200]] }),
-        },
+        action: [
+          {
+            type: "buffered",
+            current: snapshot({ buffered: [[141, 200]] }),
+          },
+        ],
         expected: {},
       },
       {
-        action: { type: "request_failed", error: failure },
+        action: [{ type: "request_failed", error: failure }],
         expected: { error: failure },
       },
       {
-        action: {
-          type: "request_retry",
-          current: snapshot({ buffered: [[141, 200]] }),
-        },
+        action: [
+          {
+            type: "request_retry",
+            current: snapshot({ buffered: [[141, 200]] }),
+          },
+        ],
         expected: { buffer: { type: "end" }, seek: 141 },
       },
     ],
@@ -417,44 +540,52 @@ const cases: readonly Case[] = [
     steps: [
       source_opened(200 - BUFFER_HIGH + 1),
       {
-        action: {
-          type: "seeked",
-          current: snapshot({ time: 200 - BUFFER_HIGH + 1 }),
-        },
+        action: [
+          {
+            type: "seeked",
+            current: snapshot({ time: 200 - BUFFER_HIGH + 1 }),
+          },
+        ],
         expected: {},
       },
       {
-        action: {
-          type: "buffered",
-          current: snapshot({
-            buffered: [[200 - BUFFER_HIGH + 1, end]],
-            time: 200 - BUFFER_HIGH + 1,
-          }),
-        },
+        action: [
+          {
+            type: "buffered",
+            current: snapshot({
+              buffered: [[200 - BUFFER_HIGH + 1, end]],
+              time: 200 - BUFFER_HIGH + 1,
+            }),
+          },
+        ],
         expected: {},
       },
       {
-        action: { type: "request_failed", error: failure },
+        action: [{ type: "request_failed", error: failure }],
         expected: { error: failure },
       },
       {
-        action: {
-          type: "timeupdate",
-          current: snapshot({
-            buffered: [[200 - BUFFER_HIGH + 1, end]],
-            time: end - BUFFER_LOW + 1,
-          }),
-        },
+        action: [
+          {
+            type: "timeupdate",
+            current: snapshot({
+              buffered: [[200 - BUFFER_HIGH + 1, end]],
+              time: end - BUFFER_LOW + 1,
+            }),
+          },
+        ],
         expected: { persist: end - BUFFER_LOW + 1 },
       },
       {
-        action: {
-          type: "request_retry",
-          current: snapshot({
-            buffered: [[200 - BUFFER_HIGH + 1, end]],
-            time: end - BUFFER_LOW + 1,
-          }),
-        },
+        action: [
+          {
+            type: "request_retry",
+            current: snapshot({
+              buffered: [[200 - BUFFER_HIGH + 1, end]],
+              time: end - BUFFER_LOW + 1,
+            }),
+          },
+        ],
         expected:
           end >= 199.9
             ? { buffer: { type: "end" } }
@@ -471,30 +602,36 @@ const cases: readonly Case[] = [
     name: "a retry with sufficient retained data waits for low water before continuing",
     steps: [
       source_opened(),
-      { action: { type: "seeked", current: snapshot() }, expected: {} },
+      { action: [{ type: "seeked", current: snapshot() }], expected: {} },
       {
-        action: {
-          type: "buffered",
-          current: snapshot({ buffered: [[0, BUFFER_LOW]] }),
-        },
+        action: [
+          {
+            type: "buffered",
+            current: snapshot({ buffered: [[0, BUFFER_LOW]] }),
+          },
+        ],
         expected: {},
       },
       {
-        action: { type: "request_failed", error: failure },
+        action: [{ type: "request_failed", error: failure }],
         expected: { error: failure },
       },
       {
-        action: {
-          type: "request_retry",
-          current: snapshot({ buffered: [[0, BUFFER_LOW]] }),
-        },
+        action: [
+          {
+            type: "request_retry",
+            current: snapshot({ buffered: [[0, BUFFER_LOW]] }),
+          },
+        ],
         expected: { control: { type: "pause" } },
       },
       {
-        action: {
-          type: "timeupdate",
-          current: snapshot({ buffered: [[0, BUFFER_LOW]], time: 1 }),
-        },
+        action: [
+          {
+            type: "timeupdate",
+            current: snapshot({ buffered: [[0, BUFFER_LOW]], time: 1 }),
+          },
+        ],
         expected: {
           control: {
             type: "request",
@@ -509,26 +646,30 @@ const cases: readonly Case[] = [
     name: `${type} after short EOF requests new content at the acknowledged frontier`,
     steps: [
       source_opened(),
-      { action: { type: "seeked", current: snapshot() }, expected: {} },
+      { action: [{ type: "seeked", current: snapshot() }], expected: {} },
       {
-        action: {
-          type: "buffered",
-          current: snapshot({ buffered: [[0, BUFFER_LOW - 1]] }),
-        },
+        action: [
+          {
+            type: "buffered",
+            current: snapshot({ buffered: [[0, BUFFER_LOW - 1]] }),
+          },
+        ],
         expected: {},
       },
       {
-        action: { type: "request_finished" },
+        action: [{ type: "request_finished" }],
         expected: { buffer: { type: "end" } },
       },
       {
-        action: {
-          type,
-          current: snapshot({
-            buffered: [[0, BUFFER_LOW - 1]],
-            time: type === "ended" ? BUFFER_LOW - 1 : 0,
-          }),
-        },
+        action: [
+          {
+            type,
+            current: snapshot({
+              buffered: [[0, BUFFER_LOW - 1]],
+              time: type === "ended" ? BUFFER_LOW - 1 : 0,
+            }),
+          },
+        ],
         expected: {
           control: {
             type: "request",
@@ -543,19 +684,27 @@ const cases: readonly Case[] = [
     name: `a buffered seek away from another request resumes its own range ending at ${end}`,
     steps: [
       source_opened(),
-      { action: { type: "seeked", current: snapshot() }, expected: {} },
+      { action: [{ type: "seeked", current: snapshot() }], expected: {} },
       {
-        action: {
-          type: "buffered",
-          current: snapshot({ buffered: [[0, end]] }),
-        },
+        action: [
+          {
+            type: "buffered",
+            current: snapshot({ buffered: [[0, end]] }),
+          },
+        ],
         expected: {},
       },
       {
-        action: {
-          type: "seeking",
-          current: snapshot({ buffered: [[0, end]], time: 120, seeking: true }),
-        },
+        action: [
+          {
+            type: "seeking",
+            current: snapshot({
+              buffered: [[0, end]],
+              time: 120,
+              seeking: true,
+            }),
+          },
+        ],
         expected: {
           control: {
             type: "request",
@@ -565,10 +714,16 @@ const cases: readonly Case[] = [
         },
       },
       {
-        action: {
-          type: "seeking",
-          current: snapshot({ buffered: [[0, end]], time: 10, seeking: true }),
-        },
+        action: [
+          {
+            type: "seeking",
+            current: snapshot({
+              buffered: [[0, end]],
+              time: 10,
+              seeking: true,
+            }),
+          },
+        ],
         expected: {
           control:
             end === BUFFER_HIGH
@@ -578,13 +733,15 @@ const cases: readonly Case[] = [
         },
       },
       {
-        action: {
-          type: "timeupdate",
-          current: snapshot({
-            buffered: [[0, end]],
-            time: Math.max(10, end - BUFFER_LOW + 1),
-          }),
-        },
+        action: [
+          {
+            type: "timeupdate",
+            current: snapshot({
+              buffered: [[0, end]],
+              time: Math.max(10, end - BUFFER_LOW + 1),
+            }),
+          },
+        ],
         expected: {
           ...(end === BUFFER_HIGH
             ? {
@@ -598,10 +755,16 @@ const cases: readonly Case[] = [
         },
       },
       {
-        action: {
-          type: "seeking",
-          current: snapshot({ buffered: [[0, end]], time: end, seeking: true }),
-        },
+        action: [
+          {
+            type: "seeking",
+            current: snapshot({
+              buffered: [[0, end]],
+              time: end,
+              seeking: true,
+            }),
+          },
+        ],
         expected: { persist: end },
       },
     ],
@@ -610,23 +773,27 @@ const cases: readonly Case[] = [
     name: `EOF at ${end} of 200 only stops acquisition within terminal tolerance`,
     steps: [
       source_opened(),
-      { action: { type: "seeked", current: snapshot() }, expected: {} },
+      { action: [{ type: "seeked", current: snapshot() }], expected: {} },
       {
-        action: {
-          type: "buffered",
-          current: snapshot({ buffered: [[0, end]] }),
-        },
+        action: [
+          {
+            type: "buffered",
+            current: snapshot({ buffered: [[0, end]] }),
+          },
+        ],
         expected: {},
       },
       {
-        action: { type: "request_finished" },
+        action: [{ type: "request_finished" }],
         expected: { buffer: { type: "end" } },
       },
       {
-        action: {
-          type: "ended",
-          current: snapshot({ buffered: [[0, end]], time: end }),
-        },
+        action: [
+          {
+            type: "ended",
+            current: snapshot({ buffered: [[0, end]], time: end }),
+          },
+        ],
         expected: {
           ...(end === 199.98
             ? {}
@@ -650,11 +817,11 @@ const cases: readonly Case[] = [
     steps: [
       source_opened(40),
       {
-        action: { type: "timeupdate", current: snapshot() },
+        action: [{ type: "timeupdate", current: snapshot() }],
         expected: { seek: 40 },
       },
       {
-        action: { type: "source_closed", position: 0, paused: true },
+        action: [{ type: "source_closed", position: 0, paused: true }],
         expected: { control: { type: "rebuild" } },
       },
       source_opened(40),
@@ -664,44 +831,54 @@ const cases: readonly Case[] = [
     name: "complete buffered media stays idle through tail playback and can be replayed",
     steps: [
       source_opened(),
-      { action: { type: "seeked", current: snapshot() }, expected: {} },
+      { action: [{ type: "seeked", current: snapshot() }], expected: {} },
       {
-        action: {
-          type: "buffered",
-          current: snapshot({ buffered: [[0, 200]] }),
-        },
+        action: [
+          {
+            type: "buffered",
+            current: snapshot({ buffered: [[0, 200]] }),
+          },
+        ],
         expected: {},
       },
       {
-        action: { type: "request_finished" },
+        action: [{ type: "request_finished" }],
         expected: { buffer: { type: "end" } },
       },
       {
-        action: {
-          type: "timeupdate",
-          current: snapshot({ buffered: [[0, 200]], time: 180 }),
-        },
+        action: [
+          {
+            type: "timeupdate",
+            current: snapshot({ buffered: [[0, 200]], time: 180 }),
+          },
+        ],
         expected: { persist: 180 },
       },
       {
-        action: {
-          type: "ended",
-          current: snapshot({ buffered: [[0, 200]], time: 200 }),
-        },
+        action: [
+          {
+            type: "ended",
+            current: snapshot({ buffered: [[0, 200]], time: 200 }),
+          },
+        ],
         expected: { persist: 0 },
       },
       {
-        action: {
-          type: "progress",
-          current: snapshot({ buffered: [[0, 200]], time: 200 }),
-        },
+        action: [
+          {
+            type: "progress",
+            current: snapshot({ buffered: [[0, 200]], time: 200 }),
+          },
+        ],
         expected: {},
       },
       {
-        action: {
-          type: "seeking",
-          current: snapshot({ seeking: true, time: 10 }),
-        },
+        action: [
+          {
+            type: "seeking",
+            current: snapshot({ seeking: true, time: 10 }),
+          },
+        ],
         expected: {
           control: { type: "request", request: { frontier: 10, position: 10 } },
           persist: 10,
@@ -718,19 +895,23 @@ const cases: readonly Case[] = [
     name: `acknowledged backpressure at time ${time} keeps state and request effects aligned`,
     steps: [
       source_opened(),
-      { action: { type: "seeked", current: snapshot() }, expected: {} },
+      { action: [{ type: "seeked", current: snapshot() }], expected: {} },
       {
-        action: {
-          type: "buffered",
-          current: snapshot({ buffered: [[0, BUFFER_HIGH]] }),
-        },
+        action: [
+          {
+            type: "buffered",
+            current: snapshot({ buffered: [[0, BUFFER_HIGH]] }),
+          },
+        ],
         expected: {},
       },
       {
-        action: {
-          type: "timeupdate",
-          current: snapshot({ buffered: [[0, BUFFER_HIGH]], time }),
-        },
+        action: [
+          {
+            type: "timeupdate",
+            current: snapshot({ buffered: [[0, BUFFER_HIGH]], time }),
+          },
+        ],
         expected: {
           control:
             time === BUFFER_HIGH - BUFFER_LOW
@@ -743,10 +924,12 @@ const cases: readonly Case[] = [
         },
       },
       {
-        action: {
-          type: "waiting",
-          current: snapshot({ buffered: [[0, BUFFER_HIGH]], time }),
-        },
+        action: [
+          {
+            type: "waiting",
+            current: snapshot({ buffered: [[0, BUFFER_HIGH]], time }),
+          },
+        ],
         expected: {},
       },
     ],
@@ -756,7 +939,7 @@ const cases: readonly Case[] = [
     position: 40,
     steps: [
       {
-        action: { type: "source_opened" },
+        action: [{ type: "source_opened" }],
         expected: {
           control: {
             request: { frontier: 40, position: 40 },
@@ -772,14 +955,16 @@ const cases: readonly Case[] = [
     steps: [
       source_opened(),
       {
-        action: { type: "request_finished" },
+        action: [{ type: "request_finished" }],
         expected: { buffer: { type: "end" } },
       },
       {
-        action: {
-          current: snapshot({ buffered: [[0, BUFFER_LOW]] }),
-          type: "progress",
-        },
+        action: [
+          {
+            current: snapshot({ buffered: [[0, BUFFER_LOW]] }),
+            type: "progress",
+          },
+        ],
         expected: {},
       },
     ],
@@ -789,14 +974,16 @@ const cases: readonly Case[] = [
     steps: [
       source_opened(),
       {
-        action: { type: "request_finished" },
+        action: [{ type: "request_finished" }],
         expected: { buffer: { type: "end" } },
       },
       {
-        action: {
-          current: snapshot({ buffered: [[0, BUFFER_LOW - 1]] }),
-          type: "progress",
-        },
+        action: [
+          {
+            current: snapshot({ buffered: [[0, BUFFER_LOW - 1]] }),
+            type: "progress",
+          },
+        ],
         expected: {
           control: {
             request: { frontier: BUFFER_LOW - 1, position: BUFFER_LOW - 1 },
@@ -811,17 +998,24 @@ const cases: readonly Case[] = [
     steps: [
       source_opened(),
       {
-        action: {
-          current: snapshot({ buffered: [[0, BUFFER_HIGH]] }),
-          type: "progress",
-        },
+        action: [
+          {
+            current: snapshot({ buffered: [[0, BUFFER_HIGH]] }),
+            type: "progress",
+          },
+        ],
         expected: { control: { type: "pause" } },
       },
       {
-        action: {
-          current: snapshot({ buffered: [[0, BUFFER_HIGH]], time: RESUME_AT }),
-          type: "timeupdate",
-        },
+        action: [
+          {
+            current: snapshot({
+              buffered: [[0, BUFFER_HIGH]],
+              time: RESUME_AT,
+            }),
+            type: "timeupdate",
+          },
+        ],
         expected: {
           control: {
             request: { frontier: BUFFER_HIGH, position: BUFFER_HIGH },
@@ -837,14 +1031,16 @@ const cases: readonly Case[] = [
     steps: [
       source_opened(),
       {
-        action: { current: snapshot(), type: "seeked" },
+        action: [{ current: snapshot(), type: "seeked" }],
         expected: {},
       },
       {
-        action: {
-          current: snapshot({ seeking: true, time: 110 }),
-          type: "seeking",
-        },
+        action: [
+          {
+            current: snapshot({ seeking: true, time: 110 }),
+            type: "seeking",
+          },
+        ],
         expected: {
           control: {
             request: { frontier: 110, position: 110 },
@@ -860,11 +1056,11 @@ const cases: readonly Case[] = [
     steps: [
       source_opened(),
       {
-        action: { error: failure, type: "request_failed" },
+        action: [{ error: failure, type: "request_failed" }],
         expected: { error: failure },
       },
       {
-        action: { type: "request_retry", current: snapshot() },
+        action: [{ type: "request_retry", current: snapshot() }],
         expected: {
           control: {
             request: { frontier: 0, position: 0 },
@@ -879,11 +1075,11 @@ const cases: readonly Case[] = [
     steps: [
       source_opened(),
       {
-        action: { current: snapshot(), type: "seeked" },
+        action: [{ current: snapshot(), type: "seeked" }],
         expected: {},
       },
       {
-        action: { type: "request_finished" },
+        action: [{ type: "request_finished" }],
         expected: { buffer: { type: "end" } },
       },
       {
@@ -919,14 +1115,17 @@ await run_cases([
     name: `native play owns resumption for ${types.join("/")}`,
     run: async (): Promise<void> => {
       const dispatch = playback_transitions(0)
-      dispatch({ type: "source_opened" })
-      dispatch({ type: "source_closed", paused: false, position: 0 })
-      dispatch({ type: "source_opened" })
+      dispatch([{ type: "source_opened" }])
+      dispatch([{ type: "source_closed", paused: false, position: 0 }])
+      dispatch([{ type: "source_opened" }])
       const effects = dispatch(
         types.map((type) => ({ type, current: snapshot() })),
       )
       equal(effects.play, false)
-      equal(dispatch({ type: "canplay", current: snapshot() }).play, undefined)
+      equal(
+        dispatch([{ type: "canplay", current: snapshot() }]).play,
+        undefined,
+      )
     },
   })),
   ...[false, true].flatMap((paused) =>
@@ -939,9 +1138,9 @@ await run_cases([
       name: `rebuild defers play for ${types.join("/")} with paused=${paused}`,
       run: async (): Promise<void> => {
         const dispatch = playback_transitions(0)
-        dispatch({ type: "source_opened" })
-        dispatch({ type: "source_closed", position: 0, paused })
-        dispatch({ type: "source_opened" })
+        dispatch([{ type: "source_opened" }])
+        dispatch([{ type: "source_closed", position: 0, paused }])
+        dispatch([{ type: "source_opened" }])
         const current = snapshot({
           paused,
           error: { code: 3, message: "decode failed" } as MediaError,
@@ -949,13 +1148,13 @@ await run_cases([
         const effects = dispatch(types.map((type) => ({ type, current })))
         deepEqual(effects.control, { type: "rebuild" })
         equal(effects.play, undefined)
-        dispatch({ type: "source_opened" })
+        dispatch([{ type: "source_opened" }])
         equal(
-          dispatch({ type: "canplay", current: snapshot() }).play,
+          dispatch([{ type: "canplay", current: snapshot() }]).play,
           paused ? undefined : true,
         )
         equal(
-          dispatch({ type: "canplay", current: snapshot() }).play,
+          dispatch([{ type: "canplay", current: snapshot() }]).play,
           undefined,
         )
       },
@@ -979,17 +1178,43 @@ await run_cases([
     name: `quota with no playable future in ${JSON.stringify(buffered)} requests a retry`,
     run: async (): Promise<void> => {
       const dispatch = playback_transitions(40)
-      dispatch({ type: "source_opened" })
-      const effects = dispatch({
-        type: "buffer_full",
-        current: snapshot({
-          buffered,
-          time: 40,
-        }),
-      })
+      dispatch([{ type: "source_opened" }])
+      const effects = dispatch([
+        {
+          type: "buffer_full",
+          playable: true,
+          current: snapshot({
+            buffered,
+            time: 40,
+          }),
+        },
+      ])
       equal(effects.error, undefined)
       deepEqual(effects.control, { type: "retry" })
       equal(effects.buffer, undefined)
+    },
+  })),
+  ...[2, 3].map((ready): { name: string; run: () => Promise<void> } => ({
+    name: `quota with a short buffered tail at readiness ${ready} ${ready >= 3 ? "waits for playback" : "rebuilds instead of waiting for an immobile clock"}`,
+    run: async (): Promise<void> => {
+      const dispatch = playback_transitions(1531.375)
+      dispatch([{ type: "source_opened" }])
+      const effects = dispatch([
+        {
+          type: "buffer_full",
+          playable: ready >= 3,
+          current: snapshot({
+            time: 1535.324599,
+            duration: 5000,
+            paused: false,
+            buffered: [
+              [1531.375, 1535.398274],
+              [4974, 4981],
+            ],
+          }),
+        },
+      ])
+      deepEqual(effects, { control: { type: ready >= 3 ? "pause" : "retry" } })
     },
   })),
 ])
