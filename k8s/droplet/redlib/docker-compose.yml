@@ -19,7 +19,7 @@ services:
       TARGET: http://bluelib.${COMPOSE_PROJECT_NAME}.svc.cluster.local:8080
 
   redlib:
-    image: &img quay.io/redlib/redlib:latest
+    image: &img ghcr.io/polak14/redlib:latest
     environment: &env
       ALL_PROXY: socks5://proxy.komposed-hostproxy.svc.cluster.local:1080
       REDLIB_AUTOPLAY_VIDEOS: on
@@ -31,6 +31,7 @@ services:
       REDLIB_DEFAULT_USE_HLS: on
       REDLIB_ENABLE_RSS: on
       REDLIB_FULL_URL: https://bbs.${DOMAIN}
+      REDLIB_REDDIT_COOKIE: ${REDLIB_REDDIT_COOKIE:-}
       REDLIB_REMOVE_DEFAULT_FEEDS: on
       REDLIB_ROBOTS_DISABLE_INDEXING: on
     ports:
