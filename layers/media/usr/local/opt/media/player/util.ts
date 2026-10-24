@@ -129,49 +129,6 @@ export const once = async <
   return fut.promise
 }
 
-// TODO: remove this with safari 27
-const readableIterator = async function* <const T>(
-  stream: ReadableStream<T>,
-  signal: AbortSignal,
-): AsyncIteratorObject<T> {
-  using a = abortion(signal)
-  const reader = stream.getReader()
-  const cancelled = Promise.withResolvers<undefined>()
-
-  a.signal.addEventListener("abort", () => cancelled.resolve(undefined), {
-    once: true,
-  })
-
-  let eof = false
-  try {
-    for (; !a.signal.aborted;) {
-      const result = await Promise.race([reader.read(), cancelled.promise])
-      if (result === undefined) {
-        return
-      }
-      const { done, value } = result
-      if (done) {
-        eof = true
-        return
-      }
-      yield value
-    }
-  } finally {
-    if (!eof) {
-      const cancelled = (async () => {
-        try {
-          await reader.cancel()
-        } catch {}
-      })()
-      if (!a.signal.aborted) {
-        await cancelled
-      }
-    }
-    reader.releaseLock()
-  }
-
-  return
-}
 
 export const event_batches = <
   const T extends EventTarget,
@@ -288,7 +245,7 @@ export const fetch_stream = (
       }
 
       if (response.body) {
-        yield* readableIterator(response.body, signal)
+        yield* response.body
       }
     } catch (error) {
       if (!signal.aborted) {
