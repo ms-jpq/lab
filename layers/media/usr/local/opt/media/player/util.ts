@@ -238,9 +238,12 @@ export const fetch_stream = (
       const response = await fetch(request, { signal })
 
       if (!response.ok) {
-        throw new Error([response.status, response.statusText].join(" "), {
-          cause: response,
-        })
+        throw new Error(
+          [response.status, response.statusText].filter((x) => x).join(" "),
+          {
+            cause: response,
+          },
+        )
       }
 
       if (response.body) {
