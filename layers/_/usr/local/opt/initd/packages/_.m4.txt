@@ -7,7 +7,6 @@
 + figlet
 + file
 + fzf
-+ gay
 + gdu
 + gettext-base
 + git
@@ -25,6 +24,7 @@
 + net-tools
 + parallel
 + pv
++ py-gay
 + python3-venv
 + ripgrep
 + rsync
