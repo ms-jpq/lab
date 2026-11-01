@@ -17,7 +17,7 @@ TEXT_SUBTITLES = frozenset(
 
 _COMMAND_PREFIX = ("nice", "--adjustment=19", "--", "ffmpeg", "-v", "error", "-nostdin")
 _VAAPI_DEVICE = "/dev/dri/renderD128"
-_H264_VAAPI_QP = "25"
+_H264_VAAPI_QP = {0: 25, 2160: 27}
 _ASS_OVERRIDE = compile(rb"\{[^}\r\n]*\\[^}\r\n]*\}")
 _FRAGMENT_DURATION = str(1_000_000)
 _COMMAND_SUFFIX = (
@@ -94,6 +94,12 @@ def _command(
         case None, _:
             pass
         case Stream() as video, height:
+            output_height = video.height or 0
+            if height is not None:
+                output_height = min(output_height, height)
+            qp = _H264_VAAPI_QP[
+                max(size for size in _H264_VAAPI_QP if size <= output_height)
+            ]
             yield from ("-map", f"0:{video.index}")
             yield from (
                 "-c:v",
@@ -101,7 +107,7 @@ def _command(
                 "-profile:v",
                 "high",
                 "-qp",
-                _H264_VAAPI_QP,
+                str(qp),
                 "-vf",
                 (
                     "format=nv12,hwupload"
