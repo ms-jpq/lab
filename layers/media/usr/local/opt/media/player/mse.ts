@@ -82,18 +82,17 @@ const update_buffer = async (
 
   const event = await changed
   switch (event?.type) {
+    case "update":
+      return
     case "error":
       throw event
-    case undefined:
-    case "seeking":
-    case "sourceclose": {
-      if (operation === "append" && buffer.updating) {
-        buffer.abort()
-      }
-      if (event === undefined && deadline.aborted && !signal.aborted) {
-        throw new Error("SourceBuffer operation timed out")
-      }
-    }
+  }
+
+  if (operation === "append" && buffer.updating) {
+    buffer.abort()
+  }
+  if (event === undefined && deadline.aborted && !signal.aborted) {
+    throw new Error("SourceBuffer operation timed out")
   }
   return
 }
