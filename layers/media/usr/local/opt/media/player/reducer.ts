@@ -14,7 +14,7 @@ type PlaybackControl =
   | Readonly<{ type: "rebuild" }>
   | Readonly<{ type: "retry" }>
 
-type Acquisition = "active" | "backpressured" | "idle"
+type Acquisition = "active" | "backpressured" | "idle" | "finished"
 
 type PlaybackState = Readonly<{
   acquisition: Acquisition
@@ -113,6 +113,11 @@ const at_end = ({ duration }: MediaSnapshot, position: number): boolean =>
   duration > 0 && position >= duration - POSITION_TOLERANCE
 
 const complete = (state: PlaybackState, current: MediaSnapshot): boolean =>
+  (state.acquisition === "finished" &&
+    aligned(
+      buffered_end(current, state.pending_seek ?? current.time) ?? current.time,
+      state.request.frontier,
+    )) ||
   at_end(
     current,
     buffered_end(current, state.pending_seek ?? current.time) ?? current.time,
@@ -256,11 +261,24 @@ const reduce = (
         ? pause(state, action.error)
         : [state, { error: action.error }]
     case "request_finished": {
-      return [{ ...state, acquisition: "idle" }, { buffer: { type: "end" } }]
+      return [
+        {
+          ...state,
+          acquisition:
+            state.acquisition === "backpressured" ||
+            state.request.frontier > state.request.position
+              ? "finished"
+              : "idle",
+        },
+        { buffer: { type: "end" } },
+      ]
     }
     case "request_retry": {
       const [next, effects] = project(
-        { ...state, acquisition: "idle" },
+        {
+          ...state,
+          acquisition: state.acquisition === "finished" ? "finished" : "idle",
+        },
         action.current,
       )
       return [
@@ -313,7 +331,7 @@ const reduce = (
         next,
         {
           ...effects,
-          persist: at_end(action.current, action.current.time)
+          persist: complete(state, action.current)
             ? 0
             : (state.pending_seek ??
               playable_time(action.current.duration, action.current.time)),

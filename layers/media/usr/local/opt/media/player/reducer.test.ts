@@ -427,13 +427,13 @@ const cases: readonly Case[] = [
         expected: {},
       },
       {
-        action: [{ type: "request_finished" }],
-        expected: { buffer: { type: "end" } },
+        action: [{ type: "request_failed", error: failure }],
+        expected: { error: failure },
       },
       {
         action: [
           {
-            type: "progress",
+            type: "request_retry",
             current: snapshot({ buffered: [[50, 70]], time: 50 }),
           },
         ],
@@ -643,7 +643,7 @@ const cases: readonly Case[] = [
     ],
   },
   ...(["progress", "ended"] as const).map((type): Case => ({
-    name: `${type} after short EOF requests new content at the acknowledged frontier`,
+    name: `${type} after successful EOF does not request beyond the acknowledged frontier`,
     steps: [
       source_opened(),
       { action: [{ type: "seeked", current: snapshot() }], expected: {} },
@@ -671,11 +671,7 @@ const cases: readonly Case[] = [
           },
         ],
         expected: {
-          control: {
-            type: "request",
-            request: { frontier: BUFFER_LOW - 1, position: BUFFER_LOW - 1 },
-          },
-          ...(type === "ended" ? { persist: BUFFER_LOW - 1 } : {}),
+          ...(type === "ended" ? { persist: 0 } : {}),
         },
       },
     ],
@@ -770,7 +766,7 @@ const cases: readonly Case[] = [
     ],
   })),
   ...[199.98, 199, BUFFER_LOW].map((end): Case => ({
-    name: `EOF at ${end} of 200 only stops acquisition within terminal tolerance`,
+    name: `successful EOF at ${end} stops acquisition even when declared duration is 200`,
     steps: [
       source_opened(),
       { action: [{ type: "seeked", current: snapshot() }], expected: {} },
@@ -795,18 +791,7 @@ const cases: readonly Case[] = [
           },
         ],
         expected: {
-          ...(end === 199.98
-            ? {}
-            : {
-                control: {
-                  type: "request",
-                  request: {
-                    frontier: end,
-                    position: end,
-                  },
-                } as const,
-              }),
-          persist: end === 199.98 ? 0 : end,
+          persist: 0,
         },
       },
     ],

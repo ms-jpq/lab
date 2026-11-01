@@ -570,7 +570,7 @@ const cases = [
     },
   },
   ...[0, 1].map((chunks): TestCase => ({
-    name: `startup EOF after ${chunks} chunks retries after backoff without another native media event`,
+    name: `startup EOF after ${chunks} chunks retries only when no data was appended`,
     run: async () => {
       const current = await fixture({ append_duration: 1 })
       const tick = retry_clock(current.context)
@@ -587,8 +587,13 @@ const cases = [
         await setImmediate()
         equal(current.requests.length, 1)
         tick()
-        await eventually(() => current.requests.length === 2)
-        equal(request_position(current.requests[1]), String(chunks))
+        if (chunks === 0) {
+          await eventually(() => current.requests.length === 2)
+          equal(request_position(current.requests[1]), "0")
+        } else {
+          await setImmediate()
+          equal(current.requests.length, 1)
+        }
       } finally {
         owner.abort()
         await playback
@@ -1484,7 +1489,7 @@ const cases = [
     },
   })),
   {
-    name: "audit: a premature native ended event does not erase resumable page progress",
+    name: "native ended after successful EOF resets progress despite a longer declared duration",
     run: async () => {
       const current = await fixture({
         response: "pending",
@@ -1513,10 +1518,8 @@ const cases = [
         current.media.ended = true
         current.media.dispatchEvent(new Event("ended"))
         await setImmediate()
-        ok(
-          Number(current.time_input.value) >= BUFFER_LOW - 1,
-          "recovery must not lose the last playable position",
-        )
+        equal(current.time_input.value, "0")
+        equal(current.requests.length, 1)
       } finally {
         owner.abort()
         await playing
@@ -1563,12 +1566,13 @@ const cases = [
     },
   },
   {
-    name: "audit: a clean short response resumes from its appended end, not its original request start",
+    name: "a successful short response stays complete through playback events and retry ticks",
     run: async () => {
       const current = await fixture({
         response: "pending",
         append_duration: BUFFER_LOW,
       })
+      const tick = retry_clock(current.context)
       const bodies = pending_responses(current)
       const owner = new AbortController()
       const playing = current.context.player_test.play_media(owner.signal)
@@ -1582,9 +1586,20 @@ const cases = [
         body.close()
         await eventually(() => current.sources[0]?.readyState === "ended")
         current.media.update_time(1)
+        await setImmediate()
+        tick()
+        await setImmediate()
+        for (const type of ["progress", "waiting", "ended"]) {
+          current.media.currentTime = BUFFER_LOW
+          current.media.dispatchEvent(new Event(type))
+          await setImmediate()
+        }
+        equal(current.requests.length, 1)
+        current.media.currentTime = 100
+        current.media.seeking = true
+        current.media.dispatchEvent(new Event("seeking"))
         await eventually(() => current.requests.length === 2)
-        equal(current.sources[0]?.sourceBuffers[0]?.timestampOffset, BUFFER_LOW)
-        equal(request_position(current.requests[1]), String(BUFFER_LOW))
+        equal(request_position(current.requests[1]), "100")
       } finally {
         owner.abort()
         await playing
@@ -2190,7 +2205,7 @@ const cases = [
     },
   },
   {
-    name: "low water resumes acquisition at the buffered frontier",
+    name: "low water does not resume acquisition after successful EOF",
     run: async (context: TestContext): Promise<void> => {
       const current = await fixture({ append_duration: BUFFER_HIGH })
       start_playback(current, context)
@@ -2202,9 +2217,8 @@ const cases = [
 
       current.media.currentTime = RESUME_AT
       current.media.dispatchEvent(new Event("timeupdate"))
-      await eventually(() => current.requests.length === 2)
-
-      equal(request_position(current.requests[1]), String(BUFFER_HIGH))
+      await setImmediate()
+      equal(current.requests.length, 1)
     },
   },
   {
