@@ -45,7 +45,7 @@ const unbuffered_seek = async (
   return
 }
 
-const op_lock = async (
+const update_buffer = async (
   {
     buffer,
     media,
@@ -113,22 +113,21 @@ export const media_source = async function* ({
   signal: AbortSignal
   timeout: number
 }): Mse {
-  using a = abortion(signal)
-  if (a.signal.aborted || closed(source)) {
+  if (signal.aborted || closed(source)) {
     return
   }
 
   const buffer = source.addSourceBuffer(mime_type)
-  const lock = op_lock.bind(undefined, {
+  const update = update_buffer.bind(undefined, {
     buffer,
     media,
     source,
-    signal: a.signal,
+    signal,
     timeout,
   })
 
   const position = (yield empty) as number
-  if (a.signal.aborted || closed(source)) {
+  if (signal.aborted || closed(source)) {
     return
   }
   buffer.timestampOffset = position
@@ -137,7 +136,7 @@ export const media_source = async function* ({
   for (
     let remaining: Uint8Array<ArrayBufferLike> = empty,
       operation = yield remaining;
-    !a.signal.aborted && !closed(source);
+    !signal.aborted && !closed(source);
     operation = yield remaining
   ) {
     remaining = empty
@@ -154,10 +153,10 @@ export const media_source = async function* ({
         const ranges = buffer.buffered
         const end = ranges.length ? ranges.end(ranges.length - 1) : 0
 
-        await lock("remove", awaiting_start, () => {
+        await update("remove", awaiting_start, () => {
           buffer.remove(end, end + EPSILON)
         })
-        if (a.signal.aborted || closed(source)) {
+        if (signal.aborted || closed(source)) {
           return
         }
       }
@@ -176,7 +175,7 @@ export const media_source = async function* ({
       buffer.timestampOffset,
     )
     try {
-      await lock("append", awaiting_start, () => {
+      await update("append", awaiting_start, () => {
         buffer.appendBuffer(
           operation.buffer instanceof ArrayBuffer
             ? new Uint8Array(
@@ -207,15 +206,6 @@ export const media_source = async function* ({
   }
 }
 
-const MSE = (): MediaSource =>
-  new (
-    (
-      globalThis as typeof globalThis & {
-        ManagedMediaSource?: typeof MediaSource
-      }
-    ).ManagedMediaSource ?? MediaSource
-  )()
-
 export const bond = (
   media: HTMLMediaElement,
   signal: AbortSignal,
@@ -223,7 +213,13 @@ export const bond = (
 ): AsyncIteratorObject<MediaSource> =>
   closing(signal, async function* (signal) {
     for (; !signal.aborted;) {
-      const source = MSE()
+      const Source =
+        (
+          globalThis as typeof globalThis & {
+            ManagedMediaSource?: typeof MediaSource
+          }
+        ).ManagedMediaSource ?? MediaSource
+      const source = new Source()
       const url = URL.createObjectURL(source)
       const prev = media.src
 
