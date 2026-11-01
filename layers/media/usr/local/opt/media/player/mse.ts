@@ -214,7 +214,7 @@ export const media_source = async function* ({
   }
 }
 
-export const bond = (
+export const attach_sources = (
   media: HTMLMediaElement,
   signal: AbortSignal,
   timeout: number,
@@ -300,7 +300,7 @@ export const media_sources = ({
       media.load()
     })
 
-    for await (const source of bond(media, signal, timeout)) {
+    for await (const source of attach_sources(media, signal, timeout)) {
       using a = abortion(signal)
       source.addEventListener("sourceclose", a[Symbol.dispose], {
         once: true,

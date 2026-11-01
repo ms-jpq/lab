@@ -3,7 +3,7 @@ import { getEventListeners } from "node:events"
 import type { TestContext } from "node:test"
 import { setImmediate } from "node:timers/promises"
 
-import { bond, media_source, media_sources, type Mse } from "./mse.ts"
+import { attach_sources, media_source, media_sources, type Mse } from "./mse.ts"
 import { EventTarget, run_cases, timeRanges } from "./test_utils.ts"
 
 const MSE_TIMEOUT = 100
@@ -319,11 +319,11 @@ const cases = [
     },
   })),
   {
-    name: "a committed bond releases opening listeners before handing off",
+    name: "a committed attachment releases opening listeners before handing off",
     run: async (context: TestContext) => {
       const current = acquisitionFixture(context)
       const owner = new AbortController()
-      const values = bond(current.media, owner.signal, MSE_TIMEOUT)
+      const values = attach_sources(current.media, owner.signal, MSE_TIMEOUT)
       try {
         current.media.src = "blob:test:previous"
         const pending = values.next()
@@ -527,11 +527,11 @@ const cases = [
     },
   },
   {
-    name: "bond rolls back a candidate that closes before its open handoff resumes",
+    name: "attach_sources rolls back a candidate that closes before its open handoff resumes",
     run: async (context: TestContext) => {
       const current = acquisitionFixture(context)
       const owner = new AbortController()
-      const values = bond(current.media, owner.signal, MSE_TIMEOUT)
+      const values = attach_sources(current.media, owner.signal, MSE_TIMEOUT)
       try {
         current.media.src = "blob:test:previous"
         const pending = values.next()
@@ -562,11 +562,11 @@ const cases = [
     },
   },
   ...(["abort", "return"] as const).map((cancellation) => ({
-    name: `bond does not commit an opened source after ${cancellation} cancels its pending handoff`,
+    name: `attach_sources does not commit an opened source after ${cancellation} cancels its pending handoff`,
     run: async (context: TestContext) => {
       const current = acquisitionFixture(context)
       const owner = new AbortController()
-      const values = bond(current.media, owner.signal, MSE_TIMEOUT)
+      const values = attach_sources(current.media, owner.signal, MSE_TIMEOUT)
       try {
         current.media.src = "blob:test:previous"
         const pending = values.next()
@@ -1478,13 +1478,13 @@ const cases = [
     },
   },
   {
-    name: "a failed bond restores the previous URL and detaches its listeners",
+    name: "a failed attachment restores the previous URL and detaches its listeners",
     run: async (context: TestContext) => {
       const current = acquisitionFixture(context)
       try {
         current.media.src = "blob:test:previous"
         const owner = new AbortController()
-        const values = bond(current.media, owner.signal, MSE_TIMEOUT)
+        const values = attach_sources(current.media, owner.signal, MSE_TIMEOUT)
         const pending = values.next()
         const source = current.sources[0]
         assert(source)
@@ -1508,15 +1508,15 @@ const cases = [
       }
     },
   },
-  ...(["bond", "media_sources"] as const).flatMap((kind) =>
+  ...(["attach_sources", "media_sources"] as const).flatMap((kind) =>
     [false, true].map((opened) => ({
       name: `${kind} return closes ${opened ? "an acquired" : "a pending"} source`,
       run: async (context: TestContext) => {
         const current = acquisitionFixture(context)
         const owner = new AbortController()
         const values =
-          kind === "bond"
-            ? bond(current.media, owner.signal, MSE_TIMEOUT)
+          kind === "attach_sources"
+            ? attach_sources(current.media, owner.signal, MSE_TIMEOUT)
             : media_sources({
                 media: current.media,
                 mime_type: "video/test",
@@ -1543,7 +1543,7 @@ const cases = [
             deepEqual(getEventListeners(source, "sourceopen").length, 0)
             deepEqual(
               getEventListeners(source, "sourceclose").length,
-              kind === "bond" ? 0 : 1,
+              kind === "attach_sources" ? 0 : 1,
             )
           }
           const closed = values.return?.()
@@ -1560,11 +1560,11 @@ const cases = [
           )
           deepEqual(
             current.revoked,
-            kind === "bond" && opened ? [] : ["blob:test:0"],
+            kind === "attach_sources" && opened ? [] : ["blob:test:0"],
           )
           deepEqual(current.state, {
-            loads: kind === "bond" ? 0 : 1,
-            removals: (opened ? 0 : 1) + (kind === "bond" ? 0 : 1),
+            loads: kind === "attach_sources" ? 0 : 1,
+            removals: (opened ? 0 : 1) + (kind === "attach_sources" ? 0 : 1),
           })
         } finally {
           owner.abort()
