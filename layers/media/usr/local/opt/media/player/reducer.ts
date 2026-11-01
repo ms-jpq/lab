@@ -181,12 +181,13 @@ const project = (
   current: MediaSnapshot,
 ): PlaybackTransition => {
   const candidate =
-    state.pending_seek === undefined || current.seeking
-      ? undefined
-      : (buffered_position(current, state.pending_seek) ??
-        (current.metadata ? state.pending_seek : undefined))
+    buffered_position(current, state.pending_seek ?? current.time) ??
+    (current.metadata && !current.seeking ? state.pending_seek : undefined)
+  const buffered = buffered_position(current, current.time)
   const seek =
-    candidate !== undefined && !aligned(current.time, candidate)
+    candidate !== undefined &&
+    (!aligned(current.time, candidate) ||
+      (buffered !== undefined && buffered > current.time))
       ? candidate
       : undefined
   const pending_seek = candidate === undefined ? state.pending_seek : seek
@@ -312,7 +313,13 @@ const reduce = (
       ]
     }
     case "buffered": {
-      return [acknowledge(state, action.current), {}]
+      const next = acknowledge(state, action.current)
+      const target = state.pending_seek ?? action.current.time
+      const position = buffered_position(action.current, target)
+      return position !== undefined &&
+        position > Math.max(target, action.current.time)
+        ? [{ ...next, pending_seek: position }, { seek: position }]
+        : [next, {}]
     }
     case "play":
       return [{ ...state, resume: false }, { play: false }]

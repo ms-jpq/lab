@@ -475,6 +475,45 @@ const retry_clock = (context: PlayerContext): (() => void) => {
 }
 
 const cases = [
+  ...[false, true].flatMap((seek) =>
+    [false, true].map((seeking): TestCase => ({
+      name: `${seek ? "user seek" : "startup"} enters newly buffered data while seeking=${seeking}`,
+      run: async () => {
+        const current = await fixture({ response: "pending", url_position: 10 })
+        const bodies = pending_responses(current)
+        const owner = new AbortController()
+        const playback = current.context.player_test.play_media(owner.signal)
+        try {
+          await eventually(() => bodies.length === 1)
+          if (seek) {
+            current.media.dispatchEvent(new Event("seeked"))
+            await setImmediate()
+            current.media.currentTime = 100
+            current.media.seeking = true
+            current.media.dispatchEvent(new Event("seeking"))
+            await eventually(() => bodies.length === 2)
+          }
+          current.media.seeking = seeking
+          const buffer = current.sources[0]!.sourceBuffers[0]!
+          const append = buffer.appendBuffer.bind(buffer)
+          buffer.appendBuffer = (bytes): void => {
+            append(bytes)
+            const [start, end] = buffer.buffered.values.pop()!
+            buffer.buffered.values.push([start + 0.05, end])
+          }
+          bodies.at(-1)!.enqueue(Uint8Array.of(1))
+          await eventually(() => buffer.appended.length === 1)
+          await setImmediate()
+          equal(current.media.currentTime, (seek ? 100 : 10) + 0.05)
+          equal(current.requests.length, seek ? 2 : 1)
+          deepEqual(current.errors, [])
+        } finally {
+          owner.abort()
+          await playback
+        }
+      },
+    })),
+  ),
   ...[200, 199.98].map((end): TestCase => ({
     name: `terminal buffering at ${end} drains EOF despite a high-water observation`,
     run: async () => {

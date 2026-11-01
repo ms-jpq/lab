@@ -69,6 +69,31 @@ const quota_steps: readonly Step[] = [
 ]
 
 const cases: readonly Case[] = [
+  ...[false, true].map((seeking): Case => ({
+    name: `waiting before the first buffered frame corrects time while seeking=${seeking}`,
+    position: 10,
+    steps: [
+      source_opened(10),
+      {
+        action: [
+          {
+            type: "waiting",
+            current: snapshot({ time: 10, buffered: [[10.05, 30]], seeking }),
+          },
+        ],
+        expected: { seek: 10.05 },
+      },
+      {
+        action: [
+          {
+            type: "seeked",
+            current: snapshot({ time: 10.06, buffered: [[10.05, 30]] }),
+          },
+        ],
+        expected: {},
+      },
+    ],
+  })),
   ...(
     [
       {

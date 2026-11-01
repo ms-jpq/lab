@@ -196,7 +196,8 @@ const playback_events = async function* (
         ]
         continue
       } else if (effects.buffer.type !== "end") {
-        dispatch([media_buffered(media)])
+        actions = [media_buffered(media)]
+        continue
       }
     }
 
