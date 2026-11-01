@@ -3,14 +3,22 @@ import {
   playable_position,
   POSITION_TOLERANCE,
 } from "./media.ts"
-import { abortion, closing, defer, event_batches, never, once } from "./util.ts"
+import { abortion, closing, defer, never, once } from "./util.ts"
 
-export type MseOperation = undefined | number | Uint8Array<ArrayBufferLike>
+export type MseOperation = undefined | number | Uint8Array<ArrayBuffer>
 export type Mse = AsyncIteratorObject<
-  Uint8Array<ArrayBufferLike>,
+  Uint8Array<ArrayBuffer>,
   void,
   MseOperation
 >
+
+type BufferContext = {
+  buffer: SourceBuffer
+  media: HTMLMediaElement
+  source: MediaSource
+  signal: AbortSignal
+  timeout: number
+}
 
 const EPSILON = 0.001
 
@@ -23,8 +31,7 @@ const unbuffered_seek = async (
   signal: AbortSignal,
   awaiting_start: boolean,
 ): Promise<{ type: "seeking" } | undefined> => {
-  await using seeks = event_batches(signal, media, ["seeking"], () => undefined)
-  for await (const _ of seeks) {
+  while (await once(signal, media, "seeking")) {
     if (signal.aborted) {
       return
     }
@@ -46,23 +53,17 @@ const unbuffered_seek = async (
 }
 
 const update_buffer = async (
-  {
-    buffer,
-    media,
-    source,
-    signal,
-    timeout,
-  }: {
-    buffer: SourceBuffer
-    media: HTMLMediaElement
-    source: MediaSource
-    signal: AbortSignal
-    timeout: number
-  },
-  operation: "append" | "remove",
-  awaiting_start: boolean,
-  mutate: () => undefined,
+  operation: BufferContext &
+    (
+      | {
+          type: "append"
+          data: Uint8Array<ArrayBuffer>
+          awaiting_start: boolean
+        }
+      | { type: "remove"; start: number; end: number }
+    ),
 ): Promise<undefined> => {
+  const { buffer, media, source, signal, timeout } = operation
   if (signal.aborted || closed(source)) {
     return
   }
@@ -70,15 +71,26 @@ const update_buffer = async (
   const deadline = AbortSignal.timeout(timeout)
   using a = abortion(signal, deadline)
   const changed = Promise.race([
-    ...(operation === "append"
-      ? [unbuffered_seek(media, buffer, a.signal, awaiting_start)]
+    ...(operation.type === "append"
+      ? [unbuffered_seek(media, buffer, a.signal, operation.awaiting_start)]
       : []),
     once(a.signal, buffer, "update"),
     once(a.signal, buffer, "error"),
     once(a.signal, source, "sourceclose"),
   ])
 
-  mutate()
+  switch (operation.type) {
+    case "append": {
+      const { data } = operation
+      buffer.appendBuffer(data)
+      break
+    }
+    case "remove": {
+      const { start, end } = operation
+      buffer.remove(start, end)
+      break
+    }
+  }
 
   const event = await changed
   switch (event?.type) {
@@ -88,7 +100,7 @@ const update_buffer = async (
       throw event
   }
 
-  if (operation === "append" && buffer.updating) {
+  if (operation.type === "append" && buffer.updating) {
     buffer.abort()
   }
   if (event === undefined && deadline.aborted && !signal.aborted) {
@@ -117,13 +129,13 @@ export const media_source = async function* ({
   }
 
   const buffer = source.addSourceBuffer(mime_type)
-  const update = update_buffer.bind(undefined, {
+  const ctx = {
     buffer,
     media,
     source,
     signal,
     timeout,
-  })
+  }
 
   const position = (yield empty) as number
   if (signal.aborted || closed(source)) {
@@ -133,8 +145,7 @@ export const media_source = async function* ({
 
   let awaiting_start = true
   for (
-    let remaining: Uint8Array<ArrayBufferLike> = empty,
-      operation = yield remaining;
+    let remaining: Uint8Array<ArrayBuffer> = empty, operation = yield remaining;
     !signal.aborted && !closed(source);
     operation = yield remaining
   ) {
@@ -152,8 +163,11 @@ export const media_source = async function* ({
         const ranges = buffer.buffered
         const end = ranges.length ? ranges.end(ranges.length - 1) : 0
 
-        await update("remove", awaiting_start, () => {
-          buffer.remove(end, end + EPSILON)
+        await update_buffer({
+          ...ctx,
+          type: "remove",
+          start: end,
+          end: end + EPSILON,
         })
         if (signal.aborted || closed(source)) {
           return
@@ -174,16 +188,11 @@ export const media_source = async function* ({
       buffer.timestampOffset,
     )
     try {
-      await update("append", awaiting_start, () => {
-        buffer.appendBuffer(
-          operation.buffer instanceof ArrayBuffer
-            ? new Uint8Array(
-                operation.buffer,
-                operation.byteOffset,
-                operation.byteLength,
-              )
-            : new Uint8Array(operation),
-        )
+      await update_buffer({
+        ...ctx,
+        type: "append",
+        data: operation,
+        awaiting_start,
       })
     } catch (error) {
       if (

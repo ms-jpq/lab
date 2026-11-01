@@ -240,7 +240,7 @@ export const merge = <const T extends readonly AsyncIterator<unknown>[]>(
 
 export const fetch_stream = (
   request: Request,
-): AsyncIteratorObject<Uint8Array<ArrayBufferLike>> =>
+): AsyncIteratorObject<Uint8Array<ArrayBuffer>> =>
   closing(request.signal, async function* (signal) {
     try {
       const response = await fetch(request, { signal })
