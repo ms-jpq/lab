@@ -2070,6 +2070,58 @@ const cases = [
       }
     },
   },
+  ...["url", "storage"].flatMap((position_source) =>
+    [false, true].map((paused): TestCase => ({
+      name: `page restoration preserves ${paused ? "a user pause" : "active playback"} from ${position_source}`,
+      run: async () => {
+        const current = await fixture(
+          position_source === "url"
+            ? { url_position: 17 }
+            : { stored_position: 17 },
+        )
+        let plays = 0
+        current.media.paused = true
+        current.media.play = async () => {
+          plays += 1
+          current.media.paused = false
+        }
+        current.media.load = () => {
+          current.media.loads += 1
+          current.media.paused = true
+        }
+        void current.context.player_test.main(
+          current.context.player_test.playback,
+        )
+
+        try {
+          current.window.dispatchEvent(new Event("pageshow"))
+          await eventually(() => current.media.buffered.length > 0)
+          current.media.dispatchEvent(new Event("seeked"))
+          current.media.dispatchEvent(new Event("canplay"))
+          await setImmediate()
+          equal(plays, 0, "the initial visit must not autoplay")
+          current.media.paused = paused
+
+          current.window.dispatchEvent(new Event("pagehide"))
+          await eventually(() => current.media.src === "")
+          equal(current.media.paused, true)
+          current.window.dispatchEvent(new Event("pageshow"))
+          await eventually(() => current.requests.length === 2)
+          await eventually(() => current.media.buffered.length > 0)
+          current.media.dispatchEvent(new Event("seeked"))
+          current.media.dispatchEvent(new Event("canplay"))
+          await setImmediate()
+
+          equal(plays, paused ? 0 : 1)
+          equal(current.media.paused, paused)
+          equal(request_position(current.requests[1]), "17")
+        } finally {
+          current.window.dispatchEvent(new Event("pagehide"))
+          await eventually(() => current.media.src === "")
+        }
+      },
+    })),
+  ),
   {
     name: "a pre-aborted lifetime starts no source or request",
     run: async () => {

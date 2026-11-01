@@ -17,7 +17,7 @@ const time_input = form.elements.namedItem("t") as HTMLInputElement
 export const page_position = (): number =>
   playable_position(media, Number(time_input.value))
 
-const initial_position: number = (() => {
+export const initial_position: number = (() => {
   if (new URL(location.href).searchParams.has("t")) {
     return page_position()
   }

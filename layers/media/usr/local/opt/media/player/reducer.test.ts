@@ -822,6 +822,97 @@ const cases: readonly Case[] = [
     ],
   })),
   {
+    name: "an empty successful tail stops retries after backpressure cancelled the original EOF",
+    steps: [
+      source_opened(),
+      { action: [{ type: "seeked", current: snapshot() }], expected: {} },
+      {
+        action: [
+          { type: "buffered", current: snapshot({ buffered: [[0, 100]] }) },
+        ],
+        expected: {},
+      },
+      {
+        action: [
+          { type: "progress", current: snapshot({ buffered: [[0, 100]] }) },
+        ],
+        expected: { control: { type: "pause" } },
+      },
+      {
+        action: [
+          {
+            type: "timeupdate",
+            current: snapshot({ buffered: [[0, 100]], time: 60 }),
+          },
+        ],
+        expected: {
+          control: {
+            type: "request",
+            request: { frontier: 100, position: 100 },
+          },
+          persist: 60,
+        },
+      },
+      {
+        action: [{ type: "request_finished" }],
+        expected: { buffer: { type: "end" } },
+      },
+      {
+        action: [
+          {
+            type: "request_retry",
+            current: snapshot({ buffered: [[0, 100]], time: 60 }),
+          },
+        ],
+        expected: { buffer: { type: "end" } },
+      },
+      {
+        action: [
+          {
+            type: "waiting",
+            current: snapshot({ buffered: [[0, 100]], time: 100 }),
+          },
+        ],
+        expected: {},
+      },
+      {
+        action: [
+          {
+            type: "ended",
+            current: snapshot({ buffered: [[0, 100]], time: 100 }),
+          },
+        ],
+        expected: { persist: 0 },
+      },
+    ],
+  },
+  ...[0, 40].map((position): Case => ({
+    name: `an empty successful startup response at ${position} still retries without buffered media`,
+    position,
+    steps: [
+      source_opened(position),
+      {
+        action: [{ type: "seeked", current: snapshot({ time: position }) }],
+        expected: {},
+      },
+      {
+        action: [{ type: "request_finished" }],
+        expected: { buffer: { type: "end" } },
+      },
+      {
+        action: [
+          { type: "request_retry", current: snapshot({ time: position }) },
+        ],
+        expected: {
+          control: {
+            type: "request",
+            request: { frontier: position, position },
+          },
+        },
+      },
+    ],
+  })),
+  {
     name: "a pending startup seek survives observations before recovery",
     position: 40,
     steps: [
@@ -965,17 +1056,17 @@ const cases: readonly Case[] = [
     steps: [
       source_opened(),
       {
-        action: [{ type: "request_finished" }],
-        expected: { buffer: { type: "end" } },
+        action: [{ type: "request_failed", error: failure }],
+        expected: { error: failure },
       },
       {
         action: [
           {
             current: snapshot({ buffered: [[0, BUFFER_LOW]] }),
-            type: "progress",
+            type: "request_retry",
           },
         ],
-        expected: {},
+        expected: { control: { type: "pause" } },
       },
     ],
   },
@@ -984,14 +1075,14 @@ const cases: readonly Case[] = [
     steps: [
       source_opened(),
       {
-        action: [{ type: "request_finished" }],
-        expected: { buffer: { type: "end" } },
+        action: [{ type: "request_failed", error: failure }],
+        expected: { error: failure },
       },
       {
         action: [
           {
             current: snapshot({ buffered: [[0, BUFFER_LOW - 1]] }),
-            type: "progress",
+            type: "request_retry",
           },
         ],
         expected: {
@@ -1089,11 +1180,15 @@ const cases: readonly Case[] = [
         expected: {},
       },
       {
-        action: [{ type: "request_finished" }],
-        expected: { buffer: { type: "end" } },
+        action: [{ type: "request_failed", error: failure }],
+        expected: { error: failure },
       },
       {
         action: [
+          {
+            current: snapshot({ buffered: [[0, 20]], time: 10 }),
+            type: "request_retry",
+          },
           {
             current: snapshot({ buffered: [[0, 20]], time: 10 }),
             type: "timeupdate",

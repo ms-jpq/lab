@@ -91,6 +91,7 @@ def _start_stream(
     request.send_response(HTTPStatus.OK, message=HTTPStatus.OK.phrase)
     request.send_header("Content-Type", content_type)
     request.send_header("Cache-Control", "no-store")
+    request.send_header("Transfer-Encoding", "chunked")
     request.send_header("Connection", "close")
     for morsel in cookies:
         request.send_header("Set-Cookie", morsel.OutputString())
@@ -106,15 +107,15 @@ def stream(
     cookies: Iterable[Morsel[str]] = (),
 ) -> None:
     request.close_connection = True
+    _start_stream(request, content_type=content_type, cookies=cookies)
 
     if head:
-        _start_stream(request, content_type=content_type, cookies=cookies)
         return
 
-    for idx, chunk in enumerate(source):
-        if not idx:
-            _start_stream(request, content_type=content_type, cookies=cookies)
-        request.wfile.write(chunk)
+    for chunk in source:
+        if chunk:
+            request.wfile.write(f"{len(chunk):x}\r\n".encode() + chunk + b"\r\n")
+    request.wfile.write(b"0\r\n\r\n")
 
 
 def _handler(handlers: Mapping[str, _HandlerFn]) -> type[BaseHTTPRequestHandler]:

@@ -3,10 +3,10 @@ import type { Mse } from "./mse.ts"
 import { media_buffered, media_events, playable_position } from "./media.ts"
 import {
   duration,
+  initial_position,
   main,
   media,
   mime_type,
-  page_position,
   persist_position,
   source_url,
 } from "./page.ts"
@@ -300,8 +300,9 @@ export const play_media = async (
   return
 }
 
+const dispatch = playback_transitions(initial_position)
+
 export const playback = async (signal: AbortSignal) => {
-  const dispatch = playback_transitions(page_position())
   for (; !signal.aborted; await delay(signal, RETRY_DELAY)) {
     try {
       await play_media(signal, dispatch)

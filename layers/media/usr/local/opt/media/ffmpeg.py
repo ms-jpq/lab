@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterator, Mapping
+from collections.abc import Generator, Iterator, Mapping
 from dataclasses import dataclass
 from functools import lru_cache
 from io import BufferedReader
@@ -55,14 +55,17 @@ class Stream:
 class ProbeError(Exception): ...
 
 
-def _bytes(*, command: tuple[str | PathLike[str], ...]) -> Iterator[bytes]:
+def _bytes(*, command: tuple[str | PathLike[str], ...]) -> Generator[bytes, None, None]:
     with Popen(command, stdin=DEVNULL, stdout=PIPE) as proc:
         reader = cast(BufferedReader, proc.stdout)
 
         try:
             yield from iter(reader.read1, b"")
+            if code := proc.wait():
+                raise CalledProcessError(code, command)
         finally:
-            proc.kill()
+            if proc.poll() is None:
+                proc.kill()
 
 
 def _command(

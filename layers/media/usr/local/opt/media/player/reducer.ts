@@ -114,8 +114,9 @@ const at_end = ({ duration }: MediaSnapshot, position: number): boolean =>
 
 const complete = (state: PlaybackState, current: MediaSnapshot): boolean =>
   (state.acquisition === "finished" &&
+    aligned(state.request.frontier, current.buffered.at(-1)?.[1] ?? NaN) &&
     aligned(
-      buffered_end(current, state.pending_seek ?? current.time) ?? current.time,
+      buffered_end(current, state.pending_seek ?? current.time) ?? NaN,
       state.request.frontier,
     )) ||
   at_end(
@@ -263,14 +264,7 @@ const reduce = (
         : [state, { error: action.error }]
     case "request_finished": {
       return [
-        {
-          ...state,
-          acquisition:
-            state.acquisition === "backpressured" ||
-            state.request.frontier > state.request.position
-              ? "finished"
-              : "idle",
-        },
+        { ...state, acquisition: "finished" },
         { buffer: { type: "end" } },
       ]
     }
