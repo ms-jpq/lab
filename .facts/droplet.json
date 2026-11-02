@@ -12,6 +12,7 @@
   "ENV_OVPN_SERVER_NAME": "ENV_WG_SERVER_NAME",
   "ENV_PRIVATE_SITES": [
     "bazarr.servarr",
+    "claw",
     "crawl4ai.mcp",
     "dash",
     "debug",
@@ -39,7 +40,6 @@
     "bbs",
     "bridge",
     "chat",
-    "claw",
     "docs",
     "draw",
     "forum",
