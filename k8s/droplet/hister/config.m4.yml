@@ -1,6 +1,0 @@
-app:
-  search_url: "https://ask.m5_assert([ENV_DOMAIN])/search?q={query}"
-  redirect_on_no_results: true
-
-server:
-  database: "host=pg.komposed-hister.svc.cluster.local port=5432 user=komposed-hister password=komposed-hister dbname=komposed-hister sslmode=disable"

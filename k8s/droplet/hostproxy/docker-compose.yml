@@ -5,7 +5,6 @@ x-networkpolicy:
   - bifrost
   - changedetection
   - crawl4ai
-  - hister
   - invidious
   - librechat
   - mcp
