@@ -48,6 +48,9 @@ services:
         limits:
           memory: 4G
     environment:
+      HTTP_PROXY: &proxy http://proxy.komposed-hostproxy.svc.cluster.local:1080
+      HTTPS_PROXY: *proxy
+      NO_PROXY: localhost,127.0.0.1,::1,.svc.cluster.local
       DATABASE_URL: postgres://${COMPOSE_PROJECT_NAME}:${COMPOSE_PROJECT_NAME}@pg.${COMPOSE_PROJECT_NAME}.svc.cluster.local/${COMPOSE_PROJECT_NAME}
       LANGFUSE_OTEL_HOST: http://langfuse-web.komposed-langfuse.svc.cluster.local:3000
       LANGFUSE_PUBLIC_KEY:
