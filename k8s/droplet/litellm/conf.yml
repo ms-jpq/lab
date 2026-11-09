@@ -7,7 +7,6 @@ general_settings:
   store_prompts_in_spend_logs: true
 
 litellm_settings:
-  callbacks: codex_tool_filter.codex_tool_filter
   drop_params: true
   use_redis_transaction_buffer: true
   cache: true
@@ -19,22 +18,32 @@ litellm_settings:
 model_list:
   - model_name: deepseek/*
     litellm_params:
-      api_base: https://api.deepseek.com/anthropic
-      model: deepseek/*
+      api_base: https://api.deepseek.com
+      model: openai/*
+
+  - model_name: moonshot/*
+    litellm_params:
+      api_base: https://api.moonshot.ai/v1
+      model: openai/*
+
   - model_name: zai/*
     litellm_params:
       api_base: https://api.z.ai/api/coding/paas/v4
       model: zai/*
       use_chat_completions_api: true
+
   - model_name: openrouter/*
     litellm_params:
       model: openrouter/*
+
   - model_name: openai/*
     litellm_params:
       model: openai/*
+
   - model_name: anthropic/*
     litellm_params:
       model: anthropic/*
+
   - model_name: "*"
     litellm_params:
       model: "*"
