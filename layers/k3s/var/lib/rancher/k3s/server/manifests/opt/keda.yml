@@ -1,0 +1,12 @@
+# https://github.com/kedacore/charts/blob/main/keda/values.yaml
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: &chart keda
+  namespace: kube-system
+spec:
+  chart: *chart
+  createNamespace: true
+  repo: https://kedacore.github.io/charts
+  targetNamespace: *chart
