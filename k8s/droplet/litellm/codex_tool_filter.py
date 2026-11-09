@@ -16,8 +16,7 @@ def _is_message(item: object) -> bool:
             return False
 
 
-# TODO: Remove when DeepSeek accepts messages between tool calls and outputs.
-# https://github.com/deepseek-ai/DeepSeek-V3/issues/1588
+# TODO: https://github.com/deepseek-ai/DeepSeek-V3/issues/1588
 def _group_tool_outputs(items: list[object]) -> list[object]:
     result: list[object] = []
     batch: list[object] = []
@@ -39,8 +38,7 @@ def _group_tool_outputs(items: list[object]) -> list[object]:
         if pending or batch:
             batch.append(item)
             if not pending:
-                result.extend(item for item in batch if not _is_message(item))
-                result.extend(item for item in batch if _is_message(item))
+                result.extend(sorted(batch, key=_is_message))
                 batch.clear()
         else:
             result.append(item)
