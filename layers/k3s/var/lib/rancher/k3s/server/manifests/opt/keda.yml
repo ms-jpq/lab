@@ -10,3 +10,9 @@ spec:
   createNamespace: true
   repo: https://kedacore.github.io/charts
   targetNamespace: *chart
+  valuesContent: |-
+    opentelemetry:
+      operator:
+        enabled: true
+      collector:
+        uri: http://opentelemetry-collector.opentelemetry-collector.svc.cluster.local:4318
