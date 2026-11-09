@@ -16,7 +16,6 @@ x-networkpolicy:
   - rss-bridge
   - searx
   - servarr
-  - teddit
 
 services:
   proxy:
