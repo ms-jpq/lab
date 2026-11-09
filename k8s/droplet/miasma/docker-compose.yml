@@ -1,0 +1,8 @@
+---
+services:
+  miasma:
+    image: docker.io/austinweeks/miasma:latest
+    labels:
+      kompose.service.expose: blog.${DOMAIN}
+    ports:
+      - 9999
