@@ -7,6 +7,7 @@ general_settings:
   store_prompts_in_spend_logs: true
 
 litellm_settings:
+  callbacks: codex_tool_filter.codex_tool_filter
   drop_params: true
   use_redis_transaction_buffer: true
   cache: true
