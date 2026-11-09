@@ -1,21 +1,10 @@
 map "$request_method:$uri" $qbittorrent_servarr_allowed {
-  default                              0;
-  GET:/api/v2/app/preferences          1;
-  GET:/api/v2/app/version              1;
-  GET:/api/v2/app/webapiVersion        1;
-  GET:/api/v2/torrents/categories      1;
-  GET:/api/v2/torrents/files           1;
-  GET:/api/v2/torrents/info            1;
-  GET:/api/v2/torrents/properties      1;
-  POST:/api/v2/auth/login              1;
-  POST:/api/v2/torrents/add            1;
-  POST:/api/v2/torrents/addTags        1;
-  POST:/api/v2/torrents/createCategory 1;
-  POST:/api/v2/torrents/delete         1;
-  POST:/api/v2/torrents/setCategory    1;
-  POST:/api/v2/torrents/setForceStart  1;
-  POST:/api/v2/torrents/setShareLimits 1;
-  POST:/api/v2/torrents/topPrio        1;
+  default                        0;
+  GET:/api/v2/app/preferences    1;
+  GET:/api/v2/app/version        1;
+  GET:/api/v2/app/webapiVersion  1;
+  POST:/api/v2/auth/login        1;
+  ~^(GET|POST):/api/v2/torrents/ 1;
 }
 
 server {
