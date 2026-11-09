@@ -2,6 +2,8 @@
 services:
   miasma:
     image: docker.io/austinweeks/miasma:latest
+    environment:
+      MIASMA_HOST: "[::]"
     labels:
       kompose.service.expose: blog.${DOMAIN}
     ports:
