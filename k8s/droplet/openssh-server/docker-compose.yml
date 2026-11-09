@@ -1,6 +1,5 @@
 ---
 x-networkpolicy:
-  - navidrome
   - servarr
 
 x-k8s:
@@ -18,9 +17,6 @@ x-k8s:
       selector:
         io.kompose.service: &service openssh-server
       ports:
-        - name: webdav
-          port: 5050
-          targetPort: 5050
         - name: proxy
           port: 8080
           targetPort: 8080
@@ -43,69 +39,10 @@ x-k8s:
         - from:
             - podSelector: {}
           ports:
-            - port: 5050
-              protocol: TCP
             - port: 8080
               protocol: TCP
 
 services:
-  rclone:
-    image: ghcr.io/rclone/rclone:latest
-    labels:
-      kompose.volume.type: hostPath
-      jq.mixin: |-
-        {
-          "containers": [
-            {
-              "volumeMounts": [
-                null,
-                {
-                  "mountPath": "/data",
-                  "name": "rclone-data",
-                  "mountPropagation": "Bidirectional"
-                }
-              ]
-            }
-          ],
-          "volumes": [
-            null,
-            {
-              "name": "rclone-data",
-              "hostPath": { "path": "/var/lib/local/rclone" }
-            }
-          ]
-        }
-    privileged: true
-    healthcheck:
-      test:
-        - CMD
-        - find
-        - /data
-        - "-maxdepth"
-        - "1"
-        - "-print"
-        - "-quit"
-    command:
-      - mount
-      - --allow-non-empty
-      - --allow-other
-      - --config=/dev/null
-      - --default-permissions
-      - --transfers=8
-      - --dir-cache-time=60s
-      - --poll-interval=30s
-      - --vfs-refresh
-      - --vfs-cache-mode=full
-      - --webdav-vendor=nginx
-      - --webdav-pacer-min-sleep=0
-      - --read-only
-      - --vfs-fast-fingerprint
-      - --webdav-url=http://openssh-server-fwd.komposed-openssh-server.svc.cluster.local:5050
-      - :webdav:/
-      - /data
-    volumes:
-      - /dev/fuse:/dev/fuse
-
   openssh-server:
     image: lscr.io/linuxserver/openssh-server:latest
     labels:
