@@ -16,4 +16,4 @@ Environment      = LLAMA_ARG_MODELS_MAX=1
 Environment      = LLAMA_CACHE=%S/local/%J/models
 EnvironmentFile  = -/usr/local/etc/default/%J.env
 
-ExecStart        = /opt/llama.cpp/llama-server
+ExecStart        = /opt/llama.cpp/llama-server $ARGS
