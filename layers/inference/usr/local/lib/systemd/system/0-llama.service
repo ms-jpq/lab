@@ -16,4 +16,5 @@ Environment      = LLAMA_CACHE=%C/local/%J/cache
 Environment      = LLAMA_ARG_MODELS_DIR=%C/local/%J/models
 EnvironmentFile  = -/usr/local/etc/default/%J.env
 
+ExecStartPre     = mkdir -p -- ${LLAMA_ARG_MODELS_DIR}
 ExecStart        = /opt/llama.cpp/llama-server $ARGS
