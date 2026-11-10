@@ -26,8 +26,12 @@ data "aws_iam_policy_document" "deb_bucket" {
   }
 }
 
-resource "aws_cloudfront_cache_policy" "science_world" {
-  name = "naive-debs"
+data "aws_cloudfront_cache_policy" "deb_metadata" {
+  name = "Managed-CachingDisabled"
+}
+
+resource "aws_cloudfront_cache_policy" "deb_packages" {
+  name = "naive-pkg-list"
   parameters_in_cache_key_and_forwarded_to_origin {
     query_strings_config {
       query_string_behavior = "none"
@@ -68,7 +72,15 @@ resource "aws_cloudfront_distribution" "science_world" {
   }
   default_cache_behavior {
     allowed_methods        = ["GET", "HEAD", "OPTIONS"]
-    cache_policy_id        = aws_cloudfront_cache_policy.science_world.id
+    cache_policy_id        = data.aws_cloudfront_cache_policy.deb_metadata.id
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = local.aws_deb_origin_id
+    viewer_protocol_policy = "allow-all"
+  }
+  ordered_cache_behavior {
+    path_pattern           = "*.deb"
+    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
+    cache_policy_id        = aws_cloudfront_cache_policy.deb_packages.id
     cached_methods         = ["GET", "HEAD"]
     target_origin_id       = local.aws_deb_origin_id
     viewer_protocol_policy = "allow-all"
