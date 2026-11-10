@@ -11,6 +11,9 @@ PrivateTmp       = yes
 RuntimeDirectory = local/%J
 CacheDirectory   = local/%J
 
+Group            = www-data
+UMask            = 0007
+
 Environment      = LLAMA_ARG_HOST=%t/local/%J/server.sock
 Environment      = LLAMA_CACHE=%C/local/%J/cache
 Environment      = LLAMA_ARG_MODELS_DIR=%C/local/%J/models
