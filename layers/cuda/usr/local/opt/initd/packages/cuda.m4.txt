@@ -1,3 +1,4 @@
++ cuda-toolkit
 + nvidia-headless-m5_assert([ENV_NVIDIA_VERSION])-server
 + nvidia-utils-m5_assert([ENV_NVIDIA_VERSION])-server
 + nvitop

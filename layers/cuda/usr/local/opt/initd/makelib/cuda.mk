@@ -7,11 +7,11 @@
 # DO NOT ENABLE ^^^
 # DO NOT ENABLE ^^^
 
-# CUDA_GPG := /etc/apt/trusted.gpg.d/cuda.gpg
-# pkg._: $(CUDA_GPG)
-# $(CUDA_GPG): | /usr/local/opt/cuda/libexec/gpg.sh
-# 	LINK="$$('$|')"
-# 	$(CURL) -- "$$LINK" >'$@'
+CUDA_GPG := /etc/apt/trusted.gpg.d/cuda.gpg
+pkg._: $(CUDA_GPG)
+$(CUDA_GPG): | /usr/local/opt/cuda/libexec/gpg.sh
+	LINK="$$('$|')"
+	$(CURL) -- "$$LINK" >'$@'
 
 CUDA_CONTAINER_GPG := /etc/apt/trusted.gpg.d/nvidia-container-toolkit.gpg
 pkg._: $(CUDA_CONTAINER_GPG)
