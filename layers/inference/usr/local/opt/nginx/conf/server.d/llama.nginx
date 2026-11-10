@@ -1,0 +1,7 @@
+location = /llama {
+  return 307 /llama/;
+}
+
+location /llama/ {
+  proxy_pass http://unix:/run/local/llama/server.sock:/;
+}
