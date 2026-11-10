@@ -12,7 +12,6 @@ RuntimeDirectory = local/%J
 StateDirectory   = local/%J
 
 Environment      = LLAMA_ARG_HOST=%t/local/%J/server.sock
-Environment      = LLAMA_ARG_MODELS_MAX=1
 Environment      = LLAMA_CACHE=%S/local/%J/models
 EnvironmentFile  = -/usr/local/etc/default/%J.env
 
