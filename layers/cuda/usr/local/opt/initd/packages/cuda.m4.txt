@@ -1,4 +1,5 @@
-# + cuda-toolkit
++ cuda-cudart-m5_assert([ENV_CUDA_VERSION])
++ libcublas-m5_assert([ENV_CUDA_VERSION])
 + nvidia-headless-m5_assert([ENV_NVIDIA_VERSION])-server
 + nvidia-utils-m5_assert([ENV_NVIDIA_VERSION])-server
 + nvitop

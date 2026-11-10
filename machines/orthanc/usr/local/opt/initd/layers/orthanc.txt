@@ -2,6 +2,7 @@
 + inference
 + nspawn
 + qemu
++ s3-repo
 + telemetry
 + vb
 + zfs
