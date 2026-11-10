@@ -1,14 +1,32 @@
 # m4_pushdef([LLAMA_AUTH], [m5_esyscmd(printf -- %s 'SALT=ENV_MAIL[]orthanc' | b3sum | cut -d ' ' -f 1 | jq -e --raw-input --join-output '"8080:\(.)" | @base64')])
 server {
-  server_name          llama.*;
-  listen               [[::]]:m5_or([ENV_HTTPS_PORT], 443) ssl http2;
-  auth_basic           "llama";
-  auth_basic_user_file /var/lib/local/nginx/llama.htpasswd;
+  server_name  llama.*;
+  listen       [[::]]:m5_or([ENV_HTTPS_PORT], 443) ssl http2;
+  auth_request /-_-llama-auth;
+
+  location = /-_-llama-auth {
+    internal;
+    auth_request            off;
+    proxy_pass              http://unix:/run/local/nginx/llama_auth.sock:/;
+    proxy_set_header        Authorization $modified_auth;
+    proxy_set_header        Content-Length "";
+    proxy_pass_request_body off;
+  }
 
   location / {
     proxy_set_header Authorization "Basic LLAMA_AUTH";
     include          /usr/local/opt/nginx/conf/http.d/proxy_params.nginx;
     proxy_pass       http://orthanc.enp1s0.opnsense.home.arpa:8080/llama/;
+  }
+}
+
+server {
+  listen               unix:/run/local/nginx/llama_auth.sock;
+  auth_basic           "llama";
+  auth_basic_user_file /var/lib/local/nginx/llama.htpasswd;
+
+  location / {
+    try_files /dev/null =204;
   }
 }
 # m4_popdef([LLAMA_AUTH])
