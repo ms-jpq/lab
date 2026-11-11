@@ -21,7 +21,6 @@ model_list:
     litellm_params:
       api_base: os.environ/LLAMA_API_BASE
       model: openai/*
-      use_chat_completions_api: true
     model_info:
       supports_mid_conversation_system: false
 
