@@ -17,6 +17,14 @@ litellm_settings:
     host: os.environ/REDIS_HOST
 
 model_list:
+  - model_name: llama/*
+    litellm_params:
+      api_base: os.environ/LLAMA_API_BASE
+      model: openai/*
+      use_chat_completions_api: true
+    model_info:
+      supports_mid_conversation_system: false
+
   - model_name: deepseek/*
     litellm_params:
       api_base: https://api.deepseek.com

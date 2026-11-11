@@ -55,6 +55,7 @@ services:
       LANGFUSE_PUBLIC_KEY:
       LANGFUSE_SECRET_KEY:
       LITELLM_MASTER_KEY:
+      LLAMA_API_BASE:
       NO_PROXY: localhost,127.0.0.1,::1,.svc.cluster.local
       REDIS_HOST: redis.${COMPOSE_PROJECT_NAME}.svc.cluster.local
       UI_USERNAME:
