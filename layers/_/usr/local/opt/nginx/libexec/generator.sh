@@ -14,7 +14,6 @@ for EXEC in "${0%/*}/../generators"/*; do
 done | xargs --no-run-if-empty --null -I '%' --max-procs 0 -- env -- '%' "$TMP" "$WWW"
 
 if ! diff --recursive --brief -- "$TMP" "$RUN"; then
-  rm -rf -- "$RUN/ssl/"*
-  rsync --recursive --perms -- "$TMP/" "$RUN/"
+  rsync --recursive --perms --delete -- "$TMP/" "$RUN/"
   systemctl try-reload-or-restart -- nginx.service
 fi
