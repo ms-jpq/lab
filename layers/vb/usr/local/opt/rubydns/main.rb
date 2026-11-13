@@ -1,13 +1,10 @@
 #!/usr/bin/env -S -- ruby
 # frozen_string_literal: true
 
-require('abbrev')
-require('etc')
 require('io/wait')
 require('ipaddr')
 require('logger')
 require('optparse')
-require('pathname')
 require('resolv')
 require('socket')
 require('timeout')
@@ -17,25 +14,19 @@ HOME = Resolv::DNS::Name.create('home.arpa.')
 TIMEOUT = 6
 
 def parse_args
-  options, =
-    {}.then do |into|
-      parsed =
-        OptionParser
-        .new do
-          _1.on('--listen LISTEN', Array)
-          _1.on('--upstream UPSTREAM', Array)
-        end
-          .parse(ARGV, into:)
-      [into, parsed]
+  {}.tap do |into|
+    OptionParser.new do |parser|
+      parser.on('--listen LISTEN', Array)
+      parser.on('--upstream UPSTREAM', Array)
     end
-
-  options
+      .parse(ARGV, into:)
+  end
 end
 
 def parse_addrs(addr)
   addr => String
-  addr.reverse.split(':', 2).map(&:reverse) => [p, ip]
-  port = Integer(p)
+  addr.rpartition(':') => [String => ip, ':', String => port]
+  port = Integer(port)
   [Addrinfo.tcp(ip, port), Addrinfo.udp(ip, port)]
 end
 
@@ -88,18 +79,16 @@ def io_read(conn:, len:)
   [conn, len] => [Socket | nil, Integer | nil]
   return if conn.nil? || len.nil?
 
-  acc = []
-  size = 0
-  while size < len
+  acc = String.new(encoding: Encoding::BINARY)
+  while acc.bytesize < len
     io_wait(read: conn)
-    conn.recvmsg(len - size) => String | nil => buf
+    conn.recv(len - acc.bytesize) => String | nil => buf
     break if buf.nil? || buf.empty?
 
-    size += buf.bytesize
     acc << buf
   end
 
-  acc.join('').freeze
+  acc.freeze
 end
 
 def io_write(conn:, buf:)
@@ -142,10 +131,9 @@ def recv_udp(log:, sock:, &blk)
   sock.recvfrom(UDP_SIZE) => [String => req, Addrinfo => addr]
 
   Thread.new do
-    ai = Socket.sockaddr_in(addr.ip_port, addr.ip_address)
-    blk.call(req&.freeze) => String => rsp
+    blk.call(req.freeze) => String => rsp
     io_wait(write: sock)
-    sock.send(rsp, 0, ai)
+    sock.send(rsp, 0, addr.to_sockaddr)
   rescue Timeout::Error => e
     log.debug(e)
   rescue SystemCallError => e
@@ -169,49 +157,30 @@ def do_recv(log:, rx:, &blk)
   end
 end
 
-def send_tcp(tx:, req:)
-  [tx, req] => [Addrinfo, String]
-  [req.bytesize].pack('n') => String => len
-  conn = tx.connect
-
-  set_timeout(sock: conn)
-  io_write(conn:, buf: len)
-  io_write(conn:, buf: req)
-  io_read(conn:, len: 2)&.unpack1('n') => Integer | nil => len
-  return if len.nil?
-
-  io_read(conn:, len:) => String | nil => rsp
-  rsp
-ensure
-  conn&.close
-end
-
-def send_udp(tx:, req:)
+def do_send(tx:, req:)
   [tx, req] => [Addrinfo, String]
   conn = tx.connect
-
   set_timeout(sock: conn)
-  io_write(conn:, buf: req)
-  io_wait(read: conn)
-  conn.recvfrom(UDP_SIZE) => [String => rsp, Addrinfo]
-  rsp
-ensure
-  conn&.close
-end
-
-def do_send(log:, tx:, req:)
-  [log, tx, req] => [Logger, Addrinfo, String]
 
   case tx.socktype
   in Socket::SOCK_STREAM
-    send_tcp(tx:, req:)
+    [req.bytesize].pack('n') => String => len
+    io_write(conn:, buf: len)
+    io_write(conn:, buf: req)
+    io_read(conn:, len: 2)&.unpack1('n') => Integer | nil => size
+    io_read(conn:, len: size) => String | nil => rsp
   in Socket::SOCK_DGRAM
-    send_udp(tx:, req:)
+    io_write(conn:, buf: req)
+    io_wait(read: conn)
+    conn.recvfrom(UDP_SIZE) => [String => rsp, Addrinfo]
   end
+  rsp
+ensure
+  conn&.close
 end
 
-def failed(log:, req:)
-  log => Logger
+def failed(req:)
+  req => String | nil
 
   case req
   in '' | nil
@@ -247,13 +216,13 @@ rescue Resolv::DNS::DecodeError => e
 end
 
 def main
-  Thread.tap { _1.abort_on_exception = true }
+  Thread.abort_on_exception = true
   log = Logger.new($stderr, level: Logger::WARN)
 
-  parse_args => { listen:, upstream: }
+  parse_args => { listen: Array => listen, upstream: Array => upstream }
 
   listen.flat_map(&method(:parse_addrs)) => Array => recv
-  upstream.lazy.flat_map(&method(:parse_addrs)).group_by(&:socktype) => Hash => snd
+  upstream.flat_map(&method(:parse_addrs)).group_by(&:socktype) => Hash => snd
 
   threads =
     recv.map do |rx|
@@ -261,11 +230,11 @@ def main
       Thread.new do
         do_recv(log:, rx:) do |req|
           req => String | nil
-          next failed(log:, req:) if req.nil?
+          next failed(req:) if req.nil?
 
           snd.fetch(rx.socktype).sample => Addrinfo => tx
-          do_send(log:, tx:, req:) => String | nil => msg
-          next failed(log:, req:) if msg.nil?
+          do_send(tx:, req:) => String | nil => msg
+          next failed(req:) if msg.nil?
 
           xform(log:, msg:) => String => rsp
           rsp
@@ -276,4 +245,4 @@ def main
   threads.each(&:join)
 end
 
-main
+main if $PROGRAM_NAME == __FILE__
