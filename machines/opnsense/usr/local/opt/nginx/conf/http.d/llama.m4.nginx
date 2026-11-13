@@ -1,6 +1,7 @@
 # m4_pushdef([LLAMA_AUTH], [m5_esyscmd(printf -- %s 'SALT=ENV_MAIL[]orthanc' | b3sum | cut -d ' ' -f 1 | jq -e --raw-input --join-output '"8080:\(.)" | @base64')])
 server {
   server_name  llama.*;
+  set          $x_orthanc orthanc.enp1s0.opnsense.home.arpa:8080;
   listen       [[::]]:m5_or([ENV_HTTPS_PORT], 443) ssl http2;
   auth_request /-_-llama-auth;
 
@@ -16,7 +17,7 @@ server {
   location / {
     proxy_set_header Authorization "Basic LLAMA_AUTH";
     include          /usr/local/opt/nginx/conf/http.d/proxy_params.nginx;
-    proxy_pass       http://orthanc.enp1s0.opnsense.home.arpa:8080/llama/;
+    proxy_pass       http://$x_orthanc/llama$request_uri;
   }
 }
 
