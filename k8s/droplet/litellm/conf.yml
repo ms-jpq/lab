@@ -4,6 +4,13 @@ general_settings:
   database_url: os.environ/DATABASE_URL
   forward_client_headers_to_llm_api: true
   forward_llm_provider_auth_headers: true
+  pass_through_endpoints:
+    - path: /models
+      methods:
+        - POST
+      target: os.environ/LLAMA_MODELS_URL
+      auth: false
+      forward_headers: true
   store_prompts_in_spend_logs: true
 
 litellm_settings:

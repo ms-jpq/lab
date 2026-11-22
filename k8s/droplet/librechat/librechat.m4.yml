@@ -40,6 +40,9 @@ modelSpecs:
     - name: deepseek-v4-pro
       label: DeepSeek V4 Pro
       default: true
+      mcpServers:
+        - searx
+        - crawl4ai
       preset:
         endpoint: deepseek
         model: deepseek-v4-pro
