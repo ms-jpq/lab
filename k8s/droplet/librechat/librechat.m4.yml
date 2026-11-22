@@ -30,16 +30,39 @@ mcpServers:
 memory:
   disabled: true
 
+interface:
+  modelSelect: true
+  parameters: true
+  presets: true
+
+modelSpecs:
+  list:
+    - name: deepseek-v4-pro
+      label: DeepSeek V4 Pro
+      default: true
+      preset:
+        endpoint: deepseek
+        model: deepseek-v4-pro
+
 endpoints:
   custom:
+    - name: "llama.cpp"
+      apiKey: "${LLAMA_API_KEY}"
+      baseURL: "m5_assert([ENV_LLAMA_API_BASE])"
+      modelDisplayLabel: "llama.cpp"
+      titleModel: "ggml-org/Qwen3.8-27B-GGUF:Q4_K_M"
+      models:
+        default:
+          - "ggml-org/Qwen3.8-27B-GGUF:Q4_K_M"
+        fetch: true
+
     - name: "deepseek"
       apiKey: "${DEEPSEEK_API_KEY}"
       baseURL: "https://api.deepseek.com"
+      modelDisplayLabel: "DeepSeek"
+      titleModel: "deepseek-v4-flash"
       models:
         default:
           - "deepseek-v4-pro"
           - "deepseek-v4-flash"
         fetch: true
-      titleConvo: true
-      titleModel: "deepseek-v4-flash"
-      modelDisplayLabel: "DeepSeek"

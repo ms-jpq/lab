@@ -10,6 +10,7 @@ services:
       HOST: "::"
       JWT_REFRESH_SECRET:
       JWT_SECRET:
+      LLAMA_API_KEY:
       MONGO_URI: mongodb://mongo.komposed-librechat.svc.cluster.local:27017/
       NO_INDEX: true
       OPENROUTER_KEY:
