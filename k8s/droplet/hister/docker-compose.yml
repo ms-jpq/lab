@@ -5,10 +5,10 @@ services:
     labels:
       kompose.controller.type: statefulset
       kompose.volume.type: hostPath
-      kompose.service.expose: hister.${DOMAIN}
+      kompose.service.expose: home.${DOMAIN}
     environment:
       HISTER__SERVER__ADDRESS: "[::]:4433"
-      HISTER__SERVER__BASE_URL: https://hister.${DOMAIN}
+      HISTER__SERVER__BASE_URL: https://home.${DOMAIN}
       NOGON__SEMANTIC_SEARCH__API_KEY:
       HTTP_PROXY: &proxy http://proxy.komposed-hostproxy.svc.cluster.local:1080
       HTTPS_PROXY: *proxy
