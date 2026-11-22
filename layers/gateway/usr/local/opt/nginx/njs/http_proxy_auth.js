@@ -106,10 +106,10 @@ const partition = (s, sep, last) => {
 const removeWs = (s) => s.replace(/\s+/g, "")
 
 /** @param {string | string[] | undefined} v */
-const firstString = (v) => (typeof v === "string" ? v : "")
+const stringOrEmpty = (v) => (typeof v === "string" ? v : "")
 
-/** @param {NginxHTTPRequest} o */
-const isSecure = (o) => (o.variables.scheme ?? "").toLowerCase() !== "http"
+/** @param {NginxHTTPRequest} r */
+const isSecure = (r) => (r.variables.scheme ?? "").toLowerCase() !== "http"
 
 /**
  * @param {Buffer} a
@@ -157,20 +157,20 @@ const decodeCookieValue = (domain, value) => {
     : undefined
 }
 
-/** @param {NginxHTTPRequest} o */
-const hasValidAuthCookie = (o) => {
-  const header = o.headersIn["Cookie"]
+/** @param {NginxHTTPRequest} r */
+const hasValidAuthCookie = (r) => {
+  const header = r.headersIn["Cookie"]
   if (!header) {
     return false
   }
 
-  const name = cookieName(isSecure(o))
+  const name = cookieName(isSecure(r))
   return header.split(";").some((part) => {
     const nameValue = partition(part, "=")
     if (!nameValue || nameValue[0].trim() !== name) {
       return false
     }
-    const plain = decodeCookieValue(cookieDomain(o), nameValue[1].trim())
+    const plain = decodeCookieValue(cookieDomain(r), nameValue[1].trim())
     if (plain === undefined) {
       return false
     }
@@ -184,12 +184,12 @@ const hasValidAuthCookie = (o) => {
 }
 
 /**
- * @param {NginxHTTPRequest} o
+ * @param {NginxHTTPRequest} r
  * @param {string} user
  */
-const buildCookie = (o, user) => {
-  const domain = cookieDomain(o)
-  const secure = isSecure(o)
+const buildCookie = (r, user) => {
+  const domain = cookieDomain(r)
+  const secure = isSecure(r)
   const exp = Math.round(Date.now() + COOKIE_TTL * 1000)
 
   const morsels = [
@@ -208,9 +208,9 @@ const buildCookie = (o, user) => {
   return morsels.join("; ")
 }
 
-/** @param {NginxHTTPRequest} o */
-const parseAuth = (o) => {
-  const header = o.headersIn["Authorization"]
+/** @param {NginxHTTPRequest} r */
+const parseAuth = (r) => {
+  const header = r.headersIn["Authorization"]
   if (!header) {
     return undefined
   }
@@ -271,18 +271,21 @@ export default {
 
   /** @param {NginxHTTPRequest} r */
   login: async (r) => {
-    const want = `${r.variables.scheme}://${r.variables.host}`
+    const origin = `${r.variables.scheme}://${r.variables.host}`
     const ref = r.headersIn["Referer"] ?? ""
-    const originHeader = r.headersIn["Origin"]
+    const requestOrigin = r.headersIn["Origin"]
+    const sameOrigin = requestOrigin
+      ? requestOrigin === origin
+      : ref.startsWith(origin + "/")
 
-    if (originHeader ? originHeader !== want : !ref.startsWith(want + "/")) {
+    if (!sameOrigin) {
       return r.return(403)
     }
 
     const params = qs.parse(r.requestText ?? "")
-    const username = removeWs(firstString(params["username"]))
+    const username = removeWs(stringOrEmpty(params["username"]))
 
-    const password = firstString(params["password"])
+    const password = stringOrEmpty(params["password"])
     const creds = Buffer.from(`${username}:${password}`).toString("base64")
     if (!(await validate(r, creds))) {
       return r.return(401)
@@ -290,9 +293,9 @@ export default {
 
     r.headersOut["Set-Cookie"] = [buildCookie(r, username)]
 
-    const requested = firstString(params["redirect"])
-    const redirectPath = requested.startsWith(want + "/")
-      ? requested.slice(want.length)
+    const requested = stringOrEmpty(params["redirect"])
+    const redirectPath = requested.startsWith(origin + "/")
+      ? requested.slice(origin.length)
       : requested
     const redirect =
       LOCAL_PATH_RE.test(redirectPath) && !TAB_OR_NEWLINE_RE.test(redirectPath)
