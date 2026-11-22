@@ -1,0 +1,41 @@
+---
+services:
+  nogon:
+    image: ghcr.io/asciimoo/nogon:latest
+    labels:
+      kompose.controller.type: statefulset
+      kompose.volume.type: hostPath
+      kompose.service.expose: home.${DOMAIN}
+    environment:
+      # https://github.com/asciimoo/nogon/blob/master/webui/website/src/content/docs/configuration.md
+      HTTP_PROXY: &proxy http://proxy.komposed-hostproxy.svc.cluster.local:1080
+      HTTPS_PROXY: *proxy
+      NO_PROXY: localhost,127.0.0.1,::1,.svc.cluster.local,${LLAMA_HOST}
+      NOGON__APP__REDIRECT_ON_NO_RESULTS: true
+      NOGON__APP__SEARCH_URL: https://ask.${DOMAIN}/search?q={query}
+      NOGON__APP__USER_HANDLING: true
+      NOGON__SEMANTIC_SEARCH__API_KEY:
+      NOGON__SEMANTIC_SEARCH__DIMENSIONS: 1024
+      NOGON__SEMANTIC_SEARCH__EMBEDDING_ENDPOINT:
+      NOGON__SEMANTIC_SEARCH__EMBEDDING_MODEL: qwen-embed
+      NOGON__SEMANTIC_SEARCH__ENABLE: true
+      NOGON__SERVER__BASE_URL: https://home.${DOMAIN}
+      NOGON__SERVER__DATABASE: "host=pg port=5432 user=${COMPOSE_PROJECT_NAME} password=${COMPOSE_PROJECT_NAME} dbname=${COMPOSE_PROJECT_NAME} sslmode=disable"
+    ports:
+      - 4433
+    volumes:
+      - /var/lib/local/nogon/data:/hister/data
+
+  pg:
+    image: docker.io/pgvector/pgvector:pg18
+    labels:
+      kompose.controller.type: statefulset
+      kompose.volume.type: hostPath
+    environment:
+      POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
+    ports:
+      - 5432
+    volumes:
+      - /var/lib/local/nogon/postgresql:/var/lib/postgresql
