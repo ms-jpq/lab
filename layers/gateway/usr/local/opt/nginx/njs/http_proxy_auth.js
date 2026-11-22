@@ -11,6 +11,7 @@ const COOKIE_TTL = 60 * 60 * 24 * 7 * 2
 const DOMAIN_PARTS = 2
 const LOCAL_PATH_RE = /^\/(?![\/\\])/
 const TAB_OR_NEWLINE_RE = /[\t\n\r]/
+const INVALID_FORWARDED_USER_CHAR_RE = /[:\x00-\x1f\x7f]/
 const HMAC_SECRET =
   process.env["HTPASSWD_SECRET"] ||
   (() => {
@@ -157,30 +158,38 @@ const decodeCookieValue = (domain, value) => {
     : undefined
 }
 
-/** @param {NginxHTTPRequest} r */
-const hasValidAuthCookie = (r) => {
-  const header = r.headersIn["Cookie"]
-  if (!header) {
-    return false
-  }
+/** @param {string} user */
+const parseUser = (user) =>
+  user && user === user.trim() && !INVALID_FORWARDED_USER_CHAR_RE.test(user)
+    ? user
+    : undefined
 
+/** @param {NginxHTTPRequest} r */
+const cookieUser = (r) => {
   const name = cookieName(isSecure(r))
-  return header.split(";").some((part) => {
+  const parts = (r.headersIn["Cookie"] ?? "").split(";")
+
+  return parts.reduce((user, part) => {
+    if (user) {
+      return user
+    }
     const nameValue = partition(part, "=")
     if (!nameValue || nameValue[0].trim() !== name) {
-      return false
+      return undefined
     }
     const plain = decodeCookieValue(cookieDomain(r), nameValue[1].trim())
-    if (plain === undefined) {
-      return false
+    if (!plain) {
+      return undefined
     }
     const userExp = partition(plain, ":", true)
     if (!userExp) {
-      return false
+      return undefined
     }
     const exp = Number(userExp[1])
     return Number.isFinite(exp) && exp > Date.now()
-  })
+      ? parseUser(userExp[0])
+      : undefined
+  }, /** @type {string | undefined} */ (undefined))
 }
 
 /**
@@ -209,7 +218,7 @@ const buildCookie = (r, user) => {
 }
 
 /** @param {NginxHTTPRequest} r */
-const parseAuth = (r) => {
+const basicUser = async (r) => {
   const header = r.headersIn["Authorization"]
   if (!header) {
     return undefined
@@ -220,11 +229,13 @@ const parseAuth = (r) => {
     return undefined
   }
   const creds = schemeCreds[1].trim()
+  if (!(await validate(r, creds))) {
+    return undefined
+  }
 
   const decoded = Buffer.from(creds, "base64").toString()
   const userPass = partition(decoded, ":")
-  const user = removeWs(userPass ? userPass[0] : decoded)
-  return { user, creds }
+  return userPass ? parseUser(userPass[0]) : undefined
 }
 
 /**
@@ -253,12 +264,13 @@ export default {
       (r.variables.host ?? "") +
       (r.variables["htpasswd_request_uri"] ?? r.variables.uri ?? "/")
 
-    if (matchAllow(uri) || hasValidAuthCookie(r)) {
+    if (matchAllow(uri)) {
       return r.return(204)
     }
 
-    const parsed = parseAuth(r)
-    if (parsed && (await validate(r, parsed.creds))) {
+    const user = cookieUser(r) ?? (await basicUser(r))
+    if (user !== undefined) {
+      r.headersOut["X-Forwarded-User"] = user
       return r.return(204)
     }
 

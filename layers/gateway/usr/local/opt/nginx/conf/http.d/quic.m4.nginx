@@ -9,6 +9,9 @@ server {
   # access_log syslog:server=unix:/dev/log,nohostname;
   location / {
     include           /usr/local/opt/nginx/conf/auth2.nginx;
+    include           /usr/local/opt/nginx/conf/http.d/proxy_params.nginx;
+    proxy_set_header  Authorization $upstream_authorization;
+    proxy_set_header  X-Forwarded-User $htpasswd_verified_user;
     proxy_pass_header Content-Security-Policy;
     proxy_pass        http://unix:/run/local/nginx/gateway-https.sock:/;
   }

@@ -1,7 +1,8 @@
-include      /usr/local/opt/nginx/conf/js_import.nginx;
-include      /usr/local/opt/nginx/conf/http.d/security2.nginx;
-auth_request /-_-auth-_-;
-set          $htpasswd_request_uri $htpasswd_original_uri;
+include          /usr/local/opt/nginx/conf/js_import.nginx;
+include          /usr/local/opt/nginx/conf/http.d/security2.nginx;
+auth_request     /-_-auth-_-;
+auth_request_set $htpasswd_verified_user $sent_http_x_forwarded_user;
+set              $htpasswd_request_uri $htpasswd_original_uri;
 
 location /-_-auth-_- {
   internal;
