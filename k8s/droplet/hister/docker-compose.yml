@@ -1,0 +1,40 @@
+---
+services:
+  hister:
+    image: ghcr.io/asciimoo/nogon:latest
+    labels:
+      kompose.controller.type: statefulset
+      kompose.volume.type: hostPath
+      kompose.service.expose: hister.${DOMAIN}
+    environment:
+      HISTER__SERVER__ADDRESS: "[::]:4433"
+      HISTER__SERVER__BASE_URL: https://hister.${DOMAIN}
+      NOGON__SEMANTIC_SEARCH__API_KEY:
+      HTTP_PROXY: &proxy http://proxy.komposed-hostproxy.svc.cluster.local:1080
+      HTTPS_PROXY: *proxy
+      NO_PROXY: localhost,127.0.0.1,::1,.svc.cluster.local,${LLAMA_HOST}
+    ports:
+      - 4433
+    configs:
+      - source: config
+        target: /hister/data/config.yml
+    volumes:
+      - /var/lib/local/hister/data:/hister/data
+
+  pg:
+    image: docker.io/pgvector/pgvector:pg18
+    labels:
+      kompose.controller.type: statefulset
+      kompose.volume.type: hostPath
+    environment:
+      POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_PASSWORD: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_USER: ${COMPOSE_PROJECT_NAME}
+    ports:
+      - 5432
+    volumes:
+      - /var/lib/local/hister/postgresql:/var/lib/postgresql
+
+configs:
+  config:
+    file: ./config.yml

@@ -53,10 +53,10 @@ endpoints:
       apiKey: "${LLAMA_API_KEY}"
       baseURL: "m5_assert([ENV_LLAMA_API_BASE])"
       modelDisplayLabel: "llama.cpp"
-      titleModel: "ggml-org/Qwen3.8-27B-GGUF:Q4_K_M"
+      titleModel: "unsloth/Qwen3.8-27B-GGUF:UD-Q4_K_XL"
       models:
         default:
-          - "ggml-org/Qwen3.8-27B-GGUF:Q4_K_M"
+          - "unsloth/Qwen3.8-27B-GGUF:UD-Q4_K_XL"
         fetch: true
 
     - name: "deepseek"
