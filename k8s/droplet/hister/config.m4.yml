@@ -1,16 +1,15 @@
 ---
 # https://github.com/asciimoo/nogon/blob/master/webui/website/src/content/docs/configuration.md
 app:
-  user_handling: true
-  search_url: "https://ask.m5_assert([ENV_DOMAIN])/search?q={query}"
   redirect_on_no_results: true
+  search_url: "https://ask.m5_assert([ENV_DOMAIN])/search?q={query}"
+  user_handling: true
 
 semantic_search:
-  enable: true
-  embedding_endpoint: "m5_assert([ENV_LLAMA_API_BASE])/embeddings"
-  embedding_model: "Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0"
   dimensions: 1024
-  query_prefix: "Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery: "
+  embedding_endpoint: "m5_assert([ENV_LLAMA_API_BASE])/embeddings"
+  embedding_model: "qwen-embed"
+  enable: true
 
 server:
   database: "host=pg.komposed-hister.svc.cluster.local port=5432 user=komposed-hister password=komposed-hister dbname=komposed-hister sslmode=disable"

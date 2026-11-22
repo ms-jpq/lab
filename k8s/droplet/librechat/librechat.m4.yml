@@ -49,23 +49,23 @@ modelSpecs:
 
 endpoints:
   custom:
-    - name: "llama.cpp"
-      apiKey: "${LLAMA_API_KEY}"
+    - name: llama.cpp
+      apiKey: ${LLAMA_API_KEY}
       baseURL: "m5_assert([ENV_LLAMA_API_BASE])"
-      modelDisplayLabel: "llama.cpp"
-      titleModel: "unsloth/Qwen3.8-27B-GGUF:UD-Q4_K_XL"
+      modelDisplayLabel: llama.cpp
+      titleModel: &qwen-chat qwen-chat
       models:
         default:
-          - "unsloth/Qwen3.8-27B-GGUF:UD-Q4_K_XL"
+          - *qwen-chat
         fetch: true
 
-    - name: "deepseek"
-      apiKey: "${DEEPSEEK_API_KEY}"
-      baseURL: "https://api.deepseek.com"
-      modelDisplayLabel: "DeepSeek"
-      titleModel: "deepseek-v4-flash"
+    - name: deepseek
+      apiKey: ${DEEPSEEK_API_KEY}
+      baseURL: https://api.deepseek.com
+      modelDisplayLabel: DeepSeek
+      titleModel: &deepseek-flash deepseek-v4-flash
       models:
         default:
-          - "deepseek-v4-pro"
-          - "deepseek-v4-flash"
+          - deepseek-v4-pro
+          - *deepseek-flash
         fetch: true
