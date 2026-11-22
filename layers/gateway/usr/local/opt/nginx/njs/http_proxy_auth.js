@@ -22,44 +22,43 @@ const ALLOW_REX = (() => {
   const acc = []
 
   const dir = "/var/lib/local/htpasswd"
-  fs.readdirSync(dir).forEach((name) => {
-    if (!name.endsWith(".txt")) {
-      return
-    }
+  fs.readdirSync(dir)
+    .filter((name) => name.endsWith(".txt"))
+    .forEach((name) => {
+      fs.readFileSync(`${dir}/${name}`, "utf8")
+        .split("\n")
+        .forEach((raw) => {
+          const line = raw.trim()
+          if (!line) {
+            return
+          }
 
-    fs.readFileSync(`${dir}/${name}`, "utf8")
-      .split("\n")
-      .forEach((raw) => {
-        const line = raw.trim()
-        if (!line) {
-          return
-        }
+          const slash = line.indexOf("/")
+          const pat = line
+            .split("")
+            .map((c, i) => {
+              const hostname = slash === -1 || i < slash
+              switch (true) {
+                case hostname && c === "*":
+                  return "[^/?]*"
+                case c === "*":
+                  return ".*"
+                case hostname && c === "?":
+                  return "[^/?]"
+                case c === "?":
+                  return "."
+                case /[.+^${}()|[\]\\]/.test(c):
+                  return "\\" + c
+                default:
+                  return c
+              }
+            })
+            .join("")
 
-        const pat = line
-          .split("")
-          .map((c, i) => {
-            const hostname = !line.slice(0, i).includes("/")
-            switch (true) {
-              case hostname && c === "*":
-                return "[^/?]*"
-              case c === "*":
-                return ".*"
-              case hostname && c === "?":
-                return "[^/?]"
-              case c === "?":
-                return "."
-              case /[.+^${}()|[\]\\]/.test(c):
-                return "\\" + c
-              default:
-                return c
-            }
-          })
-          .join("")
-
-        const re = new RegExp(`^${pat}${line.includes("/") ? "" : "/.*"}$`)
-        acc.push(re)
-      })
-  })
+          const re = new RegExp(`^${pat}${slash === -1 ? "/.*" : ""}$`)
+          acc.push(re)
+        })
+    })
 
   return acc
 })()
@@ -180,7 +179,7 @@ const hasValidAuthCookie = (o) => {
       return false
     }
     const exp = Number(userExp[1])
-    return Number.isFinite(exp) && exp - Date.now() > 0
+    return Number.isFinite(exp) && exp > Date.now()
   })
 }
 
@@ -231,10 +230,9 @@ const parseAuth = (o) => {
 /**
  * @param {NginxHTTPRequest} r
  * @param {string} creds
- * @param {NginxHTTPRequest} o
  */
-const validate = async (r, creds, o) => {
-  const ip = o.remoteAddress ?? ""
+const validate = async (r, creds) => {
+  const ip = r.remoteAddress ?? ""
   r.variables["htpasswd_authz"] = `Basic ${creds}`
   r.variables["htpasswd_ip"] = ip === "unix:" ? "::" : ip
 
@@ -251,21 +249,20 @@ export default {
 
   /** @param {NginxHTTPRequest} r */
   gate: async (r) => {
-    const o = r
     const uri =
-      (o.variables.host ?? "") +
-      (o.variables["htpasswd_request_uri"] ?? o.variables.uri ?? "/")
+      (r.variables.host ?? "") +
+      (r.variables["htpasswd_request_uri"] ?? r.variables.uri ?? "/")
 
-    if (matchAllow(uri) || hasValidAuthCookie(o)) {
+    if (matchAllow(uri) || hasValidAuthCookie(r)) {
       return r.return(204)
     }
 
-    const parsed = parseAuth(o)
-    if (parsed && (await validate(r, parsed.creds, o))) {
+    const parsed = parseAuth(r)
+    if (parsed && (await validate(r, parsed.creds))) {
       return r.return(204)
     }
 
-    const accept = (o.headersIn["Accept"] ?? "").toLowerCase()
+    const accept = (r.headersIn["Accept"] ?? "").toLowerCase()
     if (!accept.includes("html")) {
       r.headersOut["WWW-Authenticate"] = 'Basic realm="-"'
     }
@@ -274,11 +271,9 @@ export default {
 
   /** @param {NginxHTTPRequest} r */
   login: async (r) => {
-    const o = r
-
-    const want = `${o.variables.scheme}://${o.variables.host}`
-    const ref = o.headersIn["Referer"] ?? ""
-    const originHeader = o.headersIn["Origin"]
+    const want = `${r.variables.scheme}://${r.variables.host}`
+    const ref = r.headersIn["Referer"] ?? ""
+    const originHeader = r.headersIn["Origin"]
 
     if (originHeader ? originHeader !== want : !ref.startsWith(want + "/")) {
       return r.return(403)
@@ -289,11 +284,11 @@ export default {
 
     const password = firstString(params["password"])
     const creds = Buffer.from(`${username}:${password}`).toString("base64")
-    if (!(await validate(r, creds, o))) {
+    if (!(await validate(r, creds))) {
       return r.return(401)
     }
 
-    r.headersOut["Set-Cookie"] = [buildCookie(o, username)]
+    r.headersOut["Set-Cookie"] = [buildCookie(r, username)]
 
     const requested = firstString(params["redirect"])
     const redirectPath = requested.startsWith(want + "/")
