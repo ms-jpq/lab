@@ -8,12 +8,10 @@ services:
       kompose.service.expose: home.${DOMAIN}
     environment:
       # https://github.com/asciimoo/nogon/blob/master/webui/website/src/content/docs/configuration.md
-      HTTP_PROXY: &proxy http://proxy.komposed-hostproxy.svc.cluster.local:1080
-      HTTPS_PROXY: *proxy
-      NO_PROXY: localhost,127.0.0.1,::1,.svc.cluster.local,${LLAMA_HOST}
       NOGON__APP__REDIRECT_ON_NO_RESULTS: true
       NOGON__APP__SEARCH_URL: https://ask.${DOMAIN}/search?q={query}
       NOGON__APP__USER_HANDLING: true
+      NOGON__CRAWLER__PROXY: socks5://proxy.komposed-hostproxy.svc.cluster.local:1080
       NOGON__SEMANTIC_SEARCH__API_KEY:
       NOGON__SEMANTIC_SEARCH__DIMENSIONS: 1024
       NOGON__SEMANTIC_SEARCH__EMBEDDING_ENDPOINT:
