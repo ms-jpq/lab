@@ -12,7 +12,7 @@ from aws_lambda_powertools.event_handler.api_gateway import Response
 from . import TRACER, app
 
 with nullcontext():
-    _ARCHIVE = "archive.ph"
+    _ARCHIVE = "wallhop.io"
 
 
 @cache
@@ -28,7 +28,7 @@ def _mappings() -> Mapping[str, str]:
         "www.google.ca": f"ask.{domain}",
         "www.google.com": f"ask.{domain}",
         "www.reddit.com": f"bbs.{domain}",
-        "x.com": f"xcancel.com",
+        "x.com": f"xxcancel.com",
         "youtube.com": f"youku.{domain}",
     }
     return ChainMap(mappings, {v: k for k, v in mappings.items()})
